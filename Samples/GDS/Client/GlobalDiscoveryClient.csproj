@@ -124,33 +124,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Stack\Opc.Ua.Core\Opc.Ua.Core.csproj">
-      <Project>{761e1eb7-59fb-4d77-8ab3-986b623535c8}</Project>
-      <Name>Opc.Ua.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Client\Opc.Ua.Client.csproj">
-      <Project>{72d92985-2b09-409c-8573-35db1bea370c}</Project>
-      <Name>Opc.Ua.Client</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj">
-      <Project>{b6789847-e597-4ff8-8849-80e04d756251}</Project>
-      <Name>Opc.Ua.Configuration</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ClientControls.Net4\UA Client Controls.csproj">
-      <Project>{A247D2EE-14FC-463D-A9BA-6CFF1EF22B7A}</Project>
-      <Name>UA Client Controls</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Gds.Client.Common\Opc.Ua.Gds.Client.Common.csproj">
-      <Project>{4c825cdc-3cdd-4650-9801-48b755af5adb}</Project>
-      <Name>GlobalDiscoveryClientLibrary</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ClientControls\GlobalDiscoveryClientControls.csproj">
-      <Project>{228ec503-2e77-45c9-87ac-3bb312e43196}</Project>
-      <Name>GlobalDiscoveryClientControls</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
@@ -166,9 +139,22 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
+      <Version>1.4.362.41-preview</Version>
+    </PackageReference>
     <PackageReference Include="System.Net.Http">
       <Version>4.3.3</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ClientControls.Net4\UA Client Controls.csproj">
+      <Project>{a247d2ee-14fc-463d-a9ba-6cff1ef22b7a}</Project>
+      <Name>UA Client Controls</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ClientControls\GlobalDiscoveryClientControls.csproj">
+      <Project>{228ec503-2e77-45c9-87ac-3bb312e43196}</Project>
+      <Name>GlobalDiscoveryClientControls</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

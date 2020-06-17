@@ -160,26 +160,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Stack\Opc.Ua.Core\Opc.Ua.Core.csproj">
-      <Project>{761e1eb7-59fb-4d77-8ab3-986b623535c8}</Project>
-      <Name>Opc.Ua.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj">
-      <Project>{b6789847-e597-4ff8-8849-80e04d756251}</Project>
-      <Name>Opc.Ua.Configuration</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Server\Opc.Ua.Server.csproj">
-      <Project>{5f871952-f62d-424c-b8ad-964931460b3e}</Project>
-      <Name>Opc.Ua.Server</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\ServerControls.Net4\UA Server Controls.csproj">
       <Project>{80056988-44E7-4EF4-9F59-50BCF215CB03}</Project>
       <Name>UA Server Controls</Name>
       <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Gds.Server.Common\Opc.Ua.Gds.Server.Common.csproj">
-      <Project>{77860818-3989-4d5d-95ff-437925891383}</Project>
-      <Name>GlobalDiscoveryServerLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -205,6 +189,9 @@
   <ItemGroup>
     <PackageReference Include="EntityFramework">
       <Version>6.1.3</Version>
+    </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
+      <Version>1.4.362.41-preview</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
