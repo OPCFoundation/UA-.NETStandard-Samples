@@ -115,26 +115,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Stack\Opc.Ua.Core\Opc.Ua.Core.csproj">
-      <Project>{d918c0f6-39bd-4ed0-8323-e5a2eb9a85da}</Project>
-      <Name>Opc.Ua.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Libraries\Opc.Ua.Client.ComplexTypes\Opc.Ua.Client.ComplexTypes.csproj">
-      <Project>{fe9eeb39-0698-4a19-b770-e66836ce0002}</Project>
-      <Name>Opc.Ua.Client.ComplexTypes</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Libraries\Opc.Ua.Client\Opc.Ua.Client.csproj">
-      <Project>{15100583-bfef-431b-a1ea-1e5a843a39b1}</Project>
-      <Name>Opc.Ua.Client</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj">
-      <Project>{a39614ca-8ebe-4408-a9d2-38c7e5ae2a1d}</Project>
-      <Name>Opc.Ua.Configuration</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Libraries\Opc.Ua.Server\Opc.Ua.Server.csproj">
-      <Project>{6c449a1e-244e-4515-9949-a7e22012537c}</Project>
-      <Name>Opc.Ua.Server</Name>
-    </ProjectReference>
     <ProjectReference Include="..\ClientControls.Net4\UA Client Controls.csproj">
       <Project>{A247D2EE-14FC-463D-A9BA-6CFF1EF22B7A}</Project>
       <Name>UA Client Controls</Name>
@@ -154,6 +134,12 @@
     <Content Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
+      <Version>1.4.362.41-preview</Version>
+    </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes">
+      <Version>1.4.362.41-preview</Version>
+    </PackageReference>
     <PackageReference Include="System.Net.Http">
       <Version>4.3.3</Version>
     </PackageReference>
