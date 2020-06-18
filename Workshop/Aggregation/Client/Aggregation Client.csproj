@@ -127,22 +127,15 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Stack\Opc.Ua.Core\Opc.Ua.Core.csproj">
-      <Project>{3ce98776-35af-48d4-b6e0-b716ad1db889}</Project>
-      <Name>Opc.Ua.Core</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj">
       <Project>{a247d2ee-14fc-463d-a9ba-6cff1ef22b7a}</Project>
       <Name>UA Client Controls</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Client\Opc.Ua.Client.csproj">
-      <Project>{79cb842c-8c1c-414e-a9c1-84fa5205ab40}</Project>
-      <Name>Opc.Ua.Client</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj">
-      <Project>{7289b366-d72a-4aad-9024-ef5f74b3025d}</Project>
-      <Name>Opc.Ua.Configuration</Name>
-    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
+      <Version>1.4.362.41-preview</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

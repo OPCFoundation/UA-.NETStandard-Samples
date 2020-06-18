@@ -216,25 +216,14 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Stack\Opc.Ua.Core\Opc.Ua.Core.csproj">
-      <Project>{761e1eb7-59fb-4d77-8ab3-986b623535c8}</Project>
-      <Name>Opc.Ua.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Client\Opc.Ua.Client.csproj">
-      <Project>{72d92985-2b09-409c-8573-35db1bea370c}</Project>
-      <Name>Opc.Ua.Client</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj">
-      <Project>{b6789847-e597-4ff8-8849-80e04d756251}</Project>
-      <Name>Opc.Ua.Configuration</Name>
-    </ProjectReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
+      <Version>1.4.362.41-preview</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\ClientControls.Net4\UA Client Controls.csproj">
       <Project>{a247d2ee-14fc-463d-a9ba-6cff1ef22b7a}</Project>
       <Name>UA Client Controls</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\Libraries\Opc.Ua.Gds.Client.Common\Opc.Ua.Gds.Client.Common.csproj">
-      <Project>{4c825cdc-3cdd-4650-9801-48b755af5adb}</Project>
-      <Name>GlobalDiscoveryClientLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
