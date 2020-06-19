@@ -1,0 +1,63 @@
+language: csharp
+mono: 6.8.0
+dotnet: 2.2.100
+os:
+  - linux
+  - osx
+sudo: false
+dist: xenial
+osx_image: xcode9.4.1
+ 
+addons:
+  apt:
+    sources:
+    packages:
+script: 
+  - echo "========== restore all .Net Core samples ============"
+  - dotnet restore "UA Sample Applications.sln"
+  - dotnet restore "UA Global Discovery Server.sln"
+  - dotnet restore "UA Quickstart Applications.sln"
+  - echo "========== build all .Net Core samples ============"
+  - dotnet build -c Debug /p:NoHttps=true Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
+  - dotnet build -c Release /p:NoHttps=true Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
+  - dotnet build -c Debug Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj
+  - dotnet build -c Debug Samples/NetCoreComplexClient/NetCoreComplexClient.csproj
+  - dotnet build -c Debug Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
+  - dotnet build -c Release Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj
+  - dotnet build -c Release Samples/NetCoreComplexClient/NetCoreComplexClient.csproj
+  - dotnet build -c Release Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
+  - dotnet build -c Samples/GDS/ConsoleServer
+  - dotnet build -c Samples/GDS/ConsoleServer
+  - dotnet build -c Samples/GDS/ClientTest
+  - dotnet build -c Samples/GDS/ClientTest
+  - echo "========== run .Net Core samples ============"
+  - cd Samples/NetCoreConsoleServer/bin/Debug/netcoreapp2.0
+  - dotnet NetCoreConsoleServer.dll -t 10 -a
+  - cd $TRAVIS_BUILD_DIR
+  - ./testclientserver.sh
+  - echo "========== build all Mono samples ============"
+  - msbuild /t:restore Samples/NetCoreConsoleServer/MonoConsoleServer.csproj
+  - msbuild /p:configuration=Debug /t:compile,publish Samples/NetCoreConsoleServer/MonoConsoleServer.csproj
+  - msbuild /p:configuration=Release /t:compile,publish Samples/NetCoreConsoleServer/MonoConsoleServer.csproj
+  - msbuild /t:restore Samples/NetCoreConsoleClient/MonoConsoleClient.csproj
+  - msbuild /p:configuration=Debug /t:compile,publish Samples/NetCoreConsoleClient/MonoConsoleClient.csproj
+  - msbuild /p:configuration=Release /t:compile,publish Samples/NetCoreConsoleClient/MonoConsoleClient.csproj
+  - cd Samples/NetCoreConsoleServer/bin/Debug/net462
+  - mono MonoConsoleServer.exe -t 10 -a
+  - cd $TRAVIS_BUILD_DIR
+  - ./testmonoclientserver.sh
+
+after_script:
+  - echo "========== build done ============"
+
+after_failure:
+  - cd $HOME
+  - cd .local/share/OPC
+  - ls -R
+  - cd Logs
+  - cat GlobalDiscoveryTestClient.log.txt
+  - cat ServerConfigurationPushTestClient.log.txt
+  - cat GlobalDiscoveryTestServer.log.txt
+  - cd $TRAVIS_BUILD_DIR
+
+
