@@ -82,7 +82,7 @@ This section describes how to run the **NetCoreConsoleClient** and **NetCoreCons
 Please follow instructions in this [article](https://aka.ms/dotnetcoregs) to setup the dotnet command line environment for your platform. As of today .Net Standard 2.0 is required.
 
 ### Prerequisites
-1. Once the `dotnet` command is available, navigate to the root folder in your local copy of the repository and execute `dotnet restore UA-NetStandard.sln`. This command calls into NuGet to restore the tree of dependencies.
+1. Once the `dotnet` command is available, navigate to the root folder in your local copy of the repository and execute `dotnet restore UA Sample Applications.sln`. This command calls into NuGet to restore the tree of dependencies.
 
 ### Start the server 
 1. Open a command prompt. 
@@ -105,9 +105,6 @@ Please follow instructions in this [article](https://aka.ms/dotnetcoregs) to set
 
 ## How to build and run the OPC UA Aggregation Client and Server
 - Please refer to the OPC Foundation UA .Net Standard Library [Aggregation Client and Server](Workshop/Aggregation/README.md) for a detailed description how to run the aggregation client and server.
-
-## How to build and run the OPC UA Reference Server with UACTT
-- Please refer to the OPC Foundation UA .Net Standard Library [Reference Server](Workshop/Reference/README.md) for a detailed description how to run the reference server against the UACTT.
 
 ## How to build and run the OPC UA Xamarin Client
 - Please refer to the OPC UA [Xamarin Client](Samples/XamarinClient/readme.md) for a detailed description how to run the UA Xamarin Client on UWP, Android and iOS.
