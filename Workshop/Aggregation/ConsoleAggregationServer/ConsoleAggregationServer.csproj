@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.8" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.362.41-preview" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.362.42" />
   </ItemGroup>
 
   <ItemGroup>
