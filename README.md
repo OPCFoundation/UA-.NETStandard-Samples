@@ -27,12 +27,10 @@ Furthermore, cloud applications and services (such as ASP.Net, DNX, Azure Websit
 
 ### General Project Info
 
-[![Github top language](https://img.shields.io/github/languages/top/OPCFoundation/UA-.NETStandard)](https://github.com/OPCFoundation/UA-.NETStandard)
-[![Github stars](https://img.shields.io/github/stars/OPCFoundation/UA-.NETStandard?style=flat)](https://github.com/OPCFoundation/UA-.NETStandard)
-[![Github forks](https://img.shields.io/github/forks/OPCFoundation/UA-.NETStandard?style=flat)](https://github.com/OPCFoundation/UA-.NETStandard)
-[![Github size](https://img.shields.io/github/repo-size/OPCFoundation/UA-.NETStandard?style=flat)](https://github.com/OPCFoundation/UA-.NETStandard)
-[![Github release](https://img.shields.io/github/v/release/OPCFoundation/UA-.NETStandard?style=flat)](https://github.com/OPCFoundation/UA-.NETStandard/releases)
-[![Nuget Downloads](https://img.shields.io/nuget/dt/OPCFoundation.NetStandard.Opc.Ua)](https://www.nuget.org/packages/OPCFoundation.NetStandard.Opc.Ua/)
+[![Github top language](https://img.shields.io/github/languages/top/OPCFoundation/UA-.NETStandard-Samples)](https://github.com/OPCFoundation/UA-.NETStandard-Samples)
+[![Github stars](https://img.shields.io/github/stars/OPCFoundation/UA-.NETStandard-Samples?style=flat)](https://github.com/OPCFoundation/UA-.NETStandard-Samples)
+[![Github forks](https://img.shields.io/github/forks/OPCFoundation/UA-.NETStandard-Samples?style=flat)](https://github.com/OPCFoundation/UA-.NETStandard-Samples)
+[![Github size](https://img.shields.io/github/repo-size/OPCFoundation/UA-.NETStandard-Samples?style=flat)](https://github.com/OPCFoundation/UA-.NETStandard-Samples)
 
 ### Build Status
 
