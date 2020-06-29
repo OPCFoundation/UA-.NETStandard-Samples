@@ -6,10 +6,6 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
 WORKDIR /src
 COPY ["ConsoleAggregationServer/ConsoleAggregationServer.csproj", "ConsoleAggregationServer/"]
-COPY ["../../SDK/Opc.Ua.Server/Opc.Ua.Server.csproj", "../../SDK/Opc.Ua.Server/"]
-COPY ["../../../Stack/Opc.Ua.Core/Opc.Ua.Core.csproj", "../../../Stack/Opc.Ua.Core/"]
-COPY ["../../SDK/Opc.Ua.Configuration/Opc.Ua.Configuration.csproj", "../../SDK/Opc.Ua.Configuration/"]
-COPY ["../../SDK/Opc.Ua.Client/Opc.Ua.Client.csproj", "../../SDK/Opc.Ua.Client/"]
 RUN dotnet restore "ConsoleAggregationServer/ConsoleAggregationServer.csproj"
 COPY . .
 WORKDIR "/src/ConsoleAggregationServer"
