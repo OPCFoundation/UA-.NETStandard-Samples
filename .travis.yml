@@ -27,10 +27,8 @@ script:
   - dotnet build -c Release Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj
   - dotnet build -c Release Samples/NetCoreComplexClient/NetCoreComplexClient.csproj
   - dotnet build -c Release Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
-  - dotnet build -c Samples/GDS/ConsoleServer
-  - dotnet build -c Samples/GDS/ConsoleServer
-  - dotnet build -c Samples/GDS/ClientTest
-  - dotnet build -c Samples/GDS/ClientTest
+  - dotnet build -c Debug Samples/GDS/ConsoleServer
+  - dotnet build -c Release Samples/GDS/ConsoleServer
   - echo "========== run .Net Core samples ============"
   - cd Samples/NetCoreConsoleServer/bin/Debug/netcoreapp2.0
   - dotnet NetCoreConsoleServer.dll -t 10 -a
