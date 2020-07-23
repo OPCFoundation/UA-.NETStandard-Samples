@@ -29,17 +29,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
 using System.Threading;
 using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
-using System.Threading.Tasks;
-using System.Net;
-
 
 namespace AggregationServer
 {
@@ -48,6 +41,11 @@ namespace AggregationServer
     /// </summary>
     public class AggregationNodeManager : CustomNodeManager2
     {
+        const uint DefaultSessionTimeout = 60000;
+        const int DefaultMetadataRefresh = 300000;
+        const int DefaultMetadataInitDelay = 5000;
+        const int DefaultReconnectPeriod = 10000;
+
         #region Constructors
         /// <summary>
         /// Initializes the node manager.
@@ -74,7 +72,9 @@ namespace AggregationServer
             }
             m_ownsTypeModel = ownsTypeModel;
             m_clients = new Dictionary<NodeId, Opc.Ua.Client.Session>();
+            m_reconnectHandlers = new Dictionary<NodeId, Opc.Ua.Client.SessionReconnectHandler>();
             m_mapper = new NamespaceMapper();
+            m_sessionTimeout = DefaultSessionTimeout;
         }
         #endregion
 
@@ -185,7 +185,7 @@ namespace AggregationServer
 
                 AddPredefinedNode(SystemContext, status);
 
-                StartMetadataUpdates(DoMetadataUpdate, null, 5000, 30000);
+                StartMetadataUpdates(DoMetadataUpdate, null, DefaultMetadataInitDelay, DefaultMetadataRefresh);
             }
         }
 
@@ -441,7 +441,7 @@ namespace AggregationServer
         }
 
         /// <summary>
-        /// Handles a cal operation.
+        /// Handles a call operation.
         /// </summary>
         public override void Call(
             OperationContext context,
@@ -960,7 +960,6 @@ namespace AggregationServer
 
                 Opc.Ua.Client.Session client = GetClientSession(systemContext);
 
-
                 if (unsubscribe)
                 {
                     lock (client)
@@ -1142,10 +1141,13 @@ namespace AggregationServer
             }
         }
 
+        /// <summary>
+        /// Get a cached client session or create a new one per server connection.
+        /// </summary>
         Opc.Ua.Client.Session GetClientSession(ServerSystemContext context)
         {
-            NodeId sessionId = NodeId.Null;
-            string sessionName = Guid.NewGuid().ToString();
+            NodeId sessionId;
+            string sessionName;
             IUserIdentity userIdentity = null;
             IList<string> preferredLocales = null;
 
@@ -1156,58 +1158,54 @@ namespace AggregationServer
                 userIdentity = context.UserIdentity;
                 preferredLocales = context.PreferredLocales;
             }
+            else
+            {
+                sessionId = new NodeId(Guid.NewGuid());
+                sessionName = $"Aggregation Server({Utils.GetHostName()})";
+            }
 
             Opc.Ua.Client.Session session = null;
             if (m_clients.TryGetValue(sessionId, out session))
             {
-                return session;
+                if (session.Connected)
+                {
+                    return session;
+                }
+                session.Close();
+                m_clients.Remove(sessionId);
             }
 
             try
             {
                 if (m_reverseConnectManager != null)
                 {
-                    ITransportWaitingConnection connection = null;
-                    CancellationToken cts = new CancellationTokenSource(60000).Token;
-                    do
-                    {
-                        var endpointUrl = new Uri(Utils.ReplaceLocalhost(m_endpoint.EndpointUrl.ToString()));
-                        connection = m_reverseConnectManager.WaitForConnection(
-                            endpointUrl,
-                            m_endpoint.ReverseConnect.ServerUri,
-                            cts).Result;
-
-                        if (m_endpoint.NeedUpdateFromServer())
-                        {
-                            m_endpoint.UpdateFromServer(m_endpoint.EndpointUrl, connection,
-                                m_endpoint.Description.SecurityMode,
-                                m_endpoint.Description.SecurityPolicyUri);
-                            connection = null;
-                        }
-                    } while (connection == null);
-
+                    CancellationToken ct = new CancellationTokenSource((int)m_sessionTimeout).Token;
+                    Utils.Trace($"Create Reverse Connect Session: {m_endpoint}");
                     session = Opc.Ua.Client.Session.Create(
                         m_configuration,
-                        connection,
+                        m_reverseConnectManager,
                         m_endpoint,
                         false,
-                        false,
                         sessionName,
-                        60000,
+                        m_sessionTimeout,
                         userIdentity,
-                        preferredLocales).Result;
+                        preferredLocales,
+                        ct).Result;
                 }
                 else
                 {
+                    Utils.Trace($"Create Session: {m_endpoint}");
                     session = Opc.Ua.Client.Session.Create(
                         m_configuration,
                         m_endpoint,
-                        (context == null),
+                        m_endpoint.NeedUpdateFromServer(),
                         sessionName,
-                        60000,
+                        m_sessionTimeout,
                         userIdentity,
                         preferredLocales).Result;
                 }
+
+                session.KeepAlive += Client_KeepAlive;
 
                 m_clients.Add(sessionId, session);
 
@@ -1239,6 +1237,8 @@ namespace AggregationServer
                         m_status.ClearChangeMasks(SystemContext, true);
                     }
                 }
+
+                throw new ServiceResultException(StatusCodes.BadNotConnected, "Server not connected.");
             }
 
             return session;
@@ -1305,11 +1305,7 @@ namespace AggregationServer
 
                 string[] TypeSystemNamespaceUris = new string[]
                 {
-                    "http://opcfoundation.org/UA/Diagnostics",
-                    "http://samples.org/UA/memorybuffer",
-                    "http://test.org/UA/Data/",
-                    "http://tempuri.org/UA/FileSystem/",
-                    "http://opcfoundation.org/UA/Boiler/"
+                    "http://opcfoundation.org/UA/Diagnostics"
                 };
 
                 lock (Server.DiagnosticsLock)
@@ -1571,6 +1567,51 @@ namespace AggregationServer
         #endregion
 
         #region Private Methods
+        private void Client_KeepAlive(Opc.Ua.Client.Session session, Opc.Ua.Client.KeepAliveEventArgs e)
+        {
+            if (e.Status != null && ServiceResult.IsNotGood(e.Status))
+            {
+                Utils.Trace("{0} {1}/{2}", e.Status, session.OutstandingRequestCount, session.DefunctRequestCount);
+
+                Opc.Ua.Client.SessionReconnectHandler reconnectHandler;
+                if (!m_reconnectHandlers.TryGetValue(session.SessionId, out reconnectHandler))
+                {
+                    Console.WriteLine("--- RECONNECTING ---");
+                    reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler();
+                    reconnectHandler.BeginReconnect(session, DefaultReconnectPeriod, Client_ReconnectComplete);
+                    m_reconnectHandlers.Add(session.SessionId, reconnectHandler);
+                }
+            }
+        }
+
+        private void Client_ReconnectComplete(object sender, EventArgs e)
+        {
+            // ignore callbacks from discarded objects.
+            Opc.Ua.Client.SessionReconnectHandler reconnectHandler = sender as Opc.Ua.Client.SessionReconnectHandler;
+            if (reconnectHandler == null)
+            {
+                return;
+            }
+
+            Opc.Ua.Client.Session session = reconnectHandler.Session;
+            Opc.Ua.Client.SessionReconnectHandler internalReconnectHandler;
+            if (!m_reconnectHandlers.TryGetValue(session.SessionId, out internalReconnectHandler))
+            {
+                return;
+            }
+
+            if (!Object.ReferenceEquals(reconnectHandler, internalReconnectHandler))
+            {
+                return;
+            }
+
+            m_reconnectHandlers.Remove(session.SessionId);
+            m_clients[session.SessionId] = session;
+            reconnectHandler.Dispose();
+
+            Utils.Trace("--- RECONNECTED ---");
+        }
+
         /// <summary>
         /// Generates a new node id.
         /// </summary>
@@ -1586,9 +1627,11 @@ namespace AggregationServer
         private ConfiguredEndpoint m_endpoint;
         private Opc.Ua.Client.ReverseConnectManager m_reverseConnectManager;
         private Dictionary<NodeId, Opc.Ua.Client.Session> m_clients;
+        private Dictionary<NodeId, Opc.Ua.Client.SessionReconnectHandler> m_reconnectHandlers;
         private AggregatedTypeCache m_typeCache;
         private Timer m_metadataUpdateTimer;
         private int m_timerPeriod;
+        private uint m_sessionTimeout;
         private WaitCallback m_metadataUpdateCallback;
         private NamespaceMapper m_mapper;
         private FolderState m_root;
