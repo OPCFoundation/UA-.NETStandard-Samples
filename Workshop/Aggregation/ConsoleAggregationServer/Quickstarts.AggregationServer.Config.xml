@@ -182,7 +182,6 @@
     <MaxPublishRequestCount>20</MaxPublishRequestCount>
     <MaxSubscriptionCount>100</MaxSubscriptionCount>
     <MaxEventQueueSize>10000</MaxEventQueueSize>
-    <MinSubscriptionLifetime>10000</MinSubscriptionLifetime>
     
     <!-- see https://opcfoundation-onlineapplications.org/profilereporting/ for list of available profiles -->
     <ServerProfileArray>
@@ -219,15 +218,19 @@
   <ClientConfiguration>
     <DefaultSessionTimeout>60000</DefaultSessionTimeout>
     <MinSubscriptionLifetime>10000</MinSubscriptionLifetime>
-
     <ReverseConnect>
       <ClientEndpoints>
         <ClientEndpoint>
           <EndpointUrl>opc.tcp://localhost:65300</EndpointUrl>
         </ClientEndpoint>
+        <!--
+        <ClientEndpoint>
+          <EndpointUrl>opc.tcp://localhost:65302</EndpointUrl>
+        </ClientEndpoint>
+        -->
       </ClientEndpoints>
+      <HoldTime>10000</HoldTime>
     </ReverseConnect>
-
   </ClientConfiguration>
 
   <Extensions>
@@ -238,9 +241,36 @@
         xmlns:ua="http://opcfoundation.org/UA/SDK/Configuration.xsd">
         <ua:KnownHosts />
         <ua:Endpoints>
+          <!--
           <ua:ConfiguredEndpoint>
             <ua:Endpoint>
-              <EndpointUrl>opc.tcp://localhost:51210/UA/SampleServer</EndpointUrl>
+              <EndpointUrl>opc.tcp://mregen1:48010</EndpointUrl>
+              <SecurityMode>None_1</SecurityMode>
+              <SecurityPolicyUri>http://opcfoundation.org/UA/SecurityPolicy#None</SecurityPolicyUri>
+              <UserIdentityTokens>
+                <UserTokenPolicy>
+                  <TokenType>Anonymous_0</TokenType>
+                </UserTokenPolicy>
+                <UserTokenPolicy>
+                  <TokenType>UserName_1</TokenType>
+                </UserTokenPolicy>
+                <UserTokenPolicy>
+                  <TokenType>Certificate_2</TokenType>
+                </UserTokenPolicy>
+              </UserIdentityTokens>
+              <TransportProfileUri>http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary</TransportProfileUri>
+            </ua:Endpoint>
+            <ua:UpdateBeforeConnect>false</ua:UpdateBeforeConnect>
+            <ua:SelectedUserTokenPolicy>0</ua:SelectedUserTokenPolicy>
+            <ua:ReverseConnect>
+              <ua:Enabled>true</ua:Enabled>
+              <ua:ServerUri>urn:mregen1:UnifiedAutomation:UaServerCpp</ua:ServerUri>
+              <ua:Thumbprint></ua:Thumbprint>
+            </ua:ReverseConnect>
+          </ua:ConfiguredEndpoint>
+          <ua:ConfiguredEndpoint>
+            <ua:Endpoint>
+              <EndpointUrl>opc.tcp://mregen1.europe.corp.microsoft.com:48020</EndpointUrl>
               <SecurityMode>SignAndEncrypt_3</SecurityMode>
               <SecurityPolicyUri>http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256</SecurityPolicyUri>
               <UserIdentityTokens>
@@ -264,7 +294,87 @@
               <ua:Thumbprint></ua:Thumbprint>
             </ua:ReverseConnect>
           </ua:ConfiguredEndpoint>
-
+          -->
+          <ua:ConfiguredEndpoint>
+            <ua:Endpoint>
+              <EndpointUrl>opc.tcp://localhost:62541/Quickstarts/ReferenceServer/</EndpointUrl>
+              <SecurityMode>None_1</SecurityMode>
+              <SecurityPolicyUri>http://opcfoundation.org/UA/SecurityPolicy#None</SecurityPolicyUri>
+              <UserIdentityTokens>
+                <UserTokenPolicy>
+                  <TokenType>Anonymous_0</TokenType>
+                </UserTokenPolicy>
+                <UserTokenPolicy>
+                  <TokenType>UserName_1</TokenType>
+                </UserTokenPolicy>
+                <UserTokenPolicy>
+                  <TokenType>Certificate_2</TokenType>
+                </UserTokenPolicy>
+              </UserIdentityTokens>
+              <TransportProfileUri>http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary</TransportProfileUri>
+            </ua:Endpoint>
+            <ua:UpdateBeforeConnect>false</ua:UpdateBeforeConnect>
+            <ua:SelectedUserTokenPolicy>0</ua:SelectedUserTokenPolicy>
+            <ua:ReverseConnect>
+              <ua:Enabled>true</ua:Enabled>
+              <ua:ServerUri>urn:localhost:UA:Quickstarts:ReferenceServer</ua:ServerUri>
+              <ua:Thumbprint></ua:Thumbprint>
+            </ua:ReverseConnect>
+          </ua:ConfiguredEndpoint>
+          <ua:ConfiguredEndpoint>
+            <ua:Endpoint>
+              <EndpointUrl>opc.tcp://localhost:48010/</EndpointUrl>
+              <SecurityMode>None_1</SecurityMode>
+              <SecurityPolicyUri>http://opcfoundation.org/UA/SecurityPolicy#None</SecurityPolicyUri>
+              <UserIdentityTokens>
+                <UserTokenPolicy>
+                  <TokenType>Anonymous_0</TokenType>
+                </UserTokenPolicy>
+                <UserTokenPolicy>
+                  <TokenType>UserName_1</TokenType>
+                </UserTokenPolicy>
+                <UserTokenPolicy>
+                  <TokenType>Certificate_2</TokenType>
+                </UserTokenPolicy>
+              </UserIdentityTokens>
+              <TransportProfileUri>http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary</TransportProfileUri>
+            </ua:Endpoint>
+            <ua:UpdateBeforeConnect>false</ua:UpdateBeforeConnect>
+            <ua:SelectedUserTokenPolicy>0</ua:SelectedUserTokenPolicy>
+            <ua:ReverseConnect>
+              <ua:Enabled>true</ua:Enabled>
+              <ua:ServerUri></ua:ServerUri>
+              <ua:Thumbprint></ua:Thumbprint>
+            </ua:ReverseConnect>
+          </ua:ConfiguredEndpoint>
+          <!--
+          <ua:ConfiguredEndpoint>
+            <ua:Endpoint>
+              <EndpointUrl>opc.tcp://mregen1:48030/</EndpointUrl>
+              <SecurityMode>None_1</SecurityMode>
+              <SecurityPolicyUri>http://opcfoundation.org/UA/SecurityPolicy#None</SecurityPolicyUri>
+              <UserIdentityTokens>
+                <UserTokenPolicy>
+                  <TokenType>Anonymous_0</TokenType>
+                </UserTokenPolicy>
+                <UserTokenPolicy>
+                  <TokenType>UserName_1</TokenType>
+                </UserTokenPolicy>
+                <UserTokenPolicy>
+                  <TokenType>Certificate_2</TokenType>
+                </UserTokenPolicy>
+              </UserIdentityTokens>
+              <TransportProfileUri>http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary</TransportProfileUri>
+            </ua:Endpoint>
+            <ua:UpdateBeforeConnect>false</ua:UpdateBeforeConnect>
+            <ua:SelectedUserTokenPolicy>0</ua:SelectedUserTokenPolicy>
+            <ua:ReverseConnect>
+              <ua:Enabled>true</ua:Enabled>
+              <ua:ServerUri></ua:ServerUri>
+              <ua:Thumbprint></ua:Thumbprint>
+            </ua:ReverseConnect>
+          </ua:ConfiguredEndpoint>
+          -->
           <!--
           <ua:ConfiguredEndpoint>
             <ua:Endpoint>
@@ -294,7 +404,7 @@
   </Extensions>
 
   <TraceConfiguration>
-    <OutputFilePath>./Logs/AggregationServer.log.txt</OutputFilePath>
+    <OutputFilePath>%LocalApplicationData%/OPC Foundation/Logs/AggregationServer.log.txt</OutputFilePath>
     <DeleteOnLoad>true</DeleteOnLoad>
     <!-- Show Only Errors -->
     <!-- <TraceMasks>1</TraceMasks> -->

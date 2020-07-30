@@ -190,6 +190,7 @@ namespace AggregationServer
                 {
                     Console.WriteLine(endpoint.EndpointUrl);
                 }
+                Console.WriteLine("HoldTime: {0}", reverseConnect.HoldTime);
             }
 
             // start the status thread
@@ -199,7 +200,6 @@ namespace AggregationServer
             server.CurrentInstance.SessionManager.SessionActivated += EventStatus;
             server.CurrentInstance.SessionManager.SessionClosing += EventStatus;
             server.CurrentInstance.SessionManager.SessionCreated += EventStatus;
-
         }
 
         private void EventStatus(Session session, SessionEventReason reason)
