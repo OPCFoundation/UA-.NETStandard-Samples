@@ -1387,13 +1387,15 @@ namespace AggregationServer
 
                 lock (Server.DiagnosticsLock)
                 {
+                    ushort[] namespaceIndexes = null;
                     lock (Lock)
                     {
-                        m_mapper.TypeSystemNamespaceUris = TypeSystemNamespaceUris;
-                        m_mapper.Initialize(Server.NamespaceUris, client.NamespaceUris, m_endpoint.Description.Server.ApplicationUri);
+                        var mapper = new NamespaceMapper();
+                        mapper.TypeSystemNamespaceUris = TypeSystemNamespaceUris;
+                        mapper.Initialize(Server.NamespaceUris, client.NamespaceUris, m_endpoint.Description.Server.ApplicationUri);
 
                         // set the namespace indexes.
-                        ushort[] namespaceIndexes = new ushort[m_mapper.LocalNamespaceIndexes.Length + ((m_ownsTypeModel) ? 1 : 0)];
+                        namespaceIndexes = new ushort[mapper.LocalNamespaceIndexes.Length + ((m_ownsTypeModel) ? 1 : 0)];
 
                         int index = 0;
                         namespaceIndexes[index++] = (ushort)Server.NamespaceUris.GetIndex(Namespaces.Aggregation);
@@ -1403,18 +1405,18 @@ namespace AggregationServer
                             namespaceIndexes[index++] = (ushort)Server.NamespaceUris.GetIndex(AggregationModel.Namespaces.Aggregation);
                         }
 
-                        for (int ii = 1; ii < m_mapper.LocalNamespaceIndexes.Length; ii++)
+                        for (int ii = 1; ii < mapper.LocalNamespaceIndexes.Length; ii++)
                         {
-                            namespaceIndexes[index++] = (ushort)m_mapper.LocalNamespaceIndexes[ii];
+                            namespaceIndexes[index++] = (ushort)mapper.LocalNamespaceIndexes[ii];
                         }
-
+                        m_mapper = mapper;
                         SetNamespaceIndexes(namespaceIndexes);
+                    }
 
-                        // re-register node manager.
-                        for (int ii = 0; ii < namespaceIndexes.Length; ii++)
-                        {
-                            Server.NodeManager.RegisterNamespaceManager(Server.NamespaceUris.GetString(namespaceIndexes[ii]), this);
-                        }
+                    // re-register node manager.
+                    for (int ii = 0; ii < namespaceIndexes.Length; ii++)
+                    {
+                        Server.NodeManager.RegisterNamespaceManager(Server.NamespaceUris.GetString(namespaceIndexes[ii]), this);
                     }
                 }
 
