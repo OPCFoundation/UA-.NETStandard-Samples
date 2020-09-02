@@ -1271,7 +1271,8 @@ namespace AggregationServer
                     sessionName,
                     m_sessionTimeout,
                     userIdentity,
-                    preferredLocales).Result;
+                    preferredLocales,
+                    default(CancellationToken)).Result;
 
                 session.KeepAlive += Client_KeepAlive;
                 lock (m_clientsLock)

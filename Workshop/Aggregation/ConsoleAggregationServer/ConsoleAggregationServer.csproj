@@ -39,19 +39,15 @@
         <ProjectReference Include="..\..\..\..\UA-.NETStandard\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj" />
       </ItemGroup>
     </When>
+    <When Condition="'$(Configuration)'=='Release'">
+      <ItemGroup>
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.363-preview-20200902.7-preview" />
+      </ItemGroup>
+    </When>
     <Otherwise>
-      <Choose>
-        <When Condition="'$(Configuration)'=='Release'">
-          <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.362.42" />
-          </ItemGroup>
-        </When>
-        <Otherwise>
-          <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Symbols" Version="1.4.362.42" />
-          </ItemGroup>
-        </Otherwise>
-      </Choose>
+      <ItemGroup>
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Symbols" Version="1.4.363-preview-20200902.7-preview" />
+      </ItemGroup>
     </Otherwise>
   </Choose>
 
