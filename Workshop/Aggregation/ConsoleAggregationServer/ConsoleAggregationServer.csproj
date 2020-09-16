@@ -41,12 +41,12 @@
     </When>
     <When Condition="'$(Configuration)'=='Release'">
       <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.363-preview-20200902.7-preview" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.363.49" />
       </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Symbols" Version="1.4.363-preview-20200902.7-preview" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Symbols" Version="1.4.363.49" />
       </ItemGroup>
     </Otherwise>
   </Choose>
