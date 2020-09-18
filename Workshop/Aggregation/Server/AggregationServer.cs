@@ -86,11 +86,10 @@ namespace AggregationServer
 
             foreach (ConfiguredEndpoint endpoint in endpoints.Endpoints)
             {
-                nodeManagers.Add(new AggregationNodeManager(server, configuration, endpoint, reverseConnectManager, ownsTypeModel));
+                nodeManagers.Add(new AggregationNodeManager(server, configuration, endpoint,
+                    reverseConnectManager, ownsTypeModel));
                 ownsTypeModel = false;
             }
-
-
 
             // create master node manager.
             return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());

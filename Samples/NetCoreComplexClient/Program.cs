@@ -64,7 +64,7 @@ namespace NetCoreConsoleClient
         ErrorInvalidCommandLine = 0x100
     };
 
-    public class Program
+    public static class Program
     {
         public static int Main(string[] args)
         {
