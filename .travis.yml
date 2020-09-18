@@ -1,6 +1,6 @@
 language: csharp
 mono: 6.8.0
-dotnet: 3.1.201
+dotnet: 2.2.100
 os:
   - linux
   - osx
@@ -17,18 +17,19 @@ script:
   - dotnet restore "UA Sample Applications.sln"
   - dotnet restore "UA Global Discovery Server.sln"
   - dotnet restore "UA Quickstart Applications.sln"
-  - dotnet restore "UA Aggregation.sln"
   - echo "========== build all .Net Core samples ============"
-  - dotnet build -c Debug Workshop/Aggregation/ConsoleAggregationServer/ConsoleAggregationServer.csproj
+  - dotnet build -c Debug /p:NoHttps=true Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
+  - dotnet build -c Release /p:NoHttps=true Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
   - dotnet build -c Debug Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj
   - dotnet build -c Debug Samples/NetCoreComplexClient/NetCoreComplexClient.csproj
   - dotnet build -c Debug Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
-  - dotnet build -c Release Workshop/Aggregation/ConsoleAggregationServer/ConsoleAggregationServer.csproj
   - dotnet build -c Release Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj
   - dotnet build -c Release Samples/NetCoreComplexClient/NetCoreComplexClient.csproj
   - dotnet build -c Release Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
-  - dotnet build -c Debug Samples/GDS/ConsoleServer
-  - dotnet build -c Release Samples/GDS/ConsoleServer
+  - dotnet build -c Samples/GDS/ConsoleServer
+  - dotnet build -c Samples/GDS/ConsoleServer
+  - dotnet build -c Samples/GDS/ClientTest
+  - dotnet build -c Samples/GDS/ClientTest
   - echo "========== run .Net Core samples ============"
   - cd Samples/NetCoreConsoleServer/bin/Debug/netcoreapp2.0
   - dotnet NetCoreConsoleServer.dll -t 10 -a

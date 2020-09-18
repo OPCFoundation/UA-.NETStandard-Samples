@@ -244,7 +244,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     DoTest(m_endpoints[ii]);
                 }
-                catch 
+                catch (Exception)
                 {
                     // ignore.
                 }

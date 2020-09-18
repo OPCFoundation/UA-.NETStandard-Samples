@@ -224,8 +224,7 @@ namespace AggregationServer
                 return nodeId;
             }
 
-            if (namespaceIndexes == null ||
-                namespaceIndexes.Length <= nodeId.NamespaceIndex)
+            if (namespaceIndexes.Length <= nodeId.NamespaceIndex)
             {
                 return NodeId.Null;
             }

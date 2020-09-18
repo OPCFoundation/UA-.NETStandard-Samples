@@ -15,7 +15,6 @@
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileRunArguments>-p 62530:62530</DockerfileRunArguments>
-    <Configurations>Debug;Release;Develop</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,29 +29,9 @@
     <Folder Include="Model\" />
   </ItemGroup>
 
-  <Choose>
-    <When Condition="Exists('..\..\..\..\UA-.NETStandard') and '$(Configuration)'=='Develop'">
-      <ItemGroup>
-        <ProjectReference Include="..\..\..\..\UA-.NETStandard\Stack\Opc.Ua.Core\Opc.Ua.Core.csproj" />
-        <ProjectReference Include="..\..\..\..\UA-.NETStandard\Libraries\Opc.Ua.Client\Opc.Ua.Client.csproj" />
-        <ProjectReference Include="..\..\..\..\UA-.NETStandard\Libraries\Opc.Ua.Server\Opc.Ua.Server.csproj" />
-        <ProjectReference Include="..\..\..\..\UA-.NETStandard\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj" />
-      </ItemGroup>
-    </When>
-    <When Condition="'$(Configuration)'=='Release'">
-      <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.363.49" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Symbols" Version="1.4.363.49" />
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.8" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.362.42" />
   </ItemGroup>
 
   <ItemGroup>

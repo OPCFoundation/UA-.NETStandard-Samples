@@ -342,7 +342,7 @@ namespace NetCoreConsoleServer
                     }
                     LastEventTime = DateTime.UtcNow;
                 }
-                await Task.Delay(1000).ConfigureAwait(false);
+                await Task.Delay(1000);
             }
         }
     }

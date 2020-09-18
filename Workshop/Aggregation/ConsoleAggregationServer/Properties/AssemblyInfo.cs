@@ -39,7 +39,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("OPC Foundation")]
 [assembly: AssemblyProduct("Aggregation")]
-[assembly: AssemblyCopyright("Copyright © 2020 OPC Foundation")]
+[assembly: AssemblyCopyright("Copyright © 2019 OPC Foundation")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -61,5 +61,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.04.363")]
-[assembly: AssemblyFileVersion("1.04.363.0")]
+[assembly: AssemblyVersion("1.04.353")]
+[assembly: AssemblyFileVersion("1.04.353.0")]
