@@ -8,7 +8,6 @@ start Quickstarts.HistoricalAccessClient.exe
 start Quickstarts.HistoricalEventsClient.exe
 start Quickstarts.MethodsClient.exe
 start Quickstarts.PerfTestClient.exe
-start Quickstarts.ReferenceClient.exe
 start Quickstarts.SimpleEventsClient.exe
 start Quickstarts.UserAuthenticationClient.exe
 start Quickstarts.ViewsClient.exe
