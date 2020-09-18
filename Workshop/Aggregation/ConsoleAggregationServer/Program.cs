@@ -77,7 +77,7 @@ namespace AggregationServer
         }
     }
 
-    public class Program
+    public static class Program
     {
         public static void Main(string[] args)
         {
@@ -150,7 +150,7 @@ namespace AggregationServer
             ApplicationConfiguration config = await application.LoadApplicationConfiguration(false);
 
             // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, CertificateFactory.defaultKeySize);
+            bool haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, CertificateFactory.DefaultKeySize);
             if (!haveAppCertificate)
             {
                 throw new Exception("Application instance certificate invalid!");
@@ -190,16 +190,17 @@ namespace AggregationServer
                 {
                     Console.WriteLine(endpoint.EndpointUrl);
                 }
+                Console.WriteLine("HoldTime: {0}", reverseConnect.HoldTime);
+                Console.WriteLine("WaitTimeout: {0}", reverseConnect.WaitTimeout);
             }
 
             // start the status thread
-            status = Task.Run(new Action(StatusThread));
+            status = Task.Run(async () => await StatusThread());
 
             // print notification on session events
             server.CurrentInstance.SessionManager.SessionActivated += EventStatus;
             server.CurrentInstance.SessionManager.SessionClosing += EventStatus;
             server.CurrentInstance.SessionManager.SessionCreated += EventStatus;
-
         }
 
         private void EventStatus(Session session, SessionEventReason reason)
@@ -229,13 +230,14 @@ namespace AggregationServer
             }
         }
 
-        private void StatusThread()
+        private async Task StatusThread()
         {
-            while (server != null)
+            AggregationServer serverStatus = server;
+            while (serverStatus != null)
             {
                 if (DateTime.UtcNow - lastEventTime > TimeSpan.FromMilliseconds(6000))
                 {
-                    IList<Session> sessions = server.CurrentInstance.SessionManager.GetSessions();
+                    IList<Session> sessions = serverStatus.CurrentInstance.SessionManager.GetSessions();
                     for (int ii = 0; ii < sessions.Count; ii++)
                     {
                         Session session = sessions[ii];
@@ -243,7 +245,8 @@ namespace AggregationServer
                     }
                     lastEventTime = DateTime.UtcNow;
                 }
-                Thread.Sleep(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
+                serverStatus = server;
             }
         }
     }
