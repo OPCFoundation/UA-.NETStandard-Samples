@@ -30,7 +30,7 @@ script:
   - dotnet build -c Debug Samples/GDS/ConsoleServer
   - dotnet build -c Release Samples/GDS/ConsoleServer
   - echo "========== run .Net Core samples ============"
-  - cd Samples/NetCoreConsoleServer/bin/Debug/netcoreapp2.0
+  - cd Samples/NetCoreConsoleServer/bin/Debug/netcoreapp2.1
   - dotnet NetCoreConsoleServer.dll -t 10 -a
   - cd $TRAVIS_BUILD_DIR
   - ./testclientserver.sh
