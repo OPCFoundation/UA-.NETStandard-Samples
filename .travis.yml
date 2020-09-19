@@ -9,7 +9,7 @@ dist: xenial
 osx_image: xcode9.4.1
 
 before_install:
-  - sudo apt-get install dotnet-sdk-3.1
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install dotnet-sdk-3.1 ; fi
  
 addons:
   apt:
@@ -20,9 +20,9 @@ script:
   - dotnet restore "UA Sample Applications.sln"
   - dotnet restore "UA Global Discovery Server.sln"
   - dotnet restore "UA Quickstart Applications.sln"
-  - dotnet restore "UA Aggregation.sln"
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then dotnet restore "UA Aggregation.sln" ; fi
   - echo "========== build all .Net Core samples ============"
-  - dotnet build -c Debug Workshop/Aggregation/ConsoleAggregationServer/ConsoleAggregationServer.csproj
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then dotnet build -c Debug Workshop/Aggregation/ConsoleAggregationServer/ConsoleAggregationServer.csproj ; fi
   - dotnet build -c Debug Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj
   - dotnet build -c Debug Samples/NetCoreComplexClient/NetCoreComplexClient.csproj
   - dotnet build -c Debug Samples/NetCoreConsoleServer/NetCoreConsoleServer.csproj
