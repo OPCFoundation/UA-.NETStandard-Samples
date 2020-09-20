@@ -9,12 +9,13 @@ cd Samples/NetCoreConsoleServer
 echo build server
 rm -r obj
 dotnet build NetCoreConsoleServer.csproj
-cd ../NetCoreConsoleClient
+cd "$workdir"
+cd Samples/NetCoreConsoleClient
 echo build client
 rm -r obj
 dotnet build NetCoreConsoleClient.csproj
 cd "$workdir"
-cd ../NetCoreComplexClient
+cd Samples/NetCoreComplexClient
 echo build client
 rm -r obj
 dotnet build NetCoreComplexClient.csproj
