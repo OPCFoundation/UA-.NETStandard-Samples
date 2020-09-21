@@ -143,7 +143,7 @@
       <Version>1.4.363.49</Version>
     </PackageReference>
     <PackageReference Include="System.Net.Http">
-      <Version>4.3.3</Version>
+      <Version>4.3.4</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
