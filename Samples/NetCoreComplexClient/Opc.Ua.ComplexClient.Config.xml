@@ -74,6 +74,17 @@
       This ensures subscriptions are not set to expire too quickly. The requesed lifetime count
       and keep alive count are calculated using this value and the request publishing interval -->
     <MinSubscriptionLifetime>10000</MinSubscriptionLifetime>
+
+    <ReverseConnect>
+      <ClientEndpoints>
+        <ClientEndpoint>
+          <!--<EndpointUrl>opc.tcp://localhost:65300</EndpointUrl>-->
+        </ClientEndpoint>
+      </ClientEndpoints>
+      <HoldTime>15000</HoldTime>
+      <WaitTimeout>20000</WaitTimeout>
+    </ReverseConnect>
+
   </ClientConfiguration>
   
   <TraceConfiguration>

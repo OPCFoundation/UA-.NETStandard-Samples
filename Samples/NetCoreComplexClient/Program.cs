@@ -80,6 +80,7 @@ namespace NetCoreConsoleClient
             bool verbose = false;
             bool json = false;
             bool jsonReversible = false;
+            bool securityNone = false;
             string username = null;
             string pw = null;
             string reverseConnectUrlString = null;
@@ -94,6 +95,7 @@ namespace NetCoreConsoleClient
                 { "b|nobrowse", "Do not browse the address space of the server.", n => noBrowse = n != null},
                 { "u|username=", "Username to access server.", (string n) => username = n},
                 { "p|password=", "Password to access server.", (string n) => pw = n},
+                { "s|securitynone", "Do not use security for connection.", s => securityNone = s != null},
                 { "v|verbose", "Verbose output.", v => verbose = v != null},
                 { "j|json", "Print custom nodes as Json.", j => json = j != null},
                 { "r|jsonreversible", "Use Json reversible encoding.", r => jsonReversible = r != null},
@@ -155,6 +157,7 @@ namespace NetCoreConsoleClient
                 JsonReversible = jsonReversible,
                 Username = username,
                 Password = pw,
+                SecurityNone = securityNone,
                 ReverseConnectUri = reverseConnectUrl
             };
             return (int)client.Run();
@@ -171,6 +174,7 @@ namespace NetCoreConsoleClient
         public bool JsonReversible { get; set; } = false;
         public bool LoadTypeSystem { get; set; } = false;
         public bool BrowseAdddressSpace { get; set; } = false;
+        public bool SecurityNone { get; set; } = true;
         public String Username { get; set; }
         public String Password { get; set; }
         public Uri ReverseConnectUri { get; set; }
@@ -218,7 +222,14 @@ namespace NetCoreConsoleClient
             {
                 Console.WriteLine(" --- Start simulated reconnect... --- ");
                 m_reconnectHandler = new SessionReconnectHandler();
-                m_reconnectHandler.BeginReconnect(session, 1000, Client_ReconnectComplete);
+                if (m_reverseConnectManager != null)
+                {
+                    m_reconnectHandler.BeginReconnect(session, m_reverseConnectManager, 1000, Client_ReconnectComplete);
+                }
+                else
+                {
+                    m_reconnectHandler.BeginReconnect(session, 1000, Client_ReconnectComplete);
+                }
             }
 
             // wait for timeout or Ctrl-C
@@ -256,13 +267,12 @@ namespace NetCoreConsoleClient
                 throw new Exception("Application instance certificate invalid!");
             }
 
-            ReverseConnectManager reverseConnectManager = null;
             if (ReverseConnectUri != null)
             {
                 // start the reverse connection manager
-                reverseConnectManager = new ReverseConnectManager();
-                reverseConnectManager.AddEndpoint(ReverseConnectUri);
-                reverseConnectManager.StartService(config);
+                m_reverseConnectManager = new ReverseConnectManager();
+                m_reverseConnectManager.AddEndpoint(ReverseConnectUri);
+                m_reverseConnectManager.StartService(config);
             }
 
             if (haveAppCertificate)
@@ -282,20 +292,20 @@ namespace NetCoreConsoleClient
             Console.WriteLine("2 - Discover endpoints of {0}.", m_endpointURL);
             ExitCode = ExitCode.ErrorDiscoverEndpoints;
             EndpointDescription selectedEndpoint;
-            if (reverseConnectManager == null)
+            if (m_reverseConnectManager == null)
             {
-                selectedEndpoint = CoreClientUtils.SelectEndpoint(m_endpointURL, haveAppCertificate, 15000);
+                selectedEndpoint = CoreClientUtils.SelectEndpoint(m_endpointURL, haveAppCertificate && !SecurityNone, 15000);
             }
             else
             {
                 Console.WriteLine("   Waiting for reverse connection.");
-                ITransportWaitingConnection connection = await reverseConnectManager.WaitForConnection(
+                ITransportWaitingConnection connection = await m_reverseConnectManager.WaitForConnection(
                     new Uri(m_endpointURL), null, new CancellationTokenSource(60000).Token);
                 if (connection == null)
                 {
                     throw new ServiceResultException(StatusCodes.BadTimeout, "Waiting for a reverse connection timed out.");
                 }
-                selectedEndpoint = CoreClientUtils.SelectEndpoint(config, connection, haveAppCertificate, 15000);
+                selectedEndpoint = CoreClientUtils.SelectEndpoint(config, connection, haveAppCertificate && !SecurityNone, 15000);
             }
 
             Console.WriteLine("    Selected endpoint uses: {0}",
@@ -316,15 +326,15 @@ namespace NetCoreConsoleClient
             }
 
             // create worker session
-            if (reverseConnectManager == null)
+            if (m_reverseConnectManager == null)
             {
                 m_session = await CreateSession(config, selectedEndpoint, userIdentity).ConfigureAwait(false);
             }
             else
             {
                 Console.WriteLine("   Waiting for reverse connection.");
-                ITransportWaitingConnection connection = await reverseConnectManager.WaitForConnection(
-                    new Uri(m_endpointURL), null, new CancellationTokenSource(60000).Token);
+                ITransportWaitingConnection connection = await m_reverseConnectManager.WaitForConnection(
+                    new Uri(m_endpointURL), null, new CancellationTokenSource(60000).Token).ConfigureAwait(false);
                 if (connection == null)
                 {
                     throw new ServiceResultException(StatusCodes.BadTimeout, "Waiting for a reverse connection timed out.");
@@ -580,7 +590,14 @@ namespace NetCoreConsoleClient
                 {
                     Console.WriteLine("--- RECONNECTING ---");
                     m_reconnectHandler = new SessionReconnectHandler();
-                    m_reconnectHandler.BeginReconnect(sender, ReconnectPeriod * 1000, Client_ReconnectComplete);
+                    if (m_reverseConnectManager != null)
+                    {
+                        m_reconnectHandler.BeginReconnect(sender, m_reverseConnectManager, ReconnectPeriod * 1000, Client_ReconnectComplete);
+                    }
+                    else
+                    {
+                        m_reconnectHandler.BeginReconnect(sender, ReconnectPeriod * 1000, Client_ReconnectComplete);
+                    }
                 }
             }
         }
@@ -750,7 +767,7 @@ namespace NetCoreConsoleClient
         private string m_endpointURL;
         private bool m_autoAccept = false;
         private int m_clientRunTime = Timeout.Infinite;
-
+        private ReverseConnectManager m_reverseConnectManager = null;
     }
 
 }
