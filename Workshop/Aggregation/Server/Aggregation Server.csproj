@@ -128,7 +128,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Symbols">
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
       <Version>1.4.363.107</Version>
     </PackageReference>
   </ItemGroup>
