@@ -24,7 +24,7 @@
       <Choose>
         <When Condition="'$(Configuration)'=='Release'">
           <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.363.107" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.364.40" />
             <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes" Version="1.4.364.40" />
           </ItemGroup>
         </When>
