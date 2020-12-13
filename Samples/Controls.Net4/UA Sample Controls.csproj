@@ -707,7 +707,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
       <Version>1.4.364.40</Version>
     </PackageReference>
   </ItemGroup>

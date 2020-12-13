@@ -89,7 +89,7 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                IPAddress[] addresses = await Utils.GetHostAddresses(hostname);
+                IPAddress[] addresses = await Utils.GetHostAddressesAsync(hostname);
 
                 StringBuilder buffer = new StringBuilder();
 

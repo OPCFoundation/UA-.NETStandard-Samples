@@ -9,3 +9,13 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+      open-pull-requests-limit: 10
+
+  - package-ecosystem: "nuget"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "daily"
+      target-branch: "preview"
+      labels: "preview"
+      allow: "OPCFoundation.*"
+      open-pull-requests-limit: 10
