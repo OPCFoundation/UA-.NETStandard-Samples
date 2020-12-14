@@ -134,6 +134,9 @@
     <Content Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
+      <Version>1.4.364.40</Version>
+    </PackageReference>
     <PackageReference Include="System.Net.Http">
       <Version>4.3.4</Version>
     </PackageReference>

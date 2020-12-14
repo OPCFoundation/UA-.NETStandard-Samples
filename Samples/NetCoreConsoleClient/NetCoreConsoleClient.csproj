@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>$(AppTargetFramework)</TargetFramework>
     <AssemblyName>NetCoreConsoleClient</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>NetCoreConsoleClient</PackageId>
@@ -18,6 +18,7 @@
   <Choose>
     <When Condition="Exists('..\..\SDK') and '$(Configuration)'!='Nuget'">
       <ItemGroup>
+        <ProjectReference Include="..\..\..\Stack\Opc.Ua.Bindings.Https\Opc.Ua.Bindings.Https.csproj" />
         <ProjectReference Include="..\..\..\Stack\Opc.Ua.Core\Opc.Ua.Core.csproj" />
         <ProjectReference Include="..\..\..\Libraries\Opc.Ua.Client\Opc.Ua.Client.csproj" />
         <ProjectReference Include="..\..\..\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj" />
@@ -27,12 +28,16 @@
       <Choose>
         <When Condition="'$(Configuration)'=='Release'">
           <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.4.364.40" />
           </ItemGroup>
         </When>
         <Otherwise>
           <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Symbols" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.Debug" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https.Debug" Version="1.4.364.40" />
           </ItemGroup>
         </Otherwise>
       </Choose>
