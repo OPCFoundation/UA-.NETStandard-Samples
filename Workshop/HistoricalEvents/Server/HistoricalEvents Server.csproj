@@ -142,7 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
-      <Version>1.4.364.40</Version>
+      <Version>1.4.365.2</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
