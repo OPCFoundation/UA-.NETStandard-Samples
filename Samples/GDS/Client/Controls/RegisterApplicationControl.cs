@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -789,7 +789,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (String.IsNullOrWhiteSpace(ApplicationNameTextBox.Text))
                 {
-                    foreach (string field in Utils.ParseDistinguishedName(certificate.Subject))
+                    foreach (string field in X509Utils.ParseDistinguishedName(certificate.Subject))
                     {
                         if (field.StartsWith("CN=", StringComparison.Ordinal))
                         {
@@ -801,12 +801,12 @@ namespace Opc.Ua.Gds.Client
 
                 if (String.IsNullOrWhiteSpace(ApplicationUriTextBox.Text))
                 {
-                    ApplicationUriTextBox.Text = Utils.GetApplicationUriFromCertificate(certificate);
+                    ApplicationUriTextBox.Text = X509Utils.GetApplicationUriFromCertificate(certificate);
                 }
 
                 if (String.IsNullOrWhiteSpace(DiscoveryUrlsTextBox.Text) && RegistrationTypeComboBox.SelectedIndex != ClientPullManagement)
                 {
-                    var domains = Utils.GetDomainsFromCertficate(certificate);
+                    var domains = X509Utils.GetDomainsFromCertficate(certificate);
 
                     if (domains != null)
                     {
@@ -885,7 +885,7 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (String.IsNullOrWhiteSpace(ApplicationNameTextBox.Text))
                     {
-                        foreach (string field in Utils.ParseDistinguishedName(certificate.Subject))
+                        foreach (string field in X509Utils.ParseDistinguishedName(certificate.Subject))
                         {
                             if (field.StartsWith("CN=", StringComparison.Ordinal))
                             {
@@ -897,7 +897,7 @@ namespace Opc.Ua.Gds.Client
 
                     if (String.IsNullOrWhiteSpace(ApplicationUriTextBox.Text))
                     {
-                        ApplicationUriTextBox.Text = Utils.GetApplicationUriFromCertificate(certificate);
+                        ApplicationUriTextBox.Text = X509Utils.GetApplicationUriFromCertificate(certificate);
                     }
                 }
                 catch (Exception)
@@ -1010,7 +1010,7 @@ namespace Opc.Ua.Gds.Client
 
                 try
                 {
-                    foreach (string field in Utils.ParseDistinguishedName(certificate.Subject))
+                    foreach (string field in X509Utils.ParseDistinguishedName(certificate.Subject))
                     {
                         if (field.StartsWith("CN=", StringComparison.Ordinal))
                         {

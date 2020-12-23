@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -35,6 +35,7 @@ using System.Drawing;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
+using Opc.Ua.Security.Certificates;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -183,7 +184,7 @@ namespace Opc.Ua.Gds.Client.Controls
                             {
                                 X509CRL crl = new X509CRL(crlBytes);
                                 
-                                if (Utils.CompareDistinguishedName(crl.Issuer, certificate.Subject) &&
+                                if (X509Utils.CompareDistinguishedName(crl.Issuer, certificate.Subject) &&
                                     crl.VerifySignature(certificate, false))
                                 {
                                     crls.Add(crl);
@@ -209,7 +210,7 @@ namespace Opc.Ua.Gds.Client.Controls
                             {
                                 X509CRL crl = new X509CRL(crlBytes);
 
-                                if (Utils.CompareDistinguishedName(crl.Issuer, certificate.Subject) &&
+                                if (X509Utils.CompareDistinguishedName(crl.Issuer, certificate.Subject) &&
                                     crl.VerifySignature(certificate, false))
                                 {
                                     crls.Add(crl);
@@ -321,7 +322,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private string GetCommonName(X509Certificate2 certificate)
         {
-            foreach (string element in Utils.ParseDistinguishedName(certificate.Subject))
+            foreach (string element in X509Utils.ParseDistinguishedName(certificate.Subject))
             {
                 if (element.StartsWith("CN=", StringComparison.OrdinalIgnoreCase))
                 {

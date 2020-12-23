@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using Opc.Ua.Gds;
+using Opc.Ua.Security.Certificates;
 using System;
 using System.Drawing;
 using System.IO;
@@ -261,7 +262,7 @@ namespace Opc.Ua.Gds.Client
                         byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
                         if (m_application.GetPrivateKeyFormat(m_server?.GetSupportedKeyFormats()) == "PFX")
                         {
-                            csrCertificate = CertificateFactory.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
+                            csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
                         }
                         else
                         {
@@ -371,7 +372,7 @@ namespace Opc.Ua.Gds.Client
                             byte[] exportedCert;
                             if (string.Compare(file.Extension, ".PEM", true) == 0)
                             {
-                                exportedCert = CertificateFactory.ExportCertificateAsPEM(newCert);
+                                exportedCert = PEMWriter.ExportCertificateAsPEM(newCert);
                             }
                             else
                             {
@@ -402,7 +403,7 @@ namespace Opc.Ua.Gds.Client
                                 if (file.Exists)
                                 {
                                     byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
-                                    X509Certificate2 oldCertificate = CertificateFactory.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
+                                    X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
                                     newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
                                     pkcsData = newCert.Export(X509ContentType.Pfx, m_certificatePassword);
                                     File.WriteAllBytes(absoluteCertificatePrivateKeyPath, pkcsData);
