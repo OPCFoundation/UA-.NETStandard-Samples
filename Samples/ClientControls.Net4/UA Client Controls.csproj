@@ -63,7 +63,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Runtime.Serialization">
@@ -1022,9 +1021,6 @@
       <Version>1.4.365.2</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.4.365.2</Version>
-    </PackageReference>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
       <Version>1.4.365.2</Version>
     </PackageReference>
   </ItemGroup>
