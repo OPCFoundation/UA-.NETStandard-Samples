@@ -130,6 +130,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
+      <Version>1.4.365.2</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

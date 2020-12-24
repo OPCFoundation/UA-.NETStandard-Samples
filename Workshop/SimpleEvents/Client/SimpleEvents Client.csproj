@@ -118,6 +118,11 @@
     <Compile Include="Quickstarts.SimpleEvents.DataTypes.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
+      <Version>1.4.365.2</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
       <Visible>False</Visible>
       <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>

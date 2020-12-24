@@ -67,7 +67,9 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.IdentityModel" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
@@ -210,6 +212,11 @@
       <Project>{D8D0F7BC-BD73-4BE4-98E1-7ABDECAE4C50}</Project>
       <Name>Quickstart Library %28Quickstart Library\Quickstart Library%29</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
+      <Version>1.4.365.2</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

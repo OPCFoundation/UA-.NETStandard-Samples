@@ -66,10 +66,12 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IdentityModel" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
@@ -134,6 +136,11 @@
       <Project>{80056988-44e7-4ef4-9f59-50bcf215cb03}</Project>
       <Name>UA Server Controls</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
+      <Version>1.4.365.2</Version>
+    </PackageReference>
   </ItemGroup>
   <PropertyGroup>
     <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
