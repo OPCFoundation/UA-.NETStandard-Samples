@@ -68,7 +68,7 @@ namespace Quickstarts.DataAccessClient
             AggregateCB.Items.Add(BrowseNames.AggregateFunction_Count);
             AggregateCB.Items.Add(BrowseNames.AggregateFunction_Maximum);
             AggregateCB.Items.Add(BrowseNames.AggregateFunction_Minimum);
-            AggregateCB.Items.Add(BrowseNames.AggregateFunction_Total);         
+            AggregateCB.Items.Add(BrowseNames.AggregateFunction_Total);
         }
 
         private enum ReadType
@@ -83,7 +83,7 @@ namespace Quickstarts.DataAccessClient
         private NodeId m_nodeId;
         private HistoryReadResult m_result;
         private int m_index;
-        
+
         /// <summary>
         /// Displays the dialog.
         /// </summary>
@@ -105,15 +105,16 @@ namespace Quickstarts.DataAccessClient
 
             try
             {
-                startTime = ReadFirstDate().ToLocalTime(); 
+                startTime = ReadFirstDate().ToLocalTime();
             }
             catch (Exception)
             {
                 startTime = new DateTime(2000, 1, 1);
             }
-            
+
             ReadTypeCB.SelectedItem = ReadType.Raw;
-            StartTimeDP.Value = startTime;
+            StartTimeDP.MinDate = new DateTime(2000, 1, 1);
+            StartTimeDP.Value = StartTimeDP.MinDate < startTime ? startTime : StartTimeDP.MinDate;
             StartTimeCK.Checked = true;
             EndTimeDP.Value = DateTime.Now;
             EndTimeCK.Checked = true;
@@ -130,7 +131,7 @@ namespace Quickstarts.DataAccessClient
             {
                 return false;
             }
-                       
+
             return true;
         }
 
@@ -178,7 +179,7 @@ namespace Quickstarts.DataAccessClient
                 ResultsLV.Columns[ii].Width = -2;
             }
         }
-        
+
         private void ReleaseContinuationPoints()
         {
             ReadRawModifiedDetails details = new ReadRawModifiedDetails();
@@ -217,8 +218,8 @@ namespace Quickstarts.DataAccessClient
         private DateTime ReadFirstDate()
         {
             ReadRawModifiedDetails details = new ReadRawModifiedDetails();
-            details.StartTime = new DateTime(1970, 1, 1);
-            details.EndTime = DateTime.UtcNow.AddDays(1);
+            details.StartTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            details.EndTime = DateTime.Today.AddDays(1);
             details.IsReadModified = false;
             details.NumValuesPerNode = 1;
             details.ReturnBounds = false;
@@ -327,14 +328,14 @@ namespace Quickstarts.DataAccessClient
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-            
+
             if (StatusCode.IsBad(results[0].StatusCode))
             {
                 throw new ServiceResultException(results[0].StatusCode);
             }
 
             m_result = results[0];
-       
+
             ShowResults();
         }
 

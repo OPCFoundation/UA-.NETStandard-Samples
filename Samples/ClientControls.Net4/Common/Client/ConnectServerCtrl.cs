@@ -672,6 +672,16 @@ namespace Opc.Ua.Client.Controls
             {
                 await ConnectAsync();
             }
+            catch (ServiceResultException sre)
+            {
+                if (sre.StatusCode == StatusCodes.BadCertificateHostNameInvalid)
+                {
+                    if (GuiUtils.HandleDomainCheckError(this.FindForm().Text, sre.Result))
+                    {
+                        DisableDomainCheck = true;
+                    };
+                }
+            }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(this.Text, exception);
@@ -726,17 +736,13 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                e.Accept = m_configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates;
-
                 if (!m_configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
                 {
-                    DialogResult result = MessageBox.Show(
-                        e.Certificate.Subject,
-                        "Untrusted Certificate",
-                        MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Warning);
-
-                    e.Accept = (result == DialogResult.Yes);
+                    GuiUtils.HandleCertificateValidationError(this.FindForm().Text, sender, e);
+                }
+                else
+                {
+                    e.Accept = true;
                 }
             }
             catch (Exception exception)
