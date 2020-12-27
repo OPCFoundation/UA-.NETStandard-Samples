@@ -738,7 +738,7 @@ namespace Opc.Ua.Client.Controls
             {
                 if (!m_configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
                 {
-                    GuiUtils.HandleCertificateValidationError(this.FindForm().Text, sender, e);
+                    GuiUtils.HandleCertificateValidationError(this.FindForm(), sender, e);
                 }
                 else
                 {

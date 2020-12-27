@@ -68,7 +68,8 @@ namespace Opc.Ua.Server.Controls
 
             if (!configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                configuration.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                configuration.CertificateValidator.CertificateValidation +=
+                    new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
             }
 
             TrayIcon.Text = this.Text = m_configuration.ApplicationName;
