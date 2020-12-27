@@ -290,6 +290,16 @@ namespace Opc.Ua.Client.Controls
             return false;
         }
 
+        /// <summary>
+        /// Handles a certificate validation error.
+        /// </summary>
+        /// <param name="form">The caller's form is used as the caption of the <see cref="MessageBox"/> shown to provide details about the error.</param>
+        /// <param name="validator">The validator (not used).</param>
+        /// <param name="e">The <see cref="Opc.Ua.CertificateValidationEventArgs"/> instance event arguments provided when a certificate validation error occurs.</param>
+        public static void HandleCertificateValidationError(Form form, CertificateValidator validator, CertificateValidationEventArgs e)
+        {
+            HandleCertificateValidationError(form.Text, validator, e);
+        }
 
         /// <summary>
         /// Handles a certificate validation error.

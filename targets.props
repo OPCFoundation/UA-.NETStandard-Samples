@@ -1,22 +1,41 @@
 <Project>
+
   <Choose>
-    <When  Condition="'$(VisualStudioVersion)' == '16.0'">
+    <!-- .NET 4.6.2 is only available on Windows builds, 
+          however for mono builds on linux it can be enabled.
+          msbuild ... /p:MonoBuild=true ...
+      -->
+    <When Condition="$([MSBuild]::IsOsPlatform('Windows')) OR ('$(MonoBuild)' == 'true')">
       <PropertyGroup>
-        <AppTargetFrameworks>net462;netcoreapp3.1</AppTargetFrameworks>
-        <AppTargetFramework>netcoreapp3.1</AppTargetFramework>
-        <TestsTargetFrameworks>net462;netcoreapp2.1;netcoreapp3.1</TestsTargetFrameworks>
-        <LibTargetFrameworks>net462;netstandard2.0;netstandard2.1</LibTargetFrameworks>
-        <LibxTargetFrameworks>net462;netcoreapp2.1;netstandard2.1</LibxTargetFrameworks>
+        <DotNetTargetFramework>net462;</DotNetTargetFramework>
       </PropertyGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
-        <AppTargetFrameworks>net462;netcoreapp2.1</AppTargetFrameworks>
-        <AppTargetFramework>netcoreapp2.1</AppTargetFramework>
-        <TestsTargetFrameworks>netcoreapp2.1</TestsTargetFrameworks>
-        <LibTargetFrameworks>net462;netstandard2.0</LibTargetFrameworks>
-        <LibxTargetFrameworks>net462;netcoreapp2.1</LibxTargetFrameworks>
+        <DotNetTargetFramework></DotNetTargetFramework>
       </PropertyGroup>
     </Otherwise>
   </Choose>
+
+  <Choose>
+    <When  Condition="'$(VisualStudioVersion)' == '16.0'">
+      <PropertyGroup>
+        <AppTargetFrameworks>$(DotNetTargetFramework)netcoreapp3.1</AppTargetFrameworks>
+        <AppTargetFramework>netcoreapp3.1</AppTargetFramework>
+        <TestsTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1;netcoreapp3.1</TestsTargetFrameworks>
+        <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0;netstandard2.1</LibTargetFrameworks>
+        <LibxTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1;netstandard2.1</LibxTargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <AppTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1</AppTargetFrameworks>
+        <AppTargetFramework>netcoreapp2.1</AppTargetFramework>
+        <TestsTargetFrameworks>netcoreapp2.1</TestsTargetFrameworks>
+        <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0</LibTargetFrameworks>
+        <LibxTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1</LibxTargetFrameworks>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
 </Project>

@@ -132,7 +132,7 @@ namespace NetCoreConsoleServer
 
             if (showHelp)
             {
-                Console.WriteLine(Utils.IsRunningOnMono() ? "Usage: mono MonoConsoleServer.exe [OPTIONS]" : "Usage: dotnet NetCoreConsoleServer.dll [OPTIONS]");
+                Console.WriteLine(Utils.IsRunningOnMono() ? "Usage: mono NetCoreConsoleServer.exe [OPTIONS]" : "Usage: dotnet NetCoreConsoleServer.dll [OPTIONS]");
                 Console.WriteLine();
 
                 Console.WriteLine("Options:");

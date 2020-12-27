@@ -28,11 +28,8 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.IO;
-using System.Reflection;
 using Opc.Ua;
+using Range = Opc.Ua.Range;
 
 namespace TestData
 {
@@ -61,7 +58,7 @@ namespace TestData
             // provide an implementation that produces a random value on each read.
             if (SimulationActive.Value)
             {
-                variable.OnReadValue = DoDeviceRead;     
+                variable.OnReadValue = DoDeviceRead;
             }
 
             // set a valid initial value.
@@ -92,10 +89,10 @@ namespace TestData
                     euRange.Value = new Range(100, -100);
                 }
             }
-            
+
             variable.OnSimpleWriteValue = OnWriteAnalogValue;
         }
-        
+
         /// <summary>
         /// Validates a written value.
         /// </summary>
@@ -107,52 +104,52 @@ namespace TestData
             try
             {
 
-            BaseVariableState euRange = node.FindChild(context, Opc.Ua.BrowseNames.EURange) as BaseVariableState;
+                BaseVariableState euRange = node.FindChild(context, Opc.Ua.BrowseNames.EURange) as BaseVariableState;
 
-            if (euRange == null)
-            {
-                return ServiceResult.Good;
-            }
-
-            Range range = euRange.Value as Range;
-            
-            if (range == null)
-            {
-                return ServiceResult.Good;
-            }
-
-            Array array = value as Array;
-
-            if (array != null)
-            {
-                for (int ii = 0; ii < array.Length; ii++)
+                if (euRange == null)
                 {
-                    object element = array.GetValue(ii);
+                    return ServiceResult.Good;
+                }
 
-                    if (typeof(Variant).IsInstanceOfType(element))
+                Range range = euRange.Value as Range;
+
+                if (range == null)
+                {
+                    return ServiceResult.Good;
+                }
+
+                Array array = value as Array;
+
+                if (array != null)
+                {
+                    for (int ii = 0; ii < array.Length; ii++)
                     {
-                        element = ((Variant)element).Value;
+                        object element = array.GetValue(ii);
+
+                        if (typeof(Variant).IsInstanceOfType(element))
+                        {
+                            element = ((Variant)element).Value;
+                        }
+
+                        double elementNumber = Convert.ToDouble(element);
+
+                        if (elementNumber > range.High || elementNumber < range.Low)
+                        {
+                            return StatusCodes.BadOutOfRange;
+                        }
                     }
 
-                    double elementNumber = Convert.ToDouble(element);
+                    return ServiceResult.Good;
+                }
 
-                    if (elementNumber > range.High || elementNumber < range.Low)
-                    {
-                        return StatusCodes.BadOutOfRange;
-                    }
+                double number = Convert.ToDouble(value);
+
+                if (number > range.High || number < range.Low)
+                {
+                    return StatusCodes.BadOutOfRange;
                 }
 
                 return ServiceResult.Good;
-            }
-                        
-            double number = Convert.ToDouble(value);
-            
-            if (number > range.High || number < range.Low)
-            {
-                return StatusCodes.BadOutOfRange;
-            }
-            
-            return ServiceResult.Good;
             }
             catch (Exception e)
             {
@@ -174,7 +171,7 @@ namespace TestData
         /// Handles the generate values method.
         /// </summary>
         protected virtual ServiceResult OnGenerateValues(
-            ISystemContext context, 
+            ISystemContext context,
             MethodState method,
             NodeId objectId,
             uint count)
@@ -184,13 +181,13 @@ namespace TestData
             if (AreEventsMonitored)
             {
                 GenerateValuesEventState e = new GenerateValuesEventState(null);
-                            
+
                 TranslationInfo message = new TranslationInfo(
                     "GenerateValuesEventType",
                     "en-US",
                     "New values generated for test source '{0}'.",
                     this.DisplayName);
-                
+
                 e.Initialize(
                     context,
                     this,
@@ -205,11 +202,11 @@ namespace TestData
 
                 ReportEvent(context, e);
             }
-            
-            #if CONDITION_SAMPLES
+
+#if CONDITION_SAMPLES
             this.CycleComplete.RequestAcknowledgement(context, (ushort)EventSeverity.Low);
-            #endif
-            
+#endif
+
             return ServiceResult.Good;
         }
 
@@ -261,14 +258,14 @@ namespace TestData
                 {
                     statusCode = error.StatusCode;
                 }
-                
+
                 return ServiceResult.Good;
             }
             catch (Exception e)
             {
                 return new ServiceResult(e);
             }
-        }       
+        }
         #endregion
     }
 }

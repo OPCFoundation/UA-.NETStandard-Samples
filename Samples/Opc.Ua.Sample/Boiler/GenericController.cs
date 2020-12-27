@@ -38,6 +38,7 @@ using System.Reflection;
 using System.Threading;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Range = Opc.Ua.Range;
 
 namespace Boiler
 {       

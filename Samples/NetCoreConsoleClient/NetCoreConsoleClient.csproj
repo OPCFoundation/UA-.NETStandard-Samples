@@ -11,9 +11,9 @@
     <Copyright>Copyright © 2004-2019 OPC Foundation, Inc</Copyright>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Opc.Ua.MonoSampleClient.Config.xml" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(MonoBuild)' == 'true'">
+    <TargetFramework>net462</TargetFramework>
+  </PropertyGroup>
 
   <Choose>
     <When Condition="Exists('..\..\SDK') and '$(Configuration)'!='Nuget'">
@@ -53,6 +53,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Opc.Ua.MonoSampleClient.Config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Opc.Ua.SampleClient.Config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -10,6 +10,10 @@
     <Description>.Net Core Complex Client</Description>
     <Copyright>Copyright © 2004-2019 OPC Foundation, Inc</Copyright>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(MonoBuild)' == 'true'">
+    <TargetFramework>net462</TargetFramework>
+  </PropertyGroup>
 
   <Choose>
     <When Condition="Exists('..\..\..\Libraries') and '$(Configuration)'!='Nuget'">
