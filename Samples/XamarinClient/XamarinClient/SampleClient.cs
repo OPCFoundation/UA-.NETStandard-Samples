@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -60,7 +60,7 @@ namespace XamarinClient
         private LabelViewModel info;
         private ApplicationConfiguration config;
 
-        public SampleClient (LabelViewModel text)
+        public SampleClient(LabelViewModel text)
         {
             connectionStatus = ConnectionStatus.None;
             session = null;
@@ -71,11 +71,10 @@ namespace XamarinClient
 
         public async void CreateCertificate()
         {
-            ApplicationInstance application = new ApplicationInstance
-            {
+            ApplicationInstance application = new ApplicationInstance {
                 ApplicationType = ApplicationType.Client,
                 ConfigSectionName = "Opc.Ua.SampleClient"
-            };        
+            };
 
             if (Device.RuntimePlatform == "Android")
             {
@@ -111,13 +110,12 @@ namespace XamarinClient
 
             if (haveAppCertificate)
             {
-                config.ApplicationUri = Utils.GetApplicationUriFromCertificate(config.SecurityConfiguration.ApplicationCertificate.Certificate);
-         
+                config.ApplicationUri = X509Utils.GetApplicationUriFromCertificate(config.SecurityConfiguration.ApplicationCertificate.Certificate);
                 config.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
             }
         }
 
-        public async Task<ConnectionStatus>OpcClient(string endpointURL)
+        public async Task<ConnectionStatus> OpcClient(string endpointURL)
         {
             try
             {
@@ -159,7 +157,7 @@ namespace XamarinClient
                 // register keep alive handler
                 session.KeepAlive += Client_KeepAlive;
             }
-            catch 
+            catch
             {
                 connectionStatus = ConnectionStatus.Error;
             }
@@ -174,7 +172,7 @@ namespace XamarinClient
                 {
                     info.LabelText = "";
                 }
-                
+
                 session.Close();
             }
         }
@@ -214,7 +212,7 @@ namespace XamarinClient
             ReferenceDescriptionCollection references;
             Byte[] continuationPoint;
             Tree browserTree = new Tree();
-            
+
             try
             {
                 session.Browse(
@@ -233,7 +231,7 @@ namespace XamarinClient
 
                 return browserTree;
             }
-            catch 
+            catch
             {
                 Disconnect(session);
                 return null;
@@ -319,8 +317,7 @@ namespace XamarinClient
                             currentNodeExecutable = methodNode.UserExecutable;
                         }
 
-                        browserTree.currentView.Add(new ListNode()
-                        {
+                        browserTree.currentView.Add(new ListNode() {
                             id = nodeReference.NodeId.ToString(),
                             NodeName = nodeReference.DisplayName.Text.ToString(),
                             nodeClass = nodeReference.NodeClass.ToString(),
@@ -367,13 +364,12 @@ namespace XamarinClient
 
                         MethodNode methodNode = currentNode as MethodNode;
 
-                        if (methodNode != null )
+                        if (methodNode != null)
                         {
                             currentNodeExecutable = methodNode.UserExecutable;
                         }
 
-                        browserTree.currentView.Add(new ListNode()
-                        {
+                        browserTree.currentView.Add(new ListNode() {
                             id = node,
                             NodeName = currentNode.DisplayName.Text.ToString(),
                             nodeClass = currentNode.NodeClass.ToString(),
@@ -411,8 +407,8 @@ namespace XamarinClient
                 string value = "";
                 if (values[0].Value != null)
                 {
-                    var rawValue  = values[0].WrappedValue.ToString();
-                    value = rawValue.Replace("|","\r\n").Replace("{","").Replace("}","");
+                    var rawValue = values[0].WrappedValue.ToString();
+                    value = rawValue.Replace("|", "\r\n").Replace("{", "").Replace("}", "");
                 }
                 return value;
             }

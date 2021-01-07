@@ -6,20 +6,20 @@ testresult=0
 cd Samples/NetCoreConsoleServer
 echo build server
 rm -r obj
-msbuild /p:configuration=Debug /t:restore,build MonoConsoleServer.csproj
+msbuild /p:configuration=Debug /p:VisualStudioVersion=15.0 /p:MonoBuild=true /t:restore,clean,build NetCoreConsoleServer.csproj
 echo start server
 cd bin/Debug/net462
-mono MonoConsoleServer.exe -t 60 -a &
+mono NetCoreConsoleServer.exe -t 60 -a &
 serverpid="$!"
 cd "$workdir"
 
 cd Samples/NetCoreConsoleClient
 echo build client
 rm -r obj
-msbuild /p:configuration=Debug /t:restore,build MonoConsoleClient.csproj
+msbuild /p:configuration=Debug /p:VisualStudioVersion=15.0 /p:MonoBuild=true /t:restore,clean,build NetCoreConsoleClient.csproj
 echo start client
 cd bin/Debug/net462
-mono MonoConsoleClient.exe -t 20 -a &
+mono NetCoreConsoleClient.exe -t 20 -a &
 clientpid="$!"
 cd "$workdir"
 

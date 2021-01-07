@@ -29,19 +29,17 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
+using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
-using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
-using System.IO;
 using Opc.Ua;
-using Opc.Ua.Server;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Server;
 
 namespace Quickstarts
 {
@@ -174,7 +172,7 @@ namespace Quickstarts
             row[4] = String.Empty;
             row[5] = String.Empty;
             row[6] = String.Empty;
-            
+
             UpdateExpectedValue(row, value, type);
 
             m_dataset.Tables[0].Rows.Add(row);
@@ -215,7 +213,7 @@ namespace Quickstarts
             row[5] = String.Empty;
             row[6] = String.Empty;
             row[8] = value.Comment;
-                        
+
             UpdateActualValue(row, value, type);
 
             m_dataset.Tables[0].Rows.Add(row);
@@ -348,7 +346,7 @@ namespace Quickstarts
                 {
                     dv.Comment = comment;
                 }
-               
+
                 values.Add(dv);
             }
 
@@ -362,7 +360,7 @@ namespace Quickstarts
                 TestNameCB.SelectedIndex = index;
             }
         }
-        
+
         /// <summary>
         /// Adds the dataset to the grid.
         /// </summary>
@@ -521,9 +519,9 @@ namespace Quickstarts
             buffer.Append("<h1>");
             buffer.Append(aggregateName);
             buffer.Append("</h1>");
-                        
+
             foreach (RawDataSetType dataset in m_testData.RawDataSets)
-            { 
+            {
                 ProcessedDataSetType dataSetToExport = null;
 
                 foreach (ProcessedDataSetType processedDataSet in m_testData.ProcessedDataSets)
@@ -541,7 +539,7 @@ namespace Quickstarts
                 }
             }
         }
-        
+
         private void GenerateReportTable(StringBuilder buffer, ProcessedDataSetType dataset)
         {
             buffer.Append("<table border='1'>");
@@ -749,7 +747,7 @@ namespace Quickstarts
             dataset.ProcessingInterval = (uint)processingInterval;
             dataset.PercentBad = configuration.PercentDataBad;
             dataset.PercentGood = configuration.PercentDataGood;
-            
+
             m_testData.AddDataSet(dataset);
             m_testData.UpdateProcessedValues(dataset, processedValues.ToArray());
         }
@@ -765,7 +763,7 @@ namespace Quickstarts
 
             // reset row state.
             ResetRowState();
-            
+
             AggregateConfiguration configuration = new AggregateConfiguration();
             configuration.TreatUncertainAsBad = TreatUncertainAsBadCK.Checked;
             configuration.PercentDataGood = (byte)PercentGoodNP.Value;
@@ -777,8 +775,8 @@ namespace Quickstarts
 
             IAggregateCalculator calculator = Aggregators.CreateStandardCalculator(
                 Aggregators.GetIdForStandardAggregate(AggregateCB.SelectedItem as string),
-                (!this.TimeFlowsBackwardsCK.Checked)?startTime:startTime.AddSeconds(100),
-                (this.TimeFlowsBackwardsCK.Checked)?startTime:startTime.AddSeconds(100),
+                (!this.TimeFlowsBackwardsCK.Checked) ? startTime : startTime.AddSeconds(100),
+                (this.TimeFlowsBackwardsCK.Checked) ? startTime : startTime.AddSeconds(100),
                 (double)ProcessingIntervalNP.Value,
                 SteppedCK.Checked,
                 configuration);
@@ -1032,14 +1030,14 @@ namespace Quickstarts
                 dv.StatusCode = TestData.ValidateQuality(TestDataDV.Rows[e.RowIndex].Cells[4].FormattedValue);
                 dv.SourceTimestamp = TestData.ValidateTimestamp(TestDataDV.Rows[e.RowIndex].Cells[0].FormattedValue);
                 dv.Comment = TestDataDV.Rows[e.RowIndex].Cells[8].FormattedValue as string;
-                
+
                 // update the row state.
                 string rowState = TestDataDV.Rows[e.RowIndex].Cells[7].FormattedValue as string;
 
                 if (rowState == RowState.OK.ToString() || rowState == RowState.MissingExpected.ToString())
                 {
                     rowState = RowState.OK.ToString();
- 
+
                     string quality = TestDataDV.Rows[e.RowIndex].Cells[4].FormattedValue as string;
 
                     if (String.IsNullOrEmpty(quality))

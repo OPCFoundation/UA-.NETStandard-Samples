@@ -103,6 +103,8 @@ namespace Quickstarts.Boiler.Client
             try
             {
                 ConnectServerCTRL.Disconnect();
+                m_session = null;
+                m_subscription = null;
             }
             catch (Exception exception)
             {
@@ -136,6 +138,7 @@ namespace Quickstarts.Boiler.Client
 
                 if (m_session == null)
                 {
+                    m_subscription = null;
                     BoilerCB.Enabled = false;
                     return;
                 }

@@ -11,9 +11,9 @@
     <Copyright>Copyright © 2004-2019 OPC Foundation, Inc</Copyright>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Opc.Ua.MonoSampleClient.Config.xml" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(MonoBuild)' == 'true'">
+    <TargetFramework>net462</TargetFramework>
+  </PropertyGroup>
 
   <Choose>
     <When Condition="Exists('..\..\SDK') and '$(Configuration)'!='Nuget'">
@@ -28,16 +28,16 @@
       <Choose>
         <When Condition="'$(Configuration)'=='Release'">
           <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.364.40" />
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.364.40" />
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.365.2" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.365.2" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.4.365.2" />
           </ItemGroup>
         </When>
         <Otherwise>
           <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.364.40" />
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.Debug" Version="1.4.364.40" />
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https.Debug" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.365.2" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.Debug" Version="1.4.365.2" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https.Debug" Version="1.4.365.2" />
           </ItemGroup>
         </Otherwise>
       </Choose>
@@ -53,6 +53,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Opc.Ua.MonoSampleClient.Config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Opc.Ua.SampleClient.Config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -34,6 +34,7 @@ using System.Windows.Forms;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua.Gds;
 using System.Threading.Tasks;
+using Opc.Ua.Security.Certificates;
 
 namespace Opc.Ua.Gds.Client
 {
@@ -123,7 +124,7 @@ namespace Opc.Ua.Gds.Client
                         continue;
                     }
 
-                    List<string> fields = Utils.ParseDistinguishedName(certificate.Subject);
+                    List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
 
                     if (fields.Contains("CN=UA Local Discovery Server"))
                     {

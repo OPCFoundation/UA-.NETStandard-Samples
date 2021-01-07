@@ -68,7 +68,7 @@ namespace Quickstarts.DataAccessClient
             this.Text = m_configuration.ApplicationName;
 
             // create the callback.
-            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+            m_monitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
         }
         #endregion
 
@@ -77,7 +77,7 @@ namespace Quickstarts.DataAccessClient
         private Session m_session;
         private bool m_connectedOnce;
         private Subscription m_subscription;
-        private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
+        private MonitoredItemNotificationEventHandler m_monitoredItem_Notification;
         #endregion
 
         #region Private Methods
@@ -91,7 +91,7 @@ namespace Quickstarts.DataAccessClient
         {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.Connect().ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -107,7 +107,7 @@ namespace Quickstarts.DataAccessClient
             try
             {
                 ConnectServerCTRL.Disconnect();
-                m_subscription.Dispose();
+                m_subscription?.Dispose();
                 m_subscription = null;
                 m_session = null;
             }
@@ -217,7 +217,7 @@ namespace Quickstarts.DataAccessClient
             ConnectServerCTRL.Disconnect();
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Populates the branch in the tree view.
@@ -642,7 +642,7 @@ namespace Quickstarts.DataAccessClient
             monitoredItem.QueueSize = 0;
             monitoredItem.DiscardOldest = true;
 
-            monitoredItem.Notification += m_MonitoredItem_Notification;
+            monitoredItem.Notification += m_monitoredItem_Notification;
 
             m_subscription.AddItem(monitoredItem);
 
@@ -1021,7 +1021,7 @@ namespace Quickstarts.DataAccessClient
 
                     if (monitoredItem != null)
                     {
-                        monitoredItem.Notification -= m_MonitoredItem_Notification;
+                        monitoredItem.Notification -= m_monitoredItem_Notification;
                         itemsToDelete.Add(MonitoredItemsLV.SelectedItems[ii]);
 
                         if (m_subscription != null)

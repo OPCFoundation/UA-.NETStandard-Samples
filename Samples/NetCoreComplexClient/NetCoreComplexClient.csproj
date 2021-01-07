@@ -10,6 +10,10 @@
     <Description>.Net Core Complex Client</Description>
     <Copyright>Copyright © 2004-2019 OPC Foundation, Inc</Copyright>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(MonoBuild)' == 'true'">
+    <TargetFramework>net462</TargetFramework>
+  </PropertyGroup>
 
   <Choose>
     <When Condition="Exists('..\..\..\Libraries') and '$(Configuration)'!='Nuget'">
@@ -24,14 +28,14 @@
       <Choose>
         <When Condition="'$(Configuration)'=='Release'">
           <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.364.40" />
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.365.2" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes" Version="1.4.365.2" />
           </ItemGroup>
         </When>
         <Otherwise>
           <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.364.40" />
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes.Debug" Version="1.4.364.40" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.365.2" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes.Debug" Version="1.4.365.2" />
           </ItemGroup>
         </Otherwise>
       </Choose>

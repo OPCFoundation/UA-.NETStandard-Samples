@@ -9,16 +9,8 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 10
-
-  - package-ecosystem: "nuget"
-    directory: "/" # Location of package manifests
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 25
     target-branch: "preview"
     labels: 
       - "preview"
-    allow: 
-      - dependency-type: "all"
-      - dependency-name: "OPCFoundation.*"
+
