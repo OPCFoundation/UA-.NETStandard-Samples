@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Mono.Options" Version="6.6.0.161" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.365.2" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.365.10" />
   </ItemGroup>
 
 </Project>
