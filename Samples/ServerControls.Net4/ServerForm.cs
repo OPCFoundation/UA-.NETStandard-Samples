@@ -38,6 +38,7 @@ using System.Runtime.InteropServices;
 using Opc.Ua;
 using Opc.Ua.Configuration;
 using System.IO;
+using System.Linq;
 
 namespace Opc.Ua.Server.Controls
 {
@@ -58,7 +59,7 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(StandardServer server, ApplicationConfiguration configuration)
+        public ServerForm(StandardServer server, ApplicationConfiguration configuration, bool showCertificateValidationDialog = true)
         {
             InitializeComponent();
 
@@ -66,7 +67,8 @@ namespace Opc.Ua.Server.Controls
             m_configuration = configuration;
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
-            if (!configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
+            if (showCertificateValidationDialog &&
+                !configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
                 configuration.CertificateValidator.CertificateValidation +=
                     new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
@@ -80,7 +82,7 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(ApplicationInstance application)
+        public ServerForm(ApplicationInstance application, bool showCertificateValidationDialog = false)
         {
             InitializeComponent();
 
@@ -89,7 +91,8 @@ namespace Opc.Ua.Server.Controls
             m_configuration = application.ApplicationConfiguration;
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
-            if (!application.ApplicationConfiguration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
+            if (showCertificateValidationDialog &&
+                !application.ApplicationConfiguration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
                 application.ApplicationConfiguration.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
             }
@@ -210,12 +213,13 @@ namespace Opc.Ua.Server.Controls
         public static void HandleCertificateValidationError(Form caller, CertificateValidator validator, CertificateValidationEventArgs e)
         {
             StringBuilder buffer = new StringBuilder();
-            buffer.AppendFormat("Certificate could not be validated!\r\n");
-            buffer.AppendFormat("Validation error(s): \r\n");
-            buffer.AppendFormat("\t{0}\r\n", e.Error.StatusCode);
-            if (e.Error.InnerResult != null)
+            buffer.AppendLine("Certificate could not be validated!");
+            buffer.AppendLine("Validation error(s):");
+            ServiceResult error = e.Error;
+            while (error != null)
             {
-                buffer.AppendFormat("\t{0}\r\n", e.Error.InnerResult.StatusCode);
+                buffer.AppendFormat("- {0}\r\n", error.ToString().Split('\r','\n').FirstOrDefault());
+                error = error.InnerResult;
             }
             buffer.AppendFormat("\r\nSubject: {0}\r\n", e.Certificate.Subject);
             buffer.AppendFormat("Issuer: {0}\r\n", X509Utils.CompareDistinguishedName(e.Certificate.Subject, e.Certificate.Issuer)
@@ -223,14 +227,13 @@ namespace Opc.Ua.Server.Controls
             buffer.AppendFormat("Valid From: {0}\r\n", e.Certificate.NotBefore);
             buffer.AppendFormat("Valid To: {0}\r\n", e.Certificate.NotAfter);
             buffer.AppendFormat("Thumbprint: {0}\r\n\r\n", e.Certificate.Thumbprint);
-            buffer.AppendFormat("The security certificate was not issued by a trusted certificate authority. ");
-            buffer.AppendFormat("Security certificate problems may indicate an attempt to intercept any data you send ");
-            buffer.AppendFormat("to a server or to allow an untrusted client to connect to your server.");
-            buffer.AppendFormat("\r\n\r\nAccept anyway?");
+            buffer.Append("Security certificate problems may indicate an attempt to intercept any data you send ");
+            buffer.Append("to a server or to allow an untrusted client to connect to your server.");
+            buffer.Append("\r\n\r\nAccept anyway?");
 
             if (MessageBox.Show(buffer.ToString(), caller.Text, MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                e.Accept = true;
+                e.AcceptAll = true;
             }
         }
     }
