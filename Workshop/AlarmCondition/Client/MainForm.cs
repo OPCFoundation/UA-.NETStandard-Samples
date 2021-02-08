@@ -107,6 +107,7 @@ namespace Quickstarts.AlarmConditionClient
         private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
         private AuditEventForm m_auditEventForm;
         private bool m_connectedOnce;
+        private bool ColumnAutoAdjust;
         #endregion
 
         #region Private Methods
@@ -780,9 +781,12 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // adjust the width of the columns.
-                for (int ii = 0; ii < ConditionsLV.Columns.Count; ii++)
+                if (this.ColumnAutoAdjust)
                 {
-                    ConditionsLV.Columns[ii].Width = -2;
+                    for (int ii = 0; ii < ConditionsLV.Columns.Count; ii++)
+                    {
+                        ConditionsLV.Columns[ii].Width = -2;
+                    }
                 }
             }
             catch (Exception exception)
@@ -1254,6 +1258,14 @@ namespace Quickstarts.AlarmConditionClient
             {
                 Application.Exit();
             }
+        }
+
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
+            var appSettings = System.Configuration.ConfigurationManager.AppSettings;
+            Boolean.TryParse(appSettings["ColumnAutoAdjust"], out this.ColumnAutoAdjust);
+            //int.TryParse(appSettings["MaximumItems"], out this.MaximumItems);
+            //if (this.MaximumItems < MIN_ITEMS) { this.MaximumItems = MIN_ITEMS; }
         }
     }
 }

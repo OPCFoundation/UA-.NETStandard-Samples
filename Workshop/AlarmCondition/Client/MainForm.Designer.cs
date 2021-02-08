@@ -99,15 +99,15 @@ namespace Quickstarts.AlarmConditionClient
             this.StatusBar = new System.Windows.Forms.StatusStrip();
             this.MainPN = new System.Windows.Forms.Panel();
             this.ConditionsLV = new System.Windows.Forms.ListView();
-            this.SourceCH = new System.Windows.Forms.ColumnHeader();
-            this.ConditionNameCH = new System.Windows.Forms.ColumnHeader();
-            this.BranchCH = new System.Windows.Forms.ColumnHeader();
-            this.ConditionTypeCH = new System.Windows.Forms.ColumnHeader();
-            this.SeverityCH = new System.Windows.Forms.ColumnHeader();
-            this.TimeCH = new System.Windows.Forms.ColumnHeader();
-            this.StateCH = new System.Windows.Forms.ColumnHeader();
-            this.MessageCH = new System.Windows.Forms.ColumnHeader();
-            this.CommentCH = new System.Windows.Forms.ColumnHeader();
+            this.SourceCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.ConditionNameCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.BranchCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.ConditionTypeCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.SeverityCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.TimeCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.StateCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.MessageCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.CommentCH = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.ConnectServerCTRL = new Opc.Ua.Client.Controls.ConnectServerCtrl();
             this.clientHeaderBranding1 = new Opc.Ua.Client.Controls.HeaderBranding();
             this.MenuBar.SuspendLayout();
@@ -133,13 +133,13 @@ namespace Quickstarts.AlarmConditionClient
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(35, 20);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "&File";
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(92, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
             // 
@@ -156,21 +156,21 @@ namespace Quickstarts.AlarmConditionClient
             // Server_DiscoverMI
             // 
             this.Server_DiscoverMI.Name = "Server_DiscoverMI";
-            this.Server_DiscoverMI.Size = new System.Drawing.Size(127, 22);
+            this.Server_DiscoverMI.Size = new System.Drawing.Size(180, 22);
             this.Server_DiscoverMI.Text = "Discover...";
             this.Server_DiscoverMI.Click += new System.EventHandler(this.Server_DiscoverMI_Click);
             // 
             // Server_ConnectMI
             // 
             this.Server_ConnectMI.Name = "Server_ConnectMI";
-            this.Server_ConnectMI.Size = new System.Drawing.Size(127, 22);
+            this.Server_ConnectMI.Size = new System.Drawing.Size(180, 22);
             this.Server_ConnectMI.Text = "Connect";
             this.Server_ConnectMI.Click += new System.EventHandler(this.Server_ConnectMI_ClickAsync);
             // 
             // Server_DisconnectMI
             // 
             this.Server_DisconnectMI.Name = "Server_DisconnectMI";
-            this.Server_DisconnectMI.Size = new System.Drawing.Size(127, 22);
+            this.Server_DisconnectMI.Size = new System.Drawing.Size(180, 22);
             this.Server_DisconnectMI.Text = "Disconnect";
             this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_Click);
             // 
@@ -192,33 +192,33 @@ namespace Quickstarts.AlarmConditionClient
             this.Conditions_RespondMI,
             this.Conditions_ShelvingMI});
             this.ConditionsMI.Name = "ConditionsMI";
-            this.ConditionsMI.Size = new System.Drawing.Size(69, 20);
+            this.ConditionsMI.Size = new System.Drawing.Size(77, 20);
             this.ConditionsMI.Text = "Conditions";
             this.ConditionsMI.DropDownOpening += new System.EventHandler(this.ConditionsMI_DropDownOpening);
             // 
             // Conditions_MonitorMI
             // 
             this.Conditions_MonitorMI.Name = "Conditions_MonitorMI";
-            this.Conditions_MonitorMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_MonitorMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_MonitorMI.Text = "View...";
             this.Conditions_MonitorMI.Click += new System.EventHandler(this.Conditions_MonitorMI_Click);
             // 
             // Conditions_RefreshMI
             // 
             this.Conditions_RefreshMI.Name = "Conditions_RefreshMI";
-            this.Conditions_RefreshMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_RefreshMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_RefreshMI.Text = "Refresh";
             this.Conditions_RefreshMI.Click += new System.EventHandler(this.Conditions_RefreshMI_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(154, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(177, 6);
             // 
             // Conditions_SetAreaFilterMI
             // 
             this.Conditions_SetAreaFilterMI.Name = "Conditions_SetAreaFilterMI";
-            this.Conditions_SetAreaFilterMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_SetAreaFilterMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_SetAreaFilterMI.Text = "Set Area Filter...";
             this.Conditions_SetAreaFilterMI.Click += new System.EventHandler(this.Conditions_SetAreaFilterMI_Click);
             // 
@@ -231,7 +231,7 @@ namespace Quickstarts.AlarmConditionClient
             this.Condition_Type_LimitAlarmsMI,
             this.Condition_Type_DiscreteAlarmsMI});
             this.Conditions_SetTypeMI.Name = "Conditions_SetTypeMI";
-            this.Conditions_SetTypeMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_SetTypeMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_SetTypeMI.Text = "Condition Type";
             // 
             // Condition_Type_AllMI
@@ -239,35 +239,35 @@ namespace Quickstarts.AlarmConditionClient
             this.Condition_Type_AllMI.Checked = true;
             this.Condition_Type_AllMI.CheckState = System.Windows.Forms.CheckState.Checked;
             this.Condition_Type_AllMI.Name = "Condition_Type_AllMI";
-            this.Condition_Type_AllMI.Size = new System.Drawing.Size(148, 22);
+            this.Condition_Type_AllMI.Size = new System.Drawing.Size(156, 22);
             this.Condition_Type_AllMI.Text = "All";
             this.Condition_Type_AllMI.Click += new System.EventHandler(this.Conditions_TypeMI_Click);
             // 
             // Condition_Type_DialogsMI
             // 
             this.Condition_Type_DialogsMI.Name = "Condition_Type_DialogsMI";
-            this.Condition_Type_DialogsMI.Size = new System.Drawing.Size(148, 22);
+            this.Condition_Type_DialogsMI.Size = new System.Drawing.Size(156, 22);
             this.Condition_Type_DialogsMI.Text = "Dialogs";
             this.Condition_Type_DialogsMI.Click += new System.EventHandler(this.Conditions_TypeMI_Click);
             // 
             // Condition_Type_AlarmsMI
             // 
             this.Condition_Type_AlarmsMI.Name = "Condition_Type_AlarmsMI";
-            this.Condition_Type_AlarmsMI.Size = new System.Drawing.Size(148, 22);
+            this.Condition_Type_AlarmsMI.Size = new System.Drawing.Size(156, 22);
             this.Condition_Type_AlarmsMI.Text = "Alarms";
             this.Condition_Type_AlarmsMI.Click += new System.EventHandler(this.Conditions_TypeMI_Click);
             // 
             // Condition_Type_LimitAlarmsMI
             // 
             this.Condition_Type_LimitAlarmsMI.Name = "Condition_Type_LimitAlarmsMI";
-            this.Condition_Type_LimitAlarmsMI.Size = new System.Drawing.Size(148, 22);
+            this.Condition_Type_LimitAlarmsMI.Size = new System.Drawing.Size(156, 22);
             this.Condition_Type_LimitAlarmsMI.Text = "Limit Alarms";
             this.Condition_Type_LimitAlarmsMI.Click += new System.EventHandler(this.Conditions_TypeMI_Click);
             // 
             // Condition_Type_DiscreteAlarmsMI
             // 
             this.Condition_Type_DiscreteAlarmsMI.Name = "Condition_Type_DiscreteAlarmsMI";
-            this.Condition_Type_DiscreteAlarmsMI.Size = new System.Drawing.Size(148, 22);
+            this.Condition_Type_DiscreteAlarmsMI.Size = new System.Drawing.Size(156, 22);
             this.Condition_Type_DiscreteAlarmsMI.Text = "Discrete Alarms";
             this.Condition_Type_DiscreteAlarmsMI.Click += new System.EventHandler(this.Conditions_TypeMI_Click);
             // 
@@ -279,7 +279,7 @@ namespace Quickstarts.AlarmConditionClient
             this.Conditions_Severity_MediumMI,
             this.Conditions_Severity_HighMI});
             this.Conditions_SetSeverityMI.Name = "Conditions_SetSeverityMI";
-            this.Conditions_SetSeverityMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_SetSeverityMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_SetSeverityMI.Text = "Minimum Severity";
             // 
             // Conditions_Severity_AllMI
@@ -287,75 +287,75 @@ namespace Quickstarts.AlarmConditionClient
             this.Conditions_Severity_AllMI.Checked = true;
             this.Conditions_Severity_AllMI.CheckState = System.Windows.Forms.CheckState.Checked;
             this.Conditions_Severity_AllMI.Name = "Conditions_Severity_AllMI";
-            this.Conditions_Severity_AllMI.Size = new System.Drawing.Size(110, 22);
+            this.Conditions_Severity_AllMI.Size = new System.Drawing.Size(119, 22);
             this.Conditions_Severity_AllMI.Text = "All";
             this.Conditions_Severity_AllMI.Click += new System.EventHandler(this.Conditions_SeverityMI_Click);
             // 
             // Conditions_Severity_LowMI
             // 
             this.Conditions_Severity_LowMI.Name = "Conditions_Severity_LowMI";
-            this.Conditions_Severity_LowMI.Size = new System.Drawing.Size(110, 22);
+            this.Conditions_Severity_LowMI.Size = new System.Drawing.Size(119, 22);
             this.Conditions_Severity_LowMI.Text = "Low";
             this.Conditions_Severity_LowMI.Click += new System.EventHandler(this.Conditions_SeverityMI_Click);
             // 
             // Conditions_Severity_MediumMI
             // 
             this.Conditions_Severity_MediumMI.Name = "Conditions_Severity_MediumMI";
-            this.Conditions_Severity_MediumMI.Size = new System.Drawing.Size(110, 22);
+            this.Conditions_Severity_MediumMI.Size = new System.Drawing.Size(119, 22);
             this.Conditions_Severity_MediumMI.Text = "Medium";
             this.Conditions_Severity_MediumMI.Click += new System.EventHandler(this.Conditions_SeverityMI_Click);
             // 
             // Conditions_Severity_HighMI
             // 
             this.Conditions_Severity_HighMI.Name = "Conditions_Severity_HighMI";
-            this.Conditions_Severity_HighMI.Size = new System.Drawing.Size(110, 22);
+            this.Conditions_Severity_HighMI.Size = new System.Drawing.Size(119, 22);
             this.Conditions_Severity_HighMI.Text = "High";
             this.Conditions_Severity_HighMI.Click += new System.EventHandler(this.Conditions_SeverityMI_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(154, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
             // 
             // Conditions_EnableMI
             // 
             this.Conditions_EnableMI.Name = "Conditions_EnableMI";
-            this.Conditions_EnableMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_EnableMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_EnableMI.Text = "Enable";
             this.Conditions_EnableMI.Click += new System.EventHandler(this.Conditions_EnableMI_Click);
             // 
             // Conditions_DisableMI
             // 
             this.Conditions_DisableMI.Name = "Conditions_DisableMI";
-            this.Conditions_DisableMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_DisableMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_DisableMI.Text = "Disable";
             this.Conditions_DisableMI.Click += new System.EventHandler(this.Conditions_DisableMI_Click);
             // 
             // Conditions_AddCommentMI
             // 
             this.Conditions_AddCommentMI.Name = "Conditions_AddCommentMI";
-            this.Conditions_AddCommentMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_AddCommentMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_AddCommentMI.Text = "Add Comment...";
             this.Conditions_AddCommentMI.Click += new System.EventHandler(this.Conditions_AddCommentMI_Click);
             // 
             // Conditions_AcknowledgeMI
             // 
             this.Conditions_AcknowledgeMI.Name = "Conditions_AcknowledgeMI";
-            this.Conditions_AcknowledgeMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_AcknowledgeMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_AcknowledgeMI.Text = "Acknowledge...";
             this.Conditions_AcknowledgeMI.Click += new System.EventHandler(this.Conditions_AcknowledgeMI_Click);
             // 
             // Conditions_ConfirmMI
             // 
             this.Conditions_ConfirmMI.Name = "Conditions_ConfirmMI";
-            this.Conditions_ConfirmMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_ConfirmMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_ConfirmMI.Text = "Confirm...";
             this.Conditions_ConfirmMI.Click += new System.EventHandler(this.Conditions_ConfirmMI_Click);
             // 
             // Conditions_RespondMI
             // 
             this.Conditions_RespondMI.Name = "Conditions_RespondMI";
-            this.Conditions_RespondMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_RespondMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_RespondMI.Text = "Respond...";
             this.Conditions_RespondMI.Click += new System.EventHandler(this.Conditions_RespondMI_Click);
             // 
@@ -367,34 +367,34 @@ namespace Quickstarts.AlarmConditionClient
             this.Conditions_OneShotShelveMI,
             this.Conditions_TimedShelveMI});
             this.Conditions_ShelvingMI.Name = "Conditions_ShelvingMI";
-            this.Conditions_ShelvingMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_ShelvingMI.Size = new System.Drawing.Size(180, 22);
             this.Conditions_ShelvingMI.Text = "Shelving";
             // 
             // Conditions_UnshelveMI
             // 
             this.Conditions_UnshelveMI.Name = "Conditions_UnshelveMI";
-            this.Conditions_UnshelveMI.Size = new System.Drawing.Size(154, 22);
+            this.Conditions_UnshelveMI.Size = new System.Drawing.Size(160, 22);
             this.Conditions_UnshelveMI.Text = "Unshelve";
             this.Conditions_UnshelveMI.Click += new System.EventHandler(this.Conditions_UnshelveMI_Click);
             // 
             // Conditions_ManualShelveMI
             // 
             this.Conditions_ManualShelveMI.Name = "Conditions_ManualShelveMI";
-            this.Conditions_ManualShelveMI.Size = new System.Drawing.Size(154, 22);
+            this.Conditions_ManualShelveMI.Size = new System.Drawing.Size(160, 22);
             this.Conditions_ManualShelveMI.Text = "Manual Shelve";
             this.Conditions_ManualShelveMI.Click += new System.EventHandler(this.Conditions_ManualShelveMI_Click);
             // 
             // Conditions_OneShotShelveMI
             // 
             this.Conditions_OneShotShelveMI.Name = "Conditions_OneShotShelveMI";
-            this.Conditions_OneShotShelveMI.Size = new System.Drawing.Size(154, 22);
+            this.Conditions_OneShotShelveMI.Size = new System.Drawing.Size(160, 22);
             this.Conditions_OneShotShelveMI.Text = "One Shot Shelve";
             this.Conditions_OneShotShelveMI.Click += new System.EventHandler(this.Conditions_OneShotShelveMI_Click);
             // 
             // Conditions_TimedShelveMI
             // 
             this.Conditions_TimedShelveMI.Name = "Conditions_TimedShelveMI";
-            this.Conditions_TimedShelveMI.Size = new System.Drawing.Size(154, 22);
+            this.Conditions_TimedShelveMI.Size = new System.Drawing.Size(160, 22);
             this.Conditions_TimedShelveMI.Text = "Timed Shelve...";
             this.Conditions_TimedShelveMI.Click += new System.EventHandler(this.Conditions_TimedShelveMI_Click);
             // 
@@ -403,13 +403,13 @@ namespace Quickstarts.AlarmConditionClient
             this.ViewMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.View_AuditEventsMI});
             this.ViewMI.Name = "ViewMI";
-            this.ViewMI.Size = new System.Drawing.Size(41, 20);
+            this.ViewMI.Size = new System.Drawing.Size(44, 20);
             this.ViewMI.Text = "View";
             // 
             // View_AuditEventsMI
             // 
             this.View_AuditEventsMI.Name = "View_AuditEventsMI";
-            this.View_AuditEventsMI.Size = new System.Drawing.Size(147, 22);
+            this.View_AuditEventsMI.Size = new System.Drawing.Size(180, 22);
             this.View_AuditEventsMI.Text = "Audit Events...";
             this.View_AuditEventsMI.Click += new System.EventHandler(this.View_AuditEventsMI_Click);
             // 
@@ -418,13 +418,13 @@ namespace Quickstarts.AlarmConditionClient
             this.HelpMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.Help_ContentsMI});
             this.HelpMI.Name = "HelpMI";
-            this.HelpMI.Size = new System.Drawing.Size(40, 20);
+            this.HelpMI.Size = new System.Drawing.Size(44, 20);
             this.HelpMI.Text = "Help";
             // 
             // Help_ContentsMI
             // 
             this.Help_ContentsMI.Name = "Help_ContentsMI";
-            this.Help_ContentsMI.Size = new System.Drawing.Size(118, 22);
+            this.Help_ContentsMI.Size = new System.Drawing.Size(180, 22);
             this.Help_ContentsMI.Text = "Contents";
             this.Help_ContentsMI.Click += new System.EventHandler(this.Help_ContentsMI_Click);
             // 
@@ -459,6 +459,7 @@ namespace Quickstarts.AlarmConditionClient
             this.CommentCH});
             this.ConditionsLV.Dock = System.Windows.Forms.DockStyle.Fill;
             this.ConditionsLV.FullRowSelect = true;
+            this.ConditionsLV.HideSelection = false;
             this.ConditionsLV.Location = new System.Drawing.Point(2, 2);
             this.ConditionsLV.Name = "ConditionsLV";
             this.ConditionsLV.Size = new System.Drawing.Size(622, 300);
@@ -508,25 +509,29 @@ namespace Quickstarts.AlarmConditionClient
             // 
             this.ConnectServerCTRL.Configuration = null;
             this.ConnectServerCTRL.DisableDomainCheck = false;
+            this.ConnectServerCTRL.DiscoverTimeout = 15000;
             this.ConnectServerCTRL.Dock = System.Windows.Forms.DockStyle.Top;
             this.ConnectServerCTRL.Location = new System.Drawing.Point(0, 114);
             this.ConnectServerCTRL.MaximumSize = new System.Drawing.Size(2048, 23);
             this.ConnectServerCTRL.MinimumSize = new System.Drawing.Size(500, 23);
             this.ConnectServerCTRL.Name = "ConnectServerCTRL";
             this.ConnectServerCTRL.PreferredLocales = null;
+            this.ConnectServerCTRL.ReconnectPeriod = 10;
             this.ConnectServerCTRL.ServerUrl = "";
             this.ConnectServerCTRL.SessionName = null;
+            this.ConnectServerCTRL.SessionTimeout = ((uint)(60000u));
             this.ConnectServerCTRL.Size = new System.Drawing.Size(626, 23);
             this.ConnectServerCTRL.StatusStrip = this.StatusBar;
             this.ConnectServerCTRL.TabIndex = 4;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
             this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
             // 
             // clientHeaderBranding1
             // 
+            this.clientHeaderBranding1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.clientHeaderBranding1.BackColor = System.Drawing.Color.White;
             this.clientHeaderBranding1.Dock = System.Windows.Forms.DockStyle.Top;
             this.clientHeaderBranding1.Location = new System.Drawing.Point(0, 24);
@@ -551,6 +556,7 @@ namespace Quickstarts.AlarmConditionClient
             this.Name = "MainForm";
             this.Text = "UA Alarm Condition Client";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.Shown += new System.EventHandler(this.MainForm_Shown);
             this.MenuBar.ResumeLayout(false);
             this.MenuBar.PerformLayout();
             this.MainPN.ResumeLayout(false);
