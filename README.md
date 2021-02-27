@@ -39,6 +39,13 @@ Furthermore, cloud applications and services (such as ASP.Net, DNX, Azure Websit
 ## Getting Started
 All the tools you need for .Net Standard come with the .Net Core tools. See [here](https://docs.microsoft.com/en-us/dotnet/articles/core/getting-started) for what you need.
 
+## Debugging the Opc.Ua.Core Nuget packages
+
+Since Nuget version 1.4.363.107 there is support for symbol snupkg packages on Nuget.Org and github source link. 
+
+- See [devblog](https://devblogs.microsoft.com/nuget/improved-package-debugging-experience-with-the-nuget-org-symbol-server/) for more information on how to setup the debug symbol server.
+- Support for [Sourcelink](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/sourcelink) for integrated source code debugging experience.
+
 <a name="certificates"/>
 
 ## Self signed certificates for the sample applications
