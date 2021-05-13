@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.4.365.48" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.4.366.38" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.365.48" />
   </ItemGroup>
 
