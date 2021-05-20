@@ -131,7 +131,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
-      <Version>1.4.365.23</Version>
+      <Version>1.4.366.38</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

@@ -28,7 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.ServiceModel;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 
