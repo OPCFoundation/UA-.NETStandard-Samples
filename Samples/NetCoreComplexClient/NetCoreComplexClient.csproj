@@ -34,7 +34,7 @@
         </When>
         <Otherwise>
           <ItemGroup>
-            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.365.23" />
+            <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.366.38" />
             <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes.Debug" Version="1.4.365.23" />
           </ItemGroup>
         </Otherwise>
