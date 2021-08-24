@@ -72,7 +72,7 @@
     <Compile Include="Controls\RegisterApplicationControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Controls\RegisterApplicationControl.designer.cs">
+    <Compile Include="Controls\RegisterApplicationControl.Designer.cs">
       <DependentUpon>RegisterApplicationControl.cs</DependentUpon>
     </Compile>
     <Compile Include="MainForm.cs">
