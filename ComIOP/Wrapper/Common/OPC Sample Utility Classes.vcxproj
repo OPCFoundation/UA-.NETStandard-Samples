@@ -14,7 +14,7 @@
     <ProjectName>UA COM Server Class Library</ProjectName>
     <ProjectGuid>{268AE545-D614-4B66-AEF3-C5B85919AD9D}</ProjectGuid>
     <RootNamespace>OPC Sample Utility Classes</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" Condition="exists('$(VCTargetsPath)\Microsoft.Cpp.Default.props')" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -320,7 +320,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="StdAfx.h" />
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" Condition="exists('$(VCTargetsPath)\Microsoft.Cpp.targets')"/>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" Condition="exists('$(VCTargetsPath)\Microsoft.Cpp.targets')" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
