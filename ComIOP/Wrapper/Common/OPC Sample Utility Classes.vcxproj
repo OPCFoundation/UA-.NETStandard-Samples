@@ -320,7 +320,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="StdAfx.h" />
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" Condition="exists('$(VCTargetsPath)\Microsoft.Cpp.targets')"/>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
