@@ -45,10 +45,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\..\bin\Release\</OutDir>
     <IntDir>$(OutDir)intermediate\$(ProjectName)\</IntDir>
+    <TargetName>OpcComServer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>..\..\bin\Debug\</OutDir>
     <IntDir>$(OutDir)intermediate\$(ProjectName)\</IntDir>
+    <TargetName>OpcComServer</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <CustomBuildStep>
