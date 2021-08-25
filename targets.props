@@ -1,5 +1,9 @@
 <Project>
 
+	<PropertyGroup>
+	  <LangVersion>7.3</LangVersion>
+	</PropertyGroup>
+	
   <Choose>
     <!-- .NET 4.6.2 is only available on Windows builds, 
           however for mono builds on linux it can be enabled.
