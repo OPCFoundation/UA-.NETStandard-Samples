@@ -27,18 +27,15 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-using System;
 using System.Collections.Generic;
-using Opc.Ua;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 namespace Opc.Ua.Com
 {
     /// <summary>
     /// A helper class for COpcProxyUtils.cpp
     /// </summary>
-    public class ProxyUtils
+    public static class ProxyUtils
     {
         /// <summary>
         /// Synchronous helper implementation of CheckApplicationInstanceCertificate for C++ Proxy
@@ -74,44 +71,32 @@ namespace Opc.Ua.Com
 
             // create a new certificate with a new public key pair.
             certificate = CertificateFactory.CreateCertificate(
-                id.StoreType,
-                id.StorePath,
-                null,
-                configuration.ApplicationUri,
-                configuration.ApplicationName,
-                subjectName,
-                hostNames,
-                2048,
-                DateTime.UtcNow - TimeSpan.FromHours(1),
-                120,
-                256,
-                false,
-                null,
-                null);
+                    configuration.ApplicationUri,
+                    configuration.ApplicationName,
+                    subjectName,
+                    hostNames)
+                .CreateForRSA()
+                .AddToStore(
+                    id.StoreType,
+                    id.StorePath);
+
+            id.Certificate = certificate;
 
             // update and save the configuration file.
-            id.Certificate = certificate;
             configuration.SaveToFile(configuration.SourceFilePath);
 
             // add certificate to the trusted peer store so other applications will trust it.
-            ICertificateStore store = configuration.SecurityConfiguration.TrustedPeerCertificates.OpenStore();
-
-            try
+            using (ICertificateStore store = configuration.SecurityConfiguration.TrustedPeerCertificates.OpenStore())
             {
-                    X509Certificate2Collection certificateCollection = store.FindByThumbprint(certificate.Thumbprint).Result;
-                    if (certificateCollection != null)
-                    {
-                        store.Add(certificateCollection[0]).Wait();
-                    }
-            }
-            finally
-            {
-                store.Close();
+                X509Certificate2Collection certificateCollection = store.FindByThumbprint(certificate.Thumbprint).Result;
+                if (certificateCollection != null)
+                {
+                    store.Add(certificateCollection[0]).Wait();
+                }
             }
 
             // tell the certificate validator about the new certificate.
             configuration.CertificateValidator.Update(configuration.SecurityConfiguration).Wait();
-
         }
 
         /// <summary>
@@ -123,6 +108,5 @@ namespace Opc.Ua.Com
             config = ApplicationConfiguration.Load(sectionName, applicationType).Result;
             return config;
         }
-
     }
 }
