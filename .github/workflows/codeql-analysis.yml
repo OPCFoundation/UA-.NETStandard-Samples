@@ -57,7 +57,9 @@ jobs:
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
     - name: Restore Packages
-      run: nuget restore "UA Quickstart Applications.sln"
+      run: |
+        nuget restore "UA Quickstart Applications.sln"
+        nuget restore "UA Sample Applications.sln"
 
     - name: Build Solution
       run: |
