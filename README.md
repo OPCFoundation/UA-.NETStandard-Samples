@@ -4,9 +4,11 @@
 ## Help wanted!
 
 The samples in this repository are hosted by the OPC Foundation to keep the sample code available for the community. 
-However, due to limited capacity at the OPC Foundation, only bare minimum maintenance and support can be provided.
 
-The OPC Foundation counts on the community to improve and maintain the samples and to help with issues to keep this repository alive!
+However, to avoid internal competition with OPC members that offer commercial SDKs, the OPC Foundation limits its own resources for maintenance and support to a minimum.
+
+Contributions of the community to improve and maintain the samples and to help with issues to keep this repository alive are very welcome.
+
 Please follow the steps outlined [here](#contributing) to start contributing.
 
 ## Overview
