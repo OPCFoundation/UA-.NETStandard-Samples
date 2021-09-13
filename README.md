@@ -6,6 +6,7 @@
 The samples in this repository are hosted by the OPC Foundation to keep the sample code available for the community. 
 However, due to limited capacity at the OPC Foundation only bare minimum maintenance and support can be provided.
 The OPC Foundation counts on the community to improve and maintain the samples and to help with issues to keep this repository alive!
+Please follow the steps outlined [here](## Contributing) to start contributing.
 
 ## Overview
 
@@ -19,7 +20,7 @@ Furthermore, cloud applications and services (such as ASP.Net, DNX, Azure Websit
 ## For more information and license terms, see [here](http://opcfoundation.github.io/UA-.NETStandard).
 
 ## Features included
-1. Sample Servers and Clients, including all required controls, for .Net 4.6, .NetCore 2.0 and UWP.
+1. Sample Servers and Clients, including all required controls, for .NET 4.6.2, .NET Core >= 2.1, and UWP.
 2. Sessions (including UI support in the samples).
 3. Subscriptions (including UI support in the samples).
 4. OPC UA [Aggregation Server](Workshop/Aggregation/README.md).
@@ -114,9 +115,6 @@ Please follow instructions in this [article](https://aka.ms/dotnetcoregs) to set
 
 ## How to build and run the OPC UA Xamarin Client
 - Please refer to the OPC UA [Xamarin Client](Samples/XamarinClient/readme.md) for a detailed description how to run the UA Xamarin Client on UWP, Android and iOS.
-
-## What happened to the OPC UA Web Telemetry sample?
-The web telemetry sample was removed as there is a much more complete (and better looking!) solution now available [here](https://github.com/azure/azure-iot-connected-factory). You can try this new solution, called "Connected Factory", out [here](http://www.azureiotsuite.com).
 
 ## Contributing
 We strongly encourage community participation and contribution to this project. First, please fork the repository and commit your changes there. Once happy with your changes you can generate a 'pull request'.
