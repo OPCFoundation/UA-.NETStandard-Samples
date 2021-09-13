@@ -4,9 +4,10 @@
 ## Help wanted!
 
 The samples in this repository are hosted by the OPC Foundation to keep the sample code available for the community. 
-However, due to limited capacity at the OPC Foundation only bare minimum maintenance and support can be provided.
+However, due to limited capacity at the OPC Foundation, only bare minimum maintenance and support can be provided.
+
 The OPC Foundation counts on the community to improve and maintain the samples and to help with issues to keep this repository alive!
-Please follow the steps outlined [here](## Contributing) to start contributing.
+Please follow the steps outlined [here](#contributing) to start contributing.
 
 ## Overview
 
