@@ -38,7 +38,7 @@
       <ItemGroup>
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.366.38" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https.Debug" Version="1.4.367.39" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="1.4.366.38" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="1.4.367.39" />
       </ItemGroup>
     </Otherwise>
   </Choose>
