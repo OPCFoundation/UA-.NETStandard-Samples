@@ -49,7 +49,7 @@
       <ItemGroup>
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.367.42" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.Debug" Version="1.4.367.42" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="1.4.367.41" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="1.4.367.42" />
       </ItemGroup>
     </Otherwise>
   </Choose>
