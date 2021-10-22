@@ -1,8 +1,8 @@
 /* ========================================================================
- * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,7 +30,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Reflection;
 using System.Xml;
 using System.Runtime.Serialization;
 using Opc.Ua;
@@ -42,7 +41,7 @@ namespace Opc.Ua.Com
     /// A class that declares constants for all ObjectTypes in the Model Design.
     /// </summary>
     /// <exclude />
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelDesigner", "1.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class ObjectTypes
     {
         /// <summary>
@@ -57,7 +56,7 @@ namespace Opc.Ua.Com
     /// A class that declares constants for all Variables in the Model Design.
     /// </summary>
     /// <exclude />
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelDesigner", "1.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class Variables
     {
         /// <summary>
@@ -102,7 +101,7 @@ namespace Opc.Ua.Com
     /// A class that declares constants for all ObjectTypes in the Model Design.
     /// </summary>
     /// <exclude />
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelDesigner", "1.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class ObjectTypeIds
     {
         /// <summary>
@@ -117,7 +116,7 @@ namespace Opc.Ua.Com
     /// A class that declares constants for all Variables in the Model Design.
     /// </summary>
     /// <exclude />
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelDesigner", "1.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class VariableIds
     {
         /// <summary>
@@ -220,41 +219,16 @@ namespace Opc.Ua.Com
         /// The URI for the OpcUaCom namespace (.NET code namespace is 'Opc.Ua.Com').
         /// </summary>
         public const string OpcUaCom = "http://opcfoundation.org/UA/SDK/COMInterop";
-
-        /// <summary>
-        /// Returns a namespace table with all of the URIs defined.
-        /// </summary>
-        /// <remarks>
-        /// This table is was used to create any relative paths in the model design.
-        /// </remarks>
-        public static NamespaceTable GetNamespaceTable()
-        {
-            FieldInfo[] fields = typeof(Namespaces).GetFields(BindingFlags.Public | BindingFlags.Static);
-
-            NamespaceTable namespaceTable = new NamespaceTable();
-
-            foreach (FieldInfo field in fields)
-            {
-                string namespaceUri = (string)field.GetValue(typeof(Namespaces));
-
-                if (namespaceTable.GetIndex(namespaceUri) == -1)
-                {
-                    namespaceTable.Append(namespaceUri);
-                }
-            }
-
-            return namespaceTable;
-        }
     }
     #endregion
-    
+
     #region ComServerStatusState Class
     #if (!OPCUA_EXCLUDE_ComServerStatusState)
     /// <summary>
     /// Stores an instance of the ComServerStatusType ObjectType.
     /// </summary>
     /// <exclude />
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelDesigner", "1.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public partial class ComServerStatusState : BaseObjectState
     {
         #region Constructors
@@ -264,7 +238,7 @@ namespace Opc.Ua.Com
         public ComServerStatusState(NodeState parent) : base(parent)
         {
         }
-        
+
         /// <summary>
         /// Returns the id of the default type definition node for the instance.
         /// </summary>
@@ -279,8 +253,18 @@ namespace Opc.Ua.Com
         /// </summary>
         protected override void Initialize(ISystemContext context)
         {
+            base.Initialize(context);
             Initialize(context, InitializationString);
             InitializeOptionalChildren(context);
+        }
+
+        /// <summary>
+        /// Initializes the instance with a node.
+        /// </summary>
+        protected override void Initialize(ISystemContext context, NodeState source)
+        {
+            InitializeOptionalChildren(context);
+            base.Initialize(context, source);
         }
 
         /// <summary>
@@ -292,31 +276,29 @@ namespace Opc.Ua.Com
         }
 
         #region Initialization String
-        private const string InitializationString = 
-           "AQAAACoAAABodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvU0RLL0NPTUludGVyb3D/////BGCAAQEA" +
-           "AAABABsAAABDb21TZXJ2ZXJTdGF0dXNUeXBlSW5zdGFuY2UBAQkAAQEJAABO/////wcAAAAVYIkLAgAA" +
-           "AAEACQAAAFNlcnZlclVybAEBCgAALgBEAE4KAAAAAAz/////AQH/////AAAAABVgiQsCAAAAAQAKAAAA" +
-           "VmVuZG9ySW5mbwEBCwAALgBEAE4LAAAAAAz/////AQH/////AAAAABVgiQsCAAAAAQAPAAAAU29mdHdh" +
-           "cmVWZXJzaW9uAQEMAAAuAEQATgwAAAAADP////8BAf////8AAAAAFWCJCwIAAAABAAsAAABTZXJ2ZXJT" +
-           "dGF0ZQEBDQAALgBEAE4NAAAAAAz/////AQH/////AAAAABVgiQsCAAAAAQALAAAAQ3VycmVudFRpbWUB" +
-           "AQ4AAC4ARABODgAAAAAN/////wEB/////wAAAAAVYIkLAgAAAAEACQAAAFN0YXJ0VGltZQEBDwAALgBE" +
-           "AE4PAAAAAA3/////AQH/////AAAAABVgiQsCAAAAAQAOAAAATGFzdFVwZGF0ZVRpbWUBARAAAC4ARABO" +
-           "EAAAAAAN/////wEB/////wAAAAA=";
+        private const string InitializationString =
+           "AQAAACoAAABodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvU0RLL0NPTUludGVyb3D/////BGCAAgEA" +
+           "AAABABsAAABDb21TZXJ2ZXJTdGF0dXNUeXBlSW5zdGFuY2UBAQkAAQEJAAkAAAD/////BwAAABVgiQoC" +
+           "AAAAAQAJAAAAU2VydmVyVXJsAQEKAAAuAEQKAAAAAAz/////AQH/////AAAAABVgiQoCAAAAAQAKAAAA" +
+           "VmVuZG9ySW5mbwEBCwAALgBECwAAAAAM/////wEB/////wAAAAAVYIkKAgAAAAEADwAAAFNvZnR3YXJl" +
+           "VmVyc2lvbgEBDAAALgBEDAAAAAAM/////wEB/////wAAAAAVYIkKAgAAAAEACwAAAFNlcnZlclN0YXRl" +
+           "AQENAAAuAEQNAAAAAAz/////AQH/////AAAAABVgiQoCAAAAAQALAAAAQ3VycmVudFRpbWUBAQ4AAC4A" +
+           "RA4AAAAADf////8BAf////8AAAAAFWCJCgIAAAABAAkAAABTdGFydFRpbWUBAQ8AAC4ARA8AAAAADf//" +
+           "//8BAf////8AAAAAFWCJCgIAAAABAA4AAABMYXN0VXBkYXRlVGltZQEBEAAALgBEEAAAAAAN/////wEB" +
+           "/////wAAAAA=";
         #endregion
         #endif
         #endregion
 
         #region Public Properties
-        /// <summary>
-        /// A description for the ServerUrl Property.
-        /// </summary>
+        /// <remarks />
         public PropertyState<string> ServerUrl
         {
             get
-            { 
-                return m_serverUrl;  
+            {
+                return m_serverUrl;
             }
-            
+
             set
             {
                 if (!Object.ReferenceEquals(m_serverUrl, value))
@@ -328,16 +310,14 @@ namespace Opc.Ua.Com
             }
         }
 
-        /// <summary>
-        /// A description for the VendorInfo Property.
-        /// </summary>
+        /// <remarks />
         public PropertyState<string> VendorInfo
         {
             get
-            { 
-                return m_vendorInfo;  
+            {
+                return m_vendorInfo;
             }
-            
+
             set
             {
                 if (!Object.ReferenceEquals(m_vendorInfo, value))
@@ -349,16 +329,14 @@ namespace Opc.Ua.Com
             }
         }
 
-        /// <summary>
-        /// A description for the SoftwareVersion Property.
-        /// </summary>
+        /// <remarks />
         public PropertyState<string> SoftwareVersion
         {
             get
-            { 
-                return m_softwareVersion;  
+            {
+                return m_softwareVersion;
             }
-            
+
             set
             {
                 if (!Object.ReferenceEquals(m_softwareVersion, value))
@@ -370,16 +348,14 @@ namespace Opc.Ua.Com
             }
         }
 
-        /// <summary>
-        /// A description for the ServerState Property.
-        /// </summary>
+        /// <remarks />
         public PropertyState<string> ServerState
         {
             get
-            { 
-                return m_serverState;  
+            {
+                return m_serverState;
             }
-            
+
             set
             {
                 if (!Object.ReferenceEquals(m_serverState, value))
@@ -391,16 +367,14 @@ namespace Opc.Ua.Com
             }
         }
 
-        /// <summary>
-        /// A description for the CurrentTime Property.
-        /// </summary>
+        /// <remarks />
         public PropertyState<DateTime> CurrentTime
         {
             get
-            { 
-                return m_currentTime;  
+            {
+                return m_currentTime;
             }
-            
+
             set
             {
                 if (!Object.ReferenceEquals(m_currentTime, value))
@@ -412,16 +386,14 @@ namespace Opc.Ua.Com
             }
         }
 
-        /// <summary>
-        /// A description for the StartTime Property.
-        /// </summary>
+        /// <remarks />
         public PropertyState<DateTime> StartTime
         {
             get
-            { 
-                return m_startTime;  
+            {
+                return m_startTime;
             }
-            
+
             set
             {
                 if (!Object.ReferenceEquals(m_startTime, value))
@@ -433,16 +405,14 @@ namespace Opc.Ua.Com
             }
         }
 
-        /// <summary>
-        /// A description for the LastUpdateTime Property.
-        /// </summary>
+        /// <remarks />
         public PropertyState<DateTime> LastUpdateTime
         {
             get
-            { 
-                return m_lastUpdateTime;  
+            {
+                return m_lastUpdateTime;
             }
-            
+
             set
             {
                 if (!Object.ReferenceEquals(m_lastUpdateTime, value))

@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<UANodeSet xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
   <NamespaceUris>
     <Uri>http://opcfoundation.org/Quickstarts/SimpleEvents</Uri>
   </NamespaceUris>
   <Models>
     <Model ModelUri="http://opcfoundation.org/Quickstarts/SimpleEvents">
-      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.04.5" PublicationDate="2020-03-06T00:00:00Z" />
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.04.10" PublicationDate="2021-09-15T00:00:00Z" />
     </Model>
   </Models>
   <Aliases>
@@ -44,6 +44,17 @@
     <Alias Alias="HasModellingRule">i=37</Alias>
     <Alias Alias="HasEncoding">i=38</Alias>
     <Alias Alias="HasDescription">i=39</Alias>
+    <Alias Alias="HasCause">i=53</Alias>
+    <Alias Alias="ToState">i=52</Alias>
+    <Alias Alias="FromState">i=51</Alias>
+    <Alias Alias="HasEffect">i=54</Alias>
+    <Alias Alias="HasTrueSubState">i=9004</Alias>
+    <Alias Alias="HasFalseSubState">i=9005</Alias>
+    <Alias Alias="HasDictionaryEntry">i=17597</Alias>
+    <Alias Alias="HasCondition">i=9006</Alias>
+    <Alias Alias="HasGuard">i=15112</Alias>
+    <Alias Alias="HasAddIn">i=17604</Alias>
+    <Alias Alias="HasInterface">i=17603</Alias>
   </Aliases>
   <UADataType NodeId="ns=1;i=183" BrowseName="1:CycleStepDataType">
     <DisplayName>CycleStepDataType</DisplayName>
@@ -127,7 +138,7 @@
       <Reference ReferenceType="HasTypeDefinition">i=76</Reference>
     </References>
   </UAObject>
-  <UAVariable NodeId="ns=1;i=222" BrowseName="1:Quickstarts.SimpleEvents" SymbolicName="SimpleEvents_BinarySchema" DataType="ByteString">
+  <UAVariable NodeId="ns=1;i=222" BrowseName="1:Quickstarts.SimpleEvents" SymbolicName="SimpleEvents_BinarySchema" ReleaseStatus="Deprecated" DataType="ByteString">
     <DisplayName>Quickstarts.SimpleEvents</DisplayName>
     <References>
       <Reference ReferenceType="HasProperty">ns=1;i=224</Reference>
@@ -151,7 +162,7 @@ IiAvPg0KICAgIDxvcGM6RmllbGQgTmFtZT0iRHVyYXRpb24iIFR5cGVOYW1lPSJvcGM6RG91Ymxl
 IiAvPg0KICA8L29wYzpTdHJ1Y3R1cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=224" BrowseName="NamespaceUri" ParentNodeId="ns=1;i=222" DataType="String">
+  <UAVariable NodeId="ns=1;i=224" BrowseName="NamespaceUri" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=222" DataType="String">
     <DisplayName>NamespaceUri</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
@@ -161,7 +172,7 @@ IiAvPg0KICA8L29wYzpTdHJ1Y3R1cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteSt
       <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/Quickstarts/SimpleEvents</String>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15001" BrowseName="Deprecated" ParentNodeId="ns=1;i=222" DataType="Boolean">
+  <UAVariable NodeId="ns=1;i=15001" BrowseName="Deprecated" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=222" DataType="Boolean">
     <DisplayName>Deprecated</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
@@ -171,7 +182,7 @@ IiAvPg0KICA8L29wYzpTdHJ1Y3R1cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteSt
       <Boolean xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">true</Boolean>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=225" BrowseName="1:CycleStepDataType" ParentNodeId="ns=1;i=222" DataType="String">
+  <UAVariable NodeId="ns=1;i=225" BrowseName="1:CycleStepDataType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=222" DataType="String">
     <DisplayName>CycleStepDataType</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=69</Reference>
@@ -189,7 +200,7 @@ IiAvPg0KICA8L29wYzpTdHJ1Y3R1cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteSt
       <Reference ReferenceType="HasTypeDefinition">i=76</Reference>
     </References>
   </UAObject>
-  <UAVariable NodeId="ns=1;i=229" BrowseName="1:Quickstarts.SimpleEvents" SymbolicName="SimpleEvents_XmlSchema" DataType="ByteString">
+  <UAVariable NodeId="ns=1;i=229" BrowseName="1:Quickstarts.SimpleEvents" SymbolicName="SimpleEvents_XmlSchema" ReleaseStatus="Deprecated" DataType="ByteString">
     <DisplayName>Quickstarts.SimpleEvents</DisplayName>
     <References>
       <Reference ReferenceType="HasProperty">ns=1;i=231</Reference>
@@ -220,7 +231,7 @@ dGVwRGF0YVR5cGUiIHR5cGU9InRuczpMaXN0T2ZDeWNsZVN0ZXBEYXRhVHlwZSIgbmlsbGFibGU9
 InRydWUiPjwveHM6ZWxlbWVudD4NCg0KPC94czpzY2hlbWE+</ByteString>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=231" BrowseName="NamespaceUri" ParentNodeId="ns=1;i=229" DataType="String">
+  <UAVariable NodeId="ns=1;i=231" BrowseName="NamespaceUri" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=229" DataType="String">
     <DisplayName>NamespaceUri</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
@@ -230,7 +241,7 @@ InRydWUiPjwveHM6ZWxlbWVudD4NCg0KPC94czpzY2hlbWE+</ByteString>
       <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/Quickstarts/SimpleEvents</String>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15002" BrowseName="Deprecated" ParentNodeId="ns=1;i=229" DataType="Boolean">
+  <UAVariable NodeId="ns=1;i=15002" BrowseName="Deprecated" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=229" DataType="Boolean">
     <DisplayName>Deprecated</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
@@ -240,7 +251,7 @@ InRydWUiPjwveHM6ZWxlbWVudD4NCg0KPC94czpzY2hlbWE+</ByteString>
       <Boolean xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">true</Boolean>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=232" BrowseName="1:CycleStepDataType" ParentNodeId="ns=1;i=229" DataType="String">
+  <UAVariable NodeId="ns=1;i=232" BrowseName="1:CycleStepDataType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=229" DataType="String">
     <DisplayName>CycleStepDataType</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=69</Reference>

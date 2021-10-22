@@ -76,9 +76,6 @@
       <uax:TypeDefinitionId>
         <uax:Identifier>i=68</uax:Identifier>
       </uax:TypeDefinitionId>
-      <uax:ModellingRuleId>
-        <uax:Identifier>i=78</uax:Identifier>
-      </uax:ModellingRuleId>
       <uax:NumericId>15007</uax:NumericId>
       <uax:Value>
         <uax:Value>
@@ -91,7 +88,6 @@
                 <uax:EnumValueType>
                   <uax:Value>1</uax:Value>
                   <uax:DisplayName>
-                    <uax:Locale></uax:Locale>
                     <uax:Text>Petrol</uax:Text>
                   </uax:DisplayName>
                 </uax:EnumValueType>
@@ -105,7 +101,6 @@
                 <uax:EnumValueType>
                   <uax:Value>2</uax:Value>
                   <uax:DisplayName>
-                    <uax:Locale></uax:Locale>
                     <uax:Text>Diesel</uax:Text>
                   </uax:DisplayName>
                 </uax:EnumValueType>
@@ -119,7 +114,6 @@
                 <uax:EnumValueType>
                   <uax:Value>3</uax:Value>
                   <uax:DisplayName>
-                    <uax:Locale></uax:Locale>
                     <uax:Text>Electric</uax:Text>
                   </uax:DisplayName>
                 </uax:EnumValueType>
@@ -133,7 +127,6 @@
                 <uax:EnumValueType>
                   <uax:Value>4</uax:Value>
                   <uax:DisplayName>
-                    <uax:Locale></uax:Locale>
                     <uax:Text>Hybrid</uax:Text>
                   </uax:DisplayName>
                 </uax:EnumValueType>
@@ -147,7 +140,6 @@
                 <uax:EnumValueType>
                   <uax:Value>5</uax:Value>
                   <uax:DisplayName>
-                    <uax:Locale></uax:Locale>
                     <uax:Text>Manual</uax:Text>
                   </uax:DisplayName>
                 </uax:EnumValueType>

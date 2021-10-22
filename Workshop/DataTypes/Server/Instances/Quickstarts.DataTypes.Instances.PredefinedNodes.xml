@@ -56,9 +56,6 @@
       <uax:TypeDefinitionId>
         <uax:Identifier>i=68</uax:Identifier>
       </uax:TypeDefinitionId>
-      <uax:ModellingRuleId>
-        <uax:Identifier>i=78</uax:Identifier>
-      </uax:ModellingRuleId>
       <uax:NumericId>15001</uax:NumericId>
       <uax:Value>
         <uax:Value>
@@ -71,7 +68,6 @@
                 <uax:EnumValueType>
                   <uax:Value>1</uax:Value>
                   <uax:DisplayName>
-                    <uax:Locale></uax:Locale>
                     <uax:Text>Open</uax:Text>
                   </uax:DisplayName>
                 </uax:EnumValueType>
@@ -85,7 +81,6 @@
                 <uax:EnumValueType>
                   <uax:Value>2</uax:Value>
                   <uax:DisplayName>
-                    <uax:Locale></uax:Locale>
                     <uax:Text>Covered</uax:Text>
                   </uax:DisplayName>
                 </uax:EnumValueType>
