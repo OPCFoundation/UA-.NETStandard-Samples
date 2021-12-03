@@ -1,0 +1,16 @@
+BicycleType,15004,DataType
+BicycleType_Encoding_DefaultBinary,15005,Object
+BicycleType_Encoding_DefaultJson,15013,Object
+BicycleType_Encoding_DefaultXml,15009,Object
+DataTypeInstances_BinarySchema,353,Variable
+DataTypeInstances_XmlSchema,341,Variable
+ParkingLot,281,Object
+ParkingLotType,378,DataType
+ScooterType,15015,DataType
+ScooterType_Encoding_DefaultBinary,15017,Object
+ScooterType_Encoding_DefaultJson,15033,Object
+ScooterType_Encoding_DefaultXml,15025,Object
+TwoWheelerType,15014,DataType
+TwoWheelerType_Encoding_DefaultBinary,15016,Object
+TwoWheelerType_Encoding_DefaultJson,15032,Object
+TwoWheelerType_Encoding_DefaultXml,15024,Object

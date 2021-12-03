@@ -61,7 +61,6 @@
       <uax:Name>SystemCycleStatusEventType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>An event raised when a system cycle starts.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>
@@ -130,7 +129,6 @@
       <uax:Name>SystemCycleStartedEventType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>An event raised when a system cycle starts.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>
@@ -174,7 +172,6 @@
       <uax:Name>SystemCycleAbortedEventType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>An event raised when a system cycle is aborted.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>
@@ -217,7 +214,6 @@
       <uax:Name>SystemCycleFinishedEventType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>An event raised when a system cycle completes.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>

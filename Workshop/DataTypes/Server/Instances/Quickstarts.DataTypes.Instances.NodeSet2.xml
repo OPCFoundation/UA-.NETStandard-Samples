@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<UANodeSet xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
   <NamespaceUris>
     <Uri>http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances</Uri>
     <Uri>http://opcfoundation.org/UA/Quickstarts/DataTypes/Types</Uri>
   </NamespaceUris>
   <Models>
     <Model ModelUri="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances">
-      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.04.5" PublicationDate="2020-03-06T00:00:00Z" />
-      <RequiredModel ModelUri="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types" />
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" XmlSchemaUri="http://opcfoundation.org/UA/2008/02/Types.xsd" Version="1.04.10" PublicationDate="2021-09-15T00:00:00Z" />
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types" XmlSchemaUri="http://opcfoundation.org/UA/2008/02/Types.xsd" />
     </Model>
   </Models>
   <Aliases>
@@ -46,6 +46,17 @@
     <Alias Alias="HasModellingRule">i=37</Alias>
     <Alias Alias="HasEncoding">i=38</Alias>
     <Alias Alias="HasDescription">i=39</Alias>
+    <Alias Alias="HasCause">i=53</Alias>
+    <Alias Alias="ToState">i=52</Alias>
+    <Alias Alias="FromState">i=51</Alias>
+    <Alias Alias="HasEffect">i=54</Alias>
+    <Alias Alias="HasTrueSubState">i=9004</Alias>
+    <Alias Alias="HasFalseSubState">i=9005</Alias>
+    <Alias Alias="HasDictionaryEntry">i=17597</Alias>
+    <Alias Alias="HasCondition">i=9006</Alias>
+    <Alias Alias="HasGuard">i=15112</Alias>
+    <Alias Alias="HasAddIn">i=17604</Alias>
+    <Alias Alias="HasInterface">i=17603</Alias>
   </Aliases>
   <UADataType NodeId="ns=1;i=378" BrowseName="1:ParkingLotType">
     <DisplayName>ParkingLotType</DisplayName>
@@ -62,7 +73,6 @@
     <DisplayName>EnumValues</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
-      <Reference ReferenceType="HasModellingRule">i=78</Reference>
       <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=378</Reference>
     </References>
     <Value>
@@ -75,8 +85,6 @@
             <EnumValueType>
               <Value>1</Value>
               <DisplayName>
-                <Locale>
-                </Locale>
                 <Text>Open</Text>
               </DisplayName>
             </EnumValueType>
@@ -90,8 +98,6 @@
             <EnumValueType>
               <Value>2</Value>
               <DisplayName>
-                <Locale>
-                </Locale>
                 <Text>Covered</Text>
               </DisplayName>
             </EnumValueType>
@@ -331,7 +337,7 @@
       <Reference ReferenceType="HasTypeDefinition">i=76</Reference>
     </References>
   </UAObject>
-  <UAVariable NodeId="ns=1;i=353" BrowseName="1:Quickstarts.DataTypes.Instances" SymbolicName="DataTypeInstances_BinarySchema" DataType="ByteString">
+  <UAVariable NodeId="ns=1;i=353" BrowseName="1:Quickstarts.DataTypes.Instances" SymbolicName="DataTypeInstances_BinarySchema" ReleaseStatus="Deprecated" DataType="ByteString">
     <DisplayName>Quickstarts.DataTypes.Instances</DisplayName>
     <References>
       <Reference ReferenceType="HasProperty">ns=1;i=355</Reference>
@@ -386,7 +392,7 @@ YW1lPSJOb09mU2VhdHMiIFR5cGVOYW1lPSJvcGM6VUludDMyIiAvPg0KICA8L29wYzpTdHJ1Y3R1
 cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=355" BrowseName="NamespaceUri" ParentNodeId="ns=1;i=353" DataType="String">
+  <UAVariable NodeId="ns=1;i=355" BrowseName="NamespaceUri" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=353" DataType="String">
     <DisplayName>NamespaceUri</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
@@ -396,7 +402,7 @@ cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
       <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances</String>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15002" BrowseName="Deprecated" ParentNodeId="ns=1;i=353" DataType="Boolean">
+  <UAVariable NodeId="ns=1;i=15002" BrowseName="Deprecated" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=353" DataType="Boolean">
     <DisplayName>Deprecated</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
@@ -406,7 +412,7 @@ cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
       <Boolean xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">true</Boolean>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15018" BrowseName="1:TwoWheelerType" ParentNodeId="ns=1;i=353" DataType="String">
+  <UAVariable NodeId="ns=1;i=15018" BrowseName="1:TwoWheelerType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=353" DataType="String">
     <DisplayName>TwoWheelerType</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=69</Reference>
@@ -416,7 +422,7 @@ cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
       <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">TwoWheelerType</String>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15006" BrowseName="1:BicycleType" ParentNodeId="ns=1;i=353" DataType="String">
+  <UAVariable NodeId="ns=1;i=15006" BrowseName="1:BicycleType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=353" DataType="String">
     <DisplayName>BicycleType</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=69</Reference>
@@ -426,7 +432,7 @@ cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
       <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">BicycleType</String>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15021" BrowseName="1:ScooterType" ParentNodeId="ns=1;i=353" DataType="String">
+  <UAVariable NodeId="ns=1;i=15021" BrowseName="1:ScooterType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=353" DataType="String">
     <DisplayName>ScooterType</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=69</Reference>
@@ -460,7 +466,7 @@ cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
       <Reference ReferenceType="HasTypeDefinition">i=76</Reference>
     </References>
   </UAObject>
-  <UAVariable NodeId="ns=1;i=341" BrowseName="1:Quickstarts.DataTypes.Instances" SymbolicName="DataTypeInstances_XmlSchema" DataType="ByteString">
+  <UAVariable NodeId="ns=1;i=341" BrowseName="1:Quickstarts.DataTypes.Instances" SymbolicName="DataTypeInstances_XmlSchema" ReleaseStatus="Deprecated" DataType="ByteString">
     <DisplayName>Quickstarts.DataTypes.Instances</DisplayName>
     <References>
       <Reference ReferenceType="HasProperty">ns=1;i=343</Reference>
@@ -533,7 +539,7 @@ dE9mU2Nvb3RlclR5cGUiIG5pbGxhYmxlPSJ0cnVlIj48L3hzOmVsZW1lbnQ+DQoNCjwveHM6c2No
 ZW1hPg==</ByteString>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=343" BrowseName="NamespaceUri" ParentNodeId="ns=1;i=341" DataType="String">
+  <UAVariable NodeId="ns=1;i=343" BrowseName="NamespaceUri" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=341" DataType="String">
     <DisplayName>NamespaceUri</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
@@ -543,7 +549,7 @@ ZW1hPg==</ByteString>
       <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances</String>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15003" BrowseName="Deprecated" ParentNodeId="ns=1;i=341" DataType="Boolean">
+  <UAVariable NodeId="ns=1;i=15003" BrowseName="Deprecated" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=341" DataType="Boolean">
     <DisplayName>Deprecated</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
@@ -553,7 +559,7 @@ ZW1hPg==</ByteString>
       <Boolean xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">true</Boolean>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15026" BrowseName="1:TwoWheelerType" ParentNodeId="ns=1;i=341" DataType="String">
+  <UAVariable NodeId="ns=1;i=15026" BrowseName="1:TwoWheelerType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=341" DataType="String">
     <DisplayName>TwoWheelerType</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=69</Reference>
@@ -563,7 +569,7 @@ ZW1hPg==</ByteString>
       <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">//xs:element[@name='TwoWheelerType']</String>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15010" BrowseName="1:BicycleType" ParentNodeId="ns=1;i=341" DataType="String">
+  <UAVariable NodeId="ns=1;i=15010" BrowseName="1:BicycleType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=341" DataType="String">
     <DisplayName>BicycleType</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=69</Reference>
@@ -573,7 +579,7 @@ ZW1hPg==</ByteString>
       <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">//xs:element[@name='BicycleType']</String>
     </Value>
   </UAVariable>
-  <UAVariable NodeId="ns=1;i=15029" BrowseName="1:ScooterType" ParentNodeId="ns=1;i=341" DataType="String">
+  <UAVariable NodeId="ns=1;i=15029" BrowseName="1:ScooterType" ReleaseStatus="Deprecated" ParentNodeId="ns=1;i=341" DataType="String">
     <DisplayName>ScooterType</DisplayName>
     <References>
       <Reference ReferenceType="HasTypeDefinition">i=69</Reference>

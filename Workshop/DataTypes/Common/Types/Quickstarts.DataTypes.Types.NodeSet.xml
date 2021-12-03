@@ -1777,15 +1777,6 @@ dHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
             <Identifier>i=68</Identifier>
           </TargetId>
         </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=37</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=78</Identifier>
-          </TargetId>
-        </ReferenceNode>
       </References>
       <Value>
         <Value>
@@ -1798,7 +1789,6 @@ dHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
                 <EnumValueType>
                   <Value>1</Value>
                   <DisplayName>
-                    <Locale></Locale>
                     <Text>Petrol</Text>
                   </DisplayName>
                 </EnumValueType>
@@ -1812,7 +1802,6 @@ dHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
                 <EnumValueType>
                   <Value>2</Value>
                   <DisplayName>
-                    <Locale></Locale>
                     <Text>Diesel</Text>
                   </DisplayName>
                 </EnumValueType>
@@ -1826,7 +1815,6 @@ dHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
                 <EnumValueType>
                   <Value>3</Value>
                   <DisplayName>
-                    <Locale></Locale>
                     <Text>Electric</Text>
                   </DisplayName>
                 </EnumValueType>
@@ -1840,7 +1828,6 @@ dHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
                 <EnumValueType>
                   <Value>4</Value>
                   <DisplayName>
-                    <Locale></Locale>
                     <Text>Hybrid</Text>
                   </DisplayName>
                 </EnumValueType>
@@ -1854,7 +1841,6 @@ dHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
                 <EnumValueType>
                   <Value>5</Value>
                   <DisplayName>
-                    <Locale></Locale>
                     <Text>Manual</Text>
                   </DisplayName>
                 </EnumValueType>
