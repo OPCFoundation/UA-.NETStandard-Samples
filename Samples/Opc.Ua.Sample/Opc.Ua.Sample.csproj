@@ -22,8 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.4.367.65" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.367.65" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.4.367.75" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.367.75" />
   </ItemGroup>
 
 </Project>
