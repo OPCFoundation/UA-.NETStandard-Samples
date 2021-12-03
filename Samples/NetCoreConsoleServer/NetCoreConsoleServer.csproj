@@ -31,7 +31,7 @@
       <ItemGroup>
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.367.65" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.4.367.75" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.367.65" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.367.75" />
       </ItemGroup>
     </When>
     <Otherwise>
