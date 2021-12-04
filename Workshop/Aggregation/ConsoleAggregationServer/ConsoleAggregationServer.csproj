@@ -18,7 +18,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Server\AggregationNodeManager.cs;..\Server\AggregationServer.cs;..\Server\AggregationServerConfiguration.cs;..\Server\AggregatedTypeCache.cs;..\Server\NamespaceMapper.cs;..\Server\Browser.cs;..\Server\Model\AggregationModel.Classes.cs;..\Server\Model\AggregationModel.Constants.cs;..\Server\Model\AggregationModel.DataTypes.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+    <Compile Include="..\Server\AggregationNodeManager.cs;..\Server\AggregationServer.cs;..\Server\AggregationServerConfiguration.cs;..\Server\AggregatedTypeCache.cs;..\Server\NamespaceMapper.cs;..\Server\Browser.cs;" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+    <Compile Include="..\Server\Model\AggregationModel.Classes.cs;..\Server\Model\AggregationModel.Constants.cs;..\Server\Model\AggregationModel.DataTypes.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**"/>
   </ItemGroup>
 
   <ItemGroup>
