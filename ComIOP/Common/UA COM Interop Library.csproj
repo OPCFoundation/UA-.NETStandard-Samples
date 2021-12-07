@@ -160,8 +160,9 @@
     <Compile Include="Common\Namespaces.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Common\Opc.Ua.Com.Classes.Design.cs" />
     <Compile Include="Common\Opc.Ua.Com.Classes.cs" />
+    <Compile Include="Common\Opc.Ua.Com.Constants.cs" />
+    <Compile Include="Common\Opc.Ua.Com.DataTypes.cs" />
     <Compile Include="Common\PropertyIds.cs">
       <SubType>Code</SubType>
     </Compile>

@@ -1067,7 +1067,7 @@ namespace Opc.Ua.Com
 			}
 			else
 			{
-				if (target.ToLower() == pattern.ToLower())
+				if (String.Equals(target, pattern, StringComparison.OrdinalIgnoreCase))
 				{
 					return true;
 				}
