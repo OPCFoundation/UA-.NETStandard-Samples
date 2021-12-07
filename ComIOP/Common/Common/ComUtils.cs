@@ -49,7 +49,7 @@ namespace Opc.Ua.Com
 	/// <summary>
 	/// Exposes WIN32 and COM API functions.
 	/// </summary>
-	public class ComUtils
+	public static class ComUtils
 	{
 		#region NetApi Function Declarations
 		[StructLayout(LayoutKind.Sequential, CharSet=CharSet.Auto)]
@@ -1067,7 +1067,7 @@ namespace Opc.Ua.Com
 			}
 			else
 			{
-				if (target.ToLower() == pattern.ToLower())
+				if (String.Equals(target, pattern, StringComparison.OrdinalIgnoreCase))
 				{
 					return true;
 				}

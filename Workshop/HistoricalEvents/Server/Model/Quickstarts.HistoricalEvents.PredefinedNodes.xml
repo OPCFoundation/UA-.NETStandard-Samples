@@ -13,7 +13,6 @@
       <uax:Name>WellTestReportType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>A report containing the results of a well test.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>
@@ -29,7 +28,6 @@
         <uax:Name>NameWell</uax:Name>
       </uax:BrowseName>
       <uax:Description>
-        <uax:Locale></uax:Locale>
         <uax:Text>Human recognizable context for the well that contains the well test.</uax:Text>
       </uax:Description>
       <uax:ReferenceTypeId>
@@ -59,7 +57,6 @@
         <uax:Name>UidWell</uax:Name>
       </uax:BrowseName>
       <uax:Description>
-        <uax:Locale></uax:Locale>
         <uax:Text>Unique identifier for the well. This uniquely represents the well referenced by the (possibly non-unique) NameWell.</uax:Text>
       </uax:Description>
       <uax:ReferenceTypeId>
@@ -89,7 +86,6 @@
         <uax:Name>TestDate</uax:Name>
       </uax:BrowseName>
       <uax:Description>
-        <uax:Locale></uax:Locale>
         <uax:Text>The date-time of well test.</uax:Text>
       </uax:Description>
       <uax:ReferenceTypeId>
@@ -119,7 +115,6 @@
         <uax:Name>TestReason</uax:Name>
       </uax:BrowseName>
       <uax:Description>
-        <uax:Locale></uax:Locale>
         <uax:Text>The reason for the well test: initial, periodic, revision.</uax:Text>
       </uax:Description>
       <uax:ReferenceTypeId>
@@ -150,7 +145,6 @@
       <uax:Name>FluidLevelTestReportType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>A report for a fluid level test.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>
@@ -166,7 +160,6 @@
         <uax:Name>FluidLevel</uax:Name>
       </uax:BrowseName>
       <uax:Description>
-        <uax:Locale></uax:Locale>
         <uax:Text>The fluid level achieved in the well. The value is given as length units from the top of the well.</uax:Text>
       </uax:Description>
       <uax:ReferenceTypeId>
@@ -248,7 +241,6 @@
         <uax:Name>TestedBy</uax:Name>
       </uax:BrowseName>
       <uax:Description>
-        <uax:Locale></uax:Locale>
         <uax:Text>The business associate that conducted the test. This is generally a person.</uax:Text>
       </uax:Description>
       <uax:ReferenceTypeId>
@@ -279,7 +271,6 @@
       <uax:Name>InjectionTestReportType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>A report for a fluid level test.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>
@@ -295,7 +286,6 @@
         <uax:Name>TestDuration</uax:Name>
       </uax:BrowseName>
       <uax:Description>
-        <uax:Locale></uax:Locale>
         <uax:Text>The time length (with uom) of the well test.</uax:Text>
       </uax:Description>
       <uax:ReferenceTypeId>
@@ -377,7 +367,6 @@
         <uax:Name>InjectedFluid</uax:Name>
       </uax:BrowseName>
       <uax:Description>
-        <uax:Locale></uax:Locale>
         <uax:Text>The fluid that is being injected. .</uax:Text>
       </uax:Description>
       <uax:ReferenceTypeId>
@@ -408,7 +397,6 @@
       <uax:Name>WellType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>A physical well.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>

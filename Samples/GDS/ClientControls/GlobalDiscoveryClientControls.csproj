@@ -216,8 +216,11 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
-      <Version>1.4.367.42</Version>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
+      <Version>1.4.367.75</Version>
+    </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Client.Common">
+      <Version>1.4.367.75</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

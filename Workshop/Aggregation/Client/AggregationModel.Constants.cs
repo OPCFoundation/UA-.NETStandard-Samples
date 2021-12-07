@@ -1,8 +1,8 @@
 /* ========================================================================
- * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -121,6 +121,7 @@ namespace AggregationModel
     /// <summary>
     /// Declares all of the BrowseNames used in the Model Design.
     /// </summary>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class BrowseNames
     {
         /// <summary>
@@ -149,6 +150,7 @@ namespace AggregationModel
     /// <summary>
     /// Defines constants for all namespaces referenced by the model design.
     /// </summary>
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class Namespaces
     {
         /// <summary>
@@ -165,31 +167,6 @@ namespace AggregationModel
         /// The URI for the Aggregation namespace (.NET code namespace is 'AggregationModel').
         /// </summary>
         public const string Aggregation = "http://opcfoundation.org/AggregationModel";
-
-        /// <summary>
-        /// Returns a namespace table with all of the URIs defined.
-        /// </summary>
-        /// <remarks>
-        /// This table is was used to create any relative paths in the model design.
-        /// </remarks>
-        public static NamespaceTable GetNamespaceTable()
-        {
-            FieldInfo[] fields = typeof(Namespaces).GetFields(BindingFlags.Public | BindingFlags.Static);
-
-            NamespaceTable namespaceTable = new NamespaceTable();
-
-            foreach (FieldInfo field in fields)
-            {
-                string namespaceUri = (string)field.GetValue(typeof(Namespaces));
-
-                if (namespaceTable.GetIndex(namespaceUri) == -1)
-                {
-                    namespaceTable.Append(namespaceUri);
-                }
-            }
-
-            return namespaceTable;
-        }
     }
     #endregion
 }

@@ -30,15 +30,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Text;
 using System.IO;
-using System.Windows.Forms;
 using System.Reflection;
-using System.ServiceModel;
-using System.ServiceModel.Description;
-
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
@@ -59,7 +54,7 @@ namespace Opc.Ua.Sample.Controls
         private ClientForm m_masterForm;
         private List<ClientForm> m_forms;
         #endregion
-        
+
         public ClientForm()
         {
             InitializeComponent();
@@ -68,8 +63,8 @@ namespace Opc.Ua.Sample.Controls
 
         public ClientForm(
             ServiceMessageContext context,
-            ApplicationInstance application, 
-            ClientForm masterForm, 
+            ApplicationInstance application,
+            ClientForm masterForm,
             ApplicationConfiguration configuration)
         {
             InitializeComponent();
@@ -85,7 +80,7 @@ namespace Opc.Ua.Sample.Controls
                 m_forms = new List<ClientForm>();
             }
 
-            SessionsCTRL.Configuration  = m_configuration = configuration;
+            SessionsCTRL.Configuration = m_configuration = configuration;
             SessionsCTRL.MessageContext = context;
 
             // get list of cached endpoints.
@@ -155,7 +150,7 @@ namespace Opc.Ua.Sample.Controls
 
             Disconnect();
         }
-        
+
         /// <summary>
         /// Disconnects from a server.
         /// </summary>
@@ -184,7 +179,7 @@ namespace Opc.Ua.Sample.Controls
         {
             MessageBox.Show("A handy place to put test code.");
         }
-        
+
         void EndpointSelectorCTRL_ConnectEndpoint(object sender, ConnectEndpointEventArgs e)
         {
             try
@@ -256,10 +251,10 @@ namespace Opc.Ua.Sample.Controls
             if (sender != null && sender.Endpoint != null)
             {
                 ServerUrlLB.Text = Utils.Format(
-                    "{0} ({1}) {2}", 
-                    sender.Endpoint.EndpointUrl, 
-                    sender.Endpoint.SecurityMode, 
-                    (sender.EndpointConfiguration.UseBinaryEncoding)?"UABinary":"XML");
+                    "{0} ({1}) {2}",
+                    sender.Endpoint.EndpointUrl,
+                    sender.Endpoint.SecurityMode,
+                    (sender.EndpointConfiguration.UseBinaryEncoding) ? "UABinary" : "XML");
             }
             else
             {
@@ -267,16 +262,16 @@ namespace Opc.Ua.Sample.Controls
             }
 
             if (e != null && m_session != null)
-            {            
+            {
                 if (ServiceResult.IsGood(e.Status))
                 {
                     ServerStatusLB.Text = Utils.Format(
-                        "Server Status: {0} {1:yyyy-MM-dd HH:mm:ss} {2}/{3}", 
-                        e.CurrentState, 
-                        e.CurrentTime.ToLocalTime(), 
-                        m_session.OutstandingRequestCount, 
+                        "Server Status: {0} {1:yyyy-MM-dd HH:mm:ss} {2}/{3}",
+                        e.CurrentState,
+                        e.CurrentTime.ToLocalTime(),
+                        m_session.OutstandingRequestCount,
                         m_session.DefunctRequestCount);
-                    
+
                     ServerStatusLB.ForeColor = Color.Empty;
                     ServerStatusLB.Font = new Font(ServerStatusLB.Font, FontStyle.Regular);
                 }
@@ -284,7 +279,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     ServerStatusLB.Text = String.Format(
                         "{0} {1}/{2}", e.Status,
-                        m_session.OutstandingRequestCount, 
+                        m_session.OutstandingRequestCount,
                         m_session.DefunctRequestCount);
 
                     ServerStatusLB.ForeColor = Color.Red;
@@ -337,7 +332,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
-        {            
+        {
             try
             {
                 SessionsCTRL.Close();
@@ -378,7 +373,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true);
-                
+
                 if (endpoint != null)
                 {
                     this.EndpointSelectorCTRL.SelectedEndpoint = endpoint;
@@ -477,7 +472,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                System.Diagnostics.Process.Start( Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "index.htm");
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "index.htm");
             }
             catch (Exception ex)
             {

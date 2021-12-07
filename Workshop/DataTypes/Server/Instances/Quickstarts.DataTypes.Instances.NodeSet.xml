@@ -967,15 +967,6 @@ cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
             <Identifier>i=68</Identifier>
           </TargetId>
         </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=37</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=78</Identifier>
-          </TargetId>
-        </ReferenceNode>
       </References>
       <Value>
         <Value>
@@ -988,7 +979,6 @@ cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
                 <EnumValueType>
                   <Value>1</Value>
                   <DisplayName>
-                    <Locale></Locale>
                     <Text>Open</Text>
                   </DisplayName>
                 </EnumValueType>
@@ -1002,7 +992,6 @@ cmVkVHlwZT4NCg0KPC9vcGM6VHlwZURpY3Rpb25hcnk+</ByteString>
                 <EnumValueType>
                   <Value>2</Value>
                   <DisplayName>
-                    <Locale></Locale>
                     <Text>Covered</Text>
                   </DisplayName>
                 </EnumValueType>

@@ -13,7 +13,6 @@
       <uax:Name>AggregatedServerStatusType</uax:Name>
     </uax:BrowseName>
     <uax:Description>
-      <uax:Locale></uax:Locale>
       <uax:Text>Represents the status of an aggregated server.</uax:Text>
     </uax:Description>
     <uax:SuperTypeId>

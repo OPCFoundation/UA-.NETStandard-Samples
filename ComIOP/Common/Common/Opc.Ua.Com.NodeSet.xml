@@ -16,12 +16,15 @@
         <Name>ComServerStatusType</Name>
       </BrowseName>
       <DisplayName>
-        <Locale i:nil="true" />
+        <Locale></Locale>
         <Text>ComServerStatusType</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
       <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
@@ -43,27 +46,9 @@
         </ReferenceNode>
         <ReferenceNode>
           <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=10</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=11</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=11</Identifier>
           </TargetId>
@@ -79,27 +64,9 @@
         </ReferenceNode>
         <ReferenceNode>
           <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=12</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=13</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=13</Identifier>
           </TargetId>
@@ -115,15 +82,6 @@
         </ReferenceNode>
         <ReferenceNode>
           <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=14</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>false</IsInverse>
@@ -133,27 +91,9 @@
         </ReferenceNode>
         <ReferenceNode>
           <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=16</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=16</Identifier>
           </TargetId>
@@ -171,27 +111,21 @@
         <Name>ServerUrl</Name>
       </BrowseName>
       <DisplayName>
-        <Locale i:nil="true" />
+        <Locale></Locale>
         <Text>ServerUrl</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
       <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=9</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=9</Identifier>
           </TargetId>
@@ -229,6 +163,7 @@
       <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
@@ -240,27 +175,21 @@
         <Name>VendorInfo</Name>
       </BrowseName>
       <DisplayName>
-        <Locale i:nil="true" />
+        <Locale></Locale>
         <Text>VendorInfo</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
       <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=9</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=9</Identifier>
           </TargetId>
@@ -298,6 +227,7 @@
       <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
@@ -309,27 +239,21 @@
         <Name>SoftwareVersion</Name>
       </BrowseName>
       <DisplayName>
-        <Locale i:nil="true" />
+        <Locale></Locale>
         <Text>SoftwareVersion</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
       <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=9</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=9</Identifier>
           </TargetId>
@@ -367,6 +291,7 @@
       <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
@@ -378,27 +303,21 @@
         <Name>ServerState</Name>
       </BrowseName>
       <DisplayName>
-        <Locale i:nil="true" />
+        <Locale></Locale>
         <Text>ServerState</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
       <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=9</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=9</Identifier>
           </TargetId>
@@ -436,6 +355,7 @@
       <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
@@ -447,27 +367,21 @@
         <Name>CurrentTime</Name>
       </BrowseName>
       <DisplayName>
-        <Locale i:nil="true" />
+        <Locale></Locale>
         <Text>CurrentTime</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
       <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=9</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=9</Identifier>
           </TargetId>
@@ -505,6 +419,7 @@
       <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
@@ -516,27 +431,21 @@
         <Name>StartTime</Name>
       </BrowseName>
       <DisplayName>
-        <Locale i:nil="true" />
+        <Locale></Locale>
         <Text>StartTime</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
       <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=9</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=9</Identifier>
           </TargetId>
@@ -574,6 +483,7 @@
       <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
@@ -585,27 +495,21 @@
         <Name>LastUpdateTime</Name>
       </BrowseName>
       <DisplayName>
-        <Locale i:nil="true" />
+        <Locale></Locale>
         <Text>LastUpdateTime</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
       <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
             <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=9</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=50</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=9</Identifier>
           </TargetId>
@@ -643,6 +547,7 @@
       <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
     </Node>
   </Nodes>
 </NodeSet>
