@@ -1478,7 +1478,7 @@ namespace Opc.Ua.Com.Client
                     }
                 }
 
-                lock (Server.DiagnosticsLock)
+                lock (Server.DiagnosticsNodeManager.Lock)
                 {
                     HistoryServerCapabilitiesState capabilities = Server.DiagnosticsNodeManager.GetDefaultHistoryCapabilities();
 
