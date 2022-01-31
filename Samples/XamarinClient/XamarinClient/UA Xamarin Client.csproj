@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.368.21-preview" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.368.23-preview" />
     <PackageReference Include="Xamarin.Forms" Version="2.5.0.122203" />
   </ItemGroup>
 

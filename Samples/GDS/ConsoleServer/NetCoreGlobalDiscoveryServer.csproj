@@ -13,8 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common" Version="1.4.368.21-preview" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.368.21-preview" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common" Version="1.4.368.23-preview" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.368.23-preview" />
   </ItemGroup>
 
 </Project>
