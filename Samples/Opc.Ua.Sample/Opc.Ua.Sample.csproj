@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
     <AssemblyName>Opc.Ua.Sample</AssemblyName>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>6</LangVersion>
     <PackageId>Opc.Ua.Sample</PackageId>
     <RootNamespace>Opc.Ua.Sample</RootNamespace>
     <Description>OPC UA Sample Class Library</Description>
@@ -22,8 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.4.368.23-preview" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.368.23-preview" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.4.367.75" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.367.75" />
   </ItemGroup>
 
 </Project>
