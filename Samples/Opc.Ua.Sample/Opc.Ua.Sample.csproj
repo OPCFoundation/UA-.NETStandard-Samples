@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
     <AssemblyName>Opc.Ua.Sample</AssemblyName>
-    <LangVersion>6</LangVersion>
+    <LangVersion>7.3</LangVersion>
     <PackageId>Opc.Ua.Sample</PackageId>
     <RootNamespace>Opc.Ua.Sample</RootNamespace>
     <Description>OPC UA Sample Class Library</Description>

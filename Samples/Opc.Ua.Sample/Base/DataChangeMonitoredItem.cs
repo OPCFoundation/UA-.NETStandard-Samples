@@ -37,7 +37,7 @@ namespace Opc.Ua.Sample
     /// <summary>
     /// Provides a basic monitored item implementation which does not support queuing.
     /// </summary>
-    public class DataChangeMonitoredItem : IDataChangeMonitoredItem
+    public class DataChangeMonitoredItem : IDataChangeMonitoredItem2
     {
         #region Constructors
         /// <summary>
@@ -520,10 +520,18 @@ namespace Opc.Ua.Sample
         /// </summary>
         public void QueueValue(DataValue value, ServiceResult error)
         {
+            QueueValue(value, error, false);
+        }
+
+        /// <summary>
+        /// Queues a new data change.
+        /// </summary>
+        public void QueueValue(DataValue value, ServiceResult error, bool ignoreFilters)
+        {
             lock (m_lock)
             {
                 // check if value has changed.
-                if (!m_alwaysReportUpdates)
+                if (!m_alwaysReportUpdates && !ignoreFilters)
                 {
                     if (!Opc.Ua.Server.MonitoredItem.ValueChanged(value, error, m_lastValue, m_lastError, m_filter, m_range))
                     {

@@ -107,7 +107,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the configuration.
         /// </summary>
-        public void LoadConfiguration(SystemContext context)
+        public void LoadConfiguration(ISystemContext context)
         {
             DataFileReader reader = new DataFileReader();
 
@@ -132,7 +132,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the data.
         /// </summary>
-        public void ReloadFromSource(SystemContext context)
+        public void ReloadFromSource(ISystemContext context)
         {
             LoadConfiguration(context);
 
@@ -172,7 +172,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Creates a new sample.
         /// </summary>
-        public List<DataValue> NewSamples(SystemContext context)
+        public List<DataValue> NewSamples(ISystemContext context)
         {
             List<DataValue> newSamples = new List<DataValue>();
 

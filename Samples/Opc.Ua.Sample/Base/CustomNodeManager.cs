@@ -2540,6 +2540,36 @@ namespace Opc.Ua.Sample
         }
 
         /// <summary>
+        /// Reads the initial value for a monitored item.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="handle">The item handle.</param>
+        /// <param name="monitoredItem">The monitored item.</param>
+        protected virtual ServiceResult ReadInitialValue(
+            ISystemContext context,
+            MonitoredNode monitoredNode,
+            IDataChangeMonitoredItem2 monitoredItem)
+        {
+            DataValue initialValue = new DataValue {
+                Value = null,
+                ServerTimestamp = DateTime.UtcNow,
+                SourceTimestamp = DateTime.MinValue,
+                StatusCode = StatusCodes.BadWaitingForInitialData
+            };
+
+            ServiceResult error = monitoredNode.Node.ReadAttribute(
+                context,
+                monitoredItem.AttributeId,
+                monitoredItem.IndexRange,
+                monitoredItem.DataEncoding,
+                initialValue);
+
+            monitoredItem.QueueValue(initialValue, error, true);
+
+            return error;
+        }
+
+        /// <summary>
         /// Calculates the sampling interval.
         /// </summary>
         private double CalculateSamplingInterval(BaseVariableState variable, double samplingInterval)
@@ -2878,6 +2908,64 @@ namespace Opc.Ua.Sample
             DataChangeMonitoredItem monitoredItem)
         {
             // does nothing.
+        }
+
+        /// <summary>
+        /// Transfers a set of monitored items.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="sendInitialValues">Whether the subscription should send initial values after transfer.</param>
+        /// <param name="monitoredItems">The set of monitoring items to update.</param>
+        /// <param name="processedItems">The list of bool with items that were already processed.</param>
+        /// <param name="errors">Any errors.</param>
+        public virtual void TransferMonitoredItems(
+            OperationContext context,
+            bool sendInitialValues,
+            IList<IMonitoredItem> monitoredItems,
+            IList<bool> processedItems,
+            IList<ServiceResult> errors)
+        {
+            ServerSystemContext systemContext = m_systemContext.Copy(context);
+            lock (Lock)
+            {
+                for (int ii = 0; ii < monitoredItems.Count; ii++)
+                {
+                    // skip items that have already been processed.
+                    if (processedItems[ii] || monitoredItems[ii] == null)
+                    {
+                        continue;
+                    }
+
+                    // check handle.
+                    MonitoredNode monitoredNode = monitoredItems[ii].ManagerHandle as MonitoredNode;
+
+                    if (monitoredNode == null)
+                    {
+                        continue;
+                    }
+
+                    if (IsHandleInNamespace(monitoredNode.Node) == null)
+                    {
+                        continue;
+                    }
+
+                    // owned by this node manager.
+                    processedItems[ii] = true;
+                    var monitoredItem = monitoredItems[ii];
+
+                    if (sendInitialValues && !monitoredItem.IsReadyToPublish)
+                    {
+                        if (monitoredItem is IDataChangeMonitoredItem2 dataChangeMonitoredItem)
+                        {
+                            errors[ii] = ReadInitialValue(systemContext, monitoredNode, dataChangeMonitoredItem);
+                        }
+                    }
+                    else
+                    {
+                        errors[ii] = StatusCodes.Good;
+                    }
+                }
+            }
         }
 
         /// <summary>

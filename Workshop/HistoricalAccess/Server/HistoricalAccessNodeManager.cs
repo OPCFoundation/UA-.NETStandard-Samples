@@ -376,27 +376,27 @@ namespace Quickstarts.HistoricalAccessServer
         /// <param name="context">The context.</param>
         /// <param name="handle">The item handle.</param>
         /// <param name="monitoredItem">The monitored item.</param>
-        protected override void ReadInitialValue(
-            ServerSystemContext context,
+        protected override ServiceResult ReadInitialValue(
+            ISystemContext context,
             NodeHandle handle,
-            MonitoredItem monitoredItem)
+            IDataChangeMonitoredItem2 dataChangeMonitoredItem)
         {
             ArchiveItemState item = handle.Node as ArchiveItemState;
 
-            if (item == null || monitoredItem.AttributeId != Attributes.Value)
+            if (item == null || dataChangeMonitoredItem.AttributeId != Attributes.Value)
             {
-                base.ReadInitialValue(context, handle, monitoredItem);
-                return;
+                return base.ReadInitialValue(context, handle, dataChangeMonitoredItem);
             }
 
+            MonitoredItem monitoredItem = dataChangeMonitoredItem as MonitoredItem;
             AggregateFilter filter = monitoredItem.Filter as AggregateFilter;
 
             if (filter == null || filter.StartTime >= DateTime.UtcNow.AddMilliseconds(-filter.ProcessingInterval))
             {
-                base.ReadInitialValue(context, handle, monitoredItem);
-                return;
+                return base.ReadInitialValue(context, handle, dataChangeMonitoredItem);
             }
 
+            ServiceResult error = StatusCodes.Good;
             ReadRawModifiedDetails details = new ReadRawModifiedDetails();
 
             details.StartTime = filter.StartTime;
@@ -431,9 +431,10 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                ServiceResult error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error fetching initial values.");
+                error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error fetching initial values.");
                 monitoredItem.QueueValue(null, error);
             }
+            return error;
         }
 
         /// <summary>
@@ -1150,7 +1151,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the archive item state from the underlying source.
         /// </summary>
-        private ArchiveItemState Reload(ServerSystemContext context, NodeHandle handle)
+        private ArchiveItemState Reload(ISystemContext context, NodeHandle handle)
         {
             ArchiveItemState item = handle.Node as ArchiveItemState;
 
@@ -1176,7 +1177,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// Creates a new history request.
         /// </summary>
         private HistoryReadRequest CreateHistoryReadRequest(
-            ServerSystemContext context,
+            ISystemContext context,
             ReadRawModifiedDetails details,
             NodeHandle handle,
             HistoryReadValueId nodeToRead)
@@ -1608,7 +1609,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// Creates a new history request.
         /// </summary>
         private DataValue RowToDataValue(
-            ServerSystemContext context,
+            ISystemContext context,
             HistoryReadValueId nodeToRead,
             DataRowView row,
             bool applyIndexRangeOrEncoding)
