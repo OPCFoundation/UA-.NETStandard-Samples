@@ -102,11 +102,11 @@ namespace Opc.Ua.Gds.Client.Controls
                     X509CertificateCollection certificates = await store.Enumerate();
                     foreach (X509Certificate2 certificate in certificates)
                     {
-                        List<X509CRL> crls = new List<X509CRL>();
+                        var crls = new X509CRLCollection();
 
                         if (store.SupportsCRLs)
                         {
-                            foreach (X509CRL crl in store.EnumerateCRLs(certificate))
+                            foreach (X509CRL crl in await store.EnumerateCRLs(certificate))
                             {
                                 crls.Add(crl);
                             }
@@ -129,11 +129,11 @@ namespace Opc.Ua.Gds.Client.Controls
                         X509Certificate2Collection certificates = await store.Enumerate();
                         foreach (X509Certificate2 certificate in certificates)
                         {
-                            List<X509CRL> crls = new List<X509CRL>();
+                            var crls = new X509CRLCollection();
 
                             if (store.SupportsCRLs)
                             {
-                                foreach (X509CRL crl in store.EnumerateCRLs(certificate))
+                                foreach (X509CRL crl in await store.EnumerateCRLs(certificate))
                                 {
                                     crls.Add(crl);
                                 }
