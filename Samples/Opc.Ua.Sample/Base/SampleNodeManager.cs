@@ -2936,6 +2936,7 @@ namespace Opc.Ua.Sample
             IList<ServiceResult> errors)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
+            IList<IMonitoredItems> transferredItems = new List<IMonitoredItems>();
             lock (Lock)
             {
                 for (int ii = 0; ii < monitoredItems.Count; ii++)
@@ -2958,6 +2959,7 @@ namespace Opc.Ua.Sample
                     // owned by this node manager.
                     processedItems[ii] = true;
                     var monitoredItem = monitoredItems[ii];
+                    trasferredItems.Add(monitoredItem);
 
                     if (sendInitialValues && !monitoredItem.IsReadyToPublish)
                     {
@@ -2972,6 +2974,22 @@ namespace Opc.Ua.Sample
                     }
                 }
             }
+
+            // do any post processing.
+            OnMonitoredItemsTransferred(systemContext, transferredItems);
+        }
+
+        /// <summary>
+        /// Called after transfer of MonitoredItems.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="monitoredItems">The transferred monitored items.</param>
+        protected virtual void OnMonitoredItemsTransferred(
+            ServerSystemContext context,
+            IList<IMonitoredItem> monitoredItems
+            )
+        {
+            // overridden by the sub-class.
         }
 
         /// <summary>
