@@ -2936,7 +2936,7 @@ namespace Opc.Ua.Sample
             IList<ServiceResult> errors)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
-            IList<IMonitoredItems> transferredItems = new List<IMonitoredItems>();
+            IList<IMonitoredItem> transferredItems = new List<IMonitoredItem>();
             lock (Lock)
             {
                 for (int ii = 0; ii < monitoredItems.Count; ii++)
@@ -2959,7 +2959,7 @@ namespace Opc.Ua.Sample
                     // owned by this node manager.
                     processedItems[ii] = true;
                     var monitoredItem = monitoredItems[ii];
-                    trasferredItems.Add(monitoredItem);
+                    transferredItems.Add(monitoredItem);
 
                     if (sendInitialValues && !monitoredItem.IsReadyToPublish)
                     {
