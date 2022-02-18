@@ -1021,7 +1021,7 @@
       <Version>1.4.368.33</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.4.368.27-preview</Version>
+      <Version>1.4.368.33</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
