@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.368.33" />
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.122203" />
+    <PackageReference Include="Xamarin.Forms" Version="5.0.0.2337+884-sha.8f765bd87-azdo.5638139" />
   </ItemGroup>
 
   <ItemGroup>
