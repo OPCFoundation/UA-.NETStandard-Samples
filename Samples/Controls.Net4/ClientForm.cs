@@ -447,7 +447,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (server != null)
                 {
-                    server.RegisterWithDiscoveryServer().Wait();
+                    server.RegisterWithDiscoveryServer();
                 }
             }
             catch (Exception exception)
