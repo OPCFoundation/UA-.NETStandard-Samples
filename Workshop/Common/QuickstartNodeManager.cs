@@ -3306,7 +3306,6 @@ namespace Quickstarts
                 handle,
                 subscriptionId,
                 monitoredItemId,
-                context.OperationContext.Session,
                 itemToCreate.ItemToMonitor,
                 diagnosticsMasks,
                 timestampsToReturn,
