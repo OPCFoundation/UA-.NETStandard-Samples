@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -54,8 +54,7 @@ namespace Opc.Ua.Gds.Client
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
             {
-                m_configuration = new GlobalDiscoveryClientConfiguration()
-                {
+                m_configuration = new GlobalDiscoveryClientConfiguration() {
                     GlobalDiscoveryServerUrl = "opc.tcp://localhost:58810/GlobalDiscoveryServer",
                     ExternalEditor = "notepad.exe"
                 };
@@ -63,11 +62,11 @@ namespace Opc.Ua.Gds.Client
 
             m_filters = new QueryServersFilter();
             m_identity = new UserIdentity();
-            m_gds = new GlobalDiscoveryServerClient(m_application, m_configuration.GlobalDiscoveryServerUrl);
+            m_gds = new GlobalDiscoveryServerClient(m_application.ApplicationConfiguration, m_configuration.GlobalDiscoveryServerUrl);
             m_gds.KeepAlive += GdsServer_KeepAlive;
             m_gds.ServerStatusChanged += GdsServer_StatusNotification;
             m_lds = new LocalDiscoveryServerClient(m_application.ApplicationConfiguration);
-            m_server = new ServerPushConfigurationClient(m_application);
+            m_server = new ServerPushConfigurationClient(m_application.ApplicationConfiguration);
             m_server.AdminCredentialsRequired += Server_AdminCredentialsRequired;
             m_server.KeepAlive += Server_KeepAlive;
             m_server.ServerStatusChanged += Server_StatusNotification;
@@ -138,7 +137,7 @@ namespace Opc.Ua.Gds.Client
             CertificatePanel.Visible = false;
             TrustListPanel.Visible = false;
             DiscoveryPanel.Visible = false;
-            
+
             foreach (var control in LeftPanel.Controls)
             {
                 if (control is Button button)
@@ -543,7 +542,7 @@ namespace Opc.Ua.Gds.Client
 
         private void RegistrationPanel_ServerRequired(object sender, SelectServerEventArgs e)
         {
-            try 
+            try
             {
                 SelectServerButton_Click(this, null);
             }
@@ -557,7 +556,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                var app =  m_registeredApplication = e.Application;
+                var app = m_registeredApplication = e.Application;
 
                 if (app == null || app.RegistrationType == RegistrationType.ClientPull)
                 {

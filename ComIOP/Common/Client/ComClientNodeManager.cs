@@ -122,8 +122,14 @@ namespace Opc.Ua.Com.Client
 
                 if (availableLocales != null)
                 {
-                    lock (Server.DiagnosticsNodeManager.Lock)
+                    lock (Server.DiagnosticsLock)
                     {
+                        // check if the server is running.
+                        if (!Server.IsRunning)
+                        {
+                            return;
+                        }
+
                         // get the LocaleIdArray property.
                         BaseVariableState localeArray = Server.DiagnosticsNodeManager.Find(Opc.Ua.VariableIds.Server_ServerCapabilities_LocaleIdArray) as BaseVariableState;
 

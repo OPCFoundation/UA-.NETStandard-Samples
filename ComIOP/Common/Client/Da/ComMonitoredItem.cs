@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -70,7 +70,6 @@ namespace Opc.Ua.Com.Client
                     mangerHandle,
                     subscriptionId,
                     id,
-                    session,
                     itemToMonitor,
                     diagnosticsMasks,
                     timestampsToReturn,

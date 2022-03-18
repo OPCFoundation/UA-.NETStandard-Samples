@@ -70,7 +70,6 @@ namespace MemoryBuffer
                 mangerHandle,
                 subscriptionId,
                 id,
-                session,
                 itemToMonitor,
                 diagnosticsMasks,
                 timestampsToReturn,

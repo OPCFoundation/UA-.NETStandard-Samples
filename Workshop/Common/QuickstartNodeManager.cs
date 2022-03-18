@@ -3306,7 +3306,6 @@ namespace Quickstarts
                 handle,
                 subscriptionId,
                 monitoredItemId,
-                context.OperationContext.Session,
                 itemToCreate.ItemToMonitor,
                 diagnosticsMasks,
                 timestampsToReturn,
@@ -3342,10 +3341,10 @@ namespace Quickstarts
         /// <param name="context">The context.</param>
         /// <param name="handle">The item handle.</param>
         /// <param name="monitoredItem">The monitored item.</param>
-        protected virtual void ReadInitialValue(
+        protected virtual ServiceResult ReadInitialValue(
             ServerSystemContext context,
             NodeHandle handle,
-            MonitoredItem monitoredItem)
+            IDataChangeMonitoredItem2 monitoredItem)
         {
             DataValue initialValue = new DataValue();
 
@@ -3361,7 +3360,9 @@ namespace Quickstarts
                 monitoredItem.DataEncoding,
                 initialValue);
 
-            monitoredItem.QueueValue(initialValue, error);
+            monitoredItem.QueueValue(initialValue, error, true);
+
+            return error;
         }
 
         /// <summary>
@@ -3832,6 +3833,78 @@ namespace Quickstarts
             ServerSystemContext context,
             NodeHandle handle,
             MonitoredItem monitoredItem)
+        {
+            // overridden by the sub-class.
+        }
+        #endregion
+
+        #region TransferMonitoredItems Support Functions
+        /// <summary>
+        /// Transfers a set of monitored items.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="sendInitialValues">Whether the subscription should send initial values after transfer.</param>
+        /// <param name="monitoredItems">The set of monitoring items to update.</param>
+        /// <param name="processedItems">The list of bool with items that were already processed.</param>
+        /// <param name="errors">Any errors.</param>
+        public virtual void TransferMonitoredItems(
+            OperationContext context,
+            bool sendInitialValues,
+            IList<IMonitoredItem> monitoredItems,
+            IList<bool> processedItems,
+            IList<ServiceResult> errors)
+        {
+            ServerSystemContext systemContext = m_systemContext.Copy(context);
+            List<IMonitoredItem> transferredItems = new List<IMonitoredItem>();
+            lock (Lock)
+            {
+                for (int ii = 0; ii < monitoredItems.Count; ii++)
+                {
+                    // skip items that have already been processed.
+                    if (processedItems[ii] || monitoredItems[ii] == null)
+                    {
+                        continue;
+                    }
+
+                    // check handle.
+                    NodeHandle handle = IsHandleInNamespace(monitoredItems[ii].ManagerHandle);
+
+                    if (handle == null)
+                    {
+                        continue;
+                    }
+
+                    // owned by this node manager.
+                    processedItems[ii] = true;
+                    var monitoredItem = monitoredItems[ii];
+                    transferredItems.Add(monitoredItem);
+                    if (sendInitialValues && !monitoredItem.IsReadyToPublish)
+                    {
+                        if (monitoredItem is IDataChangeMonitoredItem2 dataChangeMonitoredItem)
+                        {
+                            errors[ii] = ReadInitialValue(systemContext, handle, dataChangeMonitoredItem);
+                        }
+                    }
+                    else
+                    {
+                        errors[ii] = StatusCodes.Good;
+                    }
+                }
+            }
+
+            // do any post processing.
+            OnMonitoredItemsTransferred(systemContext, transferredItems);
+        }
+
+        /// <summary>
+        /// Called after transfer of MonitoredItems.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="monitoredItems">The transferred monitored items.</param>
+        protected virtual void OnMonitoredItemsTransferred(
+            ServerSystemContext context,
+            IList<IMonitoredItem> monitoredItems
+            )
         {
             // overridden by the sub-class.
         }
