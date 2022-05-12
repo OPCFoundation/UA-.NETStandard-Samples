@@ -164,7 +164,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                NodeId trustListId = m_gds.GetTrustList(m_application.ApplicationId, null);
+                NodeId trustListId = m_gds.GetTrustList(m_application.ApplicationId, NodeId.Null);
 
                 if (trustListId == null)
                 {
