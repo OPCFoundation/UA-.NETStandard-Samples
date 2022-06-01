@@ -184,7 +184,7 @@ namespace Opc.Ua.Gds.Client
             try
             {
                 byte[] certificateRequest = m_server.CreateSigningRequest(
-                    null,
+                    NodeId.Null,
                     m_server.ApplicationCertificateType,
                     null,
                     false,
@@ -192,8 +192,8 @@ namespace Opc.Ua.Gds.Client
                 var domainNames = m_application.GetDomainNames(m_certificate);
                 NodeId requestId = m_gds.StartSigningRequest(
                     m_application.ApplicationId,
-                    null,
-                    null,
+                    NodeId.Null,
+                    NodeId.Null,
                     certificateRequest);
 
                 m_application.CertificateRequestId = requestId.ToString();
@@ -242,8 +242,8 @@ namespace Opc.Ua.Gds.Client
                     // no private key
                     requestId = m_gds.StartNewKeyPairRequest(
                         m_application.ApplicationId,
-                        null,
-                        null,
+                        NodeId.Null,
+                        NodeId.Null,
                         m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName()),
                         domainNames,
                         "PFX",
@@ -270,7 +270,7 @@ namespace Opc.Ua.Gds.Client
                         }
                     }
                     byte[] certificateRequest = CertificateFactory.CreateSigningRequest(csrCertificate, domainNames);
-                    requestId = m_gds.StartSigningRequest(m_application.ApplicationId, null, null, certificateRequest);
+                    requestId = m_gds.StartSigningRequest(m_application.ApplicationId, NodeId.Null, NodeId.Null, certificateRequest);
                 }
 
                 m_application.CertificateRequestId = requestId.ToString();
@@ -448,8 +448,9 @@ namespace Opc.Ua.Gds.Client
                         var x509 = new X509Certificate2(privateKeyPFX, m_certificatePassword, X509KeyStorageFlags.Exportable);
                         privateKeyPFX = x509.Export(X509ContentType.Pfx);
                     }
+
                     bool applyChanges = m_server.UpdateCertificate(
-                        null,
+                        NodeId.Null,
                         m_server.ApplicationCertificateType,
                         certificate,
                         (privateKeyPFX != null) ? "PFX" : null,
