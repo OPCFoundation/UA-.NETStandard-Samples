@@ -183,12 +183,13 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
+                byte[] unusedNonce = new byte[0];
                 byte[] certificateRequest = m_server.CreateSigningRequest(
                     NodeId.Null,
                     m_server.ApplicationCertificateType,
-                    null,
+                    string.Empty,
                     false,
-                    null);
+                    unusedNonce);
                 var domainNames = m_application.GetDomainNames(m_certificate);
                 NodeId requestId = m_gds.StartSigningRequest(
                     m_application.ApplicationId,
@@ -449,12 +450,13 @@ namespace Opc.Ua.Gds.Client
                         privateKeyPFX = x509.Export(X509ContentType.Pfx);
                     }
 
+                    byte[] unusedPrivateKey = new byte[0];
                     bool applyChanges = m_server.UpdateCertificate(
                         NodeId.Null,
                         m_server.ApplicationCertificateType,
                         certificate,
-                        (privateKeyPFX != null) ? "PFX" : null,
-                        privateKeyPFX,
+                        (privateKeyPFX != null) ? "pfx" : String.Empty,
+                        (privateKeyPFX != null) ? privateKeyPFX : unusedPrivateKey,
                         issuerCertificates);
                     if (applyChanges)
                     {
