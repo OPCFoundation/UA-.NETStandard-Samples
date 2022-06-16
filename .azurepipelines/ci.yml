@@ -40,7 +40,7 @@ jobs:
       arguments: '--configuration Release ${{ parameters.buildoption }}'
       includeNuGetOrg: true
       feedsToUse: config
-      configPath: ./Nuget.Config
+      configPath: $(Build.SourcesDirectory)/Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Release Build
     inputs:
@@ -55,7 +55,7 @@ jobs:
       arguments: '--configuration Debug ${{ parameters.buildoption }}'
       includeNuGetOrg: true
       feedsToUse: config
-      configPath: ./Nuget.Config
+      configPath: $(Build.SourcesDirectory)/Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Debug Build
     inputs:
