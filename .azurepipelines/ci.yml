@@ -47,6 +47,9 @@ jobs:
       command: build
       projects: '**/NetCore*.csproj'
       arguments: '--configuration Release ${{ parameters.buildoption }}'
+      includeNuGetOrg: true
+      feedsToUse: config
+      nugetConfigPath: $(Build.SourcesDirectory)/Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Debug Restore
     inputs:
@@ -62,3 +65,6 @@ jobs:
       command: build
       projects: '**/NetCore*.csproj'
       arguments: '--configuration Debug ${{ parameters.buildoption }}'
+      includeNuGetOrg: true
+      feedsToUse: config
+      nugetConfigPath: $(Build.SourcesDirectory)/Nuget.Config
