@@ -38,6 +38,9 @@ jobs:
       command: restore
       projects: '**/NetCore*.csproj'
       arguments: '--configuration Release ${{ parameters.buildoption }}'
+      includeNuGetOrg: true
+      feedsToUse: config
+      configPath: ./Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Release Build
     inputs:
@@ -50,6 +53,9 @@ jobs:
       command: restore
       projects: '**/NetCore*.csproj'
       arguments: '--configuration Debug ${{ parameters.buildoption }}'
+      includeNuGetOrg: true
+      feedsToUse: config
+      configPath: ./Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Debug Build
     inputs:
