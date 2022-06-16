@@ -17,6 +17,9 @@ jobs:
       command: restore
       restoreSolution: '**/*.sln'
       configuration: 'Release'
+      includeNuGetOrg: true
+      feedsToUse: config
+      configPath: ./Nuget.Config
   - task: MSBuild@1
     displayName: MS Build Release
     inputs:
@@ -30,6 +33,9 @@ jobs:
       command: restore
       restoreSolution: '**/*.sln'
       configuration: 'Debug'
+      includeNuGetOrg: true
+      feedsToUse: config
+      configPath: ./Nuget.Config
   - task: MSBuild@1
     displayName: MS Build Debug
     inputs:
