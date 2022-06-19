@@ -198,7 +198,7 @@ namespace Opc.Ua.Client.Controls
 
                     foreach (string item in StorePathCB.Items)
                     {
-                        if (string.Equals(storePath, item, StringComparison.OrdinalIgnoreCase))
+                        if (String.Equals(storePath, item, StringComparison.OrdinalIgnoreCase))
                         {
                             found = true;
                             break;

@@ -233,4 +233,24 @@
     <opc:Field Name="VariantDataType" TypeName="ua:Variant" LengthField="NoOfVariantDataType" />
   </opc:StructuredType>
 
+  <opc:StructuredType Name="Vector" BaseType="ua:ExtensionObject">
+    <opc:Field Name="X" TypeName="opc:Double" />
+    <opc:Field Name="Y" TypeName="opc:Double" />
+    <opc:Field Name="Z" TypeName="opc:Double" />
+  </opc:StructuredType>
+
+  <opc:StructuredType Name="WorkOrderStatusType" BaseType="ua:ExtensionObject">
+    <opc:Field Name="Actor" TypeName="opc:String" />
+    <opc:Field Name="Timestamp" TypeName="opc:DateTime" />
+    <opc:Field Name="Comment" TypeName="ua:LocalizedText" />
+  </opc:StructuredType>
+
+  <opc:StructuredType Name="WorkOrderType" BaseType="ua:ExtensionObject">
+    <opc:Field Name="ID" TypeName="opc:Guid" />
+    <opc:Field Name="AssetID" TypeName="opc:String" />
+    <opc:Field Name="StartTime" TypeName="opc:DateTime" />
+    <opc:Field Name="NoOfStatusComments" TypeName="opc:Int32" />
+    <opc:Field Name="StatusComments" TypeName="tns:WorkOrderStatusType" LengthField="NoOfStatusComments" />
+  </opc:StructuredType>
+
 </opc:TypeDictionary>

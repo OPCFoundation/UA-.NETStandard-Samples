@@ -213,4 +213,53 @@
   </xs:complexType>
   <xs:element name="ListOfUserArrayValueDataType" type="tns:ListOfUserArrayValueDataType" nillable="true"></xs:element>
 
+  <xs:complexType name="Vector">
+    <xs:sequence>
+      <xs:element name="X" type="xs:double" minOccurs="0" />
+      <xs:element name="Y" type="xs:double" minOccurs="0" />
+      <xs:element name="Z" type="xs:double" minOccurs="0" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Vector" type="tns:Vector" />
+
+  <xs:complexType name="ListOfVector">
+    <xs:sequence>
+      <xs:element name="Vector" type="tns:Vector" minOccurs="0" maxOccurs="unbounded" nillable="true" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ListOfVector" type="tns:ListOfVector" nillable="true"></xs:element>
+
+  <xs:complexType name="WorkOrderStatusType">
+    <xs:sequence>
+      <xs:element name="Actor" type="xs:string" minOccurs="0" nillable="true" />
+      <xs:element name="Timestamp" type="xs:dateTime" minOccurs="0" />
+      <xs:element name="Comment" type="ua:LocalizedText" minOccurs="0" nillable="true" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="WorkOrderStatusType" type="tns:WorkOrderStatusType" />
+
+  <xs:complexType name="ListOfWorkOrderStatusType">
+    <xs:sequence>
+      <xs:element name="WorkOrderStatusType" type="tns:WorkOrderStatusType" minOccurs="0" maxOccurs="unbounded" nillable="true" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ListOfWorkOrderStatusType" type="tns:ListOfWorkOrderStatusType" nillable="true"></xs:element>
+
+  <xs:complexType name="WorkOrderType">
+    <xs:sequence>
+      <xs:element name="ID" type="ua:Guid" minOccurs="0" />
+      <xs:element name="AssetID" type="xs:string" minOccurs="0" nillable="true" />
+      <xs:element name="StartTime" type="xs:dateTime" minOccurs="0" />
+      <xs:element name="StatusComments" type="tns:ListOfWorkOrderStatusType" minOccurs="0" nillable="true" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="WorkOrderType" type="tns:WorkOrderType" />
+
+  <xs:complexType name="ListOfWorkOrderType">
+    <xs:sequence>
+      <xs:element name="WorkOrderType" type="tns:WorkOrderType" minOccurs="0" maxOccurs="unbounded" nillable="true" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ListOfWorkOrderType" type="tns:ListOfWorkOrderType" nillable="true"></xs:element>
+
 </xs:schema>

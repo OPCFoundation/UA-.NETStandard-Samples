@@ -31,11 +31,37 @@ using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Sample;
 using System.Reflection;
+using Opc.Ua.Server;
 
 namespace Boiler
 {
     /// <summary>
-    /// A node manager the diagnostic information exposed by the server.
+    /// The factory class to create the boiler node manager.
+    /// </summary>
+    public class BoilerNodeManagerFactory : INodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public INodeManager Create(IServerInternal server, ApplicationConfiguration configuration)
+        {
+            return new BoilerNodeManager(server, configuration, NamespacesUris.ToArray());
+        }
+
+        /// <inheritdoc/>
+        public StringCollection NamespacesUris
+        {
+            get
+            {
+                var nameSpaces = new StringCollection {
+                    Namespaces.Boiler,
+                    Namespaces.Boiler + "Instance"
+                };
+                return nameSpaces;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A node manager for the boiler exposed by the server.
     /// </summary>
     public class BoilerNodeManager : SampleNodeManager
     {
@@ -44,18 +70,18 @@ namespace Boiler
         /// Initializes the node manager.
         /// </summary>
         public BoilerNodeManager(
-            Opc.Ua.Server.IServerInternal server, 
-            ApplicationConfiguration configuration)
+            IServerInternal server,
+            ApplicationConfiguration configuration,
+            string[] namespaceUris)
         :
             base(server)
         {
-            List<string> namespaceUris = new List<string>();
-            namespaceUris.Add(Namespaces.Boiler);
-            namespaceUris.Add(Namespaces.Boiler +"/Instance");
             NamespaceUris = namespaceUris;
 
             m_typeNamespaceIndex = Server.NamespaceUris.GetIndexOrAppend(namespaceUris[0]);
             m_namespaceIndex = Server.NamespaceUris.GetIndexOrAppend(namespaceUris[1]);
+
+            AddEncodeableNodeManagerTypes(typeof(BoilerNodeManager).Assembly, typeof(BoilerNodeManager).Namespace);
 
             m_lastUsedId = 0;
             m_boilers = new List<BoilerState>();
@@ -107,9 +133,9 @@ namespace Boiler
 
             boiler.Create(
                 context,
-                null, 
+                null,
                 new QualifiedName(name, m_namespaceIndex),
-                null, 
+                null,
                 true);
 
             NodeState folder = (NodeState)FindPredefinedNode(
@@ -144,9 +170,9 @@ namespace Boiler
         /// Updates the display name for an instance with the unit label name.
         /// </summary>
         /// <param name="instance">The instance to update.</param>
-        /// <param name="label">The label to apply.</param>
+        /// <param name="unitLabel">The label to apply.</param>
         /// <remarks>This method assumes the DisplayName has the form NameX001 where X0 is the unit label placeholder.</remarks>
-        private void UpdateDisplayName(BaseInstanceState instance, string unitLabel)
+        private static void UpdateDisplayName(BaseInstanceState instance, string unitLabel)
         {
             LocalizedText displayName = instance.DisplayName;
 

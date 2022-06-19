@@ -50,7 +50,6 @@ namespace MemoryBuffer
             uint                offset,
             uint                subscriptionId,
             uint                id,
-            Session             session,
             ReadValueId         itemToMonitor,
             DiagnosticsMasks    diagnosticsMasks,
             TimestampsToReturn  timestampsToReturn,

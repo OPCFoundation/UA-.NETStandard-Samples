@@ -1014,6 +1014,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
+      <Version>1.4.369.28</Version>
+    </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>1.4.369.28</Version>
     </PackageReference>

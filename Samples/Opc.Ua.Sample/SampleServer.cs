@@ -108,9 +108,12 @@ namespace Opc.Ua.Sample
             List<INodeManager> nodeManagers = new List<INodeManager>();
 
             // create the custom node managers.
-            nodeManagers.Add(new global::TestData.TestDataNodeManager(server, configuration));            
-            nodeManagers.Add(new global::MemoryBuffer.MemoryBufferNodeManager(server, configuration));
-            nodeManagers.Add(new global::Boiler.BoilerNodeManager(server, configuration));
+            INodeManagerFactory factory = new global::TestData.TestDataNodeManagerFactory();
+            nodeManagers.Add(factory.Create(server, configuration));
+            factory = new global::MemoryBuffer.MemoryBufferNodeManagerFactory();
+            nodeManagers.Add(factory.Create(server, configuration));
+            factory = new global::Boiler.BoilerNodeManagerFactory();
+            nodeManagers.Add(factory.Create(server, configuration));
             
             // create master node manager.
             return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());

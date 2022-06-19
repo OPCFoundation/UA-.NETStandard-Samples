@@ -309,7 +309,7 @@ namespace Opc.Ua.Sample
 
             value.ServerTimestamp = DateTime.UtcNow;
 
-            QueueValue(value, error);
+            QueueValue(value, error, false);
         }
         #endregion
 
@@ -531,7 +531,9 @@ namespace Opc.Ua.Sample
         {
             QueueValue(value, error, false);
         }
+        #endregion
 
+        #region IDataChangeMonitoredItem2 Members
         /// <inheritdoc/>
         public void QueueValue(DataValue value, ServiceResult error, bool ignoreFilters)
         {

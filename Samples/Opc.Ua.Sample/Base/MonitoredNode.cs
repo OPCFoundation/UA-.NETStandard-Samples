@@ -29,8 +29,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using Opc.Ua.Server; 
+using Opc.Ua.Server;
 
 namespace Opc.Ua.Sample
 {
@@ -53,7 +52,7 @@ namespace Opc.Ua.Sample
             m_node = node;
         }
         #endregion
-        
+
         #region Public Properties
         /// <summary>
         /// The server that the node belongs to.
@@ -100,7 +99,7 @@ namespace Opc.Ua.Sample
             return false;
         }
         #endregion
-    
+
         #region Public Methods
         /// <summary>
         /// Creates a new data change monitored item.
@@ -165,7 +164,7 @@ namespace Opc.Ua.Sample
 
             return monitoredItem;
         }
-        
+
         /// <summary>
         /// Creates a new data change monitored item.
         /// </summary>
@@ -284,7 +283,7 @@ namespace Opc.Ua.Sample
                 m_node.OnReportEvent = OnReportEvent;
                 m_node.SetAreEventsMonitored(context, true, true);
             }
-            
+
             for (int ii = 0; ii < m_eventSubscriptions.Count; ii++)
             {
                 if (Object.ReferenceEquals(eventSubscription, m_eventSubscriptions[ii]))
@@ -344,7 +343,7 @@ namespace Opc.Ua.Sample
         /// <param name="context">The system context.</param>
         /// <param name="monitoredItem">The item to refresh.</param>
         public void ConditionRefresh(
-            ISystemContext context, 
+            ISystemContext context,
             IEventMonitoredItem monitoredItem)
         {
             if (m_eventSubscriptions != null)
@@ -356,7 +355,7 @@ namespace Opc.Ua.Sample
                     {
                         continue;
                     }
-                    
+
                     // get the set of condition events for the node and its children.
                     List<IFilterTarget> events = new List<IFilterTarget>();
                     m_node.ConditionRefresh(context, events, true);

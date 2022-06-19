@@ -42,7 +42,32 @@ using System.Reflection;
 namespace MemoryBuffer
 {
     /// <summary>
-    /// A node manager for a variety of test data.
+    /// The factory to create the node manager for memory buffers.
+    /// </summary>
+    public class MemoryBufferNodeManagerFactory : INodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public INodeManager Create(IServerInternal server, ApplicationConfiguration configuration)
+        {
+            return new MemoryBufferNodeManager(server, configuration, NamespacesUris.ToArray());
+        }
+
+        /// <inheritdoc/>
+        public StringCollection NamespacesUris
+        {
+            get
+            {
+                var nameSpaces = new StringCollection {
+                    Namespaces.MemoryBuffer,
+                    Namespaces.MemoryBuffer + "/Instance"
+                };
+                return nameSpaces;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A node manager for a variety of memory buffers.
     /// </summary>
     public class MemoryBufferNodeManager : SampleNodeManager
     {
@@ -50,17 +75,14 @@ namespace MemoryBuffer
         /// <summary>
         /// Initializes the node manager.
         /// </summary>
-        public MemoryBufferNodeManager(IServerInternal server, ApplicationConfiguration configuration)
+        public MemoryBufferNodeManager(IServerInternal server, ApplicationConfiguration configuration, string[] namespaceUris)
         :
             base(server)
         {
-            List<string> namespaceUris = new List<string>();
-         
-            namespaceUris.Add(Namespaces.MemoryBuffer);
-            namespaceUris.Add(Namespaces.MemoryBuffer + "/Instance");
-            
             NamespaceUris = namespaceUris;
             
+            AddEncodeableNodeManagerTypes(typeof(MemoryBufferNodeManager).Assembly, typeof(MemoryBufferNodeManager).Namespace);
+
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<MemoryBufferConfiguration>();
 
@@ -291,7 +313,7 @@ namespace MemoryBuffer
             // data encoding not supported.
             if (!QualifiedName.IsNull(itemToCreate.ItemToMonitor.DataEncoding))
             {
-                return StatusCodes.BadDataEncodingInvalid;
+                return StatusCodes.BadDataEncodingUnsupported;
             }
 
             // read initial value.
@@ -345,20 +367,6 @@ namespace MemoryBuffer
                 itemToCreate.MonitoringMode,
                 itemToCreate.RequestedParameters.ClientHandle,
                 samplingInterval);
-
-            /*
-            // create the item.
-            MemoryBufferMonitoredItem datachangeItem = buffer.CreateDataChangeItem(
-                context,
-                tag,
-                monitoredItemId,
-                itemToCreate.ItemToMonitor.AttributeId,
-                diagnosticsMasks,
-                timestampsToReturn,
-                itemToCreate.MonitoringMode,
-                itemToCreate.RequestedParameters.ClientHandle,
-                samplingInterval);
-            */
 
             // report the initial value.
             datachangeItem.QueueValue(initialValue, null);
