@@ -48,4 +48,16 @@ UserScalarValueDataType_Encoding_DefaultJson,15049,Object
 UserScalarValueDataType_Encoding_DefaultXml,11420,Object
 UserScalarValueObjectType,9921,ObjectType
 VariantDataType,9919,DataType
+Vector,1000,DataType
+Vector_Encoding_DefaultBinary,1008,Object
+Vector_Encoding_DefaultJson,64,Object
+Vector_Encoding_DefaultXml,36,Object
+WorkOrderStatusType,1004,DataType
+WorkOrderStatusType_Encoding_DefaultBinary,1011,Object
+WorkOrderStatusType_Encoding_DefaultJson,67,Object
+WorkOrderStatusType_Encoding_DefaultXml,39,Object
+WorkOrderType,1005,DataType
+WorkOrderType_Encoding_DefaultBinary,1012,Object
+WorkOrderType_Encoding_DefaultJson,68,Object
+WorkOrderType_Encoding_DefaultXml,40,Object
 XmlElementDataType,9913,DataType

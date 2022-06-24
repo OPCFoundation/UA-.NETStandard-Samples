@@ -69,6 +69,7 @@ namespace Opc.Ua.Sample
             m_nextSampleTime = DateTime.UtcNow.Ticks;
             m_readyToPublish = false;
             m_readyToTrigger = false;
+            m_resendData = false;
             m_alwaysReportUpdates = alwaysReportUpdates;
         }
 
@@ -105,6 +106,7 @@ namespace Opc.Ua.Sample
             m_nextSampleTime = DateTime.UtcNow.Ticks;
             m_readyToPublish = false;
             m_readyToTrigger = false;
+            m_resendData = false;
             m_queue = null;
             m_filter = filter;
             m_range = 0;
@@ -307,7 +309,7 @@ namespace Opc.Ua.Sample
 
             value.ServerTimestamp = DateTime.UtcNow;
 
-            QueueValue(value, error);
+            QueueValue(value, error, false);
         }
         #endregion
 
@@ -466,6 +468,18 @@ namespace Opc.Ua.Sample
             }
         }
 
+        /// <inheritdoc/>
+        public bool IsResendData
+        {
+            get
+            {
+                lock (m_lock)
+                {
+                    return m_resendData;
+                }
+            }
+        }
+
         /// <summary>
         /// Returns the results for the create request.
         /// </summary>
@@ -512,20 +526,30 @@ namespace Opc.Ua.Sample
                 return ServiceResult.Good;
             }
         }
+
+        /// <inheritdoc/>
+        public void SetupResendDataTrigger()
+        {
+            lock (m_lock)
+            {
+                if (m_monitoringMode == MonitoringMode.Reporting)
+                {
+                    m_resendData = true;
+                }
+            }
+        }
         #endregion
 
         #region IDataChangeMonitoredItem Members
-        /// <summary>
-        /// Queues a new data change.
-        /// </summary>
+        /// <inheritdoc/>
         public void QueueValue(DataValue value, ServiceResult error)
         {
             QueueValue(value, error, false);
         }
+        #endregion
 
-        /// <summary>
-        /// Queues a new data change.
-        /// </summary>
+        #region IDataChangeMonitoredItem2 Members
+        /// <inheritdoc/>
         public void QueueValue(DataValue value, ServiceResult error, bool ignoreFilters)
         {
             lock (m_lock)
@@ -680,31 +704,43 @@ namespace Opc.Ua.Sample
                 // check if not ready to publish.
                 if (!IsReadyToPublish)
                 {
-                    return false;
+                    if (!m_resendData)
+                    {
+                        return false;
+                    }
                 }
-
-                // update sample time.
-                IncrementSampleTime();
+                else
+                {
+                    // update sample time.
+                    IncrementSampleTime();
+                }
 
                 // update publish flag.
                 m_readyToPublish = false;
                 m_readyToTrigger = false;
-                                
+
                 // check if queuing is enabled.
-                if (m_queue == null)
-                {
-                    Publish(context, m_lastValue, m_lastError, notifications, diagnostics);                        
-                }
-                else
+                if (m_queue != null && (!m_resendData || m_queue.ItemsInQueue != 0))
                 {
                     DataValue value = null;
                     ServiceResult error = null;
 
                     while (m_queue.Publish(out value, out error))
                     {
-                        Publish(context, value, error, notifications, diagnostics);     
+                        Publish(context, value, error, notifications, diagnostics);
+
+                        if (m_resendData)
+                        {
+                            break;
+                        }
                     }
                 }
+                else
+                {
+                    Publish(context, m_lastValue, m_lastError, notifications, diagnostics);
+                }
+
+                m_resendData = false;
 
                 return true;
             }
@@ -795,7 +831,7 @@ namespace Opc.Ua.Sample
             }
 
             diagnostics.Enqueue(diagnosticInfo);
-        }        
+        }
         #endregion
 
         #region Private Fields
@@ -820,8 +856,9 @@ namespace Opc.Ua.Sample
         private bool m_readyToPublish;
         private bool m_readyToTrigger;
         private bool m_alwaysReportUpdates;
-		private bool m_semanticsChanged;
+        private bool m_semanticsChanged;
 		private bool m_structureChanged;
+        private bool m_resendData;
         #endregion
     }
 }

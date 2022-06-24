@@ -7,6 +7,7 @@ jobs:
   pool:
     vmImage: 'windows-2019'
   steps:
+  - task: NuGetAuthenticate@1
   - task: NuGetToolInstaller@1
     inputs:
       versionSpec: '>=5.4.x'
@@ -16,6 +17,9 @@ jobs:
       command: restore
       restoreSolution: '**/*.sln'
       configuration: 'Release'
+      includeNuGetOrg: true
+      feedsToUse: config
+      configPath: ./Nuget.Config
   - task: MSBuild@1
     displayName: MS Build Release
     inputs:
@@ -29,6 +33,9 @@ jobs:
       command: restore
       restoreSolution: '**/*.sln'
       configuration: 'Debug'
+      includeNuGetOrg: true
+      feedsToUse: config
+      configPath: ./Nuget.Config
   - task: MSBuild@1
     displayName: MS Build Debug
     inputs:

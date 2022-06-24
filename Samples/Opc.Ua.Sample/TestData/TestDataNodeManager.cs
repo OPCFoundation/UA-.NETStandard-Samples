@@ -29,17 +29,38 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
-using System.Threading;
+using System.Linq;
+using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
-using System.Reflection;
 
 namespace TestData
 {
+    /// <summary>
+    /// The node manager factory for test data.
+    /// </summary>
+    public class TestDataNodeManagerFactory : INodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public INodeManager Create(IServerInternal server, ApplicationConfiguration configuration)
+        {
+            return new TestDataNodeManager(server, configuration, NamespacesUris.ToArray());
+        }
+
+        /// <inheritdoc/>
+        public StringCollection NamespacesUris
+        {
+            get
+            {
+                var nameSpaces = new StringCollection {
+                    Namespaces.TestData,
+                    Namespaces.TestData + "Instance"
+                };
+                return nameSpaces;
+            }
+        }
+    }
+
     /// <summary>
     /// A node manager for a variety of test data.
     /// </summary>
@@ -49,17 +70,14 @@ namespace TestData
         /// <summary>
         /// Initializes the node manager.
         /// </summary>
-        public TestDataNodeManager(Opc.Ua.Server.IServerInternal server, ApplicationConfiguration configuration)
+        public TestDataNodeManager(Opc.Ua.Server.IServerInternal server, ApplicationConfiguration configuration, string[] namespaceUris)
         :
             base(server, configuration)
         {
             // update the namespaces.
-            List<string> namespaceUris = new List<string>();
-
-            namespaceUris.Add(Namespaces.TestData);
-            namespaceUris.Add(Namespaces.TestData + "/Instance");
-
             NamespaceUris = namespaceUris;
+
+            Server.Factory.AddEncodeableTypes(typeof(TestDataNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(TestDataNodeManager).Namespace)));
 
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<TestDataNodeManagerConfiguration>();
@@ -70,7 +88,7 @@ namespace TestData
                 m_configuration = new TestDataNodeManagerConfiguration();
             }
 
-            m_lastUsedId = m_configuration.NextUnusedId-1;
+            m_lastUsedId = m_configuration.NextUnusedId - 1;
 
             // create the object used to access the test system.
             m_system = new TestDataSystem(this, server.NamespaceUris, server.ServerUris);
@@ -127,10 +145,11 @@ namespace TestData
             {
                 // ensure the namespace used by the node manager is in the server's namespace table.
                 m_typeNamespaceIndex = Server.NamespaceUris.GetIndexOrAppend(Namespaces.TestData);
-                m_namespaceIndex = Server.NamespaceUris.GetIndexOrAppend(Namespaces.TestData + "/Instance");
+                m_namespaceIndex = Server.NamespaceUris.GetIndexOrAppend(Namespaces.TestData + "Instance");
 
                 base.CreateAddressSpace(externalReferences);
-                                
+
+#if CONDITION_SAMPLES
                 // start monitoring the system status.
                 m_systemStatusCondition = (TestSystemConditionState)FindPredefinedNode(
                     new NodeId(Objects.Data_Conditions_SystemStatus, m_typeNamespaceIndex), 
@@ -141,26 +160,25 @@ namespace TestData
                     m_systemStatusTimer = new Timer(OnCheckSystemStatus, null, 5000, 5000);
                     m_systemStatusCondition.Retain.Value = true;
                 }
-                
+#endif
                 // link all conditions to the conditions folder.
                 NodeState conditionsFolder = (NodeState)FindPredefinedNode(
-                    new NodeId(Objects.Data_Conditions, m_typeNamespaceIndex), 
+                    new NodeId(Objects.Data_Conditions, m_typeNamespaceIndex),
                     typeof(NodeState));
 
                 foreach (NodeState node in PredefinedNodes.Values)
                 {
                     ConditionState condition = node as ConditionState;
-
                     if (condition != null && !Object.ReferenceEquals(condition.Parent, conditionsFolder))
                     {
                         condition.AddNotifier(SystemContext, null, true, conditionsFolder);
                         conditionsFolder.AddNotifier(SystemContext, null, false, condition);
                     }
                 }
-                
+
                 // enable history for all numeric scalar values.
                 ScalarValueObjectState scalarValues = (ScalarValueObjectState)FindPredefinedNode(
-                    new NodeId(Objects.Data_Dynamic_Scalar, m_typeNamespaceIndex), 
+                    new NodeId(Objects.Data_Dynamic_Scalar, m_typeNamespaceIndex),
                     typeof(ScalarValueObjectState));
 
                 scalarValues.Int32Value.Historizing = true;
@@ -404,12 +422,12 @@ namespace TestData
         /// Reads the raw data for a variable
         /// </summary>
         protected ServiceResult HistoryReadRaw(
-            ISystemContext context, 
-            BaseVariableState source, 
-            ReadRawModifiedDetails details, 
-            TimestampsToReturn timestampsToReturn, 
-            bool releaseContinuationPoints, 
-            HistoryReadValueId nodeToRead, 
+            ISystemContext context,
+            BaseVariableState source,
+            ReadRawModifiedDetails details,
+            TimestampsToReturn timestampsToReturn,
+            bool releaseContinuationPoints,
+            HistoryReadValueId nodeToRead,
             HistoryReadResult result)
         {
             ServerSystemContext serverContext = context as ServerSystemContext;
@@ -454,21 +472,21 @@ namespace TestData
 
                 // create a reader.
                 reader = new HistoryDataReader(nodeToRead.NodeId, datasource);
-                
+
                 // start reading.
                 reader.BeginReadRaw(
-                    serverContext, 
-                    details, 
-                    timestampsToReturn, 
+                    serverContext,
+                    details,
+                    timestampsToReturn,
                     nodeToRead.ParsedIndexRange,
                     nodeToRead.DataEncoding,
                     data.DataValues);
             }
-     
+
             // continue reading data until done or max values reached.
             bool complete = reader.NextReadRaw(
-                serverContext, 
-                timestampsToReturn, 
+                serverContext,
+                timestampsToReturn,
                 nodeToRead.ParsedIndexRange,
                 nodeToRead.DataEncoding,
                 data.DataValues);
@@ -482,14 +500,14 @@ namespace TestData
 
             // return the dat.
             result.HistoryData = new ExtensionObject(data);
-            
+
             return result.StatusCode;
         }
 
         /// <summary>
         /// Returns true if the system must be scanning to provide updates for the monitored item.
         /// </summary>
-        private bool SystemScanRequired(MonitoredNode2 monitoredNode, IDataChangeMonitoredItem2 monitoredItem)
+        private static bool SystemScanRequired(MonitoredNode2 monitoredNode, IDataChangeMonitoredItem2 monitoredItem)
         {
             // ingore other types of monitored items.
             if (monitoredItem == null)
@@ -509,7 +527,7 @@ namespace TestData
             if (monitoredItem.AttributeId == Attributes.Value)
             {
                 TestDataObjectState test = source.Parent as TestDataObjectState;
-                
+
                 if (test != null && test.SimulationActive.Value)
                 {
                     return true;
@@ -535,11 +553,11 @@ namespace TestData
                 if (monitoredItem.MonitoringMode != MonitoringMode.Disabled)
                 {
                     m_system.StartMonitoringValue(
-                        monitoredItem.Id, 
-                        monitoredItem.SamplingInterval, 
+                        monitoredItem.Id,
+                        monitoredItem.SamplingInterval,
                         handle.Node as BaseVariableState);
                 }
-            }    
+            }
         }
 
         /// <summary>
@@ -614,12 +632,12 @@ namespace TestData
         }
         #endregion
 
+#if CONDITION_SAMPLES
         /// <summary>
         /// Peridically checks the system state.
         /// </summary>
         private void OnCheckSystemStatus(object state)
         {
-            #if CONDITION_SAMPLES
             lock (Lock)
             {
                 try
@@ -684,13 +702,11 @@ namespace TestData
                 }
                 catch (Exception e)
                 {
-                    Utils.Trace(e, "Unexpected error monitoring system status.");
+                    Utils.LogError(e, "Unexpected error monitoring system status.");
                 }
             }
-            #endif
         }    
         
-        #if CONDITION_SAMPLES
         /// <summary>
         /// Handles a user response to a dialog.
         /// </summary>
@@ -707,7 +723,7 @@ namespace TestData
 
             return ServiceResult.Good;
         }
-        #endif
+#endif
 
         #region Private Fields
         private TestDataNodeManagerConfiguration m_configuration;
@@ -715,12 +731,11 @@ namespace TestData
         private ushort m_typeNamespaceIndex;
         private TestDataSystem m_system;
         private long m_lastUsedId;
+#if CONDITION_SAMPLES
         private Timer m_systemStatusTimer;
         private TestSystemConditionState m_systemStatusCondition;
-        
-        #if CONDITION_SAMPLES
         private DialogConditionState m_dialog;
-        #endif
+#endif
         #endregion
     }
 }

@@ -71,6 +71,27 @@ namespace Opc.Ua.Sample
         }
         
         /// <summary>
+        /// Gets number of elements actually contained in value queue.
+        /// </summary>
+        public int ItemsInQueue
+        {
+            get
+            {
+                if (m_values == null)
+                {
+                    return 0;
+                }
+
+                if (m_start < m_end)
+                {
+                    return m_end - m_start - 1;
+                }
+
+                return m_values.Length - m_start + m_end - 1;
+            }
+        }
+
+        /// <summary>
         /// Sets the sampling interval used when queuing values.
         /// </summary>
         /// <param name="samplingInterval">The new sampling interval.</param>

@@ -28,6 +28,7 @@ jobs:
   pool:
     vmImage: $(poolImage)
   steps:
+  - task: NuGetAuthenticate@1
   - task: NuGetToolInstaller@1
     inputs:
       versionSpec: '>=5.4.x'
@@ -37,21 +38,27 @@ jobs:
       command: restore
       projects: '**/NetCore*.csproj'
       arguments: '--configuration Release ${{ parameters.buildoption }}'
+      includeNuGetOrg: true
+      feedsToUse: config
+      nugetConfigPath: $(Build.SourcesDirectory)/Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Release Build
     inputs:
       command: build
       projects: '**/NetCore*.csproj'
-      arguments: '--configuration Release ${{ parameters.buildoption }}'
+      arguments: '--no-restore --configuration Release ${{ parameters.buildoption }}'
   - task: DotNetCoreCLI@2
     displayName: Debug Restore
     inputs:
       command: restore
       projects: '**/NetCore*.csproj'
       arguments: '--configuration Debug ${{ parameters.buildoption }}'
+      includeNuGetOrg: true
+      feedsToUse: config
+      nugetConfigPath: $(Build.SourcesDirectory)/Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Debug Build
     inputs:
       command: build
       projects: '**/NetCore*.csproj'
-      arguments: '--configuration Debug ${{ parameters.buildoption }}'
+      arguments: '--no-restore --configuration Debug ${{ parameters.buildoption }}'

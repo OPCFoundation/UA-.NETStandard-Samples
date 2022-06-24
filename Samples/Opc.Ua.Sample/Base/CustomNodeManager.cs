@@ -2953,20 +2953,12 @@ namespace Opc.Ua.Sample
 
                     // owned by this node manager.
                     processedItems[ii] = true;
-                    var monitoredItem = monitoredItems[ii];
-                    transferredItems.Add(monitoredItem);
-
-                    if (sendInitialValues && !monitoredItem.IsReadyToPublish)
+                    transferredItems.Add(monitoredItems[ii]);
+                    if (sendInitialValues)
                     {
-                        if (monitoredItem is IDataChangeMonitoredItem2 dataChangeMonitoredItem)
-                        {
-                            errors[ii] = ReadInitialValue(systemContext, monitoredNode, dataChangeMonitoredItem);
-                        }
+                        monitoredItems[ii].SetupResendDataTrigger();
                     }
-                    else
-                    {
-                        errors[ii] = StatusCodes.Good;
-                    }
+                    errors[ii] = StatusCodes.Good;
                 }
             }
 

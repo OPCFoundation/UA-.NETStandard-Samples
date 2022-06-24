@@ -1,5 +1,5 @@
 /* ========================================================================
- * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2022 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
  * 
@@ -29,13 +29,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
 using System.Threading;
 using System.Reflection;
 using Opc.Ua.Server; 
+using System.Linq;
 
 namespace Opc.Ua.Sample
 {
@@ -74,6 +71,7 @@ namespace Opc.Ua.Sample
         public void Dispose()
         {   
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -293,6 +291,16 @@ namespace Opc.Ua.Sample
             }
 
             return found;
+        }
+
+        /// <summary>
+        /// Adds all encodeable types defined in a node manager to the server factory.
+        /// </summary>
+        /// <param name="assembly">The assembly which contains the encodeable types.</param>
+        /// <param name="filter">A filter with which the FullName of the type must start.</param>
+        protected void AddEncodeableNodeManagerTypes(Assembly assembly, string filter)
+        {
+            Server.Factory.AddEncodeableTypes(assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(filter)));
         }
         #endregion
 
@@ -837,7 +845,7 @@ namespace Opc.Ua.Sample
             NodeId         referenceTypeId, 
             bool           isInverse, 
             ExpandedNodeId targetId, 
-            bool           deleteBiDirectional)
+            bool deleteBidirectional)
         {
             lock (Lock)
             {
@@ -851,7 +859,7 @@ namespace Opc.Ua.Sample
 
                 source.RemoveReference(referenceTypeId, isInverse, targetId);
 
-                if (deleteBiDirectional)
+                if (deleteBidirectional)
                 {
                     // check if the target is also managed by the node manager.
                     if (!targetId.IsAbsolute)
@@ -975,8 +983,8 @@ namespace Opc.Ua.Sample
             ref ContinuationPoint       continuationPoint, 
             IList<ReferenceDescription> references)
         {
-            if (continuationPoint == null) throw new ArgumentNullException("continuationPoint");
-            if (references == null) throw new ArgumentNullException("references");
+            if (continuationPoint == null) throw new ArgumentNullException(nameof(continuationPoint));
+            if (references == null) throw new ArgumentNullException(nameof(references));
 
             // check for view.
             if (!ViewDescription.IsDefault(continuationPoint.View))
@@ -1979,7 +1987,6 @@ namespace Opc.Ua.Sample
             bool                unsubscribe)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
-            IDictionary<NodeId,NodeState> operationCache = new NodeIdDictionary<NodeState>();
 
             lock (Lock)
             {
@@ -2044,7 +2051,6 @@ namespace Opc.Ua.Sample
             bool                unsubscribe)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
-            IDictionary<NodeId,NodeState> operationCache = new NodeIdDictionary<NodeState>();
 
             lock (Lock)
             {
@@ -2568,7 +2574,7 @@ namespace Opc.Ua.Sample
             }
 
             // report the initial value.
-            datachangeItem.QueueValue(initialValue, null);
+            datachangeItem.QueueValue(initialValue, null, true);
 
             // do any post processing.
             OnCreateMonitoredItem(context, itemToCreate, monitoredNode, datachangeItem);
@@ -2958,20 +2964,13 @@ namespace Opc.Ua.Sample
 
                     // owned by this node manager.
                     processedItems[ii] = true;
-                    var monitoredItem = monitoredItems[ii];
-                    transferredItems.Add(monitoredItem);
+                    transferredItems.Add(monitoredItems[ii]);
 
-                    if (sendInitialValues && !monitoredItem.IsReadyToPublish)
+                    if (sendInitialValues)
                     {
-                        if (monitoredItem is DataChangeMonitoredItem dataChangeMonitoredItem)
-                        {
-                            errors[ii] = ReadInitialValue(systemContext, monitoredNode, dataChangeMonitoredItem, true);
-                        }
+                        monitoredItems[ii].SetupResendDataTrigger();
                     }
-                    else
-                    {
-                        errors[ii] = StatusCodes.Good;
-                    }
+                    errors[ii] = StatusCodes.Good;
                 }
             }
 

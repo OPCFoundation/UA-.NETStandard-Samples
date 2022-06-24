@@ -244,7 +244,7 @@ namespace MemoryBuffer
 
             if (!QualifiedName.IsNull(dataEncoding))
             {
-                return StatusCodes.BadDataEncodingInvalid;
+                return StatusCodes.BadDataEncodingUnsupported;
             }
 
             int offset = (int)tag.Offset;
@@ -296,7 +296,7 @@ namespace MemoryBuffer
 
             if (!QualifiedName.IsNull(dataEncoding))
             {
-                return StatusCodes.BadDataEncodingInvalid;
+                return StatusCodes.BadDataEncodingUnsupported;
             }
 
             if (statusCode != StatusCodes.Good)
@@ -468,7 +468,6 @@ namespace MemoryBuffer
                     tag.Offset,
                     0,
                     monitoredItemId,
-                    context.OperationContext.Session,
                     itemToMonitor,
                     diagnosticsMasks,
                     timestampsToReturn,
@@ -557,7 +556,7 @@ namespace MemoryBuffer
 
             if (delta1 > 100)
             {
-                Debug.WriteLine("SAMPLING DELAY ({0}ms)", delta1);
+                Utils.LogWarning("{0} SAMPLING DELAY ({1}ms)", nameof(MemoryBufferState), delta1);
             }
         }
 
@@ -619,9 +618,6 @@ namespace MemoryBuffer
         /// <summary>
         /// Handles change events raised by the node.
         /// </summary>
-        /// <param name="context">The system context.</param>
-        /// <param name="state">The node that raised the event.</param>
-        /// <param name="masks">What caused the event to be raised</param>
         public void OnBufferChanged(int offset)
         {
             lock (m_dataLock)
@@ -664,7 +660,7 @@ namespace MemoryBuffer
             {
                 if (m_itemCount > 0 && m_updateCount < m_itemCount)
                 {
-                    Debug.WriteLine("{0:HH:mm:ss.fff} MEMORYBUFFER Reported  {1}/{2} items ***.", DateTime.Now, m_updateCount, m_itemCount);
+                    Utils.LogInfo("{0:HH:mm:ss.fff} MEMORYBUFFER Reported  {1}/{2} items ***.", DateTime.Now, m_updateCount, m_itemCount);
                 }
 
                 m_updateCount = 0;
@@ -676,7 +672,7 @@ namespace MemoryBuffer
 
             if (delta1 > 100)
             {
-                Debug.WriteLine("****** PUBLISH DELAY ({0}ms) ******", delta1);
+                Utils.LogInfo("{0} ****** PUBLISH DELAY ({1}ms) ******", nameof(MemoryBufferState), delta1);
             }
         }
         #endregion
