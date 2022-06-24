@@ -1021,7 +1021,7 @@
       <Version>1.4.369.28</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes">
-      <Version>1.4.369.28</Version>
+      <Version>1.4.369.30</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
       <Version>1.4.369.28</Version>
