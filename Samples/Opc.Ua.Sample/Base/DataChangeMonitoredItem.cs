@@ -731,6 +731,7 @@ namespace Opc.Ua.Sample
 
                         if (m_resendData)
                         {
+                            m_readyToPublish = m_queue.ItemsInQueue > 0;
                             break;
                         }
                     }
