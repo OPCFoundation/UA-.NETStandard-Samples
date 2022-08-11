@@ -158,7 +158,7 @@
       <Version>6.2.14</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
-      <Version>1.4.370.8</Version>
+      <Version>1.4.370.9</Version>
     </PackageReference>
     <PackageReference Include="System.Xml.XmlDocument">
       <Version>4.3.0</Version>
