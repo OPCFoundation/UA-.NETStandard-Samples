@@ -191,7 +191,7 @@
       <Version>6.1.3</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.4.370.9</Version>
+      <Version>1.4.370.12</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common">
       <Version>1.4.370.12</Version>
