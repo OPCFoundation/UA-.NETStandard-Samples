@@ -1,13 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1145
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32901.82
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCoreConsoleClient", "Samples\NetCoreConsoleClient\NetCoreConsoleClient.csproj", "{CB6A78DB-52CA-4FED-A31B-CA8801E6D850}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Opc.Ua.Sample", "Samples\Opc.Ua.Sample\Opc.Ua.Sample.csproj", "{FD51D47C-DCCE-4FFC-988B-F330D9135166}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCoreConsoleServer", "Samples\NetCoreConsoleServer\NetCoreConsoleServer.csproj", "{E58F4B4E-0A59-4BFB-8D59-9F40B8F6DE5C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UA Client Controls", "Samples\ClientControls.Net4\UA Client Controls.csproj", "{A247D2EE-14FC-463D-A9BA-6CFF1EF22B7A}"
 EndProject
@@ -19,26 +15,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UA Sample Controls", "Sampl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UA Sample Client", "Samples\Client.Net4\UA Sample Client.csproj", "{D7601329-530D-4537-B9B9-D9D53D5F81F6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCoreComplexClient", "Samples\NetCoreComplexClient\NetCoreComplexClient.csproj", "{C518CCFC-5BE8-45F4-BCC1-C98B07F8EF23}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CB6A78DB-52CA-4FED-A31B-CA8801E6D850}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CB6A78DB-52CA-4FED-A31B-CA8801E6D850}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CB6A78DB-52CA-4FED-A31B-CA8801E6D850}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CB6A78DB-52CA-4FED-A31B-CA8801E6D850}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FD51D47C-DCCE-4FFC-988B-F330D9135166}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FD51D47C-DCCE-4FFC-988B-F330D9135166}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FD51D47C-DCCE-4FFC-988B-F330D9135166}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FD51D47C-DCCE-4FFC-988B-F330D9135166}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E58F4B4E-0A59-4BFB-8D59-9F40B8F6DE5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E58F4B4E-0A59-4BFB-8D59-9F40B8F6DE5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E58F4B4E-0A59-4BFB-8D59-9F40B8F6DE5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E58F4B4E-0A59-4BFB-8D59-9F40B8F6DE5C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A247D2EE-14FC-463D-A9BA-6CFF1EF22B7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A247D2EE-14FC-463D-A9BA-6CFF1EF22B7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A247D2EE-14FC-463D-A9BA-6CFF1EF22B7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -59,10 +45,6 @@ Global
 		{D7601329-530D-4537-B9B9-D9D53D5F81F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7601329-530D-4537-B9B9-D9D53D5F81F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7601329-530D-4537-B9B9-D9D53D5F81F6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C518CCFC-5BE8-45F4-BCC1-C98B07F8EF23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C518CCFC-5BE8-45F4-BCC1-C98B07F8EF23}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C518CCFC-5BE8-45F4-BCC1-C98B07F8EF23}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C518CCFC-5BE8-45F4-BCC1-C98B07F8EF23}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
