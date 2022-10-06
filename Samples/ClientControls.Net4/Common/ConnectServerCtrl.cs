@@ -493,7 +493,12 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                m_session = m_reconnectHandler.Session;
+                // only apply session if reconnect was required
+                if (m_reconnectHandler.Session != null)
+                {
+                    m_session = m_reconnectHandler.Session;
+                }
+
                 m_reconnectHandler.Dispose();
                 m_reconnectHandler = null;
 
