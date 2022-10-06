@@ -1015,16 +1015,16 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
-      <Version>1.4.369.30</Version>
+      <Version>1.4.370.12</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>1.4.369.30</Version>
+      <Version>1.4.370.12</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes">
-      <Version>1.4.369.30</Version>
+      <Version>1.4.370.12</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.4.369.30</Version>
+      <Version>1.4.370.12</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

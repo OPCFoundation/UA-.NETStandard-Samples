@@ -41,22 +41,22 @@
     </When>
     <When Condition="'$(Configuration)'=='Release'">
       <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.369.30" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.369.30" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.370.9" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.370.12" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.370.12" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.370.12" />
       </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.369.30" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.Debug" Version="1.4.369.30" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="1.4.369.30" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.370.12" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.Debug" Version="1.4.370.12" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="1.4.370.12" />
       </ItemGroup>
     </Otherwise>
   </Choose>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.16.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
   </ItemGroup>
 
   <ItemGroup>

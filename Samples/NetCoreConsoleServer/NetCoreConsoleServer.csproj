@@ -29,16 +29,16 @@
   <Choose>
     <When Condition="'$(Configuration)'=='Release'">
       <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.369.30" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.369.30" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.4.369.30" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.370.12" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.4.370.12" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https" Version="1.4.370.12" />
       </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.369.30" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https.Debug" Version="1.4.369.30" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="1.4.369.30" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https.Debug" Version="1.4.370.12" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="1.4.370.12" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="1.4.370.12" />
       </ItemGroup>
     </Otherwise>
   </Choose>
