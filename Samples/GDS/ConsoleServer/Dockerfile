@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/core/runtime:3.1-buster-slim AS base
+﻿FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim AS base
 
 COPY ./publish /publish
 WORKDIR /publish
