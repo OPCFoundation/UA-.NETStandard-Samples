@@ -564,7 +564,7 @@ namespace Opc.Ua.Com.Server
         /// </summary>
         /// <param name="session">The session.</param>
         /// <param name="e">The <see cref="Opc.Ua.Client.KeepAliveEventArgs"/> instance containing the event data.</param>
-        private void Session_KeepAlive(Session session, KeepAliveEventArgs e)
+        private void Session_KeepAlive(ISession session, KeepAliveEventArgs e)
         {
             int missedKeepAlives = 0;
 

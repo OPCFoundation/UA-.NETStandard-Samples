@@ -2262,7 +2262,7 @@ namespace Opc.Ua.Com.Server
                 throw ComUtils.CreateComException(ResultIds.E_FAIL);
             }
 
-            return m_subscription.Session;
+            return m_subscription.Session as Session;
         }
 
         /// <summary>
