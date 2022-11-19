@@ -1650,7 +1650,7 @@ namespace AggregationServer
         #endregion
 
         #region Private Methods
-        private void Client_KeepAlive(Opc.Ua.Client.Session session, Opc.Ua.Client.KeepAliveEventArgs e)
+        private void Client_KeepAlive(Opc.Ua.Client.ISession session, Opc.Ua.Client.KeepAliveEventArgs e)
         {
             if (e.Status != null && ServiceResult.IsNotGood(e.Status))
             {
@@ -1700,7 +1700,11 @@ namespace AggregationServer
                 }
 
                 clientSession.ReconnectHandler = null;
-                clientSession.Session = session;
+                Opc.Ua.Client.Session newSession = session as Opc.Ua.Client.Session;
+                if (newSession != null)
+                {
+                    clientSession.Session = newSession;
+                }
                 reconnectHandler.Dispose();
                 Utils.Trace($"--- RECONNECTED --- SessionId: {clientSession.ClientSessionId}");
             }
