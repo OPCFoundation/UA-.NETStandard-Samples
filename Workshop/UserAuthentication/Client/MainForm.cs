@@ -182,7 +182,7 @@ namespace Quickstarts.UserAuthenticationClient
                     m_connectedOnce = true;
                 }
 
-                m_session.RenewUserIdentity += new Session.RenewUserIdentityEventHandler(Session_RenewUserIdentity);
+                m_session.RenewUserIdentity += new RenewUserIdentityEventHandler(Session_RenewUserIdentity);
 
                 // set the available tokens.
                 SetAvailableUserTokens(m_session.ConfiguredEndpoint.Description);
@@ -354,7 +354,7 @@ namespace Quickstarts.UserAuthenticationClient
         /// <summary>
         /// Called when a Kerberos token needs to be renewed before reconnect.
         /// </summary>
-        IUserIdentity Session_RenewUserIdentity(Session session, IUserIdentity identity)
+        IUserIdentity Session_RenewUserIdentity(ISession session, IUserIdentity identity)
         {
             if (identity == null || identity.TokenType != UserTokenType.IssuedToken)
             {

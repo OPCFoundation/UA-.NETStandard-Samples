@@ -229,7 +229,7 @@ namespace Quickstarts.PerfTestClient
 	        }
         }
 
-        void Session_Notification(Session session, NotificationEventArgs e)
+        void Session_Notification(ISession session, NotificationEventArgs e)
         {
             lock (m_lock)
             {

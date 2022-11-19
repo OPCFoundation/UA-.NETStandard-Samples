@@ -39,7 +39,8 @@
     <!-- WARNING: SHA1 signed certficates are by default rejected and should be phased out. -->
     <RejectSHA1SignedCertificates>false</RejectSHA1SignedCertificates>
     <MinimumCertificateKeySize>1024</MinimumCertificateKeySize>
-
+    <!-- for UI cache the validated certificates to reduce the number of dialog pop ups -->
+    <UseValidatedCertificates>true</UseValidatedCertificates>
   </SecurityConfiguration>
 
   <TransportQuotas>

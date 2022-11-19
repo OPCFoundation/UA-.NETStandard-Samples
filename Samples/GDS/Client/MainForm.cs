@@ -314,7 +314,7 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void GdsServer_KeepAlive(Session session, KeepAliveEventArgs e)
+        private void GdsServer_KeepAlive(ISession session, KeepAliveEventArgs e)
         {
             if (InvokeRequired)
             {
@@ -352,7 +352,7 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void Server_KeepAlive(Session session, KeepAliveEventArgs e)
+        private void Server_KeepAlive(ISession session, KeepAliveEventArgs e)
         {
             if (this.InvokeRequired)
             {

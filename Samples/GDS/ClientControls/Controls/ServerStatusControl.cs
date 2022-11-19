@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -30,6 +30,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using Opc.Ua.Client;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -45,7 +46,7 @@ namespace Opc.Ua.Gds.Client.Controls
         public void Initialize(ServerPushConfigurationClient server)
         {
             m_server = server;
-            ServerBrowseControl.Initialize((server != null) ? server.Session : null, Opc.Ua.ObjectIds.ObjectsFolder, ReferenceTypeIds.HierarchicalReferences);
+            ServerBrowseControl.Initialize((server != null) ? server.Session as Session : null, Opc.Ua.ObjectIds.ObjectsFolder, ReferenceTypeIds.HierarchicalReferences);
         }
 
         public void SetServerStatus(ServerStatusDataType status)
