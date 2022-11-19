@@ -236,7 +236,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates the status control when a keep alive event occurs.
         /// </summary>
-        void StandardClient_KeepAlive(Session sender, KeepAliveEventArgs e)
+        void StandardClient_KeepAlive(ISession sender, KeepAliveEventArgs e)
         {
             if (InvokeRequired)
             {
@@ -315,7 +315,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                m_session = m_reconnectHandler.Session;
+                m_session = m_reconnectHandler.Session as Session;
                 m_reconnectHandler.Dispose();
                 m_reconnectHandler = null;
 

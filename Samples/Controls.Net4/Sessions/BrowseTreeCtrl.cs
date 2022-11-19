@@ -206,7 +206,7 @@ namespace Opc.Ua.Sample.Controls
                 reference.TypeDefinition  = null;
                                 
                 string text = GetTargetText(reference);
-                string icon = GuiUtils.GetTargetIcon(m_browser.Session, reference);
+                string icon = GuiUtils.GetTargetIcon(m_browser.Session as Session, reference);
 
                 TreeNode root = AddNode(null, reference, text, icon);
                 root.Nodes.Add(new TreeNode());
@@ -525,7 +525,7 @@ namespace Opc.Ua.Sample.Controls
             {              
                 if (reference != null)
                 {
-                    m_AttributesCtrl.Initialize(m_browser.Session, reference.NodeId);
+                    m_AttributesCtrl.Initialize(m_browser.Session as Session, reference.NodeId);
                 }
                 else
                 {
@@ -725,7 +725,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 string text = GetTargetText(reference);
-                string icon = GuiUtils.GetTargetIcon(m_browser.Session, reference);
+                string icon = GuiUtils.GetTargetIcon(m_browser.Session as Session, reference);
 
                 TreeNode container = parent;
 
@@ -956,7 +956,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
                 
-                new NodeAttributesDlg().ShowDialog(m_browser.Session, reference.NodeId);
+                new NodeAttributesDlg().ShowDialog(m_browser.Session as Session, reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -973,7 +973,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Session session = m_browser.Session;
+                Session session = m_browser.Session as Session;
                                     
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
                 
@@ -1000,7 +1000,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_MethodCalled != null)
                 {
-                    MethodCalledEventArgs args = new MethodCalledEventArgs(m_browser.Session, objectId, methodId);
+                    MethodCalledEventArgs args = new MethodCalledEventArgs(m_browser.Session as Session, objectId, methodId);
                     m_MethodCalled(this, args);
 
                     if (args.Handled)
@@ -1009,7 +1009,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                new CallMethodDlg().Show(m_browser.Session, objectId, methodId);
+                new CallMethodDlg().Show(m_browser.Session as Session, objectId, methodId);
             }
             catch (Exception exception)
             {
@@ -1033,7 +1033,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Session session = m_browser.Session;
+                Session session = m_browser.Session as Session;
 
                 // build list of nodes to read.
                 ReadValueIdCollection valueIds = new ReadValueIdCollection();
@@ -1072,7 +1072,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Session session = m_browser.Session;
+                Session session = m_browser.Session as Session;
 
                 // build list of nodes to read.
                 WriteValueCollection values = new WriteValueCollection();
@@ -1113,7 +1113,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_SessionTreeCtrl != null)
                 {                    
-                    Subscription subscription = m_SessionTreeCtrl.CreateSubscription(m_browser.Session);
+                    Subscription subscription = m_SessionTreeCtrl.CreateSubscription(m_browser.Session as Session);
 
                     if (subscription != null)
                     {
@@ -1172,7 +1172,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
                                 
-                new DataEncodingDlg().ShowDialog(m_browser.Session, (NodeId)reference.NodeId);
+                new DataEncodingDlg().ShowDialog(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -1196,7 +1196,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                new ReadHistoryDlg().ShowDialog(m_browser.Session, (NodeId)reference.NodeId);
+                new ReadHistoryDlg().ShowDialog(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -1220,7 +1220,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                new BrowseDlg().Show(m_browser.Session, (NodeId)reference.NodeId);
+                new BrowseDlg().Show(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {

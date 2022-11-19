@@ -51,37 +51,37 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
             SetColumns(m_ColumnNames);
-            m_dialogs = new Dictionary<uint,MonitoredItemDlg>();
+            m_dialogs = new Dictionary<uint, MonitoredItemDlg>();
         }
-		#endregion
+        #endregion
 
         #region Private Fields
         private Subscription m_subscription;
-        private Dictionary<uint,MonitoredItemDlg> m_dialogs;
+        private Dictionary<uint, MonitoredItemDlg> m_dialogs;
         private bool m_batchUpdates;
-                
+
         /// <summary>
-		/// The columns to display in the control.
-		/// </summary>
-		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "ID",                        HorizontalAlignment.Center, null       },
-			new object[] { "Name",                      HorizontalAlignment.Left,   null       },
-			new object[] { "Class",                     HorizontalAlignment.Left,   "Variable" },
-			new object[] { "Node ID",                   HorizontalAlignment.Left,   null       },
-			new object[] { "Path",                      HorizontalAlignment.Left,   ""         }, 
-			new object[] { "Attribute",                 HorizontalAlignment.Left,   "Value"    },
-			new object[] { "Indexes",                   HorizontalAlignment.Left,   ""         }, 
-			new object[] { "Encoding",                  HorizontalAlignment.Left,   ""         }, 
-			new object[] { "Mode",                      HorizontalAlignment.Left,   null       },
-			new object[] { "Sampling Interval",         HorizontalAlignment.Center, null       }, 
-            new object[] { "Revised Sampling Interval", HorizontalAlignment.Center, null       }, 
+        /// The columns to display in the control.
+        /// </summary>
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "ID",                        HorizontalAlignment.Center, null       },
+            new object[] { "Name",                      HorizontalAlignment.Left,   null       },
+            new object[] { "Class",                     HorizontalAlignment.Left,   "Variable" },
+            new object[] { "Node ID",                   HorizontalAlignment.Left,   null       },
+            new object[] { "Path",                      HorizontalAlignment.Left,   ""         },
+            new object[] { "Attribute",                 HorizontalAlignment.Left,   "Value"    },
+            new object[] { "Indexes",                   HorizontalAlignment.Left,   ""         },
+            new object[] { "Encoding",                  HorizontalAlignment.Left,   ""         },
+            new object[] { "Mode",                      HorizontalAlignment.Left,   null       },
+            new object[] { "Sampling Interval",         HorizontalAlignment.Center, null       },
+            new object[] { "Revised Sampling Interval", HorizontalAlignment.Center, null       },
             new object[] { "Queue Size",                HorizontalAlignment.Center, null       },
             new object[] { "Revised Queue Size",        HorizontalAlignment.Center, null        },
-			new object[] { "Discard Oldest",            HorizontalAlignment.Center, "True"     }, 
-			new object[] { "Status",                    HorizontalAlignment.Left,   ""         }, 
-		};
-		#endregion
+            new object[] { "Discard Oldest",            HorizontalAlignment.Center, "True"     },
+            new object[] { "Status",                    HorizontalAlignment.Left,   ""         },
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -90,8 +90,8 @@ namespace Opc.Ua.Sample.Controls
         [DefaultValue(false)]
         public bool BatchUpdates
         {
-            get { return m_batchUpdates;  }
-            set { m_batchUpdates = value; }  
+            get { return m_batchUpdates; }
+            set { m_batchUpdates = value; }
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             m_subscription = subscription;
-            
+
             Clear();
             UpdateItems();
         }
@@ -132,14 +132,14 @@ namespace Opc.Ua.Sample.Controls
             {
                 List<MonitoredItemDlg> dialogsToClose = new List<MonitoredItemDlg>();
 
-                foreach (KeyValuePair<uint,MonitoredItemDlg> current in m_dialogs)
+                foreach (KeyValuePair<uint, MonitoredItemDlg> current in m_dialogs)
                 {
                     if (m_subscription.FindItemByClientHandle(current.Key) == null)
                     {
                         dialogsToClose.Add(current.Value);
                     }
                 }
-                
+
                 // this invokes a callback which will remove the dialog from the table.
                 foreach (MonitoredItemDlg dialog in dialogsToClose)
                 {
@@ -158,7 +158,7 @@ namespace Opc.Ua.Sample.Controls
             MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem);
             monitoredItem.QueueSize = 1;
 
-            if (!new MonitoredItemEditDlg().ShowDialog(subscription.Session, monitoredItem))
+            if (!new MonitoredItemEditDlg().ShowDialog(subscription.Session as Session, monitoredItem))
             {
                 return null;
             }
@@ -199,7 +199,7 @@ namespace Opc.Ua.Sample.Controls
             if (parents.Count > 0)
             {
                 bool followToType = false;
-                
+
                 foreach (IReference parentReference in parents)
                 {
                     Node parent = m_subscription.Session.NodeCache.Find(parentReference.TargetId) as Node;
@@ -220,7 +220,7 @@ namespace Opc.Ua.Sample.Controls
 
             return null;
         }
-        
+
         /// <summary>
         /// Creates an item from a reference.
         /// </summary>
@@ -256,9 +256,9 @@ namespace Opc.Ua.Sample.Controls
             {
                 monitoredItem.DisplayName = String.Format("{0}", node);
             }
-             
+
             monitoredItem.StartNodeId = node.NodeId;
-            monitoredItem.NodeClass   = node.NodeClass;
+            monitoredItem.NodeClass = node.NodeClass;
 
             if (parent != null)
             {
@@ -273,15 +273,15 @@ namespace Opc.Ua.Sample.Controls
                     {
                         break;
                     }
-                        
+
                     parents.Add(parent);
                 }
-                
-                monitoredItem.StartNodeId = parents[parents.Count-1].NodeId;
+
+                monitoredItem.StartNodeId = parents[parents.Count - 1].NodeId;
 
                 StringBuilder relativePath = new StringBuilder();
 
-                for (int ii = parents.Count-2; ii >= 0; ii--)
+                for (int ii = parents.Count - 2; ii >= 0; ii--)
                 {
                     relativePath.AppendFormat(".{0}", parents[ii].BrowseName);
                 }
@@ -291,7 +291,7 @@ namespace Opc.Ua.Sample.Controls
                 monitoredItem.RelativePath = relativePath.ToString();
             }
 
-            Session session = m_subscription.Session;
+            Session session = m_subscription.Session as Session;
 
             if (node.NodeClass == NodeClass.Object || node.NodeClass == NodeClass.Variable)
             {
@@ -301,7 +301,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_subscription.AddItem(monitoredItem);
         }
-        
+
         /// <summary>
         /// Apply any changes to the set of items.
         /// </summary>
@@ -324,7 +324,7 @@ namespace Opc.Ua.Sample.Controls
                 AdjustColumns();
             }
         }
-        
+
         /// <summary>
         /// Closes all dialogs when the containing form closes.
         /// </summary>
@@ -332,35 +332,35 @@ namespace Opc.Ua.Sample.Controls
         {
             List<MonitoredItemDlg> dialogsToClose = new List<MonitoredItemDlg>();
 
-            foreach (KeyValuePair<uint,MonitoredItemDlg> current in m_dialogs)
+            foreach (KeyValuePair<uint, MonitoredItemDlg> current in m_dialogs)
             {
                 dialogsToClose.Add(current.Value);
             }
-            
+
             // this invokes a callback which will remove the dialog from the table.
             foreach (MonitoredItemDlg dialog in dialogsToClose)
             {
                 dialog.Close();
             }
-        }        
+        }
         #endregion
-        
+
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
-		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
+        protected override void EnableMenuItems(ListViewItem clickedItem)
+        {
             if (m_subscription != null)
             {
-                NewMI.Enabled                 = true;
-                EditMI.Enabled                = ItemsLV.SelectedItems.Count == 1;
-                DeleteMI.Enabled              = ItemsLV.SelectedItems.Count > 0;
-                SetMonitoringModeMI.Enabled   = ItemsLV.SelectedItems.Count > 0;
-                SetFilterMI.Enabled           = ItemsLV.SelectedItems.Count == 1;
+                NewMI.Enabled = true;
+                EditMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+                DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+                SetMonitoringModeMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+                SetFilterMI.Enabled = ItemsLV.SelectedItems.Count == 1;
                 SetSamplingIntervalMI.Enabled = ItemsLV.SelectedItems.Count == 1;
-                MonitorMI.Enabled             = ItemsLV.SelectedItems.Count == 1;
+                MonitorMI.Enabled = ItemsLV.SelectedItems.Count == 1;
             }
-		}
-                
+        }
+
         /// <see cref="BaseListCtrl.PickItems" />
         protected override void PickItems()
         {
@@ -371,24 +371,24 @@ namespace Opc.Ua.Sample.Controls
         /// <see cref="BaseListCtrl.UpdateItem" />
         protected override void UpdateItem(ListViewItem listItem, object item)
         {
-			MonitoredItem monitoredItem = item as MonitoredItem;
+            MonitoredItem monitoredItem = item as MonitoredItem;
 
-			if (monitoredItem == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
-            
-		    listItem.SubItems[0].Text  = String.Format("{0}", monitoredItem.Status.Id);
-		    listItem.SubItems[1].Text  = String.Format("{0}", monitoredItem.DisplayName);
-		    listItem.SubItems[2].Text  = String.Format("{0}", monitoredItem.NodeClass);
-		    listItem.SubItems[3].Text  = String.Format("{0}", monitoredItem.StartNodeId);
-		    listItem.SubItems[4].Text  = String.Format("{0}", monitoredItem.RelativePath);
-		    listItem.SubItems[5].Text  = String.Format("{0}", Attributes.GetBrowseName(monitoredItem.AttributeId));
-		    listItem.SubItems[6].Text  = String.Format("{0}", monitoredItem.IndexRange);
-		    listItem.SubItems[7].Text  = String.Format("{0}", monitoredItem.Encoding);
-		    listItem.SubItems[8].Text  = String.Format("{0}", monitoredItem.MonitoringMode);
-		    listItem.SubItems[9].Text  = String.Format("{0}", monitoredItem.SamplingInterval);
+            if (monitoredItem == null)
+            {
+                base.UpdateItem(listItem, item);
+                return;
+            }
+
+            listItem.SubItems[0].Text = String.Format("{0}", monitoredItem.Status.Id);
+            listItem.SubItems[1].Text = String.Format("{0}", monitoredItem.DisplayName);
+            listItem.SubItems[2].Text = String.Format("{0}", monitoredItem.NodeClass);
+            listItem.SubItems[3].Text = String.Format("{0}", monitoredItem.StartNodeId);
+            listItem.SubItems[4].Text = String.Format("{0}", monitoredItem.RelativePath);
+            listItem.SubItems[5].Text = String.Format("{0}", Attributes.GetBrowseName(monitoredItem.AttributeId));
+            listItem.SubItems[6].Text = String.Format("{0}", monitoredItem.IndexRange);
+            listItem.SubItems[7].Text = String.Format("{0}", monitoredItem.Encoding);
+            listItem.SubItems[8].Text = String.Format("{0}", monitoredItem.MonitoringMode);
+            listItem.SubItems[9].Text = String.Format("{0}", monitoredItem.SamplingInterval);
 
             double revisedSampingInterval = monitoredItem.Created ? monitoredItem.Status.SamplingInterval : (double)0.0;
 
@@ -398,16 +398,16 @@ namespace Opc.Ua.Sample.Controls
             uint revisedQueueSize = monitoredItem.Created ? monitoredItem.Status.QueueSize : 0;
 
             listItem.SubItems[12].Text = String.Format("{0}", revisedQueueSize);
-		    listItem.SubItems[13].Text = String.Format("{0}", monitoredItem.DiscardOldest);
+            listItem.SubItems[13].Text = String.Format("{0}", monitoredItem.DiscardOldest);
             listItem.SubItems[14].Text = String.Format("{0}", monitoredItem.Status.Error);
- 
+
             listItem.ForeColor = Color.Gray;
 
             if (monitoredItem.Status.Created)
             {
                 listItem.ForeColor = Color.Empty;
 
-                if ((revisedQueueSize != monitoredItem.QueueSize) && monitoredItem.AttributeId != Opc.Ua.Attributes.EventNotifier )                   
+                if ((revisedQueueSize != monitoredItem.QueueSize) && monitoredItem.AttributeId != Opc.Ua.Attributes.EventNotifier)
                 {
                     listItem.ForeColor = Color.DarkOrange;
                 }
@@ -433,14 +433,14 @@ namespace Opc.Ua.Sample.Controls
                 listItem.ForeColor = Color.Red;
             }
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
 
         /// <summary>
         /// Handles a drop event.
         /// </summary>
         protected override void ItemsLV_DragDrop(object sender, DragEventArgs e)
-        {            
+        {
             try
             {
                 ReferenceDescription reference = e.Data.GetData(typeof(ReferenceDescription)) as ReferenceDescription;
@@ -449,17 +449,17 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                    
+
                 AddItem(reference);
                 AdjustColumns();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
-		#endregion
-        
+        #endregion
+
         #region Event Handlers
         private void NewMI_Click(object sender, EventArgs e)
         {
@@ -475,14 +475,14 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void EditMI_Click(object sender, EventArgs e)
         {
             try
-            {                
+            {
                 MonitoredItem monitoredItem = SelectedTag as MonitoredItem;
 
                 if (monitoredItem == null)
@@ -495,16 +495,16 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session, monitoredItem, true))
+                if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session as Session, monitoredItem, true))
                 {
                     return;
                 }
-                
+
                 ApplyChanges(false);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -528,11 +528,11 @@ namespace Opc.Ua.Sample.Controls
 
                 string errorString = string.Empty;
 
-                foreach(MonitoredItem item in deletedItems)
+                foreach (MonitoredItem item in deletedItems)
                 {
                     if (item.Status.Error != null && ServiceResult.IsBad(item.Status.Error))
                     {
-                        errorString += System.Environment.NewLine + item.Status.Error; 
+                        errorString += System.Environment.NewLine + item.Status.Error;
                     }
                 }
 
@@ -550,7 +550,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -582,7 +582,7 @@ namespace Opc.Ua.Sample.Controls
 
                         foreach (ServiceResult result in errors)
                         {
-                            errorString += System.Environment.NewLine + result; 
+                            errorString += System.Environment.NewLine + result;
                         }
 
                         throw new Exception(String.Format("SetMonitoringMode error: {0}", errorString));
@@ -591,12 +591,12 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void SetFilterMI_Click(object sender, EventArgs e)
-        {     
+        {
             try
             {
                 if (m_subscription == null)
@@ -610,14 +610,14 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (monitoredItems[0].NodeClass == NodeClass.Variable || monitoredItems[0].NodeClass == NodeClass.VariableType)
                     {
-                        if (!new DataChangeFilterEditDlg().ShowDialog(m_subscription.Session, monitoredItems[0]))
+                        if (!new DataChangeFilterEditDlg().ShowDialog(m_subscription.Session as Session, monitoredItems[0]))
                         {
                             return;
                         }
                     }
                     else
                     {
-                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session, monitoredItems[0].Filter as EventFilter, false);
+                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session as Session, monitoredItems[0].Filter as EventFilter, false);
 
                         if (filter == null)
                         {
@@ -633,9 +633,9 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
-        }        
+        }
 
         private void MonitorMI_Click(object sender, EventArgs e)
         {
@@ -659,13 +659,13 @@ namespace Opc.Ua.Sample.Controls
                 {
                     m_dialogs[monitoredItem.ClientHandle] = dialog = new MonitoredItemDlg();
                     dialog.FormClosing += new FormClosingEventHandler(MonitoredItemDlg_FormClosing);
-                }             
+                }
 
                 dialog.Show(monitoredItem);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -673,7 +673,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                foreach (KeyValuePair<uint,MonitoredItemDlg> current in m_dialogs)
+                foreach (KeyValuePair<uint, MonitoredItemDlg> current in m_dialogs)
                 {
                     if (current.Value == sender)
                     {
@@ -684,7 +684,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

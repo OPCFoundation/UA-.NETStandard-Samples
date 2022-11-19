@@ -213,7 +213,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Processes a Publish repsonse from the server.
         /// </summary>
-        void Session_Notification(Session session, NotificationEventArgs e)
+        void Session_Notification(ISession session, NotificationEventArgs e)
         {
             if (InvokeRequired)
             {
