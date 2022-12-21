@@ -379,7 +379,7 @@ namespace Opc.Ua.Sample.Controls
             {              
                 if (reference != null)
                 {
-                    m_AttributesCtrl.Initialize(m_browser.Session, reference.NodeId);
+                    m_AttributesCtrl.Initialize(m_browser.Session as Session, reference.NodeId);
                 }
                 else
                 {
@@ -761,7 +761,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Session session = m_browser.Session;
+                Session session = m_browser.Session as Session;
                                     
                 ReferenceDescription reference = NodesTV.SelectedItem.Item as ReferenceDescription;
                 
@@ -788,7 +788,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_MethodCalled != null)
                 {
-                    MethodCalledEventArgs args = new MethodCalledEventArgs(m_browser.Session, objectId, methodId);
+                    MethodCalledEventArgs args = new MethodCalledEventArgs(m_browser.Session as Session, objectId, methodId);
                     m_MethodCalled(this, args);
 
                     if (args.Handled)
@@ -821,7 +821,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Session session = m_browser.Session;
+                Session session = m_browser.Session as Session;
 
                 // build list of nodes to read.
                 ReadValueIdCollection valueIds = new ReadValueIdCollection();
@@ -860,7 +860,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Session session = m_browser.Session;
+                Session session = m_browser.Session as Session;
 
                 // build list of nodes to read.
                 WriteValueCollection values = new WriteValueCollection();
@@ -901,7 +901,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_SessionTreeCtrl != null)
                 {                    
-                    Subscription subscription = m_SessionTreeCtrl.CreateSubscription(m_browser.Session);
+                    Subscription subscription = m_SessionTreeCtrl.CreateSubscription(m_browser.Session as Session);
 
                     if (subscription != null)
                     {
@@ -984,7 +984,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                new ReadHistoryDlg().ShowDialog(m_browser.Session, (NodeId)reference.NodeId);
+                new ReadHistoryDlg().ShowDialog(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -1008,7 +1008,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                new BrowseDlg().Show(m_browser.Session, (NodeId)reference.NodeId);
+                new BrowseDlg().Show(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {

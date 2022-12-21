@@ -284,7 +284,7 @@ namespace Opc.Ua.Sample.Controls
                 //dialog.Close();
             }
 
-            Session session = subscription.Session;
+            Session session = subscription.Session as Session;
             session.RemoveSubscription(subscription);
             NodesTV.SelectedItem = FindNode(NodesTV.TreeItems, session);
         }

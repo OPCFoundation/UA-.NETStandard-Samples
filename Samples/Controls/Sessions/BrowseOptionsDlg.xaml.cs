@@ -66,7 +66,7 @@ namespace Opc.Ua.Sample.Controls
             if (browser == null) throw new ArgumentNullException("browser");
 
             m_browser = browser;
-            ReferenceTypeCTRL.Initialize(m_browser.Session, null);
+            ReferenceTypeCTRL.Initialize(m_browser.Session as Session, null);
 
             ViewIdTB.Text         = null;
             ViewTimestampDP.Date = ViewTimestampDP.MinYear;
