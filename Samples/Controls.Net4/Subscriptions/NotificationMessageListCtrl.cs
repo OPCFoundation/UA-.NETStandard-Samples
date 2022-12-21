@@ -272,7 +272,7 @@ namespace Opc.Ua.Sample.Controls
             EndUpdate();
         }
 
-        private void Session_Notification(Session sender, NotificationEventArgs e)
+        private void Session_Notification(ISession sender, NotificationEventArgs e)
         {
             if (InvokeRequired)
             {

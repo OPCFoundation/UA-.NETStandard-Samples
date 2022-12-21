@@ -85,7 +85,7 @@ namespace Opc.Ua.Sample.Controls
             m_subscription = subscription;
             
             BrowseCTRL.AllowPick = true;
-            BrowseCTRL.SetView(subscription.Session, (useTypeModel)?BrowseViewType.ObjectTypes:BrowseViewType.Objects, null);
+            BrowseCTRL.SetView(subscription.Session as Session, (useTypeModel)?BrowseViewType.ObjectTypes:BrowseViewType.Objects, null);
 
             MonitoredItemsCTRL.Initialize(subscription);
         }
