@@ -114,7 +114,7 @@ namespace Opc.Ua.Com.Server
                     }
 
                     // process continuation points.
-                    ByteStringCollection revisedContiuationPoints = new ByteStringCollection();
+                    ByteStringCollection revisedContinuationPoints = new ByteStringCollection();
 
                     while (continuationPoints.Count > 0)
                     {
@@ -149,12 +149,12 @@ namespace Opc.Ua.Com.Server
                             // check for continuation point.
                             if (results[ii].ContinuationPoint != null)
                             {
-                                revisedContiuationPoints.Add(results[ii].ContinuationPoint);
+                                revisedContinuationPoints.Add(results[ii].ContinuationPoint);
                             }
                         }
 
                         // check if browsing must continue;
-                        revisedContiuationPoints = continuationPoints;
+                        continuationPoints = revisedContinuationPoints;
                     }
 
                     // check if unprocessed results exist.
