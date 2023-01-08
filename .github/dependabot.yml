@@ -14,3 +14,11 @@ updates:
     labels: 
       - "preview"
 
+  - package-ecosystem: github-actions
+    labels:
+      - "actions"
+    directory: "./"
+    schedule:
+      interval: "daily"
+    # Raise pull requests in worker branch actions
+    target-branch: "actions"
