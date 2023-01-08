@@ -23,7 +23,7 @@ on:
 jobs:
   analyze:
     name: Analyze
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     strategy:
       fail-fast: false
@@ -40,7 +40,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '5.x' # SDK Version to use;
+        dotnet-version: '6.x' # SDK Version to use;
 
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
