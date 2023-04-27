@@ -132,7 +132,7 @@
       <Version>1.4.371.85</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.4.371.85</Version>
+      <Version>1.4.371.86</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
       <Version>1.4.371.86</Version>
