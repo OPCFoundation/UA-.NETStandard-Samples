@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -13,8 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common" Version="1.4.371.60" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.371.60" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common" Version="1.4.371.86" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="1.4.371.86" />
   </ItemGroup>
 
 </Project>
