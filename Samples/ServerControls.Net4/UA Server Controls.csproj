@@ -145,7 +145,7 @@
       <Version>1.4.371.90</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>1.4.371.86</Version>
+      <Version>1.4.371.90</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
