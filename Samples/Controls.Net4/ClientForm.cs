@@ -220,16 +220,15 @@ namespace Opc.Ua.Sample.Controls
             if (session != null)
             {
                 // stop any reconnect operation.
-                if (m_reconnectHandler != null)
-                {
-                    m_reconnectHandler.Dispose();
-                    m_reconnectHandler = null;
-                }
+                m_reconnectHandler?.CancelReconnect();
+                Utils.SilentDispose(m_reconnectHandler);
 
                 m_session = session;
                 m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
                 BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
                 StandardClient_KeepAlive(m_session, null);
+
+                m_reconnectHandler = new SessionReconnectHandler(true, 10_000);
             }
         }
 
@@ -277,24 +276,20 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
+                    var state = SessionReconnectHandler.ReconnectState.Ready;
+                    if (m_reconnectPeriod > 0)
+                    {
+                        state = m_reconnectHandler.BeginReconnect(m_session, m_reconnectPeriod * 1000, StandardClient_Server_ReconnectComplete);
+                    }
+
                     ServerStatusLB.Text = String.Format(
-                        "{0} {1}/{2}", e.Status,
+                        "{0} {1}/{2}/{3}", e.Status,
                         m_session.OutstandingRequestCount,
-                        m_session.DefunctRequestCount);
+                        m_session.DefunctRequestCount,
+                        state);
 
                     ServerStatusLB.ForeColor = Color.Red;
                     ServerStatusLB.Font = new Font(ServerStatusLB.Font, FontStyle.Bold);
-
-                    if (m_reconnectPeriod <= 0)
-                    {
-                        return;
-                    }
-
-                    if (m_reconnectHandler == null && m_reconnectPeriod > 0)
-                    {
-                        m_reconnectHandler = new SessionReconnectHandler();
-                        m_reconnectHandler.BeginReconnect(m_session, m_reconnectPeriod * 1000, StandardClient_Server_ReconnectComplete);
-                    }
                 }
             }
         }
@@ -315,9 +310,15 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                m_session = m_reconnectHandler.Session as Session;
-                m_reconnectHandler.Dispose();
-                m_reconnectHandler = null;
+                if (m_reconnectHandler.Session != null)
+                {
+                    if (!ReferenceEquals(m_session, m_reconnectHandler.Session))
+                    {
+                        var session = m_session;
+                        m_session = m_reconnectHandler.Session as Session;
+                        Utils.SilentDispose(session);
+                    }
+                }
 
                 BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
 
