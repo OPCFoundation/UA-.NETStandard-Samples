@@ -19,6 +19,6 @@ updates:
       - "actions"
     directory: "./"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     # Raise pull requests in worker branch actions
-    target-branch: "actions"
+    target-branch: "preview"

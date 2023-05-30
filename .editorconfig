@@ -20,17 +20,22 @@ charset                  = utf-8
 trim_trailing_whitespace = true
 end_of_line              = crlf
 insert_final_newline     = true
+max_line_length          = 120
 
 # Xml project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
 indent_size = 2
 
 # Xml config files
-[*.{props,targets,ruleset,config,nuspec,resx,vsixmanifest,vsct}]
+[*.{xml,props,targets,ruleset,config,nuspec,resx,vsixmanifest,vsct}]
 indent_size = 2
 
 # JSON files
 [*.json]
+indent_size = 2
+
+# YAML files
+[*.{yml,yaml}]
 indent_size = 2
 
 ###############################
@@ -46,7 +51,7 @@ csharp_style_conditional_delegate_call                                        = 
 
 # Modifier preferences
 # require braces to be on a new line for control_blocks, types, and methods (also known as "Allman" style)
-csharp_new_line_before_open_brace                                             = control_blocks, types, methods, properties, accessors
+csharp_new_line_before_open_brace                                             = control_blocks, types, methods, properties, accessors, object_collection
 csharp_preferred_modifier_order                                               = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async : suggestion
 csharp_new_line_before_catch                                                  = true
 csharp_new_line_before_else                                                   = true : suggestion
@@ -81,6 +86,8 @@ csharp_space_between_square_brackets                                          = 
 
 dotnet_sort_system_directives_first                                           = true
 dotnet_separate_import_directive_groups                                       = false
+csharp_style_prefer_method_group_conversion                                   = true : silent
+csharp_style_prefer_top_level_statements                                      = true : silent
 
 #Formatting - spacing options
 
@@ -95,7 +102,6 @@ csharp_space_between_method_declaration_empty_parameter_list_parentheses      = 
 csharp_space_between_method_declaration_parameter_list_parentheses            = false
 
 #Formatting - wrapping options
-
 csharp_preserve_single_line_blocks                                            = true
 csharp_preserve_single_line_statements                                        = true
 
@@ -111,24 +117,28 @@ csharp_style_expression_bodied_accessors                                      = 
 csharp_style_expression_bodied_constructors                                   = false : suggestion
 csharp_style_expression_bodied_methods                                        = false : suggestion
 csharp_style_expression_bodied_properties                                     = true : silent
+csharp_style_expression_bodied_lambdas                                        = true : silent
+csharp_style_expression_bodied_local_functions                                = false : silent
+
 
 #Style - expression level options
 csharp_prefer_braces                                                          = true : silent
 csharp_style_deconstructed_variable_declaration                               = true : suggestion
 csharp_prefer_simple_default_expression                                       = true : suggestion
 csharp_style_inlined_variable_declaration                                     = false : suggestion
-dotnet_style_predefined_type_for_member_access                                = false : suggestion
+csharp_prefer_simple_using_statement                                          = false : suggestion
 
 #Style - implicit and explicit types
-csharp_style_var_for_built_in_types                                           = false : silent
-csharp_style_var_when_type_is_apparent                                        = true : silent
-csharp_style_var_elsewhere                                                    = false : silent
+csharp_style_var_for_built_in_types                                           = false : suggestion
+csharp_style_var_when_type_is_apparent                                        = true : suggestion
+csharp_style_var_elsewhere                                                    = false : suggestion
 
 #Style - language keyword and framework type options
 
 #prefer the language keyword for local variables, method parameters, and class members,
 #instead of the type name, for types that have a keyword to represent them
 dotnet_style_predefined_type_for_locals_parameters_members                    = true : suggestion
+dotnet_style_predefined_type_for_member_access                                = true : suggestion
 
 #Style - qualification options
 dotnet_style_qualification_for_event                                          = false : suggestion
@@ -159,7 +169,23 @@ dotnet_style_prefer_auto_properties                                           = 
 dotnet_style_prefer_conditional_expression_over_assignment                    = true : suggestion
 dotnet_style_prefer_conditional_expression_over_return                        = true : suggestion
 
+# 'using' directive preferences
+csharp_using_directive_placement                                              = outside_namespace : suggestion
+csharp_style_namespace_declarations                                           = block_scoped : suggestion
+
 # Naming rules
+
+# Async methods should have "Async" suffix
+dotnet_naming_rule.async_methods_end_in_async.severity                        = suggestion
+dotnet_naming_rule.async_methods_end_in_async.symbols                         = any_async_methods
+dotnet_naming_rule.async_methods_end_in_async.style                           = end_in_async
+
+dotnet_naming_symbols.any_async_methods.applicable_kinds                      = method, interface
+dotnet_naming_symbols.any_async_methods.applicable_accessibilities            = *
+dotnet_naming_symbols.any_async_methods.required_modifiers                    = async
+
+dotnet_naming_style.end_in_async.required_suffix                              = Async
+dotnet_naming_style.end_in_async.capitalization                               = pascal_case
 
 # Private Constants are PascalCase and start with k
 dotnet_naming_rule.constants_private_should_start_with_k.severity             = suggestion
@@ -229,6 +255,17 @@ dotnet_naming_symbols.instance_fields.applicable_accessibilities              = 
 dotnet_naming_style.instance_field_style.capitalization                       = camel_case
 dotnet_naming_style.instance_field_style.required_prefix                      = m_
 
+# Private event fields are PascalCase and start with m_
+dotnet_naming_rule.instance_events_should_be_pascal_case.severity             = suggestion
+dotnet_naming_rule.instance_events_should_be_pascal_case.symbols              = instance_events
+dotnet_naming_rule.instance_events_should_be_pascal_case.style                = instance_events_style
+
+dotnet_naming_symbols.instance_events.applicable_kinds                        = event
+dotnet_naming_symbols.instance_events.applicable_accessibilities              = private, protected, private_protected, protected_friend
+
+dotnet_naming_style.instance_events_style.capitalization                      = pascal_case
+dotnet_naming_style.instance_events_style.required_prefix                     = m_
+
 # Locals and parameters are camelCase
 dotnet_naming_rule.locals_should_be_camel_case.severity                       = suggestion
 dotnet_naming_rule.locals_should_be_camel_case.symbols                        = locals_and_parameters
@@ -255,4 +292,35 @@ dotnet_naming_rule.members_should_be_pascal_case.style                        = 
 dotnet_naming_symbols.all_members.applicable_kinds                            = *
 
 dotnet_naming_style.pascal_case_style.capitalization                          = pascal_case
+
+# Diagnostic settings (windows only)
+dotnet_analyzer_diagnostic.category-style.severity                            = suggestion
+dotnet_analyzer_diagnostic.category-globalization.severity                    = silent
+dotnet_analyzer_diagnostic.category-design.severity                           = suggestion
+dotnet_analyzer_diagnostic.category-reliability.severity                      = warning
+dotnet_analyzer_diagnostic.category-performance.severity                      = warning
+dotnet_analyzer_diagnostic.category-security.severity                         = warning
+
+# Suggest only non breaking warnings
+
+# CA1805: Do not initialize unnecessarily.
+dotnet_diagnostic.CA1805.severity                                             = silent
+dotnet_code_quality.CA1805.api_surface                                        = private, internal
+
+# CA1822: Mark members as static.
+dotnet_diagnostic.CA1822.severity                                             = suggestion
+dotnet_code_quality.CA1822.api_surface                                        = private, internal
+
+# CA3075: Insecure DTD processing in XML
+dotnet_diagnostic.CA3075.severity                                             = error
+dotnet_diagnostic.CA3077.severity                                             = error
+
+# CA2007: Do not directly await a Task
+dotnet_diagnostic.CA2007.severity                                             = warning
+
+# IDE0049: Simplify Names
+dotnet_diagnostic.IDE0049.severity                                            = silent
+
+# CA1507: Use nameof in place of string
+dotnet_diagnostic.CA1507.severity                                             = warning
 
