@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -67,14 +67,14 @@ namespace Opc.Ua.Gds.Server
                 {
                     ConsoleKeyInfo result = Console.ReadKey();
                     Console.WriteLine();
-                    return await Task.FromResult((result.KeyChar == 'y') || (result.KeyChar == 'Y') || (result.KeyChar == '\r'));
+                    return await Task.FromResult((result.KeyChar == 'y') || (result.KeyChar == 'Y') || (result.KeyChar == '\r')).ConfigureAwait(false);
                 }
                 catch
                 {
                     // intentionally fall through
                 }
             }
-            return await Task.FromResult(true);
+            return await Task.FromResult(true).ConfigureAwait(false);
         }
     }
 
@@ -217,10 +217,10 @@ namespace Opc.Ua.Gds.Server
             };
 
             // load the application configuration.
-            ApplicationConfiguration config = await application.LoadApplicationConfiguration(false);
+            ApplicationConfiguration config = await application.LoadApplicationConfiguration(false).ConfigureAwait(false);
 
             // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, 0);
+            bool haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, 0).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
                 throw new Exception("Application instance certificate invalid!");
@@ -241,7 +241,7 @@ namespace Opc.Ua.Gds.Server
                 database,
                 database,
                 new CertificateGroup());
-            await application.Start(server);
+            await application.Start(server).ConfigureAwait(false);
 
             // print endpoint info
             var endpoints = application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
@@ -301,7 +301,7 @@ namespace Opc.Ua.Gds.Server
                     }
                     lastEventTime = DateTime.UtcNow;
                 }
-                await Task.Delay(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
             }
         }
     }
