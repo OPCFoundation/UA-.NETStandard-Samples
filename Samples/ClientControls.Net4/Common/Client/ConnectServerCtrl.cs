@@ -211,12 +211,12 @@ namespace Opc.Ua.Client.Controls
         public int ReconnectPeriod { get; set; } = DefaultReconnectPeriod;
 
         /// <summary>
-        /// The discover timeout.
+        /// The discover timeout in ms.
         /// </summary>
         public int DiscoverTimeout { get; set; } = DefaultDiscoverTimeout;
 
         /// <summary>
-        /// The session timeout.
+        /// The session timeout in ms.
         /// </summary>
         public uint SessionTimeout { get; set; } = DefaultSessionTimeout;
 
@@ -321,6 +321,9 @@ namespace Opc.Ua.Client.Controls
             // set up keep alive callback.
             m_session.KeepAlive += Session_KeepAlive;
 
+            // set up reconnect handler.
+            m_reconnectHandler = new SessionReconnectHandler(true);
+
             // raise an event.
             DoConnectComplete(null);
 
@@ -385,6 +388,9 @@ namespace Opc.Ua.Client.Controls
 
             // set up keep alive callback.
             m_session.KeepAlive += new KeepAliveEventHandler(Session_KeepAlive);
+
+            // set up reconnect handler.
+            m_reconnectHandler = new SessionReconnectHandler(true);
 
             // raise an event.
             DoConnectComplete(null);
@@ -636,15 +642,10 @@ namespace Opc.Ua.Client.Controls
 
                     UpdateStatus(true, e.CurrentTime, "Reconnecting in {0}s", ReconnectPeriod);
 
-                    if (m_reconnectHandler == null)
+                    var state = m_reconnectHandler.BeginReconnect(m_session, ReconnectPeriod * 1000, Server_ReconnectComplete);
+                    if (state == SessionReconnectHandler.ReconnectState.Triggered)
                     {
-                        if (m_ReconnectStarting != null)
-                        {
-                            m_ReconnectStarting(this, e);
-                        }
-
-                        m_reconnectHandler = new SessionReconnectHandler(true);
-                        m_reconnectHandler.BeginReconnect(m_session, ReconnectPeriod * 1000, Server_ReconnectComplete);
+                        m_ReconnectStarting?.Invoke(this, e);
                     }
 
                     return;
@@ -670,29 +671,42 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private void Server_ConnectMI_Click(object sender, EventArgs e)
         {
-            try
+            string serverUrl = UrlCB.Text;
+
+            if (UrlCB.SelectedIndex >= 0)
             {
-                ConnectAsync().GetAwaiter().GetResult();
+                serverUrl = (string)UrlCB.SelectedItem;
             }
-            catch (ServiceResultException sre)
-            {
-                if (sre.StatusCode == StatusCodes.BadCertificateHostNameInvalid)
+
+            bool useSecurity = UseSecurityCK.Checked;
+
+            UpdateStatus(false, DateTime.Now, "Connecting [{0}]", serverUrl);
+
+            Task.Run(() => {
+                try
                 {
-                    if (GuiUtils.HandleDomainCheckError(this.FindForm().Text, sre.Result))
+                    Connect(serverUrl, useSecurity).GetAwaiter().GetResult();
+                }
+                catch (ServiceResultException sre)
+                {
+                    if (sre.StatusCode == StatusCodes.BadCertificateHostNameInvalid)
                     {
-                        DisableDomainCheck = true;
-                    };
+                        if (GuiUtils.HandleDomainCheckError(this.FindForm().Text, sre.Result))
+                        {
+                            DisableDomainCheck = true;
+                        };
+                    }
+                    else
+                    {
+                        // update status.
+                        UpdateStatus(true, DateTime.Now, "Connection failed! [{0}]", sre.Message);
+                    }
                 }
-                else
+                catch (Exception exception)
                 {
-                    // update status.
-                    UpdateStatus(true, DateTime.Now, "Connection failed! [{0}]", sre.Message);
+                    ClientUtils.HandleException(this.Text, exception);
                 }
-            }
-            catch (Exception exception)
-            {
-                ClientUtils.HandleException(this.Text, exception);
-            }
+            });
         }
 
         /// <summary>
@@ -717,11 +731,15 @@ namespace Opc.Ua.Client.Controls
                 // only apply session if reconnect was required
                 if (m_reconnectHandler.Session != null)
                 {
-                    m_session = m_reconnectHandler.Session as Session;
+                    if (!ReferenceEquals(m_session, m_reconnectHandler.Session))
+                    {
+                        var session = m_session;
+                        session.KeepAlive -= Session_KeepAlive;
+                        m_session = m_reconnectHandler.Session as Session;
+                        m_session.KeepAlive += Session_KeepAlive;
+                        Utils.SilentDispose(session);
+                    }
                 }
-
-                m_reconnectHandler.Dispose();
-                m_reconnectHandler = null;
 
                 // raise any additional notifications.
                 if (m_ReconnectComplete != null)

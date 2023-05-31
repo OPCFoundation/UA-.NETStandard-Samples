@@ -5,13 +5,13 @@
 	</PropertyGroup>
 	
   <Choose>
-    <!-- .NET 4.6.2 is only available on Windows builds, 
+    <!-- .NET 4.8 is only available on Windows builds, 
           however for mono builds on linux it can be enabled.
           msbuild ... /p:MonoBuild=true ...
       -->
     <When Condition="$([MSBuild]::IsOsPlatform('Windows')) OR ('$(MonoBuild)' == 'true')">
       <PropertyGroup>
-        <DotNetTargetFramework>net462;</DotNetTargetFramework>
+        <DotNetTargetFramework>net48;</DotNetTargetFramework>
       </PropertyGroup>
     </When>
     <Otherwise>
@@ -25,6 +25,7 @@
     <!-- Visual Studio 2022 -->
     <When  Condition="'$(VisualStudioVersion)' == '17.0'">
       <PropertyGroup>
+        <AnalysisLevel>preview-all</AnalysisLevel>
         <AppTargetFrameworks>$(DotNetTargetFramework)netcoreapp3.1;net6.0</AppTargetFrameworks>
         <AppTargetFramework>net6.0</AppTargetFramework>
         <TestsTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1;netcoreapp3.1;net6.0</TestsTargetFrameworks>
@@ -35,6 +36,7 @@
     <!-- Visual Studio 2019 -->
     <When  Condition="'$(VisualStudioVersion)' == '16.0'">
       <PropertyGroup>
+        <AnalysisLevel>latest</AnalysisLevel>
         <AppTargetFrameworks>$(DotNetTargetFramework)netcoreapp3.1</AppTargetFrameworks>
         <AppTargetFramework>netcoreapp3.1</AppTargetFramework>
         <TestsTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1;netcoreapp3.1</TestsTargetFrameworks>

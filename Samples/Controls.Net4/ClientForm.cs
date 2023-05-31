@@ -165,6 +165,8 @@ namespace Opc.Ua.Sample.Controls
                     m_reconnectHandler = null;
                 }
 
+                m_session.KeepAlive -= StandardClient_KeepAlive;
+
                 m_session.Close();
                 m_session = null;
             }
@@ -220,11 +222,11 @@ namespace Opc.Ua.Sample.Controls
             if (session != null)
             {
                 // stop any reconnect operation.
-                if (m_reconnectHandler != null)
-                {
-                    m_reconnectHandler.Dispose();
-                    m_reconnectHandler = null;
-                }
+                m_reconnectHandler?.CancelReconnect();
+                Utils.SilentDispose(m_reconnectHandler);
+
+                m_reconnectHandler = new SessionReconnectHandler(true);
+                session.TransferSubscriptionsOnReconnect = true;
 
                 m_session = session;
                 m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
@@ -261,14 +263,16 @@ namespace Opc.Ua.Sample.Controls
                 ServerUrlLB.Text = "None";
             }
 
-            if (e != null && m_session != null)
+            if (m_session != null)
             {
-                if (ServiceResult.IsGood(e.Status))
+                if (e == null || ServiceResult.IsGood(e.Status))
                 {
+                    ServerState serverState = e?.CurrentState ?? ServerState.Running;
+                    DateTime currentTime = e?.CurrentTime ?? DateTime.UtcNow;
                     ServerStatusLB.Text = Utils.Format(
                         "Server Status: {0} {1:yyyy-MM-dd HH:mm:ss} {2}/{3}",
-                        e.CurrentState,
-                        e.CurrentTime.ToLocalTime(),
+                        serverState,
+                        currentTime.ToLocalTime(),
                         m_session.OutstandingRequestCount,
                         m_session.DefunctRequestCount);
 
@@ -277,24 +281,20 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
+                    var state = SessionReconnectHandler.ReconnectState.Ready;
+                    if (m_reconnectPeriod > 0)
+                    {
+                        state = m_reconnectHandler.BeginReconnect(m_session, m_reconnectPeriod * 1000, StandardClient_Server_ReconnectComplete);
+                    }
+
                     ServerStatusLB.Text = String.Format(
-                        "{0} {1}/{2}", e.Status,
+                        "{0} {1}/{2}/{3}", e.Status,
                         m_session.OutstandingRequestCount,
-                        m_session.DefunctRequestCount);
+                        m_session.DefunctRequestCount,
+                        state);
 
                     ServerStatusLB.ForeColor = Color.Red;
                     ServerStatusLB.Font = new Font(ServerStatusLB.Font, FontStyle.Bold);
-
-                    if (m_reconnectPeriod <= 0)
-                    {
-                        return;
-                    }
-
-                    if (m_reconnectHandler == null && m_reconnectPeriod > 0)
-                    {
-                        m_reconnectHandler = new SessionReconnectHandler();
-                        m_reconnectHandler.BeginReconnect(m_session, m_reconnectPeriod * 1000, StandardClient_Server_ReconnectComplete);
-                    }
                 }
             }
         }
@@ -315,9 +315,17 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                m_session = m_reconnectHandler.Session as Session;
-                m_reconnectHandler.Dispose();
-                m_reconnectHandler = null;
+                if (m_reconnectHandler.Session != null)
+                {
+                    if (!ReferenceEquals(m_session, m_reconnectHandler.Session))
+                    {
+                        var session = m_session;
+                        session.KeepAlive -= StandardClient_KeepAlive;
+                        m_session = m_reconnectHandler.Session as Session;
+                        m_session.KeepAlive += StandardClient_KeepAlive;
+                        Utils.SilentDispose(session);
+                    }
+                }
 
                 BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
 
