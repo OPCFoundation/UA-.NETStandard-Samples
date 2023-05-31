@@ -47,9 +47,9 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
 
-            m_eventRegistrations = new Dictionary<object,TreeNode>();
+            m_eventRegistrations = new Dictionary<object, TreeNode>();
             m_endpointUrls = new StringCollection();
-            m_dialogs = new Dictionary<Subscription,SubscriptionDlg>();
+            m_dialogs = new Dictionary<Subscription, SubscriptionDlg>();
 
             m_SessionSubscriptionsChanged = new EventHandler(Session_SubscriptionsChanged);
             m_SubscriptionStateChanged = new SubscriptionStateChangedEventHandler(Subscription_StateChanged);
@@ -62,22 +62,22 @@ namespace Opc.Ua.Sample.Controls
         private ToolStripStatusLabel m_ServerStatusCtrl;
         private EventHandler m_SessionSubscriptionsChanged;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
-        private Dictionary<object,TreeNode> m_eventRegistrations;
+        private Dictionary<object, TreeNode> m_eventRegistrations;
         private StringCollection m_endpointUrls;
-        private Dictionary<Subscription,SubscriptionDlg> m_dialogs;
+        private Dictionary<Subscription, SubscriptionDlg> m_dialogs;
         private ApplicationConfiguration m_configuration;
         private ServiceMessageContext m_messageContext;
         private ConfiguredEndpoint m_endpoint;
         private string m_filePath;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// The configuration to use when creating sessions.
         /// </summary>
         public ApplicationConfiguration Configuration
         {
-            get { return m_configuration;  }
+            get { return m_configuration; }
             set { m_configuration = value; }
         }
 
@@ -86,7 +86,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public ServiceMessageContext MessageContext
         {
-            get { return m_messageContext;  }
+            get { return m_messageContext; }
             set { m_messageContext = value; }
         }
 
@@ -109,7 +109,7 @@ namespace Opc.Ua.Sample.Controls
             // close all active sessions.
             foreach (TreeNode root in NodesTV.Nodes)
             {
-                Session session  = root.Tag as Session;
+                Session session = root.Tag as Session;
 
                 if (session != null)
                 {
@@ -128,23 +128,23 @@ namespace Opc.Ua.Sample.Controls
             // close all active sessions.
             foreach (TreeNode root in NodesTV.Nodes)
             {
-                Session session  = root.Tag as Session;
+                Session session = root.Tag as Session;
 
                 if (session != null)
                 {
                     session.Close();
                 }
             }
-            
+
             Clear(NodesTV.Nodes);
         }
-        
+
         /// <summary>
         /// The control used to display the address space for a session.
         /// </summary>
         public BrowseTreeCtrl AddressSpaceCtrl
         {
-            get { return m_AddressSpaceCtrl;  }
+            get { return m_AddressSpaceCtrl; }
             set { m_AddressSpaceCtrl = value; }
         }
 
@@ -153,7 +153,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public NotificationMessageListCtrl NotificationMessagesCtrl
         {
-            get { return m_NotificationMessagesCtrl;  }
+            get { return m_NotificationMessagesCtrl; }
             set { m_NotificationMessagesCtrl = value; }
         }
 
@@ -162,7 +162,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public ToolStripStatusLabel ServerStatusCtrl
         {
-            get { return m_ServerStatusCtrl;  }
+            get { return m_ServerStatusCtrl; }
             set { m_ServerStatusCtrl = value; }
         }
 
@@ -251,7 +251,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return null;
                 }
-                
+
                 // session now owns the channel.
                 channel = null;
 
@@ -273,7 +273,7 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
         }
-                
+
         /// <summary>
         /// Deletes a session.
         /// </summary>
@@ -288,7 +288,7 @@ namespace Opc.Ua.Sample.Controls
                 Clear(node.Nodes);
                 node.Remove();
             }
-            
+
             // close any dialogs.
             foreach (SubscriptionDlg dialog in new List<SubscriptionDlg>(m_dialogs.Values))
             {
@@ -299,14 +299,14 @@ namespace Opc.Ua.Sample.Controls
             NodesTV.SelectedNode = null;
             SelectNode();
         }
-        
+
         /// <summary>
         /// Deletes a subscription.
         /// </summary>
         public void Delete(Subscription subscription)
         {
             if (subscription == null) throw new ArgumentNullException("subscription");
-            
+
             // close any dialog.
             SubscriptionDlg dialog = null;
 
@@ -317,7 +317,7 @@ namespace Opc.Ua.Sample.Controls
 
             Session session = subscription.Session as Session;
             session.RemoveSubscription(subscription);
-            
+
             TreeNode node = FindNode(NodesTV.Nodes, subscription);
 
             if (node != null)
@@ -328,7 +328,7 @@ namespace Opc.Ua.Sample.Controls
 
             NodesTV.SelectedNode = FindNode(NodesTV.Nodes, session);
         }
-        
+
         /// <summary>
         /// Deletes a monitored item.
         /// </summary>
@@ -346,7 +346,7 @@ namespace Opc.Ua.Sample.Controls
 
             Subscription subscription = monitoredItem.Subscription;
             subscription.RemoveItem(monitoredItem);
-            subscription.ApplyChanges();;
+            subscription.ApplyChanges();
             NodesTV.SelectedNode = FindNode(NodesTV.Nodes, subscription);
         }
 
@@ -354,11 +354,11 @@ namespace Opc.Ua.Sample.Controls
         /// Creates a new subscription.
         /// </summary>
         public Subscription CreateSubscription(Session session)
-        {                                        
+        {
             // create form.
             SubscriptionDlg dialog = new SubscriptionDlg();
             dialog.FormClosing += new FormClosingEventHandler(Subscription_FormClosing);
-            
+
             // create subscription.
             Subscription subscription = dialog.New(session);
 
@@ -377,7 +377,7 @@ namespace Opc.Ua.Sample.Controls
             // update any dialogs.
             foreach (SubscriptionDlg dialog in new List<SubscriptionDlg>(m_dialogs.Values))
             {
-                foreach(Subscription subscription in session.Subscriptions)
+                foreach (Subscription subscription in session.Subscriptions)
                 {
                     if (subscription.Handle == dialog)
                     {
@@ -394,7 +394,7 @@ namespace Opc.Ua.Sample.Controls
             SelectNode();
         }
         #endregion
-        
+
         #region Overridden Members
         /// <see cref="BaseTreeCtrl.EnableMenuItems" />
         protected override void EnableMenuItems(TreeNode clickedNode)
@@ -407,35 +407,35 @@ namespace Opc.Ua.Sample.Controls
 
             if (session != null)
             {
-                SessionSaveMI.Enabled          = true;
-                SessionLoadMI.Enabled          = true;
-                SetLocaleMI.Enabled            = true;
-                DeleteMI.Enabled               = true;
-                ReadMI.Enabled                 = true;
-                WriteMI.Enabled                = true;
-                BrowseMI.Enabled               = session.Connected;
-                BrowseAllMI.Enabled            = BrowseMI.Enabled;
-                BrowseObjectsMI.Enabled        = BrowseMI.Enabled;
-                BrowseObjectTypesMI.Enabled    = BrowseMI.Enabled;
-                BrowseEventTypesMI.Enabled     = BrowseMI.Enabled;
-                BrowseServerViewsMI.Enabled    = BrowseMI.Enabled;
-                BrowseVariableTypesMI.Enabled  = BrowseMI.Enabled;
-                BrowseDataTypesMI.Enabled      = BrowseMI.Enabled;
+                SessionSaveMI.Enabled = true;
+                SessionLoadMI.Enabled = true;
+                SetLocaleMI.Enabled = true;
+                DeleteMI.Enabled = true;
+                ReadMI.Enabled = true;
+                WriteMI.Enabled = true;
+                BrowseMI.Enabled = session.Connected;
+                BrowseAllMI.Enabled = BrowseMI.Enabled;
+                BrowseObjectsMI.Enabled = BrowseMI.Enabled;
+                BrowseObjectTypesMI.Enabled = BrowseMI.Enabled;
+                BrowseEventTypesMI.Enabled = BrowseMI.Enabled;
+                BrowseServerViewsMI.Enabled = BrowseMI.Enabled;
+                BrowseVariableTypesMI.Enabled = BrowseMI.Enabled;
+                BrowseDataTypesMI.Enabled = BrowseMI.Enabled;
                 BrowseReferenceTypesMI.Enabled = BrowseMI.Enabled;
-                SubscriptionMI.Enabled         = session.Connected;
-                SubscriptionCreateMI.Enabled   = SubscriptionMI.Enabled;
+                SubscriptionMI.Enabled = session.Connected;
+                SubscriptionCreateMI.Enabled = SubscriptionMI.Enabled;
             }
 
             Subscription subscription = clickedNode.Tag as Subscription;
 
             if (subscription != null)
             {
-                DeleteMI.Enabled                        = true;
-                ReadMI.Enabled                          = true;
-                WriteMI.Enabled                         = true;
-                SubscriptionMI.Enabled                  = subscription.Session.Connected;
-                SubscriptionMonitorMI.Enabled           = SubscriptionMI.Enabled;
-                SubscriptionEnabledPublishingMI.Enabled = SubscriptionMI.Enabled; 
+                DeleteMI.Enabled = true;
+                ReadMI.Enabled = true;
+                WriteMI.Enabled = true;
+                SubscriptionMI.Enabled = subscription.Session.Connected;
+                SubscriptionMonitorMI.Enabled = SubscriptionMI.Enabled;
+                SubscriptionEnabledPublishingMI.Enabled = SubscriptionMI.Enabled;
                 SubscriptionEnabledPublishingMI.Checked = subscription.CurrentPublishingEnabled;
             }
 
@@ -444,8 +444,8 @@ namespace Opc.Ua.Sample.Controls
             if (monitoredItem != null)
             {
                 DeleteMI.Enabled = true;
-                ReadMI.Enabled   = true;
-                WriteMI.Enabled  = true;
+                ReadMI.Enabled = true;
+                WriteMI.Enabled = true;
             }
         }
 
@@ -461,7 +461,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (node.Tag is T)
             {
-                return (T)node.Tag ;
+                return (T)node.Tag;
             }
 
             return Get<T>(node.Parent);
@@ -473,10 +473,10 @@ namespace Opc.Ua.Sample.Controls
             base.SelectNode();
 
             TreeNode selectedNode = NodesTV.SelectedNode;
-            
+
             Session session = Get<Session>(selectedNode);
-            Subscription subscription = Get<Subscription>(selectedNode); 
-                        
+            Subscription subscription = Get<Subscription>(selectedNode);
+
             // update address space control.
             if (m_AddressSpaceCtrl != null)
             {
@@ -508,7 +508,7 @@ namespace Opc.Ua.Sample.Controls
                     else if (node.Tag is Subscription)
                     {
                         ((Subscription)node.Tag).StateChanged -= m_SubscriptionStateChanged;
-                    }                   
+                    }
                 }
 
                 Clear(node.Nodes);
@@ -523,13 +523,19 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         private void Subscription_StateChanged(object sender, EventArgs e)
         {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new EventHandler(Subscription_StateChanged), sender, e);
+                return;
+            }
+
             TreeNode node = FindNode(NodesTV.Nodes, sender);
 
             if (node == null)
             {
                 return;
             }
-            
+
             UpdateNode(node, sender as Subscription);
         }
 
@@ -538,13 +544,19 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         private void Session_SubscriptionsChanged(object sender, EventArgs e)
         {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new EventHandler(Session_SubscriptionsChanged), sender, e);
+                return;
+            }
+
             TreeNode node = FindNode(NodesTV.Nodes, sender);
 
             if (node == null)
             {
                 return;
             }
-            
+
             UpdateNode(node, sender as Session);
             node.EnsureVisible();
             node.Expand();
@@ -605,13 +617,13 @@ namespace Opc.Ua.Sample.Controls
 
             TreeNode node = AddNode(null, session, session.SessionName, "Server");
             UpdateNode(node, session);
-            
+
             if (!m_eventRegistrations.ContainsKey(session))
             {
                 session.SubscriptionsChanged += m_SessionSubscriptionsChanged;
                 m_eventRegistrations.Add(session, node);
             }
-            
+
             NodesTV.SelectedNode = node;
         }
 
@@ -620,7 +632,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         private void UpdateNode(TreeNode parent, Session session)
         {
-            UpdateNode(parent, session, session.SessionName, (session.Connected)?"Server":"ServerStopped");
+            UpdateNode(parent, session, session.SessionName, (session.Connected) ? "Server" : "ServerStopped");
             Clear(parent.Nodes);
 
             if (Object.ReferenceEquals(parent.Tag, session))
@@ -646,24 +658,24 @@ namespace Opc.Ua.Sample.Controls
                 m_eventRegistrations.Add(subscription, node);
             }
         }
-        
+
         /// <summary>
         /// Updates a subscription node in the tree.
         /// </summary>
         private void UpdateNode(TreeNode parent, Subscription subscription)
         {
-            Clear(parent.Nodes);            
+            Clear(parent.Nodes);
             parent.Text = subscription.DisplayName;
 
             foreach (MonitoredItem monitoredItem in subscription.MonitoredItems)
-            {                
+            {
                 AddNode(parent, monitoredItem, monitoredItem.DisplayName, "Property");
             }
         }
         #endregion       
 
         private void BrowseAllMI_Click(object sender, EventArgs e)
-        {     
+        {
             try
             {
                 TreeNode selectedNode = NodesTV.SelectedNode;
@@ -673,9 +685,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -684,7 +696,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -699,9 +711,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -710,7 +722,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -725,9 +737,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -736,7 +748,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -751,9 +763,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -762,7 +774,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -777,9 +789,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -788,7 +800,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -803,9 +815,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -814,7 +826,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -829,9 +841,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -840,7 +852,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -855,9 +867,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -865,10 +877,10 @@ namespace Opc.Ua.Sample.Controls
 
                     Browser browser = new Browser(session);
 
-                    browser.BrowseDirection   = BrowseDirection.Forward;
-                    browser.IncludeSubtypes   = true;
-                    browser.ReferenceTypeId   = null;
-                    browser.NodeClassMask     = (int)NodeClass.View;
+                    browser.BrowseDirection = BrowseDirection.Forward;
+                    browser.IncludeSubtypes = true;
+                    browser.ReferenceTypeId = null;
+                    browser.NodeClassMask = (int)NodeClass.View;
                     browser.ContinueUntilDone = true;
 
                     ReferenceDescriptionCollection references = browser.Browse(Objects.ViewsFolder);
@@ -883,7 +895,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -898,9 +910,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 // get selected session.
-                Session session = selectedNode.Tag as Session; 
+                Session session = selectedNode.Tag as Session;
 
                 if (session != null)
                 {
@@ -909,17 +921,17 @@ namespace Opc.Ua.Sample.Controls
                     if (menuitem != null)
                     {
                         ReferenceDescription reference = menuitem.Tag as ReferenceDescription;
-                        
+
                         new AddressSpaceDlg().Show(
-                            session, 
-                            BrowseViewType.ServerDefinedView, 
+                            session,
+                            BrowseViewType.ServerDefinedView,
                             (NodeId)reference.NodeId);
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -948,13 +960,13 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         void Subscription_FormClosing(object sender, FormClosingEventArgs e)
         {
-            foreach (KeyValuePair<Subscription,SubscriptionDlg> current in m_dialogs)
+            foreach (KeyValuePair<Subscription, SubscriptionDlg> current in m_dialogs)
             {
                 if (current.Value == sender)
                 {
@@ -977,7 +989,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         private void DeleteMI_Click(object sender, EventArgs e)
-        {            
+        {
             try
             {
                 // get current selection.
@@ -1010,11 +1022,11 @@ namespace Opc.Ua.Sample.Controls
                 if (monitoredItem != null)
                 {
                     Delete(monitoredItem);
-                }                
+                }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1039,9 +1051,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     ReadValueId valueId = new ReadValueId();
 
-                    valueId.NodeId       = monitoredItem.ResolvedNodeId;
-                    valueId.AttributeId  = monitoredItem.AttributeId;
-                    valueId.IndexRange   = monitoredItem.IndexRange;
+                    valueId.NodeId = monitoredItem.ResolvedNodeId;
+                    valueId.AttributeId = monitoredItem.AttributeId;
+                    valueId.IndexRange = monitoredItem.IndexRange;
                     valueId.DataEncoding = monitoredItem.Encoding;
 
                     valueIds.Add(valueId);
@@ -1056,9 +1068,9 @@ namespace Opc.Ua.Sample.Controls
                         {
                             ReadValueId valueId = new ReadValueId();
 
-                            valueId.NodeId       = item.ResolvedNodeId;
-                            valueId.AttributeId  = item.AttributeId;
-                            valueId.IndexRange   = item.IndexRange;
+                            valueId.NodeId = item.ResolvedNodeId;
+                            valueId.AttributeId = item.AttributeId;
+                            valueId.IndexRange = item.IndexRange;
                             valueId.DataEncoding = item.Encoding;
 
                             valueIds.Add(valueId);
@@ -1071,7 +1083,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1096,9 +1108,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     WriteValue value = new WriteValue();
 
-                    value.NodeId      = monitoredItem.ResolvedNodeId;
-                    value.AttributeId = monitoredItem.AttributeId; 
-                    value.IndexRange  = monitoredItem.IndexRange;
+                    value.NodeId = monitoredItem.ResolvedNodeId;
+                    value.AttributeId = monitoredItem.AttributeId;
+                    value.IndexRange = monitoredItem.IndexRange;
 
                     MonitoredItemNotification datachange = monitoredItem.LastValue as MonitoredItemNotification;
 
@@ -1119,9 +1131,9 @@ namespace Opc.Ua.Sample.Controls
                         {
                             WriteValue value = new WriteValue();
 
-                            value.NodeId      = item.ResolvedNodeId;
-                            value.AttributeId = item.AttributeId;     
-                            value.IndexRange  = item.IndexRange;                      
+                            value.NodeId = item.ResolvedNodeId;
+                            value.AttributeId = item.AttributeId;
+                            value.IndexRange = item.IndexRange;
 
                             MonitoredItemNotification datachange = item.LastValue as MonitoredItemNotification;
 
@@ -1140,7 +1152,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1162,16 +1174,16 @@ namespace Opc.Ua.Sample.Controls
                 if (subscription != null)
                 {
                     subscription.SetPublishingMode(SubscriptionEnabledPublishingMI.Checked);
-                }   
+                }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void SubscriptionMonitorMI_Click(object sender, EventArgs e)
-        {            
+        {
             try
             {
                 // get selected session.
@@ -1181,7 +1193,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                                        
+
                 // show form
                 SubscriptionDlg dialog = null;
 
@@ -1192,19 +1204,19 @@ namespace Opc.Ua.Sample.Controls
                     m_dialogs.Add(subscription, dialog);
                     subscription.Handle = dialog;
                 }
-                
+
                 dialog.Show(subscription);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void SessionSaveMI_Click(object sender, EventArgs e)
         {
-			try
-			{
+            try
+            {
                 // get selected session.
                 Session session = SelectedTag as Session;
 
@@ -1220,46 +1232,46 @@ namespace Opc.Ua.Sample.Controls
 
                     m_filePath = defaultInfo.DirectoryName;
                     m_filePath += Path.DirectorySeparatorChar;
-                    m_filePath += session.SessionName;                    
+                    m_filePath += session.SessionName;
                     m_filePath += ".xml";
                 }
-                 
+
                 // prompt user to select file.
                 FileInfo fileInfo = new FileInfo(m_filePath);
 
-				SaveFileDialog dialog = new SaveFileDialog();
+                SaveFileDialog dialog = new SaveFileDialog();
 
-				dialog.CheckFileExists  = false;
-				dialog.CheckPathExists  = true;
-				dialog.DefaultExt       = ".xml";
-				dialog.Filter           = "Result Files (*.xml)|*.xml|All Files (*.*)|*.*";
-				dialog.ValidateNames    = true;
-				dialog.Title            = "Save Subscriptions";
-				dialog.FileName         = m_filePath;
+                dialog.CheckFileExists = false;
+                dialog.CheckPathExists = true;
+                dialog.DefaultExt = ".xml";
+                dialog.Filter = "Result Files (*.xml)|*.xml|All Files (*.*)|*.*";
+                dialog.ValidateNames = true;
+                dialog.Title = "Save Subscriptions";
+                dialog.FileName = m_filePath;
                 dialog.InitialDirectory = fileInfo.DirectoryName;
                 dialog.RestoreDirectory = true;
 
-				if (dialog.ShowDialog() != DialogResult.OK)
-				{
-					return;
-				}
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
 
                 // save file.
                 session.Save(dialog.FileName);
 
                 // remember file path.
                 m_filePath = dialog.FileName;
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void SessionLoadMI_Click(object sender, EventArgs e)
-        {               
-			try
-			{
+        {
+            try
+            {
                 // get selected session.
                 Session session = SelectedTag as Session;
 
@@ -1275,36 +1287,36 @@ namespace Opc.Ua.Sample.Controls
 
                     m_filePath = defaultInfo.DirectoryName;
                     m_filePath += Path.DirectorySeparatorChar;
-                    m_filePath += session.SessionName;                    
+                    m_filePath += session.SessionName;
                     m_filePath += ".xml";
                 }
-                
-                FileInfo fileInfo = new FileInfo(m_filePath);
-                
-				OpenFileDialog dialog = new OpenFileDialog();
 
-				dialog.CheckFileExists  = true;
-				dialog.CheckPathExists  = true;
-				dialog.DefaultExt       = ".xml";
-				dialog.Filter           = "Result Files (*.xml)|*.xml|All Files (*.*)|*.*";
-				dialog.Multiselect      = false;
-				dialog.ValidateNames    = true;
-				dialog.Title            = "Load Subscriptions";
-				dialog.FileName         = m_filePath;
+                FileInfo fileInfo = new FileInfo(m_filePath);
+
+                OpenFileDialog dialog = new OpenFileDialog();
+
+                dialog.CheckFileExists = true;
+                dialog.CheckPathExists = true;
+                dialog.DefaultExt = ".xml";
+                dialog.Filter = "Result Files (*.xml)|*.xml|All Files (*.*)|*.*";
+                dialog.Multiselect = false;
+                dialog.ValidateNames = true;
+                dialog.Title = "Load Subscriptions";
+                dialog.FileName = m_filePath;
                 dialog.InitialDirectory = fileInfo.DirectoryName;
                 dialog.RestoreDirectory = true;
 
-				if (dialog.ShowDialog() != DialogResult.OK)
-				{
-					return;
-				}
-                
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
                 // remember file path.
                 m_filePath = dialog.FileName;
 
                 // load file.
                 IEnumerable<Subscription> subscriptions = session.Load(dialog.FileName);
-                
+
                 // create the subscriptions automatically if the session is connected.
                 if (session.Connected)
                 {
@@ -1313,27 +1325,27 @@ namespace Opc.Ua.Sample.Controls
                         subscription.Create();
                     }
                 }
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void NewWindowMI_Click(object sender, EventArgs e)
-        {                    
-			try
-			{
+        {
+            try
+            {
                 ClientForm form = this.FindForm() as ClientForm;
 
                 if (form != null)
                 {
                     form.OpenForm();
                 }
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
