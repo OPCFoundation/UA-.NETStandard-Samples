@@ -1666,7 +1666,7 @@ namespace AggregationServer
                         if (clientSession != null && clientSession.ReconnectHandler == null)
                         {
                             Utils.Trace($"--- RECONNECTING --- SessionId: {clientSession.ClientSessionId}");
-                            reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler();
+                            reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler(true);
                             reconnectHandler.BeginReconnect(session, m_reverseConnectManager, DefaultReconnectPeriod, Client_ReconnectComplete);
                             clientSession.ReconnectHandler = reconnectHandler;
                             e.CancelKeepAlive = true;
@@ -1701,9 +1701,13 @@ namespace AggregationServer
 
                 clientSession.ReconnectHandler = null;
                 Opc.Ua.Client.Session newSession = session as Opc.Ua.Client.Session;
-                if (newSession != null)
+                if (newSession != null && !ReferenceEquals(newSession, clientSession.Session))
                 {
+                    var oldSession = clientSession.Session;
+                    oldSession.KeepAlive -= Client_KeepAlive;
+                    newSession.KeepAlive += Client_KeepAlive;
                     clientSession.Session = newSession;
+                    Utils.SilentDispose(oldSession);
                 }
                 reconnectHandler.Dispose();
                 Utils.Trace($"--- RECONNECTED --- SessionId: {clientSession.ClientSessionId}");

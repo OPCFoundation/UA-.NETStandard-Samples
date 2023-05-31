@@ -66,14 +66,14 @@ namespace AggregationServer
                 {
                     ConsoleKeyInfo result = Console.ReadKey();
                     Console.WriteLine();
-                    return await Task.FromResult((result.KeyChar == 'y') || (result.KeyChar == 'Y') || (result.KeyChar == '\r'));
+                    return await Task.FromResult((result.KeyChar == 'y') || (result.KeyChar == 'Y') || (result.KeyChar == '\r')).ConfigureAwait(false);
                 }
                 catch
                 {
                     // intentionally fall through
                 }
             }
-            return await Task.FromResult(true);
+            return await Task.FromResult(true).ConfigureAwait(false);
         }
     }
 
@@ -147,10 +147,10 @@ namespace AggregationServer
             application.ConfigSectionName = "Quickstarts.AggregationServer";
 
             // load the application configuration.
-            ApplicationConfiguration config = await application.LoadApplicationConfiguration(false);
+            ApplicationConfiguration config = await application.LoadApplicationConfiguration(false).ConfigureAwait(false);
 
             // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, CertificateFactory.DefaultKeySize);
+            bool haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, CertificateFactory.DefaultKeySize).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
                 throw new Exception("Application instance certificate invalid!");
@@ -163,7 +163,7 @@ namespace AggregationServer
 
             // start the server.
             server = new AggregationServer();
-            await application.Start(server);
+            await application.Start(server).ConfigureAwait(false);
 
             // print reverse connect info
             Console.WriteLine("Reverse Connect Clients:");
@@ -195,7 +195,7 @@ namespace AggregationServer
             }
 
             // start the status thread
-            status = Task.Run(async () => await StatusThread());
+            status = Task.Run(async () => await StatusThread().ConfigureAwait(false));
 
             // print notification on session events
             server.CurrentInstance.SessionManager.SessionActivated += EventStatus;
