@@ -35,6 +35,8 @@
       <StoreType>Directory</StoreType>
       <StorePath>%CommonApplicationData%\OPC Foundation\pki\rejected</StorePath>
     </RejectedCertificateStore>
+
+      <UseValidatedCertificates>true</UseValidatedCertificates>
   </SecurityConfiguration>
   
   <TransportConfigurations></TransportConfigurations>
@@ -66,7 +68,7 @@
   </Extensions>
 
   <TraceConfiguration>
-    <OutputFilePath>Logs\Quickstarts.SimpleEventsClient.log.txt</OutputFilePath>
+    <OutputFilePath>%CommonApplicationData%\OPC Foundation\Logs\Quickstarts.SimpleEventsClient.log.txt</OutputFilePath>
     <DeleteOnLoad>true</DeleteOnLoad>
     <!-- Show Only Errors -->
     <!-- <TraceMasks>1</TraceMasks> -->
