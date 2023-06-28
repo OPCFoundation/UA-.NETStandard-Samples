@@ -7,6 +7,7 @@
     <PackageId>Opc.Ua.Sample</PackageId>
     <RootNamespace>Opc.Ua.Sample</RootNamespace>
     <Description>OPC UA Sample Class Library</Description>
+    <NoWarn>$(NoWarn);CA1852</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
