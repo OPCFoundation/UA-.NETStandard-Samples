@@ -37,7 +37,7 @@ namespace AggregationServer
     /// <summary>
     /// Stores the type information provided by the AE server.
     /// </summary>
-    internal class AggregatedTypeCache
+    internal sealed class AggregatedTypeCache
     {
         /// <summary>
         /// A table of node reprenting the AE event catgories and condtions.

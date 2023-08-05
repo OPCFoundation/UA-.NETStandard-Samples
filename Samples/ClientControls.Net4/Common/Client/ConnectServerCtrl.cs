@@ -74,7 +74,8 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public static readonly uint DefaultSessionTimeout = 60000;
         public static readonly int DefaultDiscoverTimeout = 15000;
-        public static readonly int DefaultReconnectPeriod = 10;
+        public static readonly int DefaultReconnectPeriod = 1;
+        public static readonly int DefaultReconnectPeriodExponentialBackOff = 10;
 
         /// <summary>
         /// A strip used to display session status information.
@@ -322,7 +323,7 @@ namespace Opc.Ua.Client.Controls
             m_session.KeepAlive += Session_KeepAlive;
 
             // set up reconnect handler.
-            m_reconnectHandler = new SessionReconnectHandler(true);
+            m_reconnectHandler = new SessionReconnectHandler(true, DefaultReconnectPeriodExponentialBackOff * 1000);
 
             // raise an event.
             DoConnectComplete(null);
@@ -390,7 +391,7 @@ namespace Opc.Ua.Client.Controls
             m_session.KeepAlive += new KeepAliveEventHandler(Session_KeepAlive);
 
             // set up reconnect handler.
-            m_reconnectHandler = new SessionReconnectHandler(true);
+            m_reconnectHandler = new SessionReconnectHandler(true, DefaultReconnectPeriodExponentialBackOff * 1000);
 
             // raise an event.
             DoConnectComplete(null);
