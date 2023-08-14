@@ -51,7 +51,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_SubscriptionStateChanged = new SubscriptionStateChangedEventHandler(Subscription_StateChanged);
             m_MonitoredItemNotification = new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
-            m_PublishStatusChanged = new EventHandler(Subscription_PublishStatusChanged);
+            m_PublishStatusChanged = new PublishStateChangedEventHandler(Subscription_PublishStatusChanged);
         }
         #endregion
 
@@ -60,9 +60,9 @@ namespace Opc.Ua.Sample.Controls
         private MonitoredItem m_monitoredItem;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
         private MonitoredItemNotificationEventHandler m_MonitoredItemNotification;
-        private EventHandler m_PublishStatusChanged;
+        private PublishStateChangedEventHandler m_PublishStatusChanged;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
@@ -70,7 +70,7 @@ namespace Opc.Ua.Sample.Controls
         public void Show(MonitoredItem monitoredItem)
         {
             if (monitoredItem == null) throw new ArgumentNullException("monitoredItem");
-            
+
             Show();
             BringToFront();
 
@@ -81,11 +81,11 @@ namespace Opc.Ua.Sample.Controls
                 monitoredItem.Subscription.PublishStatusChanged -= m_PublishStatusChanged;
                 monitoredItem.Notification -= m_MonitoredItemNotification;
             }
-            
+
             // start receiving notifications from the new subscription.
             m_monitoredItem = monitoredItem;
-            m_subscription  = null;
-  
+            m_subscription = null;
+
             if (m_monitoredItem != null)
             {
                 m_subscription = monitoredItem.Subscription;
@@ -103,7 +103,7 @@ namespace Opc.Ua.Sample.Controls
             LatestValueCTRL.ShowValue(m_monitoredItem, false);
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Updates the controls displaying the status of the subscription.
@@ -132,14 +132,14 @@ namespace Opc.Ua.Sample.Controls
                 MonitoringModeTB.ForeColor = Color.Red;
                 MonitoringModeTB.Font = new Font(MonitoringModeTB.Font, FontStyle.Bold);
             }
-            
+
             LastUpdateTimeTB.Text = String.Empty;
-            LastMessageIdTB.Text  = String.Empty;
+            LastMessageIdTB.Text = String.Empty;
 
             if (lastMessage != null)
             {
                 LastUpdateTimeTB.Text = String.Format("{0:HH:mm:ss}", lastMessage.PublishTime.ToLocalTime());
-                LastMessageIdTB.Text  = String.Format("{0}", lastMessage.SequenceNumber);
+                LastMessageIdTB.Text = String.Format("{0}", lastMessage.SequenceNumber);
             }
         }
         #endregion
@@ -167,7 +167,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                                
+
                 // notify controls of the change.
                 EventsCTRL.NotificationReceived(e);
                 DataChangesCTRL.NotificationReceived(e);
@@ -181,7 +181,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -218,14 +218,14 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         /// <summary>
         /// Handles a change to the publish status for the subscription.
         /// </summary>
-        void Subscription_PublishStatusChanged(object subscription, EventArgs e)
+        void Subscription_PublishStatusChanged(object subscription, PublishStateChangedEventArgs e)
         {
             if (InvokeRequired)
             {
@@ -240,7 +240,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // ignore notifications for other subscriptions.
-                if (!Object.ReferenceEquals(m_subscription,  subscription))
+                if (!Object.ReferenceEquals(m_subscription, subscription))
                 {
                     return;
                 }
@@ -250,7 +250,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -260,39 +260,39 @@ namespace Opc.Ua.Sample.Controls
             {
                 if (sender == WindowStatusMI)
                 {
-                    WindowStatusMI.Checked      = !WindowStatusMI.Checked;
+                    WindowStatusMI.Checked = !WindowStatusMI.Checked;
                     WindowLatestValueMI.Checked = false;
-                    MonitoredItemsCTRL.Visible  = true; 
-                    SplitterPN.Panel1Collapsed  = !WindowStatusMI.Checked;
+                    MonitoredItemsCTRL.Visible = true;
+                    SplitterPN.Panel1Collapsed = !WindowStatusMI.Checked;
                 }
 
                 else if (sender == WindowHistoryMI)
                 {
-                    WindowHistoryMI.Checked        = true;
-                    WindowLatestValueMI.Checked    = false;
-                    MonitoredItemsCTRL.Visible     = true;
-                    EventsCTRL.Visible             = m_monitoredItem.NodeClass != NodeClass.Variable;
-                    DataChangesCTRL.Visible        = !EventsCTRL.Visible;
-                    LatestValueCTRL.Visible        = false;
+                    WindowHistoryMI.Checked = true;
+                    WindowLatestValueMI.Checked = false;
+                    MonitoredItemsCTRL.Visible = true;
+                    EventsCTRL.Visible = m_monitoredItem.NodeClass != NodeClass.Variable;
+                    DataChangesCTRL.Visible = !EventsCTRL.Visible;
+                    LatestValueCTRL.Visible = false;
 
                     Text = String.Format("{0} - {1} - {2}", m_subscription.DisplayName, m_monitoredItem.DisplayName, "Recent Values");
                 }
-                
+
                 else if (sender == WindowLatestValueMI)
                 {
-                    WindowHistoryMI.Checked        = false;
-                    WindowLatestValueMI.Checked    = true;
-                    MonitoredItemsCTRL.Visible     = true;
-                    EventsCTRL.Visible             = false;
-                    DataChangesCTRL.Visible        = false; 
-                    LatestValueCTRL.Visible        = true;
+                    WindowHistoryMI.Checked = false;
+                    WindowLatestValueMI.Checked = true;
+                    MonitoredItemsCTRL.Visible = true;
+                    EventsCTRL.Visible = false;
+                    DataChangesCTRL.Visible = false;
+                    LatestValueCTRL.Visible = true;
 
                     Text = String.Format("{0} - {1} - {2}", m_subscription.DisplayName, m_monitoredItem.DisplayName, "Latest Value");
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -306,7 +306,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     monitoringMode = MonitoringMode.Reporting;
                 }
-                
+
                 else if (sender == MonitoringModeSamplingMI)
                 {
                     monitoringMode = MonitoringMode.Sampling;
@@ -316,33 +316,33 @@ namespace Opc.Ua.Sample.Controls
                 {
                     monitoringMode = MonitoringMode.Disabled;
                 }
-                
+
                 m_monitoredItem.Subscription.SetMonitoringMode(monitoringMode, new MonitoredItem[] { m_monitoredItem });
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void MonitoringModeMI_DropDownOpening(object sender, EventArgs e)
-        {            
+        {
             try
             {
                 MonitoringModeReportingMI.Checked = false;
-                MonitoringModeSamplingMI.Checked  = false;
-                MonitoringModeDisabledMI.Checked  = false;
+                MonitoringModeSamplingMI.Checked = false;
+                MonitoringModeDisabledMI.Checked = false;
 
                 switch (m_monitoredItem.MonitoringMode)
                 {
                     case MonitoringMode.Reporting: { MonitoringModeReportingMI.Checked = true; break; }
-                    case MonitoringMode.Sampling:  { MonitoringModeSamplingMI.Checked  = true; break; }
-                    case MonitoringMode.Disabled:  { MonitoringModeDisabledMI.Checked  = true; break; }
+                    case MonitoringMode.Sampling: { MonitoringModeSamplingMI.Checked = true; break; }
+                    case MonitoringMode.Disabled: { MonitoringModeDisabledMI.Checked = true; break; }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
