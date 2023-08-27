@@ -267,7 +267,7 @@
       <Version>6.2.14</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>1.4.372.46-preview</Version>
+      <Version>1.4.372.56</Version>
     </PackageReference>
     <PackageReference Include="System.Xml.XmlDocument">
       <Version>4.3.0</Version>
