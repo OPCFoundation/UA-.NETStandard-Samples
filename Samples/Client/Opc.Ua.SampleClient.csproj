@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -158,7 +158,7 @@
       <Version>6.2.14</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
-      <Version>1.4.372.56</Version>
+      <Version>1.4.372.76</Version>
     </PackageReference>
     <PackageReference Include="System.Xml.XmlDocument">
       <Version>4.3.0</Version>
