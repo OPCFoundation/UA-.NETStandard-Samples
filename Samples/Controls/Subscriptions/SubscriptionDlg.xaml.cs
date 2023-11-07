@@ -77,7 +77,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_SessionNotification = new NotificationEventHandler(Session_Notification);
             m_SubscriptionStateChanged = new SubscriptionStateChangedEventHandler(Subscription_StateChanged);
-            m_PublishStatusChanged = new PublishStateChangedEventHandler(Subscription_PublishStatusChanged);
+            m_PublishStatusChanged = new EventHandler(Subscription_PublishStatusChanged);
         }
         #endregion
 
@@ -85,7 +85,7 @@ namespace Opc.Ua.Sample.Controls
         private Subscription m_subscription;
         private NotificationEventHandler m_SessionNotification;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
-        private PublishStateChangedEventHandler m_PublishStatusChanged;
+        private EventHandler m_PublishStatusChanged;
         #endregion
 
         #region Public Interface
