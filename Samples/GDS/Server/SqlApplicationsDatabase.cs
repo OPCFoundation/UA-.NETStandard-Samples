@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -680,6 +680,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
         }
 
         #endregion
+
         #region ICertificateRequest
         public NodeId StartSigningRequest(
             NodeId applicationId,
@@ -938,9 +939,9 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 return CertificateRequestState.Approved;
             }
         }
-
         #endregion
-        #region Private Fileds
+
+        #region Private Fields
         private DateTime m_lastCounterResetTime = DateTime.MinValue;
         #endregion
     }

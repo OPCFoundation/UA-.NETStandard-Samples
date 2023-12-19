@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using Opc.Ua.Configuration;
+using Opc.Ua.Gds.Server.Database.Linq;
 using Opc.Ua.Gds.Server.Database.Sql;
 using Opc.Ua.Server.Controls;
 using System;
@@ -56,17 +57,29 @@ namespace Opc.Ua.Gds.Server
             try
             {
                 // load the application configuration.
-                application.LoadApplicationConfiguration(false).Wait();
+                var config = application.LoadApplicationConfiguration(false).Result;
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificate(false, 0).Wait();
+                bool haveAppCertificate = application.CheckApplicationInstanceCertificate(false, 0).Result;
+                if (!haveAppCertificate)
+                {
+                    throw new Exception("Application instance certificate invalid!");
+                }
+
+                // get the DatabaseStorePath configuration parameter.
+                GlobalDiscoveryServerConfiguration gdsConfiguration = config.ParseExtension<GlobalDiscoveryServerConfiguration>();
+                string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
+
+                // load the user database. TODO: map to Sql database
+                var userDatabase = JsonUsersDatabase.Load(userdatabaseStorePath);
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
                 var server = new GlobalDiscoverySampleServer(
                     database,
                     database,
-                    new CertificateGroup());
+                    new CertificateGroup(),
+                    userDatabase);
                 application.Start(server).Wait();
 
                 // run the application interactively.

@@ -73,6 +73,7 @@
         <ua:TokenType>UserName_1</ua:TokenType>
         <ua:SecurityPolicyUri>http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256</ua:SecurityPolicyUri>
       </ua:UserTokenPolicy>
+      
     </UserTokenPolicies>
     <DiagnosticsEnabled>true</DiagnosticsEnabled>
     <MaxSessionCount>100</MaxSessionCount>
@@ -124,7 +125,6 @@
     <MaxTrustListSize>0</MaxTrustListSize>
     <MultiCastDnsEnabled>false</MultiCastDnsEnabled>
 
-
   </ServerConfiguration>
   <Extensions>
     <ua:XmlElement>
@@ -149,6 +149,7 @@
         <KnownHostNames/>
         <ShutdownDelay>5</ShutdownDelay>
         <DatabaseStorePath>%LocalApplicationData%/OPC Foundation/GDS/gdsdb.json</DatabaseStorePath>
+        <UsersDatabaseStorePath>%LocalApplicationData%/OPC Foundation/GDS/gdsuserdb.json</UsersDatabaseStorePath>
       </GlobalDiscoveryServerConfiguration>
     </ua:XmlElement>
   </Extensions>
