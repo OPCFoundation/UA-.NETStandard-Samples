@@ -27,11 +27,13 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Linq;
 using Opc.Ua.Gds.Server.Database.Sql;
 using Opc.Ua.Server.Controls;
 using System;
+using System.Data.Entity;
 
 namespace Opc.Ua.Gds.Server
 {
@@ -66,12 +68,32 @@ namespace Opc.Ua.Gds.Server
                     throw new Exception("Application instance certificate invalid!");
                 }
 
-                // get the DatabaseStorePath configuration parameter.
-                GlobalDiscoveryServerConfiguration gdsConfiguration = config.ParseExtension<GlobalDiscoveryServerConfiguration>();
-                string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
+               
+                // load the user database.
+                var userDatabase = new SqlUsersDatabase();
+                //check if database Works, else initialize
+                try
+                {
+                    userDatabase.CheckCredentials("Test", "Test");
+                }
+                catch (Exception e)
+                {
+                    Utils.LogError(e, "Could not connect to the Database!");
 
-                // load the user database. TODO: map to Sql database
-                var userDatabase = JsonUsersDatabase.Load(userdatabaseStorePath);
+                    var ie = e.InnerException;
+
+                    while (ie != null)
+                    {
+                        Utils.LogInfo(ie, "");
+                        ie = ie.InnerException;
+                    }
+
+                    Utils.LogInfo("Initialize Database tables!");
+                    userDatabase.Initialize();
+
+                    Utils.LogInfo("Database Initialized!");
+                }
+
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
