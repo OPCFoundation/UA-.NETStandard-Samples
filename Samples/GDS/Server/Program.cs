@@ -73,8 +73,28 @@ namespace Opc.Ua.Gds.Server
                 var userDatabase = new SqlUsersDatabase();
                 //initialize users Database
                 userDatabase.Initialize();
-               
-                
+
+                //configure users
+                ApplicationInstance.MessageDlg.Message("Use default users?", true);
+                bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+                if (!createStandardUsers)
+                {
+                    //Delete existing standard users
+                    userDatabase.DeleteUser("appadmin");
+                    userDatabase.DeleteUser("appuser");
+                    userDatabase.DeleteUser("sysadmin");
+
+                    //Create new admin user
+                    string username = InputDlg.Show("Please specify user name of the application admin user:", false);
+                    _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
+
+                    Console.Write($"Please specify the password of {username}:");
+
+                    string password = InputDlg.Show($"Please specify the password of {username}:", true);
+                    _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
+
+                    userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
+                }
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
@@ -82,7 +102,9 @@ namespace Opc.Ua.Gds.Server
                     database,
                     database,
                     new CertificateGroup(),
-                    userDatabase);
+                    userDatabase,
+                    true,
+                    createStandardUsers);
                 application.Start(server).Wait();
 
                 // run the application interactively.

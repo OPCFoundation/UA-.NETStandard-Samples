@@ -249,6 +249,12 @@ namespace Opc.Ua.Gds.Server
             bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
 
             if (!createStandardUsers){
+                //delete existing standard users
+                userDatabase.DeleteUser("appadmin");
+                userDatabase.DeleteUser("appuser");
+                userDatabase.DeleteUser("sysadmin");
+
+                //Create new admin user
                 Console.Write("Please specify user name of the application admin user:");
                 string username = Console.ReadLine();
                 _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
