@@ -23,14 +23,34 @@ namespace Opc.Ua.Gds.Server
         {
             using (usersdbEntities entities = new usersdbEntities())
             {
-                Assembly assembly = typeof(SqlApplicationsDatabase).GetTypeInfo().Assembly;
-                StreamReader istrm = new StreamReader(assembly.GetManifestResourceStream("Opc.Ua.Gds.Server.DB.usersdb.edmx.sql"));
-                string tables = istrm.ReadToEnd();
-                entities.Database.Initialize(true);
-                entities.Database.CreateIfNotExists();
-                var parts = tables.Split(new string[] { "GO" }, System.StringSplitOptions.None);
-                foreach (var part in parts) { entities.Database.ExecuteSqlCommand(part); }
-                entities.SaveChanges();
+                //only run initizailation logic if the database does not work -> throwS an exception
+                try
+                {
+                    CheckCredentials("Test", "Test");
+                }
+                catch (Exception e)
+                {
+                    Utils.LogError(e, "Could not connect to the Database!");
+
+                    var ie = e.InnerException;
+
+                    while (ie != null)
+                    {
+                        Utils.LogInfo(ie, "");
+                        ie = ie.InnerException;
+                    }
+                    Utils.LogInfo("Initialize Database tables!");
+                    Assembly assembly = typeof(SqlApplicationsDatabase).GetTypeInfo().Assembly;
+                    StreamReader istrm = new StreamReader(assembly.GetManifestResourceStream("Opc.Ua.Gds.Server.DB.usersdb.edmx.sql"));
+                    string tables = istrm.ReadToEnd();
+                    entities.Database.Initialize(true);
+                    entities.Database.CreateIfNotExists();
+                    var parts = tables.Split(new string[] { "GO" }, System.StringSplitOptions.None);
+                    foreach (var part in parts) { entities.Database.ExecuteSqlCommand(part); }
+                    entities.SaveChanges();
+                    Utils.LogInfo("Database Initialized!");
+                }
+                
             }
         }
 

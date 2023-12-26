@@ -71,29 +71,10 @@ namespace Opc.Ua.Gds.Server
                
                 // load the user database.
                 var userDatabase = new SqlUsersDatabase();
-                //check if database Works, else initialize
-                try
-                {
-                    userDatabase.CheckCredentials("Test", "Test");
-                }
-                catch (Exception e)
-                {
-                    Utils.LogError(e, "Could not connect to the Database!");
-
-                    var ie = e.InnerException;
-
-                    while (ie != null)
-                    {
-                        Utils.LogInfo(ie, "");
-                        ie = ie.InnerException;
-                    }
-
-                    Utils.LogInfo("Initialize Database tables!");
-                    userDatabase.Initialize();
-
-                    Utils.LogInfo("Database Initialized!");
-                }
-
+                //initialize users Database
+                userDatabase.Initialize();
+               
+                
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
