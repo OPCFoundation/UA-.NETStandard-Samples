@@ -74,27 +74,8 @@ namespace Opc.Ua.Gds.Server
                 //initialize users Database
                 userDatabase.Initialize();
 
-                //configure users
-                ApplicationInstance.MessageDlg.Message("Use default users?", true);
-                bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
-                if (!createStandardUsers)
-                {
-                    //Delete existing standard users
-                    userDatabase.DeleteUser("appadmin");
-                    userDatabase.DeleteUser("appuser");
-                    userDatabase.DeleteUser("sysadmin");
-
-                    //Create new admin user
-                    string username = InputDlg.Show("Please specify user name of the application admin user:", false);
-                    _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
-
-                    Console.Write($"Please specify the password of {username}:");
-
-                    string password = InputDlg.Show($"Please specify the password of {username}:", true);
-                    _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
-
-                    userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
-                }
+                bool createStandardUsers = ConfigureUsers(userDatabase);
+                
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
@@ -114,6 +95,36 @@ namespace Opc.Ua.Gds.Server
             {
                 ExceptionDlg.Show(application.ApplicationName, e);
             }
+        }
+
+        private static bool ConfigureUsers(SqlUsersDatabase userDatabase)
+        {
+            ApplicationInstance.MessageDlg.Message("Use default users?", true);
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+            if (!createStandardUsers)
+            {
+                //Delete existing standard users
+                userDatabase.DeleteUser("appadmin");
+                userDatabase.DeleteUser("appuser");
+                userDatabase.DeleteUser("sysadmin");
+
+                //Create new admin user
+                string username = InputDlg.Show("Please specify user name of the application admin user:", false);
+                _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
+
+                Console.Write($"Please specify the password of {username}:");
+
+                string password = InputDlg.Show($"Please specify the password of {username}:", true);
+                _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
+
+                //create User, if User exists delete & recreate
+                if (!userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin))
+                {
+                    userDatabase.DeleteUser(username);
+                    userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
+                }
+            }
+            return createStandardUsers;
         }
     }
 }

@@ -29,6 +29,7 @@
 
 using Mono.Options;
 using Opc.Ua.Configuration;
+using Opc.Ua.Gds.Server.Database;
 using Opc.Ua.Gds.Server.Database.Linq;
 using Opc.Ua.Server;
 using System;
@@ -243,33 +244,9 @@ namespace Opc.Ua.Gds.Server
             var database = JsonApplicationsDatabase.Load(databaseStorePath);
             var userDatabase = JsonUsersDatabase.Load(userdatabaseStorePath);
 
-
-            //configure Users
-            ApplicationInstance.MessageDlg.Message("Use default users?", true);
-            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
-
-            if (!createStandardUsers){
-                //delete existing standard users
-                userDatabase.DeleteUser("appadmin");
-                userDatabase.DeleteUser("appuser");
-                userDatabase.DeleteUser("sysadmin");
-
-                //Create new admin user
-                Console.Write("Please specify user name of the application admin user:");
-                string username = Console.ReadLine();
-                _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
-
-                Console.Write($"Please specify the password of {username}:");
-
-                //string password = Console.ReadLine();
-                string password = GetPassword();
-                _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
-
-                userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
-            }
+            bool createStandardUsers = ConfigureUsers(userDatabase);
 
             // start the server.
-            
             server = new GlobalDiscoverySampleServer(
                 database,
                 database,
@@ -294,6 +271,39 @@ namespace Opc.Ua.Gds.Server
             server.CurrentInstance.SessionManager.SessionClosing += EventStatus;
             server.CurrentInstance.SessionManager.SessionCreated += EventStatus;
 
+        }
+
+        private bool ConfigureUsers(JsonUsersDatabase userDatabase)
+        {
+            ApplicationInstance.MessageDlg.Message("Use default users?", true);
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+
+            if (!createStandardUsers)
+            {
+                //delete existing standard users
+                userDatabase.DeleteUser("appadmin");
+                userDatabase.DeleteUser("appuser");
+                userDatabase.DeleteUser("sysadmin");
+
+                //Create new admin user
+                Console.Write("Please specify user name of the application admin user:");
+                string username = Console.ReadLine();
+                _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
+
+                Console.Write($"Please specify the password of {username}:");
+
+                //string password = Console.ReadLine();
+                string password = GetPassword();
+                _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
+
+                //create User, if User exists delete & recreate
+                if (!userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin))
+                {
+                    userDatabase.DeleteUser(username);
+                    userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
+                }
+            }
+            return createStandardUsers;
         }
 
         private void EventStatus(Session session, SessionEventReason reason)
