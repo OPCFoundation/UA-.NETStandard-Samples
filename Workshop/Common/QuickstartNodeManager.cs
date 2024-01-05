@@ -4060,7 +4060,7 @@ namespace Quickstarts
 
                 if (!String.IsNullOrEmpty(handle.ComponentPath))
                 {
-                    if (m_componentCache.TryGetValue(handle.RootId, out entry))
+                    if (m_componentCache.TryGetValue(handle.RootNodeId, out entry))
                     {
                         return entry.Entry.FindChildBySymbolicName(context, handle.ComponentPath);
                     }
@@ -4095,7 +4095,7 @@ namespace Quickstarts
 
                     if (!String.IsNullOrEmpty(handle.ComponentPath))
                     {
-                        nodeId = handle.RootId;
+                        nodeId = handle.RootNodeId;
                     }
 
                     CacheEntry entry = null;
@@ -4135,7 +4135,7 @@ namespace Quickstarts
                 {
                     CacheEntry entry = null;
 
-                    if (m_componentCache.TryGetValue(handle.RootId, out entry))
+                    if (m_componentCache.TryGetValue(handle.RootNodeId, out entry))
                     {
                         entry.RefCount++;
 
@@ -4154,7 +4154,7 @@ namespace Quickstarts
                         entry = new CacheEntry();
                         entry.RefCount = 1;
                         entry.Entry = root;
-                        m_componentCache.Add(handle.RootId, entry);
+                        m_componentCache.Add(handle.RootNodeId, entry);
                     }
                 }
 
