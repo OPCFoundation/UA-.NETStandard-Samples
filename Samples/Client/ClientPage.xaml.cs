@@ -371,7 +371,7 @@ namespace Opc.Ua.SampleClient
         /// <summary>
         /// Updates the status control when a keep alive event occurs.
         /// </summary>
-        async void StandardClient_KeepAlive(Session sender, KeepAliveEventArgs e)
+        async void StandardClient_KeepAlive(ISession sender, KeepAliveEventArgs e)
         {
             if (!Dispatcher.HasThreadAccess)
             {
