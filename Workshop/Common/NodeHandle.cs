@@ -88,6 +88,24 @@ namespace Quickstarts
         }
 
         /// <summary>
+        /// A unique identifier for the root of a complex object tree.
+        /// Like <see cref="RootId"/>, but combined with the namespace.
+        /// </summary>
+        public NodeId RootNodeId
+        {
+            get
+            {
+                if (ParsedNodeId != null)
+                {
+                    // the RootId does not contain a namespace, so it has to be re-constructed to be used as a NodeId
+                    return new NodeId(ParsedNodeId.RootId, ParsedNodeId.NamespaceIndex);
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
         /// A path to a component within the tree identified by the root id.
         /// </summary>
         public string ComponentPath
