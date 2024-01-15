@@ -27,11 +27,13 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Linq;
 using Opc.Ua.Gds.Server.Database.Sql;
 using Opc.Ua.Server.Controls;
 using System;
+using System.Data.Entity;
 
 namespace Opc.Ua.Gds.Server
 {
@@ -66,12 +68,14 @@ namespace Opc.Ua.Gds.Server
                     throw new Exception("Application instance certificate invalid!");
                 }
 
-                // get the DatabaseStorePath configuration parameter.
-                GlobalDiscoveryServerConfiguration gdsConfiguration = config.ParseExtension<GlobalDiscoveryServerConfiguration>();
-                string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
+               
+                // load the user database.
+                var userDatabase = new SqlUsersDatabase();
+                //initialize users Database
+                userDatabase.Initialize();
 
-                // load the user database. TODO: map to Sql database
-                var userDatabase = JsonUsersDatabase.Load(userdatabaseStorePath);
+                bool createStandardUsers = ConfigureUsers(userDatabase);
+                
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
@@ -79,7 +83,9 @@ namespace Opc.Ua.Gds.Server
                     database,
                     database,
                     new CertificateGroup(),
-                    userDatabase);
+                    userDatabase,
+                    true,
+                    createStandardUsers);
                 application.Start(server).Wait();
 
                 // run the application interactively.
@@ -89,6 +95,36 @@ namespace Opc.Ua.Gds.Server
             {
                 ExceptionDlg.Show(application.ApplicationName, e);
             }
+        }
+
+        private static bool ConfigureUsers(SqlUsersDatabase userDatabase)
+        {
+            ApplicationInstance.MessageDlg.Message("Use default users?", true);
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+            if (!createStandardUsers)
+            {
+                //Delete existing standard users
+                userDatabase.DeleteUser("appadmin");
+                userDatabase.DeleteUser("appuser");
+                userDatabase.DeleteUser("sysadmin");
+
+                //Create new admin user
+                string username = InputDlg.Show("Please specify user name of the application admin user:", false);
+                _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
+
+                Console.Write($"Please specify the password of {username}:");
+
+                string password = InputDlg.Show($"Please specify the password of {username}:", true);
+                _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
+
+                //create User, if User exists delete & recreate
+                if (!userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin))
+                {
+                    userDatabase.DeleteUser(username);
+                    userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
+                }
+            }
+            return createStandardUsers;
         }
     }
 }

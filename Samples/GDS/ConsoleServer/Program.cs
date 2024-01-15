@@ -29,13 +29,18 @@
 
 using Mono.Options;
 using Opc.Ua.Configuration;
+using Opc.Ua.Gds.Server.Database;
 using Opc.Ua.Gds.Server.Database.Linq;
 using Opc.Ua.Server;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Opc.Ua.Gds.Server
 {
@@ -236,14 +241,19 @@ namespace Opc.Ua.Gds.Server
             string databaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.DatabaseStorePath);
             string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
 
-            // start the server.
             var database = JsonApplicationsDatabase.Load(databaseStorePath);
             var userDatabase = JsonUsersDatabase.Load(userdatabaseStorePath);
+
+            bool createStandardUsers = ConfigureUsers(userDatabase);
+
+            // start the server.
             server = new GlobalDiscoverySampleServer(
                 database,
                 database,
                 new CertificateGroup(),
-                userDatabase);
+                userDatabase,
+                true,
+                createStandardUsers);
             await application.Start(server).ConfigureAwait(false);
 
             // print endpoint info
@@ -261,6 +271,39 @@ namespace Opc.Ua.Gds.Server
             server.CurrentInstance.SessionManager.SessionClosing += EventStatus;
             server.CurrentInstance.SessionManager.SessionCreated += EventStatus;
 
+        }
+
+        private bool ConfigureUsers(JsonUsersDatabase userDatabase)
+        {
+            ApplicationInstance.MessageDlg.Message("Use default users?", true);
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+
+            if (!createStandardUsers)
+            {
+                //delete existing standard users
+                userDatabase.DeleteUser("appadmin");
+                userDatabase.DeleteUser("appuser");
+                userDatabase.DeleteUser("sysadmin");
+
+                //Create new admin user
+                Console.Write("Please specify user name of the application admin user:");
+                string username = Console.ReadLine();
+                _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
+
+                Console.Write($"Please specify the password of {username}:");
+
+                //string password = Console.ReadLine();
+                string password = GetPassword();
+                _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
+
+                //create User, if User exists delete & recreate
+                if (!userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin))
+                {
+                    userDatabase.DeleteUser(username);
+                    userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
+                }
+            }
+            return createStandardUsers;
         }
 
         private void EventStatus(Session session, SessionEventReason reason)
@@ -306,6 +349,39 @@ namespace Opc.Ua.Gds.Server
                 }
                 await Task.Delay(1000).ConfigureAwait(false);
             }
+        }
+
+        private static string GetPassword()
+        {
+            StringBuilder input = new StringBuilder();
+            while (true)
+            {
+                int x = Console.CursorLeft;
+                int y = Console.CursorTop;
+                ConsoleKeyInfo key = Console.ReadKey(true);
+                if (key.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                    break;
+                }
+                if (key.Key == ConsoleKey.Backspace && input.Length > 0)
+                {
+                    input.Remove(input.Length - 1, 1);
+                    Console.SetCursorPosition(x - 1, y);
+                    Console.Write(" ");
+                    Console.SetCursorPosition(x - 1, y);
+                }
+                else if (key.KeyChar < 32 || key.KeyChar > 126)
+                {
+                    Trace.WriteLine("Output suppressed: no key char"); //catch non-printable chars, e.g F1, CursorUp and so ...
+                }
+                else if (key.Key != ConsoleKey.Backspace)
+                {
+                    input.Append(key.KeyChar);
+                    Console.Write("*");
+                }
+            }
+            return input.ToString();
         }
     }
 }
