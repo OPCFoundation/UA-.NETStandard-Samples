@@ -21,6 +21,10 @@ jobs:
   analyze:
     name: Analyze
     runs-on: windows-2022
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
     strategy:
       fail-fast: false
