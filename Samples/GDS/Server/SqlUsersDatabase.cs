@@ -4,18 +4,15 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Opc.Ua.Gds.Server;
-using Opc.Ua.Gds.Server.Database;
 using Opc.Ua.Gds.Server.Database.Sql;
+using Opc.Ua.Gds.Server.DB;
+using Opc.Ua.Server;
+using Opc.Ua.Server.UserDatabase;
 
 namespace Opc.Ua.Gds.Server
 {
-    public class SqlUsersDatabase: IUsersDatabase
+    public class SqlUsersDatabase: IUserDatabase
     {
 
         #region IUsersDatabase
@@ -54,7 +51,7 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        public bool CreateUser(string userName, string password, GdsRole role)
+        public bool CreateUser(string userName, string password, IEnumerable<Role> roles)
         {
             if (string.IsNullOrEmpty(userName))
             {
@@ -74,7 +71,13 @@ namespace Opc.Ua.Gds.Server
 
                 string hash = Hash(password);
 
-                var user = new User { ID = Guid.NewGuid(), UserName = userName, Hash = hash, GdsRole = (int)role };
+                var sqlRoles = new List<SqlRole>();
+                foreach (var role in roles)
+                {
+                    sqlRoles.Add((SqlRole)role);
+                }
+
+                var user = new User { ID = Guid.NewGuid(), UserName = userName, Hash = hash, Roles = sqlRoles };
 
                 entities.UserSet.Add(user);
 
@@ -127,7 +130,7 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        public GdsRole GetUserRole(string userName)
+        public IEnumerable<Role> GetUserRoles(string userName)
         {
             if (string.IsNullOrEmpty(userName))
             {
@@ -142,7 +145,13 @@ namespace Opc.Ua.Gds.Server
                     throw new ArgumentException("No user found with the UserName " + userName);
                 }
 
-                return (GdsRole)user.GdsRole;
+                var roles = new List<Role>();
+                foreach (var role in user.Roles)
+                {
+                    roles.Add((Role)role);
+                }
+
+                return roles;
             }
         }
 

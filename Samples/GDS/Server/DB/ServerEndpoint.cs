@@ -7,25 +7,16 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Opc.Ua.Gds.Server
+namespace Opc.Ua.Gds.Server.DB
 {
     using System;
     using System.Collections.Generic;
     
-    public partial class CertificateRequest
+    public partial class ServerEndpoint
     {
         public int ID { get; set; }
-        public System.Guid RequestId { get; set; }
         public int ApplicationId { get; set; }
-        public int State { get; set; }
-        public string CertificateGroupId { get; set; }
-        public string CertificateTypeId { get; set; }
-        public byte[] CertificateSigningRequest { get; set; }
-        public string SubjectName { get; set; }
-        public string DomainNames { get; set; }
-        public string PrivateKeyFormat { get; set; }
-        public string PrivateKeyPassword { get; set; }
-        public string AuthorityId { get; set; }
+        public string DiscoveryUrl { get; set; }
     
         public virtual Application Application { get; set; }
     }

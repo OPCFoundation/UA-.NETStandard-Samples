@@ -31,8 +31,10 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Linq;
 using Opc.Ua.Gds.Server.Database.Sql;
+using Opc.Ua.Server;
 using Opc.Ua.Server.Controls;
 using System;
+using System.Collections.Generic;
 using System.Data.Entity;
 
 namespace Opc.Ua.Gds.Server
@@ -118,10 +120,10 @@ namespace Opc.Ua.Gds.Server
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
 
                 //create User, if User exists delete & recreate
-                if (!userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin))
+                if (!userDatabase.CreateUser(username, password, new List<Role>() { GdsRole.ApplicationAdmin }))
                 {
                     userDatabase.DeleteUser(username);
-                    userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
+                    userDatabase.CreateUser(username, password, new List<Role>(){ GdsRole.ApplicationAdmin});
                 }
             }
             return createStandardUsers;

@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Opc.Ua.Gds.Server
+namespace Opc.Ua.Gds.Server.DB
 {
     using System;
     using System.Data.Entity;
