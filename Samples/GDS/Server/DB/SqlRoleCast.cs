@@ -17,7 +17,7 @@ namespace Opc.Ua.Gds.Server.DB
                 return new Role(new NodeId(sqlRole.RoleId), sqlRole.Name);
             }
 
-            return new Role(null, sqlRole.Name);
+            return new Role(NodeId.Null, sqlRole.Name);
         }
 
         public static explicit operator SqlRole(Role Role)
