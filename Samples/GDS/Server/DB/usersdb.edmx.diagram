@@ -6,6 +6,8 @@
     <edmx:Diagrams>
       <Diagram DiagramId="0b624976d95a4e54b00c5ffe76af5a87" Name="Diagram1" >
         <EntityTypeShape EntityType="usersdb.User" Width="1.5" PointX="5.125" PointY="1.75" />
+        <EntityTypeShape EntityType="usersdb.SqlRole" Width="1.5" PointX="7.625" PointY="3.375" IsExpanded="true" />
+        <AssociationConnector Association="usersdb.UserSqlRole" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

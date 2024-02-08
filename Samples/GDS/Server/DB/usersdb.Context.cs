@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Opc.Ua.Gds.Server
+namespace Opc.Ua.Gds.Server.DB
 {
     using System;
     using System.Data.Entity;
@@ -26,5 +26,6 @@ namespace Opc.Ua.Gds.Server
         }
     
         public virtual DbSet<User> UserSet { get; set; }
+        public virtual DbSet<SqlRole> SqlRoleSet { get; set; }
     }
 }

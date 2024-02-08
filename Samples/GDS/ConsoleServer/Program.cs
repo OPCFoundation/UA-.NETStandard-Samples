@@ -29,9 +29,9 @@
 
 using Mono.Options;
 using Opc.Ua.Configuration;
-using Opc.Ua.Gds.Server.Database;
 using Opc.Ua.Gds.Server.Database.Linq;
 using Opc.Ua.Server;
+using Opc.Ua.Server.UserDatabase;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -242,7 +242,7 @@ namespace Opc.Ua.Gds.Server
             string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
 
             var database = JsonApplicationsDatabase.Load(databaseStorePath);
-            var userDatabase = JsonUsersDatabase.Load(userdatabaseStorePath);
+            var userDatabase = JsonUserDatabase.Load(userdatabaseStorePath);
 
             bool createStandardUsers = ConfigureUsers(userDatabase);
 
@@ -273,7 +273,7 @@ namespace Opc.Ua.Gds.Server
 
         }
 
-        private bool ConfigureUsers(JsonUsersDatabase userDatabase)
+        private bool ConfigureUsers(JsonUserDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
             bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
@@ -297,10 +297,10 @@ namespace Opc.Ua.Gds.Server
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
 
                 //create User, if User exists delete & recreate
-                if (!userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin))
+                if (!userDatabase.CreateUser(username, password, new List<Role>() { GdsRole.ApplicationAdmin }))
                 {
                     userDatabase.DeleteUser(username);
-                    userDatabase.CreateUser(username, password, GdsRole.ApplicationAdmin);
+                    userDatabase.CreateUser(username, password, new List<Role>() { GdsRole.ApplicationAdmin });
                 }
             }
             return createStandardUsers;

@@ -7,6 +7,11 @@
     <Schema Namespace="usersdb.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
   <EntityContainer Name="usersdbStoreContainer">
     <EntitySet Name="UserSet" EntityType="usersdb.Store.UserSet" store:Type="Tables" Schema="dbo" />
+    <EntitySet Name="SqlRoleSet" EntityType="usersdb.Store.SqlRoleSet" store:Type="Tables" Schema="dbo" />
+    <AssociationSet Name="UserSqlRole" Association="usersdb.Store.UserSqlRole">
+      <End Role="User" EntitySet="UserSet" />
+      <End Role="SqlRole" EntitySet="SqlRoleSet" />
+    </AssociationSet>
   </EntityContainer>
   <EntityType Name="UserSet">
     <Key>
@@ -15,14 +20,41 @@
     <Property Name="ID" Type="uniqueidentifier" Nullable="false" />
     <Property Name="UserName" Type="nvarchar(max)" Nullable="false" />
     <Property Name="Hash" Type="nvarchar(max)" Nullable="false" />
-    <Property Name="GdsRole" Type="int" Nullable="false" />
   </EntityType>
+  <EntityType Name="SqlRoleSet">
+    <Key>
+      <PropertyRef Name="Id" />
+    </Key>
+    <Property Name="Id" Type="uniqueidentifier" Nullable="false" />
+    <Property Name="RoleId" Type="uniqueidentifier" Nullable="true" />
+    <Property Name="Name" Type="nvarchar(max)" Nullable="false" />
+    <Property Name="UserID" Type="uniqueidentifier" Nullable="false" />
+  </EntityType>
+  <Association Name="UserSqlRole">
+    <End Role="User" Type="usersdb.Store.UserSet" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="SqlRole" Type="usersdb.Store.SqlRoleSet" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="User">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="SqlRole">
+        <PropertyRef Name="UserID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
 </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema xmlns="http://schemas.microsoft.com/ado/2009/11/edm" xmlns:cg="http://schemas.microsoft.com/ado/2006/04/codegeneration" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" Namespace="usersdb" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" annotation:UseStrongSpatialTypes="false">
         <EntityContainer Name="usersdbEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="UserSet" EntityType="usersdb.User" />
+          <EntitySet Name="SqlRoleSet" EntityType="usersdb.SqlRole" />
+          <AssociationSet Name="UserSqlRole" Association="usersdb.UserSqlRole">
+            <End Role="User" EntitySet="UserSet" />
+            <End Role="SqlRole" EntitySet="SqlRoleSet" />
+          </AssociationSet>
         </EntityContainer>
         <EntityType Name="User">
           <Key>
@@ -31,8 +63,32 @@
           <Property Name="ID" Type="Guid" Nullable="false" annotation:StoreGeneratedPattern="None" />
           <Property Name="UserName" Type="String" Nullable="false" />
           <Property Name="Hash" Type="String" Nullable="false" />
-          <Property Name="GdsRole" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Roles" Relationship="usersdb.UserSqlRole" FromRole="User" ToRole="SqlRole" />
         </EntityType>
+        <EntityType Name="SqlRole">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Guid" Nullable="false" annotation:StoreGeneratedPattern="None" />
+          <Property Name="RoleId" Type="Guid" Nullable="true" />
+          <Property Name="Name" Type="String" Nullable="false" />
+          <NavigationProperty Name="User" Relationship="usersdb.UserSqlRole" FromRole="SqlRole" ToRole="User" />
+          <Property Name="UserID" Type="Guid" Nullable="false" />
+        </EntityType>
+        <Association Name="UserSqlRole">
+          <End Type="usersdb.User" Role="User" Multiplicity="1" >
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="usersdb.SqlRole" Role="SqlRole" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="User">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="SqlRole">
+              <PropertyRef Name="UserID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -45,7 +101,16 @@
           <ScalarProperty Name="ID" ColumnName="ID" />
           <ScalarProperty Name="UserName" ColumnName="UserName" />
           <ScalarProperty Name="Hash" ColumnName="Hash" />
-          <ScalarProperty Name="GdsRole" ColumnName="GdsRole" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="SqlRoleSet">
+      <EntityTypeMapping TypeName="IsTypeOf(usersdb.SqlRole)">
+        <MappingFragment StoreEntitySet="SqlRoleSet">
+          <ScalarProperty Name="Id" ColumnName="Id" />
+          <ScalarProperty Name="RoleId" ColumnName="RoleId" />
+          <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="UserID" ColumnName="UserID" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>

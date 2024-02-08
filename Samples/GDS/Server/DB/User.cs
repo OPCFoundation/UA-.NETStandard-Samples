@@ -7,16 +7,24 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Opc.Ua.Gds.Server
+namespace Opc.Ua.Gds.Server.DB
 {
     using System;
     using System.Collections.Generic;
     
     public partial class User
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        public User()
+        {
+            this.Roles = new HashSet<SqlRole>();
+        }
+    
         public System.Guid ID { get; set; }
         public string UserName { get; set; }
         public string Hash { get; set; }
-        public int GdsRole { get; set; }
+    
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<SqlRole> Roles { get; set; }
     }
 }
