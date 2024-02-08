@@ -157,7 +157,7 @@
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.2.14</Version>
     </PackageReference>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua">
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>1.5.373.9-preview</Version>
     </PackageReference>
     <PackageReference Include="System.Xml.XmlDocument">
