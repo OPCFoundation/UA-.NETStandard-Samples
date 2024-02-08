@@ -497,7 +497,7 @@ namespace Opc.Ua.SampleClient
             }
         }
 
-        private async void OnRegister(object sender)
+        private void OnRegister(object sender)
         {
             try
             {
