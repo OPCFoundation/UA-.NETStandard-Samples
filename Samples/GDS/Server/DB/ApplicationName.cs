@@ -7,24 +7,18 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Opc.Ua.Gds.Server
+namespace Opc.Ua.Gds.Server.DB
 {
     using System;
     using System.Collections.Generic;
     
-    public partial class CertificateStore
+    public partial class ApplicationName
     {
-        public CertificateStore()
-        {
-            this.HttpsApplications = new HashSet<Application>();
-            this.Applications = new HashSet<Application>();
-        }
-    
         public int ID { get; set; }
-        public string Path { get; set; }
-        public string AuthorityId { get; set; }
+        public int ApplicationId { get; set; }
+        public string Locale { get; set; }
+        public string Text { get; set; }
     
-        public virtual ICollection<Application> HttpsApplications { get; set; }
-        public virtual ICollection<Application> Applications { get; set; }
+        public virtual Application Application { get; set; }
     }
 }

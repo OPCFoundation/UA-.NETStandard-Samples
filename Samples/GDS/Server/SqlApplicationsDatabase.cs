@@ -33,6 +33,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
+using Opc.Ua.Gds.Server.DB;
 
 namespace Opc.Ua.Gds.Server.Database.Sql
 {

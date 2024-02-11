@@ -497,7 +497,7 @@ namespace Opc.Ua.SampleClient
             }
         }
 
-        private async void OnRegister(object sender)
+        private void OnRegister(object sender)
         {
             try
             {
@@ -505,7 +505,7 @@ namespace Opc.Ua.SampleClient
 
                 if (server != null)
                 {
-                    await server.RegisterWithDiscoveryServer();
+                    server.RegisterWithDiscoveryServer();
                 }
             }
             catch (Exception exception)
@@ -557,7 +557,7 @@ namespace Opc.Ua.SampleClient
                 {
                     XmlEncoder encoder = new XmlEncoder(monitoredItem.Subscription.Session.MessageContext);
                     e.NotificationValue.Encode(encoder);
-                    ServerStatusTB.Text = encoder.Close();
+                    ServerStatusTB.Text = encoder.CloseAndReturnText();
                 }
                 catch (Exception ex)
                 {

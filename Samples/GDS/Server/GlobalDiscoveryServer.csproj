@@ -79,48 +79,52 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Application.cs">
+    <Compile Include="DB\Application.cs">
       <DependentUpon>gdsdb.tt</DependentUpon>
     </Compile>
-    <Compile Include="ApplicationName.cs">
+    <Compile Include="DB\ApplicationName.cs">
       <DependentUpon>gdsdb.tt</DependentUpon>
     </Compile>
-    <Compile Include="User.cs">
+    <Compile Include="DB\SqlRole.cs">
       <DependentUpon>usersdb.tt</DependentUpon>
     </Compile>
-    <Compile Include="usersdb.Context.cs">
+    <Compile Include="DB\SqlRoleCast.cs" />
+    <Compile Include="DB\User.cs">
+      <DependentUpon>usersdb.tt</DependentUpon>
+    </Compile>
+    <Compile Include="DB\usersdb.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>usersdb.Context.tt</DependentUpon>
     </Compile>
-    <Compile Include="usersdb.cs">
+    <Compile Include="DB\usersdb.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>usersdb.tt</DependentUpon>
     </Compile>
-    <Compile Include="usersdb.Designer.cs">
+    <Compile Include="DB\usersdb.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>usersdb.edmx</DependentUpon>
     </Compile>
     <Compile Include="SqlApplicationsDatabase.cs" />
-    <Compile Include="CertificateRequest.cs">
+    <Compile Include="DB\CertificateRequest.cs">
       <DependentUpon>gdsdb.tt</DependentUpon>
     </Compile>
-    <Compile Include="CertificateStore.cs">
+    <Compile Include="DB\CertificateStore.cs">
       <DependentUpon>gdsdb.tt</DependentUpon>
     </Compile>
-    <Compile Include="gdsdb.Context.cs">
+    <Compile Include="DB\gdsdb.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>gdsdb.Context.tt</DependentUpon>
     </Compile>
-    <Compile Include="gdsdb.cs">
+    <Compile Include="DB\gdsdb.cs">
       <DependentUpon>gdsdb.tt</DependentUpon>
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
     </Compile>
-    <Compile Include="gdsdb.Designer.cs">
+    <Compile Include="DB\gdsdb.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>gdsdb.edmx</DependentUpon>
@@ -128,18 +132,17 @@
     <Compile Include="Properties\AssemblyVersionInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ServerEndpoint.cs">
+    <Compile Include="DB\ServerEndpoint.cs">
       <DependentUpon>gdsdb.tt</DependentUpon>
     </Compile>
     <Compile Include="SqlUsersDatabase.cs" />
-    <Content Include="usersdb.Context.tt">
+    <Content Include="DB\usersdb.Context.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>usersdb.Context.cs</LastGenOutput>
       <DependentUpon>usersdb.edmx</DependentUpon>
     </Content>
     <EmbeddedResource Include="DB\usersdb.edmx.sql" />
-    <Content Include="usersdb.edmx.sql" />
-    <Content Include="usersdb.tt">
+    <Content Include="DB\usersdb.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>usersdb.cs</LastGenOutput>
       <DependentUpon>usersdb.edmx</DependentUpon>
@@ -160,12 +163,12 @@
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <Content Include="gdsdb.Context.tt">
+    <Content Include="DB\gdsdb.Context.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>gdsdb.Context.cs</LastGenOutput>
     </Content>
     <EmbeddedResource Include="DB\gdsdb.edmx.sql" />
-    <Content Include="gdsdb.tt">
+    <Content Include="DB\gdsdb.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>gdsdb.cs</LastGenOutput>
     </Content>
@@ -176,18 +179,18 @@
     <None Include="app.manifest">
       <SubType>Designer</SubType>
     </None>
-    <EntityDeploy Include="gdsdb.edmx">
+    <EntityDeploy Include="DB\gdsdb.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>gdsdb.Designer.cs</LastGenOutput>
     </EntityDeploy>
-    <EntityDeploy Include="usersdb.edmx">
+    <EntityDeploy Include="DB\usersdb.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>usersdb.Designer.cs</LastGenOutput>
     </EntityDeploy>
-    <None Include="usersdb.edmx.diagram">
+    <None Include="DB\usersdb.edmx.diagram">
       <DependentUpon>usersdb.edmx</DependentUpon>
     </None>
-    <None Include="gdsdb.edmx.diagram">
+    <None Include="DB\gdsdb.edmx.diagram">
       <DependentUpon>gdsdb.edmx</DependentUpon>
     </None>
     <None Include="Properties\Settings.settings">
@@ -232,10 +235,10 @@
       <Version>6.4.4</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.4.372.106</Version>
+      <Version>1.5.373.121</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common">
-      <Version>1.4.372.106</Version>
+      <Version>1.5.373.121</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
