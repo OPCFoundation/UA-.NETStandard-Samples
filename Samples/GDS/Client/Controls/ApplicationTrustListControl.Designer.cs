@@ -174,7 +174,7 @@ namespace Opc.Ua.Gds.Client
             // TrustListMasksComboBox
             // 
             this.TrustListMasksComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.TrustListMasksComboBox.DropDownWidth = 250;
+            this.TrustListMasksComboBox.DropDownWidth = 168;
             this.TrustListMasksComboBox.FormattingEnabled = true;
             this.TrustListMasksComboBox.Location = new System.Drawing.Point(137, 11);
             this.TrustListMasksComboBox.Margin = new System.Windows.Forms.Padding(3, 2, 3, 1);
