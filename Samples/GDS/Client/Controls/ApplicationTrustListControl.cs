@@ -43,6 +43,8 @@ namespace Opc.Ua.Gds.Client
         public ApplicationTrustListControl()
         {
             InitializeComponent();
+            TrustListMasksComboBox.DataSource = Enum.GetValues(typeof(TrustListMasks));
+            TrustListMasksComboBox.SelectedItem = TrustListMasks.All;
         }
 
         private GlobalDiscoveryServerClient m_gds;
@@ -77,7 +79,11 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (m_application.RegistrationType == RegistrationType.ServerPush)
                     {
-                        var trustList = m_server.ReadTrustList();
+                        TrustListMasks masks;
+
+                        if (!Enum.TryParse(TrustListMasksComboBox.SelectedItem.ToString(), out masks))
+                            masks = TrustListMasks.All;
+                        var trustList = m_server.ReadTrustList(masks);
                         var rejectedList = m_server.GetRejectedList();
                         CertificateStoreControl.Initialize(trustList, rejectedList, true);
                     }
