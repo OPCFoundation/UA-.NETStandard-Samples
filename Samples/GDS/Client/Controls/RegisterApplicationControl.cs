@@ -806,7 +806,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (String.IsNullOrWhiteSpace(DiscoveryUrlsTextBox.Text) && RegistrationTypeComboBox.SelectedIndex != ClientPullManagement)
                 {
-                    var domains = X509Utils.GetDomainsFromCertficate(certificate);
+                    var domains = X509Utils.GetDomainsFromCertificate(certificate);
 
                     if (domains != null)
                     {
