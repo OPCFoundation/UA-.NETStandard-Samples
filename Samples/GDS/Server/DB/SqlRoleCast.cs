@@ -14,18 +14,19 @@ namespace Opc.Ua.Gds.Server.DB
         {
             if (sqlRole.RoleId != null)
             {
-                return new Role(new NodeId(sqlRole.RoleId), sqlRole.Name);
+                return new Role(new NodeId((uint)sqlRole.RoleId, (ushort)sqlRole.NamespaceIndex), sqlRole.Name);
             }
 
             return new Role(NodeId.Null, sqlRole.Name);
         }
 
-        public static explicit operator SqlRole(Role Role)
+        public static explicit operator SqlRole(Role role)
         {
             return new SqlRole() {
                 Id = Guid.NewGuid(),
-                Name = Role.Name,
-                RoleId = Role.RoleId.Identifier as Guid?
+                Name = role.Name,
+                RoleId = (int?)(role.RoleId.Identifier as uint?),
+                NamespaceIndex = role.RoleId.NamespaceIndex
             };
         }
     }

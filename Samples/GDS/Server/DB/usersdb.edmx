@@ -26,9 +26,10 @@
       <PropertyRef Name="Id" />
     </Key>
     <Property Name="Id" Type="uniqueidentifier" Nullable="false" />
-    <Property Name="RoleId" Type="uniqueidentifier" Nullable="true" />
+    <Property Name="RoleId" Type="int" Nullable="true" />
     <Property Name="Name" Type="nvarchar(max)" Nullable="false" />
     <Property Name="UserID" Type="uniqueidentifier" Nullable="false" />
+    <Property Name="NamespaceIndex" Type="int" Nullable="false" />
   </EntityType>
   <Association Name="UserSqlRole">
     <End Role="User" Type="usersdb.Store.UserSet" Multiplicity="1">
@@ -70,10 +71,11 @@
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="Guid" Nullable="false" annotation:StoreGeneratedPattern="None" />
-          <Property Name="RoleId" Type="Guid" Nullable="true" />
+          <Property Name="RoleId" Type="Int32" Nullable="true" />
           <Property Name="Name" Type="String" Nullable="false" />
           <NavigationProperty Name="User" Relationship="usersdb.UserSqlRole" FromRole="SqlRole" ToRole="User" />
           <Property Name="UserID" Type="Guid" Nullable="false" />
+          <Property Name="NamespaceIndex" Type="Int32" Nullable="false" />
         </EntityType>
         <Association Name="UserSqlRole">
           <End Type="usersdb.User" Role="User" Multiplicity="1" >
@@ -111,6 +113,7 @@
           <ScalarProperty Name="RoleId" ColumnName="RoleId" />
           <ScalarProperty Name="Name" ColumnName="Name" />
           <ScalarProperty Name="UserID" ColumnName="UserID" />
+          <ScalarProperty Name="NamespaceIndex" ColumnName="NamespaceIndex" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>

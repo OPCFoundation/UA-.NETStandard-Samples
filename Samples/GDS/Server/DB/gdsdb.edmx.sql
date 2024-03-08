@@ -2,8 +2,8 @@
 -- --------------------------------------------------
 -- Entity Designer DDL Script for SQL Server 2005, 2008, 2012 and Azure
 -- --------------------------------------------------
--- Date Created: 04/04/2018 18:45:51
--- Generated from EDMX file: C:\Users\mregen\Source\Repos\UA-.NETStandard\SampleApplications\Samples\GDS\Server\gdsdb.edmx
+-- Date Created: 03/08/2024 14:50:07
+-- Generated from EDMX file: C:\Users\roman\source\repos\romanett\UA-.NETStandard-Samples\Samples\GDS\Server\DB\gdsdb.edmx
 -- --------------------------------------------------
 
 SET QUOTED_IDENTIFIER OFF;
@@ -84,9 +84,7 @@ CREATE TABLE [dbo].[Applications] (
     [ProductUri] nvarchar(1000)  NOT NULL,
     [ServerCapabilities] nvarchar(500)  NULL,
     [Certificate] varbinary(max)  NULL,
-    [HttpsCertificate] varbinary(max)  NULL,
-    [TrustListId] int  NULL,
-    [HttpsTrustListId] int  NULL
+    [HttpsCertificate] varbinary(max)  NULL
 );
 GO
 
@@ -94,7 +92,9 @@ GO
 CREATE TABLE [dbo].[CertificateStores] (
     [ID] int IDENTITY(1,1) NOT NULL,
     [Path] nvarchar(256)  NOT NULL,
-    [AuthorityId] nvarchar(50)  NULL
+    [CertificateType] nvarchar(50)  NULL,
+    [ApplicationId] int  NOT NULL,
+    [Application_ID] int  NOT NULL
 );
 GO
 
@@ -183,36 +183,6 @@ ON [dbo].[ServerEndpoints]
     ([ApplicationId]);
 GO
 
--- Creating foreign key on [HttpsTrustListId] in table 'Applications'
-ALTER TABLE [dbo].[Applications]
-ADD CONSTRAINT [FK_Applications_HttpsTrustListId]
-    FOREIGN KEY ([HttpsTrustListId])
-    REFERENCES [dbo].[CertificateStores]
-        ([ID])
-    ON DELETE NO ACTION ON UPDATE NO ACTION;
-GO
-
--- Creating non-clustered index for FOREIGN KEY 'FK_Applications_HttpsTrustListId'
-CREATE INDEX [IX_FK_Applications_HttpsTrustListId]
-ON [dbo].[Applications]
-    ([HttpsTrustListId]);
-GO
-
--- Creating foreign key on [TrustListId] in table 'Applications'
-ALTER TABLE [dbo].[Applications]
-ADD CONSTRAINT [FK_Applications_TrustListId]
-    FOREIGN KEY ([TrustListId])
-    REFERENCES [dbo].[CertificateStores]
-        ([ID])
-    ON DELETE NO ACTION ON UPDATE NO ACTION;
-GO
-
--- Creating non-clustered index for FOREIGN KEY 'FK_Applications_TrustListId'
-CREATE INDEX [IX_FK_Applications_TrustListId]
-ON [dbo].[Applications]
-    ([TrustListId]);
-GO
-
 -- Creating foreign key on [ApplicationId] in table 'CertificateRequests'
 ALTER TABLE [dbo].[CertificateRequests]
 ADD CONSTRAINT [FK_CertificateRequests_Applications]
@@ -226,6 +196,21 @@ GO
 CREATE INDEX [IX_FK_CertificateRequests_Applications]
 ON [dbo].[CertificateRequests]
     ([ApplicationId]);
+GO
+
+-- Creating foreign key on [Application_ID] in table 'CertificateStores'
+ALTER TABLE [dbo].[CertificateStores]
+ADD CONSTRAINT [FK_CertificateStoreApplication]
+    FOREIGN KEY ([Application_ID])
+    REFERENCES [dbo].[Applications]
+        ([ID])
+    ON DELETE NO ACTION ON UPDATE NO ACTION;
+GO
+
+-- Creating non-clustered index for FOREIGN KEY 'FK_CertificateStoreApplication'
+CREATE INDEX [IX_FK_CertificateStoreApplication]
+ON [dbo].[CertificateStores]
+    ([Application_ID]);
 GO
 
 -- --------------------------------------------------

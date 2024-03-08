@@ -1,10 +1,10 @@
-﻿// T4 code generation is enabled for model 'gdsdb.edmx'. 
-// To enable legacy code generation, change the value of the 'Code Generation Strategy' designer
-// property to 'Legacy ObjectContext'. This property is available in the Properties Window when the model
-// is open in the designer.
+﻿// Die T4-Codegenerierung ist für Modell 'C:\Users\roman\source\repos\romanett\UA-.NETStandard-Samples\Samples\GDS\Server\DB\gdsdb.edmx' aktiviert. 
+// Um die Generierung von Legacycode zu aktivieren, ändern Sie den Wert der Designer-Eigenschaft 'Code Generation Strategy'
+// in 'Legacy ObjectContext'. Diese Eigenschaft wird im Eigenschaftenfenster angezeigt, wenn das Modell
+// im Designer geöffnet ist.
 
-// If no context and entity classes have been generated, it may be because you created an empty model but
-// have not yet chosen which version of Entity Framework to use. To generate a context class and entity
-// classes for your model, open the model in the designer, right-click on the designer surface, and
-// select 'Update Model from Database...', 'Generate Database from Model...', or 'Add Code Generation
-// Item...'.
+// Wenn keine Kontextklasse und keine Entitätsklassen generiert wurden, kann dies daran liegen, dass Sie ein leeres Modell erstellt, aber
+// noch nicht die gewünschte Entity Framework-Version ausgewählt haben. Um eine Kontextklasse und
+// Entitätsklassen für das Modell zu generieren, öffnen Sie das Modell im Designer, klicken mit der rechten Maustaste auf die Designeroberfläche, und
+// wählen 'Modell aus der Datenbank aktualisieren', 'Datenbank aus Modell generieren' oder 'Codegenerierungselement
+// hinzufügen' aus.
