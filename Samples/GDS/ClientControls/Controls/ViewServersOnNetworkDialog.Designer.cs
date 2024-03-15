@@ -64,17 +64,19 @@
             this.ButtonsPanel.Controls.Add(this.SearchButton);
             this.ButtonsPanel.Controls.Add(this.CloseButton);
             this.ButtonsPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.ButtonsPanel.Location = new System.Drawing.Point(0, 373);
+            this.ButtonsPanel.Location = new System.Drawing.Point(0, 573);
+            this.ButtonsPanel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ButtonsPanel.Name = "ButtonsPanel";
-            this.ButtonsPanel.Size = new System.Drawing.Size(792, 29);
+            this.ButtonsPanel.Size = new System.Drawing.Size(1188, 45);
             this.ButtonsPanel.TabIndex = 1;
             // 
             // NextButton
             // 
             this.NextButton.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.NextButton.Location = new System.Drawing.Point(270, 3);
+            this.NextButton.Location = new System.Drawing.Point(405, 5);
+            this.NextButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.NextButton.Name = "NextButton";
-            this.NextButton.Size = new System.Drawing.Size(80, 23);
+            this.NextButton.Size = new System.Drawing.Size(120, 35);
             this.NextButton.TabIndex = 8;
             this.NextButton.Text = "Next";
             this.NextButton.UseVisualStyleBackColor = true;
@@ -84,14 +86,15 @@
             // NumberOfRecordsUpDown
             // 
             this.NumberOfRecordsUpDown.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.NumberOfRecordsUpDown.Location = new System.Drawing.Point(442, 5);
+            this.NumberOfRecordsUpDown.Location = new System.Drawing.Point(663, 8);
+            this.NumberOfRecordsUpDown.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.NumberOfRecordsUpDown.Maximum = new decimal(new int[] {
             10,
             0,
             0,
             0});
             this.NumberOfRecordsUpDown.Name = "NumberOfRecordsUpDown";
-            this.NumberOfRecordsUpDown.Size = new System.Drawing.Size(56, 20);
+            this.NumberOfRecordsUpDown.Size = new System.Drawing.Size(84, 26);
             this.NumberOfRecordsUpDown.TabIndex = 7;
             this.NumberOfRecordsUpDown.Value = new decimal(new int[] {
             10,
@@ -102,9 +105,10 @@
             // StopButton
             // 
             this.StopButton.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.StopButton.Location = new System.Drawing.Point(356, 3);
+            this.StopButton.Location = new System.Drawing.Point(534, 5);
+            this.StopButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.StopButton.Name = "StopButton";
-            this.StopButton.Size = new System.Drawing.Size(80, 23);
+            this.StopButton.Size = new System.Drawing.Size(120, 35);
             this.StopButton.TabIndex = 6;
             this.StopButton.Text = "Stop";
             this.StopButton.UseVisualStyleBackColor = true;
@@ -115,9 +119,10 @@
             // 
             this.OkButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.OkButton.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.OkButton.Location = new System.Drawing.Point(3, 3);
+            this.OkButton.Location = new System.Drawing.Point(4, 5);
+            this.OkButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.OkButton.Name = "OkButton";
-            this.OkButton.Size = new System.Drawing.Size(80, 23);
+            this.OkButton.Size = new System.Drawing.Size(120, 35);
             this.OkButton.TabIndex = 5;
             this.OkButton.Text = "OK";
             this.OkButton.UseVisualStyleBackColor = true;
@@ -125,9 +130,10 @@
             // SearchButton
             // 
             this.SearchButton.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.SearchButton.Location = new System.Drawing.Point(356, 3);
+            this.SearchButton.Location = new System.Drawing.Point(534, 5);
+            this.SearchButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.SearchButton.Name = "SearchButton";
-            this.SearchButton.Size = new System.Drawing.Size(80, 23);
+            this.SearchButton.Size = new System.Drawing.Size(120, 35);
             this.SearchButton.TabIndex = 4;
             this.SearchButton.Text = "Search";
             this.SearchButton.UseVisualStyleBackColor = true;
@@ -137,9 +143,10 @@
             // 
             this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.CloseButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.CloseButton.Location = new System.Drawing.Point(709, 3);
+            this.CloseButton.Location = new System.Drawing.Point(1064, 5);
+            this.CloseButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.CloseButton.Name = "CloseButton";
-            this.CloseButton.Size = new System.Drawing.Size(80, 23);
+            this.CloseButton.Size = new System.Drawing.Size(120, 35);
             this.CloseButton.TabIndex = 3;
             this.CloseButton.Text = "Cancel";
             this.CloseButton.UseVisualStyleBackColor = true;
@@ -149,6 +156,7 @@
             this.ServersDataGridView.AllowUserToAddRows = false;
             this.ServersDataGridView.AllowUserToDeleteRows = false;
             this.ServersDataGridView.AllowUserToResizeRows = false;
+            this.ServersDataGridView.ColumnHeadersHeight = 34;
             this.ServersDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.ServersDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.ApplicationNameColumn,
@@ -156,13 +164,15 @@
             this.ServerCapabilitiesColumn});
             this.ServersDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.ServersDataGridView.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
-            this.ServersDataGridView.Location = new System.Drawing.Point(0, 108);
+            this.ServersDataGridView.Location = new System.Drawing.Point(0, 166);
+            this.ServersDataGridView.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ServersDataGridView.Name = "ServersDataGridView";
             this.ServersDataGridView.ReadOnly = true;
             this.ServersDataGridView.RowHeadersVisible = false;
+            this.ServersDataGridView.RowHeadersWidth = 62;
             this.ServersDataGridView.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             this.ServersDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.ServersDataGridView.Size = new System.Drawing.Size(792, 265);
+            this.ServersDataGridView.Size = new System.Drawing.Size(1188, 407);
             this.ServersDataGridView.TabIndex = 3;
             this.ServersDataGridView.SelectionChanged += new System.EventHandler(this.ApplicationRecordDataGridView_SelectionChanged);
             // 
@@ -171,15 +181,17 @@
             this.ApplicationNameColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
             this.ApplicationNameColumn.DataPropertyName = "ServerName";
             this.ApplicationNameColumn.HeaderText = "Server Name";
+            this.ApplicationNameColumn.MinimumWidth = 8;
             this.ApplicationNameColumn.Name = "ApplicationNameColumn";
             this.ApplicationNameColumn.ReadOnly = true;
-            this.ApplicationNameColumn.Width = 94;
+            this.ApplicationNameColumn.Width = 137;
             // 
             // DiscoveryUrlColumn
             // 
             this.DiscoveryUrlColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.DiscoveryUrlColumn.DataPropertyName = "DiscoveryUrl";
             this.DiscoveryUrlColumn.HeaderText = "URL";
+            this.DiscoveryUrlColumn.MinimumWidth = 8;
             this.DiscoveryUrlColumn.Name = "DiscoveryUrlColumn";
             this.DiscoveryUrlColumn.ReadOnly = true;
             // 
@@ -188,9 +200,10 @@
             this.ServerCapabilitiesColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
             this.ServerCapabilitiesColumn.DataPropertyName = "ServerCapabilities";
             this.ServerCapabilitiesColumn.HeaderText = "Capabilities";
+            this.ServerCapabilitiesColumn.MinimumWidth = 8;
             this.ServerCapabilitiesColumn.Name = "ServerCapabilitiesColumn";
             this.ServerCapabilitiesColumn.ReadOnly = true;
-            this.ServerCapabilitiesColumn.Width = 85;
+            this.ServerCapabilitiesColumn.Width = 126;
             // 
             // MainPanel
             // 
@@ -209,6 +222,7 @@
             this.MainPanel.Controls.Add(this.ServerCapabilitiesButton, 2, 3);
             this.MainPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.MainPanel.Location = new System.Drawing.Point(0, 0);
+            this.MainPanel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MainPanel.Name = "MainPanel";
             this.MainPanel.RowCount = 5;
             this.MainPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -216,26 +230,28 @@
             this.MainPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.MainPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.MainPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.MainPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.MainPanel.Size = new System.Drawing.Size(792, 108);
+            this.MainPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 31F));
+            this.MainPanel.Size = new System.Drawing.Size(1188, 166);
             this.MainPanel.TabIndex = 4;
             // 
             // ServerCapabilitiesTextBox
             // 
             this.ServerCapabilitiesTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ServerCapabilitiesTextBox.Location = new System.Drawing.Point(103, 81);
+            this.ServerCapabilitiesTextBox.Location = new System.Drawing.Point(152, 113);
+            this.ServerCapabilitiesTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ServerCapabilitiesTextBox.Name = "ServerCapabilitiesTextBox";
             this.ServerCapabilitiesTextBox.ReadOnly = true;
-            this.ServerCapabilitiesTextBox.Size = new System.Drawing.Size(655, 20);
+            this.ServerCapabilitiesTextBox.Size = new System.Drawing.Size(986, 26);
             this.ServerCapabilitiesTextBox.TabIndex = 14;
             // 
             // ServerCapabilitiesLabel
             // 
             this.ServerCapabilitiesLabel.AutoSize = true;
             this.ServerCapabilitiesLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ServerCapabilitiesLabel.Location = new System.Drawing.Point(3, 78);
+            this.ServerCapabilitiesLabel.Location = new System.Drawing.Point(4, 108);
+            this.ServerCapabilitiesLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.ServerCapabilitiesLabel.Name = "ServerCapabilitiesLabel";
-            this.ServerCapabilitiesLabel.Size = new System.Drawing.Size(94, 26);
+            this.ServerCapabilitiesLabel.Size = new System.Drawing.Size(140, 41);
             this.ServerCapabilitiesLabel.TabIndex = 8;
             this.ServerCapabilitiesLabel.Text = "Server Capabilities";
             this.ServerCapabilitiesLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -244,9 +260,10 @@
             // 
             this.ApplicationNameLabel.AutoSize = true;
             this.ApplicationNameLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationNameLabel.Location = new System.Drawing.Point(3, 26);
+            this.ApplicationNameLabel.Location = new System.Drawing.Point(4, 36);
+            this.ApplicationNameLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.ApplicationNameLabel.Name = "ApplicationNameLabel";
-            this.ApplicationNameLabel.Size = new System.Drawing.Size(94, 26);
+            this.ApplicationNameLabel.Size = new System.Drawing.Size(140, 36);
             this.ApplicationNameLabel.TabIndex = 6;
             this.ApplicationNameLabel.Text = "Application Name";
             this.ApplicationNameLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -255,9 +272,10 @@
             // 
             this.ProductUriLabel.AutoSize = true;
             this.ProductUriLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ProductUriLabel.Location = new System.Drawing.Point(3, 52);
+            this.ProductUriLabel.Location = new System.Drawing.Point(4, 72);
+            this.ProductUriLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.ProductUriLabel.Name = "ProductUriLabel";
-            this.ProductUriLabel.Size = new System.Drawing.Size(94, 26);
+            this.ProductUriLabel.Size = new System.Drawing.Size(140, 36);
             this.ProductUriLabel.TabIndex = 5;
             this.ProductUriLabel.Text = "Product URI";
             this.ProductUriLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -266,9 +284,10 @@
             // 
             this.ApplicationUriLabel.AutoSize = true;
             this.ApplicationUriLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationUriLabel.Location = new System.Drawing.Point(3, 0);
+            this.ApplicationUriLabel.Location = new System.Drawing.Point(4, 0);
+            this.ApplicationUriLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.ApplicationUriLabel.Name = "ApplicationUriLabel";
-            this.ApplicationUriLabel.Size = new System.Drawing.Size(94, 26);
+            this.ApplicationUriLabel.Size = new System.Drawing.Size(140, 36);
             this.ApplicationUriLabel.TabIndex = 0;
             this.ApplicationUriLabel.Text = "Application URI";
             this.ApplicationUriLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -276,35 +295,39 @@
             // ApplicationUriTextBox
             // 
             this.ApplicationUriTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationUriTextBox.Location = new System.Drawing.Point(103, 3);
+            this.ApplicationUriTextBox.Location = new System.Drawing.Point(152, 5);
+            this.ApplicationUriTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationUriTextBox.Name = "ApplicationUriTextBox";
-            this.ApplicationUriTextBox.Size = new System.Drawing.Size(655, 20);
+            this.ApplicationUriTextBox.Size = new System.Drawing.Size(986, 26);
             this.ApplicationUriTextBox.TabIndex = 9;
             this.ApplicationUriTextBox.TextChanged += new System.EventHandler(this.ApplicationUriTextBox_TextChanged);
             // 
             // ApplicationNameTextBox
             // 
             this.ApplicationNameTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationNameTextBox.Location = new System.Drawing.Point(103, 29);
+            this.ApplicationNameTextBox.Location = new System.Drawing.Point(152, 41);
+            this.ApplicationNameTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationNameTextBox.Name = "ApplicationNameTextBox";
-            this.ApplicationNameTextBox.Size = new System.Drawing.Size(655, 20);
+            this.ApplicationNameTextBox.Size = new System.Drawing.Size(986, 26);
             this.ApplicationNameTextBox.TabIndex = 11;
             this.ApplicationNameTextBox.TextChanged += new System.EventHandler(this.ApplicationNameTextBox_TextChanged);
             // 
             // ProductUriTextBox
             // 
             this.ProductUriTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ProductUriTextBox.Location = new System.Drawing.Point(103, 55);
+            this.ProductUriTextBox.Location = new System.Drawing.Point(152, 77);
+            this.ProductUriTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ProductUriTextBox.Name = "ProductUriTextBox";
-            this.ProductUriTextBox.Size = new System.Drawing.Size(655, 20);
+            this.ProductUriTextBox.Size = new System.Drawing.Size(986, 26);
             this.ProductUriTextBox.TabIndex = 12;
             this.ProductUriTextBox.TextChanged += new System.EventHandler(this.ProductUriTextBox_TextChanged);
             // 
             // ServerCapabilitiesButton
             // 
-            this.ServerCapabilitiesButton.Location = new System.Drawing.Point(764, 81);
+            this.ServerCapabilitiesButton.Location = new System.Drawing.Point(1146, 113);
+            this.ServerCapabilitiesButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ServerCapabilitiesButton.Name = "ServerCapabilitiesButton";
-            this.ServerCapabilitiesButton.Size = new System.Drawing.Size(25, 20);
+            this.ServerCapabilitiesButton.Size = new System.Drawing.Size(38, 31);
             this.ServerCapabilitiesButton.TabIndex = 15;
             this.ServerCapabilitiesButton.Text = "...";
             this.ServerCapabilitiesButton.UseVisualStyleBackColor = true;
@@ -312,13 +335,14 @@
             // 
             // ViewServersOnNetworkDialog
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(792, 402);
+            this.ClientSize = new System.Drawing.Size(1188, 618);
             this.Controls.Add(this.ServersDataGridView);
             this.Controls.Add(this.MainPanel);
             this.Controls.Add(this.ButtonsPanel);
-            this.MinimumSize = new System.Drawing.Size(600, 240);
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.MinimumSize = new System.Drawing.Size(889, 339);
             this.Name = "ViewServersOnNetworkDialog";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Query Servers";

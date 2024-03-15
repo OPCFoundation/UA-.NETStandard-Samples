@@ -139,10 +139,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.5.374.26-preview</Version>
+      <Version>1.5.374.27</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Client.Common">
-      <Version>1.5.374.26-preview</Version>
+      <Version>1.5.374.27</Version>
     </PackageReference>
     <PackageReference Include="System.Net.Http">
       <Version>4.3.4</Version>
