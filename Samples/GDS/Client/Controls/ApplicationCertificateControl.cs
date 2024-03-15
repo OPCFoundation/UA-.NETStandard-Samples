@@ -348,6 +348,7 @@ namespace Opc.Ua.Gds.Client
                                 newCert = CertificateFactory.Load(newCert, true);
                             }
 
+                            // bugbug: private key is not saved to store
                             await store.Add(newCert);
                         }
                     }
