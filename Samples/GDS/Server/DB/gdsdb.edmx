@@ -19,17 +19,13 @@
       <End Role="Application" EntitySet="Applications" />
       <End Role="ServerEndpoint" EntitySet="ServerEndpoints" />
     </AssociationSet>
-    <AssociationSet Name="FK_Applications_HttpsTrustListId" Association="gdsdbModel.Store.FK_Applications_HttpsTrustListId">
-      <End Role="CertificateStore" EntitySet="CertificateStores" />
-      <End Role="Application" EntitySet="Applications" />
-    </AssociationSet>
-    <AssociationSet Name="FK_Applications_TrustListId" Association="gdsdbModel.Store.FK_Applications_TrustListId">
-      <End Role="CertificateStore" EntitySet="CertificateStores" />
-      <End Role="Application" EntitySet="Applications" />
-    </AssociationSet>
     <AssociationSet Name="FK_CertificateRequests_Applications" Association="gdsdbModel.Store.FK_CertificateRequests_Applications">
       <End Role="Application" EntitySet="Applications" />
       <End Role="CertificateRequest" EntitySet="CertificateRequests" />
+    </AssociationSet>
+    <AssociationSet Name="CertificateStoreApplication" Association="gdsdbModel.Store.CertificateStoreApplication">
+      <End Role="CertificateStore" EntitySet="CertificateStores" />
+      <End Role="Application" EntitySet="Applications" />
     </AssociationSet>
   </EntityContainer>
   <EntityType Name="ApplicationNames">
@@ -62,8 +58,6 @@
     <Property Name="ServerCapabilities" Type="nvarchar" Nullable="true" MaxLength="500" />
     <Property Name="Certificate" Type="varbinary(max)" Nullable="true" />
     <Property Name="HttpsCertificate" Type="varbinary(max)" Nullable="true" />
-    <Property Name="TrustListId" Type="int" Nullable="true" />
-    <Property Name="HttpsTrustListId" Type="int" Nullable="true" />
   </EntityType>
   <EntityType Name="CertificateStores">
     <Key>
@@ -71,7 +65,9 @@
     </Key>
     <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
     <Property Name="Path" Type="nvarchar" Nullable="false" MaxLength="256" />
-    <Property Name="AuthorityId" Type="nvarchar" Nullable="true" MaxLength="50" />
+    <Property Name="CertificateType" Type="nvarchar" Nullable="true" MaxLength="50" />
+    <Property Name="ApplicationId" Type="int" Nullable="false" />
+    <Property Name="Application_ID" Type="int" Nullable="false" />
   </EntityType>
   <EntityType Name="CertificateRequests">
     <Key>
@@ -118,30 +114,6 @@
       </Dependent>
     </ReferentialConstraint>
   </Association>
-  <Association Name="FK_Applications_HttpsTrustListId">
-    <End Role="CertificateStore" Type="gdsdbModel.Store.CertificateStores" Multiplicity="0..1" />
-    <End Role="Application" Type="gdsdbModel.Store.Applications" Multiplicity="*" />
-    <ReferentialConstraint>
-      <Principal Role="CertificateStore">
-        <PropertyRef Name="ID" />
-      </Principal>
-      <Dependent Role="Application">
-        <PropertyRef Name="HttpsTrustListId" />
-      </Dependent>
-    </ReferentialConstraint>
-  </Association>
-  <Association Name="FK_Applications_TrustListId">
-    <End Role="CertificateStore" Type="gdsdbModel.Store.CertificateStores" Multiplicity="0..1" />
-    <End Role="Application" Type="gdsdbModel.Store.Applications" Multiplicity="*" />
-    <ReferentialConstraint>
-      <Principal Role="CertificateStore">
-        <PropertyRef Name="ID" />
-      </Principal>
-      <Dependent Role="Application">
-        <PropertyRef Name="TrustListId" />
-      </Dependent>
-    </ReferentialConstraint>
-  </Association>
   <Association Name="FK_CertificateRequests_Applications">
     <End Role="Application" Type="gdsdbModel.Store.Applications" Multiplicity="1">
       <OnDelete Action="Cascade" />
@@ -153,6 +125,18 @@
       </Principal>
       <Dependent Role="CertificateRequest">
         <PropertyRef Name="ApplicationId" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="CertificateStoreApplication">
+    <End Role="CertificateStore" Type="gdsdbModel.Store.CertificateStores" Multiplicity="*" />
+    <End Role="Application" Type="gdsdbModel.Store.Applications" Multiplicity="1" />
+    <ReferentialConstraint>
+      <Principal Role="Application">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="CertificateStore">
+        <PropertyRef Name="Application_ID" />
       </Dependent>
     </ReferentialConstraint>
   </Association>
@@ -173,18 +157,14 @@
             <End Role="ServerEndpoint" EntitySet="ServerEndpoints" />
           </AssociationSet>
           <EntitySet Name="CertificateStores" EntityType="gdsdbModel.CertificateStore" />
-          <AssociationSet Name="FK_Applications_HttpsTrustListId" Association="gdsdbModel.FK_Applications_HttpsTrustListId">
-            <End Role="CertificateStore" EntitySet="CertificateStores" />
-            <End Role="Application" EntitySet="Applications" />
-          </AssociationSet>
-          <AssociationSet Name="FK_Applications_TrustListId" Association="gdsdbModel.FK_Applications_TrustListId">
-            <End Role="CertificateStore" EntitySet="CertificateStores" />
-            <End Role="Application" EntitySet="Applications" />
-          </AssociationSet>
           <EntitySet Name="CertificateRequests" EntityType="gdsdbModel.CertificateRequest" />
           <AssociationSet Name="FK_CertificateRequests_Applications" Association="gdsdbModel.FK_CertificateRequests_Applications">
             <End Role="Application" EntitySet="Applications" />
             <End Role="CertificateRequest" EntitySet="CertificateRequests" />
+          </AssociationSet>
+          <AssociationSet Name="CertificateStoreApplication" Association="gdsdbModel.CertificateStoreApplication">
+            <End Role="CertificateStore" EntitySet="CertificateStores" />
+            <End Role="Application" EntitySet="Applications" />
           </AssociationSet>
         </EntityContainer>
         <EntityType Name="ApplicationName">
@@ -219,13 +199,10 @@
           <Property Type="String" Name="ServerCapabilities" MaxLength="500" FixedLength="false" Unicode="true" />
           <Property Type="Binary" Name="Certificate" MaxLength="Max" FixedLength="false" Nullable="true" />
           <Property Type="Binary" Name="HttpsCertificate" MaxLength="Max" FixedLength="false" Nullable="true" />
-          <Property Type="Int32" Name="TrustListId" Nullable="true" />
-          <Property Type="Int32" Name="HttpsTrustListId" Nullable="true" />
           <NavigationProperty Name="ApplicationNames" Relationship="gdsdbModel.FK_ApplicationNames_ApplicationId" FromRole="Application" ToRole="ApplicationName" />
           <NavigationProperty Name="ServerEndpoints" Relationship="gdsdbModel.FK_ServerEndpoints_ApplicationId" FromRole="Application" ToRole="ServerEndpoint" />
-          <NavigationProperty Name="HttpsTrustList" Relationship="gdsdbModel.FK_Applications_HttpsTrustListId" FromRole="Application" ToRole="CertificateStore" />
-          <NavigationProperty Name="TrustList" Relationship="gdsdbModel.FK_Applications_TrustListId" FromRole="Application" ToRole="CertificateStore" />
           <NavigationProperty Name="CertificateRequests" Relationship="gdsdbModel.FK_CertificateRequests_Applications" FromRole="Application" ToRole="CertificateRequest" />
+          <NavigationProperty Name="CertificateStores" Relationship="gdsdbModel.CertificateStoreApplication" FromRole="Application" ToRole="CertificateStore" />
         </EntityType>
         <Association Name="FK_ApplicationNames_ApplicationId">
           <End Type="gdsdbModel.Application" Role="Application" Multiplicity="1">
@@ -261,34 +238,10 @@
           </Key>
           <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
           <Property Type="String" Name="Path" Nullable="false" MaxLength="256" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="HttpsApplications" Relationship="gdsdbModel.FK_Applications_HttpsTrustListId" FromRole="CertificateStore" ToRole="Application" />
-          <NavigationProperty Name="Applications" Relationship="gdsdbModel.FK_Applications_TrustListId" FromRole="CertificateStore" ToRole="Application" />
-          <Property Type="String" Name="AuthorityId" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="CertificateType" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="ApplicationId" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Application" Relationship="gdsdbModel.CertificateStoreApplication" FromRole="CertificateStore" ToRole="Application" />
         </EntityType>
-        <Association Name="FK_Applications_HttpsTrustListId">
-          <End Type="gdsdbModel.CertificateStore" Role="CertificateStore" Multiplicity="0..1" />
-          <End Type="gdsdbModel.Application" Role="Application" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="CertificateStore">
-              <PropertyRef Name="ID" />
-            </Principal>
-            <Dependent Role="Application">
-              <PropertyRef Name="HttpsTrustListId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_Applications_TrustListId">
-          <End Type="gdsdbModel.CertificateStore" Role="CertificateStore" Multiplicity="0..1" />
-          <End Type="gdsdbModel.Application" Role="Application" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="CertificateStore">
-              <PropertyRef Name="ID" />
-            </Principal>
-            <Dependent Role="Application">
-              <PropertyRef Name="TrustListId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <EntityType Name="CertificateRequest">
           <Key>
             <PropertyRef Name="ID" />
@@ -320,6 +273,10 @@
               <PropertyRef Name="ApplicationId" />
             </Dependent>
           </ReferentialConstraint>
+        </Association>
+        <Association Name="CertificateStoreApplication">
+          <End Type="gdsdbModel.CertificateStore" Role="CertificateStore" Multiplicity="*" />
+          <End Type="gdsdbModel.Application" Role="Application" Multiplicity="1" />
         </Association>
       </Schema>
     </edmx:ConceptualModels>
@@ -358,8 +315,6 @@
           <ScalarProperty Name="ServerCapabilities" ColumnName="ServerCapabilities" />
           <ScalarProperty Name="Certificate" ColumnName="Certificate" />
           <ScalarProperty Name="HttpsCertificate" ColumnName="HttpsCertificate" />
-          <ScalarProperty Name="TrustListId" ColumnName="TrustListId" />
-          <ScalarProperty Name="HttpsTrustListId" ColumnName="HttpsTrustListId" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -368,7 +323,8 @@
         <MappingFragment StoreEntitySet="CertificateStores">
           <ScalarProperty Name="ID" ColumnName="ID" />
           <ScalarProperty Name="Path" ColumnName="Path" />
-          <ScalarProperty Name="AuthorityId" ColumnName="AuthorityId" />
+          <ScalarProperty Name="CertificateType" ColumnName="CertificateType" />
+          <ScalarProperty Name="ApplicationId" ColumnName="ApplicationId" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -390,6 +346,14 @@
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
+    <AssociationSetMapping Name="CertificateStoreApplication" TypeName="gdsdbModel.CertificateStoreApplication" StoreEntitySet="CertificateStores">
+      <EndProperty Name="Application">
+        <ScalarProperty Name="ID" ColumnName="Application_ID" />
+      </EndProperty>
+      <EndProperty Name="CertificateStore">
+        <ScalarProperty Name="ID" ColumnName="ID" />
+      </EndProperty>
+    </AssociationSetMapping>
   </EntityContainerMapping>
 </Mapping></edmx:Mappings>
   </edmx:Runtime>

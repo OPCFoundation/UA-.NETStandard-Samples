@@ -2,8 +2,8 @@
 -- --------------------------------------------------
 -- Entity Designer DDL Script for SQL Server 2005, 2008, 2012 and Azure
 -- --------------------------------------------------
--- Date Created: 02/07/2024 14:25:58
--- Generated from EDMX file: usersdb.edmx
+-- Date Created: 03/08/2024 07:56:02
+-- Generated from EDMX file: C:\Users\roman\source\repos\romanett\UA-.NETStandard-Samples\Samples\GDS\Server\DB\usersdb.edmx
 -- --------------------------------------------------
 
 SET QUOTED_IDENTIFIER OFF;
@@ -24,13 +24,13 @@ GO
 -- --------------------------------------------------
 -- Dropping existing tables
 -- --------------------------------------------------
-
-IF OBJECT_ID(N'[dbo].[UserSet]', 'U') IS NOT NULL
-    DROP TABLE [dbo].[UserSet];
-GO
 IF OBJECT_ID(N'[dbo].[SqlRoleSet]', 'U') IS NOT NULL
     DROP TABLE [dbo].[SqlRoleSet];
 GO
+IF OBJECT_ID(N'[dbo].[UserSet]', 'U') IS NOT NULL
+    DROP TABLE [dbo].[UserSet];
+GO
+
 
 -- --------------------------------------------------
 -- Creating all tables
@@ -47,9 +47,10 @@ GO
 -- Creating table 'SqlRoleSet'
 CREATE TABLE [dbo].[SqlRoleSet] (
     [Id] uniqueidentifier  NOT NULL,
-    [RoleId] uniqueidentifier  NULL,
+    [RoleId] int  NULL,
     [Name] nvarchar(max)  NOT NULL,
-    [UserID] uniqueidentifier  NOT NULL
+    [UserID] uniqueidentifier  NOT NULL,
+    [NamespaceIndex] int  NOT NULL
 );
 GO
 

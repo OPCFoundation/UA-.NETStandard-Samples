@@ -109,6 +109,8 @@ namespace Opc.Ua.Gds.Server
                 userDatabase.DeleteUser("appadmin");
                 userDatabase.DeleteUser("appuser");
                 userDatabase.DeleteUser("sysadmin");
+                userDatabase.DeleteUser("DiscoveryAdmin");
+                userDatabase.DeleteUser("CertificateAuthorityAdmin");
 
                 //Create new admin user
                 string username = InputDlg.Show("Please specify user name of the application admin user:", false);
@@ -120,10 +122,10 @@ namespace Opc.Ua.Gds.Server
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
 
                 //create User, if User exists delete & recreate
-                if (!userDatabase.CreateUser(username, password, new List<Role>() { GdsRole.ApplicationAdmin }))
+                if (!userDatabase.CreateUser(username, password, new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))
                 {
                     userDatabase.DeleteUser(username);
-                    userDatabase.CreateUser(username, password, new List<Role>(){ GdsRole.ApplicationAdmin});
+                    userDatabase.CreateUser(username, password, new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin });
                 }
             }
             return createStandardUsers;

@@ -36,15 +36,25 @@ Please follow instructions in this [article](https://aka.ms/dotnetcoregs) to set
 
 ## GDS Users
 The sample GDS servers only implement the username/password authentication. The following combinations can be used to connect to the servers:
+- **DiscoveryAdmin**
+  - PW: **demo**
+  - This Role grants rights to register, update and unregister any OPC UA Application.
+  - see spec (Roles and Privileges)[https://reference.opcfoundation.org/GDS/v105/docs/6.2]
+- **CertificateAuthorityAdmin**
+  - PW: **demo**
+  - This Role grants rights to request or revoke any Certificate, update any TrustList or assign CertificateGroups to OPC UA Applications.
+  - see spec (Roles and Privileges Part 2)[https://reference.opcfoundation.org/GDS/v105/docs/7.2]
+- **System Administrator:** 
+  - Username: **sysadmin**, PW: **demo**
+  - This user is defined for server push management and has the ability to access the server configuration nodes of the GDS server to update the server certificate and the trust lists. Server push configuration management is not a requirement for a GDS server and only supported here to demonstrate the functionality.
+  - Roles: CertificateAuthorityAdmin, DiscoveryAdmin, SecurityAdmin, ConfigureAdmin 
+*Deprecated*
 - **GDS Administrator:** 
   - Username: **appadmin**, PW: **demo**
   - This user has the ability to register and unregister applications and to issue new certificates. It should be used by the GDS Client application to connect.
 - **GDS User:**
   - Username: **appuser**, PW: **demo**
   - This user has only a limited ability to search for applications.
-- **System Administrator:** 
-  - Username: **sysadmin**, PW: **demo**
-  - This user is defined for server push management and has the ability to access the server configuration nodes of the GDS server to update the server certificate and the trust lists. Server push configuration management is not a requirement for a GDS server and only supported here to demonstrate the functionality.
 
 ## Certificates
 The global discovery server creates the CA certificates for all configured certificate groups on the first start.
