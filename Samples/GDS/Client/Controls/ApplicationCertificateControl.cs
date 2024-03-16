@@ -93,8 +93,7 @@ namespace Opc.Ua.Gds.Client
                     }
                     else if (!String.IsNullOrEmpty(application.CertificateStorePath))
                     {
-                        CertificateIdentifier id = new CertificateIdentifier
-                        {
+                        CertificateIdentifier id = new CertificateIdentifier {
                             StorePath = application.CertificateStorePath
                         };
                         id.StoreType = CertificateStoreIdentifier.DetermineStoreType(id.StorePath);
@@ -125,8 +124,7 @@ namespace Opc.Ua.Gds.Client
                             {
                                 Uri url = new Uri(disoveryUrl);
 
-                                CertificateIdentifier id = new CertificateIdentifier()
-                                {
+                                CertificateIdentifier id = new CertificateIdentifier() {
                                     StoreType = CertificateStoreType.X509Store,
                                     StorePath = "CurrentUser\\UA_MachineDefault",
                                     SubjectName = "CN=" + url.DnsSafeHost
@@ -216,8 +214,7 @@ namespace Opc.Ua.Gds.Client
                 NodeId requestId = null;
                 if (!string.IsNullOrEmpty(m_application.CertificateStorePath))
                 {
-                    CertificateIdentifier id = new CertificateIdentifier
-                    {
+                    CertificateIdentifier id = new CertificateIdentifier {
                         StoreType = CertificateStoreIdentifier.DetermineStoreType(m_application.CertificateStorePath),
                         StorePath = m_application.CertificateStorePath,
                         SubjectName = m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName())
@@ -316,41 +313,48 @@ namespace Opc.Ua.Gds.Client
 
                     if (!String.IsNullOrEmpty(m_application.CertificateStorePath) && !String.IsNullOrEmpty(m_application.CertificateSubjectName))
                     {
-                        CertificateIdentifier cid = new CertificateIdentifier()
-                        {
+                        CertificateIdentifier cid = new CertificateIdentifier() {
                             StorePath = m_application.CertificateStorePath,
                             StoreType = CertificateStoreIdentifier.DetermineStoreType(m_application.CertificateStorePath),
                             SubjectName = m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName())
                         };
 
                         // update store
-                        using (var store = CertificateStoreIdentifier.OpenStore(m_application.CertificateStorePath))
+                        ICertificateStore store;
+
+                        if (CertificateStoreIdentifier.DetermineStoreType(m_application.CertificateStorePath) == CertificateStoreType.Directory)
                         {
-                            // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
-                            // in this case, privateKey is null
-                            if (privateKeyPFX == null)
+                            store = new DirectoryCertificateStore();
+                            store.Open(m_application.CertificateStorePath, false);
+                        }
+                        else
+                        {
+                            store = CertificateStoreIdentifier.OpenStore(m_application.CertificateStorePath);
+                        }
+
+                        // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
+                        // in this case, privateKey is null
+                        if (privateKeyPFX == null)
+                        {
+                            X509Certificate2 oldCertificate = await cid.Find(true);
+                            if (oldCertificate != null && oldCertificate.HasPrivateKey)
                             {
-                                X509Certificate2 oldCertificate = await cid.Find(true);
-                                if (oldCertificate != null && oldCertificate.HasPrivateKey)
-                                {
-                                    oldCertificate = await cid.LoadPrivateKey(string.Empty);
-                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
-                                    await store.Delete(oldCertificate.Thumbprint);
-                                }
-                                else
-                                {
-                                    throw new ServiceResultException("Failed to merge signed certificate with the private key.");
-                                }
+                                oldCertificate = await cid.LoadPrivateKey(string.Empty);
+                                newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
+                                await store.Delete(oldCertificate.Thumbprint);
                             }
                             else
                             {
-                                newCert = new X509Certificate2(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
-                                newCert = CertificateFactory.Load(newCert, true);
+                                throw new ServiceResultException("Failed to merge signed certificate with the private key.");
                             }
-
-                            // bugbug: private key is not saved to store
-                            await store.Add(newCert);
                         }
+                        else
+                        {
+                            newCert = new X509Certificate2(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
+                            newCert = CertificateFactory.Load(newCert, true);
+                        }
+                        await store.Add(newCert);
+                        store.Dispose();
                     }
                     else
                     {
