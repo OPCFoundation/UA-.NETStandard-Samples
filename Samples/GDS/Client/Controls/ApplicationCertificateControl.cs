@@ -217,7 +217,7 @@ namespace Opc.Ua.Gds.Client
                     CertificateIdentifier id = new CertificateIdentifier {
                         StoreType = CertificateStoreIdentifier.DetermineStoreType(m_application.CertificateStorePath),
                         StorePath = m_application.CertificateStorePath,
-                        SubjectName = m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName())
+                        SubjectName = Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName)
                     };
                     m_certificate = await id.Find(true);
                     if (m_certificate != null &&
@@ -242,7 +242,7 @@ namespace Opc.Ua.Gds.Client
                         m_application.ApplicationId,
                         NodeId.Null,
                         NodeId.Null,
-                        m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName()),
+                        Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                         domainNames,
                         "PFX",
                         m_certificatePassword);
@@ -316,45 +316,35 @@ namespace Opc.Ua.Gds.Client
                         CertificateIdentifier cid = new CertificateIdentifier() {
                             StorePath = m_application.CertificateStorePath,
                             StoreType = CertificateStoreIdentifier.DetermineStoreType(m_application.CertificateStorePath),
-                            SubjectName = m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName())
+                            SubjectName = Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName)
                         };
 
                         // update store
-                        ICertificateStore store;
-
-                        if (CertificateStoreIdentifier.DetermineStoreType(m_application.CertificateStorePath) == CertificateStoreType.Directory)
+                        using (ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_application.CertificateStorePath, false))
                         {
-                            store = new DirectoryCertificateStore();
-                            store.Open(m_application.CertificateStorePath, false);
-                        }
-                        else
-                        {
-                            store = CertificateStoreIdentifier.OpenStore(m_application.CertificateStorePath);
-                        }
-
-                        // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
-                        // in this case, privateKey is null
-                        if (privateKeyPFX == null)
-                        {
-                            X509Certificate2 oldCertificate = await cid.Find(true);
-                            if (oldCertificate != null && oldCertificate.HasPrivateKey)
+                            // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
+                            // in this case, privateKey is null
+                            if (privateKeyPFX == null)
                             {
-                                oldCertificate = await cid.LoadPrivateKey(string.Empty);
-                                newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
-                                await store.Delete(oldCertificate.Thumbprint);
+                                X509Certificate2 oldCertificate = await cid.Find(true);
+                                if (oldCertificate != null && oldCertificate.HasPrivateKey)
+                                {
+                                    oldCertificate = await cid.LoadPrivateKey(string.Empty);
+                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
+                                    await store.Delete(oldCertificate.Thumbprint);
+                                }
+                                else
+                                {
+                                    throw new ServiceResultException("Failed to merge signed certificate with the private key.");
+                                }
                             }
                             else
                             {
-                                throw new ServiceResultException("Failed to merge signed certificate with the private key.");
+                                newCert = new X509Certificate2(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
+                                newCert = CertificateFactory.Load(newCert, true);
                             }
+                            await store.Add(newCert);
                         }
-                        else
-                        {
-                            newCert = new X509Certificate2(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
-                            newCert = CertificateFactory.Load(newCert, true);
-                        }
-                        await store.Add(newCert);
-                        store.Dispose();
                     }
                     else
                     {
