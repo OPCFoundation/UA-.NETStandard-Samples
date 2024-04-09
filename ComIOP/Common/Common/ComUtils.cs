@@ -163,7 +163,7 @@ namespace Opc.Ua.Com
 		/// <summary>
 		/// The base for the WIN32 FILETIME structure.
 		/// </summary>
-		private static readonly DateTime FILETIME_BaseTime = new DateTime(1601, 1, 1);
+		private static readonly DateTime FILETIME_BaseTime = new DateTime(1601, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
 		/// <summary>
 		/// WIN32 GUID struct declaration.
