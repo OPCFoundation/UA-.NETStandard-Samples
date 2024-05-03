@@ -116,6 +116,12 @@ namespace Opc.Ua.Gds.Client
 
         private void Server_ConnectionStatusChanged(object sender, EventArgs e)
         {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new EventHandler(Server_ConnectionStatusChanged), sender, e);
+                return;
+            }
+
             if (Object.ReferenceEquals(sender, m_server))
             {
                 if (m_server.IsConnected)

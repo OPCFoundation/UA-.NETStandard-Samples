@@ -9,11 +9,17 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+    registries: "*"
     open-pull-requests-limit: 25
     target-branch: "preview"
     labels: 
-      - "preview"
-
+      - "nuget"
+    groups:
+      opcfoundation:
+        applies-to: version-updates
+        patterns:
+        - "OPCFoundation.*"
+      
   - package-ecosystem: github-actions
     labels:
       - "actions"

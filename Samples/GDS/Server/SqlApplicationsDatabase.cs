@@ -236,8 +236,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                     capabilities = result.ServerCapabilities.Split(',');
                 }
 
-                return new ApplicationRecordDataType()
-                {
+                return new ApplicationRecordDataType() {
                     ApplicationId = new NodeId(result.ApplicationId, NamespaceIndex),
                     ApplicationUri = result.ApplicationUri,
                     ApplicationType = (ApplicationType)result.ApplicationType,
@@ -289,8 +288,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         capabilities = result.ServerCapabilities.Split(',');
                     }
 
-                    records.Add(new ApplicationRecordDataType()
-                    {
+                    records.Add(new ApplicationRecordDataType() {
                         ApplicationId = new NodeId(result.ApplicationId, NamespaceIndex),
                         ApplicationUri = result.ApplicationUri,
                         ApplicationType = (ApplicationType)result.ApplicationType,
@@ -424,8 +422,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         lastID = result.ID;
                     }
 
-                    records.Add(new ApplicationDescription()
-                    {
+                    records.Add(new ApplicationDescription() {
                         ApplicationUri = result.ApplicationUri,
                         ProductUri = result.ProductUri,
                         ApplicationName = result.ApplicationName,
@@ -458,8 +455,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                               join y in entities.Applications on x.ApplicationId equals y.ID
                               where ((int)startingRecordId == 0 || (int)startingRecordId <= x.ID)
                               orderby x.ID
-                              select new
-                              {
+                              select new {
                                   x.ID,
                                   y.ApplicationName,
                                   y.ApplicationUri,
@@ -539,8 +535,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         lastID = result.ID;
                     }
 
-                    records.Add(new ServerOnNetwork()
-                    {
+                    records.Add(new ServerOnNetwork() {
                         RecordId = (uint)result.ID,
                         ServerName = result.ApplicationName,
                         DiscoveryUrl = result.DiscoveryUrl,
@@ -634,61 +629,77 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             return certificate != null;
         }
 
-
-        public override bool SetApplicationTrustLists(
-            NodeId applicationId,
-            string trustListId,
-            string httpsTrustListId
-            )
+        public override bool SetApplicationTrustLists(NodeId applicationId, string certificateTypeId, string trustListId)
         {
             Guid id = GetNodeIdGuid(applicationId);
             using (gdsdbEntities entities = new gdsdbEntities())
             {
                 var result = (from x in entities.Applications where x.ApplicationId == id select x).SingleOrDefault();
 
-                if (result == null)
+                if (result == null || certificateTypeId == null)
                 {
                     return false;
                 }
 
-                result.TrustListId = null;
-                result.HttpsTrustListId = null;
+                var result2 = (from x in entities.CertificateStores where x.CertificateType == certificateTypeId && x.ApplicationId == result.ID select x).SingleOrDefault();
 
-                if (trustListId != null)
+                if (result2 != null)
                 {
-                    var result2 = (from x in entities.CertificateStores where x.Path == trustListId select x).SingleOrDefault();
-
-                    if (result2 != null)
-                    {
-                        result.TrustListId = result2.ID;
-                    }
+                    result2.Path = trustListId;
                 }
-
-                if (httpsTrustListId != null)
+                else
                 {
-                    var result2 = (from x in entities.CertificateStores where x.Path == httpsTrustListId select x).SingleOrDefault();
-
-                    if (result2 != null)
-                    {
-                        result.HttpsTrustListId = result2.ID;
-                    }
+                    entities.CertificateStores.Add(
+                        new CertificateStore() {
+                            Application = result,
+                            ApplicationId = result.ID,
+                            CertificateType = certificateTypeId,
+                            Path = trustListId
+                        });
                 }
-
                 entities.SaveChanges();
             }
 
             return true;
         }
 
+        public override bool GetApplicationTrustLists(NodeId applicationId, string certificateTypeId, out string trustListId)
+        {
+            Guid id = GetNodeIdGuid(applicationId);
+            trustListId = null;
+           
+            using (gdsdbEntities entities = new gdsdbEntities())
+            {
+                var result = (from x in entities.Applications where x.ApplicationId == id select x).SingleOrDefault();
+
+                if (result == null || certificateTypeId == null)
+                {
+                    return false;
+                }
+                var result2 = (from x in entities.CertificateStores where x.CertificateType == certificateTypeId && x.ApplicationId == result.ID select x).SingleOrDefault();
+
+
+                if (result2 == null)
+                {
+                    return false;
+                }
+                trustListId = result2.Path;
+
+                return true;
+            }
+
+        }
+
+
         #endregion
 
         #region ICertificateRequest
         public NodeId StartSigningRequest(
-            NodeId applicationId,
-            string certificateGroupId,
-            string certificateTypeId,
-            byte[] certificateRequest,
-            string authorityId)
+                NodeId applicationId,
+                string certificateGroupId,
+                string certificateTypeId,
+                byte[] certificateRequest,
+                string authorityId)
         {
             Guid id = GetNodeIdGuid(applicationId);
 
