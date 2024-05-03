@@ -12,7 +12,12 @@ updates:
     open-pull-requests-limit: 25
     target-branch: "preview"
     labels: 
-      - "preview"
+      - "nuget"
+    groups:
+      opcf:
+        applies-to: version-updates
+        patterns:
+        - "OPCFoundation.*"
       
   - package-ecosystem: github-actions
     labels:
