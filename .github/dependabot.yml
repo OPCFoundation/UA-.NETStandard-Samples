@@ -8,13 +8,14 @@ updates:
   - package-ecosystem: "nuget"
     directory: "/" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    registries: "*"
     open-pull-requests-limit: 25
     target-branch: "preview"
     labels: 
       - "nuget"
     groups:
-      opcf:
+      opcfoundation:
         applies-to: version-updates
         patterns:
         - "OPCFoundation.*"
