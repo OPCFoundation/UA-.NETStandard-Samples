@@ -169,6 +169,11 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                     entities.CertificateRequests.Remove(entry);
                 }
 
+                foreach (var entry in new List<CertificateStore>(result.CertificateStores))
+                {
+                    entities.CertificateStores.Remove(entry);
+                }
+
                 foreach (var entry in new List<ApplicationName>(result.ApplicationNames))
                 {
                     entities.ApplicationNames.Remove(entry);

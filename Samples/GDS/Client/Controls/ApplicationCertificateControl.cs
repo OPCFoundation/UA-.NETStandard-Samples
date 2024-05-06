@@ -93,8 +93,7 @@ namespace Opc.Ua.Gds.Client
                     }
                     else if (!String.IsNullOrEmpty(application.CertificateStorePath))
                     {
-                        CertificateIdentifier id = new CertificateIdentifier
-                        {
+                        CertificateIdentifier id = new CertificateIdentifier {
                             StorePath = application.CertificateStorePath
                         };
                         id.StoreType = CertificateStoreIdentifier.DetermineStoreType(id.StorePath);
@@ -125,8 +124,7 @@ namespace Opc.Ua.Gds.Client
                             {
                                 Uri url = new Uri(disoveryUrl);
 
-                                CertificateIdentifier id = new CertificateIdentifier()
-                                {
+                                CertificateIdentifier id = new CertificateIdentifier() {
                                     StoreType = CertificateStoreType.X509Store,
                                     StorePath = "CurrentUser\\UA_MachineDefault",
                                     SubjectName = "CN=" + url.DnsSafeHost
@@ -216,11 +214,10 @@ namespace Opc.Ua.Gds.Client
                 NodeId requestId = null;
                 if (!string.IsNullOrEmpty(m_application.CertificateStorePath))
                 {
-                    CertificateIdentifier id = new CertificateIdentifier
-                    {
+                    CertificateIdentifier id = new CertificateIdentifier {
                         StoreType = CertificateStoreIdentifier.DetermineStoreType(m_application.CertificateStorePath),
                         StorePath = m_application.CertificateStorePath,
-                        SubjectName = m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName())
+                        SubjectName = Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName)
                     };
                     m_certificate = await id.Find(true);
                     if (m_certificate != null &&
@@ -245,7 +242,7 @@ namespace Opc.Ua.Gds.Client
                         m_application.ApplicationId,
                         NodeId.Null,
                         NodeId.Null,
-                        m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName()),
+                        Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                         domainNames,
                         "PFX",
                         m_certificatePassword);
@@ -316,15 +313,14 @@ namespace Opc.Ua.Gds.Client
 
                     if (!String.IsNullOrEmpty(m_application.CertificateStorePath) && !String.IsNullOrEmpty(m_application.CertificateSubjectName))
                     {
-                        CertificateIdentifier cid = new CertificateIdentifier()
-                        {
+                        CertificateIdentifier cid = new CertificateIdentifier() {
                             StorePath = m_application.CertificateStorePath,
                             StoreType = CertificateStoreIdentifier.DetermineStoreType(m_application.CertificateStorePath),
-                            SubjectName = m_application.CertificateSubjectName.Replace("localhost", Utils.GetHostName())
+                            SubjectName = Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName)
                         };
 
                         // update store
-                        using (var store = CertificateStoreIdentifier.OpenStore(m_application.CertificateStorePath))
+                        using (ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_application.CertificateStorePath, false))
                         {
                             // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
                             // in this case, privateKey is null
@@ -347,8 +343,6 @@ namespace Opc.Ua.Gds.Client
                                 newCert = new X509Certificate2(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
                                 newCert = CertificateFactory.Load(newCert, true);
                             }
-
-                            // bugbug: private key is not saved to store
                             await store.Add(newCert);
                         }
                     }
