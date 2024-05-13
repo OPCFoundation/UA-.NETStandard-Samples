@@ -139,6 +139,21 @@
     <MaxPublishRequestCount>20</MaxPublishRequestCount>
     <MaxSubscriptionCount>100</MaxSubscriptionCount>
     <MaxEventQueueSize>10000</MaxEventQueueSize>
+
+    <!-- Reverse Connect config 
+    <ReverseConnect>
+      <Clients>
+        <ReverseConnectClient>
+          <EndpointUrl>opc.tcp://localhost:65300</EndpointUrl>
+          <Timeout>30000</Timeout>
+        </ReverseConnectClient>
+      </Clients>
+      <ConnectInterval>2000</ConnectInterval>
+      <ConnectTimeout>10000</ConnectTimeout>
+      <RejectTimeout>10000</RejectTimeout>
+    </ReverseConnect>
+    -->
+    
   </ServerConfiguration>
 
   <Extensions>
