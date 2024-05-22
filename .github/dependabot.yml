@@ -19,6 +19,15 @@ updates:
         applies-to: version-updates
         patterns:
         - "OPCFoundation.*"
+        
+- package-ecosystem: "nuget"
+    directory: "/Samples/XamarinClient"
+    schedule:
+      interval: "monthly"
+    labels: [ ]
+    ignore:
+      - dependency-name: "OPCFoundation.*"
+        
       
   - package-ecosystem: github-actions
     labels:
