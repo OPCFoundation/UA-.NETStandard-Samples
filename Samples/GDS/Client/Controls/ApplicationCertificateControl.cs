@@ -181,6 +181,10 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
+                NodeId trustListId = m_gds.GetTrustList(m_application.ApplicationId, NodeId.Null);
+                var trustList = m_gds.ReadTrustList(trustListId);
+                bool applyChanges = m_server.UpdateTrustList(trustList);
+
                 byte[] unusedNonce = new byte[0];
                 byte[] certificateRequest = m_server.CreateSigningRequest(
                     NodeId.Null,
@@ -194,6 +198,18 @@ namespace Opc.Ua.Gds.Client
                     NodeId.Null,
                     NodeId.Null,
                     certificateRequest);
+
+                if (applyChanges)
+                {
+                    MessageBox.Show(
+                        Parent,
+                        "The updated Trust List was loaded however, the apply changes command must be sent before the server will update its Trust List.",
+                        Parent.Text,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+
+                    ApplyChangesButton.Enabled = true;
+                }
 
                 m_application.CertificateRequestId = requestId.ToString();
                 CertificateRequestTimer.Enabled = true;
