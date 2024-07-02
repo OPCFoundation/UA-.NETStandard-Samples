@@ -45,7 +45,7 @@ namespace Opc.Ua.Com.Client
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the DataAccessServerNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
-    public partial class ComWrapperServer : StandardServer
+    public partial class ComWrapperServer : ReverseConnectServer
     {
         #region Public Interface
         /// <summary>
@@ -272,6 +272,7 @@ namespace Opc.Ua.Com.Client
         /// <param name="server">The server.</param>
         protected override void OnServerStarted(IServerInternal server)
         {
+            base.OnServerStarted(server);
             // verify session
             this.ServerInstance.SessionManager.ImpersonateUser += SessionManager_ImpersonateUser;
         }
