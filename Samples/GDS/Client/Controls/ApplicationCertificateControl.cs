@@ -232,6 +232,19 @@ namespace Opc.Ua.Gds.Client
                         }
                         catch
                         {
+                            DialogResult result = MessageBox.Show(
+                                   Parent,
+                                   "Private key of the selected application certificate is not exportable.  \n Creating a Certificate Signing request therefore is not possible \n  " +
+                                   "Do you want to retrieve a new certificate from the GDS using a key pair request?",
+                                   Parent.Text,
+                                   MessageBoxButtons.YesNo,
+                                   MessageBoxIcon.Exclamation);
+
+                            if (result == DialogResult.No)
+                            {
+                                return;
+                            }
+
                             //use KeyPair Request instead
                             m_certificate = null;
                         }
