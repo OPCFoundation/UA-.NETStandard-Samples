@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1145
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35027.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UA Xamarin Client", "Samples\XamarinClient\XamarinClient\UA Xamarin Client.csproj", "{3A624318-FA6E-404B-8BAC-3AF8DFA49F1E}"
 EndProject
@@ -124,8 +124,6 @@ Global
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.AppStore|x86.Build.0 = Release|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.AppStore|x86.Deploy.0 = Release|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Debug|ARM.ActiveCfg = Debug|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Debug|ARM.Build.0 = Debug|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Debug|ARM.Deploy.0 = Debug|Any CPU
@@ -142,8 +140,6 @@ Global
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Debug|x86.Build.0 = Debug|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Debug|x86.Deploy.0 = Debug|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Release|Any CPU.Deploy.0 = Release|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Release|ARM.ActiveCfg = Release|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Release|ARM.Build.0 = Release|Any CPU
 		{F7FE6E6A-A37D-48AF-84D5-60727679D973}.Release|ARM.Deploy.0 = Release|Any CPU
