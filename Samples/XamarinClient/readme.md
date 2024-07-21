@@ -20,9 +20,10 @@ Add [Xamarin](https://developer.xamarin.com/guides/cross-platform/getting_starte
 2. Hit `F5` to build and execute the sample.
 
 ### Android:
-1. Install [install VisualStudio Android emulator](https://www.visualstudio.com/vs/msft-android-emulator/). 
-2. Select UA Xamarin Client.Android as startup project.
-3. Hit `F5` to build and execute the sample.
+1. Install [install VisualStudio Android emulator](https://www.visualstudio.com/vs/msft-android-emulator/).
+2. Add the UA Xamarin Client.Android build to the debug and release [configuration](https://learn.microsoft.com/en-us/visualstudio/ide/how-to-create-and-edit-configurations?view=vs-2022).
+3. Select UA Xamarin Client.Android as startup project.
+4. Hit `F5` to build and execute the sample.
 
 Tested with Android Marshmallow (6.0.0 API 23) or higher. 
 

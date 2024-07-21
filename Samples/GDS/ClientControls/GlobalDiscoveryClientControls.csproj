@@ -217,10 +217,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>1.5.374.36</Version>
+      <Version>1.5.374.78</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Client.Common">
-      <Version>1.5.374.36</Version>
+      <Version>1.5.374.78</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
