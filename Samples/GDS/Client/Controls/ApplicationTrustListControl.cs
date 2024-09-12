@@ -89,8 +89,8 @@ namespace Opc.Ua.Gds.Client
                     }
                     else
                     {
-                    CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
-                }
+                        CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
+                    }
                 }
                 else
                 {
@@ -120,17 +120,12 @@ namespace Opc.Ua.Gds.Client
                 return;
             }
 
-            var certificateStoreIdentifier = new CertificateStoreIdentifier(sorePath);
-            using (var store = certificateStoreIdentifier.OpenStore(storePath))
+            ICertificateStore store = CertificateStoreIdentifier.OpenStore(storePath, false);
+            try
             {
                 X509Certificate2Collection certificates = await store.Enumerate();
                 foreach (var certificate in certificates)
                 {
-                    if (store.GetPrivateKeyFilePath(certificate.Thumbprint) != null)
-                    {
-                        continue;
-                    }
-
                     List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
 
                     if (fields.Contains("CN=UA Local Discovery Server"))
@@ -141,6 +136,11 @@ namespace Opc.Ua.Gds.Client
 
                     if (store is DirectoryCertificateStore ds)
                     {
+                        if (ds.GetPrivateKeyFilePath(certificate.Thumbprint) != null)
+                        {
+                            continue;
+                        }
+
                         string path = Utils.GetAbsoluteFilePath(m_application.CertificatePublicKeyPath, true, false, false);
 
                         if (path != null)
@@ -165,6 +165,7 @@ namespace Opc.Ua.Gds.Client
                     await store.Delete(certificate.Thumbprint);
                 }
             }
+            finally { store.Close(); }
         }
 
         private void PullFromGds(bool deleteBeforeAdd)
