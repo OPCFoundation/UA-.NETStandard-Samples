@@ -167,20 +167,22 @@ namespace Opc.Ua.Gds.Server
                 return;
             }
 
-            ManualResetEvent quitEvent = new ManualResetEvent(false);
-            try
+            using (ManualResetEvent quitEvent = new ManualResetEvent(false))
             {
-                Console.CancelKeyPress += (sender, eArgs) => {
-                    quitEvent.Set();
-                    eArgs.Cancel = true;
-                };
-            }
-            catch
-            {
-            }
+                try
+                {
+                    Console.CancelKeyPress += (sender, eArgs) => {
+                        quitEvent.Set();
+                        eArgs.Cancel = true;
+                    };
+                }
+                catch
+                {
+                }
 
-            // wait for timeout or Ctrl-C
-            quitEvent.WaitOne();
+                // wait for timeout or Ctrl-C
+                quitEvent.WaitOne();
+            }
 
             if (server != null)
             {
@@ -318,18 +320,18 @@ namespace Opc.Ua.Gds.Server
         {
             lock (session.DiagnosticsLock)
             {
-                string item = String.Format("{0,9}:{1,20}:", reason, session.SessionDiagnostics.SessionName);
+                string item = Utils.Format("{0,9}:{1,20}:", reason, session.SessionDiagnostics.SessionName);
                 if (lastContact)
                 {
-                    item += String.Format("Last Event:{0:HH:mm:ss}", session.SessionDiagnostics.ClientLastContactTime.ToLocalTime());
+                    item += Utils.Format("Last Event:{0:HH:mm:ss}", session.SessionDiagnostics.ClientLastContactTime.ToLocalTime());
                 }
                 else
                 {
                     if (session.Identity != null)
                     {
-                        item += String.Format(":{0,20}", session.Identity.DisplayName);
+                        item += Utils.Format(":{0,20}", session.Identity.DisplayName);
                     }
-                    item += String.Format(":{0}", session.Id);
+                    item += Utils.Format(":{0}", session.Id);
                 }
                 Console.WriteLine(item);
             }

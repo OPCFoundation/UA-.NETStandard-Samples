@@ -120,7 +120,8 @@ namespace Opc.Ua.Gds.Client
                 return;
             }
 
-            using (DirectoryCertificateStore store = (DirectoryCertificateStore) CertificateStoreIdentifier.OpenStore(storePath))
+            var certificateStoreIdentifier = new CertificateStoreIdentifier(sorePath);
+            using (var store = certificateStoreIdentifier.OpenStore(storePath))
             {
                 X509Certificate2Collection certificates = await store.Enumerate();
                 foreach (var certificate in certificates)

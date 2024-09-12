@@ -8,7 +8,7 @@
   <ApplicationUri>urn:localhost:UA:SimpleEventsClient</ApplicationUri>
   <ProductUri>http://opcfoundation.org/UA/SimpleEventsClient</ProductUri>
   <ApplicationType>Client_1</ApplicationType>
-  
+
   <SecurityConfiguration>
 
     <!-- Where the application instance certificate is stored (MachineDefault) -->
@@ -36,11 +36,11 @@
       <StorePath>%CommonApplicationData%\OPC Foundation\pki\rejected</StorePath>
     </RejectedCertificateStore>
 
-      <UseValidatedCertificates>true</UseValidatedCertificates>
+    <UseValidatedCertificates>true</UseValidatedCertificates>
   </SecurityConfiguration>
-  
+
   <TransportConfigurations></TransportConfigurations>
-  
+
   <TransportQuotas>
     <OperationTimeout>600000</OperationTimeout>
     <MaxStringLength>1048576</MaxStringLength>
@@ -83,5 +83,5 @@
     <!-- Show Only Security, ServiceResultExceptions, Errors and Trace -->
     <!-- <TraceMasks>519</TraceMasks> -->
   </TraceConfiguration>
-  
+
 </ApplicationConfiguration>
