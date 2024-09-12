@@ -825,7 +825,6 @@ namespace Opc.Ua.Com.Client
             monitoredItem = datachangeItem;
 
             // save the monitored item.
-            MonitoredItems.Add(monitoredItemId, datachangeItem);
             monitoredNode.Add(datachangeItem);
 
             // report change.
