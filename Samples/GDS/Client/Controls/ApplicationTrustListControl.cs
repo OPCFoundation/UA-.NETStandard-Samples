@@ -207,7 +207,8 @@ namespace Opc.Ua.Gds.Client
 
                 if (!String.IsNullOrEmpty(m_trustListStorePath))
                 {
-                    using (ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_trustListStorePath))
+                    ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_trustListStorePath, true);
+                    try
                     {
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.TrustedCertificates) != 0)
                         {
@@ -231,11 +232,13 @@ namespace Opc.Ua.Gds.Client
                             }
                         }
                     }
-                }
+                    finally { store.Close(); }
+        }
 
                 if (!String.IsNullOrEmpty(m_application.IssuerListStorePath))
                 {
-                    using (ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_application.IssuerListStorePath))
+                    ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_application.IssuerListStorePath, true);
+                    try
                     {
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.IssuerCertificates) != 0)
                         {
@@ -259,6 +262,7 @@ namespace Opc.Ua.Gds.Client
                             }
                         }
                     }
+                    finally { store.Close(); }
                 }
 
                 CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
