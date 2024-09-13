@@ -336,7 +336,8 @@ namespace Opc.Ua.Gds.Client
                         };
 
                         // update store
-                        using (ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_application.CertificateStorePath, false))
+                        var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.CertificateStorePath, false);
+                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
                         {
                             // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
                             // in this case, privateKey is null
@@ -436,7 +437,8 @@ namespace Opc.Ua.Gds.Client
                     // update trust list.
                     if (!String.IsNullOrEmpty(m_application.TrustListStorePath))
                     {
-                        using (ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_application.TrustListStorePath))
+                        var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.TrustListStorePath);
+                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
                         {
                             foreach (byte[] issuerCertificate in issuerCertificates)
                             {

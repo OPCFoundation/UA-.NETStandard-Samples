@@ -32,6 +32,9 @@ GO
 IF OBJECT_ID(N'[dbo].[FK_CertificateRequests_Applications]', 'F') IS NOT NULL
     ALTER TABLE [dbo].[CertificateRequests] DROP CONSTRAINT [FK_CertificateRequests_Applications];
 GO
+IF OBJECT_ID(N'[dbo].[CertificateStoreApplication]', 'F') IS NOT NULL
+    ALTER TABLE [dbo].[CertificateStores] DROP CONSTRAINT [CertificateStoreApplication]
+GO
 
 -- --------------------------------------------------
 -- Dropping existing tables
@@ -204,7 +207,7 @@ ADD CONSTRAINT [FK_CertificateStoreApplication]
     FOREIGN KEY ([Application_ID])
     REFERENCES [dbo].[Applications]
         ([ID])
-    ON DELETE NO ACTION ON UPDATE NO ACTION;
+    ON DELETE CASCADE ON UPDATE NO ACTION;
 GO
 
 -- Creating non-clustered index for FOREIGN KEY 'FK_CertificateStoreApplication'
