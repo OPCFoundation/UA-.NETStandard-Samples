@@ -136,7 +136,7 @@
           <CertificateGroupConfiguration>
             <Id>Default</Id>
             <CertificateType>RsaSha256ApplicationCertificateType</CertificateType>
-            <SubjectName>CN=IOP-2017 CA, O=OPC Foundation</SubjectName>
+            <SubjectName>CN=IOP-2024 CA, O=OPC Foundation</SubjectName>
             <BaseStorePath>%CommonApplicationData%/OPC Foundation/GDS/PKI/CA/default</BaseStorePath>
             <DefaultCertificateLifetime>12</DefaultCertificateLifetime>
             <DefaultCertificateKeySize>2048</DefaultCertificateKeySize>

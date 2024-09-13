@@ -89,8 +89,8 @@ namespace Opc.Ua.Gds.Client
                     }
                     else
                     {
-                    CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
-                }
+                        CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
+                    }
                 }
                 else
                 {
@@ -120,16 +120,12 @@ namespace Opc.Ua.Gds.Client
                 return;
             }
 
-            using (DirectoryCertificateStore store = (DirectoryCertificateStore) CertificateStoreIdentifier.OpenStore(storePath))
+            var certificateStoreIdentifier = new CertificateStoreIdentifier(storePath);
+            using (var store = certificateStoreIdentifier.OpenStore())
             {
                 X509Certificate2Collection certificates = await store.Enumerate();
                 foreach (var certificate in certificates)
                 {
-                    if (store.GetPrivateKeyFilePath(certificate.Thumbprint) != null)
-                    {
-                        continue;
-                    }
-
                     List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
 
                     if (fields.Contains("CN=UA Local Discovery Server"))
@@ -140,6 +136,11 @@ namespace Opc.Ua.Gds.Client
 
                     if (store is DirectoryCertificateStore ds)
                     {
+                        if (ds.GetPrivateKeyFilePath(certificate.Thumbprint) != null)
+                        {
+                            continue;
+                        }
+
                         string path = Utils.GetAbsoluteFilePath(m_application.CertificatePublicKeyPath, true, false, false);
 
                         if (path != null)
@@ -205,7 +206,8 @@ namespace Opc.Ua.Gds.Client
 
                 if (!String.IsNullOrEmpty(m_trustListStorePath))
                 {
-                    using (ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_trustListStorePath))
+                    var certificateStoreIdentifier = new CertificateStoreIdentifier(m_trustListStorePath);
+                    using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
                     {
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.TrustedCertificates) != 0)
                         {
@@ -233,7 +235,8 @@ namespace Opc.Ua.Gds.Client
 
                 if (!String.IsNullOrEmpty(m_application.IssuerListStorePath))
                 {
-                    using (ICertificateStore store = CertificateStoreIdentifier.OpenStore(m_application.IssuerListStorePath))
+                    var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.IssuerListStorePath);
+                    using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
                     {
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.IssuerCertificates) != 0)
                         {

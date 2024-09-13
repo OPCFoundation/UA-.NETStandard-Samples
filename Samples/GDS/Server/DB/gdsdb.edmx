@@ -130,7 +130,9 @@
   </Association>
   <Association Name="CertificateStoreApplication">
     <End Role="CertificateStore" Type="gdsdbModel.Store.CertificateStores" Multiplicity="*" />
-    <End Role="Application" Type="gdsdbModel.Store.Applications" Multiplicity="1" />
+    <End Role="Application" Type="gdsdbModel.Store.Applications" Multiplicity="1">
+	<OnDelete Action="Cascade" />
+    </End>
     <ReferentialConstraint>
       <Principal Role="Application">
         <PropertyRef Name="ID" />
@@ -276,7 +278,9 @@
         </Association>
         <Association Name="CertificateStoreApplication">
           <End Type="gdsdbModel.CertificateStore" Role="CertificateStore" Multiplicity="*" />
-          <End Type="gdsdbModel.Application" Role="Application" Multiplicity="1" />
+          <End Type="gdsdbModel.Application" Role="Application" Multiplicity="1" >
+            <OnDelete Action="Cascade" />
+          </End>
         </Association>
       </Schema>
     </edmx:ConceptualModels>
