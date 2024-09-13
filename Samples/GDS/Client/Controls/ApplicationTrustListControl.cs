@@ -126,12 +126,6 @@ namespace Opc.Ua.Gds.Client
                 X509Certificate2Collection certificates = await store.Enumerate();
                 foreach (var certificate in certificates)
                 {
-                    if (store is DirectoryCertificateStore directoryStore &&
-                        directoryStore.GetPrivateKeyFilePath(certificate.Thumbprint) != null)
-                    {
-                        continue;
-                    }
-
                     List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
 
                     if (fields.Contains("CN=UA Local Discovery Server"))
@@ -142,6 +136,11 @@ namespace Opc.Ua.Gds.Client
 
                     if (store is DirectoryCertificateStore ds)
                     {
+                        if (ds.GetPrivateKeyFilePath(certificate.Thumbprint) != null)
+                        {
+                            continue;
+                        }
+
                         string path = Utils.GetAbsoluteFilePath(m_application.CertificatePublicKeyPath, true, false, false);
 
                         if (path != null)
