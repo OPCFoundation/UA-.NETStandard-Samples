@@ -235,7 +235,7 @@ namespace Opc.Ua.Gds.Client
                         SubjectName = Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName)
                     };
                     m_certificate = await id.Find(true);
-                    //only use CSR when the private key is available & exportable
+                    //test if private key is available & exportable, else create new temporary certificate for csr
                     if (m_certificate != null &&
                         m_certificate.HasPrivateKey)
                     {
@@ -248,21 +248,16 @@ namespace Opc.Ua.Gds.Client
                         }
                         catch
                         {
-                            DialogResult result = MessageBox.Show(
-                                   Parent,
-                                   "Private key of the selected application certificate is not exportable.  \n Creating a Certificate Signing request therefore is not possible \n  " +
-                                   "Do you want to retrieve a new certificate from the GDS using a key pair request?",
-                                   Parent.Text,
-                                   MessageBoxButtons.YesNo,
-                                   MessageBoxIcon.Exclamation);
-
-                            if (result == DialogResult.No)
-                            {
-                                return;
-                            }
-
-                            //use KeyPair Request instead
-                            m_certificate = null;
+                            ushort keySize = (ushort)(m_certificate.GetRSAPublicKey()?.KeySize ?? 0);
+                            m_certificate = CertificateFactory.CreateCertificate(
+                                X509Utils.GetApplicationUriFromCertificate(m_certificate),
+                                null,
+                                Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
+                                m_application.GetDomainNames(m_certificate))
+                                .SetNotBefore(DateTime.Today.AddDays(-1))
+                                .SetNotAfter(DateTime.Today.AddDays(14))
+                                .SetRSAKeySize(keySize)
+                                .CreateForRSA();
                         }
                     }
                 }
