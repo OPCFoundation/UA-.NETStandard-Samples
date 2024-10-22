@@ -248,7 +248,7 @@ namespace Opc.Ua.Gds.Client
                         }
                         catch
                         {
-                            ushort keySize = (ushort)(m_certificate.GetRSAPublicKey()?.KeySize ?? 0);
+                            //create temporary cert to generate csr from
                             m_certificate = CertificateFactory.CreateCertificate(
                                 X509Utils.GetApplicationUriFromCertificate(m_certificate),
                                 null,
@@ -256,7 +256,7 @@ namespace Opc.Ua.Gds.Client
                                 m_application.GetDomainNames(m_certificate))
                                 .SetNotBefore(DateTime.Today.AddDays(-1))
                                 .SetNotAfter(DateTime.Today.AddDays(14))
-                                .SetRSAKeySize(keySize)
+                                .SetRSAKeySize((ushort)(m_certificate.GetRSAPublicKey()?.KeySize ?? 0))
                                 .CreateForRSA();
                         }
                     }
