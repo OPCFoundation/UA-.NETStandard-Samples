@@ -82,8 +82,8 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private ICertificateStore CreateStore(string storePath)
         {
-            ICertificateStore store = CertificateStoreIdentifier.CreateStore(CertificateStoreIdentifier.DetermineStoreType(storePath));
-            store.Open(storePath);
+            CertificateStoreIdentifier certificateStoreIdentifier = new CertificateStoreIdentifier(storePath);
+            ICertificateStore store = certificateStoreIdentifier.OpenStore();
             return store;
         }
 
