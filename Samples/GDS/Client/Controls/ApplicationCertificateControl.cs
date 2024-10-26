@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using Opc.Ua.Security.Certificates;
+using Org.BouncyCastle.Tls.Crypto;
 using System;
 using System.Drawing;
 using System.IO;
@@ -49,6 +50,7 @@ namespace Opc.Ua.Gds.Client
         private ServerPushConfigurationClient m_server;
         private RegisteredApplication m_application;
         private X509Certificate2 m_certificate;
+        private bool m_temporaryCertificateCreated;
         private string m_certificatePassword;
 
         public async Task Initialize(
@@ -63,6 +65,7 @@ namespace Opc.Ua.Gds.Client
             m_server = server;
             m_application = application;
             m_certificate = null;
+            m_temporaryCertificateCreated = false;
             m_certificatePassword = null;
 
             CertificateRequestTimer.Enabled = false;
@@ -251,13 +254,14 @@ namespace Opc.Ua.Gds.Client
                             //create temporary cert to generate csr from
                             m_certificate = CertificateFactory.CreateCertificate(
                                 X509Utils.GetApplicationUriFromCertificate(m_certificate),
-                                null,
+                                m_application.ApplicationName,
                                 Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                                 m_application.GetDomainNames(m_certificate))
                                 .SetNotBefore(DateTime.Today.AddDays(-1))
                                 .SetNotAfter(DateTime.Today.AddDays(14))
                                 .SetRSAKeySize((ushort)(m_certificate.GetRSAPublicKey()?.KeySize ?? 0))
                                 .CreateForRSA();
+                            m_temporaryCertificateCreated = true;
                         }
                     }
                 }
@@ -366,7 +370,7 @@ namespace Opc.Ua.Gds.Client
                                 if (oldCertificate != null && oldCertificate.HasPrivateKey)
                                 {
                                     oldCertificate = await cid.LoadPrivateKey(string.Empty);
-                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
+                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, m_temporaryCertificateCreated ? m_certificate : oldCertificate);
                                     await store.Delete(oldCertificate.Thumbprint);
                                 }
                                 else
@@ -380,6 +384,12 @@ namespace Opc.Ua.Gds.Client
                                 newCert = CertificateFactory.Load(newCert, true);
                             }
                             await store.Add(newCert);
+                            if (m_temporaryCertificateCreated)
+                            {
+                                m_certificate.Dispose();
+                                m_certificate = null;
+                                m_temporaryCertificateCreated = false;
+                            }
                         }
                     }
                     else
