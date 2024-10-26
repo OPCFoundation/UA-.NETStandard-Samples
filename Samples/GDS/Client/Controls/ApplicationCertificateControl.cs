@@ -28,7 +28,6 @@
  * ======================================================================*/
 
 using Opc.Ua.Security.Certificates;
-using Org.BouncyCastle.Tls.Crypto;
 using System;
 using System.Drawing;
 using System.IO;
