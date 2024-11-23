@@ -1,5 +1,5 @@
 <xs:schema
-  xmlns:Quickstarts.DataTypes.Types="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types"
+  xmlns:s1="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types"
   xmlns:xs="http://www.w3.org/2001/XMLSchema"
   xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
   xmlns:tns="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances"
@@ -8,7 +8,7 @@
 >
   <xs:annotation>
     <xs:appinfo>
-      <ua:Model ModelUri="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances" Version="1.0.0" PublicationDate="2024-11-23T08:02:04.4779264Z" />
+      <ua:Model ModelUri="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances" Version="1.0.0" PublicationDate="2024-11-23T08:59:06.1068498Z" />
     </xs:appinfo>
   </xs:annotation>
   
@@ -32,7 +32,7 @@
 
   <xs:complexType name="TwoWheelerType">
     <xs:complexContent mixed="false">
-      <xs:extension base="Quickstarts.DataTypes.Types:VehicleType">
+      <xs:extension base="s1:VehicleType">
         <xs:sequence>
           <xs:element name="ManufacturerName" type="xs:string" minOccurs="0" nillable="true" />
         </xs:sequence>

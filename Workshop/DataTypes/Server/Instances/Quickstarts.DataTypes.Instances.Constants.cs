@@ -33,7 +33,7 @@ using System.Text;
 using System.Reflection;
 using System.Xml;
 using System.Runtime.Serialization;
-using Quickstarts.DataTypes.Types;
+using Opc.Ua;
 using Opc.Ua;
 
 namespace Quickstarts.DataTypes.Instances
@@ -326,9 +326,9 @@ namespace Quickstarts.DataTypes.Instances
         public const string DataTypeInstances = "http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances";
 
         /// <summary>
-        /// The URI for the DataTypes namespace (.NET code namespace is 'Quickstarts.DataTypes.Types').
+        /// The URI for the OpcUa namespace (.NET code namespace is 'Opc.Ua').
         /// </summary>
-        public const string DataTypes = "http://opcfoundation.org/UA/Quickstarts/DataTypes/Types";
+        public const string OpcUa = "http://opcfoundation.org/UA/Quickstarts/DataTypes/Types";
 
         /// <summary>
         /// The URI for the OpcUa namespace (.NET code namespace is 'Opc.Ua').

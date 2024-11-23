@@ -32,7 +32,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 using System.Runtime.Serialization;
-using Quickstarts.DataTypes.Types;
+using Opc.Ua;
 using Opc.Ua;
 
 namespace Quickstarts.DataTypes.Instances

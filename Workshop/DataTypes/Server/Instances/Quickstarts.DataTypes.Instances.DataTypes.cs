@@ -32,7 +32,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 using System.Runtime.Serialization;
-using Quickstarts.DataTypes.Types;
+using Opc.Ua;
 using Opc.Ua;
 
 namespace Quickstarts.DataTypes.Instances
@@ -127,7 +127,7 @@ namespace Quickstarts.DataTypes.Instances
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances)]
-    public partial class TwoWheelerType : Quickstarts.DataTypes.Types.VehicleType
+    public partial class TwoWheelerType : Opc.Ua.VehicleType
     {
         #region Constructors
         /// <remarks />
@@ -210,6 +210,7 @@ namespace Quickstarts.DataTypes.Instances
                 return false;
             }
 
+            if (!base.IsEqual(encodeable)) return false;
             if (!Utils.IsEqual(m_manufacturerName, value.m_manufacturerName)) return false;
 
             return base.IsEqual(encodeable);
@@ -393,6 +394,7 @@ namespace Quickstarts.DataTypes.Instances
                 return false;
             }
 
+            if (!base.IsEqual(encodeable)) return false;
             if (!Utils.IsEqual(m_noOfGears, value.m_noOfGears)) return false;
 
             return base.IsEqual(encodeable);
@@ -576,6 +578,7 @@ namespace Quickstarts.DataTypes.Instances
                 return false;
             }
 
+            if (!base.IsEqual(encodeable)) return false;
             if (!Utils.IsEqual(m_noOfSeats, value.m_noOfSeats)) return false;
 
             return base.IsEqual(encodeable);

@@ -7,330 +7,6 @@
   </NamespaceUris>
   <ServerUris />
   <Nodes>
-    <Node i:type="DataTypeNode">
-      <NodeId>
-        <Identifier>ns=1;i=378</Identifier>
-      </NodeId>
-      <NodeClass>DataType_64</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>ParkingLotType</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>ParkingLotType</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=45</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>i=29</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15001</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <IsAbstract>false</IsAbstract>
-      <DataTypeDefinition i:nil="true" />
-    </Node>
-    <Node i:type="VariableNode">
-      <NodeId>
-        <Identifier>ns=1;i=15001</Identifier>
-      </NodeId>
-      <NodeClass>Variable_2</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>EnumValues</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>EnumValues</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=378</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=68</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <Value>
-        <Value>
-          <ListOfExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">
-            <ExtensionObject>
-              <TypeId>
-                <Identifier>i=7616</Identifier>
-              </TypeId>
-              <Body>
-                <EnumValueType>
-                  <Value>1</Value>
-                  <DisplayName>
-                    <Text>Open</Text>
-                  </DisplayName>
-                </EnumValueType>
-              </Body>
-            </ExtensionObject>
-            <ExtensionObject>
-              <TypeId>
-                <Identifier>i=7616</Identifier>
-              </TypeId>
-              <Body>
-                <EnumValueType>
-                  <Value>2</Value>
-                  <DisplayName>
-                    <Text>Covered</Text>
-                  </DisplayName>
-                </EnumValueType>
-              </Body>
-            </ExtensionObject>
-          </ListOfExtensionObject>
-        </Value>
-      </Value>
-      <DataType>
-        <Identifier>i=7594</Identifier>
-      </DataType>
-      <ValueRank>1</ValueRank>
-      <ArrayDimensions>
-        <UInt32>2</UInt32>
-      </ArrayDimensions>
-      <AccessLevel>1</AccessLevel>
-      <UserAccessLevel>1</UserAccessLevel>
-      <MinimumSamplingInterval>0</MinimumSamplingInterval>
-      <Historizing>false</Historizing>
-      <AccessLevelEx>0</AccessLevelEx>
-    </Node>
-    <Node i:type="DataTypeNode">
-      <NodeId>
-        <Identifier>ns=1;i=15014</Identifier>
-      </NodeId>
-      <NodeClass>DataType_64</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>TwoWheelerType</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>TwoWheelerType</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=45</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=2;i=314</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=45</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15004</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=45</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15015</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15016</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15024</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15032</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <IsAbstract>false</IsAbstract>
-      <DataTypeDefinition i:nil="true" />
-    </Node>
-    <Node i:type="DataTypeNode">
-      <NodeId>
-        <Identifier>ns=1;i=15004</Identifier>
-      </NodeId>
-      <NodeClass>DataType_64</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>BicycleType</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>BicycleType</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=45</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15014</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15005</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15009</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15013</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <IsAbstract>false</IsAbstract>
-      <DataTypeDefinition i:nil="true" />
-    </Node>
-    <Node i:type="DataTypeNode">
-      <NodeId>
-        <Identifier>ns=1;i=15015</Identifier>
-      </NodeId>
-      <NodeClass>DataType_64</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>ScooterType</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>ScooterType</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=45</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15014</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15017</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15025</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15033</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <IsAbstract>false</IsAbstract>
-      <DataTypeDefinition i:nil="true" />
-    </Node>
     <Node i:type="ObjectNode">
       <NodeId>
         <Identifier>ns=1;i=281</Identifier>
@@ -401,16 +77,303 @@
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
-        <Identifier>ns=1;i=380</Identifier>
+        <Identifier>ns=1;i=283</Identifier>
       </NodeId>
       <NodeClass>Variable_2</NodeClass>
       <BrowseName>
         <NamespaceIndex>1</NamespaceIndex>
-        <Name>LotType</Name>
+        <Name>VehiclesInLot</Name>
       </BrowseName>
       <DisplayName>
         <Locale></Locale>
-        <Text>LotType</Text>
+        <Text>VehiclesInLot</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=281</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=63</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <Value>
+        <Value>
+          <ListOfExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            <ExtensionObject>
+              <TypeId>
+                <Identifier>ns=2;i=319</Identifier>
+              </TypeId>
+              <Body>
+                <s0:TruckType xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">
+                  <s0:Make>Dodge</s0:Make>
+                  <s0:Model>Ram</s0:Model>
+                  <s0:Engine>Diesel_2</s0:Engine>
+                  <s0:CargoCapacity>500</s0:CargoCapacity>
+                </s0:TruckType>
+              </Body>
+            </ExtensionObject>
+            <ExtensionObject>
+              <TypeId>
+                <Identifier>ns=2;i=318</Identifier>
+              </TypeId>
+              <Body>
+                <s0:VehicleType xsi:type="s0:CarType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">
+                  <s0:Make>Porsche</s0:Make>
+                  <s0:Model>Roadster</s0:Model>
+                  <s0:Engine>Petrol_1</s0:Engine>
+                  <s0:NoOfPassengers>2</s0:NoOfPassengers>
+                </s0:VehicleType>
+              </Body>
+            </ExtensionObject>
+            <ExtensionObject>
+              <TypeId>
+                <Identifier>ns=2;i=318</Identifier>
+              </TypeId>
+              <Body>
+                <s0:VehicleType xsi:type="s0:CarType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">
+                  <s0:Make>Tesla</s0:Make>
+                  <s0:Model>Model X</s0:Model>
+                  <s0:Engine>Electric_3</s0:Engine>
+                  <s0:NoOfPassengers>4</s0:NoOfPassengers>
+                </s0:VehicleType>
+              </Body>
+            </ExtensionObject>
+            <ExtensionObject>
+              <TypeId>
+                <Identifier>ns=1;i=15009</Identifier>
+              </TypeId>
+              <Body>
+                <BicycleType xmlns="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances">
+                  <s0:Make xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Giant</s0:Make>
+                  <s0:Model xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Cruiser</s0:Model>
+                  <s0:Engine xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Manual_5</s0:Engine>
+                  <ManufacturerName>Canyon</ManufacturerName>
+                  <NoOfGears>18</NoOfGears>
+                </BicycleType>
+              </Body>
+            </ExtensionObject>
+            <ExtensionObject>
+              <TypeId>
+                <Identifier>ns=1;i=15025</Identifier>
+              </TypeId>
+              <Body>
+                <ScooterType xmlns="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances">
+                  <s0:Make xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Lucky</s0:Make>
+                  <s0:Model xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Pro Kick</s0:Model>
+                  <s0:Engine xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Electric_3</s0:Engine>
+                  <ManufacturerName>Dafra</ManufacturerName>
+                  <NoOfSeats>1</NoOfSeats>
+                </ScooterType>
+              </Body>
+            </ExtensionObject>
+          </ListOfExtensionObject>
+        </Value>
+      </Value>
+      <DataType>
+        <Identifier>ns=2;i=314</Identifier>
+      </DataType>
+      <ValueRank>1</ValueRank>
+      <ArrayDimensions>
+        <UInt32>0</UInt32>
+      </ArrayDimensions>
+      <AccessLevel>3</AccessLevel>
+      <UserAccessLevel>3</UserAccessLevel>
+      <MinimumSamplingInterval>0</MinimumSamplingInterval>
+      <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
+    </Node>
+    <Node i:type="VariableNode">
+      <NodeId>
+        <Identifier>ns=1;i=341</Identifier>
+      </NodeId>
+      <NodeClass>Variable_2</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>Quickstarts.DataTypes.Instances</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>Quickstarts.DataTypes.Instances</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=72</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>i=92</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=46</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=343</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=46</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15003</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15026</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15010</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15029</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <Value>
+        <Value>
+          <ByteString xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">PHhzOnNjaGVtYQ0KICB4bWxuczpzMT0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL1VBL1F1aWNr
+c3RhcnRzL0RhdGFUeXBlcy9UeXBlcyINCiAgeG1sbnM6eHM9Imh0dHA6Ly93d3cudzMub3JnLzIw
+MDEvWE1MU2NoZW1hIg0KICB4bWxuczp1YT0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL1VBLzIw
+MDgvMDIvVHlwZXMueHNkIg0KICB4bWxuczp0bnM9Imh0dHA6Ly9vcGNmb3VuZGF0aW9uLm9yZy9V
+QS9RdWlja3N0YXJ0cy9EYXRhVHlwZXMvSW5zdGFuY2VzIg0KICB0YXJnZXROYW1lc3BhY2U9Imh0
+dHA6Ly9vcGNmb3VuZGF0aW9uLm9yZy9VQS9RdWlja3N0YXJ0cy9EYXRhVHlwZXMvSW5zdGFuY2Vz
+Ig0KICBlbGVtZW50Rm9ybURlZmF1bHQ9InF1YWxpZmllZCINCj4NCiAgPHhzOmFubm90YXRpb24+
+DQogICAgPHhzOmFwcGluZm8+DQogICAgICA8dWE6TW9kZWwgTW9kZWxVcmk9Imh0dHA6Ly9vcGNm
+b3VuZGF0aW9uLm9yZy9VQS9RdWlja3N0YXJ0cy9EYXRhVHlwZXMvSW5zdGFuY2VzIiBWZXJzaW9u
+PSIxLjAuMCIgUHVibGljYXRpb25EYXRlPSIyMDI0LTExLTIzVDA4OjU5OjA2LjEwNjg0OThaIiAv
+Pg0KICAgIDwveHM6YXBwaW5mbz4NCiAgPC94czphbm5vdGF0aW9uPg0KICANCiAgPHhzOmltcG9y
+dCBuYW1lc3BhY2U9Imh0dHA6Ly9vcGNmb3VuZGF0aW9uLm9yZy9VQS9RdWlja3N0YXJ0cy9EYXRh
+VHlwZXMvVHlwZXMiIC8+DQogIDx4czppbXBvcnQgbmFtZXNwYWNlPSJodHRwOi8vb3BjZm91bmRh
+dGlvbi5vcmcvVUEvMjAwOC8wMi9UeXBlcy54c2QiIC8+DQoNCiAgPHhzOnNpbXBsZVR5cGUgIG5h
+bWU9IlBhcmtpbmdMb3RUeXBlIj4NCiAgICA8eHM6cmVzdHJpY3Rpb24gYmFzZT0ieHM6c3RyaW5n
+Ij4NCiAgICAgIDx4czplbnVtZXJhdGlvbiB2YWx1ZT0iT3Blbl8xIiAvPg0KICAgICAgPHhzOmVu
+dW1lcmF0aW9uIHZhbHVlPSJDb3ZlcmVkXzIiIC8+DQogICAgPC94czpyZXN0cmljdGlvbj4NCiAg
+PC94czpzaW1wbGVUeXBlPg0KICA8eHM6ZWxlbWVudCBuYW1lPSJQYXJraW5nTG90VHlwZSIgdHlw
+ZT0idG5zOlBhcmtpbmdMb3RUeXBlIiAvPg0KDQogIDx4czpjb21wbGV4VHlwZSBuYW1lPSJMaXN0
+T2ZQYXJraW5nTG90VHlwZSI+DQogICAgPHhzOnNlcXVlbmNlPg0KICAgICAgPHhzOmVsZW1lbnQg
+bmFtZT0iUGFya2luZ0xvdFR5cGUiIHR5cGU9InRuczpQYXJraW5nTG90VHlwZSIgbWluT2NjdXJz
+PSIwIiBtYXhPY2N1cnM9InVuYm91bmRlZCIgLz4NCiAgICA8L3hzOnNlcXVlbmNlPg0KICA8L3hz
+OmNvbXBsZXhUeXBlPg0KICA8eHM6ZWxlbWVudCBuYW1lPSJMaXN0T2ZQYXJraW5nTG90VHlwZSIg
+dHlwZT0idG5zOkxpc3RPZlBhcmtpbmdMb3RUeXBlIiBuaWxsYWJsZT0idHJ1ZSI+PC94czplbGVt
+ZW50Pg0KDQogIDx4czpjb21wbGV4VHlwZSBuYW1lPSJUd29XaGVlbGVyVHlwZSI+DQogICAgPHhz
+OmNvbXBsZXhDb250ZW50IG1peGVkPSJmYWxzZSI+DQogICAgICA8eHM6ZXh0ZW5zaW9uIGJhc2U9
+InMxOlZlaGljbGVUeXBlIj4NCiAgICAgICAgPHhzOnNlcXVlbmNlPg0KICAgICAgICAgIDx4czpl
+bGVtZW50IG5hbWU9Ik1hbnVmYWN0dXJlck5hbWUiIHR5cGU9InhzOnN0cmluZyIgbWluT2NjdXJz
+PSIwIiBuaWxsYWJsZT0idHJ1ZSIgLz4NCiAgICAgICAgPC94czpzZXF1ZW5jZT4NCiAgICAgIDwv
+eHM6ZXh0ZW5zaW9uPg0KICAgIDwveHM6Y29tcGxleENvbnRlbnQ+DQogIDwveHM6Y29tcGxleFR5
+cGU+DQogIDx4czplbGVtZW50IG5hbWU9IlR3b1doZWVsZXJUeXBlIiB0eXBlPSJ0bnM6VHdvV2hl
+ZWxlclR5cGUiIC8+DQoNCiAgPHhzOmNvbXBsZXhUeXBlIG5hbWU9Ikxpc3RPZlR3b1doZWVsZXJU
+eXBlIj4NCiAgICA8eHM6c2VxdWVuY2U+DQogICAgICA8eHM6ZWxlbWVudCBuYW1lPSJUd29XaGVl
+bGVyVHlwZSIgdHlwZT0idG5zOlR3b1doZWVsZXJUeXBlIiBtaW5PY2N1cnM9IjAiIG1heE9jY3Vy
+cz0idW5ib3VuZGVkIiBuaWxsYWJsZT0idHJ1ZSIgLz4NCiAgICA8L3hzOnNlcXVlbmNlPg0KICA8
+L3hzOmNvbXBsZXhUeXBlPg0KICA8eHM6ZWxlbWVudCBuYW1lPSJMaXN0T2ZUd29XaGVlbGVyVHlw
+ZSIgdHlwZT0idG5zOkxpc3RPZlR3b1doZWVsZXJUeXBlIiBuaWxsYWJsZT0idHJ1ZSI+PC94czpl
+bGVtZW50Pg0KDQogIDx4czpjb21wbGV4VHlwZSBuYW1lPSJCaWN5Y2xlVHlwZSI+DQogICAgPHhz
+OmNvbXBsZXhDb250ZW50IG1peGVkPSJmYWxzZSI+DQogICAgICA8eHM6ZXh0ZW5zaW9uIGJhc2U9
+InRuczpUd29XaGVlbGVyVHlwZSI+DQogICAgICAgIDx4czpzZXF1ZW5jZT4NCiAgICAgICAgICA8
+eHM6ZWxlbWVudCBuYW1lPSJOb09mR2VhcnMiIHR5cGU9InhzOnVuc2lnbmVkSW50IiBtaW5PY2N1
+cnM9IjAiIC8+DQogICAgICAgIDwveHM6c2VxdWVuY2U+DQogICAgICA8L3hzOmV4dGVuc2lvbj4N
+CiAgICA8L3hzOmNvbXBsZXhDb250ZW50Pg0KICA8L3hzOmNvbXBsZXhUeXBlPg0KICA8eHM6ZWxl
+bWVudCBuYW1lPSJCaWN5Y2xlVHlwZSIgdHlwZT0idG5zOkJpY3ljbGVUeXBlIiAvPg0KDQogIDx4
+czpjb21wbGV4VHlwZSBuYW1lPSJMaXN0T2ZCaWN5Y2xlVHlwZSI+DQogICAgPHhzOnNlcXVlbmNl
+Pg0KICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iQmljeWNsZVR5cGUiIHR5cGU9InRuczpCaWN5Y2xl
+VHlwZSIgbWluT2NjdXJzPSIwIiBtYXhPY2N1cnM9InVuYm91bmRlZCIgbmlsbGFibGU9InRydWUi
+IC8+DQogICAgPC94czpzZXF1ZW5jZT4NCiAgPC94czpjb21wbGV4VHlwZT4NCiAgPHhzOmVsZW1l
+bnQgbmFtZT0iTGlzdE9mQmljeWNsZVR5cGUiIHR5cGU9InRuczpMaXN0T2ZCaWN5Y2xlVHlwZSIg
+bmlsbGFibGU9InRydWUiPjwveHM6ZWxlbWVudD4NCg0KICA8eHM6Y29tcGxleFR5cGUgbmFtZT0i
+U2Nvb3RlclR5cGUiPg0KICAgIDx4czpjb21wbGV4Q29udGVudCBtaXhlZD0iZmFsc2UiPg0KICAg
+ICAgPHhzOmV4dGVuc2lvbiBiYXNlPSJ0bnM6VHdvV2hlZWxlclR5cGUiPg0KICAgICAgICA8eHM6
+c2VxdWVuY2U+DQogICAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iTm9PZlNlYXRzIiB0eXBlPSJ4
+czp1bnNpZ25lZEludCIgbWluT2NjdXJzPSIwIiAvPg0KICAgICAgICA8L3hzOnNlcXVlbmNlPg0K
+ICAgICAgPC94czpleHRlbnNpb24+DQogICAgPC94czpjb21wbGV4Q29udGVudD4NCiAgPC94czpj
+b21wbGV4VHlwZT4NCiAgPHhzOmVsZW1lbnQgbmFtZT0iU2Nvb3RlclR5cGUiIHR5cGU9InRuczpT
+Y29vdGVyVHlwZSIgLz4NCg0KICA8eHM6Y29tcGxleFR5cGUgbmFtZT0iTGlzdE9mU2Nvb3RlclR5
+cGUiPg0KICAgIDx4czpzZXF1ZW5jZT4NCiAgICAgIDx4czplbGVtZW50IG5hbWU9IlNjb290ZXJU
+eXBlIiB0eXBlPSJ0bnM6U2Nvb3RlclR5cGUiIG1pbk9jY3Vycz0iMCIgbWF4T2NjdXJzPSJ1bmJv
+dW5kZWQiIG5pbGxhYmxlPSJ0cnVlIiAvPg0KICAgIDwveHM6c2VxdWVuY2U+DQogIDwveHM6Y29t
+cGxleFR5cGU+DQogIDx4czplbGVtZW50IG5hbWU9Ikxpc3RPZlNjb290ZXJUeXBlIiB0eXBlPSJ0
+bnM6TGlzdE9mU2Nvb3RlclR5cGUiIG5pbGxhYmxlPSJ0cnVlIj48L3hzOmVsZW1lbnQ+DQoNCjwv
+eHM6c2NoZW1hPg==</ByteString>
+        </Value>
+      </Value>
+      <DataType>
+        <Identifier>i=15</Identifier>
+      </DataType>
+      <ValueRank>-1</ValueRank>
+      <ArrayDimensions />
+      <AccessLevel>1</AccessLevel>
+      <UserAccessLevel>1</UserAccessLevel>
+      <MinimumSamplingInterval>0</MinimumSamplingInterval>
+      <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
+    </Node>
+    <Node i:type="VariableNode">
+      <NodeId>
+        <Identifier>ns=1;i=343</Identifier>
+      </NodeId>
+      <NodeClass>Variable_2</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>NamespaceUri</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>NamespaceUri</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
@@ -425,7 +388,7 @@
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
           <TargetId>
-            <Identifier>ns=1;i=281</Identifier>
+            <Identifier>ns=1;i=341</Identifier>
           </TargetId>
         </ReferenceNode>
         <ReferenceNode>
@@ -440,16 +403,211 @@
       </References>
       <Value>
         <Value>
-          <Int32 xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">2</Int32>
+          <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances</String>
         </Value>
       </Value>
       <DataType>
-        <Identifier>ns=1;i=378</Identifier>
+        <Identifier>i=12</Identifier>
       </DataType>
       <ValueRank>-1</ValueRank>
       <ArrayDimensions />
-      <AccessLevel>3</AccessLevel>
-      <UserAccessLevel>3</UserAccessLevel>
+      <AccessLevel>1</AccessLevel>
+      <UserAccessLevel>1</UserAccessLevel>
+      <MinimumSamplingInterval>0</MinimumSamplingInterval>
+      <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
+    </Node>
+    <Node i:type="VariableNode">
+      <NodeId>
+        <Identifier>ns=1;i=353</Identifier>
+      </NodeId>
+      <NodeClass>Variable_2</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>Quickstarts.DataTypes.Instances</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>Quickstarts.DataTypes.Instances</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=72</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>i=93</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=46</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=355</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=46</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15002</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15018</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15006</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15021</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <Value>
+        <Value>
+          <ByteString xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">PG9wYzpUeXBlRGljdGlvbmFyeQ0KICB4bWxuczpzMT0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3Jn
+L1VBL1F1aWNrc3RhcnRzL0RhdGFUeXBlcy9UeXBlcyINCiAgeG1sbnM6b3BjPSJodHRwOi8vb3Bj
+Zm91bmRhdGlvbi5vcmcvQmluYXJ5U2NoZW1hLyINCiAgeG1sbnM6eHNpPSJodHRwOi8vd3d3Lncz
+Lm9yZy8yMDAxL1hNTFNjaGVtYS1pbnN0YW5jZSINCiAgeG1sbnM6dWE9Imh0dHA6Ly9vcGNmb3Vu
+ZGF0aW9uLm9yZy9VQS8iDQogIHhtbG5zOnRucz0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL1VB
+L1F1aWNrc3RhcnRzL0RhdGFUeXBlcy9JbnN0YW5jZXMiDQogIERlZmF1bHRCeXRlT3JkZXI9Ikxp
+dHRsZUVuZGlhbiINCiAgVGFyZ2V0TmFtZXNwYWNlPSJodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcv
+VUEvUXVpY2tzdGFydHMvRGF0YVR5cGVzL0luc3RhbmNlcyINCj4NCiAgPG9wYzpJbXBvcnQgTmFt
+ZXNwYWNlPSJodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvUXVpY2tzdGFydHMvRGF0YVR5cGVz
+L1R5cGVzIiBMb2NhdGlvbj0iT3BjLlVhLkJpbmFyeVNjaGVtYS5ic2QiLz4NCiAgPG9wYzpJbXBv
+cnQgTmFtZXNwYWNlPSJodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvIiBMb2NhdGlvbj0iT3Bj
+LlVhLkJpbmFyeVNjaGVtYS5ic2QiLz4NCg0KICA8b3BjOkVudW1lcmF0ZWRUeXBlIE5hbWU9IlBh
+cmtpbmdMb3RUeXBlIiBMZW5ndGhJbkJpdHM9IjMyIj4NCiAgICA8b3BjOkVudW1lcmF0ZWRWYWx1
+ZSBOYW1lPSJPcGVuIiBWYWx1ZT0iMSIgLz4NCiAgICA8b3BjOkVudW1lcmF0ZWRWYWx1ZSBOYW1l
+PSJDb3ZlcmVkIiBWYWx1ZT0iMiIgLz4NCiAgPC9vcGM6RW51bWVyYXRlZFR5cGU+DQoNCiAgPG9w
+YzpTdHJ1Y3R1cmVkVHlwZSBOYW1lPSJUd29XaGVlbGVyVHlwZSIgQmFzZVR5cGU9InMxOlZlaGlj
+bGVUeXBlIj4NCiAgICA8b3BjOkZpZWxkIE5hbWU9Ik1ha2UiIFR5cGVOYW1lPSJvcGM6U3RyaW5n
+IiBTb3VyY2VUeXBlPSJzMTpWZWhpY2xlVHlwZSIgLz4NCiAgICA8b3BjOkZpZWxkIE5hbWU9Ik1v
+ZGVsIiBUeXBlTmFtZT0ib3BjOlN0cmluZyIgU291cmNlVHlwZT0iczE6VmVoaWNsZVR5cGUiIC8+
+DQogICAgPG9wYzpGaWVsZCBOYW1lPSJFbmdpbmUiIFR5cGVOYW1lPSJzMTpFbmdpbmVUeXBlIiBT
+b3VyY2VUeXBlPSJzMTpWZWhpY2xlVHlwZSIgLz4NCiAgICA8b3BjOkZpZWxkIE5hbWU9Ik1hbnVm
+YWN0dXJlck5hbWUiIFR5cGVOYW1lPSJvcGM6U3RyaW5nIiAvPg0KICA8L29wYzpTdHJ1Y3R1cmVk
+VHlwZT4NCg0KICA8b3BjOlN0cnVjdHVyZWRUeXBlIE5hbWU9IkJpY3ljbGVUeXBlIiBCYXNlVHlw
+ZT0idG5zOlR3b1doZWVsZXJUeXBlIj4NCiAgICA8b3BjOkZpZWxkIE5hbWU9Ik1ha2UiIFR5cGVO
+YW1lPSJvcGM6U3RyaW5nIiBTb3VyY2VUeXBlPSJzMTpWZWhpY2xlVHlwZSIgLz4NCiAgICA8b3Bj
+OkZpZWxkIE5hbWU9Ik1vZGVsIiBUeXBlTmFtZT0ib3BjOlN0cmluZyIgU291cmNlVHlwZT0iczE6
+VmVoaWNsZVR5cGUiIC8+DQogICAgPG9wYzpGaWVsZCBOYW1lPSJFbmdpbmUiIFR5cGVOYW1lPSJz
+MTpFbmdpbmVUeXBlIiBTb3VyY2VUeXBlPSJzMTpWZWhpY2xlVHlwZSIgLz4NCiAgICA8b3BjOkZp
+ZWxkIE5hbWU9Ik1hbnVmYWN0dXJlck5hbWUiIFR5cGVOYW1lPSJvcGM6U3RyaW5nIiBTb3VyY2VU
+eXBlPSJ0bnM6VHdvV2hlZWxlclR5cGUiIC8+DQogICAgPG9wYzpGaWVsZCBOYW1lPSJOb09mR2Vh
+cnMiIFR5cGVOYW1lPSJvcGM6VUludDMyIiAvPg0KICA8L29wYzpTdHJ1Y3R1cmVkVHlwZT4NCg0K
+ICA8b3BjOlN0cnVjdHVyZWRUeXBlIE5hbWU9IlNjb290ZXJUeXBlIiBCYXNlVHlwZT0idG5zOlR3
+b1doZWVsZXJUeXBlIj4NCiAgICA8b3BjOkZpZWxkIE5hbWU9Ik1ha2UiIFR5cGVOYW1lPSJvcGM6
+U3RyaW5nIiBTb3VyY2VUeXBlPSJzMTpWZWhpY2xlVHlwZSIgLz4NCiAgICA8b3BjOkZpZWxkIE5h
+bWU9Ik1vZGVsIiBUeXBlTmFtZT0ib3BjOlN0cmluZyIgU291cmNlVHlwZT0iczE6VmVoaWNsZVR5
+cGUiIC8+DQogICAgPG9wYzpGaWVsZCBOYW1lPSJFbmdpbmUiIFR5cGVOYW1lPSJzMTpFbmdpbmVU
+eXBlIiBTb3VyY2VUeXBlPSJzMTpWZWhpY2xlVHlwZSIgLz4NCiAgICA8b3BjOkZpZWxkIE5hbWU9
+Ik1hbnVmYWN0dXJlck5hbWUiIFR5cGVOYW1lPSJvcGM6U3RyaW5nIiBTb3VyY2VUeXBlPSJ0bnM6
+VHdvV2hlZWxlclR5cGUiIC8+DQogICAgPG9wYzpGaWVsZCBOYW1lPSJOb09mU2VhdHMiIFR5cGVO
+YW1lPSJvcGM6VUludDMyIiAvPg0KICA8L29wYzpTdHJ1Y3R1cmVkVHlwZT4NCg0KPC9vcGM6VHlw
+ZURpY3Rpb25hcnk+</ByteString>
+        </Value>
+      </Value>
+      <DataType>
+        <Identifier>i=15</Identifier>
+      </DataType>
+      <ValueRank>-1</ValueRank>
+      <ArrayDimensions />
+      <AccessLevel>1</AccessLevel>
+      <UserAccessLevel>1</UserAccessLevel>
+      <MinimumSamplingInterval>0</MinimumSamplingInterval>
+      <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
+    </Node>
+    <Node i:type="VariableNode">
+      <NodeId>
+        <Identifier>ns=1;i=355</Identifier>
+      </NodeId>
+      <NodeClass>Variable_2</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>NamespaceUri</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>NamespaceUri</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=46</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=353</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=68</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <Value>
+        <Value>
+          <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances</String>
+        </Value>
+      </Value>
+      <DataType>
+        <Identifier>i=12</Identifier>
+      </DataType>
+      <ValueRank>-1</ValueRank>
+      <ArrayDimensions />
+      <AccessLevel>1</AccessLevel>
+      <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
       <AccessLevelEx>0</AccessLevelEx>
@@ -678,18 +836,18 @@
       <Historizing>false</Historizing>
       <AccessLevelEx>0</AccessLevelEx>
     </Node>
-    <Node i:type="VariableNode">
+    <Node i:type="DataTypeNode">
       <NodeId>
-        <Identifier>ns=1;i=283</Identifier>
+        <Identifier>ns=1;i=378</Identifier>
       </NodeId>
-      <NodeClass>Variable_2</NodeClass>
+      <NodeClass>DataType_64</NodeClass>
       <BrowseName>
         <NamespaceIndex>1</NamespaceIndex>
-        <Name>VehiclesInLot</Name>
+        <Name>ParkingLotType</Name>
       </BrowseName>
       <DisplayName>
         <Locale></Locale>
-        <Text>VehiclesInLot</Text>
+        <Text>ParkingLotType</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
@@ -700,432 +858,53 @@
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
+            <Identifier>i=45</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>i=29</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=46</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15001</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <IsAbstract>false</IsAbstract>
+      <DataTypeDefinition i:nil="true" />
+    </Node>
+    <Node i:type="VariableNode">
+      <NodeId>
+        <Identifier>ns=1;i=380</Identifier>
+      </NodeId>
+      <NodeClass>Variable_2</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>LotType</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>LotType</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=281</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=63</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <Value>
-        <Value>
-          <ListOfExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">
-            <ExtensionObject>
-              <TypeId>
-                <Identifier>ns=2;i=319</Identifier>
-              </TypeId>
-              <Body>
-                <s0:TruckType xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">
-                  <s0:Make>Dodge</s0:Make>
-                  <s0:Model>Ram</s0:Model>
-                  <s0:Engine>Diesel_2</s0:Engine>
-                  <s0:CargoCapacity>500</s0:CargoCapacity>
-                </s0:TruckType>
-              </Body>
-            </ExtensionObject>
-            <ExtensionObject>
-              <TypeId>
-                <Identifier>ns=2;i=318</Identifier>
-              </TypeId>
-              <Body>
-                <s0:VehicleType xsi:type="s0:CarType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">
-                  <s0:Make>Porsche</s0:Make>
-                  <s0:Model>Roadster</s0:Model>
-                  <s0:Engine>Petrol_1</s0:Engine>
-                  <s0:NoOfPassengers>2</s0:NoOfPassengers>
-                </s0:VehicleType>
-              </Body>
-            </ExtensionObject>
-            <ExtensionObject>
-              <TypeId>
-                <Identifier>ns=2;i=318</Identifier>
-              </TypeId>
-              <Body>
-                <s0:VehicleType xsi:type="s0:CarType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">
-                  <s0:Make>Tesla</s0:Make>
-                  <s0:Model>Model X</s0:Model>
-                  <s0:Engine>Electric_3</s0:Engine>
-                  <s0:NoOfPassengers>4</s0:NoOfPassengers>
-                </s0:VehicleType>
-              </Body>
-            </ExtensionObject>
-            <ExtensionObject>
-              <TypeId>
-                <Identifier>ns=1;i=15009</Identifier>
-              </TypeId>
-              <Body>
-                <BicycleType xmlns="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances">
-                  <s0:Make xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Giant</s0:Make>
-                  <s0:Model xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Cruiser</s0:Model>
-                  <s0:Engine xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Manual_5</s0:Engine>
-                  <ManufacturerName>Canyon</ManufacturerName>
-                  <NoOfGears>18</NoOfGears>
-                </BicycleType>
-              </Body>
-            </ExtensionObject>
-            <ExtensionObject>
-              <TypeId>
-                <Identifier>ns=1;i=15025</Identifier>
-              </TypeId>
-              <Body>
-                <ScooterType xmlns="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances">
-                  <s0:Make xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Lucky</s0:Make>
-                  <s0:Model xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Pro Kick</s0:Model>
-                  <s0:Engine xmlns:s0="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types">Electric_3</s0:Engine>
-                  <ManufacturerName>Dafra</ManufacturerName>
-                  <NoOfSeats>1</NoOfSeats>
-                </ScooterType>
-              </Body>
-            </ExtensionObject>
-          </ListOfExtensionObject>
-        </Value>
-      </Value>
-      <DataType>
-        <Identifier>ns=2;i=314</Identifier>
-      </DataType>
-      <ValueRank>1</ValueRank>
-      <ArrayDimensions>
-        <UInt32>0</UInt32>
-      </ArrayDimensions>
-      <AccessLevel>3</AccessLevel>
-      <UserAccessLevel>3</UserAccessLevel>
-      <MinimumSamplingInterval>0</MinimumSamplingInterval>
-      <Historizing>false</Historizing>
-      <AccessLevelEx>0</AccessLevelEx>
-    </Node>
-    <Node i:type="ObjectNode">
-      <NodeId>
-        <Identifier>ns=1;i=15016</Identifier>
-      </NodeId>
-      <NodeClass>Object_1</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>Default Binary</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>Default Binary</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=76</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15014</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=39</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15018</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <EventNotifier>0</EventNotifier>
-    </Node>
-    <Node i:type="ObjectNode">
-      <NodeId>
-        <Identifier>ns=1;i=15005</Identifier>
-      </NodeId>
-      <NodeClass>Object_1</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>Default Binary</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>Default Binary</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=76</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15004</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=39</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15006</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <EventNotifier>0</EventNotifier>
-    </Node>
-    <Node i:type="ObjectNode">
-      <NodeId>
-        <Identifier>ns=1;i=15017</Identifier>
-      </NodeId>
-      <NodeClass>Object_1</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>Default Binary</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>Default Binary</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=76</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15015</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=39</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15021</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <EventNotifier>0</EventNotifier>
-    </Node>
-    <Node i:type="VariableNode">
-      <NodeId>
-        <Identifier>ns=1;i=353</Identifier>
-      </NodeId>
-      <NodeClass>Variable_2</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>Quickstarts.DataTypes.Instances</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>Quickstarts.DataTypes.Instances</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=72</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>i=93</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=355</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15002</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15018</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15006</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15021</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <Value>
-        <Value>
-          <ByteString xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">PG9wYzpUeXBlRGljdGlvbmFyeQ0KICB4bWxuczpRdWlja3N0YXJ0cy5EYXRhVHlwZXMuVHlwZXM9
-Imh0dHA6Ly9vcGNmb3VuZGF0aW9uLm9yZy9VQS9RdWlja3N0YXJ0cy9EYXRhVHlwZXMvVHlwZXMi
-DQogIHhtbG5zOm9wYz0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL0JpbmFyeVNjaGVtYS8iDQog
-IHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiDQog
-IHhtbG5zOnVhPSJodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvIg0KICB4bWxuczp0bnM9Imh0
-dHA6Ly9vcGNmb3VuZGF0aW9uLm9yZy9VQS9RdWlja3N0YXJ0cy9EYXRhVHlwZXMvSW5zdGFuY2Vz
-Ig0KICBEZWZhdWx0Qnl0ZU9yZGVyPSJMaXR0bGVFbmRpYW4iDQogIFRhcmdldE5hbWVzcGFjZT0i
-aHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL1VBL1F1aWNrc3RhcnRzL0RhdGFUeXBlcy9JbnN0YW5j
-ZXMiDQo+DQogIDxvcGM6SW1wb3J0IE5hbWVzcGFjZT0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3Jn
-L1VBL1F1aWNrc3RhcnRzL0RhdGFUeXBlcy9UeXBlcyIgTG9jYXRpb249IlF1aWNrc3RhcnRzLkRh
-dGFUeXBlcy5UeXBlcy5CaW5hcnlTY2hlbWEuYnNkIi8+DQogIDxvcGM6SW1wb3J0IE5hbWVzcGFj
-ZT0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL1VBLyIgTG9jYXRpb249Ik9wYy5VYS5CaW5hcnlT
-Y2hlbWEuYnNkIi8+DQoNCiAgPG9wYzpFbnVtZXJhdGVkVHlwZSBOYW1lPSJQYXJraW5nTG90VHlw
-ZSIgTGVuZ3RoSW5CaXRzPSIzMiI+DQogICAgPG9wYzpFbnVtZXJhdGVkVmFsdWUgTmFtZT0iT3Bl
-biIgVmFsdWU9IjEiIC8+DQogICAgPG9wYzpFbnVtZXJhdGVkVmFsdWUgTmFtZT0iQ292ZXJlZCIg
-VmFsdWU9IjIiIC8+DQogIDwvb3BjOkVudW1lcmF0ZWRUeXBlPg0KDQogIDxvcGM6U3RydWN0dXJl
-ZFR5cGUgTmFtZT0iVHdvV2hlZWxlclR5cGUiIEJhc2VUeXBlPSJRdWlja3N0YXJ0cy5EYXRhVHlw
-ZXMuVHlwZXM6VmVoaWNsZVR5cGUiPg0KICAgIDxvcGM6RmllbGQgTmFtZT0iTWFrZSIgVHlwZU5h
-bWU9Im9wYzpTdHJpbmciIFNvdXJjZVR5cGU9IlF1aWNrc3RhcnRzLkRhdGFUeXBlcy5UeXBlczpW
-ZWhpY2xlVHlwZSIgLz4NCiAgICA8b3BjOkZpZWxkIE5hbWU9Ik1vZGVsIiBUeXBlTmFtZT0ib3Bj
-OlN0cmluZyIgU291cmNlVHlwZT0iUXVpY2tzdGFydHMuRGF0YVR5cGVzLlR5cGVzOlZlaGljbGVU
-eXBlIiAvPg0KICAgIDxvcGM6RmllbGQgTmFtZT0iRW5naW5lIiBUeXBlTmFtZT0iUXVpY2tzdGFy
-dHMuRGF0YVR5cGVzLlR5cGVzOkVuZ2luZVR5cGUiIFNvdXJjZVR5cGU9IlF1aWNrc3RhcnRzLkRh
-dGFUeXBlcy5UeXBlczpWZWhpY2xlVHlwZSIgLz4NCiAgICA8b3BjOkZpZWxkIE5hbWU9Ik1hbnVm
-YWN0dXJlck5hbWUiIFR5cGVOYW1lPSJvcGM6U3RyaW5nIiAvPg0KICA8L29wYzpTdHJ1Y3R1cmVk
-VHlwZT4NCg0KICA8b3BjOlN0cnVjdHVyZWRUeXBlIE5hbWU9IkJpY3ljbGVUeXBlIiBCYXNlVHlw
-ZT0idG5zOlR3b1doZWVsZXJUeXBlIj4NCiAgICA8b3BjOkZpZWxkIE5hbWU9Ik1ha2UiIFR5cGVO
-YW1lPSJvcGM6U3RyaW5nIiBTb3VyY2VUeXBlPSJRdWlja3N0YXJ0cy5EYXRhVHlwZXMuVHlwZXM6
-VmVoaWNsZVR5cGUiIC8+DQogICAgPG9wYzpGaWVsZCBOYW1lPSJNb2RlbCIgVHlwZU5hbWU9Im9w
-YzpTdHJpbmciIFNvdXJjZVR5cGU9IlF1aWNrc3RhcnRzLkRhdGFUeXBlcy5UeXBlczpWZWhpY2xl
-VHlwZSIgLz4NCiAgICA8b3BjOkZpZWxkIE5hbWU9IkVuZ2luZSIgVHlwZU5hbWU9IlF1aWNrc3Rh
-cnRzLkRhdGFUeXBlcy5UeXBlczpFbmdpbmVUeXBlIiBTb3VyY2VUeXBlPSJRdWlja3N0YXJ0cy5E
-YXRhVHlwZXMuVHlwZXM6VmVoaWNsZVR5cGUiIC8+DQogICAgPG9wYzpGaWVsZCBOYW1lPSJNYW51
-ZmFjdHVyZXJOYW1lIiBUeXBlTmFtZT0ib3BjOlN0cmluZyIgU291cmNlVHlwZT0idG5zOlR3b1do
-ZWVsZXJUeXBlIiAvPg0KICAgIDxvcGM6RmllbGQgTmFtZT0iTm9PZkdlYXJzIiBUeXBlTmFtZT0i
-b3BjOlVJbnQzMiIgLz4NCiAgPC9vcGM6U3RydWN0dXJlZFR5cGU+DQoNCiAgPG9wYzpTdHJ1Y3R1
-cmVkVHlwZSBOYW1lPSJTY29vdGVyVHlwZSIgQmFzZVR5cGU9InRuczpUd29XaGVlbGVyVHlwZSI+
-DQogICAgPG9wYzpGaWVsZCBOYW1lPSJNYWtlIiBUeXBlTmFtZT0ib3BjOlN0cmluZyIgU291cmNl
-VHlwZT0iUXVpY2tzdGFydHMuRGF0YVR5cGVzLlR5cGVzOlZlaGljbGVUeXBlIiAvPg0KICAgIDxv
-cGM6RmllbGQgTmFtZT0iTW9kZWwiIFR5cGVOYW1lPSJvcGM6U3RyaW5nIiBTb3VyY2VUeXBlPSJR
-dWlja3N0YXJ0cy5EYXRhVHlwZXMuVHlwZXM6VmVoaWNsZVR5cGUiIC8+DQogICAgPG9wYzpGaWVs
-ZCBOYW1lPSJFbmdpbmUiIFR5cGVOYW1lPSJRdWlja3N0YXJ0cy5EYXRhVHlwZXMuVHlwZXM6RW5n
-aW5lVHlwZSIgU291cmNlVHlwZT0iUXVpY2tzdGFydHMuRGF0YVR5cGVzLlR5cGVzOlZlaGljbGVU
-eXBlIiAvPg0KICAgIDxvcGM6RmllbGQgTmFtZT0iTWFudWZhY3R1cmVyTmFtZSIgVHlwZU5hbWU9
-Im9wYzpTdHJpbmciIFNvdXJjZVR5cGU9InRuczpUd29XaGVlbGVyVHlwZSIgLz4NCiAgICA8b3Bj
-OkZpZWxkIE5hbWU9Ik5vT2ZTZWF0cyIgVHlwZU5hbWU9Im9wYzpVSW50MzIiIC8+DQogIDwvb3Bj
-OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
-        </Value>
-      </Value>
-      <DataType>
-        <Identifier>i=15</Identifier>
-      </DataType>
-      <ValueRank>-1</ValueRank>
-      <ArrayDimensions />
-      <AccessLevel>1</AccessLevel>
-      <UserAccessLevel>1</UserAccessLevel>
-      <MinimumSamplingInterval>0</MinimumSamplingInterval>
-      <Historizing>false</Historizing>
-      <AccessLevelEx>0</AccessLevelEx>
-    </Node>
-    <Node i:type="VariableNode">
-      <NodeId>
-        <Identifier>ns=1;i=355</Identifier>
-      </NodeId>
-      <NodeClass>Variable_2</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>NamespaceUri</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>NamespaceUri</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=353</Identifier>
           </TargetId>
         </ReferenceNode>
         <ReferenceNode>
@@ -1140,14 +919,98 @@ OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
       </References>
       <Value>
         <Value>
-          <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances</String>
+          <Int32 xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">2</Int32>
         </Value>
       </Value>
       <DataType>
-        <Identifier>i=12</Identifier>
+        <Identifier>ns=1;i=378</Identifier>
       </DataType>
       <ValueRank>-1</ValueRank>
       <ArrayDimensions />
+      <AccessLevel>3</AccessLevel>
+      <UserAccessLevel>3</UserAccessLevel>
+      <MinimumSamplingInterval>0</MinimumSamplingInterval>
+      <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
+    </Node>
+    <Node i:type="VariableNode">
+      <NodeId>
+        <Identifier>ns=1;i=15001</Identifier>
+      </NodeId>
+      <NodeClass>Variable_2</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>EnumValues</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>EnumValues</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=46</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=378</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=68</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <Value>
+        <Value>
+          <ListOfExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            <ExtensionObject>
+              <TypeId>
+                <Identifier>i=7616</Identifier>
+              </TypeId>
+              <Body>
+                <EnumValueType>
+                  <Value>1</Value>
+                  <DisplayName>
+                    <Text>Open</Text>
+                  </DisplayName>
+                </EnumValueType>
+              </Body>
+            </ExtensionObject>
+            <ExtensionObject>
+              <TypeId>
+                <Identifier>i=7616</Identifier>
+              </TypeId>
+              <Body>
+                <EnumValueType>
+                  <Value>2</Value>
+                  <DisplayName>
+                    <Text>Covered</Text>
+                  </DisplayName>
+                </EnumValueType>
+              </Body>
+            </ExtensionObject>
+          </ListOfExtensionObject>
+        </Value>
+      </Value>
+      <DataType>
+        <Identifier>i=7594</Identifier>
+      </DataType>
+      <ValueRank>1</ValueRank>
+      <ArrayDimensions>
+        <UInt32>2</UInt32>
+      </ArrayDimensions>
       <AccessLevel>1</AccessLevel>
       <UserAccessLevel>1</UserAccessLevel>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
@@ -1211,16 +1074,16 @@ OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
-        <Identifier>ns=1;i=15018</Identifier>
+        <Identifier>ns=1;i=15003</Identifier>
       </NodeId>
       <NodeClass>Variable_2</NodeClass>
       <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>TwoWheelerType</Name>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>Deprecated</Name>
       </BrowseName>
       <DisplayName>
         <Locale></Locale>
-        <Text>TwoWheelerType</Text>
+        <Text>Deprecated</Text>
       </DisplayName>
       <Description i:nil="true" />
       <WriteMask>0</WriteMask>
@@ -1231,11 +1094,11 @@ OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
       <References>
         <ReferenceNode>
           <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
+            <Identifier>i=46</Identifier>
           </ReferenceTypeId>
           <IsInverse>true</IsInverse>
           <TargetId>
-            <Identifier>ns=1;i=353</Identifier>
+            <Identifier>ns=1;i=341</Identifier>
           </TargetId>
         </ReferenceNode>
         <ReferenceNode>
@@ -1244,17 +1107,17 @@ OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
           </ReferenceTypeId>
           <IsInverse>false</IsInverse>
           <TargetId>
-            <Identifier>i=69</Identifier>
+            <Identifier>i=68</Identifier>
           </TargetId>
         </ReferenceNode>
       </References>
       <Value>
         <Value>
-          <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">TwoWheelerType</String>
+          <Boolean xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">true</Boolean>
         </Value>
       </Value>
       <DataType>
-        <Identifier>i=12</Identifier>
+        <Identifier>i=1</Identifier>
       </DataType>
       <ValueRank>-1</ValueRank>
       <ArrayDimensions />
@@ -1263,6 +1126,116 @@ OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
       <MinimumSamplingInterval>0</MinimumSamplingInterval>
       <Historizing>false</Historizing>
       <AccessLevelEx>0</AccessLevelEx>
+    </Node>
+    <Node i:type="DataTypeNode">
+      <NodeId>
+        <Identifier>ns=1;i=15004</Identifier>
+      </NodeId>
+      <NodeClass>DataType_64</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>BicycleType</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>BicycleType</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=45</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15014</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15005</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15009</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15013</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <IsAbstract>false</IsAbstract>
+      <DataTypeDefinition i:nil="true" />
+    </Node>
+    <Node i:type="ObjectNode">
+      <NodeId>
+        <Identifier>ns=1;i=15005</Identifier>
+      </NodeId>
+      <NodeClass>Object_1</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>Default Binary</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>Default Binary</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=76</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15004</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=39</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15006</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <EventNotifier>0</EventNotifier>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
@@ -1306,6 +1279,445 @@ OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
       <Value>
         <Value>
           <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">BicycleType</String>
+        </Value>
+      </Value>
+      <DataType>
+        <Identifier>i=12</Identifier>
+      </DataType>
+      <ValueRank>-1</ValueRank>
+      <ArrayDimensions />
+      <AccessLevel>1</AccessLevel>
+      <UserAccessLevel>1</UserAccessLevel>
+      <MinimumSamplingInterval>0</MinimumSamplingInterval>
+      <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
+    </Node>
+    <Node i:type="ObjectNode">
+      <NodeId>
+        <Identifier>ns=1;i=15009</Identifier>
+      </NodeId>
+      <NodeClass>Object_1</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>Default XML</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>Default XML</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=76</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15004</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=39</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15010</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <EventNotifier>0</EventNotifier>
+    </Node>
+    <Node i:type="VariableNode">
+      <NodeId>
+        <Identifier>ns=1;i=15010</Identifier>
+      </NodeId>
+      <NodeClass>Variable_2</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>BicycleType</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>BicycleType</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=341</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=69</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <Value>
+        <Value>
+          <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">//xs:element[@name='BicycleType']</String>
+        </Value>
+      </Value>
+      <DataType>
+        <Identifier>i=12</Identifier>
+      </DataType>
+      <ValueRank>-1</ValueRank>
+      <ArrayDimensions />
+      <AccessLevel>1</AccessLevel>
+      <UserAccessLevel>1</UserAccessLevel>
+      <MinimumSamplingInterval>0</MinimumSamplingInterval>
+      <Historizing>false</Historizing>
+      <AccessLevelEx>0</AccessLevelEx>
+    </Node>
+    <Node i:type="ObjectNode">
+      <NodeId>
+        <Identifier>ns=1;i=15013</Identifier>
+      </NodeId>
+      <NodeClass>Object_1</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>Default JSON</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>Default JSON</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=76</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15004</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <EventNotifier>0</EventNotifier>
+    </Node>
+    <Node i:type="DataTypeNode">
+      <NodeId>
+        <Identifier>ns=1;i=15014</Identifier>
+      </NodeId>
+      <NodeClass>DataType_64</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>TwoWheelerType</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>TwoWheelerType</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=45</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=2;i=314</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=45</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15004</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=45</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15015</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15016</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15024</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15032</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <IsAbstract>false</IsAbstract>
+      <DataTypeDefinition i:nil="true" />
+    </Node>
+    <Node i:type="DataTypeNode">
+      <NodeId>
+        <Identifier>ns=1;i=15015</Identifier>
+      </NodeId>
+      <NodeClass>DataType_64</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>ScooterType</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>ScooterType</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=45</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15014</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15017</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15025</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15033</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <IsAbstract>false</IsAbstract>
+      <DataTypeDefinition i:nil="true" />
+    </Node>
+    <Node i:type="ObjectNode">
+      <NodeId>
+        <Identifier>ns=1;i=15016</Identifier>
+      </NodeId>
+      <NodeClass>Object_1</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>Default Binary</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>Default Binary</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=76</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15014</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=39</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15018</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <EventNotifier>0</EventNotifier>
+    </Node>
+    <Node i:type="ObjectNode">
+      <NodeId>
+        <Identifier>ns=1;i=15017</Identifier>
+      </NodeId>
+      <NodeClass>Object_1</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>0</NamespaceIndex>
+        <Name>Default Binary</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>Default Binary</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=76</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=38</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15015</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=39</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15021</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <EventNotifier>0</EventNotifier>
+    </Node>
+    <Node i:type="VariableNode">
+      <NodeId>
+        <Identifier>ns=1;i=15018</Identifier>
+      </NodeId>
+      <NodeClass>Variable_2</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>TwoWheelerType</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>TwoWheelerType</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=47</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=353</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=69</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <Value>
+        <Value>
+          <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">TwoWheelerType</String>
         </Value>
       </Value>
       <DataType>
@@ -1426,56 +1838,6 @@ OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
     </Node>
     <Node i:type="ObjectNode">
       <NodeId>
-        <Identifier>ns=1;i=15009</Identifier>
-      </NodeId>
-      <NodeClass>Object_1</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>Default XML</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>Default XML</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=76</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15004</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=39</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15010</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <EventNotifier>0</EventNotifier>
-    </Node>
-    <Node i:type="ObjectNode">
-      <NodeId>
         <Identifier>ns=1;i=15025</Identifier>
       </NodeId>
       <NodeClass>Object_1</NodeClass>
@@ -1526,279 +1888,6 @@ OlN0cnVjdHVyZWRUeXBlPg0KDQo8L29wYzpUeXBlRGljdGlvbmFyeT4=</ByteString>
     </Node>
     <Node i:type="VariableNode">
       <NodeId>
-        <Identifier>ns=1;i=341</Identifier>
-      </NodeId>
-      <NodeClass>Variable_2</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>Quickstarts.DataTypes.Instances</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>Quickstarts.DataTypes.Instances</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=72</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>i=92</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=343</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15003</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15026</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15010</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15029</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <Value>
-        <Value>
-          <ByteString xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">PHhzOnNjaGVtYQ0KICB4bWxuczpRdWlja3N0YXJ0cy5EYXRhVHlwZXMuVHlwZXM9Imh0dHA6Ly9v
-cGNmb3VuZGF0aW9uLm9yZy9VQS9RdWlja3N0YXJ0cy9EYXRhVHlwZXMvVHlwZXMiDQogIHhtbG5z
-OnhzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYSINCiAgeG1sbnM6dWE9Imh0dHA6
-Ly9vcGNmb3VuZGF0aW9uLm9yZy9VQS8yMDA4LzAyL1R5cGVzLnhzZCINCiAgeG1sbnM6dG5zPSJo
-dHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvUXVpY2tzdGFydHMvRGF0YVR5cGVzL0luc3RhbmNl
-cyINCiAgdGFyZ2V0TmFtZXNwYWNlPSJodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvUXVpY2tz
-dGFydHMvRGF0YVR5cGVzL0luc3RhbmNlcyINCiAgZWxlbWVudEZvcm1EZWZhdWx0PSJxdWFsaWZp
-ZWQiDQo+DQogIDx4czphbm5vdGF0aW9uPg0KICAgIDx4czphcHBpbmZvPg0KICAgICAgPHVhOk1v
-ZGVsIE1vZGVsVXJpPSJodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvVUEvUXVpY2tzdGFydHMvRGF0
-YVR5cGVzL0luc3RhbmNlcyIgVmVyc2lvbj0iMS4wLjAiIFB1YmxpY2F0aW9uRGF0ZT0iMjAyNC0x
-MS0yM1QwODowMjowNC40Nzc5MjY0WiIgLz4NCiAgICA8L3hzOmFwcGluZm8+DQogIDwveHM6YW5u
-b3RhdGlvbj4NCiAgDQogIDx4czppbXBvcnQgbmFtZXNwYWNlPSJodHRwOi8vb3BjZm91bmRhdGlv
-bi5vcmcvVUEvUXVpY2tzdGFydHMvRGF0YVR5cGVzL1R5cGVzIiAvPg0KICA8eHM6aW1wb3J0IG5h
-bWVzcGFjZT0iaHR0cDovL29wY2ZvdW5kYXRpb24ub3JnL1VBLzIwMDgvMDIvVHlwZXMueHNkIiAv
-Pg0KDQogIDx4czpzaW1wbGVUeXBlICBuYW1lPSJQYXJraW5nTG90VHlwZSI+DQogICAgPHhzOnJl
-c3RyaWN0aW9uIGJhc2U9InhzOnN0cmluZyI+DQogICAgICA8eHM6ZW51bWVyYXRpb24gdmFsdWU9
-Ik9wZW5fMSIgLz4NCiAgICAgIDx4czplbnVtZXJhdGlvbiB2YWx1ZT0iQ292ZXJlZF8yIiAvPg0K
-ICAgIDwveHM6cmVzdHJpY3Rpb24+DQogIDwveHM6c2ltcGxlVHlwZT4NCiAgPHhzOmVsZW1lbnQg
-bmFtZT0iUGFya2luZ0xvdFR5cGUiIHR5cGU9InRuczpQYXJraW5nTG90VHlwZSIgLz4NCg0KICA8
-eHM6Y29tcGxleFR5cGUgbmFtZT0iTGlzdE9mUGFya2luZ0xvdFR5cGUiPg0KICAgIDx4czpzZXF1
-ZW5jZT4NCiAgICAgIDx4czplbGVtZW50IG5hbWU9IlBhcmtpbmdMb3RUeXBlIiB0eXBlPSJ0bnM6
-UGFya2luZ0xvdFR5cGUiIG1pbk9jY3Vycz0iMCIgbWF4T2NjdXJzPSJ1bmJvdW5kZWQiIC8+DQog
-ICAgPC94czpzZXF1ZW5jZT4NCiAgPC94czpjb21wbGV4VHlwZT4NCiAgPHhzOmVsZW1lbnQgbmFt
-ZT0iTGlzdE9mUGFya2luZ0xvdFR5cGUiIHR5cGU9InRuczpMaXN0T2ZQYXJraW5nTG90VHlwZSIg
-bmlsbGFibGU9InRydWUiPjwveHM6ZWxlbWVudD4NCg0KICA8eHM6Y29tcGxleFR5cGUgbmFtZT0i
-VHdvV2hlZWxlclR5cGUiPg0KICAgIDx4czpjb21wbGV4Q29udGVudCBtaXhlZD0iZmFsc2UiPg0K
-ICAgICAgPHhzOmV4dGVuc2lvbiBiYXNlPSJRdWlja3N0YXJ0cy5EYXRhVHlwZXMuVHlwZXM6VmVo
-aWNsZVR5cGUiPg0KICAgICAgICA8eHM6c2VxdWVuY2U+DQogICAgICAgICAgPHhzOmVsZW1lbnQg
-bmFtZT0iTWFudWZhY3R1cmVyTmFtZSIgdHlwZT0ieHM6c3RyaW5nIiBtaW5PY2N1cnM9IjAiIG5p
-bGxhYmxlPSJ0cnVlIiAvPg0KICAgICAgICA8L3hzOnNlcXVlbmNlPg0KICAgICAgPC94czpleHRl
-bnNpb24+DQogICAgPC94czpjb21wbGV4Q29udGVudD4NCiAgPC94czpjb21wbGV4VHlwZT4NCiAg
-PHhzOmVsZW1lbnQgbmFtZT0iVHdvV2hlZWxlclR5cGUiIHR5cGU9InRuczpUd29XaGVlbGVyVHlw
-ZSIgLz4NCg0KICA8eHM6Y29tcGxleFR5cGUgbmFtZT0iTGlzdE9mVHdvV2hlZWxlclR5cGUiPg0K
-ICAgIDx4czpzZXF1ZW5jZT4NCiAgICAgIDx4czplbGVtZW50IG5hbWU9IlR3b1doZWVsZXJUeXBl
-IiB0eXBlPSJ0bnM6VHdvV2hlZWxlclR5cGUiIG1pbk9jY3Vycz0iMCIgbWF4T2NjdXJzPSJ1bmJv
-dW5kZWQiIG5pbGxhYmxlPSJ0cnVlIiAvPg0KICAgIDwveHM6c2VxdWVuY2U+DQogIDwveHM6Y29t
-cGxleFR5cGU+DQogIDx4czplbGVtZW50IG5hbWU9Ikxpc3RPZlR3b1doZWVsZXJUeXBlIiB0eXBl
-PSJ0bnM6TGlzdE9mVHdvV2hlZWxlclR5cGUiIG5pbGxhYmxlPSJ0cnVlIj48L3hzOmVsZW1lbnQ+
-DQoNCiAgPHhzOmNvbXBsZXhUeXBlIG5hbWU9IkJpY3ljbGVUeXBlIj4NCiAgICA8eHM6Y29tcGxl
-eENvbnRlbnQgbWl4ZWQ9ImZhbHNlIj4NCiAgICAgIDx4czpleHRlbnNpb24gYmFzZT0idG5zOlR3
-b1doZWVsZXJUeXBlIj4NCiAgICAgICAgPHhzOnNlcXVlbmNlPg0KICAgICAgICAgIDx4czplbGVt
-ZW50IG5hbWU9Ik5vT2ZHZWFycyIgdHlwZT0ieHM6dW5zaWduZWRJbnQiIG1pbk9jY3Vycz0iMCIg
-Lz4NCiAgICAgICAgPC94czpzZXF1ZW5jZT4NCiAgICAgIDwveHM6ZXh0ZW5zaW9uPg0KICAgIDwv
-eHM6Y29tcGxleENvbnRlbnQ+DQogIDwveHM6Y29tcGxleFR5cGU+DQogIDx4czplbGVtZW50IG5h
-bWU9IkJpY3ljbGVUeXBlIiB0eXBlPSJ0bnM6QmljeWNsZVR5cGUiIC8+DQoNCiAgPHhzOmNvbXBs
-ZXhUeXBlIG5hbWU9Ikxpc3RPZkJpY3ljbGVUeXBlIj4NCiAgICA8eHM6c2VxdWVuY2U+DQogICAg
-ICA8eHM6ZWxlbWVudCBuYW1lPSJCaWN5Y2xlVHlwZSIgdHlwZT0idG5zOkJpY3ljbGVUeXBlIiBt
-aW5PY2N1cnM9IjAiIG1heE9jY3Vycz0idW5ib3VuZGVkIiBuaWxsYWJsZT0idHJ1ZSIgLz4NCiAg
-ICA8L3hzOnNlcXVlbmNlPg0KICA8L3hzOmNvbXBsZXhUeXBlPg0KICA8eHM6ZWxlbWVudCBuYW1l
-PSJMaXN0T2ZCaWN5Y2xlVHlwZSIgdHlwZT0idG5zOkxpc3RPZkJpY3ljbGVUeXBlIiBuaWxsYWJs
-ZT0idHJ1ZSI+PC94czplbGVtZW50Pg0KDQogIDx4czpjb21wbGV4VHlwZSBuYW1lPSJTY29vdGVy
-VHlwZSI+DQogICAgPHhzOmNvbXBsZXhDb250ZW50IG1peGVkPSJmYWxzZSI+DQogICAgICA8eHM6
-ZXh0ZW5zaW9uIGJhc2U9InRuczpUd29XaGVlbGVyVHlwZSI+DQogICAgICAgIDx4czpzZXF1ZW5j
-ZT4NCiAgICAgICAgICA8eHM6ZWxlbWVudCBuYW1lPSJOb09mU2VhdHMiIHR5cGU9InhzOnVuc2ln
-bmVkSW50IiBtaW5PY2N1cnM9IjAiIC8+DQogICAgICAgIDwveHM6c2VxdWVuY2U+DQogICAgICA8
-L3hzOmV4dGVuc2lvbj4NCiAgICA8L3hzOmNvbXBsZXhDb250ZW50Pg0KICA8L3hzOmNvbXBsZXhU
-eXBlPg0KICA8eHM6ZWxlbWVudCBuYW1lPSJTY29vdGVyVHlwZSIgdHlwZT0idG5zOlNjb290ZXJU
-eXBlIiAvPg0KDQogIDx4czpjb21wbGV4VHlwZSBuYW1lPSJMaXN0T2ZTY29vdGVyVHlwZSI+DQog
-ICAgPHhzOnNlcXVlbmNlPg0KICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iU2Nvb3RlclR5cGUiIHR5
-cGU9InRuczpTY29vdGVyVHlwZSIgbWluT2NjdXJzPSIwIiBtYXhPY2N1cnM9InVuYm91bmRlZCIg
-bmlsbGFibGU9InRydWUiIC8+DQogICAgPC94czpzZXF1ZW5jZT4NCiAgPC94czpjb21wbGV4VHlw
-ZT4NCiAgPHhzOmVsZW1lbnQgbmFtZT0iTGlzdE9mU2Nvb3RlclR5cGUiIHR5cGU9InRuczpMaXN0
-T2ZTY29vdGVyVHlwZSIgbmlsbGFibGU9InRydWUiPjwveHM6ZWxlbWVudD4NCg0KPC94czpzY2hl
-bWE+</ByteString>
-        </Value>
-      </Value>
-      <DataType>
-        <Identifier>i=15</Identifier>
-      </DataType>
-      <ValueRank>-1</ValueRank>
-      <ArrayDimensions />
-      <AccessLevel>1</AccessLevel>
-      <UserAccessLevel>1</UserAccessLevel>
-      <MinimumSamplingInterval>0</MinimumSamplingInterval>
-      <Historizing>false</Historizing>
-      <AccessLevelEx>0</AccessLevelEx>
-    </Node>
-    <Node i:type="VariableNode">
-      <NodeId>
-        <Identifier>ns=1;i=343</Identifier>
-      </NodeId>
-      <NodeClass>Variable_2</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>NamespaceUri</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>NamespaceUri</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=341</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=68</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <Value>
-        <Value>
-          <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances</String>
-        </Value>
-      </Value>
-      <DataType>
-        <Identifier>i=12</Identifier>
-      </DataType>
-      <ValueRank>-1</ValueRank>
-      <ArrayDimensions />
-      <AccessLevel>1</AccessLevel>
-      <UserAccessLevel>1</UserAccessLevel>
-      <MinimumSamplingInterval>0</MinimumSamplingInterval>
-      <Historizing>false</Historizing>
-      <AccessLevelEx>0</AccessLevelEx>
-    </Node>
-    <Node i:type="VariableNode">
-      <NodeId>
-        <Identifier>ns=1;i=15003</Identifier>
-      </NodeId>
-      <NodeClass>Variable_2</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>Deprecated</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>Deprecated</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=46</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=341</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=68</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <Value>
-        <Value>
-          <Boolean xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">true</Boolean>
-        </Value>
-      </Value>
-      <DataType>
-        <Identifier>i=1</Identifier>
-      </DataType>
-      <ValueRank>-1</ValueRank>
-      <ArrayDimensions />
-      <AccessLevel>1</AccessLevel>
-      <UserAccessLevel>1</UserAccessLevel>
-      <MinimumSamplingInterval>0</MinimumSamplingInterval>
-      <Historizing>false</Historizing>
-      <AccessLevelEx>0</AccessLevelEx>
-    </Node>
-    <Node i:type="VariableNode">
-      <NodeId>
         <Identifier>ns=1;i=15026</Identifier>
       </NodeId>
       <NodeClass>Variable_2</NodeClass>
@@ -1839,61 +1928,6 @@ bWE+</ByteString>
       <Value>
         <Value>
           <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">//xs:element[@name='TwoWheelerType']</String>
-        </Value>
-      </Value>
-      <DataType>
-        <Identifier>i=12</Identifier>
-      </DataType>
-      <ValueRank>-1</ValueRank>
-      <ArrayDimensions />
-      <AccessLevel>1</AccessLevel>
-      <UserAccessLevel>1</UserAccessLevel>
-      <MinimumSamplingInterval>0</MinimumSamplingInterval>
-      <Historizing>false</Historizing>
-      <AccessLevelEx>0</AccessLevelEx>
-    </Node>
-    <Node i:type="VariableNode">
-      <NodeId>
-        <Identifier>ns=1;i=15010</Identifier>
-      </NodeId>
-      <NodeClass>Variable_2</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>BicycleType</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>BicycleType</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=341</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=69</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <Value>
-        <Value>
-          <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">//xs:element[@name='BicycleType']</String>
         </Value>
       </Value>
       <DataType>
@@ -1998,47 +2032,6 @@ bWE+</ByteString>
           <IsInverse>true</IsInverse>
           <TargetId>
             <Identifier>ns=1;i=15014</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <EventNotifier>0</EventNotifier>
-    </Node>
-    <Node i:type="ObjectNode">
-      <NodeId>
-        <Identifier>ns=1;i=15013</Identifier>
-      </NodeId>
-      <NodeClass>Object_1</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>0</NamespaceIndex>
-        <Name>Default JSON</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>Default JSON</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=76</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=38</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15004</Identifier>
           </TargetId>
         </ReferenceNode>
       </References>
