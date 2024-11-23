@@ -1,13 +1,19 @@
 <xs:schema
-  xmlns:s1="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types"
+  xmlns:Quickstarts.DataTypes.Types="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types"
   xmlns:xs="http://www.w3.org/2001/XMLSchema"
   xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
   xmlns:tns="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances"
   targetNamespace="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances"
   elementFormDefault="qualified"
 >
-  <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd" />
+  <xs:annotation>
+    <xs:appinfo>
+      <ua:Model ModelUri="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances" Version="1.0.0" PublicationDate="2024-11-23T08:02:04.4779264Z" />
+    </xs:appinfo>
+  </xs:annotation>
+  
   <xs:import namespace="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types" />
+  <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd" />
 
   <xs:simpleType  name="ParkingLotType">
     <xs:restriction base="xs:string">
@@ -26,7 +32,7 @@
 
   <xs:complexType name="TwoWheelerType">
     <xs:complexContent mixed="false">
-      <xs:extension base="s1:VehicleType">
+      <xs:extension base="Quickstarts.DataTypes.Types:VehicleType">
         <xs:sequence>
           <xs:element name="ManufacturerName" type="xs:string" minOccurs="0" nillable="true" />
         </xs:sequence>

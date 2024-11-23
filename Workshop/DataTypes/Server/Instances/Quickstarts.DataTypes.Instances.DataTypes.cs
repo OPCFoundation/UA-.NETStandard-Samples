@@ -1,5 +1,5 @@
 /* ========================================================================
- * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2024 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
  *
@@ -32,16 +32,14 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 using System.Runtime.Serialization;
-using Opc.Ua;
 using Quickstarts.DataTypes.Types;
+using Opc.Ua;
 
 namespace Quickstarts.DataTypes.Instances
 {
     #region ParkingLotType Enumeration
     #if (!OPCUA_EXCLUDE_ParkingLotType)
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances)]
@@ -57,39 +55,25 @@ namespace Quickstarts.DataTypes.Instances
     }
 
     #region ParkingLotTypeCollection Class
-    /// <summary>
-    /// A collection of ParkingLotType objects.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfParkingLotType", Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances, ItemName = "ParkingLotType")]
-    #if !NET_STANDARD
     public partial class ParkingLotTypeCollection : List<ParkingLotType>, ICloneable
-    #else
-    public partial class ParkingLotTypeCollection : List<ParkingLotType>
-    #endif
     {
         #region Constructors
-        /// <summary>
-        /// Initializes the collection with default values.
-        /// </summary>
+        /// <remarks />
         public ParkingLotTypeCollection() {}
 
-        /// <summary>
-        /// Initializes the collection with an initial capacity.
-        /// </summary>
+        /// <remarks />
         public ParkingLotTypeCollection(int capacity) : base(capacity) {}
 
-        /// <summary>
-        /// Initializes the collection with another collection.
-        /// </summary>
+        /// <remarks />
         public ParkingLotTypeCollection(IEnumerable<ParkingLotType> collection) : base(collection) {}
         #endregion
 
         #region Static Operators
-        /// <summary>
-        /// Converts an array to a collection.
-        /// </summary>
+        /// <remarks />
         public static implicit operator ParkingLotTypeCollection(ParkingLotType[] values)
         {
             if (values != null)
@@ -100,9 +84,7 @@ namespace Quickstarts.DataTypes.Instances
             return new ParkingLotTypeCollection();
         }
 
-        /// <summary>
-        /// Converts a collection to an array.
-        /// </summary>
+        /// <remarks />
         public static explicit operator ParkingLotType[](ParkingLotTypeCollection values)
         {
             if (values != null)
@@ -114,17 +96,13 @@ namespace Quickstarts.DataTypes.Instances
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
-        /// <summary>
-        /// Creates a deep copy of the collection.
-        /// </summary>
+        /// <remarks />
         public object Clone()
         {
             return (ParkingLotTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -145,35 +123,25 @@ namespace Quickstarts.DataTypes.Instances
 
     #region TwoWheelerType Class
     #if (!OPCUA_EXCLUDE_TwoWheelerType)
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances)]
-    public partial class TwoWheelerType : VehicleType
+    public partial class TwoWheelerType : Quickstarts.DataTypes.Types.VehicleType
     {
         #region Constructors
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
+        /// <remarks />
         public TwoWheelerType()
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Called by the .NET framework during deserialization.
-        /// </summary>
         [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
         private void Initialize()
         {
             m_manufacturerName = null;
@@ -192,22 +160,16 @@ namespace Quickstarts.DataTypes.Instances
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId
-        {
-            get { return DataTypeIds.TwoWheelerType; }
-        }
+        public override ExpandedNodeId TypeId => DataTypeIds.TwoWheelerType; 
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
-        public override ExpandedNodeId BinaryEncodingId
-        {
-            get { return ObjectIds.TwoWheelerType_Encoding_DefaultBinary; }
-        }
+        public override ExpandedNodeId BinaryEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
-        public override ExpandedNodeId XmlEncodingId
-        {
-            get { return ObjectIds.TwoWheelerType_Encoding_DefaultXml; }
-        }
+        public override ExpandedNodeId XmlEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultXml;
+            
+        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultJson; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -248,19 +210,16 @@ namespace Quickstarts.DataTypes.Instances
                 return false;
             }
 
-            if (!base.IsEqual(encodeable)) return false;
             if (!Utils.IsEqual(m_manufacturerName, value.m_manufacturerName)) return false;
 
-            return true;
+            return base.IsEqual(encodeable);
         }    
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
         {
             return (TwoWheelerType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -279,39 +238,25 @@ namespace Quickstarts.DataTypes.Instances
     }
 
     #region TwoWheelerTypeCollection Class
-    /// <summary>
-    /// A collection of TwoWheelerType objects.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfTwoWheelerType", Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances, ItemName = "TwoWheelerType")]
-    #if !NET_STANDARD
     public partial class TwoWheelerTypeCollection : List<TwoWheelerType>, ICloneable
-    #else
-    public partial class TwoWheelerTypeCollection : List<TwoWheelerType>
-    #endif
     {
         #region Constructors
-        /// <summary>
-        /// Initializes the collection with default values.
-        /// </summary>
+        /// <remarks />
         public TwoWheelerTypeCollection() {}
 
-        /// <summary>
-        /// Initializes the collection with an initial capacity.
-        /// </summary>
+        /// <remarks />
         public TwoWheelerTypeCollection(int capacity) : base(capacity) {}
 
-        /// <summary>
-        /// Initializes the collection with another collection.
-        /// </summary>
+        /// <remarks />
         public TwoWheelerTypeCollection(IEnumerable<TwoWheelerType> collection) : base(collection) {}
         #endregion
 
         #region Static Operators
-        /// <summary>
-        /// Converts an array to a collection.
-        /// </summary>
+        /// <remarks />
         public static implicit operator TwoWheelerTypeCollection(TwoWheelerType[] values)
         {
             if (values != null)
@@ -322,9 +267,7 @@ namespace Quickstarts.DataTypes.Instances
             return new TwoWheelerTypeCollection();
         }
 
-        /// <summary>
-        /// Converts a collection to an array.
-        /// </summary>
+        /// <remarks />
         public static explicit operator TwoWheelerType[](TwoWheelerTypeCollection values)
         {
             if (values != null)
@@ -336,17 +279,13 @@ namespace Quickstarts.DataTypes.Instances
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
-        /// <summary>
-        /// Creates a deep copy of the collection.
-        /// </summary>
+        /// <remarks />
         public object Clone()
         {
             return (TwoWheelerTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -367,35 +306,25 @@ namespace Quickstarts.DataTypes.Instances
 
     #region BicycleType Class
     #if (!OPCUA_EXCLUDE_BicycleType)
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances)]
-    public partial class BicycleType : TwoWheelerType
+    public partial class BicycleType : Quickstarts.DataTypes.Instances.TwoWheelerType
     {
         #region Constructors
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
+        /// <remarks />
         public BicycleType()
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Called by the .NET framework during deserialization.
-        /// </summary>
         [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
         private void Initialize()
         {
             m_noOfGears = (uint)0;
@@ -414,22 +343,16 @@ namespace Quickstarts.DataTypes.Instances
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId
-        {
-            get { return DataTypeIds.BicycleType; }
-        }
+        public override ExpandedNodeId TypeId => DataTypeIds.BicycleType; 
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
-        public override ExpandedNodeId BinaryEncodingId
-        {
-            get { return ObjectIds.BicycleType_Encoding_DefaultBinary; }
-        }
+        public override ExpandedNodeId BinaryEncodingId => ObjectIds.BicycleType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
-        public override ExpandedNodeId XmlEncodingId
-        {
-            get { return ObjectIds.BicycleType_Encoding_DefaultXml; }
-        }
+        public override ExpandedNodeId XmlEncodingId => ObjectIds.BicycleType_Encoding_DefaultXml;
+            
+        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.BicycleType_Encoding_DefaultJson; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -470,19 +393,16 @@ namespace Quickstarts.DataTypes.Instances
                 return false;
             }
 
-            if (!base.IsEqual(encodeable)) return false;
             if (!Utils.IsEqual(m_noOfGears, value.m_noOfGears)) return false;
 
-            return true;
+            return base.IsEqual(encodeable);
         }    
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
         {
             return (BicycleType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -501,39 +421,25 @@ namespace Quickstarts.DataTypes.Instances
     }
 
     #region BicycleTypeCollection Class
-    /// <summary>
-    /// A collection of BicycleType objects.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfBicycleType", Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances, ItemName = "BicycleType")]
-    #if !NET_STANDARD
     public partial class BicycleTypeCollection : List<BicycleType>, ICloneable
-    #else
-    public partial class BicycleTypeCollection : List<BicycleType>
-    #endif
     {
         #region Constructors
-        /// <summary>
-        /// Initializes the collection with default values.
-        /// </summary>
+        /// <remarks />
         public BicycleTypeCollection() {}
 
-        /// <summary>
-        /// Initializes the collection with an initial capacity.
-        /// </summary>
+        /// <remarks />
         public BicycleTypeCollection(int capacity) : base(capacity) {}
 
-        /// <summary>
-        /// Initializes the collection with another collection.
-        /// </summary>
+        /// <remarks />
         public BicycleTypeCollection(IEnumerable<BicycleType> collection) : base(collection) {}
         #endregion
 
         #region Static Operators
-        /// <summary>
-        /// Converts an array to a collection.
-        /// </summary>
+        /// <remarks />
         public static implicit operator BicycleTypeCollection(BicycleType[] values)
         {
             if (values != null)
@@ -544,9 +450,7 @@ namespace Quickstarts.DataTypes.Instances
             return new BicycleTypeCollection();
         }
 
-        /// <summary>
-        /// Converts a collection to an array.
-        /// </summary>
+        /// <remarks />
         public static explicit operator BicycleType[](BicycleTypeCollection values)
         {
             if (values != null)
@@ -558,17 +462,13 @@ namespace Quickstarts.DataTypes.Instances
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
-        /// <summary>
-        /// Creates a deep copy of the collection.
-        /// </summary>
+        /// <remarks />
         public object Clone()
         {
             return (BicycleTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -589,35 +489,25 @@ namespace Quickstarts.DataTypes.Instances
 
     #region ScooterType Class
     #if (!OPCUA_EXCLUDE_ScooterType)
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances)]
-    public partial class ScooterType : TwoWheelerType
+    public partial class ScooterType : Quickstarts.DataTypes.Instances.TwoWheelerType
     {
         #region Constructors
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
+        /// <remarks />
         public ScooterType()
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Called by the .NET framework during deserialization.
-        /// </summary>
         [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
         private void Initialize()
         {
             m_noOfSeats = (uint)0;
@@ -636,22 +526,16 @@ namespace Quickstarts.DataTypes.Instances
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId
-        {
-            get { return DataTypeIds.ScooterType; }
-        }
+        public override ExpandedNodeId TypeId => DataTypeIds.ScooterType; 
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
-        public override ExpandedNodeId BinaryEncodingId
-        {
-            get { return ObjectIds.ScooterType_Encoding_DefaultBinary; }
-        }
+        public override ExpandedNodeId BinaryEncodingId => ObjectIds.ScooterType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
-        public override ExpandedNodeId XmlEncodingId
-        {
-            get { return ObjectIds.ScooterType_Encoding_DefaultXml; }
-        }
+        public override ExpandedNodeId XmlEncodingId => ObjectIds.ScooterType_Encoding_DefaultXml;
+            
+        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.ScooterType_Encoding_DefaultJson; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -692,19 +576,16 @@ namespace Quickstarts.DataTypes.Instances
                 return false;
             }
 
-            if (!base.IsEqual(encodeable)) return false;
             if (!Utils.IsEqual(m_noOfSeats, value.m_noOfSeats)) return false;
 
-            return true;
+            return base.IsEqual(encodeable);
         }    
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
         {
             return (ScooterType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -723,39 +604,25 @@ namespace Quickstarts.DataTypes.Instances
     }
 
     #region ScooterTypeCollection Class
-    /// <summary>
-    /// A collection of ScooterType objects.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfScooterType", Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances, ItemName = "ScooterType")]
-    #if !NET_STANDARD
     public partial class ScooterTypeCollection : List<ScooterType>, ICloneable
-    #else
-    public partial class ScooterTypeCollection : List<ScooterType>
-    #endif
     {
         #region Constructors
-        /// <summary>
-        /// Initializes the collection with default values.
-        /// </summary>
+        /// <remarks />
         public ScooterTypeCollection() {}
 
-        /// <summary>
-        /// Initializes the collection with an initial capacity.
-        /// </summary>
+        /// <remarks />
         public ScooterTypeCollection(int capacity) : base(capacity) {}
 
-        /// <summary>
-        /// Initializes the collection with another collection.
-        /// </summary>
+        /// <remarks />
         public ScooterTypeCollection(IEnumerable<ScooterType> collection) : base(collection) {}
         #endregion
 
         #region Static Operators
-        /// <summary>
-        /// Converts an array to a collection.
-        /// </summary>
+        /// <remarks />
         public static implicit operator ScooterTypeCollection(ScooterType[] values)
         {
             if (values != null)
@@ -766,9 +633,7 @@ namespace Quickstarts.DataTypes.Instances
             return new ScooterTypeCollection();
         }
 
-        /// <summary>
-        /// Converts a collection to an array.
-        /// </summary>
+        /// <remarks />
         public static explicit operator ScooterType[](ScooterTypeCollection values)
         {
             if (values != null)
@@ -780,17 +645,13 @@ namespace Quickstarts.DataTypes.Instances
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
-        /// <summary>
-        /// Creates a deep copy of the collection.
-        /// </summary>
+        /// <remarks />
         public object Clone()
         {
             return (ScooterTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()

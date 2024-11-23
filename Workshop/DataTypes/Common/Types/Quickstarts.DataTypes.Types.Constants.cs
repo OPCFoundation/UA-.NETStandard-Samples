@@ -1,5 +1,5 @@
 /* ========================================================================
- * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2024 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
  *
@@ -38,433 +38,279 @@ using Opc.Ua;
 namespace Quickstarts.DataTypes.Types
 {
     #region DataType Identifiers
-    /// <summary>
-    /// A class that declares constants for all DataTypes in the Model Design.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class DataTypes
     {
-        /// <summary>
-        /// The identifier for the EngineType DataType.
-        /// </summary>
+        /// <remarks />
         public const uint EngineType = 15006;
 
-        /// <summary>
-        /// The identifier for the VehicleType DataType.
-        /// </summary>
+        /// <remarks />
         public const uint VehicleType = 314;
 
-        /// <summary>
-        /// The identifier for the CarType DataType.
-        /// </summary>
+        /// <remarks />
         public const uint CarType = 315;
 
-        /// <summary>
-        /// The identifier for the TruckType DataType.
-        /// </summary>
+        /// <remarks />
         public const uint TruckType = 316;
     }
     #endregion
 
     #region Object Identifiers
-    /// <summary>
-    /// A class that declares constants for all Objects in the Model Design.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class Objects
     {
-        /// <summary>
-        /// The identifier for the VehicleType_Encoding_DefaultBinary Object.
-        /// </summary>
+        /// <remarks />
         public const uint VehicleType_Encoding_DefaultBinary = 329;
 
-        /// <summary>
-        /// The identifier for the CarType_Encoding_DefaultBinary Object.
-        /// </summary>
+        /// <remarks />
         public const uint CarType_Encoding_DefaultBinary = 330;
 
-        /// <summary>
-        /// The identifier for the TruckType_Encoding_DefaultBinary Object.
-        /// </summary>
+        /// <remarks />
         public const uint TruckType_Encoding_DefaultBinary = 331;
 
-        /// <summary>
-        /// The identifier for the VehicleType_Encoding_DefaultXml Object.
-        /// </summary>
+        /// <remarks />
         public const uint VehicleType_Encoding_DefaultXml = 317;
 
-        /// <summary>
-        /// The identifier for the CarType_Encoding_DefaultXml Object.
-        /// </summary>
+        /// <remarks />
         public const uint CarType_Encoding_DefaultXml = 318;
 
-        /// <summary>
-        /// The identifier for the TruckType_Encoding_DefaultXml Object.
-        /// </summary>
+        /// <remarks />
         public const uint TruckType_Encoding_DefaultXml = 319;
 
-        /// <summary>
-        /// The identifier for the VehicleType_Encoding_DefaultJson Object.
-        /// </summary>
+        /// <remarks />
         public const uint VehicleType_Encoding_DefaultJson = 15003;
 
-        /// <summary>
-        /// The identifier for the CarType_Encoding_DefaultJson Object.
-        /// </summary>
+        /// <remarks />
         public const uint CarType_Encoding_DefaultJson = 15004;
 
-        /// <summary>
-        /// The identifier for the TruckType_Encoding_DefaultJson Object.
-        /// </summary>
+        /// <remarks />
         public const uint TruckType_Encoding_DefaultJson = 15005;
     }
     #endregion
 
     #region ObjectType Identifiers
-    /// <summary>
-    /// A class that declares constants for all ObjectTypes in the Model Design.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class ObjectTypes
     {
-        /// <summary>
-        /// The identifier for the DriverType ObjectType.
-        /// </summary>
+        /// <remarks />
         public const uint DriverType = 341;
     }
     #endregion
 
     #region Variable Identifiers
-    /// <summary>
-    /// A class that declares constants for all Variables in the Model Design.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class Variables
     {
-        /// <summary>
-        /// The identifier for the EngineType_EnumValues Variable.
-        /// </summary>
+        /// <remarks />
         public const uint EngineType_EnumValues = 15007;
 
-        /// <summary>
-        /// The identifier for the DriverType_PrimaryVehicle Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DriverType_PrimaryVehicle = 342;
 
-        /// <summary>
-        /// The identifier for the DriverType_OwnedVehicles Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DriverType_OwnedVehicles = 344;
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_BinarySchema = 302;
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_NamespaceUri Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_BinarySchema_NamespaceUri = 304;
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_Deprecated Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_BinarySchema_Deprecated = 15001;
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_VehicleType Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_BinarySchema_VehicleType = 332;
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_CarType Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_BinarySchema_CarType = 335;
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_TruckType Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_BinarySchema_TruckType = 338;
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_XmlSchema = 287;
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_NamespaceUri Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_XmlSchema_NamespaceUri = 289;
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_Deprecated Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_XmlSchema_Deprecated = 15002;
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_VehicleType Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_XmlSchema_VehicleType = 320;
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_CarType Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_XmlSchema_CarType = 323;
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_TruckType Variable.
-        /// </summary>
+        /// <remarks />
         public const uint DataTypes_XmlSchema_TruckType = 326;
     }
     #endregion
 
     #region DataType Node Identifiers
-    /// <summary>
-    /// A class that declares constants for all DataTypes in the Model Design.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class DataTypeIds
     {
-        /// <summary>
-        /// The identifier for the EngineType DataType.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId EngineType = new ExpandedNodeId(Quickstarts.DataTypes.Types.DataTypes.EngineType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the VehicleType DataType.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId VehicleType = new ExpandedNodeId(Quickstarts.DataTypes.Types.DataTypes.VehicleType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the CarType DataType.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId CarType = new ExpandedNodeId(Quickstarts.DataTypes.Types.DataTypes.CarType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the TruckType DataType.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId TruckType = new ExpandedNodeId(Quickstarts.DataTypes.Types.DataTypes.TruckType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
     }
     #endregion
 
     #region Object Node Identifiers
-    /// <summary>
-    /// A class that declares constants for all Objects in the Model Design.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class ObjectIds
     {
-        /// <summary>
-        /// The identifier for the VehicleType_Encoding_DefaultBinary Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId VehicleType_Encoding_DefaultBinary = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.VehicleType_Encoding_DefaultBinary, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the CarType_Encoding_DefaultBinary Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId CarType_Encoding_DefaultBinary = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.CarType_Encoding_DefaultBinary, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the TruckType_Encoding_DefaultBinary Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId TruckType_Encoding_DefaultBinary = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.TruckType_Encoding_DefaultBinary, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the VehicleType_Encoding_DefaultXml Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId VehicleType_Encoding_DefaultXml = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.VehicleType_Encoding_DefaultXml, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the CarType_Encoding_DefaultXml Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId CarType_Encoding_DefaultXml = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.CarType_Encoding_DefaultXml, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the TruckType_Encoding_DefaultXml Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId TruckType_Encoding_DefaultXml = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.TruckType_Encoding_DefaultXml, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the VehicleType_Encoding_DefaultJson Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId VehicleType_Encoding_DefaultJson = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.VehicleType_Encoding_DefaultJson, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the CarType_Encoding_DefaultJson Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId CarType_Encoding_DefaultJson = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.CarType_Encoding_DefaultJson, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the TruckType_Encoding_DefaultJson Object.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId TruckType_Encoding_DefaultJson = new ExpandedNodeId(Quickstarts.DataTypes.Types.Objects.TruckType_Encoding_DefaultJson, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
     }
     #endregion
 
     #region ObjectType Node Identifiers
-    /// <summary>
-    /// A class that declares constants for all ObjectTypes in the Model Design.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class ObjectTypeIds
     {
-        /// <summary>
-        /// The identifier for the DriverType ObjectType.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DriverType = new ExpandedNodeId(Quickstarts.DataTypes.Types.ObjectTypes.DriverType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
     }
     #endregion
 
     #region Variable Node Identifiers
-    /// <summary>
-    /// A class that declares constants for all Variables in the Model Design.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class VariableIds
     {
-        /// <summary>
-        /// The identifier for the EngineType_EnumValues Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId EngineType_EnumValues = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.EngineType_EnumValues, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DriverType_PrimaryVehicle Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DriverType_PrimaryVehicle = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DriverType_PrimaryVehicle, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DriverType_OwnedVehicles Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DriverType_OwnedVehicles = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DriverType_OwnedVehicles, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_BinarySchema = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_BinarySchema, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_NamespaceUri Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_BinarySchema_NamespaceUri = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_BinarySchema_NamespaceUri, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_Deprecated Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_BinarySchema_Deprecated = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_BinarySchema_Deprecated, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_VehicleType Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_BinarySchema_VehicleType = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_BinarySchema_VehicleType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_CarType Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_BinarySchema_CarType = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_BinarySchema_CarType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_BinarySchema_TruckType Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_BinarySchema_TruckType = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_BinarySchema_TruckType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_XmlSchema = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_XmlSchema, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_NamespaceUri Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_XmlSchema_NamespaceUri = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_XmlSchema_NamespaceUri, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_Deprecated Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_XmlSchema_Deprecated = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_XmlSchema_Deprecated, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_VehicleType Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_XmlSchema_VehicleType = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_XmlSchema_VehicleType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_CarType Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_XmlSchema_CarType = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_XmlSchema_CarType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
 
-        /// <summary>
-        /// The identifier for the DataTypes_XmlSchema_TruckType Variable.
-        /// </summary>
+        /// <remarks />
         public static readonly ExpandedNodeId DataTypes_XmlSchema_TruckType = new ExpandedNodeId(Quickstarts.DataTypes.Types.Variables.DataTypes_XmlSchema_TruckType, Quickstarts.DataTypes.Types.Namespaces.DataTypes);
     }
     #endregion
 
     #region BrowseName Declarations
-    /// <summary>
-    /// Declares all of the BrowseNames used in the Model Design.
-    /// </summary>
+    /// <remarks />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class BrowseNames
     {
-        /// <summary>
-        /// The BrowseName for the CarType component.
-        /// </summary>
+        /// <remarks />
         public const string CarType = "CarType";
 
-        /// <summary>
-        /// The BrowseName for the DataTypes_BinarySchema component.
-        /// </summary>
+        /// <remarks />
         public const string DataTypes_BinarySchema = "Quickstarts.DataTypes.Types";
 
-        /// <summary>
-        /// The BrowseName for the DataTypes_XmlSchema component.
-        /// </summary>
+        /// <remarks />
         public const string DataTypes_XmlSchema = "Quickstarts.DataTypes.Types";
 
-        /// <summary>
-        /// The BrowseName for the DriverType component.
-        /// </summary>
+        /// <remarks />
         public const string DriverType = "DriverType";
 
-        /// <summary>
-        /// The BrowseName for the EngineType component.
-        /// </summary>
+        /// <remarks />
         public const string EngineType = "EngineType";
 
-        /// <summary>
-        /// The BrowseName for the OwnedVehicles component.
-        /// </summary>
+        /// <remarks />
         public const string OwnedVehicles = "OwnedVehicles";
 
-        /// <summary>
-        /// The BrowseName for the PrimaryVehicle component.
-        /// </summary>
+        /// <remarks />
         public const string PrimaryVehicle = "PrimaryVehicle";
 
-        /// <summary>
-        /// The BrowseName for the TruckType component.
-        /// </summary>
+        /// <remarks />
         public const string TruckType = "TruckType";
 
-        /// <summary>
-        /// The BrowseName for the VehicleType component.
-        /// </summary>
+        /// <remarks />
         public const string VehicleType = "VehicleType";
     }
     #endregion
 
     #region Namespace Declarations
-    /// <summary>
-    /// Defines constants for all namespaces referenced by the model design.
-    /// </summary>
+    /// <remarks />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     public static partial class Namespaces
     {

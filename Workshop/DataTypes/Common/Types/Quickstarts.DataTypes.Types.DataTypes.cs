@@ -1,5 +1,5 @@
 /* ========================================================================
- * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2024 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
  *
@@ -38,9 +38,7 @@ namespace Quickstarts.DataTypes.Types
 {
     #region EngineType Enumeration
     #if (!OPCUA_EXCLUDE_EngineType)
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes)]
@@ -68,39 +66,25 @@ namespace Quickstarts.DataTypes.Types
     }
 
     #region EngineTypeCollection Class
-    /// <summary>
-    /// A collection of EngineType objects.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfEngineType", Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes, ItemName = "EngineType")]
-    #if !NET_STANDARD
     public partial class EngineTypeCollection : List<EngineType>, ICloneable
-    #else
-    public partial class EngineTypeCollection : List<EngineType>
-    #endif
     {
         #region Constructors
-        /// <summary>
-        /// Initializes the collection with default values.
-        /// </summary>
+        /// <remarks />
         public EngineTypeCollection() {}
 
-        /// <summary>
-        /// Initializes the collection with an initial capacity.
-        /// </summary>
+        /// <remarks />
         public EngineTypeCollection(int capacity) : base(capacity) {}
 
-        /// <summary>
-        /// Initializes the collection with another collection.
-        /// </summary>
+        /// <remarks />
         public EngineTypeCollection(IEnumerable<EngineType> collection) : base(collection) {}
         #endregion
 
         #region Static Operators
-        /// <summary>
-        /// Converts an array to a collection.
-        /// </summary>
+        /// <remarks />
         public static implicit operator EngineTypeCollection(EngineType[] values)
         {
             if (values != null)
@@ -111,9 +95,7 @@ namespace Quickstarts.DataTypes.Types
             return new EngineTypeCollection();
         }
 
-        /// <summary>
-        /// Converts a collection to an array.
-        /// </summary>
+        /// <remarks />
         public static explicit operator EngineType[](EngineTypeCollection values)
         {
             if (values != null)
@@ -125,17 +107,13 @@ namespace Quickstarts.DataTypes.Types
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
-        /// <summary>
-        /// Creates a deep copy of the collection.
-        /// </summary>
+        /// <remarks />
         public object Clone()
         {
             return (EngineTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -156,35 +134,25 @@ namespace Quickstarts.DataTypes.Types
 
     #region VehicleType Class
     #if (!OPCUA_EXCLUDE_VehicleType)
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes)]
-    public partial class VehicleType : IEncodeable
+    public partial class VehicleType : IEncodeable, IJsonEncodeable
     {
         #region Constructors
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
+        /// <remarks />
         public VehicleType()
         {
             Initialize();
         }
-
-        /// <summary>
-        /// Called by the .NET framework during deserialization.
-        /// </summary>
+            
         [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
         }
-
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
+            
         private void Initialize()
         {
             m_make = null;
@@ -221,22 +189,16 @@ namespace Quickstarts.DataTypes.Types
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public virtual ExpandedNodeId TypeId
-        {
-            get { return DataTypeIds.VehicleType; }
-        }
+        public virtual ExpandedNodeId TypeId => DataTypeIds.VehicleType; 
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
-        public virtual ExpandedNodeId BinaryEncodingId
-        {
-            get { return ObjectIds.VehicleType_Encoding_DefaultBinary; }
-        }
+        public virtual ExpandedNodeId BinaryEncodingId => ObjectIds.VehicleType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
-        public virtual ExpandedNodeId XmlEncodingId
-        {
-            get { return ObjectIds.VehicleType_Encoding_DefaultXml; }
-        }
+        public virtual ExpandedNodeId XmlEncodingId => ObjectIds.VehicleType_Encoding_DefaultXml;
+                    
+        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
+        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.VehicleType_Encoding_DefaultJson; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -284,13 +246,11 @@ namespace Quickstarts.DataTypes.Types
             return true;
         }
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (VehicleType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -313,39 +273,25 @@ namespace Quickstarts.DataTypes.Types
     }
 
     #region VehicleTypeCollection Class
-    /// <summary>
-    /// A collection of VehicleType objects.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfVehicleType", Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes, ItemName = "VehicleType")]
-    #if !NET_STANDARD
     public partial class VehicleTypeCollection : List<VehicleType>, ICloneable
-    #else
-    public partial class VehicleTypeCollection : List<VehicleType>
-    #endif
     {
         #region Constructors
-        /// <summary>
-        /// Initializes the collection with default values.
-        /// </summary>
+        /// <remarks />
         public VehicleTypeCollection() {}
 
-        /// <summary>
-        /// Initializes the collection with an initial capacity.
-        /// </summary>
+        /// <remarks />
         public VehicleTypeCollection(int capacity) : base(capacity) {}
 
-        /// <summary>
-        /// Initializes the collection with another collection.
-        /// </summary>
+        /// <remarks />
         public VehicleTypeCollection(IEnumerable<VehicleType> collection) : base(collection) {}
         #endregion
 
         #region Static Operators
-        /// <summary>
-        /// Converts an array to a collection.
-        /// </summary>
+        /// <remarks />
         public static implicit operator VehicleTypeCollection(VehicleType[] values)
         {
             if (values != null)
@@ -356,9 +302,7 @@ namespace Quickstarts.DataTypes.Types
             return new VehicleTypeCollection();
         }
 
-        /// <summary>
-        /// Converts a collection to an array.
-        /// </summary>
+        /// <remarks />
         public static explicit operator VehicleType[](VehicleTypeCollection values)
         {
             if (values != null)
@@ -370,17 +314,13 @@ namespace Quickstarts.DataTypes.Types
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
-        /// <summary>
-        /// Creates a deep copy of the collection.
-        /// </summary>
+        /// <remarks />
         public object Clone()
         {
             return (VehicleTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -401,35 +341,25 @@ namespace Quickstarts.DataTypes.Types
 
     #region CarType Class
     #if (!OPCUA_EXCLUDE_CarType)
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes)]
-    public partial class CarType : VehicleType
+    public partial class CarType : Quickstarts.DataTypes.Types.VehicleType
     {
         #region Constructors
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
+        /// <remarks />
         public CarType()
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Called by the .NET framework during deserialization.
-        /// </summary>
         [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
         private void Initialize()
         {
             m_noOfPassengers = (uint)0;
@@ -448,22 +378,16 @@ namespace Quickstarts.DataTypes.Types
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId
-        {
-            get { return DataTypeIds.CarType; }
-        }
+        public override ExpandedNodeId TypeId => DataTypeIds.CarType; 
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
-        public override ExpandedNodeId BinaryEncodingId
-        {
-            get { return ObjectIds.CarType_Encoding_DefaultBinary; }
-        }
+        public override ExpandedNodeId BinaryEncodingId => ObjectIds.CarType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
-        public override ExpandedNodeId XmlEncodingId
-        {
-            get { return ObjectIds.CarType_Encoding_DefaultXml; }
-        }
+        public override ExpandedNodeId XmlEncodingId => ObjectIds.CarType_Encoding_DefaultXml;
+            
+        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.CarType_Encoding_DefaultJson; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -504,19 +428,16 @@ namespace Quickstarts.DataTypes.Types
                 return false;
             }
 
-            if (!base.IsEqual(encodeable)) return false;
             if (!Utils.IsEqual(m_noOfPassengers, value.m_noOfPassengers)) return false;
 
-            return true;
+            return base.IsEqual(encodeable);
         }    
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
         {
             return (CarType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -535,39 +456,25 @@ namespace Quickstarts.DataTypes.Types
     }
 
     #region CarTypeCollection Class
-    /// <summary>
-    /// A collection of CarType objects.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfCarType", Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes, ItemName = "CarType")]
-    #if !NET_STANDARD
     public partial class CarTypeCollection : List<CarType>, ICloneable
-    #else
-    public partial class CarTypeCollection : List<CarType>
-    #endif
     {
         #region Constructors
-        /// <summary>
-        /// Initializes the collection with default values.
-        /// </summary>
+        /// <remarks />
         public CarTypeCollection() {}
 
-        /// <summary>
-        /// Initializes the collection with an initial capacity.
-        /// </summary>
+        /// <remarks />
         public CarTypeCollection(int capacity) : base(capacity) {}
 
-        /// <summary>
-        /// Initializes the collection with another collection.
-        /// </summary>
+        /// <remarks />
         public CarTypeCollection(IEnumerable<CarType> collection) : base(collection) {}
         #endregion
 
         #region Static Operators
-        /// <summary>
-        /// Converts an array to a collection.
-        /// </summary>
+        /// <remarks />
         public static implicit operator CarTypeCollection(CarType[] values)
         {
             if (values != null)
@@ -578,9 +485,7 @@ namespace Quickstarts.DataTypes.Types
             return new CarTypeCollection();
         }
 
-        /// <summary>
-        /// Converts a collection to an array.
-        /// </summary>
+        /// <remarks />
         public static explicit operator CarType[](CarTypeCollection values)
         {
             if (values != null)
@@ -592,17 +497,13 @@ namespace Quickstarts.DataTypes.Types
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
-        /// <summary>
-        /// Creates a deep copy of the collection.
-        /// </summary>
+        /// <remarks />
         public object Clone()
         {
             return (CarTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -623,35 +524,25 @@ namespace Quickstarts.DataTypes.Types
 
     #region TruckType Class
     #if (!OPCUA_EXCLUDE_TruckType)
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes)]
-    public partial class TruckType : VehicleType
+    public partial class TruckType : Quickstarts.DataTypes.Types.VehicleType
     {
         #region Constructors
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
+        /// <remarks />
         public TruckType()
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Called by the .NET framework during deserialization.
-        /// </summary>
         [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
         }
 
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
         private void Initialize()
         {
             m_cargoCapacity = (uint)0;
@@ -670,22 +561,16 @@ namespace Quickstarts.DataTypes.Types
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId
-        {
-            get { return DataTypeIds.TruckType; }
-        }
+        public override ExpandedNodeId TypeId => DataTypeIds.TruckType; 
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
-        public override ExpandedNodeId BinaryEncodingId
-        {
-            get { return ObjectIds.TruckType_Encoding_DefaultBinary; }
-        }
+        public override ExpandedNodeId BinaryEncodingId => ObjectIds.TruckType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
-        public override ExpandedNodeId XmlEncodingId
-        {
-            get { return ObjectIds.TruckType_Encoding_DefaultXml; }
-        }
+        public override ExpandedNodeId XmlEncodingId => ObjectIds.TruckType_Encoding_DefaultXml;
+            
+        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.TruckType_Encoding_DefaultJson; 
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -726,19 +611,16 @@ namespace Quickstarts.DataTypes.Types
                 return false;
             }
 
-            if (!base.IsEqual(encodeable)) return false;
             if (!Utils.IsEqual(m_cargoCapacity, value.m_cargoCapacity)) return false;
 
-            return true;
+            return base.IsEqual(encodeable);
         }    
 
-        #if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
         {
             return (TruckType)this.MemberwiseClone();
         }
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -757,39 +639,25 @@ namespace Quickstarts.DataTypes.Types
     }
 
     #region TruckTypeCollection Class
-    /// <summary>
-    /// A collection of TruckType objects.
-    /// </summary>
+    /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfTruckType", Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes, ItemName = "TruckType")]
-    #if !NET_STANDARD
     public partial class TruckTypeCollection : List<TruckType>, ICloneable
-    #else
-    public partial class TruckTypeCollection : List<TruckType>
-    #endif
     {
         #region Constructors
-        /// <summary>
-        /// Initializes the collection with default values.
-        /// </summary>
+        /// <remarks />
         public TruckTypeCollection() {}
 
-        /// <summary>
-        /// Initializes the collection with an initial capacity.
-        /// </summary>
+        /// <remarks />
         public TruckTypeCollection(int capacity) : base(capacity) {}
 
-        /// <summary>
-        /// Initializes the collection with another collection.
-        /// </summary>
+        /// <remarks />
         public TruckTypeCollection(IEnumerable<TruckType> collection) : base(collection) {}
         #endregion
 
         #region Static Operators
-        /// <summary>
-        /// Converts an array to a collection.
-        /// </summary>
+        /// <remarks />
         public static implicit operator TruckTypeCollection(TruckType[] values)
         {
             if (values != null)
@@ -800,9 +668,7 @@ namespace Quickstarts.DataTypes.Types
             return new TruckTypeCollection();
         }
 
-        /// <summary>
-        /// Converts a collection to an array.
-        /// </summary>
+        /// <remarks />
         public static explicit operator TruckType[](TruckTypeCollection values)
         {
             if (values != null)
@@ -814,17 +680,13 @@ namespace Quickstarts.DataTypes.Types
         }
         #endregion
 
-        #if !NET_STANDARD
         #region ICloneable Methods
-        /// <summary>
-        /// Creates a deep copy of the collection.
-        /// </summary>
+        /// <remarks />
         public object Clone()
         {
             return (TruckTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()

@@ -5,6 +5,12 @@
   targetNamespace="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types"
   elementFormDefault="qualified"
 >
+  <xs:annotation>
+    <xs:appinfo>
+      <ua:Model ModelUri="http://opcfoundation.org/UA/Quickstarts/DataTypes/Types" Version="1.0.0" PublicationDate="2024-04-26T04:40:41.5087071Z" />
+    </xs:appinfo>
+  </xs:annotation>
+  
   <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd" />
 
   <xs:simpleType  name="EngineType">

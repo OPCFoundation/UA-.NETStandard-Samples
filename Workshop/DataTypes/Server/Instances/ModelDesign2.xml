@@ -10,9 +10,9 @@
   TargetNamespace="http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances"
 >
   <opc:Namespaces>
-    <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/</opc:Namespace>
-    <opc:Namespace Name="DataTypes" Prefix="Quickstarts.DataTypes.Types" InternalPrefix="Quickstarts.DataTypes.Types" FilePath="..\Common\Types\ModelDesign1.xml">http://opcfoundation.org/UA/Quickstarts/DataTypes/Types</opc:Namespace>
     <opc:Namespace Name="DataTypeInstances" Prefix="Quickstarts.DataTypes.Instances" InternalPrefix="Quickstarts.DataTypeInstances.Instances">http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances</opc:Namespace>
+    <opc:Namespace Name="DataTypes" Prefix="Quickstarts.DataTypes.Types" InternalPrefix="Quickstarts.DataTypes.Types" FilePath="..\Common\Types\ModelDesign1.xml">http://opcfoundation.org/UA/Quickstarts/DataTypes/Types</opc:Namespace>
+    <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/</opc:Namespace>
   </opc:Namespaces>
 
   <opc:DataType SymbolicName="ParkingLotType" BaseType="ua:Enumeration">
