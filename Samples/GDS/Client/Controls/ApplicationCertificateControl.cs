@@ -27,7 +27,6 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-using Opc.Ua.Gds;
 using Opc.Ua.Security.Certificates;
 using System;
 using System.Drawing;
@@ -50,6 +49,7 @@ namespace Opc.Ua.Gds.Client
         private ServerPushConfigurationClient m_server;
         private RegisteredApplication m_application;
         private X509Certificate2 m_certificate;
+        private bool m_temporaryCertificateCreated;
         private string m_certificatePassword;
 
         public async Task Initialize(
@@ -64,6 +64,7 @@ namespace Opc.Ua.Gds.Client
             m_server = server;
             m_application = application;
             m_certificate = null;
+            m_temporaryCertificateCreated = false;
             m_certificatePassword = null;
 
             CertificateRequestTimer.Enabled = false;
@@ -236,10 +237,31 @@ namespace Opc.Ua.Gds.Client
                         SubjectName = Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName)
                     };
                     m_certificate = await id.Find(true);
+                    //test if private key is available & exportable, else create new temporary certificate for csr
                     if (m_certificate != null &&
                         m_certificate.HasPrivateKey)
                     {
-                        m_certificate = await id.LoadPrivateKey(m_certificatePassword);
+                        try
+                        {
+                            //this line fails with a CryptographicException if export of private key is not allowed
+                            _ = m_certificate.GetRSAPrivateKey().ExportParameters(true);
+                            //proceed with a CSR using the exportable private key
+                            m_certificate = await id.LoadPrivateKey(m_certificatePassword);
+                        }
+                        catch
+                        {
+                            //create temporary cert to generate csr from
+                            m_certificate = CertificateFactory.CreateCertificate(
+                                X509Utils.GetApplicationUriFromCertificate(m_certificate),
+                                m_application.ApplicationName,
+                                Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
+                                m_application.GetDomainNames(m_certificate))
+                                .SetNotBefore(DateTime.Today.AddDays(-1))
+                                .SetNotAfter(DateTime.Today.AddDays(14))
+                                .SetRSAKeySize((ushort)(m_certificate.GetRSAPublicKey()?.KeySize ?? 0))
+                                .CreateForRSA();
+                            m_temporaryCertificateCreated = true;
+                        }
                     }
                 }
 
@@ -347,7 +369,7 @@ namespace Opc.Ua.Gds.Client
                                 if (oldCertificate != null && oldCertificate.HasPrivateKey)
                                 {
                                     oldCertificate = await cid.LoadPrivateKey(string.Empty);
-                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
+                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, m_temporaryCertificateCreated ? m_certificate : oldCertificate);
                                     await store.Delete(oldCertificate.Thumbprint);
                                 }
                                 else
@@ -361,6 +383,12 @@ namespace Opc.Ua.Gds.Client
                                 newCert = CertificateFactory.Load(newCert, true);
                             }
                             await store.Add(newCert);
+                            if (m_temporaryCertificateCreated)
+                            {
+                                m_certificate.Dispose();
+                                m_certificate = null;
+                                m_temporaryCertificateCreated = false;
+                            }
                         }
                     }
                     else
