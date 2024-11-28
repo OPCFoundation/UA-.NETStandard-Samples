@@ -27,11 +27,11 @@ Furthermore, cloud applications and services (such as ASP.Net, DNX, Azure Websit
 2. Sessions (including UI support in the samples).
 3. Subscriptions (including UI support in the samples).
 4. OPC UA [Aggregation Server](Workshop/Aggregation/README.md).
-5. [OPC Classic adapter for OPC UA](ComIOP/README.md).
+5. OPC Classic adapter for OPC UA. (Removed in 12/2024)
 6. OPC UA [Global Discovery Client and Global Discovery Server](Samples/GDS/README.md).
-7. OPC UA [Xamarin Client](Samples/XamarinClient/readme.md).
+7. OPC UA Xamarin Client. (Removed in 12/2024)
 8. OPC UA [Quickstart Samples](Workshop).
-9. The Core UA stack and SDK has been tested with Mono 5.4 to add support for the [Xamarin Client](Samples/XamarinClient/readme.md) and the Mono console application samples.
+9. The Core UA stack and SDK has been tested with Mono 5.4 to add support for the Xamarin Client and the Mono console application samples. (Removed as of 12/2024)
 
 ## Project Information
 
@@ -110,14 +110,12 @@ Please follow instructions in this [article](https://aka.ms/dotnetcoregs) to set
 4. If not using the `-a` auto accept option, on first connection, or after certificates were renewed, the server may have refused the client certificate. Check the server and client folder **%LocalApplicationData%/OPC Foundation/CertificateStores/RejectedCertificates** for rejected certificates. To approve a certificate copy it to the **%LocalApplicationData%/OPC Foundation/CertificateStores/UA Applications** folder.
 5. Retry step 3 to connect using a secure connection.
 
-## How to build and run the OPC UA COM Server Wrapper
-- Please refer to the OPC Foundation UA .Net Standard Library [COM Server Wrapper](ComIOP/README.md) for a detailed description how to run the OPC COM wrapper.
+## How to build and run the OPC UA COM Server Wrapper (Removed as of 12/2024)
 
 ## How to build and run the OPC UA Aggregation Client and Server
 - Please refer to the OPC Foundation UA .Net Standard Library [Aggregation Client and Server](Workshop/Aggregation/README.md) for a detailed description how to run the aggregation client and server.
 
-## How to build and run the OPC UA Xamarin Client
-- Please refer to the OPC UA [Xamarin Client](Samples/XamarinClient/readme.md) for a detailed description how to run the UA Xamarin Client on UWP, Android and iOS.
+## How to build and run the OPC UA Xamarin Client (Removed as of 12/2024)
 
 ## Contributing
 We strongly encourage community participation and contribution to this project. First, please fork the repository and commit your changes there. Once happy with your changes you can generate a 'pull request'.
