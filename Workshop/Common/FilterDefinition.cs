@@ -120,7 +120,7 @@ namespace Quickstarts
             // this can be done by specifying an operand with an empty browse path.
             SimpleAttributeOperand operand = new SimpleAttributeOperand();
 
-            operand.TypeDefinitionId = ObjectTypeIds.BaseEventType;
+            operand.TypeDefinitionId = ObjectTypeIds.ConditionType;
             operand.AttributeId = Attributes.NodeId;
             operand.BrowsePath = new QualifiedNameCollection();
 
