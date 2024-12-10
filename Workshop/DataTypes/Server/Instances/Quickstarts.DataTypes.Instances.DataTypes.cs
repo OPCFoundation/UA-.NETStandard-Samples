@@ -33,7 +33,7 @@ using System.Text;
 using System.Xml;
 using System.Runtime.Serialization;
 using Opc.Ua;
-using Opc.Ua;
+using Quickstarts.DataTypes.Types;
 
 namespace Quickstarts.DataTypes.Instances
 {
@@ -127,7 +127,7 @@ namespace Quickstarts.DataTypes.Instances
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances)]
-    public partial class TwoWheelerType : Opc.Ua.VehicleType
+    public partial class TwoWheelerType : VehicleType
     {
         #region Constructors
         /// <remarks />
