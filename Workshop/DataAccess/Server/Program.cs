@@ -74,7 +74,7 @@ namespace Quickstarts.DataAccessServer
                 application.LoadApplicationConfiguration(false).Wait();
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificate(false, 0).Wait();
+                application.CheckApplicationInstanceCertificates(false).Wait();
 
                 // start the server.
                 application.Start(new DataAccessServer()).Wait();
