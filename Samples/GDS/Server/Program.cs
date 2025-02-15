@@ -64,7 +64,7 @@ namespace Opc.Ua.Gds.Server
                 var config = application.LoadApplicationConfiguration(false).Result;
 
                 // check the application certificate.
-                bool haveAppCertificate = application.CheckApplicationInstanceCertificate(false, 0).Result;
+                bool haveAppCertificate = application.CheckApplicationInstanceCertificates(false).Result;
                 if (!haveAppCertificate)
                 {
                     throw new Exception("Application instance certificate invalid!");
