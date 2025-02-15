@@ -57,7 +57,7 @@ namespace Opc.Ua.Sample
                 application.LoadApplicationConfiguration(false).Wait();
 
                 // check the application certificate.
-                bool certOK = application.CheckApplicationInstanceCertificate(false, 0).Result;
+                bool certOK = application.CheckApplicationInstanceCertificates(false).Result;
                 if (!certOK)
                 {
                     throw new Exception("Application instance certificate invalid!");
