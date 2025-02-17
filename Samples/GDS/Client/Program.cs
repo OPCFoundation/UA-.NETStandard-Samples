@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -57,7 +57,7 @@ namespace Opc.Ua.Gds.Client
                 ApplicationConfiguration config = application.LoadApplicationConfiguration(false).Result;
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificate(false, 0).Wait();
+                application.CheckApplicationInstanceCertificates(false).Wait();
 
                 // run the application interactively.
                 Application.Run(new MainForm(application));

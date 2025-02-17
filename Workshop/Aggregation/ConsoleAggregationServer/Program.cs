@@ -150,7 +150,7 @@ namespace AggregationServer
             ApplicationConfiguration config = await application.LoadApplicationConfiguration(false).ConfigureAwait(false);
 
             // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificate(false, CertificateFactory.DefaultKeySize).ConfigureAwait(false);
+            bool haveAppCertificate = await application.CheckApplicationInstanceCertificates(false).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
                 throw new Exception("Application instance certificate invalid!");

@@ -33,7 +33,6 @@ using System.Text;
 using System.Xml;
 using System.Runtime.Serialization;
 using Opc.Ua;
-using Opc.Ua;
 
 namespace Quickstarts.DataTypes.Instances
 {

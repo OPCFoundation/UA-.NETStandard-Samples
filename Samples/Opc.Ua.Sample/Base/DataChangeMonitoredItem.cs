@@ -668,6 +668,15 @@ namespace Opc.Ua.Sample
             get { return m_filter; }
         }
 
+        public IUserIdentity EffectiveIdentity
+        {
+            get
+            {
+                ISubscription subscription = m_subscription;
+                return subscription?.EffectiveIdentity;
+            }
+        }
+
         /// <summary>
         /// Increments the sample time to the next interval.
         /// </summary>

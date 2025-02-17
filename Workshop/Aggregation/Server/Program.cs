@@ -63,7 +63,7 @@ namespace AggregationServer
                 await application.LoadApplicationConfiguration(false);
 
                 // check the application certificate.
-                await application.CheckApplicationInstanceCertificate(false, 0);
+                await application.CheckApplicationInstanceCertificates(false);
 
                 // start the server.
                 await application.Start(new AggregationServer());

@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -92,11 +92,11 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     Cursor = Cursors.WaitCursor;
 
-                    var endpoint = CoreClientUtils.SelectEndpoint(url, true, 5000);
+                    var endpoint = CoreClientUtils.SelectEndpoint(m_gds.Configuration, url, true, 5000);
 
                     if (UserNameCredentialsRB.Checked)
                     {
-                        if (endpoint.FindUserTokenPolicy(UserTokenType.UserName, (string)null) == null)
+                        if (endpoint.FindUserTokenPolicy(UserTokenType.UserName, (string)null, null) == null)
                         {
                             throw new ArgumentException("Server does not support username/password user identity tokens.");
                         }
