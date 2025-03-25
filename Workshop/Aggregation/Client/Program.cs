@@ -58,7 +58,7 @@ namespace AggregationClient
                 application.LoadApplicationConfiguration(false).Wait();
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificate(false, 0).Wait();
+                application.CheckApplicationInstanceCertificates(false).Wait();
 
                 // run the application interactively.
                 Application.Run(new MainForm(application.ApplicationConfiguration));
