@@ -235,10 +235,10 @@
       <Version>6.5.1</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.5.375.457</Version>
+      <Version>1.5.376.213</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common">
-      <Version>1.5.375.457</Version>
+      <Version>1.5.376.213</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>

@@ -2204,6 +2204,7 @@ namespace Opc.Ua.Sample
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterErrors,
             IList<IMonitoredItem> monitoredItems,
+            bool createDurable,
             ref long globalIdCounter)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
@@ -3086,6 +3087,11 @@ namespace Opc.Ua.Sample
             MonitoringMode currentMode)
         {
             // does nothing.
+        }
+
+        public void RestoreMonitoredItems(IList<IStoredMonitoredItem> itemsToRestore, IList<IMonitoredItem> monitoredItems, IUserIdentity savedOwnerIdentity)
+        {
+            throw new NotImplementedException();
         }
         #endregion
 

@@ -127,16 +127,16 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
-      <Version>1.5.375.457</Version>
+      <Version>1.5.376.213</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>1.5.375.457</Version>
+      <Version>1.5.376.213</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.5.375.457</Version>
+      <Version>1.5.376.213</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
-      <Version>1.5.375.457</Version>
+      <Version>1.5.376.213</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>

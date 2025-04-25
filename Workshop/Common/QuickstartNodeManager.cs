@@ -3095,6 +3095,7 @@ namespace Quickstarts
             IList<ServiceResult>              errors, 
             IList<MonitoringFilterResult>     filterResults, 
             IList<IMonitoredItem>             monitoredItems,
+            bool                              createDurable,
             ref long                          globalIdCounter)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
@@ -4177,6 +4178,11 @@ namespace Quickstarts
 
                 return node;
             }
+        }
+
+        public void RestoreMonitoredItems(IList<IStoredMonitoredItem> itemsToRestore, IList<IMonitoredItem> monitoredItems, IUserIdentity savedOwnerIdentity)
+        {
+            throw new NotImplementedException();
         }
         #endregion
 
