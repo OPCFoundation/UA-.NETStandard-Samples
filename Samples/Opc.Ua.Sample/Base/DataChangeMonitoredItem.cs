@@ -677,6 +677,8 @@ namespace Opc.Ua.Sample
             }
         }
 
+        public bool IsDurable => throw new NotImplementedException();
+
         /// <summary>
         /// Increments the sample time to the next interval.
         /// </summary>
@@ -841,6 +843,21 @@ namespace Opc.Ua.Sample
             }
 
             diagnostics.Enqueue(diagnosticInfo);
+        }
+
+        public bool Publish(OperationContext context, Queue<MonitoredItemNotification> notifications, Queue<DiagnosticInfo> diagnostics, uint maxNotificationsPerPublish)
+        {
+            return Publish(context, notifications, diagnostics);
+        }
+
+        public IStoredMonitoredItem ToStorableMonitoredItem()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
         #endregion
 
