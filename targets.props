@@ -26,11 +26,11 @@
     <When  Condition="'$(VisualStudioVersion)' == '17.0'">
       <PropertyGroup>
         <AnalysisLevel>preview-all</AnalysisLevel>
-        <AppTargetFrameworks>$(DotNetTargetFramework)netcoreapp3.1;net6.0</AppTargetFrameworks>
+        <AppTargetFrameworks>$(DotNetTargetFramework)net8.0</AppTargetFrameworks>
         <AppTargetFramework>net6.0</AppTargetFramework>
-        <TestsTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1;netcoreapp3.1;net6.0</TestsTargetFrameworks>
-        <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0;netstandard2.1;net6.0</LibTargetFrameworks>
-        <LibxTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1;netstandard2.1;net6.0</LibxTargetFrameworks>
+        <TestsTargetFrameworks>$(DotNetTargetFramework);net8.0</TestsTargetFrameworks>
+        <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0;netstandard2.1;net8.0</LibTargetFrameworks>
+        <LibxTargetFrameworks>$(DotNetTargetFramework)netstandard2.1;net8.0</LibxTargetFrameworks>
       </PropertyGroup>
     </When>
     <!-- Visual Studio 2019 -->

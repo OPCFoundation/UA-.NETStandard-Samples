@@ -66,7 +66,7 @@ namespace Quickstarts.DataTypes
                 application.LoadApplicationConfiguration(false).Wait();
 
                 // add the encodable types defined in the shared information model library.
-                application.ApplicationConfiguration.MessageContext.Factory.AddEncodeableTypes(typeof(Quickstarts.DataTypes.Types.Namespaces).Assembly);
+                EncodeableFactory.GlobalFactory.AddEncodeableTypes(typeof(Quickstarts.DataTypes.Types.Namespaces).Assembly);
 
                 // check the application certificate.
                 application.CheckApplicationInstanceCertificates(false).Wait();
