@@ -99,14 +99,14 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 using (ICertificateStore store = CreateStore(trustedStorePath))
                 {
-                    X509CertificateCollection certificates = await store.Enumerate();
+                    X509CertificateCollection certificates = await store.EnumerateAsync();
                     foreach (X509Certificate2 certificate in certificates)
                     {
                         var crls = new X509CRLCollection();
 
                         if (store.SupportsCRLs)
                         {
-                            foreach (X509CRL crl in await store.EnumerateCRLs(certificate))
+                            foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificate))
                             {
                                 crls.Add(crl);
                             }
@@ -126,14 +126,14 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     using (ICertificateStore store = CreateStore(issuerStorePath))
                     {
-                        X509Certificate2Collection certificates = await store.Enumerate();
+                        X509Certificate2Collection certificates = await store.EnumerateAsync();
                         foreach (X509Certificate2 certificate in certificates)
                         {
                             var crls = new X509CRLCollection();
 
                             if (store.SupportsCRLs)
                             {
-                                foreach (X509CRL crl in await store.EnumerateCRLs(certificate))
+                                foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificate))
                                 {
                                     crls.Add(crl);
                                 }
@@ -149,7 +149,7 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 using (ICertificateStore store = CreateStore(rejectedStorePath))
                 {
-                    X509Certificate2Collection certificates = await store.Enumerate();
+                    X509Certificate2Collection certificates = await store.EnumerateAsync();
                     foreach (X509Certificate2 certificate in certificates)
                     {
                         AddCertificate(certificate, Status.Rejected, null);
@@ -385,7 +385,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     using (ICertificateStore store = CreateStore(targetStorePath))
                     {
-                        store.Add(certificate);
+                        store.AddAsync(certificate);
                     }
                 }
                 
@@ -393,7 +393,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     using (ICertificateStore store = CreateStore(oldStorePath))
                     {
-                        store.Delete(certificate.Thumbprint);
+                        store.DeleteAsync(certificate.Thumbprint);
                     }
                 }
             }
@@ -544,7 +544,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         using (ICertificateStore store = CreateStore(m_trustedStorePath))
                         {
-                            store.Add(certificate);
+                            store.AddAsync(certificate);
                         }
                     }
                 }

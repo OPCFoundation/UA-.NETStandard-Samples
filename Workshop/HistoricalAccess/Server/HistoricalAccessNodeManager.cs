@@ -440,7 +440,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Called after creating a MonitoredItem.
         /// </summary>
-        protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, MonitoredItem monitoredItem)
+        protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
         {
             lock (Lock)
             {
@@ -576,7 +576,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Called after deleting a MonitoredItem.
         /// </summary>
-        protected override void OnMonitoredItemDeleted(ServerSystemContext context, NodeHandle handle, MonitoredItem monitoredItem)
+        protected override void OnMonitoredItemDeleted(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
         {
             lock (Lock)
             {
@@ -1684,7 +1684,7 @@ namespace Quickstarts.HistoricalAccessServer
             ServerSystemContext context,
             byte[] continuationPoint)
         {
-            Session session = context.OperationContext.Session;
+            ISession session = context.OperationContext.Session;
 
             if (session == null)
             {
@@ -1708,7 +1708,7 @@ namespace Quickstarts.HistoricalAccessServer
             ServerSystemContext context,
             HistoryReadRequest request)
         {
-            Session session = context.OperationContext.Session;
+            ISession session = context.OperationContext.Session;
 
             if (session == null)
             {

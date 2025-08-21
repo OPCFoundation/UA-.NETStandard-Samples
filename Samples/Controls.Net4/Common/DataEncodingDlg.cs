@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.ComplexTypes;
 
 namespace Opc.Ua.Sample.Controls
 {

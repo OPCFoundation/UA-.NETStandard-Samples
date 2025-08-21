@@ -278,7 +278,7 @@ namespace AggregationServer
         /// <summary>
         /// Converts a ReferenceDescription to an IReference.
         /// </summary>
-        private IReference ToReference(ReferenceDescription reference)
+        private NodeStateReference ToReference(ReferenceDescription reference)
         {
             if (reference.NodeId.IsAbsolute || reference.TypeDefinition.IsAbsolute)
             {
@@ -319,7 +319,7 @@ namespace AggregationServer
         /// <summary>
         /// Returns the next child.
         /// </summary>
-        private IReference NextChild()
+        private NodeStateReference NextChild()
         {
             // check if a specific browse name is requested.
             if (!QualifiedName.IsNull(base.BrowseName))

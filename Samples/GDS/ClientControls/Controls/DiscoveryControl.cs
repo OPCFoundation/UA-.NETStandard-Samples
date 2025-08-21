@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -211,7 +211,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             try
             {
-                foreach (var application in m_lds.FindServers(server.DiscoveryUrl, null))
+                foreach (var application in m_lds.FindServersAsync(server.DiscoveryUrl, null).GetAwaiter().GetResult())
                 {
                     if (fallback == null)
                     {

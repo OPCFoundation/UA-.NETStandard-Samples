@@ -146,7 +146,7 @@
       <Version>9.0.6</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
-      <Version>1.5.376.244</Version>
+      <Version>1.5.377.5-preview</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>

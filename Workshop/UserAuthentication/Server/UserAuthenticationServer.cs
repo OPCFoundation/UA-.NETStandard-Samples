@@ -134,7 +134,7 @@ namespace Quickstarts.UserAuthenticationServer
         /// </summary>
         protected override ResourceManager CreateResourceManager(IServerInternal server, ApplicationConfiguration configuration)
         {
-            ResourceManager resourceManager = new ResourceManager(server, configuration);
+            ResourceManager resourceManager = new ResourceManager(configuration);
 
             // add some localized strings to the resource manager to demonstrate that localization occurs.
             resourceManager.Add("InvalidPassword", "de-DE", "Das Passwort ist nicht gültig für Konto '{0}'.");
@@ -186,7 +186,7 @@ namespace Quickstarts.UserAuthenticationServer
         /// <summary>
         /// Called when a client tries to change its user identity.
         /// </summary>
-        private void SessionManager_ImpersonateUser(Session session, ImpersonateEventArgs args)
+        private void SessionManager_ImpersonateUser(ISession session, ImpersonateEventArgs args)
         {
 
 #if TODO

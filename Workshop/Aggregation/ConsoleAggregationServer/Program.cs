@@ -147,10 +147,10 @@ namespace AggregationServer
             application.ConfigSectionName = "Quickstarts.AggregationServer";
 
             // load the application configuration.
-            ApplicationConfiguration config = await application.LoadApplicationConfiguration(false).ConfigureAwait(false);
+            ApplicationConfiguration config = await application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
 
             // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificates(false).ConfigureAwait(false);
+            bool haveAppCertificate = await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
                 throw new Exception("Application instance certificate invalid!");
@@ -163,7 +163,7 @@ namespace AggregationServer
 
             // start the server.
             server = new AggregationServer();
-            await application.Start(server).ConfigureAwait(false);
+            await application.StartAsync(server).ConfigureAwait(false);
 
             // print reverse connect info
             Console.WriteLine("Reverse Connect Clients:");
@@ -203,13 +203,13 @@ namespace AggregationServer
             server.CurrentInstance.SessionManager.SessionCreated += EventStatus;
         }
 
-        private void EventStatus(Session session, SessionEventReason reason)
+        private void EventStatus(ISession session, SessionEventReason reason)
         {
             lastEventTime = DateTime.UtcNow;
             PrintSessionStatus(session, reason.ToString());
         }
 
-        void PrintSessionStatus(Session session, string reason, bool lastContact = false)
+        private void PrintSessionStatus(ISession session, string reason, bool lastContact = false)
         {
             lock (session.DiagnosticsLock)
             {
@@ -237,10 +237,10 @@ namespace AggregationServer
             {
                 if (DateTime.UtcNow - lastEventTime > TimeSpan.FromMilliseconds(6000))
                 {
-                    IList<Session> sessions = serverStatus.CurrentInstance.SessionManager.GetSessions();
+                    IList<ISession> sessions = serverStatus.CurrentInstance.SessionManager.GetSessions();
                     for (int ii = 0; ii < sessions.Count; ii++)
                     {
-                        Session session = sessions[ii];
+                        ISession session = sessions[ii];
                         PrintSessionStatus(session, "-Status-", true);
                     }
                     lastEventTime = DateTime.UtcNow;

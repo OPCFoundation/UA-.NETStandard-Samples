@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -173,7 +173,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     DataRowView source = row.DataBoundItem as DataRowView;
                     ApplicationRecordDataType argument = (ApplicationRecordDataType)source.Row[6];
-                    m_gds.UnregisterApplication(argument.ApplicationId);
+                    m_gds.UnregisterApplicationAsync(argument.ApplicationId).GetAwaiter().GetResult();
                     rowsToDelete.Add(source.Row);
                 }
 

@@ -96,11 +96,11 @@ namespace Opc.Ua.Server.Controls
         {
             SessionsLV.Items.Clear();
 
-            IList<Session> sessions = m_server.CurrentInstance.SessionManager.GetSessions();
+            IList<ISession> sessions = m_server.CurrentInstance.SessionManager.GetSessions();
 
             for (int ii = 0; ii < sessions.Count; ii++)
             {
-                Session session = sessions[ii];
+                ISession session = sessions[ii];
 
                 lock (session.DiagnosticsLock)
                 {
@@ -136,11 +136,11 @@ namespace Opc.Ua.Server.Controls
         {
             SubscriptionsLV.Items.Clear();
 
-            IList<Subscription> subscriptions = m_server.CurrentInstance.SubscriptionManager.GetSubscriptions();
+            IList<ISubscription> subscriptions = m_server.CurrentInstance.SubscriptionManager.GetSubscriptions();
 
             for (int ii = 0; ii < subscriptions.Count; ii++)
             {
-                Subscription subscription = subscriptions[ii];
+                ISubscription subscription = subscriptions[ii];
 
                 ListViewItem item = new ListViewItem(subscription.Id.ToString());
 

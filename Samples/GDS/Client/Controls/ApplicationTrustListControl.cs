@@ -83,8 +83,8 @@ namespace Opc.Ua.Gds.Client
 
                         if (!Enum.TryParse(TrustListMasksComboBox.SelectedItem.ToString(), out masks))
                             masks = TrustListMasks.All;
-                        var trustList = m_server.ReadTrustList(masks);
-                        var rejectedList = m_server.GetRejectedList();
+                        var trustList = m_server.ReadTrustListAsync(masks).GetAwaiter().GetResult();
+                        var rejectedList = m_server.GetRejectedListAsync().GetAwaiter().GetResult();
                         CertificateStoreControl.Initialize(trustList, rejectedList, true);
                     }
                     else
@@ -123,7 +123,7 @@ namespace Opc.Ua.Gds.Client
             var certificateStoreIdentifier = new CertificateStoreIdentifier(storePath);
             using (var store = certificateStoreIdentifier.OpenStore())
             {
-                X509Certificate2Collection certificates = await store.Enumerate();
+                X509Certificate2Collection certificates = await store.EnumerateAsync();
                 foreach (var certificate in certificates)
                 {
                     List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
@@ -162,7 +162,7 @@ namespace Opc.Ua.Gds.Client
                         }
                     }
 
-                    await store.Delete(certificate.Thumbprint);
+                    await store.DeleteAsync(certificate.Thumbprint);
                 }
             }
         }
@@ -171,7 +171,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                NodeId trustListId = m_gds.GetTrustList(m_application.ApplicationId, NodeId.Null);
+                NodeId trustListId = m_gds.GetTrustListAsync(m_application.ApplicationId, NodeId.Null).GetAwaiter().GetResult();
 
                 if (trustListId == null)
                 {
@@ -179,7 +179,7 @@ namespace Opc.Ua.Gds.Client
                     return;
                 }
 
-                var trustList = m_gds.ReadTrustList(trustListId);
+                var trustList = m_gds.ReadTrustListAsync(trustListId).GetAwaiter().GetResult();
 
                 if (m_application.RegistrationType == RegistrationType.ServerPush)
                 {
@@ -215,10 +215,10 @@ namespace Opc.Ua.Gds.Client
                             {
                                 var x509 = new X509Certificate2(certificate);
 
-                                X509Certificate2Collection certs = store.FindByThumbprint(x509.Thumbprint).Result;
+                                X509Certificate2Collection certs = store.FindByThumbprintAsync(x509.Thumbprint).Result;
                                 if (certs.Count == 0)
                                 {
-                                    store.Add(x509).Wait();
+                                    store.AddAsync(x509).Wait();
                                 }
                             }
                         }
@@ -227,7 +227,7 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (var crl in trustList.TrustedCrls)
                             {
-                                store.AddCRL(new X509CRL(crl));
+                                store.AddCRLAsync(new X509CRL(crl)).GetAwaiter().GetResult();
                             }
                         }
                     }
@@ -244,10 +244,10 @@ namespace Opc.Ua.Gds.Client
                             {
                                 var x509 = new X509Certificate2(certificate);
 
-                                X509Certificate2Collection certs = store.FindByThumbprint(x509.Thumbprint).Result;
+                                X509Certificate2Collection certs = store.FindByThumbprintAsync(x509.Thumbprint).Result;
                                 if (certs.Count == 0)
                                 {
-                                    store.Add(x509).Wait();
+                                    store.AddAsync(x509).Wait();
                                 }
                             }
                         }
@@ -256,7 +256,7 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (var crl in trustList.IssuerCrls)
                             {
-                                store.AddCRL(new X509CRL(crl));
+                                store.AddCRLAsync(new X509CRL(crl)).GetAwaiter().GetResult();
                             }
                         }
                     }
@@ -287,7 +287,7 @@ namespace Opc.Ua.Gds.Client
                     {
                         var trustList = CertificateStoreControl.GetTrustLists();
 
-                        bool applyChanges = m_server.UpdateTrustList(trustList);
+                        bool applyChanges = m_server.UpdateTrustListAsync(trustList).GetAwaiter().GetResult();
 
                         if (applyChanges)
                         {
@@ -323,7 +323,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                m_server.ApplyChanges();
+                m_server.ApplyChangesAsync().GetAwaiter().GetResult();
             }
             catch (Exception exception)
             {
@@ -337,7 +337,7 @@ namespace Opc.Ua.Gds.Client
 
             try
             {
-                m_server.Disconnect();
+                m_server.DisconnectAsync().GetAwaiter().GetResult();
             }
             catch (Exception)
             {

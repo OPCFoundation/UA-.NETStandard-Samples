@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -111,17 +111,17 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (!m_gds.IsConnected)
                 {
-                    new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrls(null));
+                    new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(null).GetAwaiter().GetResult());
                 }
 
                 uint maxNoOfRecords = (uint)NumberOfRecordsUpDown.Value;
 
-                var servers = m_gds.QueryServers(
+                var servers = m_gds.QueryServersAsync(
                     0,
                     ApplicationNameTextBox.Text.Trim(),
                     ApplicationUriTextBox.Text.Trim(),
                     ProductUriTextBox.Text.Trim(),
-                    ServerCapabilitiesTextBox.Tag as IList<string>);
+                    ServerCapabilitiesTextBox.Tag as IList<string>).GetAwaiter().GetResult();
 
                 bool found = false;
 

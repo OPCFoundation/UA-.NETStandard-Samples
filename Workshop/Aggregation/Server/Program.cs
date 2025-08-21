@@ -60,13 +60,13 @@ namespace AggregationServer
             try
             {
                 // load the application configuration.
-                await application.LoadApplicationConfiguration(false);
+                await application.LoadApplicationConfigurationAsync(false);
 
                 // check the application certificate.
-                await application.CheckApplicationInstanceCertificates(false);
+                await application.CheckApplicationInstanceCertificatesAsync(false);
 
                 // start the server.
-                await application.Start(new AggregationServer());
+                await application.StartAsync(new AggregationServer());
 
                 // run the application interactively.
                 Application.Run(new ServerForm(application));

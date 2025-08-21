@@ -54,10 +54,10 @@ namespace Opc.Ua.Gds.Client
             try
             {
                 // load the application configuration.
-                ApplicationConfiguration config = application.LoadApplicationConfiguration(false).Result;
+                ApplicationConfiguration config = application.LoadApplicationConfigurationAsync(false).Result;
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificates(false).Wait();
+                application.CheckApplicationInstanceCertificatesAsync(false).GetAwaiter().GetResult();
 
                 // run the application interactively.
                 Application.Run(new MainForm(application));

@@ -183,7 +183,7 @@ namespace AggregationClient
                 {
                     // update the session.
                     m_session.ReturnDiagnostics = DiagnosticsMasks.ServiceSymbolicIdAndText;
-                    m_session.UpdateSession(identity, preferredLocales);
+                    m_session.UpdateSessionAsync(identity, preferredLocales).GetAwaiter().GetResult();
                 }
                 finally
                 {

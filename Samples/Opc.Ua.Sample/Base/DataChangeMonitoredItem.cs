@@ -322,10 +322,14 @@ namespace Opc.Ua.Sample
             get { return m_source.NodeManager; }
         }
 
+        public NodeId NodeId {
+            get { return m_source.Node.NodeId; }
+        }
+
         /// <summary>
         /// The session for the monitored item.
         /// </summary>
-        public Session Session
+        public ISession Session
         {
             get
             {

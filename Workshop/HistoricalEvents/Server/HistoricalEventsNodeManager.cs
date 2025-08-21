@@ -636,7 +636,7 @@ namespace Quickstarts.HistoricalEvents.Server
             ServerSystemContext context,
             byte[] continuationPoint)
         {
-            Session session = context.OperationContext.Session;
+            ISession session = context.OperationContext.Session;
 
             if (session == null)
             {
@@ -660,7 +660,7 @@ namespace Quickstarts.HistoricalEvents.Server
             ServerSystemContext context,
             HistoryReadRequest request)
         {
-            Session session = context.OperationContext.Session;
+            ISession session = context.OperationContext.Session;
 
             if (session == null)
             {

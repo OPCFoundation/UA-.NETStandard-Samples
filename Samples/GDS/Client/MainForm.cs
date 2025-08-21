@@ -248,7 +248,7 @@ namespace Opc.Ua.Gds.Client
                     return;
                 }
 
-                await m_server.Connect(endpoint.Description.EndpointUrl);
+                await m_server.ConnectAsync(endpoint.Description.EndpointUrl);
 
                 ServerStatusPanel.Initialize(m_server);
                 await CertificatePanel.Initialize(m_configuration, m_gds, m_server, m_registeredApplication, false);
@@ -435,7 +435,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (m_server.IsConnected)
                 {
-                    m_server.Disconnect();
+                    m_server.DisconnectAsync().GetAwaiter().GetResult();
                     UpdateStatus(true, DateTime.UtcNow, "Disconnected {0}", m_server.Endpoint);
                     ServerStatusPanel.Initialize(null);
                 }
@@ -452,7 +452,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (!m_gdsConfigured)
                 {
-                    string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrls(m_lds));
+                    string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).GetAwaiter().GetResult());
                     if (uri != null)
                     {
                         m_configuration.GlobalDiscoveryServerUrl = m_gds.EndpointUrl;
@@ -608,11 +608,11 @@ namespace Opc.Ua.Gds.Client
         private void SelectGdsButton_Click(object sender, EventArgs e)
         {
             m_gds.AdminCredentials = null;
-            m_gds.Disconnect();
+            m_gds.DisconnectAsync().GetAwaiter().GetResult();
             m_gdsConfigured = false;
             UpdateGdsStatus(true, DateTime.UtcNow, "Disconnected");
 
-            string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrls(m_lds));
+            string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).GetAwaiter().GetResult());
             if (uri != null)
             {
                 m_configuration.GlobalDiscoveryServerUrl = m_gds.EndpointUrl;

@@ -224,10 +224,10 @@ namespace Opc.Ua.Gds.Server
             };
 
             // load the application configuration.
-            ApplicationConfiguration config = await application.LoadApplicationConfiguration(false).ConfigureAwait(false);
+            ApplicationConfiguration config = await application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
 
             // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificates(false).ConfigureAwait(false);
+            bool haveAppCertificate = await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
                 throw new Exception("Application instance certificate invalid!");
@@ -256,7 +256,7 @@ namespace Opc.Ua.Gds.Server
                 userDatabase,
                 true,
                 createStandardUsers);
-            await application.Start(server).ConfigureAwait(false);
+            await application.StartAsync(server).ConfigureAwait(false);
 
             // print endpoint info
             var endpoints = application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
@@ -310,13 +310,13 @@ namespace Opc.Ua.Gds.Server
             return createStandardUsers;
         }
 
-        private void EventStatus(Session session, SessionEventReason reason)
+        private void EventStatus(ISession session, SessionEventReason reason)
         {
             lastEventTime = DateTime.UtcNow;
             PrintSessionStatus(session, reason.ToString());
         }
 
-        void PrintSessionStatus(Session session, string reason, bool lastContact = false)
+        void PrintSessionStatus(ISession session, string reason, bool lastContact = false)
         {
             lock (session.DiagnosticsLock)
             {
@@ -343,10 +343,10 @@ namespace Opc.Ua.Gds.Server
             {
                 if (DateTime.UtcNow - lastEventTime > TimeSpan.FromMilliseconds(6000))
                 {
-                    IList<Session> sessions = server.CurrentInstance.SessionManager.GetSessions();
+                    IList<ISession> sessions = server.CurrentInstance.SessionManager.GetSessions();
                     for (int ii = 0; ii < sessions.Count; ii++)
                     {
-                        Session session = sessions[ii];
+                        ISession session = sessions[ii];
                         PrintSessionStatus(session, "-Status-", true);
                     }
                     lastEventTime = DateTime.UtcNow;

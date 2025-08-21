@@ -61,10 +61,10 @@ namespace Opc.Ua.Gds.Server
             try
             {
                 // load the application configuration.
-                var config = application.LoadApplicationConfiguration(false).Result;
+                var config = application.LoadApplicationConfigurationAsync(false).Result;
 
                 // check the application certificate.
-                bool haveAppCertificate = application.CheckApplicationInstanceCertificates(false).Result;
+                bool haveAppCertificate = application.CheckApplicationInstanceCertificatesAsync(false).Result;
                 if (!haveAppCertificate)
                 {
                     throw new Exception("Application instance certificate invalid!");
@@ -88,7 +88,7 @@ namespace Opc.Ua.Gds.Server
                     userDatabase,
                     true,
                     createStandardUsers);
-                application.Start(server).Wait();
+                application.StartAsync(server).Wait();
 
                 // run the application interactively.
                 System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration));

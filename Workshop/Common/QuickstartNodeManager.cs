@@ -3281,7 +3281,7 @@ namespace Quickstarts
             }
 
             // validate the monitoring filter.
-            Range euRange = null;
+            Opc.Ua.Range euRange = null;
             MonitoringFilter filterToUse = null;
 
             ServiceResult error = ValidateMonitoringFilter(
@@ -3391,7 +3391,7 @@ namespace Quickstarts
             uint queueSize,
             ExtensionObject filter,
             out MonitoringFilter filterToUse,
-            out Range range,
+            out Opc.Ua.Range range,
             out MonitoringFilterResult result)
         {
             range = null;
@@ -3488,7 +3488,7 @@ namespace Quickstarts
                     return StatusCodes.BadFilterNotAllowed;
                 }
                 
-                range = property.Value as Range;
+                range = property.Value as Opc.Ua.Range;
                 
                 if (range == null)
                 {
@@ -3675,7 +3675,7 @@ namespace Quickstarts
             }
 
             // validate the monitoring filter.
-            Range euRange = null;
+            Opc.Ua.Range euRange = null;
             MonitoringFilter filterToUse = null;
 
             ServiceResult error = ValidateMonitoringFilter(

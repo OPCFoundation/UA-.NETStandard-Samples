@@ -57,7 +57,7 @@ namespace Quickstarts.ReferenceServer
             try
             {
                 // load the application configuration.
-                ApplicationConfiguration config = application.LoadApplicationConfiguration(false).Result;
+                ApplicationConfiguration config = application.LoadApplicationConfigurationAsync(false).Result;
 
                 LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
 #if DEBUG
@@ -66,7 +66,7 @@ namespace Quickstarts.ReferenceServer
                 SerilogTraceLogger.Create(loggerConfiguration, config);
 
                 // check the application certificate.
-                bool certOk = application.CheckApplicationInstanceCertificates(false).Result;
+                bool certOk = application.CheckApplicationInstanceCertificatesAsync(false).Result;
                 if (!certOk)
                 {
                     throw new Exception("Application instance certificate invalid!");
@@ -77,7 +77,7 @@ namespace Quickstarts.ReferenceServer
                 Quickstarts.Servers.Utils.AddDefaultNodeManagers(server);
 
                 // start the server.
-                application.Start(server).Wait();
+                application.StartAsync(server).Wait();
 
                 // check whether the invalid certificates dialog should be displayed.
                 bool showCertificateValidationDialog = false;

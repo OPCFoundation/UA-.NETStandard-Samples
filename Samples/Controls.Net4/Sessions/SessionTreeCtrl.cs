@@ -37,6 +37,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -204,7 +205,7 @@ namespace Opc.Ua.Sample.Controls
                     throw ServiceResultException.Create(StatusCodes.BadConfigurationError, "ApplicationCertificate must be specified.");
                 }
 
-                clientCertificate = await m_configuration.SecurityConfiguration.ApplicationCertificate.Find(true);
+                clientCertificate = await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true);
 
                 if (clientCertificate == null)
                 {
@@ -214,7 +215,7 @@ namespace Opc.Ua.Sample.Controls
                 // load certificate chain
                 clientCertificateChain = new X509Certificate2Collection(clientCertificate);
                 List<CertificateIdentifier> issuers = new List<CertificateIdentifier>();
-                await m_configuration.CertificateValidator.GetIssuers(clientCertificate, issuers);
+                await m_configuration.CertificateValidator.GetIssuersAsync(clientCertificate, issuers);
                 for (int i = 0; i < issuers.Count; i++)
                 {
                     clientCertificateChain.Add(issuers[i].Certificate);
@@ -1369,7 +1370,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 PreferredLocales = new string[] { locale };
-                session.ChangePreferredLocales(new StringCollection(PreferredLocales));
+                session.ChangePreferredLocalesAsync(new StringCollection(PreferredLocales), CancellationToken.None);
             }
             catch (Exception exception)
             {
