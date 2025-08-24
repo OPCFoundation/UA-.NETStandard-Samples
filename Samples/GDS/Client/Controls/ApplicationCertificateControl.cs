@@ -326,14 +326,9 @@ namespace Opc.Ua.Gds.Client
             {
                 NodeId requestId = NodeId.Parse(m_application.CertificateRequestId);
 
-                byte[] privateKeyPFX = null;
-                byte[][] issuerCertificates = null;
-
-                byte[] certificate = m_gds.FinishRequest(
+                (byte[] certificate, byte[] privateKeyPFX, byte[][] issuerCertificates) = await m_gds.FinishRequestAsync(
                     m_application.ApplicationId,
-                    requestId,
-                    out privateKeyPFX,
-                    out issuerCertificates);
+                    requestId);
 
                 if (certificate == null)
                 {
