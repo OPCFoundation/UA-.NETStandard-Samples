@@ -1338,7 +1338,7 @@ namespace Opc.Ua.Gds.Client
 
                 ApplicationRecordDataType recordToReplace = ApplicationIdTextBox.Tag as ApplicationRecordDataType;
 
-                var records = m_gds.FindApplication(applicationUri);
+                var records = m_gds.FindApplicationAsync(applicationUri).GetAwaiter().GetResult();
 
                 if (records != null)
                 {
@@ -1374,7 +1374,7 @@ namespace Opc.Ua.Gds.Client
                 recordToReplace.DiscoveryUrls = urls;
                 recordToReplace.ServerCapabilities = (capabilities != null)?new StringCollection(capabilities):new StringCollection();
 
-                var applicationId = m_gds.RegisterApplication(recordToReplace);
+                var applicationId = m_gds.RegisterApplicationAsync(recordToReplace).GetAwaiter().GetResult();
 
                 recordToReplace.ApplicationId = applicationId;
 
@@ -1445,7 +1445,7 @@ namespace Opc.Ua.Gds.Client
 
             try
             {
-                var records = m_gds.FindApplication(applicationUri);
+                var records = m_gds.FindApplicationAsync(applicationUri).GetAwaiter().GetResult();
 
                 if (records != null)
                 {
@@ -1530,7 +1530,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (ApplicationIdTextBox.Tag is ApplicationRecordDataType record)
                 {
-                    m_gds.UnregisterApplication(record.ApplicationId);
+                    m_gds.UnregisterApplicationAsync(record.ApplicationId).GetAwaiter().GetResult();
 
                     ApplicationIdTextBox.Text = null;
                     ApplicationIdTextBox.Tag = null;
@@ -1854,7 +1854,7 @@ namespace Opc.Ua.Gds.Client
 
         private void PickServerButton_Click(object sender, EventArgs e)
         {
-            string uri = new SelectPushServerDialog().ShowDialog(null, m_pushClient, m_gds.GetDefaultServerUrls(null));
+            string uri = new SelectPushServerDialog().ShowDialog(null, m_pushClient, m_gds.GetDefaultServerUrlsAsync(null).GetAwaiter().GetResult());
             if (uri != null && m_pushClient.IsConnected)
             {
                 EndpointDescription endpoint = m_pushClient.Endpoint.Description;

@@ -368,7 +368,7 @@ namespace Opc.Ua.Sample.Controls
                 new PerformanceTestDlg().ShowDialog(
                     m_configuration,
                     m_endpoints,
-                    await m_configuration.SecurityConfiguration.ApplicationCertificate.Find(true));
+                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true));
             }
             catch (Exception exception)
             {

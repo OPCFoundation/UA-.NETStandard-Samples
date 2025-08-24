@@ -313,7 +313,7 @@ namespace Opc.Ua.Client.Controls
 
                             if (certificate != null)
                             {
-                                store.Add(certificate);
+                                store.AddAsync(certificate);
                             }
                         }
                     }
@@ -479,7 +479,7 @@ namespace Opc.Ua.Client.Controls
 
                         using (ICertificateStore store = storeId.OpenStore())
                         {
-                            store.Add(id.Certificate);
+                            store.AddAsync(id.Certificate);
                         }
                     }
 

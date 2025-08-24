@@ -109,7 +109,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         }
                     }
 
-                    m_pushServer.Connect(url).Wait();
+                    m_pushServer.ConnectAsync(url).Wait();
                 }
                 finally
                 {

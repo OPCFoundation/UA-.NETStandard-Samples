@@ -546,7 +546,7 @@ namespace TestData
         protected override void OnMonitoredItemCreated(
             ServerSystemContext context,
             NodeHandle handle,
-            MonitoredItem monitoredItem)
+            ISampledDataChangeMonitoredItem monitoredItem)
         {
             if (SystemScanRequired(handle.MonitoredNode, monitoredItem))
             {
@@ -569,7 +569,7 @@ namespace TestData
         protected override void OnMonitoredItemModified(
             ServerSystemContext context,
             NodeHandle handle,
-            MonitoredItem monitoredItem)
+            ISampledDataChangeMonitoredItem monitoredItem)
         {
             if (SystemScanRequired(handle.MonitoredNode, monitoredItem))
             {
@@ -591,7 +591,7 @@ namespace TestData
         protected override void OnMonitoredItemDeleted(
             ServerSystemContext context,
             NodeHandle handle,
-            MonitoredItem monitoredItem)
+            ISampledDataChangeMonitoredItem monitoredItem)
         {
             // check for variables that need to be scanned.
             if (SystemScanRequired(handle.MonitoredNode, monitoredItem))
@@ -611,7 +611,7 @@ namespace TestData
         protected override void OnMonitoringModeChanged(
             ServerSystemContext context,
             NodeHandle handle,
-            MonitoredItem monitoredItem,
+            ISampledDataChangeMonitoredItem monitoredItem,
             MonitoringMode previousMode,
             MonitoringMode monitoringMode)
         {

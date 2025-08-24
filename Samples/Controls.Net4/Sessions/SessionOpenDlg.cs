@@ -260,7 +260,7 @@ namespace Opc.Ua.Sample.Controls
                 session.Open(sessionName, (uint)session.SessionTimeout, identity, preferredLocales, checkDomain ?? true);
 
                 var typeSystemLoader = new ComplexTypeSystem(session);
-                typeSystemLoader.Load().Wait();
+                typeSystemLoader.LoadAsync().AsTask().GetAwaiter().GetResult();
 
                 OpenComplete(null);
             }

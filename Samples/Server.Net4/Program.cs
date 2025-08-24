@@ -54,17 +54,17 @@ namespace Opc.Ua.Sample
 
             try
             {
-                application.LoadApplicationConfiguration(false).Wait();
+                application.LoadApplicationConfigurationAsync(false).GetAwaiter().GetResult();
 
                 // check the application certificate.
-                bool certOK = application.CheckApplicationInstanceCertificates(false).Result;
+                bool certOK = application.CheckApplicationInstanceCertificatesAsync(false).Result;
                 if (!certOK)
                 {
                     throw new Exception("Application instance certificate invalid!");
                 }
 
                 // start the server.
-                application.Start(new SampleServer()).Wait();
+                application.StartAsync(new SampleServer()).Wait();
 
                 // run the application interactively.
                 Application.Run(new ServerForm(application));

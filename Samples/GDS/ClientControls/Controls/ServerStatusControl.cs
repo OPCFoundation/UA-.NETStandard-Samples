@@ -92,7 +92,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             try
             {
-                m_server.ApplyChanges();
+                m_server.ApplyChangesAsync().GetAwaiter().GetResult();
             }
             catch (Exception exception)
             {
@@ -106,7 +106,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             try
             {
-                m_server.Disconnect();
+                m_server.DisconnectAsync().GetAwaiter().GetResult();
             }
             catch (Exception)
             {

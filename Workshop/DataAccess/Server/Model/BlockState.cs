@@ -244,7 +244,7 @@ namespace Quickstarts.DataAccessServer
 
                     if (tag.EuRange.Length >= 4)
                     {
-                        node.InstrumentRange = new PropertyState<Range>(node);
+                        node.InstrumentRange = new PropertyState<Opc.Ua.Range>(node);
                     }
 
                     variable = node;
@@ -345,14 +345,14 @@ namespace Quickstarts.DataAccessServer
                     {
                         if (tag.EuRange.Length >= 2 && node.EURange != null)
                         {
-                            Range range = new Range(tag.EuRange[0], tag.EuRange[1]);
+                            Opc.Ua.Range range = new Opc.Ua.Range(tag.EuRange[0], tag.EuRange[1]);
                             node.EURange.Value = range;
                             node.EURange.Timestamp = tag.Block.Timestamp;
                         }
 
                         if (tag.EuRange.Length >= 4 && node.InstrumentRange != null)
                         {
-                            Range range = new Range(tag.EuRange[2], tag.EuRange[3]);
+                            Opc.Ua.Range range = new Opc.Ua.Range(tag.EuRange[2], tag.EuRange[3]);
                             node.InstrumentRange.Value = range;
                             node.InstrumentRange.Timestamp = tag.Block.Timestamp;
                         }
