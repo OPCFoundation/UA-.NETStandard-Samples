@@ -228,7 +228,7 @@ namespace Opc.Ua.Client.Controls
 
                         foreach (string thumbprint in thumbprints)
                         {
-                            X509Certificate2Collection certificates = await store.FindByThumbprint(thumbprint);
+                            X509Certificate2Collection certificates = await store.FindByThumbprintAsync(thumbprint);
 
                             if (certificates.Count > 0)
                             {
@@ -242,7 +242,7 @@ namespace Opc.Ua.Client.Controls
                     {
                         Instructions = "No certificates are in the store.";
 
-                        X509Certificate2Collection certificates = await store.Enumerate();
+                        X509Certificate2Collection certificates = await store.EnumerateAsync();
                         foreach (X509Certificate2 certificate in certificates)
                         {
                             AddItem(certificate);
@@ -457,7 +457,7 @@ namespace Opc.Ua.Client.Controls
                         X509Certificate2 certificate = ItemsLV.SelectedItems[ii].Tag as X509Certificate2;
 
                         // check for private key.
-                        X509Certificate2Collection certificate2 = await store.FindByThumbprint(certificate.Thumbprint);
+                        X509Certificate2Collection certificate2 = await store.FindByThumbprintAsync(certificate.Thumbprint);
 
                         if (!yesToAll && (certificate2.Count > 0) && certificate2[0].HasPrivateKey)
                         {
@@ -482,7 +482,7 @@ namespace Opc.Ua.Client.Controls
 
                         if (certificate != null)
                         {
-                            await store.Delete(certificate.Thumbprint);
+                            await store.DeleteAsync(certificate.Thumbprint);
                             itemsToDelete.Add(ItemsLV.SelectedItems[ii]);
                         }
                     }
@@ -559,7 +559,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     using (ICertificateStore store = m_storeId.OpenStore())
                     {
-                        store.Add(id.Certificate);
+                        store.AddAsync(id.Certificate);
                     }
 
                     AddItem(id.Certificate);

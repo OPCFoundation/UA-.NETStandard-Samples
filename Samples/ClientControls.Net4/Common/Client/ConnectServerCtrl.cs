@@ -332,7 +332,7 @@ namespace Opc.Ua.Client.Controls
             {
                 UpdateStatus(false, DateTime.Now, "Connected, loading complex type system.");
                 var typeSystemLoader = new ComplexTypeSystem(m_session);
-                await typeSystemLoader.Load();
+                await typeSystemLoader.LoadAsync();
             }
             catch (Exception e)
             {
@@ -400,7 +400,7 @@ namespace Opc.Ua.Client.Controls
             {
                 UpdateStatus(false, DateTime.Now, "Connected, loading complex type system.");
                 var typeSystemLoader = new ComplexTypeSystem(m_session);
-                await typeSystemLoader.Load();
+                await typeSystemLoader.LoadAsync();
             }
             catch (Exception e)
             {

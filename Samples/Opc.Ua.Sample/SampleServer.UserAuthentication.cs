@@ -68,7 +68,7 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// Called when a client tries to change its user identity.
         /// </summary>
-        private void SessionManager_ImpersonateUser(Session session, ImpersonateEventArgs args)
+        private void SessionManager_ImpersonateUser(ISession session, ImpersonateEventArgs args)
         {
             // check for a WSS token.
             IssuedIdentityToken wssToken = args.NewIdentity as IssuedIdentityToken;
