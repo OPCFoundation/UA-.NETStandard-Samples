@@ -71,7 +71,7 @@ namespace Opc.Ua.Gds.Client
             ApplyChangesButton.Enabled = false;
         }
 
-        private void ReloadTrustListButton_Click(object sender, EventArgs e)
+        private async void ReloadTrustListButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -83,8 +83,8 @@ namespace Opc.Ua.Gds.Client
 
                         if (!Enum.TryParse(TrustListMasksComboBox.SelectedItem.ToString(), out masks))
                             masks = TrustListMasks.All;
-                        var trustList = m_server.ReadTrustListAsync(masks).GetAwaiter().GetResult();
-                        var rejectedList = m_server.GetRejectedListAsync().GetAwaiter().GetResult();
+                        var trustList = await m_server.ReadTrustListAsync(masks);
+                        var rejectedList = await m_server.GetRejectedListAsync();
                         CertificateStoreControl.Initialize(trustList, rejectedList, true);
                     }
                     else
@@ -103,14 +103,14 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void MergeWithGdsButton_Click(object sender, EventArgs e)
+        private async void MergeWithGdsButton_Click(object sender, EventArgs e)
         {
-            PullFromGds(false);
+            await PullFromGdsAsync(false);
         }
 
-        private void PullFromGdsButton_Click(object sender, EventArgs e)
+        private async void PullFromGdsButton_Click(object sender, EventArgs e)
         {
-            PullFromGds(true);
+            await PullFromGdsAsync(true);
         }
 
         private async Task DeleteExistingFromStore(string storePath)
@@ -167,11 +167,11 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void PullFromGds(bool deleteBeforeAdd)
+        private async Task PullFromGdsAsync(bool deleteBeforeAdd)
         {
             try
             {
-                NodeId trustListId = m_gds.GetTrustListAsync(m_application.ApplicationId, NodeId.Null).GetAwaiter().GetResult();
+                NodeId trustListId = await m_gds.GetTrustListAsync(m_application.ApplicationId, NodeId.Null);
 
                 if (trustListId == null)
                 {
@@ -179,7 +179,7 @@ namespace Opc.Ua.Gds.Client
                     return;
                 }
 
-                var trustList = m_gds.ReadTrustListAsync(trustListId).GetAwaiter().GetResult();
+                var trustList = await m_gds.ReadTrustListAsync(trustListId);
 
                 if (m_application.RegistrationType == RegistrationType.ServerPush)
                 {
@@ -199,8 +199,8 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (deleteBeforeAdd)
                     {
-                        DeleteExistingFromStore(m_trustListStorePath).Wait();
-                        DeleteExistingFromStore(m_issuerListStorePath).Wait(); ;
+                        await DeleteExistingFromStore(m_trustListStorePath);
+                        await DeleteExistingFromStore(m_issuerListStorePath);
                     }
                 }
 
@@ -215,10 +215,10 @@ namespace Opc.Ua.Gds.Client
                             {
                                 var x509 = new X509Certificate2(certificate);
 
-                                X509Certificate2Collection certs = store.FindByThumbprintAsync(x509.Thumbprint).Result;
+                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint);
                                 if (certs.Count == 0)
                                 {
-                                    store.AddAsync(x509).Wait();
+                                    await store.AddAsync(x509);
                                 }
                             }
                         }
@@ -227,7 +227,7 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (var crl in trustList.TrustedCrls)
                             {
-                                store.AddCRLAsync(new X509CRL(crl)).GetAwaiter().GetResult();
+                                await store.AddCRLAsync(new X509CRL(crl));
                             }
                         }
                     }
@@ -244,10 +244,10 @@ namespace Opc.Ua.Gds.Client
                             {
                                 var x509 = new X509Certificate2(certificate);
 
-                                X509Certificate2Collection certs = store.FindByThumbprintAsync(x509.Thumbprint).Result;
+                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint);
                                 if (certs.Count == 0)
                                 {
-                                    store.AddAsync(x509).Wait();
+                                    await store.AddAsync(x509);
                                 }
                             }
                         }
@@ -256,7 +256,7 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (var crl in trustList.IssuerCrls)
                             {
-                                store.AddCRLAsync(new X509CRL(crl)).GetAwaiter().GetResult();
+                                await store.AddCRLAsync(new X509CRL(crl));
                             }
                         }
                     }
@@ -277,7 +277,7 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void PushToServerButton_Click(object sender, EventArgs e)
+        private async void PushToServerButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -287,7 +287,7 @@ namespace Opc.Ua.Gds.Client
                     {
                         var trustList = CertificateStoreControl.GetTrustLists();
 
-                        bool applyChanges = m_server.UpdateTrustListAsync(trustList).GetAwaiter().GetResult();
+                        bool applyChanges = await m_server.UpdateTrustListAsync(trustList);
 
                         if (applyChanges)
                         {
@@ -319,11 +319,11 @@ namespace Opc.Ua.Gds.Client
             ((Control)sender).BackColor = Color.MidnightBlue;
         }
 
-        private void ApplyChangesButton_Click(object sender, EventArgs e)
+        private async void ApplyChangesButton_Click(object sender, EventArgs e)
         {
             try
             {
-                m_server.ApplyChangesAsync().GetAwaiter().GetResult();
+                await m_server.ApplyChangesAsync();
             }
             catch (Exception exception)
             {
@@ -337,7 +337,7 @@ namespace Opc.Ua.Gds.Client
 
             try
             {
-                m_server.DisconnectAsync().GetAwaiter().GetResult();
+                await m_server.DisconnectAsync();
             }
             catch (Exception)
             {

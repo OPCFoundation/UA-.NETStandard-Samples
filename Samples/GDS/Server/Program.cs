@@ -61,10 +61,10 @@ namespace Opc.Ua.Gds.Server
             try
             {
                 // load the application configuration.
-                var config = application.LoadApplicationConfigurationAsync(false).Result;
+                var config = application.LoadApplicationConfigurationAsync(false).GetAwaiter().GetResult();
 
                 // check the application certificate.
-                bool haveAppCertificate = application.CheckApplicationInstanceCertificatesAsync(false).Result;
+                bool haveAppCertificate = application.CheckApplicationInstanceCertificatesAsync(false).GetAwaiter().GetResult();
                 if (!haveAppCertificate)
                 {
                     throw new Exception("Application instance certificate invalid!");
@@ -102,7 +102,7 @@ namespace Opc.Ua.Gds.Server
         private static bool ConfigureUsers(SqlUsersDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
-            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().GetAwaiter().GetResult();
             if (!createStandardUsers)
             {
                 //Delete existing standard users

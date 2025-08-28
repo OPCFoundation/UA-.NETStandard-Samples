@@ -27,11 +27,6 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-using Mono.Options;
-using Opc.Ua.Configuration;
-using Opc.Ua.Gds.Server.Database.Linq;
-using Opc.Ua.Server;
-using Opc.Ua.Server.UserDatabase;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -40,7 +35,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
+using Mono.Options;
+using Opc.Ua.Configuration;
+using Opc.Ua.Gds.Server.Database.Linq;
+using Opc.Ua.Server;
+using Opc.Ua.Server.UserDatabase;
 
 namespace Opc.Ua.Gds.Server
 {
@@ -95,7 +94,7 @@ namespace Opc.Ua.Gds.Server
     public static class Program
     {
 
-        public static int Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             Console.WriteLine(".Net Core OPC UA Global Discovery Server");
 
@@ -131,8 +130,8 @@ namespace Opc.Ua.Gds.Server
                 return (int)ExitCode.ErrorInvalidCommandLine;
             }
 
-            NetCoreGlobalDiscoveryServer server = new NetCoreGlobalDiscoveryServer();
-            server.Run();
+            var server = new NetCoreGlobalDiscoveryServer();
+            await server.RunAsync();
 
             return (int)NetCoreGlobalDiscoveryServer.ExitCode;
         }
@@ -149,13 +148,13 @@ namespace Opc.Ua.Gds.Server
         {
         }
 
-        public void Run()
+        public async Task RunAsync()
         {
 
             try
             {
                 exitCode = ExitCode.ErrorServerNotStarted;
-                ConsoleGlobalDiscoveryServer().Wait();
+                await ConsoleGlobalDiscoveryServer();
                 Console.WriteLine("Server started. Press Ctrl-C to exit...");
                 exitCode = ExitCode.ErrorServerRunning;
             }
@@ -192,7 +191,7 @@ namespace Opc.Ua.Gds.Server
                 {
                     // Stop status thread
                     server = null;
-                    status.Wait();
+                    await status;
                     // Stop server and dispose
                     _server.Stop();
                 }
@@ -278,7 +277,7 @@ namespace Opc.Ua.Gds.Server
         private bool ConfigureUsers(JsonUserDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
-            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().GetAwaiter().GetResult();
 
             if (!createStandardUsers)
             {

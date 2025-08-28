@@ -83,7 +83,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
         }
         
-        private void ApplyChangesButton_Click(object sender, EventArgs e)
+        private async void ApplyChangesButton_Click(object sender, EventArgs e)
         {
             if (m_server == null)
             {
@@ -92,7 +92,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             try
             {
-                m_server.ApplyChangesAsync().GetAwaiter().GetResult();
+                await m_server.ApplyChangesAsync();
             }
             catch (Exception exception)
             {
@@ -106,7 +106,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             try
             {
-                m_server.DisconnectAsync().GetAwaiter().GetResult();
+                await m_server.DisconnectAsync();
             }
             catch (Exception)
             {

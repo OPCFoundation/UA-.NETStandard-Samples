@@ -72,7 +72,7 @@ namespace Opc.Ua.Gds.Client
             m_server.ServerStatusChanged += Server_StatusNotification;
             m_server.ConnectionStatusChanged += Server_ConnectionStatusChanged;
 
-            RegistrationPanel.Initialize(m_gds, m_server, null, m_configuration);
+            RegistrationPanel.InitializeAsync(m_gds, m_server, null, m_configuration).GetAwaiter().GetResult();
 
             m_application.ApplicationConfiguration.CertificateValidator.CertificateValidation += CertificateValidator_CertificateValidation;
             UpdateStatus(true, DateTime.MinValue, "---");
@@ -217,7 +217,7 @@ namespace Opc.Ua.Gds.Client
             ServerStatusButton.Enabled = endpoint != null;
         }
 
-        private void SelectServerButton_Click(object sender, EventArgs e)
+        private async void SelectServerButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -226,7 +226,7 @@ namespace Opc.Ua.Gds.Client
                 if (endpoint != null)
                 {
                     SetServer(endpoint);
-                    RegistrationPanel.Initialize(m_gds, m_server, endpoint, m_configuration);
+                    await RegistrationPanel.InitializeAsync(m_gds, m_server, endpoint, m_configuration);
                     SelectGdsButton.Visible = true;
                     return;
                 }

@@ -152,13 +152,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the controls after a node is selected.
         /// </summary>
-        protected override void SelectNode()
+        protected override async void SelectNode()
         {
             base.SelectNode();
 
             if (m_certificateListCtrl != null)
             {
-                m_certificateListCtrl.Initialize(SelectedStore, null).Wait();
+                await m_certificateListCtrl.InitializeAsync(SelectedStore, null);
             }
         }
 

@@ -54,7 +54,7 @@ namespace Opc.Ua.Gds.Client
             try
             {
                 // load the application configuration.
-                ApplicationConfiguration config = application.LoadApplicationConfigurationAsync(false).Result;
+                ApplicationConfiguration config = application.LoadApplicationConfigurationAsync(false).GetAwaiter().GetResult();
 
                 // check the application certificate.
                 application.CheckApplicationInstanceCertificatesAsync(false).GetAwaiter().GetResult();

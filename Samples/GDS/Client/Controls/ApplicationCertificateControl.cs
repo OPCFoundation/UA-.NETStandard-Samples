@@ -170,15 +170,15 @@ namespace Opc.Ua.Gds.Client
         {
             if (m_application.RegistrationType == RegistrationType.ServerPush)
             {
-                RequestNewCertificatePushMode(sender, e).GetAwaiter().GetResult();
+                await RequestNewCertificatePushModeAsync(sender, e);
             }
             else
             {
-                await RequestNewCertificatePullMode(sender, e);
+                await RequestNewCertificatePullModeAsync(sender, e);
             }
         }
 
-        private async Task RequestNewCertificatePushMode(object sender, EventArgs e)
+        private async Task RequestNewCertificatePushModeAsync(object sender, EventArgs e)
         {
             try
             {
@@ -223,7 +223,7 @@ namespace Opc.Ua.Gds.Client
             }
 
         }
-        private async Task RequestNewCertificatePullMode(object sender, EventArgs e)
+        private async Task RequestNewCertificatePullModeAsync(object sender, EventArgs e)
         {
             try
             {
@@ -276,14 +276,14 @@ namespace Opc.Ua.Gds.Client
                 if (m_certificate == null)
                 {
                     // no private key
-                    requestId = m_gds.StartNewKeyPairRequestAsync(
+                    requestId = await m_gds.StartNewKeyPairRequestAsync(
                         m_application.ApplicationId,
                         NodeId.Null,
                         NodeId.Null,
                         Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                         domainNames,
                         "PFX",
-                        m_certificatePassword).GetAwaiter().GetResult();
+                        m_certificatePassword);
                 }
                 else
                 {
@@ -296,7 +296,7 @@ namespace Opc.Ua.Gds.Client
                     {
                         string absoluteCertificatePrivateKeyPath = Utils.GetAbsoluteFilePath(m_application.CertificatePrivateKeyPath, true, false, false);
                         byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
-                        if (m_application.GetPrivateKeyFormat(m_server?.GetSupportedKeyFormatsAsync().GetAwaiter().GetResult()) == "PFX")
+                        if (m_application.GetPrivateKeyFormat(await m_server?.GetSupportedKeyFormatsAsync()) == "PFX")
                         {
                             csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
                         }
@@ -306,7 +306,7 @@ namespace Opc.Ua.Gds.Client
                         }
                     }
                     byte[] certificateRequest = CertificateFactory.CreateSigningRequest(csrCertificate, domainNames);
-                    requestId = m_gds.StartSigningRequestAsync(m_application.ApplicationId, NodeId.Null, NodeId.Null, certificateRequest).GetAwaiter().GetResult();
+                    requestId = await m_gds.StartSigningRequestAsync(m_application.ApplicationId, NodeId.Null, NodeId.Null, certificateRequest);
                 }
 
                 m_application.CertificateRequestId = requestId.ToString();
@@ -418,7 +418,7 @@ namespace Opc.Ua.Gds.Client
                         }
 
                         // if we provided a PFX or P12 with the private key, we need to merge the new cert with the private key
-                        if (m_application.GetPrivateKeyFormat(m_server?.GetSupportedKeyFormatsAsync().GetAwaiter().GetResult()) == "PFX")
+                        if (m_application.GetPrivateKeyFormat(await m_server?.GetSupportedKeyFormatsAsync()) == "PFX")
                         {
                             string absoluteCertificatePrivateKeyPath = Utils.GetAbsoluteFilePath(m_application.CertificatePrivateKeyPath, true, false, false) ?? m_application.CertificatePrivateKeyPath;
                             file = new FileInfo(absoluteCertificatePrivateKeyPath);
@@ -487,13 +487,13 @@ namespace Opc.Ua.Gds.Client
                     }
 
                     byte[] unusedPrivateKey = new byte[0];
-                    bool applyChanges = m_server.UpdateCertificateAsync(
+                    bool applyChanges = await m_server.UpdateCertificateAsync(
                         NodeId.Null,
                         m_server.ApplicationCertificateType,
                         certificate,
                         (privateKeyPFX != null) ? "pfx" : String.Empty,
                         (privateKeyPFX != null) ? privateKeyPFX : unusedPrivateKey,
-                        issuerCertificates).GetAwaiter().GetResult();
+                        issuerCertificates);
                     if (applyChanges)
                     {
                         MessageBox.Show(
@@ -523,12 +523,12 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void ApplyChangesButton_Click(object sender, EventArgs e)
+        private async void ApplyChangesButton_Click(object sender, EventArgs e)
         {
             ApplyChangesButton.Enabled = false;
             try
             {
-                m_server.ApplyChangesAsync().GetAwaiter().GetResult();
+                await m_server.ApplyChangesAsync();
             }
             catch (Exception exception)
             {
@@ -542,7 +542,7 @@ namespace Opc.Ua.Gds.Client
 
             try
             {
-                m_server.DisconnectAsync().GetAwaiter().GetResult();
+                await m_server.DisconnectAsync();
             }
             catch (Exception)
             {

@@ -34,6 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Serialization;
 using Opc.Ua.Gds.Client.Controls;
@@ -93,8 +94,8 @@ namespace Opc.Ua.Gds.Client
                 return m_application;
             }
         }
-        
-        public void Initialize(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient pushClient, EndpointDescription endpoint, GlobalDiscoveryClientConfiguration configuration)
+
+        public async Task InitializeAsync(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient pushClient, EndpointDescription endpoint, GlobalDiscoveryClientConfiguration configuration)
         {
             m_gds = gds;
             m_pushClient = pushClient;
@@ -105,10 +106,10 @@ namespace Opc.Ua.Gds.Client
                 m_externalEditor = configuration.ExternalEditor;
             }
 
-            InitializeEndpoint(endpoint);
+            await InitializeEndpointAsync(endpoint);
         }
 
-        private void InitializeEndpoint(EndpointDescription endpoint)
+        private async Task InitializeEndpointAsync(EndpointDescription endpoint)
         {
             if (endpoint != null)
             {
@@ -118,7 +119,7 @@ namespace Opc.Ua.Gds.Client
                 var server = endpoint.Server;
 
                 ApplicationUriTextBox.Text = server.ApplicationUri;
-                ReadRegistration(true);
+                await ReadRegistrationAsync(true);
 
                 ApplicationNameTextBox.Text = (server.ApplicationName != null) ? server.ApplicationName.Text : "";
                 ProductUriTextBox.Text = server.ProductUri;
@@ -471,7 +472,7 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void InitializePullConfiguration(string configurationFilePath)
+        private async void InitializePullConfiguration(string configurationFilePath)
         {
             string path = Utils.GetAbsoluteFilePath(configurationFilePath, true, true, false);
 
@@ -492,7 +493,7 @@ namespace Opc.Ua.Gds.Client
                     SetRegistrationTypeNoTrigger(application.RegistrationType);
 
                     ApplicationUriTextBox.Text = ReplaceLocalhost(application.ApplicationUri);
-                    ReadRegistration(true);
+                    await ReadRegistrationAsync(true);
 
                     ApplicationNameTextBox.Text = application.ApplicationName;
                     ProductUriTextBox.Text = application.ProductUri;
@@ -562,7 +563,7 @@ namespace Opc.Ua.Gds.Client
 #endif
                     if (application.Domains != null)
                     {
-                         DomainsTextBox.Text = ReplaceLocalhost(application.Domains);
+                        DomainsTextBox.Text = ReplaceLocalhost(application.Domains);
                     }
 
                     return;
@@ -573,7 +574,8 @@ namespace Opc.Ua.Gds.Client
                 // ignore.
             }
 
-            try { 
+            try
+            {
                 var configuration = new Opc.Ua.Security.SecurityConfigurationManager().ReadConfiguration(path);
 
                 if (configuration.ApplicationType == Security.ApplicationType.Client_1)
@@ -586,11 +588,11 @@ namespace Opc.Ua.Gds.Client
                 }
 
                 ApplicationUriTextBox.Text = ReplaceLocalhost(configuration.ApplicationUri);
-                ReadRegistration(true);
+                await ReadRegistrationAsync(true);
 
                 ApplicationNameTextBox.Text = configuration.ApplicationName;
                 ProductUriTextBox.Text = configuration.ProductName;
-                
+
                 if (configuration.ApplicationType != Security.ApplicationType.Client_1)
                 {
                     SetDiscoveryUrls(configuration.BaseAddresses);
@@ -647,8 +649,7 @@ namespace Opc.Ua.Gds.Client
                     directory = new FileInfo(configurationFile).Directory;
                 }
 
-                OpenFileDialog dialog = new OpenFileDialog
-                {
+                OpenFileDialog dialog = new OpenFileDialog {
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".xml",
@@ -747,8 +748,7 @@ namespace Opc.Ua.Gds.Client
                     directory = new DirectoryInfo(storePath);
                 }
 
-                FolderBrowserDialog dialog = new FolderBrowserDialog
-                {
+                FolderBrowserDialog dialog = new FolderBrowserDialog {
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -857,8 +857,7 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
-                OpenFileDialog dialog = new OpenFileDialog
-                {
+                OpenFileDialog dialog = new OpenFileDialog {
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".der",
@@ -878,7 +877,7 @@ namespace Opc.Ua.Gds.Client
                 m_lastDirPath = new FileInfo(dialog.FileName).Directory.FullName;
 
                 CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(dialog.FileName);
-                
+
                 X509Certificate2 certificate = new X509Certificate2(RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
 
                 try
@@ -936,8 +935,7 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
-                OpenFileDialog dialog = new OpenFileDialog
-                {
+                OpenFileDialog dialog = new OpenFileDialog {
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".pfx",
@@ -984,8 +982,7 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
-                OpenFileDialog dialog = new OpenFileDialog
-                {
+                OpenFileDialog dialog = new OpenFileDialog {
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".der",
@@ -1054,8 +1051,7 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
-                OpenFileDialog dialog = new OpenFileDialog
-                {
+                OpenFileDialog dialog = new OpenFileDialog {
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".pfx",
@@ -1101,8 +1097,7 @@ namespace Opc.Ua.Gds.Client
                 }
 
 
-                FolderBrowserDialog dialog = new FolderBrowserDialog
-                {
+                FolderBrowserDialog dialog = new FolderBrowserDialog {
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -1146,8 +1141,7 @@ namespace Opc.Ua.Gds.Client
                     directory = new DirectoryInfo(storePath);
                 }
 
-                FolderBrowserDialog dialog = new FolderBrowserDialog
-                {
+                FolderBrowserDialog dialog = new FolderBrowserDialog {
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -1191,8 +1185,7 @@ namespace Opc.Ua.Gds.Client
                     directory = new DirectoryInfo(storePath);
                 }
 
-                FolderBrowserDialog dialog = new FolderBrowserDialog
-                {
+                FolderBrowserDialog dialog = new FolderBrowserDialog {
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -1236,8 +1229,7 @@ namespace Opc.Ua.Gds.Client
                     directory = new DirectoryInfo(storePath);
                 }
 
-                FolderBrowserDialog dialog = new FolderBrowserDialog
-                {
+                FolderBrowserDialog dialog = new FolderBrowserDialog {
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -1268,10 +1260,11 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void RegisterApplicationButton_Click(object sender, EventArgs e)
+        private async void RegisterApplicationButton_Click(object sender, EventArgs e)
         {
             try
-            {   string applicationName = ApplicationNameTextBox.Text.Trim();
+            {
+                string applicationName = ApplicationNameTextBox.Text.Trim();
 
                 if (String.IsNullOrEmpty(applicationName))
                 {
@@ -1338,7 +1331,7 @@ namespace Opc.Ua.Gds.Client
 
                 ApplicationRecordDataType recordToReplace = ApplicationIdTextBox.Tag as ApplicationRecordDataType;
 
-                var records = m_gds.FindApplicationAsync(applicationUri).GetAwaiter().GetResult();
+                var records = await m_gds.FindApplicationAsync(applicationUri);
 
                 if (records != null)
                 {
@@ -1368,13 +1361,13 @@ namespace Opc.Ua.Gds.Client
                 }
 
                 recordToReplace.ApplicationUri = applicationUri;
-                recordToReplace.ApplicationType = (RegistrationTypeComboBox.SelectedIndex != ClientPullManagement)?ApplicationType.Server:ApplicationType.Client;
+                recordToReplace.ApplicationType = (RegistrationTypeComboBox.SelectedIndex != ClientPullManagement) ? ApplicationType.Server : ApplicationType.Client;
                 recordToReplace.ApplicationNames = new LocalizedText[] { applicationName };
                 recordToReplace.ProductUri = productUri;
                 recordToReplace.DiscoveryUrls = urls;
-                recordToReplace.ServerCapabilities = (capabilities != null)?new StringCollection(capabilities):new StringCollection();
+                recordToReplace.ServerCapabilities = (capabilities != null) ? new StringCollection(capabilities) : new StringCollection();
 
-                var applicationId = m_gds.RegisterApplicationAsync(recordToReplace).GetAwaiter().GetResult();
+                var applicationId = await m_gds.RegisterApplicationAsync(recordToReplace);
 
                 recordToReplace.ApplicationId = applicationId;
 
@@ -1415,7 +1408,7 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void ReadRegistration(bool silent)
+        private async Task ReadRegistrationAsync(bool silent)
         {
             string applicationUri = ApplicationUriTextBox.Text.Trim();
 
@@ -1445,7 +1438,7 @@ namespace Opc.Ua.Gds.Client
 
             try
             {
-                var records = m_gds.FindApplicationAsync(applicationUri).GetAwaiter().GetResult();
+                var records = await m_gds.FindApplicationAsync(applicationUri);
 
                 if (records != null)
                 {
@@ -1524,13 +1517,13 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void UnregisterApplicationButton_Click(object sender, EventArgs e)
+        private async void UnregisterApplicationButton_Click(object sender, EventArgs e)
         {
             try
             {
                 if (ApplicationIdTextBox.Tag is ApplicationRecordDataType record)
                 {
-                    m_gds.UnregisterApplicationAsync(record.ApplicationId).GetAwaiter().GetResult();
+                    await m_gds.UnregisterApplicationAsync(record.ApplicationId);
 
                     ApplicationIdTextBox.Text = null;
                     ApplicationIdTextBox.Tag = null;
@@ -1580,17 +1573,17 @@ namespace Opc.Ua.Gds.Client
                 IssuerListStorePathTextBox.Visible = RegistrationTypeComboBox.SelectedIndex != ServerPushManagement;
                 IssuerListStorePathButton.Visible = RegistrationTypeComboBox.SelectedIndex != ServerPushManagement;
 #if NO_HTTPS
-                HttpsCertificatePublicKeyPathLabel.Visible = 
-                HttpsCertificatePublicKeyPathTextBox.Visible = 
-                HttpsCertificatePublicKeyPathButton.Visible = 
-                HttpsCertificatePrivateKeyPathLabel.Visible = 
-                HttpsCertificatePrivateKeyPathTextBox.Visible = 
-                HttpsCertificatePrivateKeyPathButton.Visible = 
-                HttpsTrustListStorePathLabel.Visible = 
-                HttpsTrustListStorePathTextBox.Visible = 
-                HttpsTrustListStorePathButton.Visible = 
-                HttpsIssuerListStorePathLabel.Visible = 
-                HttpsIssuerListStorePathTextBox.Visible = 
+                HttpsCertificatePublicKeyPathLabel.Visible =
+                HttpsCertificatePublicKeyPathTextBox.Visible =
+                HttpsCertificatePublicKeyPathButton.Visible =
+                HttpsCertificatePrivateKeyPathLabel.Visible =
+                HttpsCertificatePrivateKeyPathTextBox.Visible =
+                HttpsCertificatePrivateKeyPathButton.Visible =
+                HttpsTrustListStorePathLabel.Visible =
+                HttpsTrustListStorePathTextBox.Visible =
+                HttpsTrustListStorePathButton.Visible =
+                HttpsIssuerListStorePathLabel.Visible =
+                HttpsIssuerListStorePathTextBox.Visible =
                 HttpsIssuerListStorePathButton.Visible = false;
 #else
                 HttpsCertificatePublicKeyPathLabel.Visible = RegistrationTypeComboBox.SelectedIndex != ClientPullManagement;
@@ -1656,8 +1649,7 @@ namespace Opc.Ua.Gds.Client
                     name = buffer.ToString();
                 }
 
-                SaveFileDialog dialog = new SaveFileDialog
-                {
+                SaveFileDialog dialog = new SaveFileDialog {
                     OverwritePrompt = true,
                     CheckFileExists = false,
                     CheckPathExists = true,
@@ -1745,8 +1737,7 @@ namespace Opc.Ua.Gds.Client
 
                 DirectoryInfo directory = new DirectoryInfo(path);
 
-                OpenFileDialog dialog = new OpenFileDialog
-                {
+                OpenFileDialog dialog = new OpenFileDialog {
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".xml",
@@ -1764,7 +1755,7 @@ namespace Opc.Ua.Gds.Client
                 }
 
                 m_lastDirPath = new FileInfo(dialog.FileName).Directory.FullName;
-                               
+
                 if (dialog.FileName.EndsWith(".der", StringComparison.OrdinalIgnoreCase))
                 {
                     ConfigurationFileTextBox.Text = null;
@@ -1778,7 +1769,7 @@ namespace Opc.Ua.Gds.Client
 
                 ControlToData();
                 RaiseRegisteredApplicationChangedEvent(m_application);
-               
+
             }
             catch (Exception ex)
             {
@@ -1791,7 +1782,7 @@ namespace Opc.Ua.Gds.Client
             try
             {
                 var pathToFile = Utils.GetAbsoluteFilePath(ConfigurationFileTextBox.Text.Trim(), true, true, false);
-                System.Diagnostics.Process.Start((m_externalEditor)??@"devenv.exe", "\"" + pathToFile + "\"");
+                System.Diagnostics.Process.Start((m_externalEditor) ?? @"devenv.exe", "\"" + pathToFile + "\"");
             }
             catch (Exception ex)
             {
@@ -1852,13 +1843,20 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void PickServerButton_Click(object sender, EventArgs e)
+        private async void PickServerButton_Click(object sender, EventArgs e)
         {
-            string uri = new SelectPushServerDialog().ShowDialog(null, m_pushClient, m_gds.GetDefaultServerUrlsAsync(null).GetAwaiter().GetResult());
-            if (uri != null && m_pushClient.IsConnected)
+            try
             {
-                EndpointDescription endpoint = m_pushClient.Endpoint.Description;
-                InitializeEndpoint(endpoint);
+                string uri = new SelectPushServerDialog().ShowDialog(null, m_pushClient, await m_gds.GetDefaultServerUrlsAsync(null));
+                if (uri != null && m_pushClient.IsConnected)
+                {
+                    EndpointDescription endpoint = m_pushClient.Endpoint.Description;
+                    await InitializeEndpointAsync(endpoint);
+                }
+            }
+            catch (Exception ex)
+            {
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
             }
         }
     }

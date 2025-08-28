@@ -121,7 +121,7 @@ namespace Opc.Ua.Gds.Client.Controls
                                 {
                                     var endpoint = new EndpointDescription(server.DiscoveryUrl)
                                     {
-                                        Server = GetApplicationDescription(server)
+                                        Server = GetApplicationDescriptionAsync(server).GetAwaiter().GetResult()
                                     };
                                     return endpoint;
                                 }
@@ -155,7 +155,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                             if (ce.Description.EndpointUrl == ce.Description.Server.ApplicationUri)
                             {
-                                ce.Description.Server = GetApplicationDescription(new ServerOnNetwork() { DiscoveryUrl = ce.Description.EndpointUrl });
+                                ce.Description.Server = GetApplicationDescriptionAsync(new ServerOnNetwork() { DiscoveryUrl = ce.Description.EndpointUrl }).GetAwaiter().GetResult();
                             }
 
                             endpoint = ce.Description;
@@ -189,7 +189,7 @@ namespace Opc.Ua.Gds.Client.Controls
                             ServerOnNetwork server = (ServerOnNetwork)node.Tag;
                             endpoint = new EndpointDescription(server.DiscoveryUrl)
                             {
-                                Server = GetApplicationDescription(server)
+                                Server = GetApplicationDescriptionAsync(server).GetAwaiter().GetResult()
                             };
                         }
 
@@ -201,13 +201,13 @@ namespace Opc.Ua.Gds.Client.Controls
             }
         }
 
-        private ApplicationDescription GetApplicationDescription(ServerOnNetwork server)
+        private async Task<ApplicationDescription> GetApplicationDescriptionAsync(ServerOnNetwork server)
         {
             ApplicationDescription fallback = null;
 
             try
             {
-                foreach (var application in m_lds.FindServersAsync(server.DiscoveryUrl, null).GetAwaiter().GetResult())
+                foreach (var application in await m_lds.FindServersAsync(server.DiscoveryUrl, null))
                 {
                     if (fallback == null)
                     {

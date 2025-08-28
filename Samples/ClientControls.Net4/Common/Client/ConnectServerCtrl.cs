@@ -683,10 +683,10 @@ namespace Opc.Ua.Client.Controls
 
             UpdateStatus(false, DateTime.Now, "Connecting [{0}]", serverUrl);
 
-            Task.Run(() => {
+            Task.Run(async () => {
                 try
                 {
-                    Connect(serverUrl, useSecurity).GetAwaiter().GetResult();
+                    await Connect(serverUrl, useSecurity);
                 }
                 catch (ServiceResultException sre)
                 {

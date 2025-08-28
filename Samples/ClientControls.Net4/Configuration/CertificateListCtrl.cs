@@ -202,7 +202,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the applications in the control.
         /// </summary>
-        internal async Task Initialize(CertificateStoreIdentifier id, IList<string> thumbprints)
+        internal async Task InitializeAsync(CertificateStoreIdentifier id, IList<string> thumbprints)
         {
             ItemsLV.Items.Clear();
 
@@ -497,7 +497,7 @@ namespace Opc.Ua.Client.Controls
             catch (Exception exception)
             {
                 GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
-                await Initialize(m_storeId, m_thumbprints);
+                await InitializeAsync(m_storeId, m_thumbprints);
             }
         }
 
