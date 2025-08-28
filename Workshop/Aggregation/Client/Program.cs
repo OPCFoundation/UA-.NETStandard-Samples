@@ -55,10 +55,10 @@ namespace AggregationClient
             try
             {
                 // load the application configuration.
-                application.LoadApplicationConfiguration(false).Wait();
+                application.LoadApplicationConfigurationAsync(false).GetAwaiter().GetResult();
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificates(false).Wait();
+                application.CheckApplicationInstanceCertificatesAsync(false).GetAwaiter().GetResult();
 
                 // run the application interactively.
                 Application.Run(new MainForm(application.ApplicationConfiguration));

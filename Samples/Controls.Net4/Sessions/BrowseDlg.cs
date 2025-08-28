@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -61,7 +62,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the address space with the specified view
         /// </summary>
-        public void Show(Session session, NodeId startId)
+        public async Task ShowAsync(Session session, NodeId startId)
         {   
             if (session == null) throw new ArgumentNullException("session");
             
@@ -81,7 +82,7 @@ namespace Opc.Ua.Sample.Controls
 
             BrowseCTRL.Initialize(browser, startId);
             
-            UpdateNavigationBar();
+            await UpdateNavigationBarAsync();
 
             Show();
             BringToFront();
@@ -91,15 +92,15 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates the navigation bar with the current positions in the browse control.
         /// </summary>
-        private void UpdateNavigationBar()
+        private async Task UpdateNavigationBarAsync()
         {
             int index = 0;
 
             foreach (NodeId nodeId in BrowseCTRL.Positions)
             {
-                Node node = m_session.NodeCache.Find(nodeId) as Node;
+                Node node = await m_session.NodeCache.FindAsync(nodeId) as Node;
 
-                string displayText = m_session.NodeCache.GetDisplayText(node);
+                string displayText = await m_session.NodeCache.GetDisplayTextAsync(node);
 
                 if (index < NodeCTRL.Items.Count)
                 {
@@ -198,11 +199,11 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseCTRL_PositionAdded(object sender, EventArgs e)
+        private async void BrowseCTRL_PositionAdded(object sender, EventArgs e)
         {
             try
             {
-                UpdateNavigationBar();
+                await UpdateNavigationBarAsync();
             }
             catch (Exception exception)
             {

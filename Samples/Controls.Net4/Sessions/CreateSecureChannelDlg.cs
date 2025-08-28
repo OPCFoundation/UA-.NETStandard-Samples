@@ -122,7 +122,7 @@ namespace Opc.Ua.Sample.Controls
                     m_configuration,
                     m_endpoints[EndpointCB.SelectedIndex],
                     configuration,
-                    await m_configuration.SecurityConfiguration.ApplicationCertificate.Find(true),
+                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true),
                     m_messageContext);
 
                 // create the channel.                   

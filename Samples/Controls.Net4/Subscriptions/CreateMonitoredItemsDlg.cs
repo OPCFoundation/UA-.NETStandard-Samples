@@ -142,11 +142,11 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ApplyBTN_Click(object sender, EventArgs e)
+        private async void ApplyBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                MonitoredItemsCTRL.ApplyChanges(true);
+                await MonitoredItemsCTRL.ApplyChangesAsync(true);
             }
             catch (Exception exception)
             {

@@ -1262,7 +1262,7 @@ namespace AggregationServer
             try
             {
                 Utils.Trace($"Create Connect Session: {m_endpoint} for {sessionName}");
-                var session = Opc.Ua.Client.Session.Create(
+                var session = Opc.Ua.Client.Session.CreateAsync(
                     m_configuration,
                     m_reverseConnectManager,
                     m_endpoint,

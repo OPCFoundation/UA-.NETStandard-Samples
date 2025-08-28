@@ -296,7 +296,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void MonitoringModeMI_Click(object sender, EventArgs e)
+        private async void MonitoringModeMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -317,7 +317,7 @@ namespace Opc.Ua.Sample.Controls
                     monitoringMode = MonitoringMode.Disabled;
                 }
 
-                m_monitoredItem.Subscription.SetMonitoringMode(monitoringMode, new MonitoredItem[] { m_monitoredItem });
+                await m_monitoredItem.Subscription.SetMonitoringModeAsync(monitoringMode, new MonitoredItem[] { m_monitoredItem });
             }
             catch (Exception exception)
             {

@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -63,7 +64,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Session session, NodeId objectId, NodeId methodId)
+        public async Task ShowAsync(Session session, NodeId objectId, NodeId methodId)
         {
             if (session == null)  throw new ArgumentNullException("session");
             if (methodId == null) throw new ArgumentNullException("methodId");
@@ -79,11 +80,11 @@ namespace Opc.Ua.Sample.Controls
             m_objectId = objectId;            
             m_methodId = methodId;
 
-            InputArgumentsCTRL.Update(session, methodId, true);     
-            OutputArgumentsCTRL.Update(session, methodId, false);
-            
-            Node target = session.NodeCache.Find(objectId) as Node;
-            Node method = session.NodeCache.Find(methodId) as Node;
+            await InputArgumentsCTRL.UpdateAsync(session, methodId, true);     
+            await OutputArgumentsCTRL.UpdateAsync(session, methodId, false);
+
+            Node target = await session.NodeCache.FindAsync(objectId) as Node;
+            Node method = await session.NodeCache.FindAsync(methodId) as Node;
 
             if (target != null && method != null)
             {

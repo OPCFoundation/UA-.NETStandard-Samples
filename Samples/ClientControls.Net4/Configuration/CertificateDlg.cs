@@ -65,12 +65,12 @@ namespace Opc.Ua.Client.Controls
 
             if (certificateIdentifier != null)
             {
-                X509Certificate2 certificate = await certificateIdentifier.Find();
+                X509Certificate2 certificate = await certificateIdentifier.FindAsync();
 
                 CertificateStoreCTRL.StoreType = certificateIdentifier.StoreType;
                 CertificateStoreCTRL.StorePath = certificateIdentifier.StorePath;
 
-                if (certificate != null && certificateIdentifier.Find(true) != null)
+                if (certificate != null && await certificateIdentifier.FindAsync(true) != null)
                 {
                     PrivateKeyCB.SelectedIndex = 1;
                 }

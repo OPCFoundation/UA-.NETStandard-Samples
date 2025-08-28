@@ -61,10 +61,10 @@ namespace Opc.Ua.Gds.Server
             try
             {
                 // load the application configuration.
-                var config = application.LoadApplicationConfiguration(false).Result;
+                var config = application.LoadApplicationConfigurationAsync(false).GetAwaiter().GetResult();
 
                 // check the application certificate.
-                bool haveAppCertificate = application.CheckApplicationInstanceCertificates(false).Result;
+                bool haveAppCertificate = application.CheckApplicationInstanceCertificatesAsync(false).GetAwaiter().GetResult();
                 if (!haveAppCertificate)
                 {
                     throw new Exception("Application instance certificate invalid!");
@@ -88,7 +88,7 @@ namespace Opc.Ua.Gds.Server
                     userDatabase,
                     true,
                     createStandardUsers);
-                application.Start(server).Wait();
+                application.StartAsync(server).Wait();
 
                 // run the application interactively.
                 System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration));
@@ -102,7 +102,7 @@ namespace Opc.Ua.Gds.Server
         private static bool ConfigureUsers(SqlUsersDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
-            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().GetAwaiter().GetResult();
             if (!createStandardUsers)
             {
                 //Delete existing standard users

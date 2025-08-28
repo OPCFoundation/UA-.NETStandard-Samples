@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -33,6 +33,8 @@ using System.ComponentModel;
 using System.Data;
 using System.Text;
 using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -83,12 +85,6 @@ namespace Opc.Ua.Gds.Client.Controls
             Add
         }
 
-        private class ExpandNodeData
-        {
-            public TreeNode Parent;
-            public LocalDiscoveryServerClient Lds;
-        }
-
         [DefaultValue(300)]
         [SettingsBindable(true)]
         public int SplitterDistance
@@ -125,7 +121,7 @@ namespace Opc.Ua.Gds.Client.Controls
                                 {
                                     var endpoint = new EndpointDescription(server.DiscoveryUrl)
                                     {
-                                        Server = GetApplicationDescription(server)
+                                        Server = GetApplicationDescriptionAsync(server).GetAwaiter().GetResult()
                                     };
                                     return endpoint;
                                 }
@@ -159,7 +155,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                             if (ce.Description.EndpointUrl == ce.Description.Server.ApplicationUri)
                             {
-                                ce.Description.Server = GetApplicationDescription(new ServerOnNetwork() { DiscoveryUrl = ce.Description.EndpointUrl });
+                                ce.Description.Server = GetApplicationDescriptionAsync(new ServerOnNetwork() { DiscoveryUrl = ce.Description.EndpointUrl }).GetAwaiter().GetResult();
                             }
 
                             endpoint = ce.Description;
@@ -193,7 +189,7 @@ namespace Opc.Ua.Gds.Client.Controls
                             ServerOnNetwork server = (ServerOnNetwork)node.Tag;
                             endpoint = new EndpointDescription(server.DiscoveryUrl)
                             {
-                                Server = GetApplicationDescription(server)
+                                Server = GetApplicationDescriptionAsync(server).GetAwaiter().GetResult()
                             };
                         }
 
@@ -205,13 +201,13 @@ namespace Opc.Ua.Gds.Client.Controls
             }
         }
 
-        private ApplicationDescription GetApplicationDescription(ServerOnNetwork server)
+        private async Task<ApplicationDescription> GetApplicationDescriptionAsync(ServerOnNetwork server)
         {
             ApplicationDescription fallback = null;
 
             try
             {
-                foreach (var application in m_lds.FindServers(server.DiscoveryUrl, null))
+                foreach (var application in await m_lds.FindServersAsync(server.DiscoveryUrl, null))
                 {
                     if (fallback == null)
                     {
@@ -350,7 +346,7 @@ namespace Opc.Ua.Gds.Client.Controls
             return url;
         }
 
-        private void DiscoveryTreeView_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        private async void DiscoveryTreeView_BeforeExpand(object sender, TreeViewCancelEventArgs e)
         {
             if (e.Node.Nodes.Count != 1 || !String.IsNullOrEmpty(e.Node.Nodes[0].Text))
             {
@@ -361,21 +357,15 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (RootFolders.LocalMachine.Equals(e.Node.Tag))
             {
-                m_lds.BeginFindServers(
-                    OnFindServersComplete,
-                    new ExpandNodeData() { Parent = e.Node, Lds = m_lds });
-
+                // async replace for BeginFindServers
+                await PopulateServersNodeAsync(e.Node, null);
                 return;
             }
 
             if (RootFolders.LocalNetwork.Equals(e.Node.Tag))
             {
-                m_lds.BeginFindServersOnNetwork(
-                    0,
-                    100,
-                    OnFindServersOnNetworkComplete,
-                    new ExpandNodeData() { Parent = e.Node, Lds = m_lds });
-
+                // async replace for BeginFindServersOnNetwork
+                await PopulateServersOnNetworkNodeAsync(e.Node, 0, 100);
                 return;
             }
 
@@ -405,32 +395,61 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (e.Node.Tag is Uri)
             {
-                m_lds.BeginFindServers(
-                    e.Node.Tag.ToString(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    OnFindServersComplete,
-                    new ExpandNodeData() { Parent = e.Node, Lds = m_lds });
-
+                await PopulateServersNodeAsync(e.Node, e.Node.Tag.ToString());
                 return;
             }
         }
 
-        private void OnFindServersComplete(IAsyncResult result)
+        private async Task PopulateServersOnNetworkNodeAsync(TreeNode parent, uint startingRecordId, uint maxRecordsToReturn)
         {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new AsyncCallback(OnFindServersComplete), result);
-                return;
-            }
-
             try
             {
-                ExpandNodeData data = (ExpandNodeData)result.AsyncState;
+                var (servers, lastCounterResetTime) = await m_lds.FindServersOnNetworkAsync(
+                    null,
+                    null,
+                    startingRecordId,
+                    maxRecordsToReturn,
+                    null,
+                    CancellationToken.None);
 
-                List<ApplicationDescription> servers = data.Lds.EndFindServers(result);
+                foreach (ServerOnNetwork server in servers)
+                {
+                    if (server.ServerCapabilities != null && server.ServerCapabilities.Contains("LDS"))
+                    {
+                        continue;
+                    }
+
+                    TreeNode node = new TreeNode(String.Format("{0}", server.ServerName));
+                    node.SelectedImageIndex = node.ImageIndex = ImageIndex.Server;
+                    node.Tag = server;
+                    node.Nodes.Add(new TreeNode());
+                    parent.Nodes.Add(node);
+                }
+
+                if (DiscoveryTreeView.SelectedNode == parent)
+                {
+                    ShowServerOnNetworks(parent.Nodes);
+                }
+                else
+                {
+                    parent.Expand();
+                }
+            }
+            catch (Exception ex)
+            {
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+            }
+        }
+
+        private async Task PopulateServersNodeAsync(TreeNode parent, string discoveryUrl)
+        {
+            try
+            {
+                List<ApplicationDescription> servers = new List<ApplicationDescription>();
+                foreach (var s in await m_lds.FindServersAsync(discoveryUrl, null))
+                {
+                    servers.Add(s);
+                }
 
                 foreach (ApplicationDescription server in servers)
                 {
@@ -443,24 +462,24 @@ namespace Opc.Ua.Gds.Client.Controls
                     node.SelectedImageIndex = node.ImageIndex = (server.ApplicationType == ApplicationType.DiscoveryServer) ? ImageIndex.LocalNetwork : ImageIndex.Server;
                     node.Tag = server;
                     node.Nodes.Add(new TreeNode());
-                    data.Parent.Nodes.Add(node);
+                    parent.Nodes.Add(node);
                 }
 
-                if (DiscoveryTreeView.SelectedNode == data.Parent)
+                if (DiscoveryTreeView.SelectedNode == parent)
                 {
-                    ShowApplicationDescriptions(data.Parent.Nodes);
+                    ShowApplicationDescriptions(parent.Nodes);
                 }
                 else
                 {
-                    data.Parent.Expand();
+                    parent.Expand();
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, e);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
             }
         }
-
+              
         private void ShowApplicationDescriptions(TreeNodeCollection nodes)
         {
             ServersTable.Rows.Clear();
@@ -509,50 +528,6 @@ namespace Opc.Ua.Gds.Client.Controls
             }
         }
 
-        private void OnFindServersOnNetworkComplete(IAsyncResult result)
-        {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new AsyncCallback(OnFindServersOnNetworkComplete), result);
-                return;
-            }
-
-            try
-            {
-                ExpandNodeData data = (ExpandNodeData)result.AsyncState;
-
-                DateTime lastCounterResetTime;
-                List<ServerOnNetwork> servers = data.Lds.EndFindServersOnNetwork(result, out lastCounterResetTime);
-
-                foreach (ServerOnNetwork server in servers)
-                {
-                    if (server.ServerCapabilities.Contains("LDS"))
-                    {
-                        continue;
-                    }
-
-                    TreeNode node = new TreeNode(String.Format("{0}", server.ServerName));
-                    node.SelectedImageIndex = node.ImageIndex = ImageIndex.Server;
-                    node.Tag = server;
-                    node.Nodes.Add(new TreeNode());
-                    data.Parent.Nodes.Add(node);
-                }
-
-                if (DiscoveryTreeView.SelectedNode == data.Parent)
-                {
-                    ShowServerOnNetworks(data.Parent.Nodes);
-                }
-                else
-                {
-                    data.Parent.Expand();
-                }
-            }
-            catch (Exception e)
-            {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, e);
-            }
-        }
-
         private void ShowServerOnNetworks(TreeNodeCollection nodes)
         {
             ServersTable.Rows.Clear();
@@ -598,37 +573,6 @@ namespace Opc.Ua.Gds.Client.Controls
             foreach (DataGridViewRow row in ServersGridView.Rows)
             {
                 row.Selected = false;
-            }
-        }
-
-        private class GetEndpointsData
-        {
-            public TreeNode Parent;
-            public LocalDiscoveryServerClient Lds;
-        }
-
-        private void OnGetEndpointsComplete(IAsyncResult result)
-        {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new AsyncCallback(OnGetEndpointsComplete), result);
-                return;
-            }
-
-            GetEndpointsData data = (GetEndpointsData)result.AsyncState;
-
-            try
-            {
-                List<EndpointDescription> endpoints = data.Lds.EndGetEndpoints(result);
-
-                if (DiscoveryTreeView.SelectedNode == data.Parent)
-                {
-                    ShowEndpointDescriptions(endpoints);
-                }
-            }
-            catch (Exception e)
-            {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, e); 
             }
         }
 
@@ -845,7 +789,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
         }
 
-        private void DiscoveryTreeView_AfterSelect(object sender, TreeViewEventArgs e)
+        private async void DiscoveryTreeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             try
             {
@@ -858,9 +802,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         e.Node.Nodes.Clear();
 
-                        m_lds.BeginFindServers(
-                            OnFindServersComplete,
-                            new ExpandNodeData() { Parent = e.Node, Lds = m_lds });
+                        await PopulateServersNodeAsync(e.Node, null);
                     }
                     else
                     {
@@ -879,11 +821,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         e.Node.Nodes.Clear();
 
-                        m_lds.BeginFindServersOnNetwork(
-                            0,
-                            1000,
-                            OnFindServersOnNetworkComplete,
-                            new ExpandNodeData() { Parent = e.Node, Lds = m_lds });
+                        await PopulateServersOnNetworkNodeAsync(e.Node, 0, 1000);
                     }
                     else
                     {
@@ -945,11 +883,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     
                     if (discoveryUrl != null)
                     {
-                        m_lds.BeginGetEndpoints(
-                            discoveryUrl,
-                            null,
-                            OnGetEndpointsComplete,
-                            new GetEndpointsData() { Parent = e.Node, Lds = m_lds });
+                        await LoadEndpointsAndShowAsync(e.Node, discoveryUrl);
                     }
                 }
                 
@@ -969,11 +903,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         Cursor = Cursors.WaitCursor;
 
-                        m_lds.BeginGetEndpoints(
-                            server.DiscoveryUrl,
-                            null,
-                            OnGetEndpointsComplete,
-                            new GetEndpointsData() { Parent = e.Node, Lds = m_lds });
+                        await LoadEndpointsAndShowAsync(e.Node, server.DiscoveryUrl);
                     }
                     finally
                     {
@@ -993,16 +923,29 @@ namespace Opc.Ua.Gds.Client.Controls
                     ApplicationUriTextBox.Text = "---";
                     ProductUriTextBox.Text = "---";
 
-                    m_lds.BeginGetEndpoints(
-                        server.EndpointUrl.ToString(),
-                        null,
-                        OnGetEndpointsComplete,
-                        new GetEndpointsData() { Parent = e.Node, Lds = m_lds });
+                    await LoadEndpointsAndShowAsync(e.Node, server.EndpointUrl.ToString());
                 }
             }
             catch (Exception ex)
             {
                 Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+            }
+        }
+
+        private async Task LoadEndpointsAndShowAsync(TreeNode parent, string discoveryUrl)
+        {
+            try
+            {
+                var endpoints = await m_lds.GetEndpointsAsync(discoveryUrl, null);
+
+                if (DiscoveryTreeView.SelectedNode == parent)
+                {
+                    ShowEndpointDescriptions(endpoints);
+                }
+            }
+            catch (Exception e)
+            {
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, e);
             }
         }
 

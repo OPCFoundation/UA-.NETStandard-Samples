@@ -67,13 +67,13 @@ namespace Quickstarts.PerfTestServer
                 }
 
                 // load the application configuration.
-                application.LoadApplicationConfiguration(false).Wait();
+                application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificates(false).Wait();
+                application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
 
                 // start the server.
-                application.Start(new PerfTestServer()).Wait();
+                application.StartAsync(new PerfTestServer()).Wait();
 
                 // run the application interactively.
                 Application.Run(new Opc.Ua.Server.Controls.ServerForm(application));

@@ -1,4 +1,4 @@
-﻿namespace Opc.Ua.Gds.Client.Controls
+namespace Opc.Ua.Gds.Client.Controls
 {
     partial class DiscoveryControl
     {
@@ -37,6 +37,10 @@
             this.AddEndpointSeparatorMenuItem = new System.Windows.Forms.ToolStripSeparator();
             this.AddEndpointMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MainPanel = new System.Windows.Forms.SplitContainer();
+            this.EndpointsGridView = new System.Windows.Forms.DataGridView();
+            this.EndpointUrlColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.SecurityModeColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.SecurityProfileColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ServersGridView = new System.Windows.Forms.DataGridView();
             this.ServerNameColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ServerCapabilitiesColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -53,19 +57,15 @@
             this.FilterPanel = new System.Windows.Forms.Panel();
             this.FilterTextBox = new System.Windows.Forms.TextBox();
             this.FilterLabel = new System.Windows.Forms.Label();
-            this.EndpointsGridView = new System.Windows.Forms.DataGridView();
-            this.EndpointUrlColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.SecurityModeColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.SecurityProfileColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.PopupMenuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.MainPanel)).BeginInit();
             this.MainPanel.Panel1.SuspendLayout();
             this.MainPanel.Panel2.SuspendLayout();
             this.MainPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.EndpointsGridView)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ServersGridView)).BeginInit();
             this.ApplicationDescriptionPanel.SuspendLayout();
             this.FilterPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.EndpointsGridView)).BeginInit();
             this.SuspendLayout();
             // 
             // DiscoveryTreeView
@@ -73,8 +73,9 @@
             this.DiscoveryTreeView.ContextMenuStrip = this.PopupMenuStrip;
             this.DiscoveryTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.DiscoveryTreeView.Location = new System.Drawing.Point(0, 0);
+            this.DiscoveryTreeView.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.DiscoveryTreeView.Name = "DiscoveryTreeView";
-            this.DiscoveryTreeView.Size = new System.Drawing.Size(296, 584);
+            this.DiscoveryTreeView.Size = new System.Drawing.Size(444, 898);
             this.DiscoveryTreeView.TabIndex = 0;
             this.DiscoveryTreeView.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.DiscoveryTreeView_BeforeExpand);
             this.DiscoveryTreeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.DiscoveryTreeView_AfterSelect);
@@ -83,6 +84,7 @@
             // 
             // PopupMenuStrip
             // 
+            this.PopupMenuStrip.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.PopupMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.RefreshMenuItem,
             this.RefreshWithParametersMenuItem,
@@ -90,39 +92,39 @@
             this.AddEndpointSeparatorMenuItem,
             this.AddEndpointMenuItem});
             this.PopupMenuStrip.Name = "PopupMenuStrip";
-            this.PopupMenuStrip.Size = new System.Drawing.Size(211, 98);
+            this.PopupMenuStrip.Size = new System.Drawing.Size(285, 138);
             this.PopupMenuStrip.Opening += new System.ComponentModel.CancelEventHandler(this.PopupMenuStrip_Opening);
             // 
             // RefreshMenuItem
             // 
             this.RefreshMenuItem.Name = "RefreshMenuItem";
-            this.RefreshMenuItem.Size = new System.Drawing.Size(210, 22);
+            this.RefreshMenuItem.Size = new System.Drawing.Size(284, 32);
             this.RefreshMenuItem.Text = "Refresh";
             this.RefreshMenuItem.Click += new System.EventHandler(this.RefreshMenuItem_Click);
             // 
             // RefreshWithParametersMenuItem
             // 
             this.RefreshWithParametersMenuItem.Name = "RefreshWithParametersMenuItem";
-            this.RefreshWithParametersMenuItem.Size = new System.Drawing.Size(210, 22);
+            this.RefreshWithParametersMenuItem.Size = new System.Drawing.Size(284, 32);
             this.RefreshWithParametersMenuItem.Text = "Refresh with Parameters...";
             this.RefreshWithParametersMenuItem.Click += new System.EventHandler(this.RefreshWithParametersMenuItem_Click);
             // 
             // DeleteMenuItem
             // 
             this.DeleteMenuItem.Name = "DeleteMenuItem";
-            this.DeleteMenuItem.Size = new System.Drawing.Size(210, 22);
+            this.DeleteMenuItem.Size = new System.Drawing.Size(284, 32);
             this.DeleteMenuItem.Text = "Delete...";
             this.DeleteMenuItem.Click += new System.EventHandler(this.DeleteMenuItem_Click);
             // 
             // AddEndpointSeparatorMenuItem
             // 
             this.AddEndpointSeparatorMenuItem.Name = "AddEndpointSeparatorMenuItem";
-            this.AddEndpointSeparatorMenuItem.Size = new System.Drawing.Size(207, 6);
+            this.AddEndpointSeparatorMenuItem.Size = new System.Drawing.Size(281, 6);
             // 
             // AddEndpointMenuItem
             // 
             this.AddEndpointMenuItem.Name = "AddEndpointMenuItem";
-            this.AddEndpointMenuItem.Size = new System.Drawing.Size(210, 22);
+            this.AddEndpointMenuItem.Size = new System.Drawing.Size(284, 32);
             this.AddEndpointMenuItem.Text = "Add Endpoint...";
             this.AddEndpointMenuItem.Click += new System.EventHandler(this.DiscoveryTreeView_DoubleClick);
             // 
@@ -130,6 +132,7 @@
             // 
             this.MainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainPanel.Location = new System.Drawing.Point(0, 0);
+            this.MainPanel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MainPanel.Name = "MainPanel";
             // 
             // MainPanel.Panel1
@@ -142,9 +145,66 @@
             this.MainPanel.Panel2.Controls.Add(this.ServersGridView);
             this.MainPanel.Panel2.Controls.Add(this.ApplicationDescriptionPanel);
             this.MainPanel.Panel2.Controls.Add(this.FilterPanel);
-            this.MainPanel.Size = new System.Drawing.Size(888, 584);
-            this.MainPanel.SplitterDistance = 296;
+            this.MainPanel.Size = new System.Drawing.Size(1332, 898);
+            this.MainPanel.SplitterDistance = 444;
+            this.MainPanel.SplitterWidth = 6;
             this.MainPanel.TabIndex = 3;
+            // 
+            // EndpointsGridView
+            // 
+            this.EndpointsGridView.AllowUserToAddRows = false;
+            this.EndpointsGridView.AllowUserToDeleteRows = false;
+            this.EndpointsGridView.AllowUserToResizeRows = false;
+            this.EndpointsGridView.BackgroundColor = System.Drawing.SystemColors.Window;
+            this.EndpointsGridView.ColumnHeadersHeight = 34;
+            this.EndpointsGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            this.EndpointsGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.EndpointUrlColumn3,
+            this.SecurityModeColumn,
+            this.SecurityProfileColumn});
+            this.EndpointsGridView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.EndpointsGridView.Location = new System.Drawing.Point(0, 212);
+            this.EndpointsGridView.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.EndpointsGridView.MultiSelect = false;
+            this.EndpointsGridView.Name = "EndpointsGridView";
+            this.EndpointsGridView.ReadOnly = true;
+            this.EndpointsGridView.RowHeadersVisible = false;
+            this.EndpointsGridView.RowHeadersWidth = 62;
+            this.EndpointsGridView.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
+            this.EndpointsGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.EndpointsGridView.Size = new System.Drawing.Size(882, 686);
+            this.EndpointsGridView.TabIndex = 2;
+            this.EndpointsGridView.VisibleChanged += new System.EventHandler(this.EndpointsGridView_VisibleChanged);
+            this.EndpointsGridView.DoubleClick += new System.EventHandler(this.EndpointsGridView_DoubleClick);
+            // 
+            // EndpointUrlColumn3
+            // 
+            this.EndpointUrlColumn3.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.EndpointUrlColumn3.DataPropertyName = "EndpointUrl";
+            this.EndpointUrlColumn3.HeaderText = "Endpoint URL";
+            this.EndpointUrlColumn3.MinimumWidth = 8;
+            this.EndpointUrlColumn3.Name = "EndpointUrlColumn3";
+            this.EndpointUrlColumn3.ReadOnly = true;
+            // 
+            // SecurityModeColumn
+            // 
+            this.SecurityModeColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
+            this.SecurityModeColumn.DataPropertyName = "SecurityMode";
+            this.SecurityModeColumn.HeaderText = "Security Mode";
+            this.SecurityModeColumn.MinimumWidth = 8;
+            this.SecurityModeColumn.Name = "SecurityModeColumn";
+            this.SecurityModeColumn.ReadOnly = true;
+            this.SecurityModeColumn.Width = 146;
+            // 
+            // SecurityProfileColumn
+            // 
+            this.SecurityProfileColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
+            this.SecurityProfileColumn.DataPropertyName = "SecurityProfile";
+            this.SecurityProfileColumn.HeaderText = "Security Profile";
+            this.SecurityProfileColumn.MinimumWidth = 8;
+            this.SecurityProfileColumn.Name = "SecurityProfileColumn";
+            this.SecurityProfileColumn.ReadOnly = true;
+            this.SecurityProfileColumn.Width = 150;
             // 
             // ServersGridView
             // 
@@ -152,19 +212,22 @@
             this.ServersGridView.AllowUserToDeleteRows = false;
             this.ServersGridView.AllowUserToResizeRows = false;
             this.ServersGridView.BackgroundColor = System.Drawing.SystemColors.Window;
+            this.ServersGridView.ColumnHeadersHeight = 34;
             this.ServersGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.ServersGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.ServerNameColumn,
             this.ServerCapabilitiesColumn,
             this.EndpointUrlColumn});
             this.ServersGridView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ServersGridView.Location = new System.Drawing.Point(0, 138);
+            this.ServersGridView.Location = new System.Drawing.Point(0, 212);
+            this.ServersGridView.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ServersGridView.Name = "ServersGridView";
             this.ServersGridView.ReadOnly = true;
             this.ServersGridView.RowHeadersVisible = false;
+            this.ServersGridView.RowHeadersWidth = 62;
             this.ServersGridView.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             this.ServersGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.ServersGridView.Size = new System.Drawing.Size(588, 446);
+            this.ServersGridView.Size = new System.Drawing.Size(882, 686);
             this.ServersGridView.TabIndex = 3;
             this.ServersGridView.DoubleClick += new System.EventHandler(this.ServersGridView_DoubleClick);
             // 
@@ -173,24 +236,27 @@
             this.ServerNameColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
             this.ServerNameColumn.DataPropertyName = "ServerName";
             this.ServerNameColumn.HeaderText = "Server Name";
+            this.ServerNameColumn.MinimumWidth = 8;
             this.ServerNameColumn.Name = "ServerNameColumn";
             this.ServerNameColumn.ReadOnly = true;
-            this.ServerNameColumn.Width = 94;
+            this.ServerNameColumn.Width = 137;
             // 
             // ServerCapabilitiesColumn
             // 
             this.ServerCapabilitiesColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
             this.ServerCapabilitiesColumn.DataPropertyName = "ServerCapabilities";
             this.ServerCapabilitiesColumn.HeaderText = "Server Capabilities";
+            this.ServerCapabilitiesColumn.MinimumWidth = 8;
             this.ServerCapabilitiesColumn.Name = "ServerCapabilitiesColumn";
             this.ServerCapabilitiesColumn.ReadOnly = true;
-            this.ServerCapabilitiesColumn.Width = 119;
+            this.ServerCapabilitiesColumn.Width = 176;
             // 
             // EndpointUrlColumn
             // 
             this.EndpointUrlColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.EndpointUrlColumn.DataPropertyName = "EndpointUrl";
             this.EndpointUrlColumn.HeaderText = "Endpoint URL";
+            this.EndpointUrlColumn.MinimumWidth = 8;
             this.EndpointUrlColumn.Name = "EndpointUrlColumn";
             this.EndpointUrlColumn.ReadOnly = true;
             // 
@@ -210,14 +276,15 @@
             this.ApplicationDescriptionPanel.Controls.Add(this.ApplicationUriLabel, 0, 1);
             this.ApplicationDescriptionPanel.Controls.Add(this.ApplicationNameTextBox, 1, 0);
             this.ApplicationDescriptionPanel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.ApplicationDescriptionPanel.Location = new System.Drawing.Point(0, 32);
+            this.ApplicationDescriptionPanel.Location = new System.Drawing.Point(0, 49);
+            this.ApplicationDescriptionPanel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationDescriptionPanel.Name = "ApplicationDescriptionPanel";
             this.ApplicationDescriptionPanel.RowCount = 4;
-            this.ApplicationDescriptionPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.ApplicationDescriptionPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.ApplicationDescriptionPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.ApplicationDescriptionPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.ApplicationDescriptionPanel.Size = new System.Drawing.Size(588, 106);
+            this.ApplicationDescriptionPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 37F));
+            this.ApplicationDescriptionPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 37F));
+            this.ApplicationDescriptionPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 37F));
+            this.ApplicationDescriptionPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 37F));
+            this.ApplicationDescriptionPanel.Size = new System.Drawing.Size(882, 163);
             this.ApplicationDescriptionPanel.TabIndex = 1;
             // 
             // ApplicationNameLabel
@@ -225,10 +292,10 @@
             this.ApplicationNameLabel.AllowDrop = true;
             this.ApplicationNameLabel.AutoSize = true;
             this.ApplicationNameLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationNameLabel.Location = new System.Drawing.Point(5, 5);
-            this.ApplicationNameLabel.Margin = new System.Windows.Forms.Padding(3);
+            this.ApplicationNameLabel.Location = new System.Drawing.Point(6, 7);
+            this.ApplicationNameLabel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationNameLabel.Name = "ApplicationNameLabel";
-            this.ApplicationNameLabel.Size = new System.Drawing.Size(90, 18);
+            this.ApplicationNameLabel.Size = new System.Drawing.Size(133, 27);
             this.ApplicationNameLabel.TabIndex = 0;
             this.ApplicationNameLabel.Text = "Application Name";
             this.ApplicationNameLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -238,10 +305,10 @@
             this.ProductUriTextBox.AllowDrop = true;
             this.ProductUriTextBox.AutoSize = true;
             this.ProductUriTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ProductUriTextBox.Location = new System.Drawing.Point(103, 83);
-            this.ProductUriTextBox.Margin = new System.Windows.Forms.Padding(3);
+            this.ProductUriTextBox.Location = new System.Drawing.Point(149, 124);
+            this.ProductUriTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ProductUriTextBox.Name = "ProductUriTextBox";
-            this.ProductUriTextBox.Size = new System.Drawing.Size(480, 18);
+            this.ProductUriTextBox.Size = new System.Drawing.Size(727, 32);
             this.ProductUriTextBox.TabIndex = 7;
             this.ProductUriTextBox.Text = "---";
             this.ProductUriTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -251,10 +318,10 @@
             this.ProductUriLabel.AllowDrop = true;
             this.ProductUriLabel.AutoSize = true;
             this.ProductUriLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ProductUriLabel.Location = new System.Drawing.Point(5, 83);
-            this.ProductUriLabel.Margin = new System.Windows.Forms.Padding(3);
+            this.ProductUriLabel.Location = new System.Drawing.Point(6, 124);
+            this.ProductUriLabel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ProductUriLabel.Name = "ProductUriLabel";
-            this.ProductUriLabel.Size = new System.Drawing.Size(90, 18);
+            this.ProductUriLabel.Size = new System.Drawing.Size(133, 32);
             this.ProductUriLabel.TabIndex = 6;
             this.ProductUriLabel.Text = "Product URI";
             this.ProductUriLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -264,10 +331,10 @@
             this.ApplicationTypeTextBox.AllowDrop = true;
             this.ApplicationTypeTextBox.AutoSize = true;
             this.ApplicationTypeTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationTypeTextBox.Location = new System.Drawing.Point(103, 57);
-            this.ApplicationTypeTextBox.Margin = new System.Windows.Forms.Padding(3);
+            this.ApplicationTypeTextBox.Location = new System.Drawing.Point(149, 85);
+            this.ApplicationTypeTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationTypeTextBox.Name = "ApplicationTypeTextBox";
-            this.ApplicationTypeTextBox.Size = new System.Drawing.Size(480, 18);
+            this.ApplicationTypeTextBox.Size = new System.Drawing.Size(727, 27);
             this.ApplicationTypeTextBox.TabIndex = 5;
             this.ApplicationTypeTextBox.Text = "---";
             this.ApplicationTypeTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -277,10 +344,10 @@
             this.ApplicationTypeLabel.AllowDrop = true;
             this.ApplicationTypeLabel.AutoSize = true;
             this.ApplicationTypeLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationTypeLabel.Location = new System.Drawing.Point(5, 57);
-            this.ApplicationTypeLabel.Margin = new System.Windows.Forms.Padding(3);
+            this.ApplicationTypeLabel.Location = new System.Drawing.Point(6, 85);
+            this.ApplicationTypeLabel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationTypeLabel.Name = "ApplicationTypeLabel";
-            this.ApplicationTypeLabel.Size = new System.Drawing.Size(90, 18);
+            this.ApplicationTypeLabel.Size = new System.Drawing.Size(133, 27);
             this.ApplicationTypeLabel.TabIndex = 4;
             this.ApplicationTypeLabel.Text = "Application Type";
             this.ApplicationTypeLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -290,10 +357,10 @@
             this.ApplicationUriTextBox.AllowDrop = true;
             this.ApplicationUriTextBox.AutoSize = true;
             this.ApplicationUriTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationUriTextBox.Location = new System.Drawing.Point(103, 31);
-            this.ApplicationUriTextBox.Margin = new System.Windows.Forms.Padding(3);
+            this.ApplicationUriTextBox.Location = new System.Drawing.Point(149, 46);
+            this.ApplicationUriTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationUriTextBox.Name = "ApplicationUriTextBox";
-            this.ApplicationUriTextBox.Size = new System.Drawing.Size(480, 18);
+            this.ApplicationUriTextBox.Size = new System.Drawing.Size(727, 27);
             this.ApplicationUriTextBox.TabIndex = 3;
             this.ApplicationUriTextBox.Text = "---";
             this.ApplicationUriTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -303,10 +370,10 @@
             this.ApplicationUriLabel.AllowDrop = true;
             this.ApplicationUriLabel.AutoSize = true;
             this.ApplicationUriLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationUriLabel.Location = new System.Drawing.Point(5, 31);
-            this.ApplicationUriLabel.Margin = new System.Windows.Forms.Padding(3);
+            this.ApplicationUriLabel.Location = new System.Drawing.Point(6, 46);
+            this.ApplicationUriLabel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationUriLabel.Name = "ApplicationUriLabel";
-            this.ApplicationUriLabel.Size = new System.Drawing.Size(90, 18);
+            this.ApplicationUriLabel.Size = new System.Drawing.Size(133, 27);
             this.ApplicationUriLabel.TabIndex = 2;
             this.ApplicationUriLabel.Text = "Application URI";
             this.ApplicationUriLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -316,10 +383,10 @@
             this.ApplicationNameTextBox.AllowDrop = true;
             this.ApplicationNameTextBox.AutoSize = true;
             this.ApplicationNameTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ApplicationNameTextBox.Location = new System.Drawing.Point(103, 5);
-            this.ApplicationNameTextBox.Margin = new System.Windows.Forms.Padding(3);
+            this.ApplicationNameTextBox.Location = new System.Drawing.Point(149, 7);
+            this.ApplicationNameTextBox.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ApplicationNameTextBox.Name = "ApplicationNameTextBox";
-            this.ApplicationNameTextBox.Size = new System.Drawing.Size(480, 18);
+            this.ApplicationNameTextBox.Size = new System.Drawing.Size(727, 27);
             this.ApplicationNameTextBox.TabIndex = 1;
             this.ApplicationNameTextBox.Text = "---";
             this.ApplicationNameTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -333,17 +400,17 @@
             this.FilterPanel.Location = new System.Drawing.Point(0, 0);
             this.FilterPanel.Margin = new System.Windows.Forms.Padding(0);
             this.FilterPanel.Name = "FilterPanel";
-            this.FilterPanel.Padding = new System.Windows.Forms.Padding(2, 6, 6, 6);
-            this.FilterPanel.Size = new System.Drawing.Size(588, 32);
+            this.FilterPanel.Padding = new System.Windows.Forms.Padding(3, 9, 9, 9);
+            this.FilterPanel.Size = new System.Drawing.Size(882, 49);
             this.FilterPanel.TabIndex = 0;
             // 
             // FilterTextBox
             // 
             this.FilterTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.FilterTextBox.Location = new System.Drawing.Point(77, 6);
-            this.FilterTextBox.Margin = new System.Windows.Forms.Padding(0, 2, 0, 2);
+            this.FilterTextBox.Location = new System.Drawing.Point(115, 9);
+            this.FilterTextBox.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
             this.FilterTextBox.Name = "FilterTextBox";
-            this.FilterTextBox.Size = new System.Drawing.Size(505, 20);
+            this.FilterTextBox.Size = new System.Drawing.Size(758, 26);
             this.FilterTextBox.TabIndex = 1;
             this.FilterTextBox.TextChanged += new System.EventHandler(this.FilterTextBox_TextChanged);
             // 
@@ -353,81 +420,33 @@
             this.FilterLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.FilterLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FilterLabel.ForeColor = System.Drawing.Color.White;
-            this.FilterLabel.Location = new System.Drawing.Point(2, 6);
-            this.FilterLabel.Margin = new System.Windows.Forms.Padding(3);
+            this.FilterLabel.Location = new System.Drawing.Point(3, 9);
+            this.FilterLabel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.FilterLabel.Name = "FilterLabel";
-            this.FilterLabel.Size = new System.Drawing.Size(75, 20);
+            this.FilterLabel.Size = new System.Drawing.Size(112, 31);
             this.FilterLabel.TabIndex = 0;
             this.FilterLabel.Text = "Text Filter";
             this.FilterLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // EndpointsGridView
-            // 
-            this.EndpointsGridView.AllowUserToAddRows = false;
-            this.EndpointsGridView.AllowUserToDeleteRows = false;
-            this.EndpointsGridView.AllowUserToResizeRows = false;
-            this.EndpointsGridView.BackgroundColor = System.Drawing.SystemColors.Window;
-            this.EndpointsGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            this.EndpointsGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.EndpointUrlColumn3,
-            this.SecurityModeColumn,
-            this.SecurityProfileColumn});
-            this.EndpointsGridView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.EndpointsGridView.Location = new System.Drawing.Point(0, 138);
-            this.EndpointsGridView.MultiSelect = false;
-            this.EndpointsGridView.Name = "EndpointsGridView";
-            this.EndpointsGridView.ReadOnly = true;
-            this.EndpointsGridView.RowHeadersVisible = false;
-            this.EndpointsGridView.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
-            this.EndpointsGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.EndpointsGridView.Size = new System.Drawing.Size(588, 446);
-            this.EndpointsGridView.TabIndex = 2;
-            this.EndpointsGridView.VisibleChanged += new System.EventHandler(this.EndpointsGridView_VisibleChanged);
-            this.EndpointsGridView.DoubleClick += new System.EventHandler(this.EndpointsGridView_DoubleClick);
-            // 
-            // EndpointUrlColumn3
-            // 
-            this.EndpointUrlColumn3.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.EndpointUrlColumn3.DataPropertyName = "EndpointUrl";
-            this.EndpointUrlColumn3.HeaderText = "Endpoint URL";
-            this.EndpointUrlColumn3.Name = "EndpointUrlColumn3";
-            this.EndpointUrlColumn3.ReadOnly = true;
-            // 
-            // SecurityModeColumn
-            // 
-            this.SecurityModeColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
-            this.SecurityModeColumn.DataPropertyName = "SecurityMode";
-            this.SecurityModeColumn.HeaderText = "Security Mode";
-            this.SecurityModeColumn.Name = "SecurityModeColumn";
-            this.SecurityModeColumn.ReadOnly = true;
-            // 
-            // SecurityProfileColumn
-            // 
-            this.SecurityProfileColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
-            this.SecurityProfileColumn.DataPropertyName = "SecurityProfile";
-            this.SecurityProfileColumn.HeaderText = "Security Profile";
-            this.SecurityProfileColumn.Name = "SecurityProfileColumn";
-            this.SecurityProfileColumn.ReadOnly = true;
-            this.SecurityProfileColumn.Width = 102;
-            // 
             // DiscoveryControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.MainPanel);
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "DiscoveryControl";
-            this.Size = new System.Drawing.Size(888, 584);
+            this.Size = new System.Drawing.Size(1332, 898);
             this.PopupMenuStrip.ResumeLayout(false);
             this.MainPanel.Panel1.ResumeLayout(false);
             this.MainPanel.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.MainPanel)).EndInit();
             this.MainPanel.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.EndpointsGridView)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ServersGridView)).EndInit();
             this.ApplicationDescriptionPanel.ResumeLayout(false);
             this.ApplicationDescriptionPanel.PerformLayout();
             this.FilterPanel.ResumeLayout(false);
             this.FilterPanel.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.EndpointsGridView)).EndInit();
             this.ResumeLayout(false);
 
         }

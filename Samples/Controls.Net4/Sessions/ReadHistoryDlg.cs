@@ -43,6 +43,7 @@ using System.ServiceModel.Channels;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -86,13 +87,13 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public bool ShowDialog(Session session, NodeId nodeId)
+        public async Task<bool> ShowDialogAsync(Session session, NodeId nodeId)
         {
             m_session = session;
             m_nodeId = nodeId;
 
             // update the title.
-            string displayText = session.NodeCache.GetDisplayText(nodeId);
+            string displayText = await session.NodeCache.GetDisplayTextAsync(nodeId);
 
             if (!String.IsNullOrEmpty(displayText))
             {
