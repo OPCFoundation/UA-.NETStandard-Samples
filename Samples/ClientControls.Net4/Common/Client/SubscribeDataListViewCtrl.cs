@@ -686,7 +686,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void SetMonitoringModeMI_Click(object sender, EventArgs e)
+        private async void SetMonitoringModeMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -726,7 +726,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (itemsToModify.Count != 0)
                     {
-                        m_subscription.SetMonitoringMode(newMonitoringMode, itemsToModify);
+                        await m_subscription.SetMonitoringModeAsync(newMonitoringMode, itemsToModify);
                     }
                 }
             }
@@ -736,17 +736,17 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void Subscription_EditMI_Click(object sender, EventArgs e)
+        private async void Subscription_EditMI_Click(object sender, EventArgs e)
         {
             try
             {
                 if (new EditSubscriptionDlg().ShowDialog(m_subscription))
                 {
-                    m_subscription.Modify();
+                    await m_subscription.ModifyAsync();
 
                     if (m_subscription.PublishingEnabled != m_subscription.CurrentPublishingEnabled)
                     {
-                        m_subscription.SetPublishingMode(m_subscription.PublishingEnabled);
+                        await m_subscription.SetPublishingModeAsync(m_subscription.PublishingEnabled);
                     }
 
                     SubscriptionStateTB.Text = GetDisplayString(m_subscription);

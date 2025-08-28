@@ -55,7 +55,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private SessionReconnectHandler m_reconnectHandler;
         private CertificateValidationEventHandler m_CertificateValidation;
         private EventHandler m_ReconnectComplete;
@@ -204,7 +204,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The currently active session. 
         /// </summary>
-        public Session Session => m_session;
+        public ISession Session => m_session;
 
         /// <summary>
         /// The number of seconds between reconnect attempts (0 means reconnect is disabled).
@@ -290,25 +290,25 @@ namespace Opc.Ua.Client.Controls
         /// Creates a new session.
         /// </summary>
         /// <returns>The new session object.</returns>
-        private async Task<Session> Connect(
+        private async Task<ISession> ConnectAsync(
             ITransportWaitingConnection connection,
             EndpointDescription endpointDescription,
             bool useSecurity,
             uint sessionTimeout = 0)
         {
             // disconnect from existing session.
-            InternalDisconnect();
+            await InternalDisconnectAsync();
 
             // select the best endpoint.
             if (endpointDescription == null)
             {
-                endpointDescription = CoreClientUtils.SelectEndpoint(m_configuration, connection, useSecurity, DiscoverTimeout);
+                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, DiscoverTimeout);
             }
 
             EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             ConfiguredEndpoint endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            m_session = await Session.Create(
+            m_session = await DefaultSessionFactory.Instance.CreateAsync(
                 m_configuration,
                 connection,
                 endpoint,
@@ -348,7 +348,7 @@ namespace Opc.Ua.Client.Controls
         /// Creates a new session.
         /// </summary>
         /// <returns>The new session object.</returns>
-        public Task<Session> Connect()
+        public Task<ISession> Connect()
         {
             // determine the URL that was selected.
             string serverUrl = UrlCB.Text;
@@ -364,20 +364,20 @@ namespace Opc.Ua.Client.Controls
         /// Creates a new session.
         /// </summary>
         /// <returns>The new session object.</returns>
-        private async Task<Session> Connect(
+        private async Task<ISession> Connect(
             string serverUrl,
             bool useSecurity,
             uint sessionTimeout = 0)
         {
             // disconnect from existing session.
-            InternalDisconnect();
+            await InternalDisconnectAsync();
 
             // select the best endpoint.
-            var endpointDescription = CoreClientUtils.SelectEndpoint(m_configuration, serverUrl, useSecurity, DiscoverTimeout);
+            var endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, serverUrl, useSecurity, DiscoverTimeout);
             var endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            m_session = await Session.Create(
+            m_session = await DefaultSessionFactory.Instance.CreateAsync(
                 m_configuration,
                 endpoint,
                 false,
@@ -418,7 +418,7 @@ namespace Opc.Ua.Client.Controls
         /// <param name="serverUrl">The URL of a server endpoint.</param>
         /// <param name="useSecurity">Whether to use security.</param>
         /// <returns>The new session object.</returns>
-        public Task<Session> ConnectAsync(
+        public Task<ISession> ConnectAsync(
             string serverUrl = null,
             bool useSecurity = false,
             uint sessionTimeout = 0
@@ -451,7 +451,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         /// <param name="connection"></param>
         /// <param name="useSecurity"></param>
-        public async Task<Session> ConnectAsync(
+        public async Task<ISession> ConnectAsync(
             ITransportWaitingConnection connection,
             bool useSecurity,
             int discoverTimeout = -1,
@@ -472,12 +472,12 @@ namespace Opc.Ua.Client.Controls
             {
                 // Discovery uses the reverse connection and closes it
                 // return and wait for next reverse hello
-                endpointDescription = CoreClientUtils.SelectEndpoint(m_configuration, connection, useSecurity, discoverTimeout);
+                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, discoverTimeout);
                 m_endpoints[connection.EndpointUrl] = endpointDescription;
                 return null;
             }
 
-            return await Connect(connection, endpointDescription, UseSecurityCK.Checked, sessionTimeout);
+            return await ConnectAsync(connection, endpointDescription, UseSecurityCK.Checked, sessionTimeout);
         }
 
         /// <summary>
@@ -486,13 +486,13 @@ namespace Opc.Ua.Client.Controls
         public Task DisconnectAsync()
         {
             UpdateStatus(false, DateTime.UtcNow, "Disconnected");
-            return Task.Run(() => InternalDisconnect());
+            return Task.Run(() => InternalDisconnectAsync());
         }
 
         /// <summary>
         /// Disconnects from the server.
         /// </summary>
-        private void InternalDisconnect()
+        private async Task InternalDisconnectAsync()
         {
             // stop any reconnect operation.
             if (m_reconnectHandler != null)
@@ -505,7 +505,7 @@ namespace Opc.Ua.Client.Controls
             if (m_session != null)
             {
                 m_session.KeepAlive -= Session_KeepAlive;
-                m_session.Close(10000);
+                await m_session.CloseAsync(10000);
                 m_session = null;
             }
 
@@ -521,7 +521,7 @@ namespace Opc.Ua.Client.Controls
             UpdateStatus(false, DateTime.UtcNow, "Disconnected");
 
             // stop any reconnect operation.
-            InternalDisconnect();
+            InternalDisconnectAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -559,7 +559,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Finds the endpoint that best matches the current settings.
         /// </summary>
-        private EndpointDescription SelectEndpoint()
+        private async Task<EndpointDescription> SelectEndpointAsync()
         {
             try
             {
@@ -574,7 +574,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // return the selected endpoint.
-                return CoreClientUtils.SelectEndpoint(m_configuration, discoveryUrl, UseSecurityCK.Checked, DiscoverTimeout);
+                return await CoreClientUtils.SelectEndpointAsync(m_configuration, discoveryUrl, UseSecurityCK.Checked, DiscoverTimeout);
             }
             finally
             {

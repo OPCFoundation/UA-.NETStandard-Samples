@@ -154,7 +154,7 @@ namespace Opc.Ua.Gds.Server
             try
             {
                 exitCode = ExitCode.ErrorServerNotStarted;
-                await ConsoleGlobalDiscoveryServer();
+                await ConsoleGlobalDiscoveryServerAsync();
                 Console.WriteLine("Server started. Press Ctrl-C to exit...");
                 exitCode = ExitCode.ErrorServerRunning;
             }
@@ -200,7 +200,7 @@ namespace Opc.Ua.Gds.Server
             exitCode = ExitCode.Ok;
         }
 
-        public static ExitCode ExitCode { get => exitCode; }
+        public static ExitCode ExitCode => exitCode;
 
         private static void CertificateValidator_CertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)
         {
@@ -212,11 +212,10 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        private async Task ConsoleGlobalDiscoveryServer()
+        private async Task ConsoleGlobalDiscoveryServerAsync()
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance
-            {
+            var application = new ApplicationInstance {
                 ApplicationName = "Global Discovery Server",
                 ApplicationType = ApplicationType.Server,
                 ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer"
@@ -258,8 +257,8 @@ namespace Opc.Ua.Gds.Server
             await application.StartAsync(server).ConfigureAwait(false);
 
             // print endpoint info
-            var endpoints = application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
-            foreach (var endpoint in endpoints)
+            IEnumerable<string> endpoints = application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
+            foreach (string endpoint in endpoints)
             {
                 Console.WriteLine(endpoint);
             }
@@ -315,7 +314,7 @@ namespace Opc.Ua.Gds.Server
             PrintSessionStatus(session, reason.ToString());
         }
 
-        void PrintSessionStatus(ISession session, string reason, bool lastContact = false)
+        private void PrintSessionStatus(ISession session, string reason, bool lastContact = false)
         {
             lock (session.DiagnosticsLock)
             {
