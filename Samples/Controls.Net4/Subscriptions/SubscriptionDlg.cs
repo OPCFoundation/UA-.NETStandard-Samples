@@ -39,6 +39,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -68,19 +69,19 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a new subscription.
         /// </summary>
-        public Subscription New(Session session)
+        public async Task<Subscription> NewAsync(Session session)
         {
             if (session == null) throw new ArgumentNullException("session");
 
             Subscription subscription = new Subscription(session.DefaultSubscription);
 
-            if (!new SubscriptionEditDlg().ShowDialog(subscription))
+            if (!await new SubscriptionEditDlg().ShowDialogAsync(subscription))
             {
                 return null;
             }
 
             session.AddSubscription(subscription);
-            subscription.Create();
+            await subscription.CreateAsync();
 
             Subscription duplicateSubscription = session.Subscriptions.FirstOrDefault(s => s.Id != 0 && s.Id.Equals(subscription.Id) && s != subscription);
             if (duplicateSubscription != null)
@@ -90,8 +91,8 @@ namespace Opc.Ua.Sample.Controls
                 DialogResult result = MessageBox.Show("Duplicate subscription was created with the id: " + duplicateSubscription.Id + ". Do you want to keep it?", "Warning", MessageBoxButtons.YesNo);
                 if (result == System.Windows.Forms.DialogResult.No)
                 {
-                    duplicateSubscription.Delete(false);
-                    session.RemoveSubscription(subscription);
+                    await duplicateSubscription.DeleteAsync(false);
+                    await session.RemoveSubscriptionAsync(subscription);
 
                     return null;
                 }
@@ -396,16 +397,16 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_Click(object sender, EventArgs e)
         {
             try
             {
-                if (!new SubscriptionEditDlg().ShowDialog(m_subscription))
+                if (!await new SubscriptionEditDlg().ShowDialogAsync(m_subscription))
                 {
                     return;
                 }
 
-                m_subscription.Modify();
+                await m_subscription.ModifyAsync();
             }
             catch (Exception exception)
             {
@@ -464,11 +465,11 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ConditionRefreshMI_Click(object sender, EventArgs e)
+        private async void ConditionRefreshMI_Click(object sender, EventArgs e)
         {
             try
             {
-                m_subscription.ConditionRefresh();
+                await m_subscription.ConditionRefreshAsync();
             }
             catch (Exception exception)
             {

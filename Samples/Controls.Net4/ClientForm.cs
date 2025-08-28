@@ -33,10 +33,12 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -89,7 +91,7 @@ namespace Opc.Ua.Sample.Controls
             EndpointSelectorCTRL.Initialize(m_endpoints, m_configuration);
 
             // initialize control state.
-            Disconnect();
+            DisconnectAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -130,7 +132,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Disconnect from the server if ths form is closing.
         /// </summary>
-        protected override void OnClosing(CancelEventArgs e)
+        protected override async void OnClosing(CancelEventArgs e)
         {
             if (m_masterForm == null && m_forms.Count > 0)
             {
@@ -147,14 +149,20 @@ namespace Opc.Ua.Sample.Controls
                     form.Close();
                 }
             }
-
-            Disconnect();
+            try
+            {
+                await DisconnectAsync();
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
 
         /// <summary>
         /// Disconnects from a server.
         /// </summary>
-        public void Disconnect()
+        public async Task DisconnectAsync()
         {
             if (m_session != null)
             {
@@ -167,7 +175,7 @@ namespace Opc.Ua.Sample.Controls
 
                 m_session.KeepAlive -= StandardClient_KeepAlive;
 
-                m_session.Close();
+                await m_session.CloseAsync();
                 m_session = null;
             }
 
@@ -182,11 +190,11 @@ namespace Opc.Ua.Sample.Controls
             MessageBox.Show("A handy place to put test code.");
         }
 
-        void EndpointSelectorCTRL_ConnectEndpoint(object sender, ConnectEndpointEventArgs e)
+        private async void EndpointSelectorCTRL_ConnectEndpoint(object sender, ConnectEndpointEventArgs e)
         {
             try
             {
-                Connect(e.Endpoint);
+                await ConnectAsync(e.Endpoint);
             }
             catch (Exception exception)
             {
@@ -210,14 +218,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Connects to a server.
         /// </summary>
-        public async void Connect(ConfiguredEndpoint endpoint)
+        public async Task ConnectAsync(ConfiguredEndpoint endpoint)
         {
             if (endpoint == null)
             {
                 return;
             }
 
-            Session session = await SessionsCTRL.Connect(endpoint);
+            Session session = await SessionsCTRL.ConnectAsync(endpoint);
 
             if (session != null)
             {
@@ -339,11 +347,11 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             try
             {
-                SessionsCTRL.Close();
+                await SessionsCTRL.CloseAsync();
 
                 if (m_masterForm == null)
                 {
@@ -480,7 +488,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "index.htm");
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "index.htm");
             }
             catch (Exception ex)
             {

@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -305,7 +306,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Apply any changes to the set of items.
         /// </summary>
-        public void ApplyChanges(bool force)
+        public async Task ApplyChangesAsync(bool force)
         {
             if (m_batchUpdates && !force)
             {
@@ -314,7 +315,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_subscription != null)
             {
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync();
 
                 foreach (ListViewItem listItem in ItemsLV.Items)
                 {
@@ -461,7 +462,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Event Handlers
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -471,7 +472,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 CreateItem(m_subscription);
-                ApplyChanges(false);
+                await ApplyChangesAsync(false);
             }
             catch (Exception exception)
             {
@@ -479,7 +480,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -500,7 +501,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                ApplyChanges(false);
+                await ApplyChangesAsync(false);
             }
             catch (Exception exception)
             {
@@ -508,7 +509,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void DeleteMI_Click(object sender, EventArgs e)
+        private async void DeleteMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -524,7 +525,7 @@ namespace Opc.Ua.Sample.Controls
                     m_subscription.RemoveItems(monitoredItems);
                 }
 
-                IList<MonitoredItem> deletedItems = m_subscription.DeleteItems();
+                IList<MonitoredItem> deletedItems = await m_subscription.DeleteItemsAsync();
 
                 string errorString = string.Empty;
 
@@ -595,7 +596,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SetFilterMI_Click(object sender, EventArgs e)
+        private async void SetFilterMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -627,8 +628,8 @@ namespace Opc.Ua.Sample.Controls
                         monitoredItems[0].Filter = filter;
                     }
 
-                    m_subscription.ModifyItems();
-                    ApplyChanges(false);
+                    await m_subscription.ModifyItemsAsync();
+                    await ApplyChangesAsync(false);
                 }
             }
             catch (Exception exception)

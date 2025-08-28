@@ -69,7 +69,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_nodeId  = nodeId;
 
-            AttributesCTRL.Initialize(session, nodeId);
+            AttributesCTRL.InitializeAsync(session, nodeId);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -82,7 +82,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                AttributesCTRL.Initialize(m_session, m_nodeId);
+                AttributesCTRL.InitializeAsync(m_session, m_nodeId);
             }
             catch (Exception exception)
             {

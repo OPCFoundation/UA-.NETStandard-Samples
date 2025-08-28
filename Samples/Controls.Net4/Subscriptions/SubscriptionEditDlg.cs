@@ -37,6 +37,7 @@ using System.Windows.Forms;
 using System.Reflection;
 
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -50,7 +51,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public bool ShowDialog(Subscription subscription)
+        public async Task<bool> ShowDialogAsync(Subscription subscription)
         {
             if (subscription == null) throw new ArgumentNullException("subscription");
 
@@ -75,7 +76,7 @@ namespace Opc.Ua.Sample.Controls
             subscription.Priority                   = (byte)PriorityNC.Value;
             if (subscription.Created)
             {
-                subscription.SetPublishingMode(PublishingEnabledCK.Checked);            
+                await subscription.SetPublishingModeAsync(PublishingEnabledCK.Checked);            
             }
             else
             {

@@ -99,7 +99,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Closes all open sessions within the control.
         /// </summary>
-        public void Close()
+        public async Task CloseAsync()
         {
             // close any dialogs.
             foreach (SubscriptionDlg dialog in new List<SubscriptionDlg>(m_dialogs.Values))
@@ -114,17 +114,17 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    session.Close();
+                    await session.CloseAsync();
                 }
             }
 
-            Clear();
+            await ClearAsync();
         }
 
         /// <summary>
         /// Clears the contents of the control,
         /// </summary>
-        public void Clear()
+        public async Task ClearAsync()
         {
             // close all active sessions.
             foreach (TreeNode root in NodesTV.Nodes)
@@ -133,7 +133,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    session.Close();
+                    await session.CloseAsync();
                 }
             }
 
@@ -170,7 +170,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a session with the endpoint.
         /// </summary>
-        public async Task<Session> Connect(ConfiguredEndpoint endpoint)
+        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint)
         {
             if (endpoint == null) throw new ArgumentNullException("endpoint");
 
@@ -232,13 +232,13 @@ namespace Opc.Ua.Sample.Controls
                 m_messageContext);
 
             // create the session.
-            return Connect(endpoint, channel, availableEndpoints);
+            return await ConnectAsync(endpoint, channel, availableEndpoints);
         }
 
         /// <summary>
         /// Opens a new session.
         /// </summary>
-        public Session Connect(ConfiguredEndpoint endpoint, ITransportChannel channel, EndpointDescriptionCollection availableEndpoints)
+        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, EndpointDescriptionCollection availableEndpoints)
         {
             if (channel == null) throw new ArgumentNullException("channel");
 
@@ -257,7 +257,7 @@ namespace Opc.Ua.Sample.Controls
                 channel = null;
 
                 // delete the existing session.
-                Close();
+                await CloseAsync();
 
                 // add session to tree.
                 AddNode(session);
@@ -278,7 +278,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Deletes a session.
         /// </summary>
-        public void Delete(Session session)
+        public async Task DeleteAsync(Session session)
         {
             if (session == null) throw new ArgumentNullException("session");
 
@@ -296,7 +296,7 @@ namespace Opc.Ua.Sample.Controls
                 dialog.Close();
             }
 
-            session.Close();
+            await session.CloseAsync();
             NodesTV.SelectedNode = null;
             SelectNode();
         }
@@ -304,7 +304,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Deletes a subscription.
         /// </summary>
-        public void Delete(Subscription subscription)
+        public async Task DeleteAsync(Subscription subscription)
         {
             if (subscription == null) throw new ArgumentNullException("subscription");
 
@@ -317,7 +317,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             Session session = subscription.Session as Session;
-            session.RemoveSubscription(subscription);
+            await session.RemoveSubscriptionAsync(subscription);
 
             TreeNode node = FindNode(NodesTV.Nodes, subscription);
 
@@ -333,7 +333,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Deletes a monitored item.
         /// </summary>
-        public void Delete(MonitoredItem monitoredItem)
+        public async Task DeleteAsync(MonitoredItem monitoredItem)
         {
             if (monitoredItem == null) throw new ArgumentNullException("monitoredItem");
 
@@ -347,21 +347,21 @@ namespace Opc.Ua.Sample.Controls
 
             Subscription subscription = monitoredItem.Subscription;
             subscription.RemoveItem(monitoredItem);
-            subscription.ApplyChanges();
+            await subscription.ApplyChangesAsync();
             NodesTV.SelectedNode = FindNode(NodesTV.Nodes, subscription);
         }
 
         /// <summary>
         /// Creates a new subscription.
         /// </summary>
-        public Subscription CreateSubscription(Session session)
+        public async Task<Subscription> CreateSubscriptionAsync(Session session)
         {
             // create form.
             SubscriptionDlg dialog = new SubscriptionDlg();
             dialog.FormClosing += new FormClosingEventHandler(Subscription_FormClosing);
 
             // create subscription.
-            Subscription subscription = dialog.New(session);
+            Subscription subscription = await dialog.NewAsync(session);
 
             if (subscription != null)
             {
@@ -936,7 +936,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SubscriptionCreateMI_Click(object sender, EventArgs e)
+        private async void SubscriptionCreateMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -957,7 +957,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // create the subscription.
-                CreateSubscription(session);
+                await CreateSubscriptionAsync(session);
             }
             catch (Exception exception)
             {
@@ -981,7 +981,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                await Connect(m_endpoint);
+                await ConnectAsync(m_endpoint);
             }
             catch (Exception exception)
             {
@@ -989,7 +989,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void DeleteMI_Click(object sender, EventArgs e)
+        private async void DeleteMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1006,7 +1006,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    Delete(session);
+                    await DeleteAsync(session);
                 }
 
                 // delete subscription
@@ -1014,7 +1014,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (subscription != null)
                 {
-                    Delete(subscription);
+                    await DeleteAsync(subscription);
                 }
 
                 // delete monitored item
@@ -1022,7 +1022,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (monitoredItem != null)
                 {
-                    Delete(monitoredItem);
+                    await DeleteAsync(monitoredItem);
                 }
             }
             catch (Exception exception)
@@ -1269,7 +1269,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SessionLoadMI_Click(object sender, EventArgs e)
+        private async void SessionLoadMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1323,7 +1323,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     foreach (Subscription subscription in subscriptions)
                     {
-                        subscription.Create();
+                        await subscription.CreateAsync();
                     }
                 }
             }

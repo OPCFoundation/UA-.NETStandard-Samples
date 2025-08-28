@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -45,8 +46,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public ArgumentListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -56,13 +57,13 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Name",        HorizontalAlignment.Left, null },  
-			new object[] { "DataType",    HorizontalAlignment.Left, null }, 
-			new object[] { "Value",       HorizontalAlignment.Left, null }, 
-			new object[] { "Description", HorizontalAlignment.Left, null }, 
-		};
-		#endregion
+        {
+            new object[] { "Name",        HorizontalAlignment.Left, null },
+            new object[] { "DataType",    HorizontalAlignment.Left, null },
+            new object[] { "Value",       HorizontalAlignment.Left, null },
+            new object[] { "Description", HorizontalAlignment.Left, null },
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -77,17 +78,17 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public bool Update(Session session, NodeId methodId, bool inputArgs)
+        public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs)
         {
-            if (session == null)  throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException("session");
             if (methodId == null) throw new ArgumentNullException("methodId");
-            
+
             Clear();
-            
+
             m_session = session;
 
             // find the method.
-            MethodNode method = session.NodeCache.Find(methodId) as MethodNode;
+            MethodNode method = await session.NodeCache.FindAsync(methodId) as MethodNode;
 
             if (method == null)
             {
@@ -96,7 +97,7 @@ namespace Opc.Ua.Sample.Controls
 
             // select the property to find.
             QualifiedName browseName = null;
-                    
+
             if (inputArgs)
             {
                 browseName = Opc.Ua.BrowseNames.InputArguments;
@@ -107,7 +108,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // fetch the argument list.
-            VariableNode argumentsNode = session.NodeCache.Find(methodId, ReferenceTypeIds.HasProperty, false, true, browseName) as VariableNode;
+            VariableNode argumentsNode = await session.NodeCache.FindAsync(methodId, ReferenceTypeIds.HasProperty, false, true, browseName) as VariableNode;
 
             if (argumentsNode == null)
             {
@@ -115,7 +116,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // read the value from the server.
-            DataValue value = m_session.ReadValue(argumentsNode.NodeId);
+            DataValue value = await m_session.ReadValueAsync(argumentsNode.NodeId);
 
             ExtensionObject[] argumentsList = value.Value as ExtensionObject[];
 
@@ -130,7 +131,7 @@ namespace Opc.Ua.Sample.Controls
             AdjustColumns();
 
             return ItemsLV.Items.Count > 0;
-        }        
+        }
 
         /// <summary>
         /// Returns the argument values
@@ -172,8 +173,8 @@ namespace Opc.Ua.Sample.Controls
 
             AdjustColumns();
         }
-		#endregion
-                
+        #endregion
+
         #region Overridden Methods
         /// <see cref="BaseListCtrl.PickItems" />
         protected override void PickItems()
@@ -184,66 +185,73 @@ namespace Opc.Ua.Sample.Controls
 
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
-            EditMI.Enabled       = ItemsLV.SelectedItems.Count == 1;
-            ClearValueMI.Enabled = EditMI.Enabled;
-		}
-        
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
         {
-			Argument argument = item as Argument;
+            EditMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+            ClearValueMI.Enabled = EditMI.Enabled;
+        }
 
-			if (argument == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
-
-			listItem.SubItems[0].Text = String.Format("{0}", argument.Name);
-
-            INode datatype = m_session.NodeCache.Find(argument.DataType);
-
-            if (datatype != null)
+        /// <see cref="BaseListCtrl.UpdateItem" />
+        protected override async void UpdateItem(ListViewItem listItem, object item)
+        {
+            try
             {
-                listItem.SubItems[1].Text = String.Format("{0}", datatype);
-            }
-            else
-            {
-                listItem.SubItems[1].Text = String.Format("{0}", argument.DataType);
-            }
+                Argument argument = item as Argument;
 
-            if (argument.ValueRank >= ValueRanks.OneOrMoreDimensions)
-            {
-                listItem.SubItems[1].Text += "[]";
-            }
+                if (argument == null)
+                {
+                    base.UpdateItem(listItem, item);
+                    return;
+                }
 
-            if (argument.Value == null)
-            {
-                argument.Value = TypeInfo.GetDefaultValue(argument.DataType, argument.ValueRank, m_session.TypeTree);
+                listItem.SubItems[0].Text = String.Format("{0}", argument.Name);
+
+                INode datatype = await m_session.NodeCache.FindAsync(argument.DataType);
+
+                if (datatype != null)
+                {
+                    listItem.SubItems[1].Text = String.Format("{0}", datatype);
+                }
+                else
+                {
+                    listItem.SubItems[1].Text = String.Format("{0}", argument.DataType);
+                }
+
+                if (argument.ValueRank >= ValueRanks.OneOrMoreDimensions)
+                {
+                    listItem.SubItems[1].Text += "[]";
+                }
 
                 if (argument.Value == null)
                 {
-                    Type type = m_session.MessageContext.Factory.GetSystemType(argument.DataType);
+                    argument.Value = TypeInfo.GetDefaultValue(argument.DataType, argument.ValueRank, m_session.TypeTree);
 
-                    if (type != null)
+                    if (argument.Value == null)
                     {
-                        if (argument.ValueRank == ValueRanks.Scalar)
+                        Type type = m_session.MessageContext.Factory.GetSystemType(argument.DataType);
+
+                        if (type != null)
                         {
-                            argument.Value = new ExtensionObject(Activator.CreateInstance(type));
-                        }
-                        else
-                        {
-                            argument.Value = new ExtensionObject[0];
+                            if (argument.ValueRank == ValueRanks.Scalar)
+                            {
+                                argument.Value = new ExtensionObject(Activator.CreateInstance(type));
+                            }
+                            else
+                            {
+                                argument.Value = new ExtensionObject[0];
+                            }
                         }
                     }
                 }
+
+                listItem.SubItems[2].Text = String.Format("{0}", argument.Value);
+                listItem.SubItems[3].Text = String.Format("{0}", argument.Description.Text);
+
+                listItem.Tag = item;
             }
-
-			listItem.SubItems[2].Text = String.Format("{0}", argument.Value);
-			listItem.SubItems[3].Text = String.Format("{0}", argument.Description.Text);
-
-			listItem.Tag = item;
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
         #endregion
 
@@ -269,7 +277,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -290,7 +298,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }
