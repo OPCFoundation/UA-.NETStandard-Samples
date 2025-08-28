@@ -77,7 +77,7 @@ namespace Opc.Ua.Gds.Client.Controls
             OkButton.Enabled = Uri.IsWellFormedUriString(ServerUrlTextBox.Text.Trim(), UriKind.Absolute);
         }
 
-        private void OkButton_Click(object sender, EventArgs e)
+        private async void OkButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -92,7 +92,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     Cursor = Cursors.WaitCursor;
 
-                    var endpoint = CoreClientUtils.SelectEndpoint(m_pushServer.Configuration, url, false, 5000);
+                    var endpoint = await CoreClientUtils.SelectEndpointAsync(m_pushServer.Configuration, url, false, 5000);
 
                     if (UserNameCredentialsRB.Checked)
                     {

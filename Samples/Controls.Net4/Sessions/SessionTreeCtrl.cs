@@ -1157,7 +1157,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SubscriptionEnabledPublishingMI_Click(object sender, EventArgs e)
+        private async void SubscriptionEnabledPublishingMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1174,7 +1174,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (subscription != null)
                 {
-                    subscription.SetPublishingMode(SubscriptionEnabledPublishingMI.Checked);
+                    await subscription.SetPublishingModeAsync(SubscriptionEnabledPublishingMI.Checked);
                 }
             }
             catch (Exception exception)

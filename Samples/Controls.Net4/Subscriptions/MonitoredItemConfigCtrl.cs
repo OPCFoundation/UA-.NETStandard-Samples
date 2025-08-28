@@ -554,7 +554,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SetMonitoringModeMI_Click(object sender, EventArgs e)
+        private async void SetMonitoringModeMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -574,7 +574,7 @@ namespace Opc.Ua.Sample.Controls
                         return;
                     }
 
-                    List<ServiceResult> errors = m_subscription.SetMonitoringMode(monitoringMode, monitoredItems);
+                    List<ServiceResult> errors = await m_subscription.SetMonitoringModeAsync(monitoringMode, monitoredItems);
 
                     if (errors != null)
                     {

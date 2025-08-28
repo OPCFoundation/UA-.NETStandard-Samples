@@ -85,12 +85,6 @@ namespace Opc.Ua.Gds.Client.Controls
             Add
         }
 
-        private class ExpandNodeData
-        {
-            public TreeNode Parent;
-            public LocalDiscoveryServerClient Lds;
-        }
-
         [DefaultValue(300)]
         [SettingsBindable(true)]
         public int SplitterDistance
