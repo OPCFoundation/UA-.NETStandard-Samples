@@ -47,7 +47,7 @@ namespace AggregationServer
         /// <summary>
         /// Fetches the event type information from the AE server.
         /// </summary>
-        public void LoadTypes(Opc.Ua.Client.Session client, IServerInternal server, NamespaceMapper mapper)
+        public void LoadTypes(Opc.Ua.Client.ISession client, IServerInternal server, NamespaceMapper mapper)
         {
             TypeNodes = new NodeIdDictionary<ReferenceDescription>();
             LoadTypes(client, server, mapper, Opc.Ua.ObjectTypeIds.BaseObjectType);
@@ -59,7 +59,7 @@ namespace AggregationServer
         /// <summary>
         /// Fetches the event categories for the specified event type.
         /// </summary>
-        private void LoadTypes(Opc.Ua.Client.Session client, IServerInternal server, NamespaceMapper mapper, NodeId parentId)
+        private void LoadTypes(Opc.Ua.Client.ISession client, IServerInternal server, NamespaceMapper mapper, NodeId parentId)
         {
             List<ReferenceDescription> references = null;
 
@@ -106,7 +106,7 @@ namespace AggregationServer
         /// <summary>
         /// Fetches the subtypes for the node.
         /// </summary>
-        private List<ReferenceDescription> BrowseSubTypes(Opc.Ua.Client.Session client, NodeId nodeId)
+        private List<ReferenceDescription> BrowseSubTypes(Opc.Ua.Client.ISession client, NodeId nodeId)
         {
             List<ReferenceDescription> references = new List<ReferenceDescription>();
 

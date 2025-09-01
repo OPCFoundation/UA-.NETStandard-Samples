@@ -68,7 +68,7 @@ namespace Quickstarts.PerfTestClient
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private bool m_connectedOnce;
         private Tester m_tester;
         #endregion
@@ -125,7 +125,7 @@ namespace Quickstarts.PerfTestClient
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectComplete(object sender, EventArgs e)
         {
             try
             {
@@ -152,7 +152,7 @@ namespace Quickstarts.PerfTestClient
                 m_tester = new Tester();
                 m_tester.SamplingRate = (int)UpdateRateCTRL.Value;
                 m_tester.ItemCount = (int)ItemCountCTRL.Value;
-                m_tester.Start(m_session);
+                await m_tester.StartAsync(m_session);
 
                 UpdateTimer.Enabled = true;
                 StopBTN.Visible = true;

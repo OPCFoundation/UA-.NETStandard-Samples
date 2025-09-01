@@ -72,7 +72,7 @@ namespace Quickstarts.DataTypes
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Private Methods
@@ -127,14 +127,14 @@ namespace Quickstarts.DataTypes
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectComplete(object sender, EventArgs e)
         {
             try
             {
                 m_session = ConnectServerCTRL.Session;
 
                 // browse the instances in the server.
-                BrowseCTRL.Initialize(m_session, 
+                await BrowseCTRL.InitializeAsync(m_session, 
                     ObjectIds.RootFolder, 
                     ReferenceTypeIds.Organizes, 
                     ReferenceTypeIds.Aggregates,
@@ -143,7 +143,7 @@ namespace Quickstarts.DataTypes
                 if (m_session != null)
                 {
                     var typeSystem = new ComplexTypeSystem(m_session);
-                    typeSystem.Load().Wait();
+                    await typeSystem.LoadAsync();
                 }
             }
             catch (Exception exception)
@@ -155,11 +155,11 @@ namespace Quickstarts.DataTypes
         /// <summary>
         /// Updates the application after a communicate error was detected.
         /// </summary>
-        private void Server_ReconnectStarting(object sender, EventArgs e)
+        private async void Server_ReconnectStarting(object sender, EventArgs e)
         {
             try
             {
-                BrowseCTRL.ChangeSession(null);
+                await BrowseCTRL.ChangeSessionAsync(null);
             }
             catch (Exception exception)
             {
@@ -170,12 +170,12 @@ namespace Quickstarts.DataTypes
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectComplete(object sender, EventArgs e)
         {
             try
             {
                 m_session = ConnectServerCTRL.Session;
-                BrowseCTRL.ChangeSession(m_session);
+                await BrowseCTRL.ChangeSessionAsync(m_session);
             }
             catch (Exception exception)
             {

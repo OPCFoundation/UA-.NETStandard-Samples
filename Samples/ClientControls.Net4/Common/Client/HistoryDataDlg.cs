@@ -36,6 +36,7 @@ using System.Drawing;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -62,9 +63,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public void ChangeSession(Session session)
+        public Task ChangeSessionAsync(ISession session)
         {
             HistoryDataCTRL.ChangeSession(session);
+            return Task.CompletedTask;
         }
 
         /// <summary>

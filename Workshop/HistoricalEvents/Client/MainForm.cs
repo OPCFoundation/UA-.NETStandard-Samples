@@ -71,7 +71,7 @@ namespace Quickstarts.HistoricalEvents.Client
         
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private bool m_connectedOnce;
         #endregion
 
@@ -226,7 +226,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void Events_SelectEventAreaMI_Click(object sender, EventArgs e)
+        private async void Events_SelectEventAreaMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -235,7 +235,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                NodeId areaId = new SelectNodeDlg().ShowDialog(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", Opc.Ua.ReferenceTypeIds.HasEventSource);
+                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId == null)
                 {

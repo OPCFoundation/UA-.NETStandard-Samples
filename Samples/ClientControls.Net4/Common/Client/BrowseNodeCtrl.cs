@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -64,21 +65,21 @@ namespace Opc.Ua.Client.Controls
         /// <param name="session">The session.</param>
         /// <param name="rootId">The root of the hierarchy to browse.</param>
         /// <param name="referenceTypeIds">The reference types to follow.</param>
-        public void Initialize(
-            Session session,
+        public async Task InitializeAsync(
+            ISession session,
             NodeId rootId,
             params NodeId[] referenceTypeIds)
         {
-            BrowseCTRL.Initialize(session, rootId, referenceTypeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, referenceTypeIds);
         }
 
         /// <summary>
         /// Changes the session used by the control.
         /// </summary>
         /// <param name="session">The session.</param>
-        public void ChangeSession(Session session)
+        public async Task ChangeSessionAsync(ISession session)
         {
-            BrowseCTRL.ChangeSession(session);
+            await BrowseCTRL.ChangeSessionAsync(session);
         }
 
         /// <summary>

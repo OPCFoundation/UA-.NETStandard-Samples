@@ -58,7 +58,7 @@ namespace Quickstarts.HistoricalEvents.Client
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_areaId;
         private FilterDeclaration m_filter;
         private ReadEventDetails m_details;
@@ -69,7 +69,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public bool ShowDialog(Session session, NodeId areaId, FilterDeclaration filter)
+        public bool ShowDialog(ISession session, NodeId areaId, FilterDeclaration filter)
         {
             m_session = session;
             m_areaId = areaId;
@@ -412,7 +412,7 @@ namespace Quickstarts.HistoricalEvents.Client
             MaxReturnValuesNP.Enabled = MaxReturnValuesCK.Checked;
         }
 
-        private void EventAreaBTN_Click(object sender, EventArgs e)
+        private async void EventAreaBTN_Click(object sender, EventArgs e)
         {
             try
             {
@@ -421,7 +421,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                NodeId areaId = new SelectNodeDlg().ShowDialog(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", Opc.Ua.ReferenceTypeIds.HasEventSource);
+                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId == null)
                 {

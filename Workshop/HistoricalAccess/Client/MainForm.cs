@@ -72,7 +72,7 @@ namespace Quickstarts.HistoricalAccess.Client
         
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private bool m_connectedOnce;
         #endregion
 
@@ -175,7 +175,7 @@ namespace Quickstarts.HistoricalAccess.Client
         /// <summary>
         /// Selects the variable to display.
         /// </summary>
-        private void Aggregates_SelectVariableMI_Click(object sender, EventArgs e)
+        private async void Aggregates_SelectVariableMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -184,7 +184,7 @@ namespace Quickstarts.HistoricalAccess.Client
                     return;
                 }
 
-                NodeId nodeId = new Opc.Ua.Client.Controls.SelectNodeDlg().ShowDialog(
+                NodeId nodeId = await new Opc.Ua.Client.Controls.SelectNodeDlg().ShowDialogAsync(
                     m_session,
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     "Select Variable to Monitor",

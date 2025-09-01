@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -55,17 +56,18 @@ namespace Opc.Ua.Client.Controls
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
         
         #region Public Interface
         /// <summary>
         /// Changes the session used for the subscription.
         /// </summary>
-        public void ChangeSession(Session session)
+        public Task ChangeSessionAsync(ISession session)
         {
             SubscribeRequestCTRL.ChangeSession(session);
             m_session = session;
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -92,9 +94,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the items to monitor.
         /// </summary>
-        public void AddItems(params ReadValueId[] nodesToRead)
+        public async Task AddItemsAsync(params ReadValueId[] nodesToRead)
         {
-            SubscribeRequestCTRL.AddItems(nodesToRead);
+            await SubscribeRequestCTRL.AddItemsAsync(nodesToRead);
             NextBTN.Visible = SubscribeRequestCTRL.CanCallNext;
             BackBTN.Visible = SubscribeRequestCTRL.CanCallBack;
         }
@@ -104,11 +106,11 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void NextBTN_Click(object sender, EventArgs e)
+        private async void NextBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                SubscribeRequestCTRL.Next();
+                await SubscribeRequestCTRL.NextAsync();
                 NextBTN.Visible = SubscribeRequestCTRL.CanCallNext;
                 BackBTN.Visible = SubscribeRequestCTRL.CanCallBack;
             }
@@ -118,11 +120,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                SubscribeRequestCTRL.Back();
+                await SubscribeRequestCTRL.BackAsync();
                 NextBTN.Visible = SubscribeRequestCTRL.CanCallNext;
                 BackBTN.Visible = SubscribeRequestCTRL.CanCallBack;
             }

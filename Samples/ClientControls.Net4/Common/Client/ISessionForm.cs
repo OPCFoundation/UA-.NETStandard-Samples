@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -43,6 +44,6 @@ namespace Opc.Ua.Client.Controls
         /// Changes the session being used by the form.
         /// </summary>
         /// <param name="session">The new session to use. A null value means the session has been disconnected.</param>
-        void ChangeSession(Session session);
+        Task ChangeSessionAsync(ISession session);
     }
 }

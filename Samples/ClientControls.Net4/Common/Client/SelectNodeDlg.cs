@@ -33,6 +33,7 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -59,8 +60,8 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to select a node.
         /// </summary>
-        public NodeId ShowDialog(
-            Session session,
+        public async Task<NodeId> ShowDialogAsync(
+            ISession session,
             NodeId rootId,
             string caption,
             params NodeId[] referenceTypeIds)
@@ -84,7 +85,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // initialize the control.
-            BrowseCTRL.Initialize(session, rootId, referenceTypeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, referenceTypeIds);
 
             // display the dialog.
             if (ShowDialog() != DialogResult.OK)
@@ -106,8 +107,8 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to select a node.
         /// </summary>
-        public ReferenceDescription ShowDialog(
-            Session session,
+        public async Task<ReferenceDescription> ShowDialogAsync(
+            ISession session,
             NodeId rootId,
             ViewDescription view, 
             string caption,
@@ -132,7 +133,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // initialize the control.
-            BrowseCTRL.Initialize(session, rootId, referenceTypeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, referenceTypeIds);
             BrowseCTRL.View = view;
 
             // display the dialog.

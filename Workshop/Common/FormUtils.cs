@@ -412,7 +412,7 @@ namespace Quickstarts
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection Browse(Session session, BrowseDescriptionCollection nodesToBrowse, bool throwOnError)
+        public static ReferenceDescriptionCollection Browse(ISession session, BrowseDescriptionCollection nodesToBrowse, bool throwOnError)
         {
             try
             {
@@ -567,7 +567,7 @@ namespace Quickstarts
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection Browse(Session session, BrowseDescription nodeToBrowse, bool throwOnError)
+        public static ReferenceDescriptionCollection Browse(ISession session, BrowseDescription nodeToBrowse, bool throwOnError)
         {
             try
             {
@@ -651,7 +651,7 @@ namespace Quickstarts
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection BrowseSuperTypes(Session session, NodeId typeId, bool throwOnError)
+        public static ReferenceDescriptionCollection BrowseSuperTypes(ISession session, NodeId typeId, bool throwOnError)
         {
             ReferenceDescriptionCollection supertypes = new ReferenceDescriptionCollection();
 

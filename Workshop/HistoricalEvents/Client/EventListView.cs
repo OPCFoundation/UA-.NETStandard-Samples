@@ -48,7 +48,7 @@ namespace Quickstarts.HistoricalEvents.Client
         }
 
         #region Private Methods
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private FilterDeclaration m_filter;
@@ -104,7 +104,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public void ChangeSession(Session session, bool fetchRecent)
+        public void ChangeSession(ISession session, bool fetchRecent)
         {
             if (Object.ReferenceEquals(session, m_session))
             {
@@ -134,7 +134,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Updates the control after the session has reconnected.
         /// </summary>
-        public void SessionReconnected(Session session)
+        public void SessionReconnected(ISession session)
         {
             m_session = session;
             

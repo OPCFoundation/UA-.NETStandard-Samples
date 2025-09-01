@@ -236,7 +236,7 @@ namespace Quickstarts.UserAuthenticationServer
             }
 
             // find the certificate.
-            X509Certificate2 certificate = issuerCertificate.Find(false).Result;
+            X509Certificate2 certificate = issuerCertificate.FindAsync(false).Result;
 
             if (certificate == null)
             {

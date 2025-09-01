@@ -43,7 +43,7 @@ namespace Quickstarts
         /// <summary>
         /// Collects the instance declarations for a type.
         /// </summary>
-        public static List<InstanceDeclaration> CollectInstanceDeclarationsForType(Session session, NodeId typeId)
+        public static List<InstanceDeclaration> CollectInstanceDeclarationsForType(ISession session, NodeId typeId)
         {
             // process the types starting from the top of the tree.
             List<InstanceDeclaration> instances = new List<InstanceDeclaration>();
@@ -71,7 +71,7 @@ namespace Quickstarts
         /// Collects the fields for the instance node.
         /// </summary>
         private static void CollectInstanceDeclarations(
-            Session session,
+            ISession session,
             NodeId typeId,
             InstanceDeclaration parent,
             List<InstanceDeclaration> instances,
@@ -203,7 +203,7 @@ namespace Quickstarts
         /// <summary>
         /// Finds the targets for the specified reference.
         /// </summary>
-        private static List<NodeId> FindTargetOfReference(Session session, List<NodeId> nodeIds, NodeId referenceTypeId, bool throwOnError)
+        private static List<NodeId> FindTargetOfReference(ISession session, List<NodeId> nodeIds, NodeId referenceTypeId, bool throwOnError)
         {
             try
             {
@@ -299,7 +299,7 @@ namespace Quickstarts
         /// <summary>
         /// Finds the targets for the specified reference.
         /// </summary>
-        private static void UpdateInstanceDescriptions(Session session, List<InstanceDeclaration> instances, bool throwOnError)
+        private static void UpdateInstanceDescriptions(ISession session, List<InstanceDeclaration> instances, bool throwOnError)
         {
             try
             {

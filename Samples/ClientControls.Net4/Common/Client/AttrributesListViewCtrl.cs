@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -56,7 +57,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Public Interface
@@ -69,7 +70,7 @@ namespace Opc.Ua.Client.Controls
         /// Changes the session used by the control.
         /// </summary>
         /// <param name="session">The session.</param>
-        public void ChangeSession(Session session)
+        public void ChangeSession(ISession session)
         {
             m_session = session;
         }
@@ -104,7 +105,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the attributes for the node.
         /// </summary>
-        public void ReadAttributes(NodeId nodeId, bool showProperties)
+        public async Task ReadAttributesAsync(NodeId nodeId, bool showProperties)
         {
             AttributesLV.Items.Clear();
 
@@ -168,7 +169,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
-                    item.SubItems.Add(ClientUtils.GetAttributeDisplayText(m_session, attributeId, results[ii].WrappedValue));
+                    item.SubItems.Add(await ClientUtils.GetAttributeDisplayTextAsync(m_session, attributeId, results[ii].WrappedValue));
                 }
 
                 item.Tag = new AttributeInfo() { NodeToRead = nodesToRead[ii], Value = results[ii] };
@@ -180,7 +181,7 @@ namespace Opc.Ua.Client.Controls
 
             if (showProperties)
             {
-                ReadProperties(nodeId);
+                await ReadPropertiesAsync(nodeId);
             }
 
             // set the column widths.
@@ -206,7 +207,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the properties for the node.
         /// </summary>
-        private void ReadProperties(NodeId nodeId)
+        private async Task ReadPropertiesAsync(NodeId nodeId)
         {
             // build list of references to browse.
             BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
@@ -292,7 +293,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 item.Tag = new AttributeInfo() { NodeToRead = nodesToRead[ii], Value = results[ii] };
-                item.ImageIndex = ClientUtils.GetImageIndex(m_session, NodeClass.Variable, Opc.Ua.VariableTypeIds.PropertyType, false);
+                item.ImageIndex = await ClientUtils.GetImageIndexAsync(m_session, NodeClass.Variable, Opc.Ua.VariableTypeIds.PropertyType, false);
 
                 // display in list.
                 AttributesLV.Items.Add(item);

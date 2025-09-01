@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
 
@@ -142,7 +143,7 @@ namespace Quickstarts.PerfTestClient
         /// Starts the specified session.
         /// </summary>
         /// <param name="session">The session.</param>
-        public void Start(Session session)
+        public async Task StartAsync(ISession session)
         {
             m_NotificationEventHandler = new NotificationEventHandler(Session_Notification);
             session.Notification += m_NotificationEventHandler;
@@ -159,7 +160,7 @@ namespace Quickstarts.PerfTestClient
             subscription.DisableMonitoredItemCache = true;
 
             session.AddSubscription(subscription);
-            subscription.Create();
+            await subscription.CreateAsync();
 
             DateTime start = HiResClock.UtcNow;
 
@@ -178,13 +179,13 @@ namespace Quickstarts.PerfTestClient
                 subscription.AddItem(monitoredItem);
             }
 
-            subscription.ApplyChanges();
+            await subscription.ApplyChangesAsync();
             DateTime end = HiResClock.UtcNow;
 
             ReportMessage("Time to add {1} items {0}ms.", (end - start).TotalMilliseconds, m_itemCount);
 
             start = HiResClock.UtcNow;
-            subscription.SetPublishingMode(true);
+            await subscription.SetPublishingModeAsync(true);
             end = HiResClock.UtcNow;
 
             ReportMessage("Time to emable publishing {0}ms.", (end - start).TotalMilliseconds);

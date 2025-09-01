@@ -63,7 +63,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the current session.
         /// </summary>
-        public Session Session { get; set; }
+        public ISession Session { get; set; }
 
         /// <summary>
         /// Gets or sets starting node.
@@ -173,9 +173,9 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void BrowseBTN_Click(object sender, EventArgs e)
+        private async void BrowseBTN_Click(object sender, EventArgs e)
         {
-            ReferenceDescription reference = new SelectNodeDlg().ShowDialog(
+            ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
                 Session,
                 RootId,
                 View,

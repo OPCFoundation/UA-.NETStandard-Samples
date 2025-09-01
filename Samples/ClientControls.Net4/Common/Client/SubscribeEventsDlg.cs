@@ -36,6 +36,7 @@ using System.Drawing;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -79,7 +80,7 @@ namespace Opc.Ua.Client.Controls
         private DataSet m_dataset;
         private FilterDeclaration m_filter;
         private DisplayState m_state;
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private PublishStateChangedEventHandler m_PublishStatusChanged;
         #endregion
@@ -97,13 +98,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public void ChangeSession(Session session)
+        public async Task ChangeSessionAsync(ISession session)
         {
             if (!Object.ReferenceEquals(session, m_session))
             {
                 m_session = session;
 
-                BrowseCTRL.ChangeSession(m_session);
+                await BrowseCTRL.ChangeSessionAsync(m_session);
                 EventTypeCTRL.ChangeSession(m_session);
                 EventFilterCTRL.ChangeSession(m_session);
                 EventsCTRL.ChangeSession(m_session);
@@ -172,7 +173,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds items to the subscription.
         /// </summary>
-        public void AddItems(params NodeId[] itemsToMonitor)
+        public async Task AddItemsAsync(params NodeId[] itemsToMonitor)
         {
             if (itemsToMonitor != null)
             {
@@ -196,7 +197,7 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem.Handle = row;
                     m_subscription.AddItem(monitoredItem);
 
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -205,7 +206,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the sequence forward.
         /// </summary>
-        public void Next()
+        public async Task NextAsync()
         {
             if (m_state == DisplayState.ViewUpdates)
             {
@@ -221,7 +222,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventType)
             {
-                BrowseCTRL.Initialize(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, Opc.Ua.ReferenceTypeIds.HasSubtype);
+                await BrowseCTRL.InitializeAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, Opc.Ua.ReferenceTypeIds.HasSubtype);
                 BrowseCTRL.SelectNode((m_filter == null || m_filter.EventTypeId == null) ? Opc.Ua.ObjectTypeIds.BaseEventType : m_filter.EventTypeId);
                 EventTypeCTRL.ShowType(Opc.Ua.ObjectTypeIds.BaseEventType);
                 return;
@@ -229,13 +230,13 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventFields)
             {
-                EventFilterCTRL.SetFilter(m_filter);
+                await EventFilterCTRL.SetFilterAsync(m_filter);
                 return;
             }
 
             if (m_state == DisplayState.ApplyChanges)
             {
-                UpdateItems();
+                await UpdateItemsAsync();
                 return;
             }
 
@@ -249,7 +250,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the sequence backward.
         /// </summary>
-        public void Back()
+        public async Task BackAsync()
         {
             if (m_state == DisplayState.EditItems)
             {
@@ -260,7 +261,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventFields)
             {
-                EventFilterCTRL.SetFilter(m_filter);
+                await EventFilterCTRL.SetFilterAsync(m_filter);
                 return;
             }
         }
@@ -351,11 +352,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the monitored item.
         /// </summary>
-        private void UpdateRow(DataRow row, MonitoredItem monitoredItem)
+        private async Task UpdateRowAsync(DataRow row, MonitoredItem monitoredItem)
         {
             row[0] = monitoredItem;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(monitoredItem.AttributeId, null)];
-            row[2] = m_session.NodeCache.GetDisplayText(monitoredItem.StartNodeId) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
+            row[2] = await m_session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
             row[3] = monitoredItem.MonitoringMode;
             row[4] = monitoredItem.SamplingInterval;
             row[5] = monitoredItem.DiscardOldest;
@@ -400,7 +401,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the items with the current filter.
         /// </summary>
-        private void UpdateItems()
+        private async Task UpdateItemsAsync()
         {
             List<FilterDeclarationField> fields = new List<FilterDeclarationField>();
 
@@ -440,7 +441,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // apply changes.
-            m_subscription.ApplyChanges();
+            await m_subscription.ApplyChangesAsync();
 
             // show results.
             for (int ii = 0; ii < m_dataset.Tables[0].Rows.Count; ii++)
@@ -705,11 +706,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                Back();
+                await BackAsync();
             }
             catch (Exception exception)
             {
@@ -717,11 +718,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void NextBTN_Click(object sender, EventArgs e)
+        private async void NextBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                Next();
+                await NextAsync();
             }
             catch (Exception exception)
             {
@@ -821,7 +822,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -848,12 +849,12 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem = new MonitoredItem(monitoredItem);
                 }
 
-                if (new EditMonitoredItemDlg().ShowDialog(m_session, monitoredItem, true))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true))
                 {
                     m_subscription.AddItem(monitoredItem);
                     DataRow row = m_dataset.Tables[0].NewRow();
                     monitoredItem.Handle = row;
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -863,7 +864,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -886,10 +887,10 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                if (new EditMonitoredItemDlg().ShowDialog(m_session, monitoredItem, true))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true))
                 {
                     DataRow row = (DataRow)monitoredItem.Handle;
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                 }
             }
             catch (Exception exception)

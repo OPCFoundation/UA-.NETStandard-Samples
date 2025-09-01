@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -82,7 +83,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private DataSet m_dataset;
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private DisplayState m_state;
         private EditComplexValueDlg m_EditComplexValueDlg;
@@ -105,7 +106,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public void ChangeSession(Session session)
+        public void ChangeSession(ISession session)
         {
             if (!Object.ReferenceEquals(session, m_session))
             {
@@ -200,7 +201,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the monitored items to the subscription.
         /// </summary>
-        public void AddItems(params ReadValueId[] itemsToMonitor)
+        public async Task AddItemsAsync(params ReadValueId[] itemsToMonitor)
         {
             if (m_subscription == null)
             {
@@ -228,7 +229,7 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem.Handle = row;
                     m_subscription.AddItem(monitoredItem);
 
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -259,7 +260,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the grid to the next state.
         /// </summary>
-        public void Next()
+        public async Task NextAsync()
         {
             if (m_state == DisplayState.ViewUpdates)
             {
@@ -279,7 +280,7 @@ namespace Opc.Ua.Client.Controls
                 // apply any changes.
                 if (m_state == DisplayState.ApplyChanges)
                 {
-                    m_subscription.ApplyChanges();
+                    await m_subscription.ApplyChangesAsync();
 
                     foreach (DataRow row in m_dataset.Tables[0].Rows)
                     {
@@ -293,7 +294,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the grid back to the edit items state.
         /// </summary>
-        public void Back()
+        public async Task BackAsync()
         {
             if (m_state == DisplayState.EditItems)
             {
@@ -310,7 +311,7 @@ namespace Opc.Ua.Client.Controls
                 // revert to specified parameters.
                 DataRowView source = row.DataBoundItem as DataRowView;
                 MonitoredItem monitoredItem = (MonitoredItem)source.Row[0];
-                UpdateRow(source.Row, monitoredItem);
+                await UpdateRowAsync(source.Row, monitoredItem);
             }
         }
         #endregion
@@ -375,11 +376,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the monitored item.
         /// </summary>
-        private void UpdateRow(DataRow row, MonitoredItem monitoredItem)
+        private async Task UpdateRowAsync(DataRow row, MonitoredItem monitoredItem)
         {
             row[0] = monitoredItem;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(monitoredItem.AttributeId, null)];
-            row[2] = m_session.NodeCache.GetDisplayText(monitoredItem.StartNodeId) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
+            row[2] = await m_session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
             row[3] = monitoredItem.IndexRange;
             row[4] = monitoredItem.Encoding;
             row[5] = monitoredItem.MonitoringMode;
@@ -540,7 +541,7 @@ namespace Opc.Ua.Client.Controls
             SetMonitoringModeMI.Visible = m_state != DisplayState.ApplyChanges;
         }
 
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -562,12 +563,12 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem = new MonitoredItem(monitoredItem);
                 }
 
-                if (new EditMonitoredItemDlg().ShowDialog(m_session, monitoredItem, false))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, false))
                 {
                     m_subscription.AddItem(monitoredItem);
                     DataRow row = m_dataset.Tables[0].NewRow();
                     monitoredItem.Handle = row;
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -577,7 +578,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -595,10 +596,10 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                if (new EditMonitoredItemDlg().ShowDialog(m_session, monitoredItem, false))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, false))
                 {
                     DataRow row = (DataRow)monitoredItem.Handle;
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                 }
             }
             catch (Exception exception)

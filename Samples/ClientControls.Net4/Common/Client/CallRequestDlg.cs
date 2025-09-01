@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -55,29 +56,30 @@ namespace Opc.Ua.Client.Controls
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
         
         #region Public Interface
         /// <summary>
         /// Changes the session used for the call request.
         /// </summary>
-        public void ChangeSession(Session session)
+        public Task ChangeSessionAsync(ISession session)
         {
             m_session = session;
             CallRequestCTRL.ChangeSession(session);
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Sets the method called by the control.
         /// </summary>
-        public void SetMethod(NodeId objectId, NodeId methodId)
+        public async Task SetMethodAsync(NodeId objectId, NodeId methodId)
         {
             StringBuilder buffer = new StringBuilder();
             buffer.Append("Calling Method ");
-            buffer.Append(m_session.NodeCache.GetDisplayText(methodId));
+            buffer.Append(await m_session.NodeCache.GetDisplayTextAsync(methodId));
             buffer.Append(" on Object ");
-            buffer.Append(m_session.NodeCache.GetDisplayText(objectId));
+            buffer.Append(await m_session.NodeCache.GetDisplayTextAsync(objectId));
             this.Text = buffer.ToString();
 
             CallRequestCTRL.SetMethod(objectId, methodId);

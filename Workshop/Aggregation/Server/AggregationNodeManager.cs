@@ -53,7 +53,7 @@ namespace AggregationServer
         public NodeId ClientSessionId { get; }
         public NodeId SessionSessionId { get; private set; }
         public bool IsMetaDataSession { get; }
-        public Opc.Ua.Client.Session Session
+        public Opc.Ua.Client.ISession Session
         {
             get => m_session;
             set
@@ -65,7 +65,7 @@ namespace AggregationServer
         public Opc.Ua.Client.SessionReconnectHandler ReconnectHandler { get; set; }
         public DateTime LastUsed { get; set; }
 
-        private Opc.Ua.Client.Session m_session;
+        private Opc.Ua.Client.ISession m_session;
     }
 
     /// <summary>
@@ -337,7 +337,7 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(context);
+                Opc.Ua.Client.ISession client = GetClientSession(context);
 
                 DataValueCollection results = null;
                 DiagnosticInfoCollection diagnosticInfos = null;
@@ -434,7 +434,7 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(context);
+                Opc.Ua.Client.ISession client = GetClientSession(context);
 
                 StatusCodeCollection results = null;
                 DiagnosticInfoCollection diagnosticInfos = null;
@@ -575,7 +575,7 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(systemContext);
+                Opc.Ua.Client.ISession client = GetClientSession(systemContext);
 
                 CallMethodResultCollection results2 = null;
                 DiagnosticInfoCollection diagnosticInfos = null;
@@ -662,7 +662,7 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(context);
+                Opc.Ua.Client.ISession client = GetClientSession(context);
 
                 lock (client)
                 {
@@ -683,7 +683,7 @@ namespace AggregationServer
                         subscription.FastEventCallback = OnEventNotification;
 
                         client.AddSubscription(subscription);
-                        subscription.Create();
+                        subscription.CreateAsync().GetAwaiter().GetResult();
                     }
 
                     // add items.
@@ -700,7 +700,7 @@ namespace AggregationServer
                         target.AddItem(requests[ii]);
                     }
 
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     // check status.
                     int index = 0;
@@ -731,7 +731,7 @@ namespace AggregationServer
         /// </summary>
         protected override void OnModifyMonitoredItemsComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
         {
-            Opc.Ua.Client.Session client = GetClientSession(context);
+            Opc.Ua.Client.ISession client = GetClientSession(context);
             List<Opc.Ua.Client.MonitoredItem> remoteItems = new List<Opc.Ua.Client.MonitoredItem>();
 
             lock (client)
@@ -784,7 +784,7 @@ namespace AggregationServer
                 // send request to external system.
                 try
                 {
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     // check status.
                     foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
@@ -813,7 +813,7 @@ namespace AggregationServer
         /// </summary>
         protected override void OnDeleteMonitoredItemsComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
         {
-            Opc.Ua.Client.Session client = GetClientSession(context);
+            Opc.Ua.Client.ISession client = GetClientSession(context);
 
             lock (client)
             {
@@ -862,11 +862,11 @@ namespace AggregationServer
                 // send request to external system.
                 try
                 {
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     if (target.MonitoredItemCount == 0)
                     {
-                        client.RemoveSubscription(target);
+                        client.RemoveSubscriptionAsync(target).GetAwaiter().GetResult();
                     }
                 }
                 catch (Exception e)
@@ -881,7 +881,7 @@ namespace AggregationServer
         /// </summary>
         protected override void OnSetMonitoringModeComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
         {
-            Opc.Ua.Client.Session client = GetClientSession(context);
+            Opc.Ua.Client.ISession client = GetClientSession(context);
             List<Opc.Ua.Client.MonitoredItem> remoteItems = new List<Opc.Ua.Client.MonitoredItem>();
 
             lock (client)
@@ -932,7 +932,7 @@ namespace AggregationServer
                 // send request to external system.
                 try
                 {
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     // check status.
                     foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
@@ -990,7 +990,7 @@ namespace AggregationServer
                     return ServiceResult.Good;
                 }
 
-                Opc.Ua.Client.Session client = GetClientSession(systemContext);
+                Opc.Ua.Client.ISession client = GetClientSession(systemContext);
 
                 if (unsubscribe)
                 {
@@ -1020,11 +1020,11 @@ namespace AggregationServer
 
                         // apply changes.
                         target.RemoveItem(remoteItem);
-                        target.ApplyChanges();
+                        target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                         if (target.MonitoredItemCount == 0)
                         {
-                            target.Session.RemoveSubscription(target);
+                            target.Session.RemoveSubscriptionAsync(target).GetAwaiter().GetResult();
                         }
                     }
 
@@ -1070,7 +1070,7 @@ namespace AggregationServer
                         subscription.FastEventCallback = OnEventNotification;
 
                         client.AddSubscription(subscription);
-                        subscription.Create();
+                        subscription.CreateAsync().GetAwaiter().GetResult();
                     }
 
                     // get the subscription.
@@ -1088,7 +1088,7 @@ namespace AggregationServer
                     }
 
                     target.AddItem(request);
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     if (ServiceResult.IsBad(request.Status.Error))
                     {
@@ -1176,7 +1176,7 @@ namespace AggregationServer
         /// <summary>
         /// Get a cached client session or create a new one per server connection.
         /// </summary>
-        Opc.Ua.Client.Session GetClientSession(ServerSystemContext context)
+        Opc.Ua.Client.ISession GetClientSession(ServerSystemContext context)
         {
             NodeId sessionId;
             string sessionName;
@@ -1233,7 +1233,7 @@ namespace AggregationServer
                         {
                             // the client session is stale and not reconnecting
                             m_clients.Remove(sessionId);
-                            session.Close();
+                            session.CloseAsync().GetAwaiter().GetResult();
                             session.Dispose();
                             clientSession = null;
                         }
@@ -1366,7 +1366,7 @@ namespace AggregationServer
         private void DoMetadataUpdate(object state)
         {
             int nextTimerPeriod = m_initialDelay;
-            Opc.Ua.Client.Session client = null;
+            Opc.Ua.Client.ISession client = null;
             try
             {
                 if (!Server.IsRunning)
@@ -1483,11 +1483,11 @@ namespace AggregationServer
 
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(context);
+                Opc.Ua.Client.ISession client = GetClientSession(context);
 
                 // get remote node.
                 NodeId targetId = m_mapper.ToRemoteId(handle.NodeId);
-                ILocalNode node = client.ReadNode(targetId) as ILocalNode;
+                ILocalNode node = client.ReadNodeAsync(targetId).GetAwaiter().GetResult();
 
                 if (node == null)
                 {

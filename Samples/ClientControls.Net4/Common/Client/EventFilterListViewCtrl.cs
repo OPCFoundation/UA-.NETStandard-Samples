@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -76,7 +77,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private DataSet m_dataset;
-        private Session m_session;
+        private ISession m_session;
         private int m_counter;
         #endregion
 
@@ -84,7 +85,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used for the read request.
         /// </summary>
-        public void ChangeSession(Session session)
+        public void ChangeSession(ISession session)
         {
             m_session = session;
         }
@@ -92,7 +93,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Sets the filter to edit.
         /// </summary>
-        public void SetFilter(FilterDeclaration filter)
+        public async Task SetFilterAsync(FilterDeclaration filter)
         {
             m_dataset.Tables[0].Rows.Clear();
 
@@ -101,7 +102,7 @@ namespace Opc.Ua.Client.Controls
                 foreach (FilterDeclarationField field in filter.Fields)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, field);
+                    await UpdateRowAsync(row, field);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -112,10 +113,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row.
         /// </summary>
-        public void UpdateRow(DataRow row, FilterDeclarationField field)
+        public async Task UpdateRowAsync(DataRow row, FilterDeclarationField field)
         {
             row[0] = field;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex(m_session, field.InstanceDeclaration.NodeClass, field.InstanceDeclaration.RootTypeId, false)];
+            row[1] = ImageList.Images[await ClientUtils.GetImageIndexAsync(m_session, field.InstanceDeclaration.NodeClass, field.InstanceDeclaration.RootTypeId, false)];
             row[2] = field.InstanceDeclaration.BrowsePathDisplayText;
             row[3] = field.Selected;
             row[4] = field.DisplayInList;

@@ -247,7 +247,7 @@ namespace Opc.Ua.Sample.Controls
                 ReferenceDescription encoding = m_encodings[EncodingCB.SelectedIndex];
 
                 // find the desctiption.
-                ReferenceDescription description = m_session.FindDataDescription((NodeId)encoding.NodeId);
+                ReferenceDescription description = await m_session.FindDataDescriptionAsync((NodeId)encoding.NodeId);
 
                 if (description == null)
                 {

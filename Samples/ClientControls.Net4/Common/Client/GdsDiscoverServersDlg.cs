@@ -161,7 +161,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the results to the control.
         /// </summary>
-        private void UpdateResults(ApplicationDescription[] descriptions)
+        private async Task UpdateResultsAsync(ApplicationDescription[] descriptions)
         {
             ServersLV.Items.Clear();
 
@@ -181,7 +181,7 @@ namespace Opc.Ua.Client.Controls
 
                 ListViewItem item = new ListViewItem();
                 item.Text = Utils.Format("{0}", description.ApplicationName);
-                item.ImageIndex = ClientUtils.GetImageIndex(ServerCTRL.Session, NodeClass.Object, null, false);
+                item.ImageIndex = await ClientUtils.GetImageIndexAsync(ServerCTRL.Session, NodeClass.Object, null, false);
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
@@ -290,9 +290,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Searches the server for servers.
         /// </summary>
-        private void Search()
+        private async Task SearchAsync()
         {
-            Session session = ServerCTRL.Session;
+            ISession session = ServerCTRL.Session;
 
             if (session == null)
             {
@@ -322,7 +322,7 @@ namespace Opc.Ua.Client.Controls
             {
                 ExtensionObject[] extensions = outputArguments[0] as ExtensionObject[];
                 ApplicationDescription[] descriptions = (ApplicationDescription[])ExtensionObject.ToArray(extensions, typeof(ApplicationDescription));
-                UpdateResults(descriptions);
+                await UpdateResultsAsync(descriptions);
             }
         }
 
@@ -394,11 +394,11 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void SearchBTN_Click(object sender, EventArgs e)
+        private async void SearchBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                Search();
+                await SearchAsync();
             }
             catch (Exception exception)
             {
@@ -418,11 +418,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void ServerCTRL_ConnectComplete(object sender, EventArgs e)
+        private async void ServerCTRL_ConnectComplete(object sender, EventArgs e)
         {
             try
             {
-                Session session = ServerCTRL.Session;
+                ISession session = ServerCTRL.Session;
 
                 if (session != null)
                 {
@@ -430,14 +430,14 @@ namespace Opc.Ua.Client.Controls
                     NodeId rootId = new NodeId(GdsId_Directory_Applications, namespaceIndex);
                     NodeId[] referenceTypeIds = new NodeId[] { Opc.Ua.ReferenceTypeIds.Organizes, Opc.Ua.ReferenceTypeIds.HasChild };
 
-                    BrowseCTRL.Initialize(session, rootId, referenceTypeIds);
+                    await BrowseCTRL.InitializeAsync(session, rootId, referenceTypeIds);
                     SystemElementBTN.Session = session;
                     SystemElementBTN.RootId = rootId;
                     SystemElementBTN.ReferenceTypeIds = referenceTypeIds;
                 }
                 else
                 {
-                    BrowseCTRL.ChangeSession(session);
+                    await BrowseCTRL.ChangeSessionAsync(session);
                     SystemElementBTN.Session = session;
                 }
             }
@@ -447,12 +447,12 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void ServerCTRL_ReconnectComplete(object sender, EventArgs e)
+        private async void ServerCTRL_ReconnectComplete(object sender, EventArgs e)
         {
             try
             {
-                Session session = ServerCTRL.Session;
-                BrowseCTRL.ChangeSession(session);
+                ISession session = ServerCTRL.Session;
+                await BrowseCTRL.ChangeSessionAsync(session);
                 SystemElementBTN.Session = session;
             }
             catch (Exception exception)

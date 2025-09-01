@@ -52,7 +52,7 @@ namespace Quickstarts
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
         
         #region Public Interface
@@ -61,7 +61,7 @@ namespace Quickstarts
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns></returns>
-        public string ShowDialog(Session session)
+        public string ShowDialog(ISession session)
         {
             m_session = session;
 

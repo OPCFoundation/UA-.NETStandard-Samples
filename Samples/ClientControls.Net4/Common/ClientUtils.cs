@@ -27,6 +27,7 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Opc.Ua.Client.Controls
@@ -149,7 +150,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns an image index for the specified attribute.
         /// </summary>
-        public static int GetImageIndex(Session session, NodeClass nodeClass, ExpandedNodeId typeDefinitionId, bool selected)
+        public static async Task<int> GetImageIndexAsync(ISession session, NodeClass nodeClass, ExpandedNodeId typeDefinitionId, bool selected)
         {
             if (nodeClass == NodeClass.Variable)
             {

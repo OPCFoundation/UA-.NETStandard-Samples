@@ -38,6 +38,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -59,7 +60,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_rootId;
         private NodeId[] m_referenceTypeIds;
         private NodeId m_selectedNodeId;
@@ -80,8 +81,8 @@ namespace Opc.Ua.Client.Controls
         /// <param name="session">The session.</param>
         /// <param name="rootId">The root of the hierarchy to browse.</param>
         /// <param name="referenceTypeIds">The reference types to follow.</param>
-        public void Initialize(
-            Session session,
+        public async Task InitializeAsync(
+            ISession session,
             NodeId rootId,
             params NodeId[] referenceTypeIds)
         {
@@ -101,7 +102,7 @@ namespace Opc.Ua.Client.Controls
             m_referenceTypeIds = referenceTypeIds;
 
             // save session.
-            ChangeSession(session, true);
+            await ChangeSessionAsync(session, true);
         }
 
         /// <summary>
@@ -116,14 +117,14 @@ namespace Opc.Ua.Client.Controls
         /// Changes the session used by the control.
         /// </summary>
         /// <param name="session">The session.</param>
-        public void ChangeSession(Session session)
+        public async Task ChangeSessionAsync(ISession session)
         {
             if (Object.ReferenceEquals(session, m_session))
             {
                 return;
             }
 
-            ChangeSession(session, false);
+            await ChangeSessionAsync(session, false);
         }
 
         /// <summary>
@@ -263,7 +264,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used by the control.
         /// </summary>
-        private void ChangeSession(Session session, bool refresh)
+        private async Task ChangeSessionAsync(ISession session, bool refresh)
         {
             m_session = session;
 
@@ -281,8 +282,8 @@ namespace Opc.Ua.Client.Controls
                 if (node != null)
                 {
                     TreeNode root = new TreeNode(node.ToString());
-                    root.ImageIndex = ClientUtils.GetImageIndex(m_session, node.NodeClass, node.TypeDefinitionId, false);
-                    root.SelectedImageIndex = ClientUtils.GetImageIndex(m_session, node.NodeClass, node.TypeDefinitionId, true);
+                    root.ImageIndex = await ClientUtils.GetImageIndexAsync(m_session, node.NodeClass, node.TypeDefinitionId, false);
+                    root.SelectedImageIndex = await ClientUtils.GetImageIndexAsync(m_session, node.NodeClass, node.TypeDefinitionId, true);
 
                     ReferenceDescription reference = new ReferenceDescription();
                     reference.NodeId = node.NodeId;
@@ -324,7 +325,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Handles the AfterSelect event of the BrowseTV control.
         /// </summary>
-        private void BrowseTV_AfterSelect(object sender, TreeViewEventArgs e)
+        private async void BrowseTV_AfterSelect(object sender, TreeViewEventArgs e)
         {
             try
             {
@@ -349,7 +350,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (AttributesControl != null)
                 {
-                    AttributesControl.ReadAttributes(m_selectedNodeId, true);
+                    await AttributesControl.ReadAttributesAsync(m_selectedNodeId, true);
                 }
 
                 // raise event.
@@ -364,7 +365,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Handles the BeforeExpand event of the BrowseTV control.
         /// </summary>
-        private void BrowseTV_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        private async void BrowseTV_BeforeExpand(object sender, TreeViewCancelEventArgs e)
         {
             try
             {
@@ -451,8 +452,8 @@ namespace Opc.Ua.Client.Controls
 
                     if (!m_typeImageMapping.TryGetValue((NodeId)reference.TypeDefinition, out index))
                     {
-                        child.ImageIndex = ClientUtils.GetImageIndex(m_session, reference.NodeClass, reference.TypeDefinition, false);
-                        child.SelectedImageIndex = ClientUtils.GetImageIndex(m_session, reference.NodeClass, reference.TypeDefinition, true);
+                        child.ImageIndex = await ClientUtils.GetImageIndexAsync(m_session, reference.NodeClass, reference.TypeDefinition, false);
+                        child.SelectedImageIndex = await ClientUtils.GetImageIndexAsync(m_session, reference.NodeClass, reference.TypeDefinition, true);
                     }
                     else
                     {

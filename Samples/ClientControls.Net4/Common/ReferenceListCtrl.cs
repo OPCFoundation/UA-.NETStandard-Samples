@@ -35,6 +35,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -71,7 +72,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private DataSet m_dataset;
         #endregion
         
@@ -108,7 +109,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public void ChangeSession(Session session)
+        public async Task ChangeSessionAsync(ISession session)
         {
             // do nothing if no change or no node id.
             if (Object.ReferenceEquals(m_session, session))
@@ -119,13 +120,13 @@ namespace Opc.Ua.Client.Controls
             m_session = session;
 
             // update the display.
-            Browse();
+            await BrowseAsync();
         }
 
         /// <summary>
         /// Changes the node id.
         /// </summary>
-        public void ChangeNodeId(NodeId nodeId)
+        public async Task ChangeNodeIdAsync(NodeId nodeId)
         {
             // do nothing if no change or no session.
             if (NodeId == nodeId)
@@ -137,7 +138,7 @@ namespace Opc.Ua.Client.Controls
             NodeId = nodeId;
 
             // update the display.
-            Browse();            
+            await BrowseAsync();            
         }
         #endregion
 
@@ -185,7 +186,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Browses for the requested references.
         /// </summary>
-        private void Browse()
+        private async Task BrowseAsync()
         {
             m_dataset.Tables[0].Rows.Clear();
 
@@ -208,7 +209,7 @@ namespace Opc.Ua.Client.Controls
                 row[3] = reference.IsForward.ToString();
                 row[4] = reference.NodeClass.ToString();
                 row[5] = m_session.NodeCache.GetDisplayText(reference.TypeDefinition);
-                row[6] = ImageList.Images[ClientUtils.GetImageIndex(m_session, reference.NodeClass, reference.TypeDefinition, false)];
+                row[6] = ImageList.Images[await ClientUtils.GetImageIndexAsync(m_session, reference.NodeClass, reference.TypeDefinition, false)];
 
                 m_dataset.Tables[0].Rows.Add(row);
             }

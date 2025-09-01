@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Threading;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -59,7 +60,7 @@ namespace Opc.Ua.Client.Controls
 
         private NodeId m_rootId;
         private NodeId m_viewId;
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_referenceTypeId;
         private BrowseDirection m_browseDirection;
         private BrowseListCtrl m_referencesCTRL;
@@ -71,7 +72,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public BrowseListCtrl ReferencesCTRL
         {
-            get { return m_referencesCTRL;  }
+            get { return m_referencesCTRL; }
             set { m_referencesCTRL = value; }
         }
 
@@ -80,7 +81,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public AttributeListCtrl AttributesCTRL
         {
-            get { return m_attributesCTRL;  }
+            get { return m_attributesCTRL; }
             set { m_attributesCTRL = value; }
         }
 
@@ -89,8 +90,8 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public event EventHandler<NodesSelectedEventArgs> NodesSelected
         {
-            add { m_nodesSelected += value;  }
-            remove { m_nodesSelected -= value;  }
+            add { m_nodesSelected += value; }
+            remove { m_nodesSelected -= value; }
         }
 
         #region NodesSelectedEventArgs Class
@@ -118,15 +119,15 @@ namespace Opc.Ua.Client.Controls
             private IList<ReferenceDescription> m_nodes;
         }
         #endregion
-        
+
         /// <summary>
         /// Displays the a root in the control.
         /// </summary>
-        public void Initialize(
-            Session session, 
-            NodeId rootId, 
+        public async Task InitializeAsync(
+            ISession session,
+            NodeId rootId,
             NodeId viewId,
-            NodeId referenceTypeId, 
+            NodeId referenceTypeId,
             BrowseDirection browseDirection)
         {
             m_session = session;
@@ -155,13 +156,13 @@ namespace Opc.Ua.Client.Controls
             ReferenceTypeCTRL.Initialize(m_session, ReferenceTypeIds.HierarchicalReferences);
             ReferenceTypeCTRL.SelectedTypeId = m_referenceTypeId;
 
-            ILocalNode root = m_session.NodeCache.Find(m_rootId) as ILocalNode;
+            ILocalNode root = await m_session.NodeCache.FindAsync(m_rootId) as ILocalNode;
 
             if (root == null)
             {
                 return;
             }
-            
+
             ReferenceDescription reference = new ReferenceDescription();
 
             reference.ReferenceTypeId = referenceTypeId;
@@ -177,7 +178,7 @@ namespace Opc.Ua.Client.Controls
             rootNode.ImageKey = rootNode.SelectedImageKey = GuiUtils.GetTargetIcon(session, reference);
             rootNode.Tag = reference;
             rootNode.Nodes.Add(new TreeNode());
-            
+
             NodesTV.Nodes.Add(rootNode);
         }
 
@@ -208,7 +209,7 @@ namespace Opc.Ua.Client.Controls
             nodeToBrowse.IncludeSubtypes = true;
             nodeToBrowse.NodeClassMask = 0;
             nodeToBrowse.ResultMask = (uint)(int)BrowseResultMask.All;
-            
+
             BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
             nodesToBrowse.Add(nodeToBrowse);
 
@@ -221,7 +222,7 @@ namespace Opc.Ua.Client.Controls
                 view.Timestamp = DateTime.MinValue;
                 view.ViewVersion = 0;
             }
-        
+
             BrowseResultCollection results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
@@ -256,7 +257,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     return false;
                 }
-            
+
                 UpdateNode(parent, results[0].References);
             }
 
@@ -267,7 +268,7 @@ namespace Opc.Ua.Client.Controls
         /// Adds the browse results to the node (if not null). 
         /// </summary>
         private void UpdateNode(TreeNode parent, ReferenceDescriptionCollection references)
-        { 
+        {
             try
             {
                 for (int ii = 0; ii < references.Count; ii++)
@@ -278,41 +279,48 @@ namespace Opc.Ua.Client.Controls
 
                     childNode.ImageKey = childNode.SelectedImageKey = GuiUtils.GetTargetIcon(m_session, reference);
                     childNode.Tag = reference;
-                                        
+
                     childNode.Nodes.Add(new TreeNode());
-                    
+
                     parent.Nodes.Add(childNode);
                 }
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
-        
+
         #region Overridden Members
         /// <see cref="BaseTreeCtrl.SelectNode" />
-        protected override void SelectNode()
+        protected override async void SelectNode()
         {
-            base.SelectNode();
-            
-            ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
-
-            if (reference == null)
+            try
             {
-                return;
+                base.SelectNode();
+
+                ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
+
+                if (reference == null)
+                {
+                    return;
+                }
+
+                // update attributes control.
+                if (AttributesCTRL != null)
+                {
+                    await AttributesCTRL.InitializeAsync(m_session, reference.NodeId);
+                }
+
+                // update references control.
+                if (ReferencesCTRL != null)
+                {
+                    await ReferencesCTRL.InitializeAsync(m_session, reference.NodeId);
+                }
             }
-
-            // update attributes control.
-            if (AttributesCTRL != null)
+            catch (Exception exception)
             {
-                AttributesCTRL.Initialize(m_session, reference.NodeId);
-            }
-
-            // update references control.
-            if (ReferencesCTRL != null)
-            {
-                ReferencesCTRL.Initialize(m_session, reference.NodeId);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -330,10 +338,10 @@ namespace Opc.Ua.Client.Controls
 
                 // do not cancel expand.
                 return false;
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
                 return false;
             }
         }
@@ -356,7 +364,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void RootBTN_Click(object sender, EventArgs e)
+        private async void RootBTN_Click(object sender, EventArgs e)
         {
             try
             {
@@ -372,11 +380,11 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                Initialize(m_session, (NodeId)reference.NodeId, m_viewId, m_referenceTypeId, m_browseDirection);
-			}
+                await InitializeAsync(m_session, (NodeId)reference.NodeId, m_viewId, m_referenceTypeId, m_browseDirection);
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -394,10 +402,10 @@ namespace Opc.Ua.Client.Controls
                     NodesTV.SelectedNode.Expand();
                     return;
                 }
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -420,11 +428,11 @@ namespace Opc.Ua.Client.Controls
                         collection.Add(reference);
                         m_nodesSelected(this, new NodesSelectedEventArgs(collection));
                     }
-                }        
-			}
+                }
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -452,14 +460,14 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     if (collection.Count > 0)
-                    {                    
+                    {
                         m_nodesSelected(this, new NodesSelectedEventArgs(collection));
                     }
-                }   
-			}
+                }
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -477,10 +485,10 @@ namespace Opc.Ua.Client.Controls
                     NodesTV.SelectedNode.Expand();
                     return;
                 }
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

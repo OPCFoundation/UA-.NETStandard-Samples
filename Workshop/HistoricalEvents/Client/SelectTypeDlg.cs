@@ -53,7 +53,7 @@ namespace Quickstarts.HistoricalEvents.Client
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_rootId;
         #endregion
         
@@ -63,7 +63,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns></returns>
-        public TypeDeclaration ShowDialog(Session session, NodeId rootId, string caption)
+        public TypeDeclaration ShowDialog(ISession session, NodeId rootId, string caption)
         {
             m_session = session;
 

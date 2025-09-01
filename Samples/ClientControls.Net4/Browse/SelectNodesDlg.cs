@@ -38,6 +38,7 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -64,12 +65,12 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public IList<ILocalNode> ShowDialog(Session session, NodeId rootId, IList<NodeId> nodeIds)
+        public async Task<IList<ILocalNode>> ShowDialogAsync(ISession session, NodeId rootId, IList<NodeId> nodeIds)
         {
-            BrowseCTRL.Initialize(session, rootId, null, null, BrowseDirection.Forward);
-            ReferencesCTRL.Initialize(session, rootId);
-            AttributesCTRL.Initialize(session, rootId);
-            NodesCTRL.Initialize(session, nodeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, null, null, BrowseDirection.Forward);
+            await ReferencesCTRL.InitializeAsync(session, rootId);
+            await AttributesCTRL.InitializeAsync(session, rootId);
+            await NodesCTRL.InitializeAsync(session, nodeIds);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -92,7 +93,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BrowseCTRL_NodesSelected(object sender, BrowseTreeCtrl.NodesSelectedEventArgs e)
+        private async void BrowseCTRL_NodesSelected(object sender, BrowseTreeCtrl.NodesSelectedEventArgs e)
         {
             try
             {
@@ -100,7 +101,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (!reference.NodeId.IsAbsolute)
                     {
-                        NodesCTRL.Add((NodeId)reference.NodeId);
+                        await NodesCTRL.AddAsync((NodeId)reference.NodeId);
                     }
                 }
             }

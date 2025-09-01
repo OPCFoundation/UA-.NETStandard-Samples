@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -49,18 +50,18 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public BrowseListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
 
             ItemsLV.Sorting = SortOrder.Ascending;
 
             m_stack = new List<ItemData>();
             m_position = -1;
         }
-		#endregion
+        #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private Browser m_browser;
         private NodeId m_startId;
         private List<ItemData> m_stack;
@@ -72,13 +73,13 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "ReferenceType", HorizontalAlignment.Left, null },
-			new object[] { "Node",          HorizontalAlignment.Left, null },
-			new object[] { "Type",          HorizontalAlignment.Left, null },
-			new object[] { "Value",         HorizontalAlignment.Left, null }
-		};
-		#endregion
+        {
+            new object[] { "ReferenceType", HorizontalAlignment.Left, null },
+            new object[] { "Node",          HorizontalAlignment.Left, null },
+            new object[] { "Type",          HorizontalAlignment.Left, null },
+            new object[] { "Value",         HorizontalAlignment.Left, null }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -105,8 +106,8 @@ namespace Opc.Ua.Sample.Controls
         [DefaultValue(-1)]
         public int Position
         {
-            get { return m_position+1;  }
-            set { SetPosition(value-1); }
+            get { return m_position + 1; }
+            set { SetPositionAsync(value - 1).GetAwaiter().GetResult(); }
         }
 
         /// <summary>
@@ -115,7 +116,7 @@ namespace Opc.Ua.Sample.Controls
         public ICollection<NodeId> Positions
         {
             get
-            { 
+            {
                 List<NodeId> positions = new List<NodeId>();
 
                 positions.Add(m_startId);
@@ -141,49 +142,49 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Initializes the control with the session/subscription indicated.
         /// </summary>
-        public void Initialize(Browser browser, NodeId startId)
+        public async Task InitializeAsync(Browser browser, NodeId startId)
         {
             m_browser = null;
             m_session = null;
-            
+
             Clear();
 
             // nothing to do if no browser provided.
             if (browser == null)
             {
                 return;
-            }                     
-            
-            m_browser  = browser;
-            m_session  = browser.Session as Session;
-            m_startId  = startId;
+            }
+
+            m_browser = browser;
+            m_session = browser.Session as Session;
+            m_startId = startId;
             m_position = -1;
-            
+
             m_stack.Clear();
 
-            Browse(startId);
+            await BrowseAsync(startId);
         }
 
         /// <summary>
         /// Moves to the previous position.
         /// </summary>
-        public void Back()
+        public async Task BackAsync()
         {
-            SetPosition(m_position);
+            await SetPositionAsync(m_position);
         }
 
         /// <summary>
         /// Moves to the next position.
         /// </summary>
-        public void Forward()
+        public async Task ForwardAsync()
         {
-            SetPosition(m_position+2);
+            await SetPositionAsync(m_position + 2);
         }
 
         /// <summary>
         /// Sets the current position.
         /// </summary>
-        public void SetPosition(int position)
+        public async Task SetPositionAsync(int position)
         {
             position--;
 
@@ -194,23 +195,23 @@ namespace Opc.Ua.Sample.Controls
 
             if (position >= m_stack.Count)
             {
-                position = m_stack.Count-1;
+                position = m_stack.Count - 1;
             }
 
             if (m_position == position)
             {
                 return;
             }
-            
+
             m_position = position;
-            
+
             if (m_position == -1)
             {
-                Browse(m_startId);
-            }                      
+                await BrowseAsync(m_startId);
+            }
             else
             {
-                Browse(m_stack[m_position].Target.NodeId);
+                await BrowseAsync(m_stack[m_position].Target.NodeId);
             }
 
             if (m_PositionChanged != null)
@@ -222,44 +223,44 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the target of a browse operation in the control.
         /// </summary>
-        private void Browse(NodeId startId)
+        private async Task BrowseAsync(NodeId startId)
         {
             if (m_browser == null || NodeId.IsNull(startId))
-            {                
+            {
                 Clear();
                 return;
             }
-            
+
             List<ItemData> variables = new List<ItemData>();
-            
+
             // browse the references from the node and build list of variables.
             BeginUpdate();
 
-            foreach (ReferenceDescription reference in m_browser.Browse(startId))
+            foreach (ReferenceDescription reference in await m_browser.BrowseAsync(startId))
             {
-                Node target = m_session.NodeCache.Find(reference.NodeId) as Node;
+                Node target = await m_session.NodeCache.FindAsync(reference.NodeId) as Node;
 
                 if (target == null)
                 {
                     continue;
                 }
 
-                ReferenceTypeNode referenceType = m_session.NodeCache.Find(reference.ReferenceTypeId) as ReferenceTypeNode;
+                ReferenceTypeNode referenceType = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId) as ReferenceTypeNode;
 
                 Node typeDefinition = null;
 
                 if ((target.NodeClass & (NodeClass.Variable | NodeClass.Object)) != 0)
                 {
-                    typeDefinition = m_session.NodeCache.Find(reference.TypeDefinition) as Node;
+                    typeDefinition = await m_session.NodeCache.FindAsync(reference.TypeDefinition) as Node;
                 }
                 else
                 {
-                    typeDefinition = m_session.NodeCache.Find(m_session.NodeCache.TypeTree.FindSuperType(target.NodeId)) as Node;
+                    typeDefinition = await m_session.NodeCache.FindAsync(await m_session.NodeCache.TypeTree.FindSuperTypeAsync(target.NodeId)) as Node;
                 }
 
                 ItemData item = new ItemData(referenceType, !reference.IsForward, target, typeDefinition);
-                AddItem(item, GuiUtils.GetTargetIcon(m_browser.Session as Session, reference), -1);    
-        
+                AddItem(item, GuiUtils.GetTargetIcon(m_browser.Session as Session, reference), -1);
+
                 if ((target.NodeClass & (NodeClass.Variable | NodeClass.VariableType)) != 0)
                 {
                     variables.Add(item);
@@ -272,19 +273,19 @@ namespace Opc.Ua.Sample.Controls
             if (variables.Count > 0)
             {
                 ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
-                
+
                 foreach (ItemData item in variables)
                 {
                     ReadValueId valueId = new ReadValueId();
 
-                    valueId.NodeId       = item.Target.NodeId;
-                    valueId.AttributeId  = Attributes.Value;
-                    valueId.IndexRange   = null;
+                    valueId.NodeId = item.Target.NodeId;
+                    valueId.AttributeId = Attributes.Value;
+                    valueId.IndexRange = null;
                     valueId.DataEncoding = null;
 
                     nodesToRead.Add(valueId);
                 }
-                    
+
                 DataValueCollection values;
                 DiagnosticInfoCollection diagnosticInfos;
 
@@ -298,11 +299,11 @@ namespace Opc.Ua.Sample.Controls
 
                 ClientBase.ValidateResponse(values, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-                
+
                 for (int ii = 0; ii < variables.Count; ii++)
                 {
                     variables[ii].Value = values[ii];
-                    
+
                     foreach (ListViewItem item in ItemsLV.Items)
                     {
                         if (Object.ReferenceEquals(item.Tag, variables[ii]))
@@ -317,7 +318,7 @@ namespace Opc.Ua.Sample.Controls
             AdjustColumns();
         }
         #endregion
-        
+
         #region ItemData Class
         /// <summary>
         /// Stores the data associated with a list view item.
@@ -330,12 +331,12 @@ namespace Opc.Ua.Sample.Controls
             public Node TypeDefinition;
             public DataValue Value;
             public string SortKey;
-            
+
             public ItemData(ReferenceTypeNode referenceType, bool isInverse, Node target, Node typeDefinition)
             {
-                ReferenceType  = referenceType;
-                IsInverse      = isInverse;
-                Target         = target;
+                ReferenceType = referenceType;
+                IsInverse = isInverse;
+                Target = target;
                 TypeDefinition = typeDefinition;
             }
 
@@ -366,47 +367,54 @@ namespace Opc.Ua.Sample.Controls
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
+        {
             // TBD
-		}
+        }
 
         /// <summary>
         /// Handles a double click.
         /// </summary>
-        protected override void PickItems()
+        protected override async void PickItems()
         {
-            if (ItemsLV.SelectedItems.Count <= 0)
+            try
             {
-                return;
-            }
+                if (ItemsLV.SelectedItems.Count <= 0)
+                {
+                    return;
+                }
 
-            ItemData itemData = ItemsLV.SelectedItems[0].Tag as ItemData;
-            
-            if (itemData == null)
-            {
-                return;
-            }
+                ItemData itemData = ItemsLV.SelectedItems[0].Tag as ItemData;
 
-            base.PickItems();
-            
-            if (m_position >= 0 && m_position < m_stack.Count-1)
-            {
-                m_stack.RemoveRange(m_position, m_stack.Count-m_position);
-            }    
-            else if (m_position == -1)
-            {
-                m_stack.Clear();
-            }
-            
-            m_position++;
-            m_stack.Add(itemData);
+                if (itemData == null)
+                {
+                    return;
+                }
 
-            if (m_PositionAdded != null)
-            {
-                m_PositionAdded(this, null);
-            }
+                base.PickItems();
 
-            Browse(itemData.Target.NodeId);
+                if (m_position >= 0 && m_position < m_stack.Count - 1)
+                {
+                    m_stack.RemoveRange(m_position, m_stack.Count - m_position);
+                }
+                else if (m_position == -1)
+                {
+                    m_stack.Clear();
+                }
+
+                m_position++;
+                m_stack.Add(itemData);
+
+                if (m_PositionAdded != null)
+                {
+                    m_PositionAdded(this, null);
+                }
+
+                await BrowseAsync(itemData.Target.NodeId);
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
 
         /// <see cref="BaseListCtrl.UpdateItem" />
@@ -414,44 +422,44 @@ namespace Opc.Ua.Sample.Controls
         {
             ItemData itemData = item as ItemData;
 
-			if (itemData == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+            if (itemData == null)
+            {
+                base.UpdateItem(listItem, item);
+                return;
+            }
 
             if (itemData.ReferenceType != null)
             {
                 if (itemData.IsInverse)
                 {
-			        listItem.SubItems[0].Text  = String.Format("{0}", itemData.ReferenceType.InverseName);
+                    listItem.SubItems[0].Text = String.Format("{0}", itemData.ReferenceType.InverseName);
                 }
                 else
                 {
-			        listItem.SubItems[0].Text  = String.Format("{0}", itemData.ReferenceType.DisplayName);
+                    listItem.SubItems[0].Text = String.Format("{0}", itemData.ReferenceType.DisplayName);
                 }
             }
             else
             {
                 listItem.SubItems[0].Text = "(unknown)";
             }
-            
-			listItem.SubItems[1].Text = String.Format("{0}", itemData.Target);
-			listItem.SubItems[2].Text = String.Format("{0}", itemData.TypeDefinition);
+
+            listItem.SubItems[1].Text = String.Format("{0}", itemData.Target);
+            listItem.SubItems[2].Text = String.Format("{0}", itemData.TypeDefinition);
 
             if (itemData.Value != null)
             {
-			    listItem.SubItems[3].Text = String.Format("{0}", itemData.Value);
+                listItem.SubItems[3].Text = String.Format("{0}", itemData.Value);
             }
             else
             {
-			    listItem.SubItems[3].Text = String.Empty;
+                listItem.SubItems[3].Text = String.Empty;
             }
-                        
+
             itemData.SortKey = String.Format("{0}{1}", listItem.SubItems[0].Text, listItem.SubItems[1].Text);
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
-		#endregion
+        #endregion
     }
 }

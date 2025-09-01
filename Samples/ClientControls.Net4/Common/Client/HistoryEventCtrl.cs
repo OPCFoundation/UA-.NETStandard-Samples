@@ -288,7 +288,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void NodeIdBTN_Click(object sender, EventArgs e)
+        private async void NodeIdBTN_Click(object sender, EventArgs e)
         {
             try
             {
@@ -297,7 +297,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                ReferenceDescription reference = new SelectNodeDlg().ShowDialog(
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
                     m_session,
                     Opc.Ua.ObjectIds.Server,
                     null,

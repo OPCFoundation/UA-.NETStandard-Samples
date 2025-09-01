@@ -51,7 +51,7 @@ namespace AggregationServer
             QualifiedName browseName,
             IEnumerable<IReference> additionalReferences,
             bool internalOnly,
-            Opc.Ua.Client.Session client,
+            Opc.Ua.Client.ISession client,
             NamespaceMapper mapper,
             NodeState source,
             NodeId rootId)
@@ -393,7 +393,7 @@ namespace AggregationServer
         #region Private Fields
         private Stage m_stage;
         private int m_position;
-        private Opc.Ua.Client.Session m_client;
+        private Opc.Ua.Client.ISession m_client;
         private NamespaceMapper m_mapper;
         private NodeState m_source;
         private byte[] m_continuationPoint;

@@ -33,6 +33,7 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -102,7 +103,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the monitored item.
         /// </summary>
-        public bool ShowDialog(Session session, MonitoredItem monitoredItem, bool isEvent)
+        public async Task<bool> ShowDialogAsync(ISession session, MonitoredItem monitoredItem, bool isEvent)
         {
             if (!monitoredItem.Created)
             {
@@ -158,16 +159,16 @@ namespace Opc.Ua.Client.Controls
                 if (!monitoredItem.Created)
                 {
                     // fetch the available encodings for the first node in the list from the server.
-                    IVariableBase variable = session.NodeCache.Find(monitoredItem.StartNodeId) as IVariableBase;
+                    IVariableBase variable = await session.NodeCache.FindAsync(monitoredItem.StartNodeId) as IVariableBase;
 
                     DataEncodingCB.Items.Add(new EncodingInfo());
                     DataEncodingCB.SelectedIndex = 0;
 
                     if (variable != null)
                     {
-                        if (session.NodeCache.IsTypeOf(variable.DataType, Opc.Ua.DataTypeIds.Structure))
+                        if (await session.NodeCache.IsTypeOfAsync(variable.DataType, Opc.Ua.DataTypeIds.Structure))
                         {
-                            foreach (INode encoding in session.NodeCache.Find(variable.DataType, Opc.Ua.ReferenceTypeIds.HasEncoding, false, true))
+                            foreach (INode encoding in await session.NodeCache.FindAsync(variable.DataType, Opc.Ua.ReferenceTypeIds.HasEncoding, false, true))
                             {
                                 DataEncodingCB.Items.Add(new EncodingInfo() { EncodingName = encoding.BrowseName });
 
@@ -194,7 +195,7 @@ namespace Opc.Ua.Client.Controls
             if (!monitoredItem.Created)
             {
                 monitoredItem.StartNodeId = NodeBTN.SelectedNode;
-                monitoredItem.DisplayName = session.NodeCache.GetDisplayText(monitoredItem.StartNodeId);
+                monitoredItem.DisplayName = await session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId);
                 monitoredItem.RelativePath = null;
                 monitoredItem.AttributeId = (uint)(AttributeCB.SelectedIndex + 1);
                 monitoredItem.MonitoringMode = (MonitoringMode)MonitoringModeCB.SelectedItem;
