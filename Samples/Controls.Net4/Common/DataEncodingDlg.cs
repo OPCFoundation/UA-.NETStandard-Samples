@@ -39,6 +39,7 @@ using System.Reflection;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Client.ComplexTypes;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -53,7 +54,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private ReferenceDescriptionCollection m_encodings;
         #endregion
         
@@ -198,13 +199,13 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public bool ShowDialog(Session session, NodeId variableId)
+        public async Task<bool> ShowDialogAsync(ISession session, NodeId variableId)
         {
             if (session == null)    throw new ArgumentNullException("session");
             if (variableId == null) throw new ArgumentNullException("variableId");
             
             m_session   = session;
-            m_encodings = session.ReadAvailableEncodings(variableId);
+            m_encodings = await session.ReadAvailableEncodingsAsync(variableId);
 
             foreach (ReferenceDescription encoding in m_encodings)
             {

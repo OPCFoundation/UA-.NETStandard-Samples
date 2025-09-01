@@ -215,7 +215,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventType)
             {
-                UpdateFilter();
+                await UpdateFilterAsync();
             }
 
             SetDisplayState(++m_state);
@@ -224,7 +224,7 @@ namespace Opc.Ua.Client.Controls
             {
                 await BrowseCTRL.InitializeAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, Opc.Ua.ReferenceTypeIds.HasSubtype);
                 BrowseCTRL.SelectNode((m_filter == null || m_filter.EventTypeId == null) ? Opc.Ua.ObjectTypeIds.BaseEventType : m_filter.EventTypeId);
-                EventTypeCTRL.ShowType(Opc.Ua.ObjectTypeIds.BaseEventType);
+                await EventTypeCTRL.ShowTypeAsync(Opc.Ua.ObjectTypeIds.BaseEventType);
                 return;
             }
 
@@ -455,11 +455,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the filter from the controls.
         /// </summary>
-        private void UpdateFilter()
+        private async Task UpdateFilterAsync()
         {
             // get selected declarations.
             List<InstanceDeclaration> declarations = new List<InstanceDeclaration>();
-            NodeId eventTypeId = CollectInstanceDeclarations(declarations);
+            NodeId eventTypeId = await CollectInstanceDeclarationsAsync(declarations);
 
             if (m_filter == null)
             {
@@ -523,7 +523,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Collects the instance declarations for the selected types.
         /// </summary>
-        private NodeId CollectInstanceDeclarations(List<InstanceDeclaration> declarations)
+        private async Task<NodeId> CollectInstanceDeclarationsAsync(List<InstanceDeclaration> declarations)
         {
             List<NodeId> typeIds = new List<NodeId>();
 
@@ -533,7 +533,7 @@ namespace Opc.Ua.Client.Controls
             // merge declarations from the selected types.
             foreach (NodeId typeId in typeIds)
             {
-                List<InstanceDeclaration> declarations2 = ClientUtils.CollectInstanceDeclarationsForType(m_session, typeId);
+                List<InstanceDeclaration> declarations2 = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId);
 
                 for (int ii = 0; ii < declarations2.Count; ii++)
                 {
@@ -771,7 +771,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BrowseCTRL_AfterSelect(object sender, EventArgs e)
+        private async void BrowseCTRL_AfterSelect(object sender, EventArgs e)
         {
             try
             {
@@ -779,11 +779,11 @@ namespace Opc.Ua.Client.Controls
 
                 if (reference == null || NodeId.IsNull(reference.NodeId) || reference.NodeId.IsAbsolute)
                 {
-                    EventTypeCTRL.ShowType(null);
+                    await EventTypeCTRL.ShowTypeAsync(null);
                     return;
                 }
 
-                EventTypeCTRL.ShowType((NodeId)reference.NodeId);
+                await EventTypeCTRL.ShowTypeAsync((NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {

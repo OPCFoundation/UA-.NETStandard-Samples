@@ -29,13 +29,15 @@
 
 using System;
 using System.Drawing;
+using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds;
 using Opc.Ua.Gds.Client.Controls;
-using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Opc.Ua.Gds.Client
 {
@@ -114,24 +116,31 @@ namespace Opc.Ua.Gds.Client
             Discovery
         }
 
-        private void Server_ConnectionStatusChanged(object sender, EventArgs e)
+        private async void Server_ConnectionStatusChanged(object sender, EventArgs e)
         {
-            if (InvokeRequired)
+            try
             {
-                BeginInvoke(new EventHandler(Server_ConnectionStatusChanged), sender, e);
-                return;
-            }
+                if (InvokeRequired)
+                {
+                    BeginInvoke(new EventHandler(Server_ConnectionStatusChanged), sender, e);
+                    return;
+                }
 
-            if (Object.ReferenceEquals(sender, m_server))
+                if (Object.ReferenceEquals(sender, m_server))
+                {
+                    if (m_server.IsConnected)
+                    {
+                        await ServerStatusPanel.InitializeAsync(m_server);
+                    }
+                    else
+                    {
+                        await ServerStatusPanel.InitializeAsync(null);
+                    }
+                }
+            }
+            catch (Exception exception)
             {
-                if (m_server.IsConnected)
-                {
-                    ServerStatusPanel.Initialize(m_server);
-                }
-                else
-                {
-                    ServerStatusPanel.Initialize(null);
-                }
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -250,8 +259,8 @@ namespace Opc.Ua.Gds.Client
 
                 await m_server.ConnectAsync(endpoint.Description.EndpointUrl);
 
-                ServerStatusPanel.Initialize(m_server);
-                await CertificatePanel.Initialize(m_configuration, m_gds, m_server, m_registeredApplication, false);
+                await ServerStatusPanel.InitializeAsync(m_server);
+                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, false);
             }
             catch (Exception exception)
             {
@@ -429,7 +438,7 @@ namespace Opc.Ua.Gds.Client
             ServerStatusTime.ForeColor = (error) ? Color.Red : Color.Empty;
         }
 
-        private void DisconnectButton_Click(object sender, EventArgs e)
+        private async void DisconnectButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -437,7 +446,7 @@ namespace Opc.Ua.Gds.Client
                 {
                     m_server.DisconnectAsync().GetAwaiter().GetResult();
                     UpdateStatus(true, DateTime.UtcNow, "Disconnected {0}", m_server.Endpoint);
-                    ServerStatusPanel.Initialize(null);
+                    await ServerStatusPanel.InitializeAsync(null);
                 }
             }
             catch (Exception exception)
@@ -485,7 +494,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                await CertificatePanel.Initialize(m_configuration, m_gds, m_server, m_registeredApplication, false);
+                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, false);
                 ShowPanel(Panel.Certificate);
             }
             catch (Exception ex)
@@ -498,7 +507,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                await CertificatePanel.Initialize(m_configuration, m_gds, m_server, m_registeredApplication, true);
+                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, true);
                 ShowPanel(Panel.HttpsCertificate);
             }
             catch (Exception ex)
@@ -590,7 +599,7 @@ namespace Opc.Ua.Gds.Client
                 HttpsCertificateButton.Visible = (e.Application != null && !String.IsNullOrEmpty(e.Application.GetHttpsDomainName()));
                 HttpsTrustListButton.Visible = (e.Application != null && !String.IsNullOrEmpty(e.Application.HttpsTrustListStorePath));
 #endif
-                await CertificatePanel.Initialize(m_configuration, m_gds, m_server, e.Application, false);
+                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, e.Application, false);
                 TrustListPanel.Initialize(m_gds, m_server, e.Application, false);
                 UpdateMainFormHeader();
             }

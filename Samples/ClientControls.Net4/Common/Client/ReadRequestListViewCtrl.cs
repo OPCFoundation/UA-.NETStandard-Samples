@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -92,7 +93,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds a node to the read request.
         /// </summary>
-        public void AddNodes(params ReadValueId[] nodesToRead)
+        public async Task AddNodesAsync(params ReadValueId[] nodesToRead)
         {
             if (nodesToRead != null)
             {
@@ -104,7 +105,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, nodesToRead[ii]);
+                    await UpdateRowAsync(row, nodesToRead[ii]);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -202,11 +203,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the node to read.
         /// </summary>
-        public void UpdateRow(DataRow row, ReadValueId nodeToRead)
+        public async Task UpdateRowAsync(DataRow row, ReadValueId nodeToRead)
         {
             row[0] = nodeToRead;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(nodeToRead.AttributeId, null)];
-            row[2] = (m_session != null) ? m_session.NodeCache.GetDisplayText(nodeToRead.NodeId) : Utils.ToString(nodeToRead.NodeId);
+            row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToRead.NodeId) : Utils.ToString(nodeToRead.NodeId);
             row[3] = Attributes.GetBrowseName(nodeToRead.AttributeId);
             row[4] = nodeToRead.IndexRange;
             row[5] = (nodeToRead.DataEncoding != null) ? nodeToRead.DataEncoding : QualifiedName.Null;
@@ -222,7 +223,7 @@ namespace Opc.Ua.Client.Controls
             DeleteMI.Visible = !m_showResults;
         }
 
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -245,7 +246,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     // edit the parameters.
-                    ReadValueId[] results = new EditReadValueIdDlg().ShowDialog(m_session, nodeToRead);
+                    ReadValueId[] results = await new EditReadValueIdDlg().ShowDialogAsync(m_session, nodeToRead);
 
                     if (results != null)
                     {
@@ -253,7 +254,7 @@ namespace Opc.Ua.Client.Controls
                         for (int ii = 0; ii < results.Length; ii++)
                         {
                             DataRow row = m_dataset.Tables[0].NewRow();
-                            UpdateRow(row, results[ii]);
+                            await UpdateRowAsync(row, results[ii]);
                             m_dataset.Tables[0].Rows.Add(row);
                         }
                     }
@@ -265,7 +266,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -300,14 +301,14 @@ namespace Opc.Ua.Client.Controls
                         nodesToRead.Add(value);
                     }
 
-                    ReadValueId[] results = new EditReadValueIdDlg().ShowDialog(m_session, nodesToRead.ToArray());
+                    ReadValueId[] results = await new EditReadValueIdDlg().ShowDialogAsync(m_session, nodesToRead.ToArray());
 
                     if (results != null)
                     {
                         for (int ii = 0; ii < results.Length; ii++)
                         {
                             DataRowView source = ResultsDV.SelectedRows[ii].DataBoundItem as DataRowView;
-                            UpdateRow(source.Row, results[ii]);
+                            await UpdateRowAsync(source.Row, results[ii]);
                         }
                     }
                 }

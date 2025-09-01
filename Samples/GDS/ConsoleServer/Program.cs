@@ -45,27 +45,27 @@ namespace Opc.Ua.Gds.Server
 {
     public class ApplicationMessageDlg : IApplicationMessageDlg
     {
-        private string message = string.Empty;
-        private bool ask = false;
+        private string m_message = string.Empty;
+        private bool m_ask = false;
 
         public override void Message(string text, bool ask)
         {
-            this.message = text;
-            this.ask = ask;
+            this.m_message = text;
+            this.m_ask = ask;
         }
 
         public override async Task<bool> ShowAsync()
         {
-            if (ask)
+            if (m_ask)
             {
-                message += " (y/n, default y): ";
-                Console.Write(message);
+                m_message += " (y/n, default y): ";
+                Console.Write(m_message);
             }
             else
             {
-                Console.WriteLine(message);
+                Console.WriteLine(m_message);
             }
-            if (ask)
+            if (m_ask)
             {
                 try
                 {
@@ -131,7 +131,7 @@ namespace Opc.Ua.Gds.Server
             }
 
             var server = new NetCoreGlobalDiscoveryServer();
-            await server.RunAsync();
+            await server.RunAsync().ConfigureAwait(false);
 
             return (int)NetCoreGlobalDiscoveryServer.ExitCode;
         }
@@ -139,10 +139,10 @@ namespace Opc.Ua.Gds.Server
 
     public class NetCoreGlobalDiscoveryServer
     {
-        GlobalDiscoverySampleServer server;
-        Task status;
-        DateTime lastEventTime;
-        static ExitCode exitCode;
+        private GlobalDiscoverySampleServer server;
+        private Task status;
+        private DateTime lastEventTime;
+        public static ExitCode exitCode;
 
         public NetCoreGlobalDiscoveryServer()
         {

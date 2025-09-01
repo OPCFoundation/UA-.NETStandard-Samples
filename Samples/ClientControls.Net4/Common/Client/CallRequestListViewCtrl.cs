@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -89,7 +90,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Sets the method for the call request.
         /// </summary>
-        public void SetMethod(NodeId objectId, NodeId methodId)
+        public async Task SetMethodAsync(NodeId objectId, NodeId methodId)
         {
             if (objectId == null)
             {
@@ -105,13 +106,13 @@ namespace Opc.Ua.Client.Controls
             m_methodId = methodId;
 
             ReadArguments(methodId);
-            DisplayInputArguments();
+            await DisplayInputArgumentsAsync();
         }
 
         /// <summary>
         /// Calls the method.
         /// </summary>
-        public void Call()
+        public async Task CallAsync()
         {
             // build list of methods to call.
             CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
@@ -180,11 +181,11 @@ namespace Opc.Ua.Client.Controls
 
                         if (results[ii].OutputArguments.Count > jj)
                         {
-                            UpdateRow(row, m_outputArguments[jj], results[ii].OutputArguments[jj], true);
+                            await UpdateRowAsync(row, m_outputArguments[jj], results[ii].OutputArguments[jj], true);
                         }
                         else
                         {
-                            UpdateRow(row, m_outputArguments[jj], Variant.Null, true);
+                            await UpdateRowAsync(row, m_outputArguments[jj], Variant.Null, true);
                         }
                         
                         m_dataset.Tables[0].Rows.Add(row);
@@ -196,9 +197,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the grid to the enter input arguments state.
         /// </summary>
-        public void Back()
+        public async Task BackAsync()
         {
-            DisplayInputArguments();
+            await DisplayInputArgumentsAsync();
 
             // clear any selection.
             foreach (DataGridViewRow row in ResultsDV.Rows)
@@ -212,7 +213,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the input arguments.
         /// </summary>
-        private void DisplayInputArguments()
+        private async Task DisplayInputArgumentsAsync()
         {
             ResultCH.Visible = false;
             NoArgumentsLB.Visible = m_inputArguments == null || m_inputArguments.Length == 0;
@@ -225,7 +226,7 @@ namespace Opc.Ua.Client.Controls
                 foreach (Argument argument in m_inputArguments)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, argument, new Variant(argument.Value), false);
+                    await UpdateRowAsync(row, argument, new Variant(argument.Value), false);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -234,9 +235,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with an argument and its value.
         /// </summary>
-        private void UpdateRow(DataRow row, Argument argument, Variant value, bool isOutputArgument)
+        private async Task UpdateRowAsync(DataRow row, Argument argument, Variant value, bool isOutputArgument)
         {
-            string dataType = m_session.NodeCache.GetDisplayText(argument.DataType);
+            string dataType = await m_session.NodeCache.GetDisplayTextAsync(argument.DataType);
 
             if (argument.ValueRank >= 0)
             {
@@ -354,7 +355,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -374,7 +375,7 @@ namespace Opc.Ua.Client.Controls
                     if (result != null)
                     {
                         argument.Value = result;
-                        UpdateRow(source.Row, argument, new Variant(result), false);
+                        await UpdateRowAsync(source.Row, argument, new Variant(result), false);
                     }
 
                     break;

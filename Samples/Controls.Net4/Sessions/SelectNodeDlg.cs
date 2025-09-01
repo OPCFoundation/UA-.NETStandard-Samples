@@ -39,6 +39,7 @@ using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -70,11 +71,11 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ReferenceDescription ShowDialog(Browser browser, NodeId rootId)
+        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId)
         {
             if (browser == null) throw new ArgumentNullException("browser");
 
-            BrowseCTRL.SetRoot(browser, rootId);
+            await BrowseCTRL.SetRootAsync(browser, rootId);
 
             NamespaceUriCB.Items.Clear();
             NamespaceUriCB.Items.AddRange(browser.Session.NamespaceUris.ToArray());

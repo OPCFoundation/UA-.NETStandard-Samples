@@ -68,7 +68,7 @@ namespace Quickstarts.ReferenceClient
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private bool m_connectedOnce;
         #endregion
 
@@ -124,7 +124,7 @@ namespace Quickstarts.ReferenceClient
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectComplete(object sender, EventArgs e)
         {
             try
             {
@@ -137,7 +137,7 @@ namespace Quickstarts.ReferenceClient
                 }
 
                 // browse the instances in the server.
-                BrowseCTRL.Initialize(m_session, ObjectIds.ObjectsFolder, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
+                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
             }
             catch (Exception exception)
             {
@@ -148,11 +148,11 @@ namespace Quickstarts.ReferenceClient
         /// <summary>
         /// Updates the application after a communicate error was detected.
         /// </summary>
-        private void Server_ReconnectStarting(object sender, EventArgs e)
+        private async void Server_ReconnectStarting(object sender, EventArgs e)
         {
             try
             {
-                BrowseCTRL.ChangeSession(null);
+                await BrowseCTRL.ChangeSessionAsync(null);
             }
             catch (Exception exception)
             {
@@ -163,12 +163,12 @@ namespace Quickstarts.ReferenceClient
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectComplete(object sender, EventArgs e)
         {
             try
             {
                 m_session = ConnectServerCTRL.Session;
-                BrowseCTRL.ChangeSession(m_session);
+                await BrowseCTRL.ChangeSessionAsync(m_session);
             }
             catch (Exception exception)
             {

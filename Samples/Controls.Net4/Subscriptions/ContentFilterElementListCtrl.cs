@@ -234,15 +234,15 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SelectNodeMI_Click(object sender, EventArgs e)
+        private async void SelectNodeMI_Click(object sender, EventArgs e)
         {
             try
             {
-                ReferenceDescription reference = new SelectNodeDlg().ShowDialog(m_browser, ObjectTypes.BaseEventType);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType);
 
                 if (reference != null)
                 {
-                    Node node = m_session.NodeCache.Find(reference.NodeId) as Node;
+                    ILocalNode node = await m_session.NodeCache.FindAsync(reference.NodeId) as ILocalNode;
 
                     if (node == null)
                     {

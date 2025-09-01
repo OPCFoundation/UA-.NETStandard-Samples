@@ -37,7 +37,6 @@ using System.ServiceModel;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.ServiceModel.Security;
-using System.ServiceModel.Channels;
 
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -79,7 +78,7 @@ namespace Quickstarts.DataAccessClient
             Processed
         }
 
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_nodeId;
         private HistoryReadResult m_result;
         private int m_index;
@@ -87,7 +86,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public bool ShowDialog(Session session, NodeId nodeId)
+        public bool ShowDialog(ISession session, NodeId nodeId)
         {
             m_session = session;
             m_nodeId = nodeId;

@@ -52,7 +52,7 @@ namespace Quickstarts.AlarmConditionClient
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
         
         #region Public Interface
@@ -61,7 +61,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns></returns>
-        public NodeId ShowDialog(Session session)
+        public NodeId ShowDialog(ISession session)
         {
             m_session = session;
 

@@ -162,7 +162,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public void SetRoot(Browser browser, NodeId rootId)
+        public async Task SetRootAsync(Browser browser, NodeId rootId)
         {
             Clear();
 
@@ -189,7 +189,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_browser != null)
             {
-                INode node = m_browser.Session.NodeCache.Find(m_rootId);
+                INode node = await m_browser.Session.NodeCache.FindAsync(m_rootId);
 
                 if (node == null)
                 {
@@ -218,15 +218,15 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public void SetRoot(Session session, NodeId rootId)
+        public async Task SetRootAsync(Session session, NodeId rootId)
         {
-            SetRoot(new Browser(session), rootId);
+            await SetRootAsync(new Browser(session), rootId);
         }
 
         /// <summary>
         /// Sets the view for the control.
         /// </summary>
-        public void SetView(Session session, BrowseViewType viewType, NodeId viewId)
+        public async Task SetViewAsync(ISession session, BrowseViewType viewType, NodeId viewId)
         {
             Clear();
 
@@ -307,7 +307,7 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            SetRoot(browser, rootId);
+            await SetRootAsync(browser, rootId);
         }
 
         /// <summary>
@@ -950,10 +950,17 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ShowReferencesMI_CheckedChanged(object sender, EventArgs e)
+        private async void ShowReferencesMI_CheckedChanged(object sender, EventArgs e)
         {
-            m_showReferences = ShowReferencesMI.Checked;
-            SetRoot(m_browser, m_rootId);
+            try
+            {
+                m_showReferences = ShowReferencesMI.Checked;
+                await SetRootAsync(m_browser, m_rootId);
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
 
         private void ViewAttributesMI_Click(object sender, EventArgs e)
@@ -1033,7 +1040,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ReadMI_Click(object sender, EventArgs e)
+        private async void ReadMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1064,7 +1071,7 @@ namespace Opc.Ua.Sample.Controls
                 valueIds.Add(valueId);
 
                 // show form.
-                new ReadDlg().Show(session, valueIds);
+                await new ReadDlg().ShowAsync(session, valueIds);
             }
             catch (Exception exception)
             {
@@ -1072,7 +1079,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void WriteMI_Click(object sender, EventArgs e)
+        private async void WriteMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1103,7 +1110,7 @@ namespace Opc.Ua.Sample.Controls
                 values.Add(value);
 
                 // show form.
-                new WriteDlg().Show(session, values);
+                await new WriteDlg().ShowAsync(session, values);
             }
             catch (Exception exception)
             {
@@ -1172,7 +1179,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void EncodingsMI_Click(object sender, EventArgs e)
+        private async void EncodingsMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1188,7 +1195,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                new DataEncodingDlg().ShowDialog(m_browser.Session as Session, (NodeId)reference.NodeId);
+                await new DataEncodingDlg().ShowDialogAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {

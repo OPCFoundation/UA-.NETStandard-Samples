@@ -55,7 +55,7 @@ namespace Quickstarts.DataAccessClient
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_nodeId;
         private uint m_attributeId;
         private DataValue m_value;
@@ -69,7 +69,7 @@ namespace Quickstarts.DataAccessClient
         /// <param name="nodeId">The identifier for the node to write to.</param>
         /// <param name="attributeId">The attribute being written.</param>
         /// <returns>True if successful. False if the operation was cancelled.</returns>
-        public bool ShowDialog(Session session, NodeId nodeId, uint attributeId)
+        public bool ShowDialog(ISession session, NodeId nodeId, uint attributeId)
         {
             m_session = session;
             m_nodeId  = nodeId;

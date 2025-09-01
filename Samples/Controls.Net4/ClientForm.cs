@@ -238,7 +238,7 @@ namespace Opc.Ua.Sample.Controls
 
                 m_session = session;
                 m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
-                BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
+                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
                 StandardClient_KeepAlive(m_session, null);
             }
         }
@@ -307,7 +307,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void StandardClient_Server_ReconnectComplete(object sender, EventArgs e)
+        private async void StandardClient_Server_ReconnectComplete(object sender, EventArgs e)
         {
             if (InvokeRequired)
             {
@@ -335,7 +335,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
+                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
 
                 SessionsCTRL.Reload(m_session);
 

@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -86,7 +87,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the components of the type in the control.
         /// </summary>
-        public void ShowType(NodeId typeId)
+        public async Task ShowTypeAsync(NodeId typeId)
         {
             if (NodeId.IsNull(typeId))
             {
@@ -94,7 +95,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            m_declarations = ClientUtils.CollectInstanceDeclarationsForType(m_session, typeId, false);
+            m_declarations = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId, false);
 
             // update existing rows.
             for (int ii = 0; ii < m_declarations.Count && ii < m_dataset.Tables[0].Rows.Count; ii++)

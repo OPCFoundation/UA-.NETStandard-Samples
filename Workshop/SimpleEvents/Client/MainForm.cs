@@ -36,6 +36,7 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Quickstarts.SimpleEvents.Client
 {
@@ -71,7 +72,7 @@ namespace Quickstarts.SimpleEvents.Client
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private Opc.Ua.Client.Controls.FilterDeclaration m_filter;
@@ -133,7 +134,7 @@ namespace Quickstarts.SimpleEvents.Client
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectComplete(object sender, EventArgs e)
         {
             try
             {
@@ -150,7 +151,7 @@ namespace Quickstarts.SimpleEvents.Client
                     m_connectedOnce = true;
                 }
 
-                CreateSubscription();
+                await CreateSubscriptionAsync();
             }
             catch (Exception exception)
             {
@@ -212,7 +213,7 @@ namespace Quickstarts.SimpleEvents.Client
         /// <summary>
         /// Creates the subscription.
         /// </summary>
-        private void CreateSubscription()
+        private async Task CreateSubscriptionAsync()
         {
             // create the default subscription.
             m_subscription = new Subscription();
@@ -226,7 +227,7 @@ namespace Quickstarts.SimpleEvents.Client
             m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
 
             m_session.AddSubscription(m_subscription);
-            m_subscription.Create();
+            await m_subscription.CreateAsync();
 
             // a table used to track event types.
             m_eventTypeMappings = new Dictionary<NodeId, NodeId>();
@@ -238,7 +239,7 @@ namespace Quickstarts.SimpleEvents.Client
             
             TypeDeclaration type = new TypeDeclaration();
             type.NodeId = ExpandedNodeId.ToNodeId(ObjectTypeIds.SystemCycleStatusEventType, m_session.NamespaceUris);
-            type.Declarations = ClientUtils.CollectInstanceDeclarationsForType(m_session, type.NodeId);
+            type.Declarations = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, type.NodeId);
 
             // the filter to use.
             m_filter = new FilterDeclaration(type, null);

@@ -29,6 +29,7 @@
 
 using System;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 
@@ -43,10 +44,10 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private ServerPushConfigurationClient m_server;
 
-        public void Initialize(ServerPushConfigurationClient server)
+        public async Task InitializeAsync(ServerPushConfigurationClient server)
         {
             m_server = server;
-            ServerBrowseControl.Initialize((server != null) ? server.Session as Session : null, Opc.Ua.ObjectIds.ObjectsFolder, ReferenceTypeIds.HierarchicalReferences);
+            await ServerBrowseControl.InitializeAsync((server != null) ? server.Session as Session : null, Opc.Ua.ObjectIds.ObjectsFolder, ReferenceTypeIds.HierarchicalReferences);
         }
 
         public void SetServerStatus(ServerStatusDataType status)

@@ -74,7 +74,7 @@ namespace Quickstarts.DataAccessClient
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private bool m_connectedOnce;
         private Subscription m_subscription;
         private MonitoredItemNotificationEventHandler m_monitoredItem_Notification;

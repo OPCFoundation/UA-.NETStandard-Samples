@@ -33,6 +33,7 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -85,7 +86,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the read request parameters for the set of nodes provided.
         /// </summary>
-        public ReadValueId[] ShowDialog(ISession session, params ReadValueId[] nodesToRead)
+        public async Task<ReadValueId[]> ShowDialogAsync(ISession session, params ReadValueId[] nodesToRead)
         {
             NodeBTN.Session = session;
             NodeBTN.SelectedReference = null;
@@ -159,16 +160,16 @@ namespace Opc.Ua.Client.Controls
                     IndexRangeTB.Text = nodesToRead[0].IndexRange;
 
                     // fetch the available encodings for the first node in the list from the server.
-                    IVariableBase variable = session.NodeCache.Find(nodesToRead[0].NodeId) as IVariableBase;
+                    IVariableBase variable = await session.NodeCache.FindAsync(nodesToRead[0].NodeId) as IVariableBase;
 
                     if (variable != null)
                     {
-                        if (session.NodeCache.IsTypeOf(variable.DataType, Opc.Ua.DataTypeIds.Structure))
+                        if (await session.NodeCache.IsTypeOfAsync(variable.DataType, Opc.Ua.DataTypeIds.Structure))
                         {
                             DataEncodingCB.Items.Add(new EncodingInfo());
                             DataEncodingCB.SelectedIndex = 0;
 
-                            foreach (INode encoding in session.NodeCache.Find(variable.DataType, Opc.Ua.ReferenceTypeIds.HasEncoding, false, true))
+                            foreach (INode encoding in await session.NodeCache.FindAsync(variable.DataType, Opc.Ua.ReferenceTypeIds.HasEncoding, false, true))
                             {
                                 DataEncodingCB.Items.Add(new EncodingInfo() { EncodingName = encoding.BrowseName });
 

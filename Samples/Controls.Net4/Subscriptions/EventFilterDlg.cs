@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -60,7 +61,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public EventFilter ShowDialog(Session session, EventFilter filter, bool editWhereClause)
+        public async Task<EventFilter> ShowDialogAsync(Session session, EventFilter filter, bool editWhereClause)
         {
             if (session == null) throw new ArgumentNullException("session");
             if (filter == null)  throw new ArgumentNullException("filter");
@@ -68,7 +69,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_filter  = filter;
 
-            BrowseCTRL.SetView(m_session, BrowseViewType.EventTypes, null);
+            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, null);
             SelectClauseCTRL.Initialize(session, filter.SelectClauses);
             ContentFilterCTRL.Initialize(session, filter.WhereClause);
             FilterOperandsCTRL.Initialize(session, null, -1);

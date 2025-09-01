@@ -647,7 +647,7 @@ namespace Opc.Ua.Client.Controls
         /// The event object. Null if the notification is not a valid event type.
         /// </returns>
         public static BaseEventState ConstructEvent(
-            Session session,
+            ISession session,
             MonitoredItem monitoredItem,
             EventFieldList notification,
             Dictionary<NodeId, Type> knownEventTypes,
@@ -737,15 +737,15 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Collects the instance declarations for a type.
         /// </summary>
-        public static List<InstanceDeclaration> CollectInstanceDeclarationsForType(ISession session, NodeId typeId)
+        public static Task<List<InstanceDeclaration>> CollectInstanceDeclarationsForTypeAsync(ISession session, NodeId typeId)
         {
-            return CollectInstanceDeclarationsForType(session, typeId, true);
+            return CollectInstanceDeclarationsForTypeAsync(session, typeId, true);
         }
 
         /// <summary>
         /// Collects the instance declarations for a type.
         /// </summary>
-        public static List<InstanceDeclaration> CollectInstanceDeclarationsForType(ISession session, NodeId typeId, bool includeSupertypes)
+        public static async Task<List<InstanceDeclaration>> CollectInstanceDeclarationsForTypeAsync(ISession session, NodeId typeId, bool includeSupertypes)
         {
             // process the types starting from the top of the tree.
             List<InstanceDeclaration> instances = new List<InstanceDeclaration>();
@@ -760,13 +760,13 @@ namespace Opc.Ua.Client.Controls
                 {
                     for (int ii = supertypes.Count - 1; ii >= 0; ii--)
                     {
-                        CollectInstanceDeclarations(session, (NodeId)supertypes[ii].NodeId, null, instances, map);
+                        await CollectInstanceDeclarationsAsync(session, (NodeId)supertypes[ii].NodeId, null, instances, map);
                     }
                 }
             }
 
             // collect the fields for the selected type.
-            CollectInstanceDeclarations(session, typeId, null, instances, map);
+            await CollectInstanceDeclarationsAsync(session, typeId, null, instances, map);
 
             // return the complete list.
             return instances;
@@ -775,7 +775,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Collects the fields for the instance node.
         /// </summary>
-        private static void CollectInstanceDeclarations(
+        private static async Task CollectInstanceDeclarationsAsync(
             ISession session,
             NodeId typeId,
             InstanceDeclaration parent,
@@ -892,7 +892,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the descriptions.
-            UpdateInstanceDescriptions(session, children, false);
+            await UpdateInstanceDescriptionsAsync(session, children, false);
 
             // recusively collect instance declarations for the tree below.
             for (int ii = 0; ii < children.Count; ii++)
@@ -900,7 +900,7 @@ namespace Opc.Ua.Client.Controls
                 if (!NodeId.IsNull(children[ii].ModellingRule))
                 {
                     instances.Add(children[ii]);
-                    CollectInstanceDeclarations(session, typeId, children[ii], instances, map);
+                    await CollectInstanceDeclarationsAsync(session, typeId, children[ii], instances, map);
                 }
             }
         }
@@ -1004,7 +1004,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Finds the targets for the specified reference.
         /// </summary>
-        private static void UpdateInstanceDescriptions(ISession session, List<InstanceDeclaration> instances, bool throwOnError)
+        private static async Task UpdateInstanceDescriptionsAsync(ISession session, List<InstanceDeclaration> instances, bool throwOnError)
         {
             try
             {
@@ -1055,7 +1055,7 @@ namespace Opc.Ua.Client.Controls
                     if (!NodeId.IsNull(instance.DataType))
                     {
                         instance.BuiltInType = DataTypes.GetBuiltInType(instance.DataType, session.TypeTree);
-                        instance.DataTypeDisplayText = session.NodeCache.GetDisplayText(instance.DataType);
+                        instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType);
 
                         if (instance.ValueRank >= 0)
                         {

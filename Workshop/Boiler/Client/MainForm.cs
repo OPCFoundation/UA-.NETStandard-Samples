@@ -71,7 +71,7 @@ namespace Quickstarts.Boiler.Client
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private bool m_connectedOnce;
         #endregion

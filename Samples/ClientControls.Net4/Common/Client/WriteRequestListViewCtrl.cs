@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -90,14 +91,14 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the nodes to the write request.
         /// </summary>
-        public void AddNodes(params WriteValue[] nodesToWrite)
+        public async Task AddNodesAsync(params WriteValue[] nodesToWrite)
         {
             if (nodesToWrite != null && nodesToWrite.Length > 0)
             {
                 foreach (WriteValue nodeToWrite in nodesToWrite)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, nodeToWrite);
+                    await UpdateRowAsync(row, nodeToWrite);
                     nodeToWrite.Handle = row;
                     m_dataset.Tables[0].Rows.Add(row);
                 }
@@ -270,11 +271,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the node to write.
         /// </summary>
-        public void UpdateRow(DataRow row, WriteValue nodeToWrite)
+        public async Task UpdateRowAsync(DataRow row, WriteValue nodeToWrite)
         {
             row[0] = nodeToWrite;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(nodeToWrite.AttributeId, null)];
-            row[2] = (m_session != null) ? m_session.NodeCache.GetDisplayText(nodeToWrite.NodeId) : Utils.ToString(nodeToWrite.NodeId);
+            row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToWrite.NodeId) : Utils.ToString(nodeToWrite.NodeId);
             row[3] = Attributes.GetBrowseName(nodeToWrite.AttributeId);
             row[4] = nodeToWrite.IndexRange;
 
@@ -297,7 +298,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -323,7 +324,7 @@ namespace Opc.Ua.Client.Controls
                 if (result != null)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, result);
+                    await UpdateRowAsync(row, result);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -333,7 +334,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -347,7 +348,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (result != null)
                     {
-                        UpdateRow(source.Row, result);
+                        await UpdateRowAsync(source.Row, result);
                     }
 
                     break;
@@ -359,7 +360,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditValueMI_Click(object sender, EventArgs e)
+        private async void EditValueMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -393,7 +394,7 @@ namespace Opc.Ua.Client.Controls
                             DataRowView source = row.DataBoundItem as DataRowView;
                             nodeToWrite = (WriteValue)source.Row[0];
                             nodeToWrite.Value.Value = value;
-                            UpdateRow(source.Row, nodeToWrite);
+                            await UpdateRowAsync(source.Row, nodeToWrite);
                         }
                     }
                 }            

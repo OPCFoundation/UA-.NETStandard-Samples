@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -61,7 +62,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Subscription subscription, bool useTypeModel)
+        public async Task ShowAsync(Subscription subscription, bool useTypeModel)
         {
             if (subscription == null) throw new ArgumentNullException("subscription");
             
@@ -85,7 +86,7 @@ namespace Opc.Ua.Sample.Controls
             m_subscription = subscription;
             
             BrowseCTRL.AllowPick = true;
-            BrowseCTRL.SetView(subscription.Session as Session, (useTypeModel)?BrowseViewType.ObjectTypes:BrowseViewType.Objects, null);
+            await BrowseCTRL.SetViewAsync(subscription.Session as Session, (useTypeModel)?BrowseViewType.ObjectTypes:BrowseViewType.Objects, null);
 
             MonitoredItemsCTRL.Initialize(subscription);
         }

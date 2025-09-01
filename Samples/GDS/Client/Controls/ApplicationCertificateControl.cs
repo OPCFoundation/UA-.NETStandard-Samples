@@ -52,7 +52,7 @@ namespace Opc.Ua.Gds.Client
         private bool m_temporaryCertificateCreated;
         private string m_certificatePassword;
 
-        public async Task Initialize(
+        public async Task InitializeAsync(
             GlobalDiscoveryClientConfiguration configuration,
             GlobalDiscoveryServerClient gds,
             ServerPushConfigurationClient server,

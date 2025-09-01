@@ -188,7 +188,7 @@ namespace Quickstarts.AlarmConditionClient
         /// The event object. Null if the notification is not a valid event type.
         /// </returns>
         public static BaseEventState ConstructEvent(
-            Session session,
+            ISession session,
             MonitoredItem monitoredItem,
             EventFieldList notification,
             Dictionary<NodeId,NodeId> eventTypeMappings)
@@ -303,7 +303,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection Browse(Session session, BrowseDescription nodeToBrowse, bool throwOnError)
+        public static ReferenceDescriptionCollection Browse(ISession session, BrowseDescription nodeToBrowse, bool throwOnError)
         {
             try
             {
@@ -387,7 +387,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection BrowseSuperTypes(Session session, NodeId typeId, bool throwOnError)
+        public static ReferenceDescriptionCollection BrowseSuperTypes(ISession session, NodeId typeId, bool throwOnError)
         {
             ReferenceDescriptionCollection supertypes = new ReferenceDescriptionCollection();
 

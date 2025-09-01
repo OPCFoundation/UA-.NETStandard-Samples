@@ -139,7 +139,7 @@ namespace Opc.Ua.Sample.Controls
             ViewTimestampDP.Enabled = ViewTimestampCK.Checked;
         }
 
-        private void BrowseBTN_Click(object sender, EventArgs e)
+        private async void BrowseBTN_Click(object sender, EventArgs e)
         {
             try
             {
@@ -150,7 +150,7 @@ namespace Opc.Ua.Sample.Controls
                 browser.ReferenceTypeId = ReferenceTypeIds.Organizes;
                 browser.IncludeSubtypes = true;
 
-                ReferenceDescription reference = new SelectNodeDlg().ShowDialog(browser, Objects.ViewsFolder);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(browser, Objects.ViewsFolder);
 
                 if (reference != null)
                 {

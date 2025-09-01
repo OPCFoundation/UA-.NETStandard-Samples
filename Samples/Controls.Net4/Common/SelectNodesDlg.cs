@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -59,7 +60,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public NodeIdCollection ShowDialog(
+        public async Task<NodeIdCollection> ShowDialogAsync(
             Session          session, 
             BrowseViewType   browseView, 
             NodeIdCollection nodesIds,
@@ -69,7 +70,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_session = session;
 
-            BrowseCTRL.SetView(session, browseView, null);
+            await BrowseCTRL.SetViewAsync(session, browseView, null);
             NodeListCTRL.Initialize(session, nodesIds, nodeClassMask);
             
             if (ShowDialog() != DialogResult.OK)

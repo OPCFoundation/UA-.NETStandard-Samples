@@ -29,15 +29,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Reflection;
 using System.IO;
-
+using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -469,25 +468,32 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <see cref="BaseTreeCtrl.SelectNode" />
-        protected override void SelectNode()
+        protected override async void SelectNode()
         {
-            base.SelectNode();
-
-            TreeNode selectedNode = NodesTV.SelectedNode;
-
-            Session session = Get<Session>(selectedNode);
-            Subscription subscription = Get<Subscription>(selectedNode);
-
-            // update address space control.
-            if (m_AddressSpaceCtrl != null)
+            try
             {
-                m_AddressSpaceCtrl.SetView(session, BrowseViewType.Objects, null);
+                base.SelectNode();
+
+                TreeNode selectedNode = NodesTV.SelectedNode;
+
+                Session session = Get<Session>(selectedNode);
+                Subscription subscription = Get<Subscription>(selectedNode);
+
+                // update address space control.
+                if (m_AddressSpaceCtrl != null)
+                {
+                    await m_AddressSpaceCtrl.SetViewAsync(session, BrowseViewType.Objects, null);
+                }
+
+                // update notification messages control.
+                if (m_NotificationMessagesCtrl != null)
+                {
+                    m_NotificationMessagesCtrl.Initialize(session, subscription);
+                }
             }
-
-            // update notification messages control.
-            if (m_NotificationMessagesCtrl != null)
+            catch (Exception exception)
             {
-                m_NotificationMessagesCtrl.Initialize(session, subscription);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -675,7 +681,7 @@ namespace Opc.Ua.Sample.Controls
         }
         #endregion       
 
-        private void BrowseAllMI_Click(object sender, EventArgs e)
+        private async void BrowseAllMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -692,7 +698,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new AddressSpaceDlg().Show(session, BrowseViewType.All, null);
+                    await new AddressSpaceDlg().ShowAsync(session, BrowseViewType.All, null);
                 }
             }
             catch (Exception exception)
@@ -701,7 +707,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseObjectsMI_Click(object sender, EventArgs e)
+        private async void BrowseObjectsMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -718,7 +724,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new AddressSpaceDlg().Show(session, BrowseViewType.Objects, null);
+                    await new AddressSpaceDlg().ShowAsync(session, BrowseViewType.Objects, null);
                 }
             }
             catch (Exception exception)
@@ -779,7 +785,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseDataTypesMI_Click(object sender, EventArgs e)
+        private async void BrowseDataTypesMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -796,7 +802,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new AddressSpaceDlg().Show(session, BrowseViewType.DataTypes, null);
+                    await new AddressSpaceDlg().ShowAsync(session, BrowseViewType.DataTypes, null);
                 }
             }
             catch (Exception exception)
@@ -805,7 +811,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseReferenceTypesMI_Click(object sender, EventArgs e)
+        private async void BrowseReferenceTypesMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -822,7 +828,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new AddressSpaceDlg().Show(session, BrowseViewType.ReferenceTypes, null);
+                    await new AddressSpaceDlg().ShowAsync(session, BrowseViewType.ReferenceTypes, null);
                 }
             }
             catch (Exception exception)
@@ -900,7 +906,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        void BrowseServerViewsMI_Click(object sender, EventArgs e)
+        private async void BrowseServerViewsMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -923,7 +929,7 @@ namespace Opc.Ua.Sample.Controls
                     {
                         ReferenceDescription reference = menuitem.Tag as ReferenceDescription;
 
-                        new AddressSpaceDlg().Show(
+                        await new AddressSpaceDlg().ShowAsync(
                             session,
                             BrowseViewType.ServerDefinedView,
                             (NodeId)reference.NodeId);
@@ -1031,7 +1037,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ReadMI_Click(object sender, EventArgs e)
+        private async void ReadMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1080,7 +1086,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
-                new ReadDlg().Show(session, valueIds);
+                await new ReadDlg().ShowAsync(session, valueIds);
             }
             catch (Exception exception)
             {
@@ -1088,7 +1094,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void WriteMI_Click(object sender, EventArgs e)
+        private async void WriteMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1149,7 +1155,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
-                new WriteDlg().Show(session, values);
+                await new WriteDlg().ShowAsync(session, values);
             }
             catch (Exception exception)
             {

@@ -414,7 +414,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SubscriptionCreateItemMI_Click(object sender, EventArgs e)
+        private async void SubscriptionCreateItemMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -424,7 +424,7 @@ namespace Opc.Ua.Sample.Controls
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                m_createDialog.Show(m_subscription, false);
+                await m_createDialog.ShowAsync(m_subscription, false);
             }
             catch (Exception exception)
             {
@@ -447,7 +447,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SubscriptionCreateItemFromTypeMI_Click(object sender, EventArgs e)
+        private async void SubscriptionCreateItemFromTypeMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -457,7 +457,7 @@ namespace Opc.Ua.Sample.Controls
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                m_createDialog.Show(m_subscription, true);
+                await m_createDialog.ShowAsync(m_subscription, true);
             }
             catch (Exception exception)
             {

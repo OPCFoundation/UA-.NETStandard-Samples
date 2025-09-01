@@ -82,7 +82,7 @@ namespace Opc.Ua.Client.Controls
             buffer.Append(await m_session.NodeCache.GetDisplayTextAsync(objectId));
             this.Text = buffer.ToString();
 
-            CallRequestCTRL.SetMethod(objectId, methodId);
+            await CallRequestCTRL.SetMethodAsync(objectId, methodId);
         }
         #endregion
 
@@ -90,11 +90,11 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void CallBTN_Click(object sender, EventArgs e)
+        private async void CallBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                CallRequestCTRL.Call();
+                await CallRequestCTRL.CallAsync();
                 CallBTN.Visible = false;
                 BackBTN.Visible = true;
             }
@@ -104,11 +104,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                CallRequestCTRL.Back();
+                await CallRequestCTRL.BackAsync();
                 CallBTN.Visible = true;
                 BackBTN.Visible = false;
             }

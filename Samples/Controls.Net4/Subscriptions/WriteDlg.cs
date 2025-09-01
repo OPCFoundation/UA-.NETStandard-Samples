@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -59,13 +60,13 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Session session, WriteValueCollection values)
+        public async Task ShowAsync(Session session, WriteValueCollection values)
         {
             if (session == null) throw new ArgumentNullException("session");
             
             m_session = session;
 
-            BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
+            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
             WriteValuesCTRL.Initialize(session, values);
 
             MoveBTN_Click(BackBTN, null);

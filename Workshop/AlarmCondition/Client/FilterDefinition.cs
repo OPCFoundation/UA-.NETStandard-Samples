@@ -70,7 +70,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns>The monitored item.</returns>
-        public MonitoredItem CreateMonitoredItem(Session session)
+        public MonitoredItem CreateMonitoredItem(ISession session)
         {
             // choose the server object by default.
             if (AreaId == null)
@@ -115,7 +115,7 @@ namespace Quickstarts.AlarmConditionClient
         /// This method browses the type model and 
         /// </remarks>
         public SimpleAttributeOperandCollection ConstructSelectClauses(
-            Session session,
+            ISession session,
             params NodeId[] eventTypeIds)
         {
             // browse the type model in the server address space to find the fields available for the event type.
@@ -153,7 +153,7 @@ namespace Quickstarts.AlarmConditionClient
         /// Constructs the event filter for the subscription.
         /// </summary>
         /// <returns>The event filter.</returns>
-        public EventFilter ConstructFilter(Session session)
+        public EventFilter ConstructFilter(ISession session)
         {
             EventFilter filter = new EventFilter();
 
@@ -260,7 +260,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="session">The session.</param>
         /// <param name="eventTypeId">The event type id.</param>
         /// <param name="eventFields">The event fields.</param>
-        private void CollectFields(Session session, NodeId eventTypeId, SimpleAttributeOperandCollection eventFields)
+        private void CollectFields(ISession session, NodeId eventTypeId, SimpleAttributeOperandCollection eventFields)
         {
             // get the supertypes.
             ReferenceDescriptionCollection supertypes = FormUtils.BrowseSuperTypes(session, eventTypeId, false);
@@ -292,7 +292,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="eventFields">The event fields.</param>
         /// <param name="foundNodes">The table of found nodes.</param>
         private void CollectFields(
-            Session session,
+            ISession session,
             NodeId nodeId,
             QualifiedNameCollection parentPath,
             SimpleAttributeOperandCollection eventFields,

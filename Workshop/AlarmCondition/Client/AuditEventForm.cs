@@ -55,7 +55,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="session">The session.</param>
         /// <param name="subscription">The subscription.</param>
-        public AuditEventForm(Session session, Subscription subscription)
+        public AuditEventForm(ISession session, Subscription subscription)
         {
             InitializeComponent();
 
@@ -86,7 +86,7 @@ namespace Quickstarts.AlarmConditionClient
             m_monitoredItem.Notification += m_MonitoredItem_Notification;
 
             m_subscription.AddItem(m_monitoredItem);
-            m_subscription.ApplyChanges();
+            m_subscription.ApplyChangesAsync().GetAwaiter().GetResult();
         }
         #endregion
 
@@ -96,7 +96,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="session">The new session.</param>
         /// <param name="subscription">The new subscription.</param>
-        public void ReconnectComplete(Session session, Subscription subscription)
+        public void ReconnectComplete(ISession session, Subscription subscription)
         {
             m_session = session;
             m_subscription = subscription;
@@ -113,7 +113,7 @@ namespace Quickstarts.AlarmConditionClient
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private FilterDefinition m_filter;

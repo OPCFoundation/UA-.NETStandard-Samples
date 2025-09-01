@@ -71,9 +71,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the nodes to the read request.
         /// </summary>
-        public void AddNodes(params ReadValueId[] nodesToRead)
+        public async Task AddNodesAsync(params ReadValueId[] nodesToRead)
         {
-            ReadRequestCTRL.AddNodes(nodesToRead);
+            await ReadRequestCTRL.AddNodesAsync(nodesToRead);
         }
         #endregion
 

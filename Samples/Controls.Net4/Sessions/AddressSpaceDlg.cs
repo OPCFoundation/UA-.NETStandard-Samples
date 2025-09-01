@@ -33,6 +33,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using Opc.Ua.Client;
@@ -52,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
         
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private EventHandler m_SessionClosing;
         #endregion
 
@@ -60,7 +61,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the address space with the specified view
         /// </summary>
-        public void Show(Session session, BrowseViewType viewType, NodeId viewId)
+        public async Task ShowAsync(ISession session, BrowseViewType viewType, NodeId viewId)
         {   
             if (session == null) throw new ArgumentNullException("session");
             
@@ -72,7 +73,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;            
             m_session.SessionClosing += m_SessionClosing;
             
-            BrowseCTRL.SetView(session, viewType, viewId);
+            await BrowseCTRL.SetViewAsync(session, viewType, viewId);
             Show();
             BringToFront();
         }
