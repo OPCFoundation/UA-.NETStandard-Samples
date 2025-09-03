@@ -32,13 +32,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -302,7 +302,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Formats the value of an attribute.
         /// </summary>
-        private string FormatAttributeValue(uint attributeId, object value)
+        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value)
         {
             switch (attributeId)
             {
@@ -322,7 +322,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (datatypeId != null)
                     {
-                        INode datatype = m_session.NodeCache.Find(datatypeId);
+                        INode datatype = await m_session.NodeCache.FindAsync(datatypeId);
 
                         if (datatype != null)
                         {
@@ -519,39 +519,46 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async void UpdateItem(ListViewItem listItem, object item)
         {
-            NodeField field = item as NodeField;
-
-            if (field == null)
+            try
             {
-                base.UpdateItem(listItem, item);
-                return;
-            }
+                NodeField field = item as NodeField;
 
-            Array array = field.Value as Array;
-
-            listItem.SubItems[0].Text = String.Format("{0}", field.Name);
-
-            if (array == null)
-            {
-                if (field.ValueId != null)
+                if (field == null)
                 {
-                    listItem.SubItems[1].Text = FormatAttributeValue(field.ValueId.AttributeId, field.Value);
+                    base.UpdateItem(listItem, item);
+                    return;
+                }
+
+                Array array = field.Value as Array;
+
+                listItem.SubItems[0].Text = String.Format("{0}", field.Name);
+
+                if (array == null)
+                {
+                    if (field.ValueId != null)
+                    {
+                        listItem.SubItems[1].Text = await FormatAttributeValueAsync(field.ValueId.AttributeId, field.Value);
+                    }
+                    else
+                    {
+                        listItem.SubItems[1].Text = String.Format("{0}", field.Value);
+                    }
                 }
                 else
                 {
-                    listItem.SubItems[1].Text = String.Format("{0}", field.Value);
+                    listItem.SubItems[1].Text = String.Format("{0}[{1}]", field.Value.GetType().GetElementType().Name, array.Length);
                 }
+
+                listItem.SubItems[2].Text = String.Format("{0}", field.StatusCode);
+
+                listItem.Tag = item;
             }
-            else
+            catch (Exception exception)
             {
-                listItem.SubItems[1].Text = String.Format("{0}[{1}]", field.Value.GetType().GetElementType().Name, array.Length);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
-
-            listItem.SubItems[2].Text = String.Format("{0}", field.StatusCode);
-
-            listItem.Tag = item;
         }
         #endregion
 

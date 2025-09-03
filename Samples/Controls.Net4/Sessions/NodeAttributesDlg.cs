@@ -39,6 +39,7 @@ using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -61,7 +62,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void ShowDialog(Session session, ExpandedNodeId nodeId)
+        public async Task ShowDialogAsync(Session session, ExpandedNodeId nodeId)
         {
             if (session == null)   throw new ArgumentNullException("session");
             if (nodeId == null) throw new ArgumentNullException("nodeId");
@@ -69,7 +70,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_nodeId  = nodeId;
 
-            AttributesCTRL.InitializeAsync(session, nodeId);
+            await AttributesCTRL.InitializeAsync(session, nodeId);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -78,11 +79,11 @@ namespace Opc.Ua.Sample.Controls
         }
         #endregion
 
-        private void OkBTN_Click(object sender, EventArgs e)
+        private async void OkBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                AttributesCTRL.InitializeAsync(m_session, m_nodeId);
+                await AttributesCTRL.InitializeAsync(m_session, m_nodeId);
             }
             catch (Exception exception)
             {

@@ -33,6 +33,7 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -61,14 +62,14 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns></returns>
-        public string ShowDialog(Session session)
+        public async Task<string> ShowDialogAsync(Session session)
         {
             m_session = session;
 
             LocaleCB.Items.Clear();
 
             // get the locales from the server.
-            DataValue value = m_session.ReadValue(VariableIds.Server_ServerCapabilities_LocaleIdArray);
+            DataValue value = await m_session.ReadValueAsync(VariableIds.Server_ServerCapabilities_LocaleIdArray);
 
             if (value != null)
             {

@@ -863,7 +863,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseServerViewsMI_DropDownOpening(object sender, EventArgs e)
+        private async void BrowseServerViewsMI_DropDownOpening(object sender, EventArgs e)
         {
             try
             {
@@ -890,7 +890,7 @@ namespace Opc.Ua.Sample.Controls
                     browser.NodeClassMask = (int)NodeClass.View;
                     browser.ContinueUntilDone = true;
 
-                    ReferenceDescriptionCollection references = browser.Browse(Objects.ViewsFolder);
+                    ReferenceDescriptionCollection references = await browser.BrowseAsync(Objects.ViewsFolder);
 
                     foreach (ReferenceDescription reference in references)
                     {
@@ -1356,7 +1356,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SetLocaleMI_Click(object sender, EventArgs e)
+        private async void SetLocaleMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -1368,7 +1368,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                string locale = new SelectLocaleDlg().ShowDialog(session);
+                string locale = await new SelectLocaleDlg().ShowDialogAsync(session);
 
                 if (locale == null)
                 {
@@ -1376,7 +1376,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 PreferredLocales = new string[] { locale };
-                session.ChangePreferredLocalesAsync(new StringCollection(PreferredLocales), CancellationToken.None);
+                await session.ChangePreferredLocalesAsync(new StringCollection(PreferredLocales), CancellationToken.None);
             }
             catch (Exception exception)
             {

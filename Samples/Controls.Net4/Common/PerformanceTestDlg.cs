@@ -43,6 +43,8 @@ using System.IO;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Org.BouncyCastle.Crypto;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -236,13 +238,13 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Runs all tests in a background thread.
         /// </summary>
-        private void DoAllTests(object state)
+        private async Task DoAllTestsAsync(object state)
         {
             for (int ii = 0; ii < m_endpoints.Count; ii++)
             {
                 try
                 {
-                    DoTest(m_endpoints[ii]);
+                    await DoTestAsync(m_endpoints[ii]);
                 }
                 catch 
                 {
@@ -256,11 +258,11 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Runs the test in a background thread.
         /// </summary>
-        private void DoTest(object state)
+        private async Task DoTestAsync(object state)
         {
             try
             {
-                DoTest((ConfiguredEndpoint)state);
+                await DoTestAsync((ConfiguredEndpoint)state);
             }
             catch (Exception e)
             {
@@ -273,7 +275,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Runs the test in a background thread.
         /// </summary>
-        private void DoTest(ConfiguredEndpoint endpoint)
+        private async Task DoTestAsync(ConfiguredEndpoint endpoint)
         {
             PerformanceTestResult result = new PerformanceTestResult(endpoint, 100);
 
@@ -289,7 +291,7 @@ namespace Opc.Ua.Sample.Controls
                 // update the endpoint.
                 if (endpoint.UpdateBeforeConnect)
                 {
-                    endpoint.UpdateFromServer();
+                    await endpoint.UpdateFromServerAsync();
                 }
 
                 SessionClient client = null;
@@ -404,7 +406,7 @@ namespace Opc.Ua.Sample.Controls
 
                 // start processing.
                 OkBTN.Enabled = m_running = true;
-                ThreadPool.QueueUserWorkItem(new WaitCallback(DoTest), endpoint);
+                Task.Run(async () => await DoTestAsync(endpoint));
             }
             catch (Exception exception)
             {
@@ -502,7 +504,7 @@ namespace Opc.Ua.Sample.Controls
 
                 ResultsCTRL.Clear();
                 OkBTN.Enabled = m_running = true;
-                ThreadPool.QueueUserWorkItem(new WaitCallback(DoAllTests), null);
+                Task.Run(async () => await DoAllTestsAsync(null));
             }
             catch (Exception exception)
             {

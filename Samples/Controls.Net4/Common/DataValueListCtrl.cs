@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -46,8 +47,8 @@ namespace Opc.Ua.Sample.Controls
         #region Constructors
         public DataValueListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
         #endregion
 
@@ -59,15 +60,15 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Node",        HorizontalAlignment.Left, null     },  
-			new object[] { "Attribute",   HorizontalAlignment.Left, "Value", }, 
-			new object[] { "Value",       HorizontalAlignment.Left, "", 200  }, 
-			new object[] { "Status",      HorizontalAlignment.Left, ""       }, 
-			new object[] { "Source Time", HorizontalAlignment.Left, ""       },
-			new object[] { "Server Time", HorizontalAlignment.Left, ""       },
-		};
-		#endregion
+        {
+            new object[] { "Node",        HorizontalAlignment.Left, null     },
+            new object[] { "Attribute",   HorizontalAlignment.Left, "Value", },
+            new object[] { "Value",       HorizontalAlignment.Left, "", 200  },
+            new object[] { "Status",      HorizontalAlignment.Left, ""       },
+            new object[] { "Source Time", HorizontalAlignment.Left, ""       },
+            new object[] { "Server Time", HorizontalAlignment.Left, ""       },
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -75,8 +76,8 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public DataListCtrl DataListCtrl
         {
-            get { return m_DataListCtrl;  }
-            set { m_DataListCtrl = value; } 
+            get { return m_DataListCtrl; }
+            set { m_DataListCtrl = value; }
         }
 
         /// <summary>
@@ -91,17 +92,17 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(
-            Session               session,
-            ReadValueIdCollection valueIds, 
-            DataValueCollection   values, 
-            List<ServiceResult>   results)
+        public async Task InitializeAsync(
+            Session session,
+            ReadValueIdCollection valueIds,
+            DataValueCollection values,
+            List<ServiceResult> results)
         {
             if (session == null) throw new ArgumentNullException("session");
-            
+
             Clear();
-                        
-            m_session  = session;
+
+            m_session = session;
 
             if (valueIds != null)
             {
@@ -109,7 +110,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     ValueItem item = new ValueItem();
 
-                    item.Node        = m_session.NodeCache.Find(valueIds[ii].NodeId) as Node;
+                    item.Node = await m_session.NodeCache.FindAsync(valueIds[ii].NodeId) as Node;
                     item.AttributeId = valueIds[ii].AttributeId;
 
                     if (values != null && ii < values.Count)
@@ -132,26 +133,26 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(
-            Session               session,
-            WriteValueCollection  values,
-            List<ServiceResult>   results)
+        public async Task InitializeAsync(
+            Session session,
+            WriteValueCollection values,
+            List<ServiceResult> results)
         {
             if (session == null) throw new ArgumentNullException("session");
-            
+
             Clear();
-                        
+
             m_session = session;
-            
+
             if (values != null)
             {
                 for (int ii = 0; ii < values.Count; ii++)
                 {
                     ValueItem item = new ValueItem();
 
-                    item.Node        = m_session.NodeCache.Find(values[ii].NodeId) as Node;
+                    item.Node = await m_session.NodeCache.FindAsync(values[ii].NodeId) as Node;
                     item.AttributeId = values[ii].AttributeId;
-                    item.Value       = values[ii].Value;
+                    item.Value = values[ii].Value;
 
                     if (results != null && ii < results.Count)
                     {
@@ -164,35 +165,35 @@ namespace Opc.Ua.Sample.Controls
 
             AdjustColumns();
         }
-		#endregion
-        
+        #endregion
+
         #region NodeField Class
         /// <summary>
         /// A field associated with a node.
         /// </summary>
         private class ValueItem
-        {            
+        {
             public Node Node;
             public uint AttributeId;
             public DataValue Value;
             public ServiceResult Result;
         }
-		#endregion
+        #endregion
 
         #region Private Methods
-		#endregion
-        
+        #endregion
+
         #region Overridden Methods
         /// <see cref="BaseListCtrl.UpdateItem" />
         protected override void UpdateItem(ListViewItem listItem, object item)
         {
-			ValueItem dataValue = item as ValueItem;
+            ValueItem dataValue = item as ValueItem;
 
-			if (dataValue == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+            if (dataValue == null)
+            {
+                base.UpdateItem(listItem, item);
+                return;
+            }
 
             listItem.SubItems[0].Text = String.Format("{0}", dataValue.Node);
             listItem.SubItems[1].Text = Attributes.GetBrowseName(dataValue.AttributeId);
@@ -218,12 +219,12 @@ namespace Opc.Ua.Sample.Controls
 
             if (dataValue.Result != null)
             {
-                listItem.SubItems[3].Text =String.Format("{0}", dataValue.Result);
+                listItem.SubItems[3].Text = String.Format("{0}", dataValue.Result);
             }
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
-        
+
         /// <see cref="BaseListCtrl.SelectItems" />
         protected override void SelectItems()
         {

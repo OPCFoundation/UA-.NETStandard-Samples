@@ -55,45 +55,45 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Session m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public async Task<NodeIdCollection> ShowDialogAsync(
-            Session          session, 
-            BrowseViewType   browseView, 
+            Session session,
+            BrowseViewType browseView,
             NodeIdCollection nodesIds,
-            NodeClass        nodeClassMask)
+            NodeClass nodeClassMask)
         {
             if (session == null) throw new ArgumentNullException("session");
 
             m_session = session;
 
             await BrowseCTRL.SetViewAsync(session, browseView, null);
-            NodeListCTRL.Initialize(session, nodesIds, nodeClassMask);
-            
+            await NodeListCTRL.InitializeAsync(session, nodesIds, nodeClassMask);
+
             if (ShowDialog() != DialogResult.OK)
             {
                 return null;
             }
-                        
+
             return NodeListCTRL.GetNodeIds();
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
-        
+
         #region Event Handler
-        private void BrowseCTRL_NodesSelected(object sender, NodesSelectedEventArgs e)
+        private async void BrowseCTRL_NodesSelected(object sender, NodesSelectedEventArgs e)
         {
             try
             {
                 foreach (ReferenceDescription reference in e.References)
                 {
-                    NodeListCTRL.AddNodeId(reference);
-                }    
+                    await NodeListCTRL.AddNodeIdAsync(reference);
+                }
             }
             catch (Exception exception)
             {

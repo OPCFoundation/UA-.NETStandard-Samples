@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -78,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, NodeIdCollection nodeIds, NodeClass nodeClassMask)
+        public async Task InitializeAsync(Session session, NodeIdCollection nodeIds, NodeClass nodeClassMask)
         {
             if (session == null) throw new ArgumentNullException("session");
             
@@ -95,7 +96,7 @@ namespace Opc.Ua.Sample.Controls
 
             foreach (NodeId nodeId in nodeIds)
             {
-                INode node = m_session.NodeCache.Find(nodeId);
+                INode node = await m_session.NodeCache.FindAsync(nodeId);
 
                 if (node != null && (m_nodeClassMask & node.NodeClass) != 0)
                 {
@@ -109,11 +110,11 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a node to the list.
         /// </summary>
-        public void AddNodeId(ReferenceDescription reference)
+        public async Task AddNodeIdAsync(ReferenceDescription reference)
         {
             if (reference != null)
             {
-                AddNodeId(reference.NodeId);
+                await AddNodeIdAsync(reference.NodeId);
                 AdjustColumns();
             }
         }
@@ -121,9 +122,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a node to the list.
         /// </summary>
-        public void AddNodeId(ExpandedNodeId nodeId)
+        public async Task AddNodeIdAsync(ExpandedNodeId nodeId)
         {
-            Node node = m_session.NodeCache.Find(nodeId) as Node;
+            Node node = await m_session.NodeCache.FindAsync(nodeId) as Node;
 
             if (node == null)
             {
@@ -156,7 +157,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (supertypeId != null)
                 {
-                    AddNodeId(supertypeId);
+                    await AddNodeIdAsync(supertypeId);
                 }
             }
             
@@ -164,7 +165,7 @@ namespace Opc.Ua.Sample.Controls
 
             for (int ii = 0; ii < properties.Count; ii++)
             {
-                AddNodeId(properties[ii].TargetId);
+                await AddNodeIdAsync(properties[ii].TargetId);
             }
         }
 
@@ -220,7 +221,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
         
         #region Event Handlers
-        private void ViewMI_Click(object sender, EventArgs e)
+        private async void ViewMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -228,7 +229,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (nodes == null || nodes.Length == 1)
                 {
-                    new NodeAttributesDlg().ShowDialog(m_session, nodes[0].NodeId);
+                    await new NodeAttributesDlg().ShowDialogAsync(m_session, nodes[0].NodeId);
                 }
             }
             catch (Exception exception)
@@ -237,7 +238,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        protected override void ItemsLV_DragDrop(object sender, DragEventArgs e)
+        protected override async void ItemsLV_DragDrop(object sender, DragEventArgs e)
         {            
             try
             {
@@ -245,7 +246,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (reference != null)
                 {
-                    AddNodeId(reference);
+                    await AddNodeIdAsync(reference);
                 }
 
                 ReferenceDescriptionCollection references = e.Data.GetData(typeof(ReferenceDescriptionCollection)) as ReferenceDescriptionCollection;
@@ -254,7 +255,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     foreach (ReferenceDescription current in references)
                     {
-                        AddNodeId(current);
+                        await AddNodeIdAsync(current);
                     }
                 }
 

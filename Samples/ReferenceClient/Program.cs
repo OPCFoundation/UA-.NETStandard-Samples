@@ -57,10 +57,10 @@ namespace Quickstarts.ReferenceClient
             {
                 
                 // load the application configuration.
-                application.LoadApplicationConfiguration(false).Wait();
+                application.LoadApplicationConfigurationAsync(false).GetAwaiter().GetResult();
 
                 // check the application certificate.
-                var certOK = application.CheckApplicationInstanceCertificates(false).Result;
+                var certOK = application.CheckApplicationInstanceCertificatesAsync(false).GetAwaiter().GetResult();
                 if (!certOK)
                 {
                     throw new Exception("Application instance certificate invalid!");

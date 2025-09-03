@@ -336,7 +336,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // browse.
-                return Browse(clickedNode);
+                return BrowseAsync(clickedNode).GetAwaiter().GetResult();
             }
 
             // do not cancel expand.
@@ -348,7 +348,6 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-
                 BrowseOptionsMI.Enabled = true;
                 ShowReferencesMI.Enabled = true;
                 SelectMI.Visible = m_allowPick;
@@ -630,7 +629,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Browses the server address space and adds the targets to the tree.
         /// </summary>
-        private bool Browse(TreeNode node)
+        private async Task<bool> BrowseAsync(TreeNode node)
         {
             // save node being browsed.
             m_nodeToBrowse = node;
@@ -648,15 +647,15 @@ namespace Opc.Ua.Sample.Controls
 
             if (reference != null)
             {
-                references = m_browser.Browse((NodeId)reference.NodeId);
+                references = await m_browser.BrowseAsync((NodeId)reference.NodeId);
             }
             else
             {
-                references = m_browser.Browse(m_rootId);
+                references = await m_browser.BrowseAsync(m_rootId);
             }
 
             // add nodes to tree.
-            AddReferences(m_nodeToBrowse, references);
+            await AddReferencesAsync(m_nodeToBrowse, references);
 
             return false;
         }
@@ -664,7 +663,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a target to the tree control.
         /// </summary>
-        private void AddReferences(TreeNode parent, ReferenceDescriptionCollection references)
+        private async Task AddReferencesAsync(TreeNode parent, ReferenceDescriptionCollection references)
         {
             foreach (ReferenceDescription reference in references)
             {
@@ -674,7 +673,7 @@ namespace Opc.Ua.Sample.Controls
                     continue;
                 }
 
-                ReferenceTypeNode typeNode = m_browser.Session.NodeCache.Find(reference.ReferenceTypeId) as ReferenceTypeNode;
+                ReferenceTypeNode typeNode = await m_browser.Session.NodeCache.FindAsync(reference.ReferenceTypeId) as ReferenceTypeNode;
                 if (typeNode == null)
                 {
                     Utils.Trace("Reference {0} has invalid reference type id.", reference.DisplayName);
@@ -747,7 +746,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_showReferences)
                 {
-                    container = FindReferenceTypeContainer(parent, reference);
+                    container = await FindReferenceTypeContainerAsync(parent, reference);
                 }
 
                 if (container != null)
@@ -761,7 +760,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a container for the reference type to the tree control.
         /// </summary>
-        private TreeNode FindReferenceTypeContainer(TreeNode parent, ReferenceDescription reference)
+        private async Task<TreeNode> FindReferenceTypeContainerAsync(TreeNode parent, ReferenceDescription reference)
         {
             if (parent == null)
             {
@@ -774,7 +773,7 @@ namespace Opc.Ua.Sample.Controls
                 return null;
             }
 
-            ReferenceTypeNode typeNode = m_browser.Session.NodeCache.Find(reference.ReferenceTypeId) as ReferenceTypeNode;
+            ReferenceTypeNode typeNode = await m_browser.Session.NodeCache.FindAsync(reference.ReferenceTypeId) as ReferenceTypeNode;
 
             foreach (TreeNode child in parent.Nodes)
             {
@@ -844,7 +843,7 @@ namespace Opc.Ua.Sample.Controls
         }
         #endregion
 
-        private void BrowseOptionsMI_Click(object sender, EventArgs e)
+        private async void BrowseOptionsMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -853,7 +852,7 @@ namespace Opc.Ua.Sample.Controls
                     if (NodesTV.SelectedNode != null)
                     {
                         NodesTV.SelectedNode.Nodes.Clear();
-                        Browse(NodesTV.SelectedNode);
+                        await BrowseAsync(NodesTV.SelectedNode);
                     }
                 }
             }
@@ -863,14 +862,14 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseRefreshMI_Click(object sender, EventArgs e)
+        private async void BrowseRefreshMI_Click(object sender, EventArgs e)
         {
             try
             {
                 if (NodesTV.SelectedNode != null)
                 {
                     NodesTV.SelectedNode.Nodes.Clear();
-                    Browse(NodesTV.SelectedNode);
+                    await BrowseAsync(NodesTV.SelectedNode);
                 }
             }
             catch (Exception exception)
@@ -879,11 +878,11 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void Browser_MoreReferences(Browser sender, BrowserEventArgs e)
+        private async void Browser_MoreReferences(Browser sender, BrowserEventArgs e)
         {
             try
             {
-                AddReferences(m_nodeToBrowse, e.References);
+                await AddReferencesAsync(m_nodeToBrowse, e.References);
                 e.References.Clear();
 
                 if (MessageBox.Show("More references exist. Continue?", "Browse", MessageBoxButtons.YesNo) == DialogResult.No)
@@ -963,7 +962,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ViewAttributesMI_Click(object sender, EventArgs e)
+        private async void ViewAttributesMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -979,7 +978,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                new NodeAttributesDlg().ShowDialog(m_browser.Session as Session, reference.NodeId);
+                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId);
             }
             catch (Exception exception)
             {

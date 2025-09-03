@@ -35,6 +35,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Opc.Ua.Sample.Controls
@@ -160,8 +161,8 @@ namespace Opc.Ua.Sample.Controls
 
                 Cursor = Cursors.WaitCursor;
 
-                ThreadPool.QueueUserWorkItem(Open, new object[] { m_session, SessionNameTB.Text, identity, m_preferredLocales, m_checkDomain });
-                
+                Task.Run(async () => await OpenAsync(new object[] { m_session, SessionNameTB.Text, identity, m_preferredLocales, m_checkDomain }));
+
                 CancelBTN.Enabled = false;
                 OkBTN.Enabled = false;
             }
@@ -246,7 +247,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Asynchronously open the session.
         /// </summary>
-        private void Open(object state)
+        private async Task OpenAsync(object state)
         {
             try
             {
@@ -257,10 +258,10 @@ namespace Opc.Ua.Sample.Controls
                 bool? checkDomain = ((object[])state)[4] as bool?;
 
                 // open the session.
-                session.Open(sessionName, (uint)session.SessionTimeout, identity, preferredLocales, checkDomain ?? true);
+                await session.OpenAsync(sessionName, (uint)session.SessionTimeout, identity, preferredLocales, checkDomain ?? true, CancellationToken.None);
 
                 var typeSystemLoader = new ComplexTypeSystem(session);
-                typeSystemLoader.LoadAsync().AsTask().GetAwaiter().GetResult();
+                await typeSystemLoader.LoadAsync();
 
                 OpenComplete(null);
             }
