@@ -173,7 +173,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.StopBTN.TabIndex = 19;
             this.StopBTN.Text = "Stop";
             this.StopBTN.UseVisualStyleBackColor = true;
-            this.StopBTN.Click += new System.EventHandler(this.StopBTN_Click);
+            this.StopBTN.Click += new System.EventHandler(this.StopBTN_ClickAsync);
             // 
             // NextBTN
             // 
@@ -357,7 +357,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.ReadTypeCB.Name = "ReadTypeCB";
             this.ReadTypeCB.Size = new System.Drawing.Size(138, 21);
             this.ReadTypeCB.TabIndex = 1;
-            this.ReadTypeCB.SelectedIndexChanged += new System.EventHandler(this.ReadTypeCB_SelectedIndexChanged);
+            this.ReadTypeCB.SelectedIndexChanged += new System.EventHandler(this.ReadTypeCB_SelectedIndexChangedAsync);
             // 
             // ReadTypeLB
             // 

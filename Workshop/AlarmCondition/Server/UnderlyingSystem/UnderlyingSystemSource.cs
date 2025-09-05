@@ -54,7 +54,7 @@ namespace Quickstarts.AlarmConditionServer
         /// Used to receive events when the state of an alarm changed.
         /// </summary>
         public AlarmChangedEventHandler OnAlarmChanged;
-        
+
         /// <summary>
         /// Gets or sets the name of the source.
         /// </summary>
@@ -149,7 +149,7 @@ namespace Quickstarts.AlarmConditionServer
                     if (alarm.SetStateBits(UnderlyingSystemAlarmStates.Enabled, enabling))
                     {
                         alarm.Time = alarm.EnableTime = DateTime.UtcNow;
-                        alarm.Reason = "The alarm was " + ((enabling)?"enabled.":"disabled.");
+                        alarm.Reason = "The alarm was " + ((enabling) ? "enabled." : "disabled.");
                         snapshots.Add(alarm.CreateSnapshot());
                     }
 
@@ -164,7 +164,7 @@ namespace Quickstarts.AlarmConditionServer
                         if (record.SetStateBits(UnderlyingSystemAlarmStates.Enabled, enabling))
                         {
                             record.Time = alarm.EnableTime = DateTime.UtcNow;
-                            record.Reason = "The alarm was " + ((enabling)?"enabled.":"disabled.");
+                            record.Reason = "The alarm was " + ((enabling) ? "enabled." : "disabled.");
                             snapshots.Add(alarm.CreateSnapshot());
                         }
                     }
@@ -239,7 +239,7 @@ namespace Quickstarts.AlarmConditionServer
                         alarm.Reason = "The alarm was acknoweledged.";
                         alarm.Comment = Utils.Format("{0}", comment);
                         alarm.UserName = userName;
-                        
+
                         alarm.SetStateBits(UnderlyingSystemAlarmStates.Confirmed, false);
                     }
 
@@ -338,21 +338,21 @@ namespace Quickstarts.AlarmConditionServer
                 for (int ii = 0; ii < m_alarms.Count; ii++)
                 {
                     UnderlyingSystemAlarm alarm = m_alarms[ii];
-                    
+
                     if (alarm.SetStateBits(UnderlyingSystemAlarmStates.Suppressed, offline))
                     {
                         alarm.Time = alarm.EnableTime = DateTime.UtcNow;
-                        alarm.Reason = "The alarm was " + ((offline)?"suppressed.":"unsuppressed.");
-                        
+                        alarm.Reason = "The alarm was " + ((offline) ? "suppressed." : "unsuppressed.");
+
                         // check if the alarm change should be reported.
                         if ((alarm.State & UnderlyingSystemAlarmStates.Enabled) != 0)
                         {
                             snapshots.Add(alarm.CreateSnapshot());
                         }
-                    }               
+                    }
                 }
             }
-            
+
             // report any alarm changes after releasing the lock.
             for (int ii = 0; ii < snapshots.Count; ii++)
             {
@@ -390,7 +390,7 @@ namespace Quickstarts.AlarmConditionServer
                 {
                     for (int ii = 0; ii < m_alarms.Count; ii++)
                     {
-                        UpdateAlarm(m_alarms[ii], counter, ii+index, snapshots);
+                        UpdateAlarm(m_alarms[ii], counter, ii + index, snapshots);
                     }
                 }
 
@@ -471,7 +471,7 @@ namespace Quickstarts.AlarmConditionServer
         private void UpdateAlarm(UnderlyingSystemAlarm alarm, long counter, int index, List<UnderlyingSystemAlarm> snapshots)
         {
             string reason = null;
-            
+
             // ignore disabled alarms.
             if ((alarm.State & UnderlyingSystemAlarmStates.Enabled) == 0)
             {
@@ -479,7 +479,7 @@ namespace Quickstarts.AlarmConditionServer
             }
 
             // check if the alarm needs to be updated this cycle.
-            if (counter % (8 + (index%4)) == 0)
+            if (counter % (8 + (index % 4)) == 0)
             {
                 // check if it is time to activate.
                 if ((alarm.State & UnderlyingSystemAlarmStates.Active) == 0)
@@ -599,7 +599,7 @@ namespace Quickstarts.AlarmConditionServer
         private string m_sourcePath;
         private string m_sourceType;
         private List<UnderlyingSystemAlarm> m_alarms;
-        private Dictionary<uint,UnderlyingSystemAlarm> m_archive;
+        private Dictionary<uint, UnderlyingSystemAlarm> m_archive;
         private bool m_isOffline;
         private uint m_nextRecordNumber;
         #endregion

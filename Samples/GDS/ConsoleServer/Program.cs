@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -27,11 +27,6 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-using Mono.Options;
-using Opc.Ua.Configuration;
-using Opc.Ua.Gds.Server.Database.Linq;
-using Opc.Ua.Server;
-using Opc.Ua.Server.UserDatabase;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -40,33 +35,37 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
+using Mono.Options;
+using Opc.Ua.Configuration;
+using Opc.Ua.Gds.Server.Database.Linq;
+using Opc.Ua.Server;
+using Opc.Ua.Server.UserDatabase;
 
 namespace Opc.Ua.Gds.Server
 {
     public class ApplicationMessageDlg : IApplicationMessageDlg
     {
-        private string message = string.Empty;
-        private bool ask = false;
+        private string m_message = string.Empty;
+        private bool m_ask = false;
 
         public override void Message(string text, bool ask)
         {
-            this.message = text;
-            this.ask = ask;
+            this.m_message = text;
+            this.m_ask = ask;
         }
 
         public override async Task<bool> ShowAsync()
         {
-            if (ask)
+            if (m_ask)
             {
-                message += " (y/n, default y): ";
-                Console.Write(message);
+                m_message += " (y/n, default y): ";
+                Console.Write(m_message);
             }
             else
             {
-                Console.WriteLine(message);
+                Console.WriteLine(m_message);
             }
-            if (ask)
+            if (m_ask)
             {
                 try
                 {
@@ -95,7 +94,7 @@ namespace Opc.Ua.Gds.Server
     public static class Program
     {
 
-        public static int Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             Console.WriteLine(".Net Core OPC UA Global Discovery Server");
 
@@ -131,8 +130,8 @@ namespace Opc.Ua.Gds.Server
                 return (int)ExitCode.ErrorInvalidCommandLine;
             }
 
-            NetCoreGlobalDiscoveryServer server = new NetCoreGlobalDiscoveryServer();
-            server.Run();
+            var server = new NetCoreGlobalDiscoveryServer();
+            await server.RunAsync().ConfigureAwait(false);
 
             return (int)NetCoreGlobalDiscoveryServer.ExitCode;
         }
@@ -140,22 +139,22 @@ namespace Opc.Ua.Gds.Server
 
     public class NetCoreGlobalDiscoveryServer
     {
-        GlobalDiscoverySampleServer server;
-        Task status;
-        DateTime lastEventTime;
-        static ExitCode exitCode;
+        private GlobalDiscoverySampleServer server;
+        private Task status;
+        private DateTime lastEventTime;
+        public static ExitCode exitCode;
 
         public NetCoreGlobalDiscoveryServer()
         {
         }
 
-        public void Run()
+        public async Task RunAsync()
         {
 
             try
             {
                 exitCode = ExitCode.ErrorServerNotStarted;
-                ConsoleGlobalDiscoveryServer().Wait();
+                await ConsoleGlobalDiscoveryServerAsync().ConfigureAwait(false);
                 Console.WriteLine("Server started. Press Ctrl-C to exit...");
                 exitCode = ExitCode.ErrorServerRunning;
             }
@@ -192,7 +191,7 @@ namespace Opc.Ua.Gds.Server
                 {
                     // Stop status thread
                     server = null;
-                    status.Wait();
+                    await status.ConfigureAwait(false);
                     // Stop server and dispose
                     _server.Stop();
                 }
@@ -201,7 +200,7 @@ namespace Opc.Ua.Gds.Server
             exitCode = ExitCode.Ok;
         }
 
-        public static ExitCode ExitCode { get => exitCode; }
+        public static ExitCode ExitCode => exitCode;
 
         private static void CertificateValidator_CertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)
         {
@@ -213,21 +212,20 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        private async Task ConsoleGlobalDiscoveryServer()
+        private async Task ConsoleGlobalDiscoveryServerAsync()
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance
-            {
+            var application = new ApplicationInstance {
                 ApplicationName = "Global Discovery Server",
                 ApplicationType = ApplicationType.Server,
                 ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer"
             };
 
             // load the application configuration.
-            ApplicationConfiguration config = await application.LoadApplicationConfiguration(false).ConfigureAwait(false);
+            ApplicationConfiguration config = await application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
 
             // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificates(false).ConfigureAwait(false);
+            bool haveAppCertificate = await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
                 throw new Exception("Application instance certificate invalid!");
@@ -256,17 +254,17 @@ namespace Opc.Ua.Gds.Server
                 userDatabase,
                 true,
                 createStandardUsers);
-            await application.Start(server).ConfigureAwait(false);
+            await application.StartAsync(server).ConfigureAwait(false);
 
             // print endpoint info
-            var endpoints = application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
-            foreach (var endpoint in endpoints)
+            IEnumerable<string> endpoints = application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
+            foreach (string endpoint in endpoints)
             {
                 Console.WriteLine(endpoint);
             }
 
             // start the status thread
-            status = Task.Run(new Action(StatusThread));
+            status = Task.Run(new Action(StatusThreadAsync));
 
             // print notification on session events
             server.CurrentInstance.SessionManager.SessionActivated += EventStatus;
@@ -278,7 +276,7 @@ namespace Opc.Ua.Gds.Server
         private bool ConfigureUsers(JsonUserDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
-            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().GetAwaiter().GetResult();
 
             if (!createStandardUsers)
             {
@@ -310,13 +308,13 @@ namespace Opc.Ua.Gds.Server
             return createStandardUsers;
         }
 
-        private void EventStatus(Session session, SessionEventReason reason)
+        private void EventStatus(ISession session, SessionEventReason reason)
         {
             lastEventTime = DateTime.UtcNow;
             PrintSessionStatus(session, reason.ToString());
         }
 
-        void PrintSessionStatus(Session session, string reason, bool lastContact = false)
+        private void PrintSessionStatus(ISession session, string reason, bool lastContact = false)
         {
             lock (session.DiagnosticsLock)
             {
@@ -337,16 +335,16 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        private async void StatusThread()
+        private async void StatusThreadAsync()
         {
             while (server != null)
             {
                 if (DateTime.UtcNow - lastEventTime > TimeSpan.FromMilliseconds(6000))
                 {
-                    IList<Session> sessions = server.CurrentInstance.SessionManager.GetSessions();
+                    IList<ISession> sessions = server.CurrentInstance.SessionManager.GetSessions();
                     for (int ii = 0; ii < sessions.Count; ii++)
                     {
-                        Session session = sessions[ii];
+                        ISession session = sessions[ii];
                         PrintSessionStatus(session, "-Status-", true);
                     }
                     lastEventTime = DateTime.UtcNow;

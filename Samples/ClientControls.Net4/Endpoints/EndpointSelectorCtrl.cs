@@ -63,14 +63,14 @@ namespace Opc.Ua.Client.Controls
         private event ConnectEndpointEventHandler m_ConnectEndpoint;
         private event EventHandler m_EndpointsChanged;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Raised when the user presses the connect button.
         /// </summary>
         public event ConnectEndpointEventHandler ConnectEndpoint
         {
-            add    { m_ConnectEndpoint += value; }
+            add { m_ConnectEndpoint += value; }
             remove { m_ConnectEndpoint -= value; }
         }
 
@@ -79,7 +79,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public event EventHandler EndpointsChanged
         {
-            add    { m_EndpointsChanged += value; }
+            add { m_EndpointsChanged += value; }
             remove { m_EndpointsChanged -= value; }
         }
 
@@ -93,15 +93,15 @@ namespace Opc.Ua.Client.Controls
                 ConfiguredEndpoint item = EndpointCB.SelectedItem as ConfiguredEndpoint;
 
                 if (item != null)
-                {                    
+                {
                     return item;
                 }
 
                 if (String.IsNullOrEmpty(EndpointCB.Text))
-                {                    
+                {
                     return null;
-                }                
-                        
+                }
+
                 return m_endpoints.Create(EndpointCB.Text);
             }
 
@@ -143,7 +143,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration)
         {
-            if (endpoints == null) throw new ArgumentNullException("endpoints");
+            if (endpoints == null) throw new ArgumentNullException(nameof(endpoints));
 
             m_endpoints = endpoints;
             m_configuration = configuration;
@@ -194,18 +194,18 @@ namespace Opc.Ua.Client.Controls
                         Initialize(m_endpoints, m_configuration);
                         SelectedEndpoint = endpoint;
                     }
-                }              
+                }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void EndpointCB_SelectedIndexChanged(object sender, EventArgs e)
         {
             try
-            {   
+            {
                 if (EndpointCB.SelectedIndex != 0)
                 {
                     m_selectedIndex = EndpointCB.SelectedIndex;
@@ -214,7 +214,7 @@ namespace Opc.Ua.Client.Controls
 
                 // modify configuration.
                 ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true);
-                
+
                 if (endpoint == null)
                 {
                     EndpointCB.SelectedIndex = m_selectedIndex;
@@ -236,20 +236,20 @@ namespace Opc.Ua.Client.Controls
                 for (int ii = 0; ii < m_endpoints.Endpoints.Count; ii++)
                 {
                     if (Object.ReferenceEquals(endpoint, m_endpoints.Endpoints[ii]))
-                    {                
-                        EndpointCB.SelectedIndex = ii+1;
+                    {
+                        EndpointCB.SelectedIndex = ii + 1;
                         break;
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
     }
-    
+
     #region ConnectEndpointEventArgs Class
     /// <summary>
     /// Contains arguments for a ConnectEndpoint event.
@@ -261,7 +261,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public ConnectEndpointEventArgs(ConfiguredEndpoint endpoint, bool updateControl)
         {
-            m_endpoint  = endpoint;
+            m_endpoint = endpoint;
             m_updateControl = updateControl;
         }
 
@@ -278,10 +278,10 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public bool UpdateControl
         {
-            get { return m_updateControl;  }
+            get { return m_updateControl; }
             set { m_updateControl = value; }
         }
-        
+
         #region Private Fields
         private ConfiguredEndpoint m_endpoint;
         private bool m_updateControl;
@@ -291,6 +291,6 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// The delegate used to receive connect endpoint notifications.
     /// </summary>
-    public delegate void ConnectEndpointEventHandler(object sender,  ConnectEndpointEventArgs e);
+    public delegate void ConnectEndpointEventHandler(object sender, ConnectEndpointEventArgs e);
     #endregion
 }

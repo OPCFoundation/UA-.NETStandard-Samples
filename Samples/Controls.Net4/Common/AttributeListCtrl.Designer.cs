@@ -83,7 +83,7 @@ namespace Opc.Ua.Sample.Controls
             this.ViewMI.Name = "ViewMI";
             this.ViewMI.Size = new System.Drawing.Size(152, 22);
             this.ViewMI.Text = "View...";
-            this.ViewMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.ViewMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // Separator01
             // 

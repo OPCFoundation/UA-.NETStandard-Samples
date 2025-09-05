@@ -189,7 +189,7 @@ namespace Quickstarts.DataTypes
             this.Browse_ViewValueMI.Name = "Browse_ViewValueMI";
             this.Browse_ViewValueMI.Size = new System.Drawing.Size(137, 22);
             this.Browse_ViewValueMI.Text = "View Value...";
-            this.Browse_ViewValueMI.Click += new System.EventHandler(this.Browse_ViewValueMI_Click);
+            this.Browse_ViewValueMI.Click += new System.EventHandler(this.Browse_ViewValueMI_ClickAsync);
             // 
             // ConnectServerCTRL
             // 
@@ -208,9 +208,9 @@ namespace Quickstarts.DataTypes
             this.ConnectServerCTRL.TabIndex = 4;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
-            this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
-            this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
+            this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStartingAsync);
+            this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectCompleteAsync);
             // 
             // clientHeaderBranding1
             // 

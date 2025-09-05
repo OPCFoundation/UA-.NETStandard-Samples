@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,10 +33,13 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -89,7 +92,7 @@ namespace Opc.Ua.Sample.Controls
             EndpointSelectorCTRL.Initialize(m_endpoints, m_configuration);
 
             // initialize control state.
-            Disconnect();
+            DisconnectAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -130,7 +133,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Disconnect from the server if ths form is closing.
         /// </summary>
-        protected override void OnClosing(CancelEventArgs e)
+        protected override async void OnClosing(CancelEventArgs e)
         {
             if (m_masterForm == null && m_forms.Count > 0)
             {
@@ -147,14 +150,20 @@ namespace Opc.Ua.Sample.Controls
                     form.Close();
                 }
             }
-
-            Disconnect();
+            try
+            {
+                await DisconnectAsync();
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
 
         /// <summary>
         /// Disconnects from a server.
         /// </summary>
-        public void Disconnect()
+        public async Task DisconnectAsync(CancellationToken ct = default)
         {
             if (m_session != null)
             {
@@ -167,7 +176,7 @@ namespace Opc.Ua.Sample.Controls
 
                 m_session.KeepAlive -= StandardClient_KeepAlive;
 
-                m_session.Close();
+                await m_session.CloseAsync(ct);
                 m_session = null;
             }
 
@@ -182,11 +191,11 @@ namespace Opc.Ua.Sample.Controls
             MessageBox.Show("A handy place to put test code.");
         }
 
-        void EndpointSelectorCTRL_ConnectEndpoint(object sender, ConnectEndpointEventArgs e)
+        private async void EndpointSelectorCTRL_ConnectEndpointAsync(object sender, ConnectEndpointEventArgs e)
         {
             try
             {
-                Connect(e.Endpoint);
+                await ConnectAsync(e.Endpoint);
             }
             catch (Exception exception)
             {
@@ -201,7 +210,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 m_endpoints.Save();
             }
-            catch (Exception)
+            catch
             {
                 // GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
@@ -210,14 +219,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Connects to a server.
         /// </summary>
-        public async void Connect(ConfiguredEndpoint endpoint)
+        public async Task ConnectAsync(ConfiguredEndpoint endpoint, CancellationToken ct = default)
         {
             if (endpoint == null)
             {
                 return;
             }
 
-            Session session = await SessionsCTRL.Connect(endpoint);
+            Session session = await SessionsCTRL.ConnectAsync(endpoint, ct);
 
             if (session != null)
             {
@@ -230,7 +239,7 @@ namespace Opc.Ua.Sample.Controls
 
                 m_session = session;
                 m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
-                BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
+                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, ct);
                 StandardClient_KeepAlive(m_session, null);
             }
         }
@@ -327,7 +336,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
+                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
 
                 SessionsCTRL.Reload(m_session);
 
@@ -339,11 +348,11 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        private async void MainForm_FormClosingAsync(object sender, FormClosingEventArgs e)
         {
             try
             {
-                SessionsCTRL.Close();
+                await SessionsCTRL.CloseAsync();
 
                 if (m_masterForm == null)
                 {
@@ -361,14 +370,14 @@ namespace Opc.Ua.Sample.Controls
             this.Close();
         }
 
-        private async void PerformanceTestMI_Click(object sender, EventArgs e)
+        private async void PerformanceTestMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                new PerformanceTestDlg().ShowDialog(
+                _ = new PerformanceTestDlg().ShowDialog(
                     m_configuration,
                     m_endpoints,
-                    await m_configuration.SecurityConfiguration.ApplicationCertificate.Find(true));
+                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true));
             }
             catch (Exception exception)
             {
@@ -480,7 +489,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "index.htm");
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "index.htm");
             }
             catch (Exception ex)
             {

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,10 +32,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -45,8 +46,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public PropertyListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -57,13 +58,13 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Property",    HorizontalAlignment.Left, null },  
-			new object[] { "Value",       HorizontalAlignment.Left, ""   }, 
-			new object[] { "DataType",    HorizontalAlignment.Left, null },
-			new object[] { "Description", HorizontalAlignment.Left, null } 
-		};
-		#endregion
+        {
+            new object[] { "Property",    HorizontalAlignment.Left, null },
+            new object[] { "Value",       HorizontalAlignment.Left, ""   },
+            new object[] { "DataType",    HorizontalAlignment.Left, null },
+            new object[] { "Description", HorizontalAlignment.Left, null }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -71,10 +72,10 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public bool ShowValues
         {
-            get { return m_showValues;  }
+            get { return m_showValues; }
             set { m_showValues = value; }
         }
-        
+
         /// <summary>
         /// Clears the contents of the control,
         /// </summary>
@@ -87,44 +88,44 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Update(Session session, ReferenceDescription reference)
+        public async Task UpdateAsync(Session session, ReferenceDescription reference, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
 
             if (reference == null)
             {
-                return;                
+                return;
             }
-            
+
             m_session = session;
 
-            AddProperties(reference.NodeId);
+            await AddPropertiesAsync(reference.NodeId, ct);
 
             AdjustColumns();
         }
-		#endregion
-        
+        #endregion
+
         #region NodeField Class
         /// <summary>
         /// A field associated with a node.
         /// </summary>
-        private class PropertyItem
-        {            
+        private sealed class PropertyItem
+        {
             public ReferenceDescription Reference;
-            public VariableNode         Property;
+            public VariableNode Property;
         }
-		#endregion
+        #endregion
 
         #region Private Methods
         /// <summary>
         /// Adds the properties to the control.
         /// </summary>
-        private void AddProperties(ExpandedNodeId nodeId)
+        private async Task AddPropertiesAsync(ExpandedNodeId nodeId, CancellationToken ct = default)
         {
             // get node.
-            Node node = m_session.NodeCache.Find(nodeId) as Node;
+            Node node = await m_session.NodeCache.FindAsync(nodeId, ct) as Node;
 
             if (node == null)
             {
@@ -136,21 +137,21 @@ namespace Opc.Ua.Sample.Controls
 
             if (supertypeId != null)
             {
-                AddProperties(supertypeId);
+                await AddPropertiesAsync(supertypeId, ct);
             }
 
             // build list of properties to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 
             Browser browser = new Browser(m_session);
-            
-            browser.BrowseDirection   = BrowseDirection.Forward;
-            browser.ReferenceTypeId   = ReferenceTypeIds.HasProperty;
-            browser.IncludeSubtypes   = true;
-            browser.NodeClassMask     = (int)NodeClass.Variable;
+
+            browser.BrowseDirection = BrowseDirection.Forward;
+            browser.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+            browser.IncludeSubtypes = true;
+            browser.NodeClassMask = (int)NodeClass.Variable;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = browser.Browse(node.NodeId);
+            ReferenceDescriptionCollection references = await browser.BrowseAsync(node.NodeId, ct);
 
             // add propertoes to view.
             foreach (ReferenceDescription reference in references)
@@ -158,13 +159,13 @@ namespace Opc.Ua.Sample.Controls
                 PropertyItem field = new PropertyItem();
 
                 field.Reference = reference;
-                field.Property  = m_session.NodeCache.Find(reference.NodeId) as VariableNode;
+                field.Property = await m_session.NodeCache.FindAsync(reference.NodeId, ct) as VariableNode;
 
                 AddItem(field, "Property", -1);
             }
         }
-		#endregion
-        
+        #endregion
+
         #region Overridden Methods
         /// <see cref="BaseListCtrl.GetDataToDrag" />
         protected override object GetDataToDrag()
@@ -186,25 +187,25 @@ namespace Opc.Ua.Sample.Controls
 
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{                        
+        {
             PropertyItem[] items = GetSelectedItems(typeof(PropertyItem)) as PropertyItem[];
 
             if (items != null && items.Length > 0)
             {
                 SelectMI.Enabled = true;
             }
-		}
-        
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
-        {
-			PropertyItem property = item as PropertyItem;
+        }
 
-			if (property == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
+        {
+            PropertyItem property = item as PropertyItem;
+
+            if (property == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
             listItem.SubItems[0].Text = String.Format("{0}", property.Reference);
             listItem.SubItems[1].Text = "";
@@ -224,7 +225,7 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            INode node = m_session.NodeCache.Find(property.Property.DataType);
+            INode node = await m_session.NodeCache.FindAsync(property.Property.DataType, ct);
 
             if (node != null)
             {
@@ -239,10 +240,10 @@ namespace Opc.Ua.Sample.Controls
             {
                 listItem.SubItems[2].Text += "[]";
             }
-                
+
             listItem.SubItems[3].Text = String.Format("{0}", property.Property.Description);
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
         #endregion
 
@@ -254,7 +255,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

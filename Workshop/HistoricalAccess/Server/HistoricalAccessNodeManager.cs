@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -69,13 +69,13 @@ namespace Quickstarts.HistoricalAccessServer
             SystemContext.NodeIdFactory = this;
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 // TBD
@@ -92,7 +92,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <returns>The new NodeId.</returns>
         /// <remarks>
         /// This method is called by the NodeState.Create() method which initializes a Node from
-        /// the type model. During initialization a number of child nodes are created and need to 
+        /// the type model. During initialization a number of child nodes are created and need to
         /// have NodeIds assigned to them. This implementation constructs NodeIds by constructing
         /// strings. Other implementations could assign unique integers or Guids and save the new
         /// Node in a dictionary for later lookup.
@@ -247,7 +247,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     return handle;
                 }
-                
+
                 return null;
             }
         }
@@ -259,7 +259,7 @@ namespace Quickstarts.HistoricalAccessServer
             ServerSystemContext context,
             NodeHandle handle,
             IDictionary<NodeId, NodeState> cache)
-        {            
+        {
             // lookup in cache.
             NodeState target = FindNodeInCache(context, handle, cache);
 
@@ -332,7 +332,7 @@ namespace Quickstarts.HistoricalAccessServer
             IList<DataValue> values,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToValidate,
-            IDictionary<NodeId,NodeState> cache)
+            IDictionary<NodeId, NodeState> cache)
         {
             for (int ii = 0; ii < nodesToValidate.Count; ii++)
             {
@@ -375,7 +375,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         /// <param name="context">The context.</param>
         /// <param name="handle">The item handle.</param>
-        /// <param name="monitoredItem">The monitored item.</param>
+        /// <param name="dataChangeMonitoredItem">The monitored item.</param>
         protected override ServiceResult ReadInitialValue(
             ISystemContext context,
             NodeHandle handle,
@@ -440,7 +440,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Called after creating a MonitoredItem.
         /// </summary>
-        protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, MonitoredItem monitoredItem)
+        protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
         {
             lock (Lock)
             {
@@ -461,7 +461,7 @@ namespace Quickstarts.HistoricalAccessServer
                         {
                             m_monitoredItems.Add(item.ArchiveItem.UniquePath, item);
                         }
-                        
+
                         item.SubscribeCount++;
 
                         if (m_simulationTimer == null)
@@ -472,9 +472,9 @@ namespace Quickstarts.HistoricalAccessServer
                 }
             }
         }
-        
+
         /// <summary>
-        /// Revises an aggregate filter (may require knowledge of the variable being used). 
+        /// Revises an aggregate filter (may require knowledge of the variable being used).
         /// </summary>
         /// <param name="context">The context.</param>
         /// <param name="handle">The handle.</param>
@@ -523,7 +523,7 @@ namespace Quickstarts.HistoricalAccessServer
                 }
 
                 // ensure the buffer does not get overfilled.
-                while (filterToUse.StartTime.AddMilliseconds(queueSize*filterToUse.ProcessingInterval) < DateTime.UtcNow)
+                while (filterToUse.StartTime.AddMilliseconds(queueSize * filterToUse.ProcessingInterval) < DateTime.UtcNow)
                 {
                     filterToUse.StartTime = filterToUse.StartTime.AddMilliseconds(filterToUse.ProcessingInterval);
                 }
@@ -576,7 +576,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Called after deleting a MonitoredItem.
         /// </summary>
-        protected override void OnMonitoredItemDeleted(ServerSystemContext context, NodeHandle handle, MonitoredItem monitoredItem)
+        protected override void OnMonitoredItemDeleted(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
         {
             lock (Lock)
             {
@@ -619,13 +619,13 @@ namespace Quickstarts.HistoricalAccessServer
         /// Reads the raw data for an item.
         /// </summary>
         protected override void HistoryReadRawModified(
-            ServerSystemContext context, 
-            ReadRawModifiedDetails details, 
-            TimestampsToReturn timestampsToReturn, 
-            IList<HistoryReadValueId> nodesToRead, 
-            IList<HistoryReadResult> results, 
+            ServerSystemContext context,
+            ReadRawModifiedDetails details,
+            TimestampsToReturn timestampsToReturn,
+            IList<HistoryReadValueId> nodesToRead,
+            IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess, 
+            List<NodeHandle> nodesToProcess,
             IDictionary<NodeId, NodeState> cache)
         {
             for (int ii = 0; ii < nodesToRead.Count; ii++)
@@ -845,7 +845,7 @@ namespace Quickstarts.HistoricalAccessServer
                 HistoryReadResult result = results[handle.Index];
 
                 HistoryReadRequest request = null;
-                
+
                 try
                 {
                     // validate node.
@@ -1029,9 +1029,9 @@ namespace Quickstarts.HistoricalAccessServer
                         }
 
                         StatusCode error = item.UpdateAnnotations(
-                            context, 
+                            context,
                             annotation,
-                            nodeToUpdate.UpdateValues[jj], 
+                            nodeToUpdate.UpdateValues[jj],
                             nodeToUpdate.PerformInsertReplace);
 
                         result.OperationResults.Add(error);
@@ -1203,12 +1203,12 @@ namespace Quickstarts.HistoricalAccessServer
                 modificationInfos = new LinkedList<ModificationInfo>();
             }
 
-            // read history. 
+            // read history.
             DataView view = item.ReadHistory(details.StartTime, details.EndTime, details.IsReadModified, handle.Node.BrowseName);
 
             int startBound = -1;
             int endBound = -1;
-            int ii = (timeFlowsBackward)?view.Count-1:0;
+            int ii = (timeFlowsBackward) ? view.Count - 1 : 0;
 
             while (ii >= 0 && ii < view.Count)
             {
@@ -1221,7 +1221,7 @@ namespace Quickstarts.HistoricalAccessServer
                     {
                         if (timeFlowsBackward)
                         {
-                            if ((details.StartTime != DateTime.MinValue && timestamp >= details.StartTime) || (details.StartTime == DateTime.MinValue &&  timestamp >= details.EndTime))
+                            if ((details.StartTime != DateTime.MinValue && timestamp >= details.StartTime) || (details.StartTime == DateTime.MinValue && timestamp >= details.EndTime))
                             {
                                 startBound = ii;
 
@@ -1389,7 +1389,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             LinkedList<DataValue> values = new LinkedList<DataValue>();
 
-            // read history. 
+            // read history.
             DataView view = item.ReadHistory(details.StartTime, details.EndTime, false);
 
             int ii = (timeFlowsBackward) ? view.Count - 1 : 0;
@@ -1490,7 +1490,7 @@ namespace Quickstarts.HistoricalAccessServer
                     endTime = details.ReqTimes[ii];
                 }
             }
-            
+
             DataView view = item.ReadHistory(startTime, endTime, false);
 
             LinkedList<DataValue> values = new LinkedList<DataValue>();
@@ -1515,7 +1515,7 @@ namespace Quickstarts.HistoricalAccessServer
                     values.AddLast((DataValue)view[index].Row[2]);
                     continue;
                 }
-                
+
                 DataValue before = (DataValue)view[index].Row[2];
                 DataValue value;
 
@@ -1570,8 +1570,8 @@ namespace Quickstarts.HistoricalAccessServer
         /// Extracts and queues any processed values.
         /// </summary>
         private void QueueProcessedValues(
-            ServerSystemContext context, 
-            IAggregateCalculator calculator, 
+            ServerSystemContext context,
+            IAggregateCalculator calculator,
             NumericRange indexRange,
             QualifiedName dataEncoding,
             bool applyIndexRangeOrEncoding,
@@ -1639,7 +1639,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Stores a read history request.
         /// </summary>
-        private class HistoryReadRequest
+        private sealed class HistoryReadRequest
         {
             public byte[] ContinuationPoint;
             public LinkedList<DataValue> Values;
@@ -1684,7 +1684,7 @@ namespace Quickstarts.HistoricalAccessServer
             ServerSystemContext context,
             byte[] continuationPoint)
         {
-            Session session = context.OperationContext.Session;
+            ISession session = context.OperationContext.Session;
 
             if (session == null)
             {
@@ -1708,7 +1708,7 @@ namespace Quickstarts.HistoricalAccessServer
             ServerSystemContext context,
             HistoryReadRequest request)
         {
-            Session session = context.OperationContext.Session;
+            ISession session = context.OperationContext.Session;
 
             if (session == null)
             {
@@ -1761,7 +1761,7 @@ namespace Quickstarts.HistoricalAccessServer
         private UnderlyingSystem m_system;
         private HistoricalAccessServerConfiguration m_configuration;
         private Timer m_simulationTimer;
-        private Dictionary<string,ArchiveItemState> m_monitoredItems;
+        private Dictionary<string, ArchiveItemState> m_monitoredItems;
         #endregion
     }
 }

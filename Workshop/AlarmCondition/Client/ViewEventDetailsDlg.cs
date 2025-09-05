@@ -49,10 +49,10 @@ namespace Quickstarts.AlarmConditionClient
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Shows all fields for the current condition.

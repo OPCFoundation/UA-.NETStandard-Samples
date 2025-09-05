@@ -63,19 +63,19 @@ namespace Opc.Ua.Sample.Controls
         private ApplicationConfiguration m_configuration;
         private EndpointDescriptionCollection m_endpoints;
         private ServiceMessageContext m_messageContext;
-        
+
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public ITransportChannel ShowDialog(
-            ApplicationConfiguration      configuration,
+            ApplicationConfiguration configuration,
             EndpointDescriptionCollection endpoints)
         {
-            if (endpoints == null)      throw new ArgumentNullException("endpoints");
-            if (configuration == null)  throw new ArgumentNullException("configuration");
+            if (endpoints == null) throw new ArgumentNullException(nameof(endpoints));
+            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-            m_endpoints      = endpoints;
-            m_configuration  = configuration;
+            m_endpoints = endpoints;
+            m_configuration = configuration;
             m_messageContext = configuration.CreateMessageContext();
 
             EndpointCB.Items.Clear();
@@ -89,23 +89,23 @@ namespace Opc.Ua.Sample.Controls
             {
                 EndpointCB.SelectedIndex = 0;
             }
-            
-            OperationTimeoutNC.Value    = configuration.TransportQuotas.OperationTimeout;
-            MaxMessageSizeNC.Value      = configuration.TransportQuotas.MaxMessageSize;
-            MaxArrayLengthNC.Value      = configuration.TransportQuotas.MaxArrayLength;
-            MaxStringLengthNC.Value     = configuration.TransportQuotas.MaxStringLength;
+
+            OperationTimeoutNC.Value = configuration.TransportQuotas.OperationTimeout;
+            MaxMessageSizeNC.Value = configuration.TransportQuotas.MaxMessageSize;
+            MaxArrayLengthNC.Value = configuration.TransportQuotas.MaxArrayLength;
+            MaxStringLengthNC.Value = configuration.TransportQuotas.MaxStringLength;
             MaxByteStringLengthNC.Value = configuration.TransportQuotas.MaxByteStringLength;
 
             if (ShowDialog() != DialogResult.OK)
             {
                 return null;
             }
-                       
+
             // return the channel.
             return m_channel;
         }
 
-        private async void OkBTN_Click(object sender, EventArgs e)
+        private async void OkBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -122,7 +122,7 @@ namespace Opc.Ua.Sample.Controls
                     m_configuration,
                     m_endpoints[EndpointCB.SelectedIndex],
                     configuration,
-                    await m_configuration.SecurityConfiguration.ApplicationCertificate.Find(true),
+                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true),
                     m_messageContext);
 
                 // create the channel.                   
@@ -189,7 +189,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         private void DetailsBTN_Click(object sender, EventArgs e)
-        {            
+        {
             try
             {
                 int index = EndpointCB.SelectedIndex;

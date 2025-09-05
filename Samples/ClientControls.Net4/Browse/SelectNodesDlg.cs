@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,11 +32,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 
 namespace Opc.Ua.Client.Controls
@@ -59,17 +60,17 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public IList<ILocalNode> ShowDialog(Session session, NodeId rootId, IList<NodeId> nodeIds)
+        public async Task<IList<ILocalNode>> ShowDialogAsync(ISession session, NodeId rootId, IList<NodeId> nodeIds, CancellationToken ct = default)
         {
-            BrowseCTRL.Initialize(session, rootId, null, null, BrowseDirection.Forward);
-            ReferencesCTRL.Initialize(session, rootId);
-            AttributesCTRL.Initialize(session, rootId);
-            NodesCTRL.Initialize(session, nodeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, null, null, BrowseDirection.Forward, ct);
+            await ReferencesCTRL.InitializeAsync(session, rootId, ct);
+            await AttributesCTRL.InitializeAsync(session, rootId, ct);
+            await NodesCTRL.InitializeAsync(session, nodeIds, ct);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -92,7 +93,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BrowseCTRL_NodesSelected(object sender, BrowseTreeCtrl.NodesSelectedEventArgs e)
+        private async void BrowseCTRL_NodesSelectedAsync(object sender, BrowseTreeCtrl.NodesSelectedEventArgs e)
         {
             try
             {
@@ -100,7 +101,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (!reference.NodeId.IsAbsolute)
                     {
-                        NodesCTRL.Add((NodeId)reference.NodeId);
+                        await NodesCTRL.AddAsync((NodeId)reference.NodeId);
                     }
                 }
             }

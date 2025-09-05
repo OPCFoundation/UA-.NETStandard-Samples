@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -58,7 +60,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private DataSet m_dataset;
-        private Session m_session;
+        private ISession m_session;
         private FilterDeclaration m_filter;
         #endregion
 
@@ -66,7 +68,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used for the read request.
         /// </summary>
-        public void ChangeSession(Session session)
+        public void ChangeSession(ISession session)
         {
             m_session = session;
         }
@@ -91,7 +93,7 @@ namespace Opc.Ua.Client.Controls
                     }
                 }
             }
-            
+
             EventsDV.DataSource = m_dataset.Tables[0];
         }
 
@@ -141,24 +143,24 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Fetches the recent history.
         /// </summary>
-        private void ReadHistory(ReadEventDetails details, NodeId areaId)
+        private async Task ReadHistoryAsync(ReadEventDetails details, NodeId areaId, CancellationToken ct = default)
         {
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = areaId;
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Neither,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -169,7 +171,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             HistoryEvent events = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryEvent;
-            
+
             foreach (HistoryEventFieldList e in events.Events)
             {
                 DisplayEvent(e.EventFields);
@@ -180,21 +182,23 @@ namespace Opc.Ua.Client.Controls
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
-                m_session.HistoryRead(
+                response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(details),
                     TimestampsToReturn.Neither,
                     true,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                results = response.Results;
+                diagnosticInfos = response.DiagnosticInfos;
             }
         }
 
         /// <summary>
         /// Deletes the recent history.
         /// </summary>
-        private void DeleteHistory(NodeId areaId, List<VariantCollection> events, FilterDeclaration filter)
+        private async Task DeleteHistoryAsync(NodeId areaId, List<VariantCollection> events, FilterDeclaration filter, CancellationToken ct = default)
         {
             // find the event id.
             int index = 0;
@@ -235,14 +239,14 @@ namespace Opc.Ua.Client.Controls
             ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
             nodesToUpdate.Add(new ExtensionObject(details));
 
-            HistoryUpdateResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            m_session.HistoryUpdate(
+            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
                 null,
                 nodesToUpdate,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryUpdateResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -269,7 +273,7 @@ namespace Opc.Ua.Client.Controls
                 if (count > 0)
                 {
                     throw ServiceResultException.Create(
-                        StatusCodes.BadEventIdUnknown, 
+                        StatusCodes.BadEventIdUnknown,
                         "Error deleting events. Only {0} of {1} deletes succeeded.",
                         events.Count - count,
                         events.Count);
@@ -288,7 +292,7 @@ namespace Opc.Ua.Client.Controls
 
             if (EventsDV.Columns.Count > 1)
             {
-                EventsDV.Columns[EventsDV.Columns.Count-1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                EventsDV.Columns[EventsDV.Columns.Count - 1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             }
         }
 

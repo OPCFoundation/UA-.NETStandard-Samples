@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -53,34 +55,35 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Changes the session used for the call request.
         /// </summary>
-        public void ChangeSession(Session session)
+        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
             m_session = session;
             CallRequestCTRL.ChangeSession(session);
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Sets the method called by the control.
         /// </summary>
-        public void SetMethod(NodeId objectId, NodeId methodId)
+        public async Task SetMethodAsync(NodeId objectId, NodeId methodId, CancellationToken ct = default)
         {
             StringBuilder buffer = new StringBuilder();
             buffer.Append("Calling Method ");
-            buffer.Append(m_session.NodeCache.GetDisplayText(methodId));
+            buffer.Append(await m_session.NodeCache.GetDisplayTextAsync(methodId, ct));
             buffer.Append(" on Object ");
-            buffer.Append(m_session.NodeCache.GetDisplayText(objectId));
+            buffer.Append(await m_session.NodeCache.GetDisplayTextAsync(objectId, ct));
             this.Text = buffer.ToString();
 
-            CallRequestCTRL.SetMethod(objectId, methodId);
+            await CallRequestCTRL.SetMethodAsync(objectId, methodId, ct);
         }
         #endregion
 
@@ -88,11 +91,11 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void CallBTN_Click(object sender, EventArgs e)
+        private async void CallBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                CallRequestCTRL.Call();
+                await CallRequestCTRL.CallAsync();
                 CallBTN.Visible = false;
                 BackBTN.Visible = true;
             }
@@ -102,11 +105,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                CallRequestCTRL.Back();
+                await CallRequestCTRL.BackAsync();
                 CallBTN.Visible = true;
                 BackBTN.Visible = false;
             }

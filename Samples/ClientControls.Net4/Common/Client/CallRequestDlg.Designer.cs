@@ -96,7 +96,7 @@ namespace Opc.Ua.Client.Controls
             this.CallBTN.TabIndex = 1;
             this.CallBTN.Text = "Call";
             this.CallBTN.UseVisualStyleBackColor = true;
-            this.CallBTN.Click += new System.EventHandler(this.CallBTN_Click);
+            this.CallBTN.Click += new System.EventHandler(this.CallBTN_ClickAsync);
             // 
             // BackBTN
             // 
@@ -107,7 +107,7 @@ namespace Opc.Ua.Client.Controls
             this.BackBTN.Text = "Back";
             this.BackBTN.UseVisualStyleBackColor = true;
             this.BackBTN.Visible = false;
-            this.BackBTN.Click += new System.EventHandler(this.BackBTN_Click);
+            this.BackBTN.Click += new System.EventHandler(this.BackBTN_ClickAsync);
             // 
             // CallRequestCTRL
             // 

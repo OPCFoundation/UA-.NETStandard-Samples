@@ -96,7 +96,7 @@ namespace Opc.Ua.Client.Controls
             this.ReadBTN.TabIndex = 1;
             this.ReadBTN.Text = "Read";
             this.ReadBTN.UseVisualStyleBackColor = true;
-            this.ReadBTN.Click += new System.EventHandler(this.ReadBTN_Click);
+            this.ReadBTN.Click += new System.EventHandler(this.ReadBTN_ClickAsync);
             // 
             // BackBTN
             // 

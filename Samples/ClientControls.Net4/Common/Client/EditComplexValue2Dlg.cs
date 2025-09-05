@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.Xml;
 using System.Xml.Serialization;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -56,7 +58,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_variableId;
         private Variant m_value;
         private bool m_textChanged;
@@ -67,7 +69,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit a value.
         /// </summary>
-        public Variant ShowDialog(Session session, NodeId variableId, Variant value, string caption)
+        public async Task<Variant> ShowDialogAsync(ISession session, NodeId variableId, Variant value, string caption, CancellationToken ct = default)
         {
             if (caption != null)
             {
@@ -77,7 +79,7 @@ namespace Opc.Ua.Client.Controls
             m_session = session;
             m_variableId = variableId;
 
-            SetValue(value);
+            await SetValueAsync(value, ct);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -91,7 +93,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Sets the value shown in the control.
         /// </summary>
-        private void SetValue(Variant value)
+        private async Task SetValueAsync(Variant value, CancellationToken ct = default)
         {
             ValueTB.ForeColor = Color.Empty;
             ValueTB.Font = new Font(ValueTB.Font, FontStyle.Regular);
@@ -115,7 +117,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             m_value = new Variant(value.Value, sourceType);
-            
+
             // display value as text.
             StringBuilder buffer = new StringBuilder();
             XmlWriter writer = XmlWriter.Create(buffer, new XmlWriterSettings() { Indent = true, OmitXmlDeclaration = true });
@@ -159,7 +161,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // check if the encoding is known.
-            IObject encodingNode = m_session.NodeCache.Find(encodingId) as IObject;
+            IObject encodingNode = await m_session.NodeCache.FindAsync(encodingId, ct) as IObject;
 
             if (encodingNode == null)
             {
@@ -174,7 +176,7 @@ namespace Opc.Ua.Client.Controls
             }
             else
             {
-                EncodingCB.Text = m_session.NodeCache.GetDisplayText(encodingNode);
+                EncodingCB.Text = await m_session.NodeCache.GetDisplayTextAsync(encodingNode, ct);
             }
 
             m_encodingName = encodingNode.BrowseName;
@@ -182,7 +184,7 @@ namespace Opc.Ua.Client.Controls
             // find the data type for the encoding.
             IDataType dataTypeNode = null;
 
-            foreach (INode node in m_session.NodeCache.Find(encodingNode.NodeId, Opc.Ua.ReferenceTypeIds.HasEncoding, true, false))
+            foreach (INode node in await m_session.NodeCache.FindAsync(encodingNode.NodeId, Opc.Ua.ReferenceTypeIds.HasEncoding, true, false, ct))
             {
                 dataTypeNode = node as IDataType;
 
@@ -199,19 +201,19 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update data type display.
-            DataTypeTB.Text = m_session.NodeCache.GetDisplayText(dataTypeNode);
+            DataTypeTB.Text = await m_session.NodeCache.GetDisplayTextAsync(dataTypeNode, ct);
             DataTypeTB.Tag = dataTypeNode;
 
             // update encoding drop down.
             EncodingCB.DropDownItems.Clear();
 
-            foreach (INode node in m_session.NodeCache.Find(dataTypeNode.NodeId, Opc.Ua.ReferenceTypeIds.HasEncoding, false, false))
+            foreach (INode node in await m_session.NodeCache.FindAsync(dataTypeNode.NodeId, Opc.Ua.ReferenceTypeIds.HasEncoding, false, false, ct))
             {
                 IObject encodingNode2 = node as IObject;
 
                 if (encodingNode2 != null)
                 {
-                    ToolStripMenuItem item = new ToolStripMenuItem(m_session.NodeCache.GetDisplayText(encodingNode2));
+                    ToolStripMenuItem item = new ToolStripMenuItem(await m_session.NodeCache.GetDisplayTextAsync(encodingNode2, ct));
                     item.Tag = encodingNode2;
                     item.Click += new EventHandler(EncodingCB_Item_Click);
                     EncodingCB.DropDownItems.Add(item);
@@ -231,12 +233,15 @@ namespace Opc.Ua.Client.Controls
                 return m_value;
             }
 
-            XmlDocument document = new XmlDocument();
-            document.InnerXml = ValueTB.Text;
-            
+            var document = new XmlDocument { XmlResolver = null };
+            using (var reader = XmlReader.Create(ValueTB.Text, new XmlReaderSettings() { XmlResolver = null }))
+            {
+                document.Load(reader);
+            }
+
             // find the first element.
             XmlElement element = null;
-            
+
             for (XmlNode node = document.DocumentElement.FirstChild; node != null; node = node.NextSibling)
             {
                 element = node as XmlElement;
@@ -290,7 +295,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void RefreshBTN_Click(object sender, EventArgs e)
+        private async void RefreshBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -304,16 +309,15 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead.Add(nodeToRead);
 
                 // read the attributes.
-                DataValueCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                m_session.Read(
+                ReadResponse response = await m_session.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    default);
+
+                DataValueCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -327,7 +331,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                SetValue(results[0].WrappedValue);
+                await SetValueAsync(results[0].WrappedValue);
             }
             catch (Exception exception)
             {
@@ -335,7 +339,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void UpdateBTN_Click(object sender, EventArgs e)
+        private async void UpdateBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -349,14 +353,14 @@ namespace Opc.Ua.Client.Controls
                 nodesToWrite.Add(nodeToWrite);
 
                 // read the attributes.
-                StatusCodeCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = m_session.Write(
+                WriteResponse response = await m_session.WriteAsync(
                     null,
                     nodesToWrite,
-                    out results,
-                    out diagnosticInfos);
+                    default);
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                StatusCodeCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);

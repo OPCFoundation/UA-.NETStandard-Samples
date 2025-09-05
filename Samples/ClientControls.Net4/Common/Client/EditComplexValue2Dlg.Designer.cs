@@ -118,7 +118,7 @@ namespace Opc.Ua.Client.Controls
             this.UpdateBTN.TabIndex = 0;
             this.UpdateBTN.Text = "Update";
             this.UpdateBTN.UseVisualStyleBackColor = true;
-            this.UpdateBTN.Click += new System.EventHandler(this.UpdateBTN_Click);
+            this.UpdateBTN.Click += new System.EventHandler(this.UpdateBTN_ClickAsync);
             // 
             // RefreshBTN
             // 
@@ -129,7 +129,7 @@ namespace Opc.Ua.Client.Controls
             this.RefreshBTN.TabIndex = 3;
             this.RefreshBTN.Text = "Refresh";
             this.RefreshBTN.UseVisualStyleBackColor = true;
-            this.RefreshBTN.Click += new System.EventHandler(this.RefreshBTN_Click);
+            this.RefreshBTN.Click += new System.EventHandler(this.RefreshBTN_ClickAsync);
             // 
             // MainPN
             // 

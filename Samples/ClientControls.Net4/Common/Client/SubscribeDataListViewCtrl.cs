@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,9 +30,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
+using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -82,7 +84,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private DataSet m_dataset;
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private DisplayState m_state;
         private EditComplexValueDlg m_EditComplexValueDlg;
@@ -105,7 +107,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public void ChangeSession(Session session)
+        public void ChangeSession(ISession session)
         {
             if (!Object.ReferenceEquals(session, m_session))
             {
@@ -127,7 +129,7 @@ namespace Opc.Ua.Client.Controls
                         {
                             m_subscription = subscription;
                             m_subscription.PublishStatusChanged += m_PublishStatusChanged;
-                            m_subscription.FastDataChangeCallback = OnDataChange;
+                            m_subscription.FastDataChangeCallback = OnDataChangeAsync;
                             break;
                         }
                     }
@@ -187,7 +189,7 @@ namespace Opc.Ua.Client.Controls
             m_subscription = subscription;
             m_subscription.DisableMonitoredItemCache = true;
             m_subscription.PublishStatusChanged += m_PublishStatusChanged;
-            m_subscription.FastDataChangeCallback = OnDataChange;
+            m_subscription.FastDataChangeCallback = OnDataChangeAsync;
             m_dataset.Tables[0].Rows.Clear();
 
             if (m_subscription != null)
@@ -200,7 +202,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the monitored items to the subscription.
         /// </summary>
-        public void AddItems(params ReadValueId[] itemsToMonitor)
+        public async Task AddItemsAsync(CancellationToken ct, params ReadValueId[] itemsToMonitor)
         {
             if (m_subscription == null)
             {
@@ -228,7 +230,7 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem.Handle = row;
                     m_subscription.AddItem(monitoredItem);
 
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -259,7 +261,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the grid to the next state.
         /// </summary>
-        public void Next()
+        public async Task NextAsync(CancellationToken ct = default)
         {
             if (m_state == DisplayState.ViewUpdates)
             {
@@ -279,7 +281,7 @@ namespace Opc.Ua.Client.Controls
                 // apply any changes.
                 if (m_state == DisplayState.ApplyChanges)
                 {
-                    m_subscription.ApplyChanges();
+                    await m_subscription.ApplyChangesAsync(ct);
 
                     foreach (DataRow row in m_dataset.Tables[0].Rows)
                     {
@@ -293,7 +295,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the grid back to the edit items state.
         /// </summary>
-        public void Back()
+        public async Task BackAsync(CancellationToken ct = default)
         {
             if (m_state == DisplayState.EditItems)
             {
@@ -310,7 +312,7 @@ namespace Opc.Ua.Client.Controls
                 // revert to specified parameters.
                 DataRowView source = row.DataBoundItem as DataRowView;
                 MonitoredItem monitoredItem = (MonitoredItem)source.Row[0];
-                UpdateRow(source.Row, monitoredItem);
+                await UpdateRowAsync(source.Row, monitoredItem, ct);
             }
         }
         #endregion
@@ -375,11 +377,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the monitored item.
         /// </summary>
-        private void UpdateRow(DataRow row, MonitoredItem monitoredItem)
+        private async Task UpdateRowAsync(DataRow row, MonitoredItem monitoredItem, CancellationToken ct = default)
         {
             row[0] = monitoredItem;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(monitoredItem.AttributeId, null)];
-            row[2] = m_session.NodeCache.GetDisplayText(monitoredItem.StartNodeId) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
+            row[2] = await m_session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId, ct) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
             row[3] = monitoredItem.IndexRange;
             row[4] = monitoredItem.Encoding;
             row[5] = monitoredItem.MonitoringMode;
@@ -442,9 +444,9 @@ namespace Opc.Ua.Client.Controls
             buffer.Append(subscription.CurrentPublishingInterval);
             buffer.Append("ms/");
             buffer.Append(subscription.CurrentKeepAliveCount);
-            buffer.Append("/");
+            buffer.Append('/');
             buffer.Append(subscription.CurrentLifetimeCount);
-            buffer.Append("}");
+            buffer.Append('}');
 
             return buffer.ToString();
         }
@@ -486,7 +488,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void OnDataChange(Subscription subscription, DataChangeNotification notification, IList<string> stringTable)
+        private async void OnDataChangeAsync(Subscription subscription, DataChangeNotification notification, IList<string> stringTable)
         {
             if (!Object.ReferenceEquals(subscription, m_subscription))
             {
@@ -495,7 +497,7 @@ namespace Opc.Ua.Client.Controls
 
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new FastDataChangeNotificationEventHandler(OnDataChange), subscription, notification, stringTable);
+                this.BeginInvoke(new FastDataChangeNotificationEventHandler(OnDataChangeAsync), subscription, notification, stringTable);
                 return;
             }
 
@@ -521,7 +523,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (m_EditComplexValueDlg != null && Object.ReferenceEquals(m_EditComplexValueDlg.Tag, monitoredItem))
                     {
-                        m_EditComplexValueDlg.UpdateValue(monitoredItem.ResolvedNodeId, monitoredItem.AttributeId, null, itemNotification.Value.Value);
+                        await m_EditComplexValueDlg.UpdateValueAsync(monitoredItem.ResolvedNodeId, monitoredItem.AttributeId, null, itemNotification.Value.Value);
                     }
                 }
             }
@@ -540,7 +542,7 @@ namespace Opc.Ua.Client.Controls
             SetMonitoringModeMI.Visible = m_state != DisplayState.ApplyChanges;
         }
 
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -562,12 +564,12 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem = new MonitoredItem(monitoredItem);
                 }
 
-                if (new EditMonitoredItemDlg().ShowDialog(m_session, monitoredItem, false))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, false))
                 {
                     m_subscription.AddItem(monitoredItem);
                     DataRow row = m_dataset.Tables[0].NewRow();
                     monitoredItem.Handle = row;
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -577,7 +579,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -595,10 +597,10 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                if (new EditMonitoredItemDlg().ShowDialog(m_session, monitoredItem, false))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, false))
                 {
                     DataRow row = (DataRow)monitoredItem.Handle;
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                 }
             }
             catch (Exception exception)
@@ -627,7 +629,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void ViewValueMI_Click(object sender, EventArgs e)
+        private async void ViewValueMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -650,7 +652,7 @@ namespace Opc.Ua.Client.Controls
                 m_EditComplexValueDlg = new EditComplexValueDlg();
                 m_EditComplexValueDlg.Tag = monitoredItem;
 
-                m_EditComplexValueDlg.ShowDialog(
+                await m_EditComplexValueDlg.ShowDialogAsync(
                     m_session,
                     monitoredItem.ResolvedNodeId,
                     monitoredItem.AttributeId,
@@ -673,11 +675,11 @@ namespace Opc.Ua.Client.Controls
             {
                 if (m_state == DisplayState.EditItems)
                 {
-                    EditMI_Click(sender, e);
+                    EditMI_ClickAsync(sender, e);
                 }
                 else
                 {
-                    ViewValueMI_Click(sender, e);
+                    ViewValueMI_ClickAsync(sender, e);
                 }
             }
             catch (Exception exception)
@@ -686,7 +688,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void SetMonitoringModeMI_Click(object sender, EventArgs e)
+        private async void SetMonitoringModeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -726,7 +728,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (itemsToModify.Count != 0)
                     {
-                        m_subscription.SetMonitoringMode(newMonitoringMode, itemsToModify);
+                        await m_subscription.SetMonitoringModeAsync(newMonitoringMode, itemsToModify);
                     }
                 }
             }
@@ -736,17 +738,17 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void Subscription_EditMI_Click(object sender, EventArgs e)
+        private async void Subscription_EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 if (new EditSubscriptionDlg().ShowDialog(m_subscription))
                 {
-                    m_subscription.Modify();
+                    await m_subscription.ModifyAsync();
 
                     if (m_subscription.PublishingEnabled != m_subscription.CurrentPublishingEnabled)
                     {
-                        m_subscription.SetPublishingMode(m_subscription.PublishingEnabled);
+                        await m_subscription.SetPublishingModeAsync(m_subscription.PublishingEnabled);
                     }
 
                     SubscriptionStateTB.Text = GetDisplayString(m_subscription);

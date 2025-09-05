@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,6 +29,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
 
 namespace AggregationServer
@@ -51,7 +53,7 @@ namespace AggregationServer
             QualifiedName browseName,
             IEnumerable<IReference> additionalReferences,
             bool internalOnly,
-            Opc.Ua.Client.Session client,
+            Opc.Ua.Client.ISession client,
             NamespaceMapper mapper,
             NodeState source,
             NodeId rootId)
@@ -83,39 +85,105 @@ namespace AggregationServer
         {
             lock (DataLock)
             {
-                IReference reference = null;
+                return NextAsync().Result;
+            }
+        }
 
-                // enumerate pre-defined references.
-                // always call first to ensure any pushed-back references are returned first.
-                reference = base.Next();
+        public async Task<IReference> NextAsync(CancellationToken ct = default)
+        {
+            IReference reference = null;
+
+            // enumerate pre-defined references.
+            // always call first to ensure any pushed-back references are returned first.
+            reference = base.Next();
+
+            if (reference != null)
+            {
+                return reference;
+            }
+
+            // don't start browsing huge number of references when only internal references are requested.
+            if (InternalOnly)
+            {
+                return null;
+            }
+
+            if (m_stage == Stage.Begin)
+            {
+                // construct request.
+                BrowseDescription nodeToBrowse = new BrowseDescription();
+
+                NodeId startId = ObjectIds.ObjectsFolder;
+
+                if (m_source != null)
+                {
+                    startId = m_mapper.ToRemoteId(m_source.NodeId);
+                }
+
+                nodeToBrowse.NodeId = startId;
+                nodeToBrowse.BrowseDirection = this.BrowseDirection;
+                nodeToBrowse.ReferenceTypeId = this.ReferenceType;
+                nodeToBrowse.IncludeSubtypes = this.IncludeSubtypes;
+                nodeToBrowse.NodeClassMask = 0;
+                nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
+
+                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                nodesToBrowse.Add(nodeToBrowse);
+
+                // start the browse operation.
+                BrowseResponse response = await m_client.BrowseAsync(
+                    null,
+                    null,
+                    0,
+                    nodesToBrowse,
+                    ct);
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                BrowseResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+
+                // these do sanity checks on the result - make sure response matched the request.
+                ClientBase.ValidateResponse(results, nodesToBrowse);
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
+
+                m_position = 0;
+                m_references = null;
+                m_continuationPoint = null;
+                m_stage = Stage.References;
+
+                // check status.
+                if (StatusCode.IsGood(results[0].StatusCode))
+                {
+                    m_references = results[0].References;
+                    m_continuationPoint = results[0].ContinuationPoint;
+
+                    reference = await NextChildAsync(ct);
+
+                    if (reference != null)
+                    {
+                        return reference;
+                    }
+                }
+            }
+
+            if (m_stage == Stage.References)
+            {
+                reference = await NextChildAsync(ct);
 
                 if (reference != null)
                 {
                     return reference;
                 }
 
-                // don't start browsing huge number of references when only internal references are requested.
-                if (InternalOnly)
-                {
-                    return null;
-                }
-
-                if (m_stage == Stage.Begin)
+                if (m_source == null && IsRequired(ReferenceTypes.HasNotifier, false))
                 {
                     // construct request.
                     BrowseDescription nodeToBrowse = new BrowseDescription();
 
-                    NodeId startId = ObjectIds.ObjectsFolder;
-
-                    if (m_source != null)
-                    {
-                        startId = m_mapper.ToRemoteId(m_source.NodeId);
-                    }
-
-                    nodeToBrowse.NodeId = startId;
-                    nodeToBrowse.BrowseDirection = this.BrowseDirection;
-                    nodeToBrowse.ReferenceTypeId = this.ReferenceType;
-                    nodeToBrowse.IncludeSubtypes = this.IncludeSubtypes;
+                    nodeToBrowse.NodeId = ObjectIds.Server;
+                    nodeToBrowse.BrowseDirection = BrowseDirection.Forward;
+                    nodeToBrowse.ReferenceTypeId = ReferenceTypes.HasNotifier;
+                    nodeToBrowse.IncludeSubtypes = true;
                     nodeToBrowse.NodeClassMask = 0;
                     nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
@@ -123,16 +191,16 @@ namespace AggregationServer
                     nodesToBrowse.Add(nodeToBrowse);
 
                     // start the browse operation.
-                    BrowseResultCollection results = null;
-                    DiagnosticInfoCollection diagnosticInfos = null;
-
-                    ResponseHeader responseHeader = m_client.Browse(
+                    BrowseResponse response = await m_client.BrowseAsync(
                         null,
                         null,
                         0,
                         nodesToBrowse,
-                        out results,
-                        out diagnosticInfos);
+                        ct);
+
+                    ResponseHeader responseHeader = response.ResponseHeader;
+                    BrowseResultCollection results = response.Results;
+                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                     // these do sanity checks on the result - make sure response matched the request.
                     ClientBase.ValidateResponse(results, nodesToBrowse);
@@ -141,94 +209,33 @@ namespace AggregationServer
                     m_position = 0;
                     m_references = null;
                     m_continuationPoint = null;
-                    m_stage = Stage.References;
+                    m_stage = Stage.Notifiers;
 
                     // check status.
                     if (StatusCode.IsGood(results[0].StatusCode))
                     {
                         m_references = results[0].References;
                         m_continuationPoint = results[0].ContinuationPoint;
-
-                        reference = NextChild();
-
-                        if (reference != null)
-                        {
-                            return reference;
-                        }
                     }
                 }
 
-                if (m_stage == Stage.References)
-                {
-                    reference = NextChild();
-
-                    if (reference != null)
-                    {
-                        return reference;
-                    }
-
-                    if (m_source == null && IsRequired(ReferenceTypes.HasNotifier, false))
-                    {
-                        // construct request.
-                        BrowseDescription nodeToBrowse = new BrowseDescription();
-
-                        nodeToBrowse.NodeId = ObjectIds.Server;
-                        nodeToBrowse.BrowseDirection = BrowseDirection.Forward;
-                        nodeToBrowse.ReferenceTypeId = ReferenceTypes.HasNotifier;
-                        nodeToBrowse.IncludeSubtypes = true;
-                        nodeToBrowse.NodeClassMask = 0;
-                        nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
-
-                        BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
-                        nodesToBrowse.Add(nodeToBrowse);
-
-                        // start the browse operation.
-                        BrowseResultCollection results = null;
-                        DiagnosticInfoCollection diagnosticInfos = null;
-
-                        ResponseHeader responseHeader = m_client.Browse(
-                            null,
-                            null,
-                            0,
-                            nodesToBrowse,
-                            out results,
-                            out diagnosticInfos);
-
-                        // these do sanity checks on the result - make sure response matched the request.
-                        ClientBase.ValidateResponse(results, nodesToBrowse);
-                        ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
-
-                        m_position = 0;
-                        m_references = null;
-                        m_continuationPoint = null;
-                        m_stage = Stage.Notifiers;
-
-                        // check status.
-                        if (StatusCode.IsGood(results[0].StatusCode))
-                        {
-                            m_references = results[0].References;
-                            m_continuationPoint = results[0].ContinuationPoint;
-                        }
-                    }
-
-                    m_stage = Stage.Notifiers;
-                }
-
-                if (m_stage == Stage.Notifiers)
-                {
-                    reference = NextChild();
-
-                    if (reference != null)
-                    {
-                        return reference;
-                    }
-
-                    m_stage = Stage.Done;
-                }
-
-                // all done.
-                return null;
+                m_stage = Stage.Notifiers;
             }
+
+            if (m_stage == Stage.Notifiers)
+            {
+                reference = await NextChildAsync(ct);
+
+                if (reference != null)
+                {
+                    return reference;
+                }
+
+                m_stage = Stage.Done;
+            }
+
+            // all done.
+            return null;
         }
         #endregion
 
@@ -236,7 +243,7 @@ namespace AggregationServer
         /// <summary>
         /// Fetches the next batch of references.
         /// </summary>
-        private bool BrowseNext()
+        private async Task<bool> BrowseNextAsync(CancellationToken ct = default)
         {
             if (m_continuationPoint != null)
             {
@@ -244,15 +251,15 @@ namespace AggregationServer
                 continuationPoints.Add(m_continuationPoint);
 
                 // start the browse operation.
-                BrowseResultCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = m_client.BrowseNext(
+                BrowseNextResponse response = await m_client.BrowseNextAsync(
                     null,
                     false,
                     continuationPoints,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                BrowseResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, continuationPoints);
@@ -278,7 +285,7 @@ namespace AggregationServer
         /// <summary>
         /// Converts a ReferenceDescription to an IReference.
         /// </summary>
-        private IReference ToReference(ReferenceDescription reference)
+        private NodeStateReference ToReference(ReferenceDescription reference)
         {
             if (reference.NodeId.IsAbsolute || reference.TypeDefinition.IsAbsolute)
             {
@@ -319,7 +326,7 @@ namespace AggregationServer
         /// <summary>
         /// Returns the next child.
         /// </summary>
-        private IReference NextChild()
+        private async Task<NodeStateReference> NextChildAsync(CancellationToken ct = default)
         {
             // check if a specific browse name is requested.
             if (!QualifiedName.IsNull(base.BrowseName))
@@ -348,7 +355,7 @@ namespace AggregationServer
                             }
                         }
                     }
-                    while (BrowseNext());
+                    while (await BrowseNextAsync(ct));
                 }
             }
 
@@ -369,7 +376,7 @@ namespace AggregationServer
                             }
                         }
                     }
-                    while (BrowseNext());
+                    while (await BrowseNextAsync(ct));
                 }
             }
 
@@ -393,7 +400,7 @@ namespace AggregationServer
         #region Private Fields
         private Stage m_stage;
         private int m_position;
-        private Opc.Ua.Client.Session m_client;
+        private Opc.Ua.Client.ISession m_client;
         private NamespaceMapper m_mapper;
         private NodeState m_source;
         private byte[] m_continuationPoint;

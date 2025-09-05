@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,7 +32,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Opc.Ua.Client.Controls
@@ -48,24 +51,24 @@ namespace Opc.Ua.Client.Controls
         public BrowseListCtrl()
         {
             InitializeComponent();
-			SetColumns(m_ColumnNames);
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
-        private Session m_session;
-       
-		// The columns to display in the control.		
-		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Type",   HorizontalAlignment.Left, null },  
-			new object[] { "Target", HorizontalAlignment.Left, null }
-		};
-		#endregion
-            
+        private ISession m_session;
+
+        // The columns to display in the control.
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Type",   HorizontalAlignment.Left, null },
+            new object[] { "Target", HorizontalAlignment.Left, null }
+        };
+        #endregion
+
         /// <summary>
         /// Initializes the control with a set of items.
         /// </summary>
-        public void Initialize(Session session, ExpandedNodeId nodeId)
+        public async Task InitializeAsync(ISession session, ExpandedNodeId nodeId, CancellationToken ct = default)
         {
             ItemsLV.Items.Clear();
             m_session = session;
@@ -75,7 +78,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            ILocalNode node = m_session.NodeCache.Find(nodeId) as ILocalNode;
+            ILocalNode node = await m_session.NodeCache.FindAsync(nodeId, ct) as ILocalNode;
 
             if (node == null)
             {
@@ -90,7 +93,7 @@ namespace Opc.Ua.Client.Controls
             {
                 AddItem(references[ii]);
             }
-            
+
             references = node.References.Find(ReferenceTypes.NonHierarchicalReferences, true, true, m_session.TypeTree);
 
             for (int ii = 0; ii < references.Count; ii++)
@@ -103,47 +106,54 @@ namespace Opc.Ua.Client.Controls
 
         #region Overridden Methods
         /// <see cref="Opc.Ua.Client.Controls.BaseListCtrl.UpdateItem(ListViewItem,object)" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-            IReference reference = item as IReference;
-
-			if (reference == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
-            
-            IReferenceType referenceType = m_session.NodeCache.Find(reference.ReferenceTypeId) as IReferenceType;
-
-            if (referenceType != null)
+            try
             {
-                if (reference.IsInverse)
+                IReference reference = item as IReference;
+
+                if (reference == null)
                 {
-			        listItem.SubItems[0].Text = Utils.Format("{0}", referenceType.InverseName);
+                    await base.UpdateItemAsync(listItem, item, ct);
+                    return;
+                }
+
+                IReferenceType referenceType = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as IReferenceType;
+
+                if (referenceType != null)
+                {
+                    if (reference.IsInverse)
+                    {
+                        listItem.SubItems[0].Text = Utils.Format("{0}", referenceType.InverseName);
+                    }
+                    else
+                    {
+                        listItem.SubItems[0].Text = Utils.Format("{0}", referenceType.DisplayName);
+                    }
                 }
                 else
                 {
-			        listItem.SubItems[0].Text = Utils.Format("{0}", referenceType.DisplayName);
+                    listItem.SubItems[0].Text = Utils.Format("{0}", reference.ReferenceTypeId);
                 }
-            }
-            else
-            {
-			    listItem.SubItems[0].Text = Utils.Format("{0}", reference.ReferenceTypeId);
-            }
-            
-            INode target = m_session.NodeCache.Find(reference.TargetId) as INode;
 
-            if (target != null)
-            {
-			    listItem.SubItems[1].Text = Utils.Format("{0}", target.DisplayName);
+                INode target = await m_session.NodeCache.FindAsync(reference.TargetId, ct) as INode;
+
+                if (target != null)
+                {
+                    listItem.SubItems[1].Text = Utils.Format("{0}", target.DisplayName);
+                }
+                else
+                {
+                    listItem.SubItems[1].Text = Utils.Format("{0}", reference.TargetId);
+                }
+
+                listItem.ImageKey = await GuiUtils.GetTargetIconAsync(m_session, NodeClass.ReferenceType, null, ct);
+                listItem.Tag = reference;
             }
-            else
+            catch (Exception exception)
             {
-			    listItem.SubItems[1].Text = Utils.Format("{0}", reference.TargetId);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
-            
-            listItem.ImageKey = GuiUtils.GetTargetIcon(m_session, NodeClass.ReferenceType, null);
-			listItem.Tag = reference;
         }
         #endregion
     }

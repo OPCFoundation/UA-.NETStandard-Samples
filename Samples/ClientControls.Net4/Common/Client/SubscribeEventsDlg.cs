@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,10 +29,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Text;
 using System.Data;
 using System.Drawing;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -79,7 +81,7 @@ namespace Opc.Ua.Client.Controls
         private DataSet m_dataset;
         private FilterDeclaration m_filter;
         private DisplayState m_state;
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private PublishStateChangedEventHandler m_PublishStatusChanged;
         #endregion
@@ -97,13 +99,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public void ChangeSession(Session session)
+        public async Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
             if (!Object.ReferenceEquals(session, m_session))
             {
                 m_session = session;
 
-                BrowseCTRL.ChangeSession(m_session);
+                await BrowseCTRL.ChangeSessionAsync(m_session, ct);
                 EventTypeCTRL.ChangeSession(m_session);
                 EventFilterCTRL.ChangeSession(m_session);
                 EventsCTRL.ChangeSession(m_session);
@@ -172,7 +174,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds items to the subscription.
         /// </summary>
-        public void AddItems(params NodeId[] itemsToMonitor)
+        public async Task AddItemsAsync(CancellationToken ct, params NodeId[] itemsToMonitor)
         {
             if (itemsToMonitor != null)
             {
@@ -196,7 +198,7 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem.Handle = row;
                     m_subscription.AddItem(monitoredItem);
 
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -205,7 +207,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the sequence forward.
         /// </summary>
-        public void Next()
+        public async Task NextAsync(CancellationToken ct = default)
         {
             if (m_state == DisplayState.ViewUpdates)
             {
@@ -214,28 +216,28 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventType)
             {
-                UpdateFilter();
+                await UpdateFilterAsync(ct);
             }
 
             SetDisplayState(++m_state);
 
             if (m_state == DisplayState.SelectEventType)
             {
-                BrowseCTRL.Initialize(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, Opc.Ua.ReferenceTypeIds.HasSubtype);
+                await BrowseCTRL.InitializeAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, ct, Opc.Ua.ReferenceTypeIds.HasSubtype);
                 BrowseCTRL.SelectNode((m_filter == null || m_filter.EventTypeId == null) ? Opc.Ua.ObjectTypeIds.BaseEventType : m_filter.EventTypeId);
-                EventTypeCTRL.ShowType(Opc.Ua.ObjectTypeIds.BaseEventType);
+                await EventTypeCTRL.ShowTypeAsync(Opc.Ua.ObjectTypeIds.BaseEventType, ct);
                 return;
             }
 
             if (m_state == DisplayState.SelectEventFields)
             {
-                EventFilterCTRL.SetFilter(m_filter);
+                await EventFilterCTRL.SetFilterAsync(m_filter, ct);
                 return;
             }
 
             if (m_state == DisplayState.ApplyChanges)
             {
-                UpdateItems();
+                await UpdateItemsAsync(ct);
                 return;
             }
 
@@ -249,7 +251,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the sequence backward.
         /// </summary>
-        public void Back()
+        public async Task BackAsync(CancellationToken ct = default)
         {
             if (m_state == DisplayState.EditItems)
             {
@@ -260,7 +262,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventFields)
             {
-                EventFilterCTRL.SetFilter(m_filter);
+                await EventFilterCTRL.SetFilterAsync(m_filter, ct);
                 return;
             }
         }
@@ -351,11 +353,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the monitored item.
         /// </summary>
-        private void UpdateRow(DataRow row, MonitoredItem monitoredItem)
+        private async Task UpdateRowAsync(DataRow row, MonitoredItem monitoredItem, CancellationToken ct = default)
         {
             row[0] = monitoredItem;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(monitoredItem.AttributeId, null)];
-            row[2] = m_session.NodeCache.GetDisplayText(monitoredItem.StartNodeId) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
+            row[2] = await m_session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId, ct) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
             row[3] = monitoredItem.MonitoringMode;
             row[4] = monitoredItem.SamplingInterval;
             row[5] = monitoredItem.DiscardOldest;
@@ -400,7 +402,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the items with the current filter.
         /// </summary>
-        private void UpdateItems()
+        private async Task UpdateItemsAsync(CancellationToken ct = default)
         {
             List<FilterDeclarationField> fields = new List<FilterDeclarationField>();
 
@@ -440,7 +442,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // apply changes.
-            m_subscription.ApplyChanges();
+            await m_subscription.ApplyChangesAsync(ct);
 
             // show results.
             for (int ii = 0; ii < m_dataset.Tables[0].Rows.Count; ii++)
@@ -454,11 +456,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the filter from the controls.
         /// </summary>
-        private void UpdateFilter()
+        private async Task UpdateFilterAsync(CancellationToken ct = default)
         {
             // get selected declarations.
             List<InstanceDeclaration> declarations = new List<InstanceDeclaration>();
-            NodeId eventTypeId = CollectInstanceDeclarations(declarations);
+            NodeId eventTypeId = await CollectInstanceDeclarationsAsync(declarations, ct);
 
             if (m_filter == null)
             {
@@ -522,7 +524,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Collects the instance declarations for the selected types.
         /// </summary>
-        private NodeId CollectInstanceDeclarations(List<InstanceDeclaration> declarations)
+        private async Task<NodeId> CollectInstanceDeclarationsAsync(List<InstanceDeclaration> declarations, CancellationToken ct = default)
         {
             List<NodeId> typeIds = new List<NodeId>();
 
@@ -532,7 +534,7 @@ namespace Opc.Ua.Client.Controls
             // merge declarations from the selected types.
             foreach (NodeId typeId in typeIds)
             {
-                List<InstanceDeclaration> declarations2 = ClientUtils.CollectInstanceDeclarationsForType(m_session, typeId);
+                List<InstanceDeclaration> declarations2 = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId, ct);
 
                 for (int ii = 0; ii < declarations2.Count; ii++)
                 {
@@ -705,11 +707,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Back();
+                await BackAsync();
             }
             catch (Exception exception)
             {
@@ -717,11 +719,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void NextBTN_Click(object sender, EventArgs e)
+        private async void NextBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Next();
+                await NextAsync();
             }
             catch (Exception exception)
             {
@@ -741,7 +743,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void SubscriptionStateTB_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        private async void SubscriptionStateTB_DropDownItemClickedAsync(object sender, ToolStripItemClickedEventArgs e)
         {
             try
             {
@@ -755,11 +757,11 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                m_subscription.Modify();
+                await m_subscription.ModifyAsync();
 
                 if (m_subscription.PublishingEnabled != m_subscription.CurrentPublishingEnabled)
                 {
-                    m_subscription.SetPublishingMode(m_subscription.PublishingEnabled);
+                    await m_subscription.SetPublishingModeAsync(m_subscription.PublishingEnabled);
                 }
 
                 SubscriptionStateTB.Text = GetDisplayString(m_subscription);
@@ -770,7 +772,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BrowseCTRL_AfterSelect(object sender, EventArgs e)
+        private async void BrowseCTRL_AfterSelectAsync(object sender, EventArgs e)
         {
             try
             {
@@ -778,11 +780,11 @@ namespace Opc.Ua.Client.Controls
 
                 if (reference == null || NodeId.IsNull(reference.NodeId) || reference.NodeId.IsAbsolute)
                 {
-                    EventTypeCTRL.ShowType(null);
+                    await EventTypeCTRL.ShowTypeAsync(null);
                     return;
                 }
 
-                EventTypeCTRL.ShowType((NodeId)reference.NodeId);
+                await EventTypeCTRL.ShowTypeAsync((NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -821,7 +823,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -848,12 +850,12 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem = new MonitoredItem(monitoredItem);
                 }
 
-                if (new EditMonitoredItemDlg().ShowDialog(m_session, monitoredItem, true))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true))
                 {
                     m_subscription.AddItem(monitoredItem);
                     DataRow row = m_dataset.Tables[0].NewRow();
                     monitoredItem.Handle = row;
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -863,7 +865,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -886,10 +888,10 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                if (new EditMonitoredItemDlg().ShowDialog(m_session, monitoredItem, true))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true))
                 {
                     DataRow row = (DataRow)monitoredItem.Handle;
-                    UpdateRow(row, monitoredItem);
+                    await UpdateRowAsync(row, monitoredItem);
                 }
             }
             catch (Exception exception)
@@ -929,7 +931,7 @@ namespace Opc.Ua.Client.Controls
             {
                 if (m_state == DisplayState.EditItems)
                 {
-                    EditMI_Click(sender, e);
+                    EditMI_ClickAsync(sender, e);
                 }
             }
             catch (Exception exception)
@@ -938,7 +940,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void SetMonitoringModeMI_Click(object sender, EventArgs e)
+        private async void SetMonitoringModeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -983,7 +985,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (itemsToModify.Count != 0)
                     {
-                        m_subscription.SetMonitoringMode(newMonitoringMode, itemsToModify);
+                        await m_subscription.SetMonitoringModeAsync(newMonitoringMode, itemsToModify);
                     }
                 }
             }

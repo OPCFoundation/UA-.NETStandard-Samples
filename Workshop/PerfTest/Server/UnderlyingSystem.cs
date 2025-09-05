@@ -178,7 +178,7 @@ namespace Quickstarts.PerfTestServer
                 lock (m_lock)
                 {
                     DateTime start = HiResClock.UtcNow;
-                    int delta = m_values.Length/2;
+                    int delta = m_values.Length / 2;
 
                     DataValue value = new DataValue();
                     value.ServerTimestamp = DateTime.UtcNow;
@@ -186,7 +186,7 @@ namespace Quickstarts.PerfTestServer
 
                     for (int ii = m_start; ii < delta + m_start && ii < m_values.Length; ii++)
                     {
-                        m_values[ii] += (ii+1);
+                        m_values[ii] += (ii + 1);
 
                         IDataChangeMonitoredItem2[] monitoredItems = m_monitoredItems[ii];
 

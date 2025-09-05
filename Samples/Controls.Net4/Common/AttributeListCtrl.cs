@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,12 +32,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -45,8 +46,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public AttributeListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -58,20 +59,20 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Field",  HorizontalAlignment.Left, null   },  
-			new object[] { "Value",  HorizontalAlignment.Left, null   }, 
-			new object[] { "Status", HorizontalAlignment.Left, "Good" }
-		};
-		#endregion
+        {
+            new object[] { "Field",  HorizontalAlignment.Left, null   },
+            new object[] { "Value",  HorizontalAlignment.Left, null   },
+            new object[] { "Status", HorizontalAlignment.Left, "Good" }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public bool ReadOnly
         {
-            get { return m_readOnly;  }
+            get { return m_readOnly; }
             set { m_readOnly = value; }
         }
 
@@ -87,81 +88,80 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, ExpandedNodeId nodeId)
+        public async Task InitializeAsync(Session session, ExpandedNodeId nodeId, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
 
             if (nodeId == null)
             {
-                return;                
+                return;
             }
-            
-            m_session = session;
-            m_nodeId  = (NodeId)nodeId;
 
-            INode node = m_session.NodeCache.Find(m_nodeId);
+            m_session = session;
+            m_nodeId = (NodeId)nodeId;
+
+            INode node = await m_session.NodeCache.FindAsync(m_nodeId, ct);
 
             if (node != null && (node.NodeClass & (NodeClass.Variable | NodeClass.Object)) != 0)
             {
-                AddReferences(ReferenceTypeIds.HasTypeDefinition, BrowseDirection.Forward);
-                AddReferences(ReferenceTypeIds.HasModellingRule,  BrowseDirection.Forward);
+                await AddReferencesAsync(ReferenceTypeIds.HasTypeDefinition, BrowseDirection.Forward, ct);
+                await AddReferencesAsync(ReferenceTypeIds.HasModellingRule, BrowseDirection.Forward, ct);
             }
 
-            AddAttributes();
-            AddProperties();
+            await AddAttributesAsync(ct);
+            await AddPropertiesAsync(ct);
 
             AdjustColumns();
         }
-		#endregion
-        
+        #endregion
+
         #region NodeField Class
         /// <summary>
         /// A field associated with a node.
         /// </summary>
-        private class NodeField
-        {            
-            public string         Name;
-            public object         Value;
-            public StatusCode     StatusCode;
+        private sealed class NodeField
+        {
+            public string Name;
+            public object Value;
+            public StatusCode StatusCode;
             public DiagnosticInfo DiagnosticInfo;
-            public ReadValueId    ValueId;
+            public ReadValueId ValueId;
         }
-		#endregion
+        #endregion
 
         #region Private Methods
         /// <summary>
         /// Adds the attributes to the control.
         /// </summary>
-        private void AddAttributes()
+        private async Task AddAttributesAsync(CancellationToken ct = default)
         {
             // build list of attributes to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 
-            foreach (uint attributeId in Attributes.GetIdentifiers())
+            foreach (uint attributeId in Attributes.Identifiers)
             {
                 ReadValueId valueId = new ReadValueId();
 
-                valueId.NodeId       = m_nodeId;
-                valueId.AttributeId  = attributeId;
-                valueId.IndexRange   = null;
+                valueId.NodeId = m_nodeId;
+                valueId.AttributeId = attributeId;
+                valueId.IndexRange = null;
                 valueId.DataEncoding = null;
 
                 nodesToRead.Add(valueId);
             }
 
             // read attributes.
-            DataValueCollection values;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out values,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection values = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -177,10 +177,10 @@ namespace Opc.Ua.Sample.Controls
 
                 NodeField field = new NodeField();
 
-                field.ValueId        = nodesToRead[ii];
-                field.Name           = Attributes.GetBrowseName(nodesToRead[ii].AttributeId);
-                field.Value          = values[ii].Value;
-                field.StatusCode     = values[ii].StatusCode;
+                field.ValueId = nodesToRead[ii];
+                field.Name = Attributes.GetBrowseName(nodesToRead[ii].AttributeId);
+                field.Value = values[ii].Value;
+                field.StatusCode = values[ii].StatusCode;
 
                 if (diagnosticInfos != null && diagnosticInfos.Count > ii)
                 {
@@ -190,32 +190,32 @@ namespace Opc.Ua.Sample.Controls
                 AddItem(field, "SimpleItem", -1);
             }
         }
-        
+
         /// <summary>
         /// Adds the properties to the control.
         /// </summary>
-        private void AddProperties()
+        private async Task AddPropertiesAsync(CancellationToken ct = default)
         {
             // build list of properties to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 
             Browser browser = new Browser(m_session);
-            
-            browser.BrowseDirection   = BrowseDirection.Forward;
-            browser.ReferenceTypeId   = ReferenceTypeIds.HasProperty;
-            browser.IncludeSubtypes   = true;
-            browser.NodeClassMask     = (int)NodeClass.Variable;
+
+            browser.BrowseDirection = BrowseDirection.Forward;
+            browser.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+            browser.IncludeSubtypes = true;
+            browser.NodeClassMask = (int)NodeClass.Variable;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = browser.Browse(m_nodeId);
+            ReferenceDescriptionCollection references = await browser.BrowseAsync(m_nodeId, ct);
 
             foreach (ReferenceDescription reference in references)
             {
                 ReadValueId valueId = new ReadValueId();
 
-                valueId.NodeId       = (NodeId)reference.NodeId;
-                valueId.AttributeId  = Attributes.Value;
-                valueId.IndexRange   = null;
+                valueId.NodeId = (NodeId)reference.NodeId;
+                valueId.AttributeId = Attributes.Value;
+                valueId.IndexRange = null;
                 valueId.DataEncoding = null;
 
                 nodesToRead.Add(valueId);
@@ -228,28 +228,27 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // read values.
-            DataValueCollection values;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out values,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection values = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, nodesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);           
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             // update control.
             for (int ii = 0; ii < nodesToRead.Count; ii++)
             {
                 NodeField field = new NodeField();
 
-                field.ValueId    = nodesToRead[ii];
-                field.Name       = references[ii].ToString();
-                field.Value      = values[ii].Value;
+                field.ValueId = nodesToRead[ii];
+                field.Name = references[ii].ToString();
+                field.Value = values[ii].Value;
                 field.StatusCode = values[ii].StatusCode;
 
                 if (diagnosticInfos != null && diagnosticInfos.Count > ii)
@@ -264,34 +263,34 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds the targets of references to the control.
         /// </summary>
-        private void AddReferences(NodeId referenceTypeId, BrowseDirection browseDirection)
+        private async Task AddReferencesAsync(NodeId referenceTypeId, BrowseDirection browseDirection, CancellationToken ct = default)
         {
             // fetch the attributes for the reference type.
-            INode referenceType = m_session.NodeCache.Find(referenceTypeId);
+            INode referenceType = await m_session.NodeCache.FindAsync(referenceTypeId, ct);
 
             if (referenceType == null)
             {
                 return;
             }
-            
+
             // browse for the references.
             Browser browser = new Browser(m_session);
-            
-            browser.BrowseDirection   = browseDirection;
-            browser.ReferenceTypeId   = referenceTypeId;
-            browser.IncludeSubtypes   = true;
-            browser.NodeClassMask     = 0;
+
+            browser.BrowseDirection = browseDirection;
+            browser.ReferenceTypeId = referenceTypeId;
+            browser.IncludeSubtypes = true;
+            browser.NodeClassMask = 0;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = browser.Browse(m_nodeId);
+            ReferenceDescriptionCollection references = await browser.BrowseAsync(m_nodeId, ct);
 
             // add results to list.
             foreach (ReferenceDescription reference in references)
             {
                 NodeField field = new NodeField();
 
-                field.Name       = referenceType.ToString();     
-                field.Value      = reference.ToString();
+                field.Name = referenceType.ToString();
+                field.Value = reference.ToString();
                 field.StatusCode = StatusCodes.Good;
 
                 AddItem(field, "ReferenceType", -1);
@@ -301,7 +300,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Formats the value of an attribute.
         /// </summary>
-        private string FormatAttributeValue(uint attributeId, object value)
+        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value, CancellationToken ct = default)
         {
             switch (attributeId)
             {
@@ -314,14 +313,14 @@ namespace Opc.Ua.Sample.Controls
 
                     return "(null)";
                 }
-                    
+
                 case Attributes.DataType:
                 {
                     NodeId datatypeId = value as NodeId;
 
                     if (datatypeId != null)
                     {
-                        INode datatype = m_session.NodeCache.Find(datatypeId);
+                        INode datatype = await m_session.NodeCache.FindAsync(datatypeId, ct);
 
                         if (datatype != null)
                         {
@@ -332,10 +331,10 @@ namespace Opc.Ua.Sample.Controls
                             return String.Format("{0}", datatypeId);
                         }
                     }
-                
+
                     return String.Format("{0}", value);
                 }
-                      
+
                 case Attributes.ValueRank:
                 {
                     int? valueRank = value as int?;
@@ -344,21 +343,21 @@ namespace Opc.Ua.Sample.Controls
                     {
                         switch (valueRank.Value)
                         {
-                            case ValueRanks.Scalar:              return "Scalar";
-                            case ValueRanks.OneDimension:        return "OneDimension";
+                            case ValueRanks.Scalar: return "Scalar";
+                            case ValueRanks.OneDimension: return "OneDimension";
                             case ValueRanks.OneOrMoreDimensions: return "OneOrMoreDimensions";
-                            case ValueRanks.Any:                 return "Any";
+                            case ValueRanks.Any: return "Any";
 
                             default:
                             {
                                 return String.Format("{0}", valueRank.Value);
                             }
-                        }                            
+                        }
                     }
 
                     return String.Format("{0}", value);
                 }
-                      
+
                 case Attributes.MinimumSamplingInterval:
                 {
                     double? minimumSamplingInterval = value as double?;
@@ -375,7 +374,7 @@ namespace Opc.Ua.Sample.Controls
                             return "Continuous";
                         }
 
-                       return String.Format("{0}", minimumSamplingInterval.Value);
+                        return String.Format("{0}", minimumSamplingInterval.Value);
                     }
 
                     return String.Format("{0}", value);
@@ -392,37 +391,37 @@ namespace Opc.Ua.Sample.Controls
                     {
                         bits.Append("Readable");
                     }
-                    
+
                     if ((accessLevel & AccessLevels.CurrentWrite) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("Writeable");
                     }
-                    
+
                     if ((accessLevel & AccessLevels.HistoryRead) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("History");
                     }
-                    
+
                     if ((accessLevel & AccessLevels.HistoryWrite) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("History Update");
                     }
-                    
+
                     if (bits.Length == 0)
                     {
                         bits.Append("No Access");
@@ -430,7 +429,7 @@ namespace Opc.Ua.Sample.Controls
 
                     return String.Format("{0}", bits);
                 }
-               
+
                 case Attributes.EventNotifier:
                 {
                     byte notifier = Convert.ToByte(value);
@@ -441,27 +440,27 @@ namespace Opc.Ua.Sample.Controls
                     {
                         bits.Append("Subscribe");
                     }
-                    
+
                     if ((notifier & EventNotifiers.HistoryRead) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("History");
                     }
-                    
+
                     if ((notifier & EventNotifiers.HistoryWrite) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("History Update");
                     }
-                    
+
                     if (bits.Length == 0)
                     {
                         bits.Append("No Access");
@@ -476,8 +475,8 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
         }
-		#endregion
-        
+        #endregion
+
         #region Overridden Methods
         /// <see cref="BaseListCtrl.GetDataToDrag" />
         protected override object GetDataToDrag()
@@ -501,42 +500,42 @@ namespace Opc.Ua.Sample.Controls
         protected override void PickItems()
         {
             base.PickItems();
-            EditMI_Click(this, null);
+            EditMI_ClickAsync(this, null);
         }
 
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
+        {
             RefreshMI.Enabled = true;
-                        
+
             NodeField[] items = GetSelectedItems(typeof(NodeField)) as NodeField[];
 
             if (items != null && items.Length > 0)
             {
                 ViewMI.Enabled = items.Length == 1;
             }
-		}
-        
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
-        {
-			NodeField field = item as NodeField;
+        }
 
-			if (field == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
+        {
+            NodeField field = item as NodeField;
+
+            if (field == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
             Array array = field.Value as Array;
 
-			listItem.SubItems[0].Text = String.Format("{0}", field.Name);
+            listItem.SubItems[0].Text = String.Format("{0}", field.Name);
 
             if (array == null)
             {
                 if (field.ValueId != null)
                 {
-                    listItem.SubItems[1].Text = FormatAttributeValue(field.ValueId.AttributeId, field.Value);
+                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(field.ValueId.AttributeId, field.Value, ct);
                 }
                 else
                 {
@@ -550,18 +549,18 @@ namespace Opc.Ua.Sample.Controls
 
             listItem.SubItems[2].Text = String.Format("{0}", field.StatusCode);
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
         #endregion
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 NodeField[] items = GetSelectedItems(typeof(NodeField)) as NodeField[];
 
                 if (items != null && items.Length == 1)
-                {                  
+                {
                     object value = GuiUtils.EditValue(m_session, items[0].Value);
 
                     if (!m_readOnly)
@@ -569,14 +568,14 @@ namespace Opc.Ua.Sample.Controls
                         if (value != null)
                         {
                             items[0].Value = value;
-                            UpdateItem(ItemsLV.SelectedItems[0], items[0]);
+                            await UpdateItemAsync(ItemsLV.SelectedItems[0], items[0]);
                         }
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

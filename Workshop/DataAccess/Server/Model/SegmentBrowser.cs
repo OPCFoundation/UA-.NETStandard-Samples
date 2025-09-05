@@ -81,7 +81,7 @@ namespace Quickstarts.DataAccessServer
             m_stage = Stage.Begin;
         }
         #endregion
-        
+
         #region Overridden Methods
         /// <summary>
         /// Returns the next reference.
@@ -116,7 +116,7 @@ namespace Quickstarts.DataAccessServer
                 {
                     return null;
                 }
-                
+
                 // enumerate segments.
                 if (m_stage == Stage.Segments)
                 {
@@ -134,7 +134,7 @@ namespace Quickstarts.DataAccessServer
                     m_stage = Stage.Blocks;
                     m_position = 0;
                 }
-                
+
                 // enumerate blocks.
                 if (m_stage == Stage.Blocks)
                 {

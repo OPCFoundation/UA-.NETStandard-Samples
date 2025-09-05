@@ -81,14 +81,14 @@ namespace Opc.Ua.Sample.Controls
             this.EditMI.Name = "EditMI";
             this.EditMI.Size = new System.Drawing.Size(152, 22);
             this.EditMI.Text = "Edit...";
-            this.EditMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.EditMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // ClearValueMI
             // 
             this.ClearValueMI.Name = "ClearValueMI";
             this.ClearValueMI.Size = new System.Drawing.Size(152, 22);
             this.ClearValueMI.Text = "Clear Value";
-            this.ClearValueMI.Click += new System.EventHandler(this.ClearValueMI_Click);
+            this.ClearValueMI.Click += new System.EventHandler(this.ClearValueMI_ClickAsync);
             // 
             // ArgumentListCtrl
             // 

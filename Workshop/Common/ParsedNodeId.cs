@@ -129,7 +129,7 @@ namespace Quickstarts
             // extract any component path.
             StringBuilder buffer = new StringBuilder();
 
-            int index = start+1;
+            int index = start + 1;
             int end = identifier.Length;
 
             bool escaped = false;

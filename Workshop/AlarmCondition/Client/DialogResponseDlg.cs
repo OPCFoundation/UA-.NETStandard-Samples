@@ -48,7 +48,7 @@ namespace Quickstarts.AlarmConditionClient
             InitializeComponent();
         }
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Prompts the user to enter a comment.
@@ -58,11 +58,11 @@ namespace Quickstarts.AlarmConditionClient
             // set the prompt.
             PromptLB.Text = Utils.Format("{0}", BaseVariableState.GetValue(dialog.Prompt));
 
-            Dictionary<DialogResult,int> resultMapping = new Dictionary<DialogResult, int>();
+            Dictionary<DialogResult, int> resultMapping = new Dictionary<DialogResult, int>();
 
             // configure the buttons.
             LocalizedText[] options = BaseVariableState.GetValue(dialog.ResponseOptionSet);
-            
+
             switch (options.Length)
             {
                 case 1:
@@ -74,7 +74,7 @@ namespace Quickstarts.AlarmConditionClient
                     ButtonsPN.ColumnStyles[2].Width = 0;
                     ButtonsPN.ColumnStyles[3].Width = 0;
                     ButtonsPN.ColumnStyles[4].Width = 50;
-                    
+
                     resultMapping.Add(DialogResult.OK, 0);
                     break;
                 }

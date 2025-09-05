@@ -57,7 +57,7 @@ namespace Opc.Ua.Client.Controls
             StructureTypeBTN.ReferenceTypeIds = new NodeId[] { Opc.Ua.ReferenceTypeIds.HasSubtype };
         }
         #endregion
-        
+
         #region Private Fields
         private SetTypeResult m_result;
         private TypeInfo m_typeInfo;
@@ -106,7 +106,7 @@ namespace Opc.Ua.Client.Controls
             ArrayDimensionsTB.Visible = dimensions != null;
 
             ErrorHandlingCB.SelectedIndex = 0;
-                        
+
             StringBuilder builder = new StringBuilder();
 
             // display the current dimensions.
@@ -134,7 +134,7 @@ namespace Opc.Ua.Client.Controls
             return m_result;
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
 
@@ -177,7 +177,7 @@ namespace Opc.Ua.Client.Controls
 
                     dimensions.Add(dimension);
                 }
-                
+
                 // save the result.
                 int valueRank = (dimensions.Count < 1) ? ValueRanks.Scalar : dimensions.Count;
 

@@ -210,7 +210,7 @@ namespace Quickstarts.PerfTestClient
             this.StopBTN.TabIndex = 28;
             this.StopBTN.Text = "Stop";
             this.StopBTN.UseVisualStyleBackColor = true;
-            this.StopBTN.Click += new System.EventHandler(this.StopBTN_Click);
+            this.StopBTN.Click += new System.EventHandler(this.StopBTN_ClickAsync);
             // 
             // TotalItemUpdateRateLB
             // 
@@ -381,7 +381,7 @@ namespace Quickstarts.PerfTestClient
             this.ConnectServerCTRL.TabIndex = 4;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
             this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
             // 

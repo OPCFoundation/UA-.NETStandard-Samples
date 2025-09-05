@@ -32,7 +32,7 @@ using System.Collections.Generic;
 using Opc.Ua;
 
 namespace Quickstarts.AlarmConditionServer
-{    
+{
     /// <summary>
     /// Maps an alarm source to a UA object node.
     /// </summary>
@@ -45,8 +45,8 @@ namespace Quickstarts.AlarmConditionServer
         public SourceState(
             QuickstartNodeManager nodeManager,
             NodeId nodeId,
-            string sourcePath) 
-        : 
+            string sourcePath)
+        :
             base(null)
         {
             Initialize(nodeManager.SystemContext);
@@ -56,7 +56,7 @@ namespace Quickstarts.AlarmConditionServer
 
             // create the source with the underlying system.
             m_source = ((UnderlyingSystem)nodeManager.SystemContext.SystemHandle).CreateSource(sourcePath, OnAlarmChanged);
-            
+
             // initialize the area with the fixed metadata.
             this.SymbolicName = m_source.Name;
             this.NodeId = nodeId;
@@ -74,7 +74,7 @@ namespace Quickstarts.AlarmConditionServer
             m_alarms = new Dictionary<string, AlarmConditionState>();
             m_events = new Dictionary<string, AlarmConditionState>();
             m_branches = new Dictionary<NodeId, AlarmConditionState>();
-            
+
             // request an updated for all alarms.
             m_source.Refresh();
         }
@@ -163,7 +163,7 @@ namespace Quickstarts.AlarmConditionServer
                 if (alarm.RecordNumber != 0)
                 {
                     NodeId branchId = new NodeId(alarm.RecordNumber, this.NodeId.NamespaceIndex);
-                    
+
                     // find the alarm branch.
                     AlarmConditionState branch = null;
 
@@ -198,7 +198,7 @@ namespace Quickstarts.AlarmConditionServer
                 ReportChanges(node);
             }
         }
-        
+
         /// <summary>
         /// Creates a new dialog condition
         /// </summary>
@@ -315,7 +315,7 @@ namespace Quickstarts.AlarmConditionServer
 
                     break;
                 }
-                    
+
                 case "TripAlarm":
                 {
                     node = new TripAlarmState(this);
@@ -391,7 +391,7 @@ namespace Quickstarts.AlarmConditionServer
             node.Time.Value = DateTime.UtcNow;
             node.ReceiveTime.Value = node.Time.Value;
             node.BranchId.Value = branchId;
-            
+
             // set up method handlers.
             node.OnEnableDisable = OnEnableDisableAlarm;
             node.OnAcknowledge = OnAcknowledge;
@@ -426,7 +426,7 @@ namespace Quickstarts.AlarmConditionServer
 
             // save the event for later lookup.
             m_events[Utils.ToHexString(node.EventId.Value)] = node;
-            
+
             // determine the retain state.
             node.Retain.Value = true;
 
@@ -510,7 +510,7 @@ namespace Quickstarts.AlarmConditionServer
                 node.Retain.Value = false;
             }
         }
-        
+
         /// <summary>
         /// Called when the alarm is enabled or disabled.
         /// </summary>
@@ -738,9 +738,9 @@ namespace Quickstarts.AlarmConditionServer
         #region Private Fields
         private QuickstartNodeManager m_nodeManager;
         private UnderlyingSystemSource m_source;
-        private Dictionary<string,AlarmConditionState> m_alarms;
-        private Dictionary<string,AlarmConditionState> m_events;
-        private Dictionary<NodeId,AlarmConditionState> m_branches;
+        private Dictionary<string, AlarmConditionState> m_alarms;
+        private Dictionary<string, AlarmConditionState> m_events;
+        private Dictionary<NodeId, AlarmConditionState> m_branches;
         private DialogConditionState m_dialog;
         #endregion
     }

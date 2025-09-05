@@ -128,7 +128,7 @@ namespace Opc.Ua.Sample.Controls
             this.TypeNavigatorCTRL.Name = "TypeNavigatorCTRL";
             this.TypeNavigatorCTRL.Size = new System.Drawing.Size(788, 24);
             this.TypeNavigatorCTRL.TabIndex = 1;
-            this.TypeNavigatorCTRL.TypeSelected += new Opc.Ua.Sample.TypeNavigatorEventHandler(this.TypeNavigatorCTRL_TypeSelected);
+            this.TypeNavigatorCTRL.TypeSelected += new Opc.Ua.Sample.TypeNavigatorEventHandler(this.TypeNavigatorCTRL_TypeSelectedAsync);
             // 
             // BrowseTypesDlg
             // 

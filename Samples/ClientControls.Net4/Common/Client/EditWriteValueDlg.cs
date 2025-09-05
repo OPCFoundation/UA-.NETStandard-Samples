@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,6 +33,8 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -51,13 +53,13 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
 
             // add the attributes in numerical order.
-            foreach (uint attributeId in Attributes.GetIdentifiers())
+            foreach (uint attributeId in Attributes.Identifiers)
             {
                 AttributeCB.Items.Add(Attributes.GetBrowseName(attributeId));
             }
         }
         #endregion
-      
+
         #region Private Fields
         #endregion
 
@@ -65,13 +67,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the write request parameters for the set of nodes provided.
         /// </summary>
-        public WriteValue ShowDialog(Session session, WriteValue nodeToWrite)
+        public async Task<WriteValue> ShowDialogAsync(ISession session, WriteValue nodeToWrite, CancellationToken ct = default)
         {
             NodeBTN.Session = session;
             NodeBTN.SelectedReference = null;
 
             // fill in the control.
-            NodeBTN.SelectedNode = nodeToWrite.NodeId;
+            await NodeBTN.SetSelectedNodeIdAsync(nodeToWrite.NodeId, ct);
             AttributeCB.SelectedIndex = (int)nodeToWrite.AttributeId - 1;
             IndexRangeTB.Text = nodeToWrite.IndexRange;
             ValueBTN.Value = nodeToWrite.Value.WrappedValue;
@@ -121,7 +123,7 @@ namespace Opc.Ua.Client.Controls
             {
                 result.Value.ServerTimestamp = (DateTime)TypeInfo.Cast(ServerTimestampTB.Text, BuiltInType.DateTime);
             }
-            
+
             if (NumericRange.Empty != result.ParsedIndexRange)
             {
                 result.IndexRange = result.ParsedIndexRange.ToString();
@@ -134,7 +136,7 @@ namespace Opc.Ua.Client.Controls
             return result;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

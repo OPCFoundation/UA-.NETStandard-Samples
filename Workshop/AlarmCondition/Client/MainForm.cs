@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -37,6 +37,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Quickstarts.AlarmConditionClient
 {
@@ -80,7 +81,7 @@ namespace Quickstarts.AlarmConditionClient
             m_filter.EventTypes = new NodeId[] { ObjectTypeIds.ConditionType };
 
             // declate callback.
-            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
 
             // initialize controls.
             Conditions_Severity_AllMI.Checked = true;
@@ -99,7 +100,7 @@ namespace Quickstarts.AlarmConditionClient
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private FilterDefinition m_filter;
@@ -120,7 +121,7 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.ConnectAsync();
             }
             catch (Exception exception)
             {
@@ -161,7 +162,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -197,11 +198,12 @@ namespace Quickstarts.AlarmConditionClient
                 m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
 
                 m_session.AddSubscription(m_subscription);
-                m_subscription.Create();
+                await m_subscription.CreateAsync();
 
                 // must specify the fields that the form is interested in.
-                m_filter.SelectClauses = m_filter.ConstructSelectClauses(
+                m_filter.SelectClauses = await m_filter.ConstructSelectClausesAsync(
                     m_session,
+                    default,
                     NodeId.Parse("ns=2;s=4:2"),
                     NodeId.Parse("ns=2;s=4:1"),
                     ObjectTypeIds.DialogConditionType,
@@ -215,10 +217,10 @@ namespace Quickstarts.AlarmConditionClient
                 m_monitoredItem.Notification += m_MonitoredItem_Notification;
 
                 m_subscription.AddItem(m_monitoredItem);
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync();
 
                 // send an initial refresh.
-                Conditions_RefreshMI_Click(sender, e);
+                Conditions_RefreshMI_ClickAsync(sender, e);
 
                 ConditionsMI.Enabled = true;
                 ViewMI.Enabled = true;
@@ -248,7 +250,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -277,7 +279,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // send a refresh.
-                m_subscription.ConditionRefresh();
+                await m_subscription.ConditionRefreshAsync();
 
                 ConditionsMI.Enabled = true;
                 ViewMI.Enabled = true;
@@ -301,11 +303,11 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// Updates the filter.
         /// </summary>
-        private void UpdateFilter()
+        private async Task UpdateFilterAsync(CancellationToken ct = default)
         {
             if (m_subscription != null)
             {
-                // changing the filter changes the fields requested. this makes it 
+                // changing the filter changes the fields requested. this makes it
                 // impossible to process notifications sent before the change.
                 // to avoid this problem we create a new item and remove the old one.
                 MonitoredItem monitoredItem = m_filter.CreateMonitoredItem(m_session);
@@ -315,14 +317,14 @@ namespace Quickstarts.AlarmConditionClient
 
                 m_subscription.AddItem(monitoredItem);
                 m_subscription.RemoveItem(m_monitoredItem);
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync(ct);
 
                 // replace monitored item.
                 m_monitoredItem.Notification -= m_MonitoredItem_Notification;
                 m_monitoredItem = monitoredItem;
 
                 // send a refresh since previously filtered conditions may be now available.
-                Conditions_RefreshMI_Click(this, null);
+                Conditions_RefreshMI_ClickAsync(this, null);
             }
         }
 
@@ -330,22 +332,22 @@ namespace Quickstarts.AlarmConditionClient
         /// Enables or disables the selected conditions.
         /// </summary>
         /// <param name="enable">if set to <c>true</c> the conditions are enabled.</param>
-        private void EnableDisableCondition(bool enable)
+        private async Task EnableDisableConditionAsync(bool enable, CancellationToken ct = default)
         {
             if (enable)
             {
-                CallMethod(MethodIds.ConditionType_Enable, null);
+                await CallMethodAsync(MethodIds.ConditionType_Enable, null, ct);
             }
             else
             {
-                CallMethod(MethodIds.ConditionType_Disable, null);
+                await CallMethodAsync(MethodIds.ConditionType_Disable, null, ct);
             }
         }
 
         /// <summary>
         /// Adds a comment to the selected conditions.
         /// </summary>
-        private void AddComment()
+        private async Task AddCommentAsync(CancellationToken ct = default)
         {
             string comment = new AddCommentDlg().ShowDialog(String.Empty);
 
@@ -354,13 +356,13 @@ namespace Quickstarts.AlarmConditionClient
                 return;
             }
 
-            CallMethod(MethodIds.ConditionType_AddComment, comment);
+            await CallMethodAsync(MethodIds.ConditionType_AddComment, comment, ct);
         }
 
         /// <summary>
         /// Acknowledges the selected conditions.
         /// </summary>
-        private void Acknowledge()
+        private async Task AcknowledgeAsync(CancellationToken ct = default)
         {
             string comment = new AddCommentDlg().ShowDialog(String.Empty);
 
@@ -369,13 +371,13 @@ namespace Quickstarts.AlarmConditionClient
                 return;
             }
 
-            CallMethod(MethodIds.AcknowledgeableConditionType_Acknowledge, comment);
+            await CallMethodAsync(MethodIds.AcknowledgeableConditionType_Acknowledge, comment, ct);
         }
 
         /// <summary>
         /// Confirms the selected conditions.
         /// </summary>
-        private void Confirm()
+        private async Task ConfirmAsync(CancellationToken ct = default)
         {
             string comment = new AddCommentDlg().ShowDialog(String.Empty);
 
@@ -384,13 +386,13 @@ namespace Quickstarts.AlarmConditionClient
                 return;
             }
 
-            CallMethod(MethodIds.AcknowledgeableConditionType_Confirm, comment);
+            await CallMethodAsync(MethodIds.AcknowledgeableConditionType_Confirm, comment, ct);
         }
 
         /// <summary>
         /// Confirms the selected conditions.
         /// </summary>
-        private void Shelve(bool shelving, bool oneShot, double shelvingTime)
+        private async Task ShelveAsync(bool shelving, bool oneShot, double shelvingTime, CancellationToken ct = default)
         {
             // build list of methods to call.
             CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
@@ -439,14 +441,12 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // call the methods.
-            CallMethodResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.Call(
+            CallResponse response = await m_session.CallAsync(
                 null,
                 methodsToCall,
-                out results,
-                out diagnosticInfos);
+                ct);
+            CallMethodResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -460,11 +460,11 @@ namespace Quickstarts.AlarmConditionClient
                 }
             }
         }
-        
+
         /// <summary>
         /// Responds to the dialog.
         /// </summary>
-        private void Respond(int selectedResponse)
+        private async Task RespondAsync(int selectedResponse, CancellationToken ct = default)
         {
             // build list of dialogs to respond to (caller should always make sure that only one is selected).
             CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
@@ -494,14 +494,13 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // call the methods.
-            CallMethodResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.Call(
+            CallResponse response = await m_session.CallAsync(
                 null,
                 methodsToCall,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            CallMethodResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -521,7 +520,8 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="methodId">The NodeId for the method to call.</param>
         /// <param name="comment">The comment to pass as an argument.</param>
-        private void CallMethod(NodeId methodId, string comment)
+        /// <param name="ct">The token to cancel the request</param>
+        private async Task CallMethodAsync(NodeId methodId, string comment, CancellationToken ct = default)
         {
             // build list of methods to call.
             CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
@@ -551,14 +551,13 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // call the methods.
-            CallMethodResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.Call(
+            CallResponse response = await m_session.CallAsync(
                 null,
                 methodsToCall,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            CallMethodResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -576,13 +575,13 @@ namespace Quickstarts.AlarmConditionClient
 
         #region Event Handlers
         /// <summary>
-        /// Updates the display with a new value for a monitored variable. 
+        /// Updates the display with a new value for a monitored variable.
         /// </summary>
-        private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_Notification), monitoredItem, e);
+                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync), monitoredItem, e);
                 return;
             }
 
@@ -603,7 +602,7 @@ namespace Quickstarts.AlarmConditionClient
                 {
                     return;
                 }
-                
+
                 // check for refresh start.
                 if (eventTypeId == ObjectTypeIds.RefreshStartEventType)
                 {
@@ -616,11 +615,11 @@ namespace Quickstarts.AlarmConditionClient
                 {
                     return;
                 }
-                
+
                 // construct the condition object.
-                ConditionState condition = FormUtils.ConstructEvent(
-                    m_session, 
-                    monitoredItem, 
+                ConditionState condition = await FormUtils.ConstructEventAsync(
+                    m_session,
+                    monitoredItem,
                     notification,
                     m_eventTypeMappings) as ConditionState;
 
@@ -636,7 +635,7 @@ namespace Quickstarts.AlarmConditionClient
                 {
                     ConditionState current = (ConditionState)ConditionsLV.Items[ii].Tag;
 
-                    // the combination of a condition and branch id uniquely identify an item in the display. 
+                    // the combination of a condition and branch id uniquely identify an item in the display.
                     if (current.NodeId == condition.NodeId && BaseVariableState.GetValue(current.BranchId) == BaseVariableState.GetValue(condition.BranchId))
                     {
                         // match found but watch out for out of order events (async processing can cause this to happen).
@@ -649,7 +648,7 @@ namespace Quickstarts.AlarmConditionClient
                         break;
                     }
                 }
-                
+
                 // create a new entry.
                 if (item == null)
                 {
@@ -668,7 +667,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // look up the condition type metadata in the local cache.
-                INode type = m_session.NodeCache.Find(condition.TypeDefinitionId);
+                INode type = await m_session.NodeCache.FindAsync(condition.TypeDefinitionId);
 
                 // Source
                 if (condition.SourceName != null)
@@ -796,7 +795,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_RefreshMI_Click(object sender, EventArgs e)
+        private async void Conditions_RefreshMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -805,18 +804,17 @@ namespace Quickstarts.AlarmConditionClient
                 request.ObjectId = ObjectTypeIds.ConditionType;
                 request.MethodId = MethodIds.ConditionType_ConditionRefresh;
                 request.InputArguments.Add(new Variant(m_subscription.Id));
-                
+
                 CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
                 methodsToCall.Add(request);
 
-                CallMethodResultCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                m_session.Call(
+                CallResponse response = await m_session.CallAsync(
                     null,
                     methodsToCall,
-                    out results,
-                    out diagnosticInfos);
+                    default);
+
+                CallMethodResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, methodsToCall);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -837,11 +835,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_EnableMI_Click(object sender, EventArgs e)
+        private async void Conditions_EnableMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                EnableDisableCondition(true);
+                await EnableDisableConditionAsync(true);
             }
             catch (Exception exception)
             {
@@ -854,11 +852,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_DisableMI_Click(object sender, EventArgs e)
+        private async void Conditions_DisableMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                EnableDisableCondition(false);
+                await EnableDisableConditionAsync(false);
             }
             catch (Exception exception)
             {
@@ -919,11 +917,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_AddCommentMI_Click(object sender, EventArgs e)
+        private async void Conditions_AddCommentMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                AddComment();
+                await AddCommentAsync();
             }
             catch (Exception exception)
             {
@@ -936,11 +934,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_AcknowledgeMI_Click(object sender, EventArgs e)
+        private async void Conditions_AcknowledgeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Acknowledge();
+                await AcknowledgeAsync();
             }
             catch (Exception exception)
             {
@@ -953,11 +951,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_ConfirmMI_Click(object sender, EventArgs e)
+        private async void Conditions_ConfirmMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Confirm();
+                await ConfirmAsync();
             }
             catch (Exception exception)
             {
@@ -970,11 +968,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_UnshelveMI_Click(object sender, EventArgs e)
+        private async void Conditions_UnshelveMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Shelve(false, false, 0);
+                await ShelveAsync(false, false, 0);
             }
             catch (Exception exception)
             {
@@ -987,11 +985,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_ManualShelveMI_Click(object sender, EventArgs e)
+        private async void Conditions_ManualShelveMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Shelve(true, false, 0);
+                await ShelveAsync(true, false, 0);
             }
             catch (Exception exception)
             {
@@ -1004,11 +1002,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_OneShotShelveMI_Click(object sender, EventArgs e)
+        private async void Conditions_OneShotShelveMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Shelve(true, true, 0);
+                await ShelveAsync(true, true, 0);
             }
             catch (Exception exception)
             {
@@ -1021,11 +1019,11 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_TimedShelveMI_Click(object sender, EventArgs e)
+        private async void Conditions_TimedShelveMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Shelve(true, false, 30000);
+                await ShelveAsync(true, false, 30000);
             }
             catch (Exception exception)
             {
@@ -1061,7 +1059,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_SeverityMI_Click(object sender, EventArgs e)
+        private async void Conditions_SeverityMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1072,7 +1070,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 m_filter.Severity = (EventSeverity)((ToolStripMenuItem)sender).Tag;
 
-                UpdateFilter();
+                await UpdateFilterAsync();
             }
             catch (Exception exception)
             {
@@ -1085,7 +1083,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_TypeMI_Click(object sender, EventArgs e)
+        private async void Conditions_TypeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1125,7 +1123,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 m_filter.EventTypes = selectedTypes;
 
-                UpdateFilter();
+                await UpdateFilterAsync();
             }
             catch (Exception exception)
             {
@@ -1138,7 +1136,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_SetAreaFilterMI_Click(object sender, EventArgs e)
+        private async void Conditions_SetAreaFilterMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1151,7 +1149,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 m_filter.AreaId = areaId;
 
-                UpdateFilter();
+                await UpdateFilterAsync();
             }
             catch (Exception exception)
             {
@@ -1164,13 +1162,15 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void View_AuditEventsMI_Click(object sender, EventArgs e)
+        private async void View_AuditEventsMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 if (m_auditEventForm == null)
                 {
-                    m_auditEventForm = new AuditEventForm(m_session, m_subscription);
+                    m_auditEventForm = new AuditEventForm();
+                    await m_auditEventForm.InitializeAsync(m_session, m_subscription);
+
                     m_auditEventForm.FormClosing += new FormClosingEventHandler(AuditEventForm_FormClosing);
                 }
 
@@ -1201,7 +1201,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Conditions_RespondMI_Click(object sender, EventArgs e)
+        private async void Conditions_RespondMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1221,7 +1221,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 if (selectedResponse != -1)
                 {
-                    Respond(selectedResponse);
+                    await RespondAsync(selectedResponse);
                 }
             }
             catch (Exception exception)
@@ -1239,7 +1239,7 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                System.Diagnostics.Process.Start( Path.GetDirectoryName(Application.ExecutablePath) + "\\WebHelp\\acclientoverview.htm");
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + "\\WebHelp\\acclientoverview.htm");
             }
             catch (Exception ex)
             {

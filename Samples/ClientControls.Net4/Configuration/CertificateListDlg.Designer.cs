@@ -162,7 +162,7 @@ namespace Opc.Ua.Client.Controls
             this.CertificateStoreCTRL.Size = new System.Drawing.Size(899, 51);
             this.CertificateStoreCTRL.StorePath = "X:\\OPC\\Source\\UA311\\Source\\Utilities\\CertificateGenerator";
             this.CertificateStoreCTRL.TabIndex = 0;
-            this.CertificateStoreCTRL.StoreChanged += new System.EventHandler(this.CertificateStoreCTRL_StoreChanged);
+            this.CertificateStoreCTRL.StoreChanged += new System.EventHandler(this.CertificateStoreCTRL_StoreChangedAsync);
             // 
             // FiltersGB
             // 

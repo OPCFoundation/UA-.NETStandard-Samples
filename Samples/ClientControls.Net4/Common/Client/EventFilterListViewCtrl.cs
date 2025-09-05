@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,9 +30,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
+using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -53,7 +55,7 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
             FilterDV.AutoGenerateColumns = false;
             ImageList = new ClientUtils().ImageList;
-            
+
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Events");
 
@@ -76,7 +78,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private DataSet m_dataset;
-        private Session m_session;
+        private ISession m_session;
         private int m_counter;
         #endregion
 
@@ -84,7 +86,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used for the read request.
         /// </summary>
-        public void ChangeSession(Session session)
+        public void ChangeSession(ISession session)
         {
             m_session = session;
         }
@@ -92,7 +94,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Sets the filter to edit.
         /// </summary>
-        public void SetFilter(FilterDeclaration filter)
+        public async Task SetFilterAsync(FilterDeclaration filter, CancellationToken ct = default)
         {
             m_dataset.Tables[0].Rows.Clear();
 
@@ -101,7 +103,7 @@ namespace Opc.Ua.Client.Controls
                 foreach (FilterDeclarationField field in filter.Fields)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, field);
+                    await UpdateRowAsync(row, field, ct);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -112,10 +114,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row.
         /// </summary>
-        public void UpdateRow(DataRow row, FilterDeclarationField field)
+        public async Task UpdateRowAsync(DataRow row, FilterDeclarationField field, CancellationToken ct = default)
         {
             row[0] = field;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex(m_session, field.InstanceDeclaration.NodeClass, field.InstanceDeclaration.RootTypeId, false)];
+            row[1] = ImageList.Images[await ClientUtils.GetImageIndexAsync(m_session, field.InstanceDeclaration.NodeClass, field.InstanceDeclaration.RootTypeId, false, ct)];
             row[2] = field.InstanceDeclaration.BrowsePathDisplayText;
             row[3] = field.Selected;
             row[4] = field.DisplayInList;
@@ -171,11 +173,11 @@ namespace Opc.Ua.Client.Controls
                     InstanceDeclaration declaration = field.InstanceDeclaration;
 
                     object result = new EditComplexValueDlg().ShowDialog(
-                        m_session, 
+                        m_session,
                         declaration.DisplayName,
-                        declaration.DataType, 
-                        declaration.ValueRank, 
-                        field.FilterValue.Value, 
+                        declaration.DataType,
+                        declaration.ValueRank,
+                        field.FilterValue.Value,
                         "Edit Filter Value");
 
                     if (result != null)
@@ -270,7 +272,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (rows[ii].Index > 0)
                     {
-                        DataRowView target = FilterDV.Rows[rows[ii].Index-1].DataBoundItem as DataRowView;
+                        DataRowView target = FilterDV.Rows[rows[ii].Index - 1].DataBoundItem as DataRowView;
                         int index = (int)target.Row[8];
                         target.Row[8] = source.Row[8];
                         source.Row[8] = index;
@@ -300,7 +302,7 @@ namespace Opc.Ua.Client.Controls
 
                     foreach (DataRowView row in m_dataset.Tables[0].DefaultView)
                     {
-                        FilterDeclarationField field = (FilterDeclarationField)row.Row[0];                        
+                        FilterDeclarationField field = (FilterDeclarationField)row.Row[0];
                         row.Row[3] = field.Selected = state;
                     }
                 }

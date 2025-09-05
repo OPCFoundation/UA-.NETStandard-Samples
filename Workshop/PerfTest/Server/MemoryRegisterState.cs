@@ -98,13 +98,13 @@ namespace Quickstarts.PerfTestServer
         }
 
         public override INodeBrowser CreateBrowser(
-            ISystemContext context, 
-            ViewDescription view, 
-            NodeId referenceType, 
-            bool includeSubtypes, 
-            BrowseDirection browseDirection, 
-            QualifiedName browseName, 
-            IEnumerable<IReference> additionalReferences, 
+            ISystemContext context,
+            ViewDescription view,
+            NodeId referenceType,
+            bool includeSubtypes,
+            BrowseDirection browseDirection,
+            QualifiedName browseName,
+            IEnumerable<IReference> additionalReferences,
             bool internalOnly)
         {
             MemoryRegisterBrowser browser = new MemoryRegisterBrowser(

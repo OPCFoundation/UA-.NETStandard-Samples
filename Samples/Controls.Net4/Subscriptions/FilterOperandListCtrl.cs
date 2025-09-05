@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,10 +32,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -45,8 +46,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public FilterOperandListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -58,11 +59,11 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Index",   HorizontalAlignment.Left, null },
-			new object[] { "Operand", HorizontalAlignment.Left, null },
-		};
-		#endregion
+        {
+            new object[] { "Index",   HorizontalAlignment.Left, null },
+            new object[] { "Operand", HorizontalAlignment.Left, null },
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -79,17 +80,17 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public void Initialize(Session session, IList<ContentFilterElement> elements, int index)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
-            
-            m_session  = session;
+
+            m_session = session;
             m_elements = elements;
-            m_index    = index;
+            m_index = index;
 
             if (elements == null || index < 0 || index >= elements.Count)
             {
-                return;                
+                return;
             }
 
             foreach (FilterOperand operand in elements[index].GetOperands())
@@ -106,7 +107,7 @@ namespace Opc.Ua.Sample.Controls
         public List<FilterOperand> GetOperands()
         {
             List<FilterOperand> operands = new List<FilterOperand>();
-                    
+
             for (int ii = 0; ii < ItemsLV.Items.Count; ii++)
             {
                 FilterOperand operand = ItemsLV.Items[ii].Tag as FilterOperand;
@@ -124,32 +125,32 @@ namespace Opc.Ua.Sample.Controls
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
-            NewMI.Enabled    = true;
-            EditMI.Enabled   = ItemsLV.SelectedItems.Count == 1;
-            DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
-		}
-        
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item, int index)
         {
-			FilterOperand operand = item as FilterOperand;
+            NewMI.Enabled = true;
+            EditMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+            DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+        }
 
-			if (operand == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
-                      
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, int index, CancellationToken ct = default)
+        {
+            FilterOperand operand = item as FilterOperand;
+
+            if (operand == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
+
             listItem.SubItems[0].Text = String.Format("[{0}]", index);
-            listItem.SubItems[1].Text = operand.ToString(m_session.NodeCache);
-                        
+            listItem.SubItems[1].Text = operand.ToString(m_session.NodeCache.AsNodeTable());
+
             listItem.Tag = operand;
         }
         #endregion
-               
+
         #region Event Handlers
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -158,14 +159,14 @@ namespace Opc.Ua.Sample.Controls
                 if (operand == null)
                 {
                     return;
-                }              
+                }
 
                 // insert after the current selection.
                 int index = ItemsLV.SelectedIndices.Count;
 
                 if (ItemsLV.SelectedIndices.Count > 0)
                 {
-                    index = ItemsLV.SelectedIndices[0]+1;
+                    index = ItemsLV.SelectedIndices[0] + 1;
                 }
 
                 AddItem(operand, "SimpleItem", index);
@@ -173,9 +174,9 @@ namespace Opc.Ua.Sample.Controls
                 // must update index for all items.
                 for (int ii = 0; ii < ItemsLV.Items.Count; ii++)
                 {
-                    UpdateItem(ItemsLV.Items[ii], ItemsLV.Items[ii].Tag, ii);
+                    await UpdateItemAsync(ItemsLV.Items[ii], ItemsLV.Items[ii].Tag, ii);
                 }
-                
+
                 AdjustColumns();
 
                 m_elements[m_index].FilterOperands.Clear();
@@ -183,7 +184,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -194,7 +195,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -205,7 +206,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

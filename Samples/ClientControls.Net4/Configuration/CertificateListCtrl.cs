@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Opc.Ua.Security.Certificates;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -57,18 +58,18 @@ namespace Opc.Ua.Client.Controls
             SetColumns(m_ColumnNames);
         }
         #endregion
-       
+
         #region Private Fields
-		// The columns to display in the control.		
-		private readonly object[][] m_ColumnNames = new object[][]
-		{ 
-			new object[] { "Name",        HorizontalAlignment.Left, null },
-			new object[] { "Type",        HorizontalAlignment.Left, null },
-			new object[] { "Private Key", HorizontalAlignment.Center, null },
-			new object[] { "Domains",     HorizontalAlignment.Left, null },  
-			new object[] { "Uri ",        HorizontalAlignment.Left, null },  
-			new object[] { "Valid Until", HorizontalAlignment.Left, null }
-		};
+        // The columns to display in the control.
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Name",        HorizontalAlignment.Left, null },
+            new object[] { "Type",        HorizontalAlignment.Left, null },
+            new object[] { "Private Key", HorizontalAlignment.Center, null },
+            new object[] { "Domains",     HorizontalAlignment.Left, null },
+            new object[] { "Uri ",        HorizontalAlignment.Left, null },
+            new object[] { "Valid Until", HorizontalAlignment.Left, null }
+        };
 
         private CertificateStoreIdentifier m_storeId;
         private CertificateIdentifierCollection m_certificates;
@@ -111,7 +112,7 @@ namespace Opc.Ua.Client.Controls
         {
             ItemsLV.Items.Clear();
             Instructions = String.Empty;
-            AdjustColumns();            
+            AdjustColumns();
         }
 
         /// <summary>
@@ -136,7 +137,7 @@ namespace Opc.Ua.Client.Controls
                 ListViewItem item = m_items[ii];
 
                 X509Certificate2 certificate = item.Tag as X509Certificate2;
-                
+
                 if (certificate == null)
                 {
                     continue;
@@ -190,7 +191,7 @@ namespace Opc.Ua.Client.Controls
 
             // save the unfiltered list.
             m_items = new List<ListViewItem>(ItemsLV.Items.Count);
-            
+
             foreach (ListViewItem item in ItemsLV.Items)
             {
                 m_items.Add(item);
@@ -202,7 +203,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the applications in the control.
         /// </summary>
-        internal async Task Initialize(CertificateStoreIdentifier id, IList<string> thumbprints)
+        internal async Task InitializeAsync(CertificateStoreIdentifier id, IList<string> thumbprints, CancellationToken ct = default)
         {
             ItemsLV.Items.Clear();
 
@@ -213,7 +214,7 @@ namespace Opc.Ua.Client.Controls
             {
                 Instructions = "No certificates are in the store.";
                 AdjustColumns();
-                return ;
+                return;
             }
 
             try
@@ -228,7 +229,7 @@ namespace Opc.Ua.Client.Controls
 
                         foreach (string thumbprint in thumbprints)
                         {
-                            X509Certificate2Collection certificates = await store.FindByThumbprint(thumbprint);
+                            X509Certificate2Collection certificates = await store.FindByThumbprintAsync(thumbprint, ct);
 
                             if (certificates.Count > 0)
                             {
@@ -242,7 +243,7 @@ namespace Opc.Ua.Client.Controls
                     {
                         Instructions = "No certificates are in the store.";
 
-                        X509Certificate2Collection certificates = await store.Enumerate();
+                        X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
                         foreach (X509Certificate2 certificate in certificates)
                         {
                             AddItem(certificate);
@@ -275,23 +276,23 @@ namespace Opc.Ua.Client.Controls
         protected override void PickItems()
         {
             base.PickItems();
-            ViewMI_Click(this, null);
+            ViewMI_ClickAsync(this, null);
         }
 
         /// <summary>
         /// Updates an item in the view.
         /// </summary>
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             X509Certificate2 certificate = item as X509Certificate2;
 
             if (certificate == null)
             {
-                base.UpdateItem(listItem, item);
+                await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 
-			listItem.SubItems[0].Text = null;
+            listItem.SubItems[0].Text = null;
             listItem.SubItems[1].Text = null;
             listItem.SubItems[2].Text = null;
             listItem.SubItems[3].Text = null;
@@ -359,7 +360,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (buffer.Length > 0)
                     {
-                        buffer.Append(";");
+                        buffer.Append(';');
                     }
 
                     buffer.Append(domains[ii]);
@@ -392,15 +393,15 @@ namespace Opc.Ua.Client.Controls
             }
 
             IDataObject clipboardData = Clipboard.GetDataObject();
-         
-            if (clipboardData.GetDataPresent(DataFormats.Text)) 
+
+            if (clipboardData.GetDataPresent(DataFormats.Text))
             {
                 PasteMI.Enabled = true;
             }
         }
         #endregion
 
-        private async void ViewMI_Click(object sender, EventArgs e)
+        private async void ViewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -417,7 +418,7 @@ namespace Opc.Ua.Client.Controls
                         id.StorePath = m_storeId.StorePath;
                     }
 
-                    await new ViewCertificateDlg().ShowDialog(id);
+                    await new ViewCertificateDlg().ShowDialogAsync(id);
                 }
             }
             catch (Exception exception)
@@ -426,7 +427,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void DeleteMI_Click(object sender, EventArgs e)
+        private async void DeleteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -457,14 +458,14 @@ namespace Opc.Ua.Client.Controls
                         X509Certificate2 certificate = ItemsLV.SelectedItems[ii].Tag as X509Certificate2;
 
                         // check for private key.
-                        X509Certificate2Collection certificate2 = await store.FindByThumbprint(certificate.Thumbprint);
+                        X509Certificate2Collection certificate2 = await store.FindByThumbprintAsync(certificate.Thumbprint);
 
                         if (!yesToAll && (certificate2.Count > 0) && certificate2[0].HasPrivateKey)
                         {
                             StringBuilder buffer = new StringBuilder();
                             buffer.Append("Certificate '");
                             buffer.Append(certificate2[0].Subject);
-                            buffer.Append("'");
+                            buffer.Append('\'');
                             buffer.Append("Deleting it may cause applications to stop working.");
                             buffer.Append("\r\n");
                             buffer.Append("\r\n");
@@ -482,7 +483,7 @@ namespace Opc.Ua.Client.Controls
 
                         if (certificate != null)
                         {
-                            await store.Delete(certificate.Thumbprint);
+                            await store.DeleteAsync(certificate.Thumbprint);
                             itemsToDelete.Add(ItemsLV.SelectedItems[ii]);
                         }
                     }
@@ -497,14 +498,14 @@ namespace Opc.Ua.Client.Controls
             catch (Exception exception)
             {
                 GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
-                await Initialize(m_storeId, m_thumbprints);
+                await InitializeAsync(m_storeId, m_thumbprints);
             }
         }
 
         private void CopyMI_Click(object sender, EventArgs e)
         {
             try
-			{                
+            {
                 X509Certificate2 certificate = SelectedTag as X509Certificate2;
 
                 if (certificate == null)
@@ -531,35 +532,35 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void PasteMI_Click(object sender, EventArgs e)
         {
             try
-			{ 
+            {
                 string xml = (string)ClipboardHack.GetData(DataFormats.Text);
 
                 if (String.IsNullOrEmpty(xml))
                 {
                     return;
                 }
-                    
+
                 // deserialize the data.
                 CertificateIdentifier id = null;
 
-                using (XmlTextReader reader = new XmlTextReader(new StringReader(xml)))
+                using (XmlReader reader = XmlReader.Create(xml, new XmlReaderSettings() { XmlResolver = null }))
                 {
-                    DataContractSerializer serializer = new DataContractSerializer(typeof(CertificateIdentifier));                    
+                    DataContractSerializer serializer = new DataContractSerializer(typeof(CertificateIdentifier));
                     id = (CertificateIdentifier)serializer.ReadObject(reader, false);
                 }
-                
+
                 if (id.Certificate != null)
                 {
                     using (ICertificateStore store = m_storeId.OpenStore())
                     {
-                        store.Add(id.Certificate);
+                        store.AddAsync(id.Certificate);
                     }
 
                     AddItem(id.Certificate);
@@ -567,7 +568,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

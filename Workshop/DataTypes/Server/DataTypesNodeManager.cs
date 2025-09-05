@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -51,7 +51,7 @@ namespace Quickstarts.DataTypes
         /// </summary>
         public DataTypesNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         :
-            base(server, configuration)            
+            base(server, configuration)
         {
             SystemContext.NodeIdFactory = this;
 
@@ -70,13 +70,13 @@ namespace Quickstarts.DataTypes
             }
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 // TBD
@@ -109,7 +109,7 @@ namespace Quickstarts.DataTypes
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -124,7 +124,7 @@ namespace Quickstarts.DataTypes
         /// </summary>
         public byte[] LoadSchemaFromResource(string resourcePath, Assembly assembly)
         {
-            if (resourcePath == null) throw new ArgumentNullException("resourcePath");
+            if (resourcePath == null) throw new ArgumentNullException(nameof(resourcePath));
 
             if (assembly == null)
             {
@@ -139,7 +139,11 @@ namespace Quickstarts.DataTypes
             }
 
             byte[] buffer = new byte[istrm.Length];
-            istrm.Read(buffer, 0, (int)istrm.Length);
+            var read = istrm.Read(buffer, 0, (int)istrm.Length);
+            if (read != istrm.Length)
+            {
+                throw ServiceResultException.Create(StatusCodes.BadDecodingError, "Could not read entire resource: {0}", resourcePath);
+            }
             return buffer;
         }
 
@@ -149,14 +153,14 @@ namespace Quickstarts.DataTypes
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
             NodeStateCollection predefinedNodes = new NodeStateCollection();
-            
-            predefinedNodes.LoadFromBinaryResource(context, 
-                "Quickstarts.DataTypes.Types.Quickstarts.DataTypes.Types.PredefinedNodes.uanodes", 
-                typeof(Quickstarts.DataTypes.Types.VehicleType).Assembly, 
+
+            predefinedNodes.LoadFromBinaryResource(context,
+                "Quickstarts.DataTypes.Types.Quickstarts.DataTypes.Types.PredefinedNodes.uanodes",
+                typeof(Quickstarts.DataTypes.Types.VehicleType).Assembly,
                 true);
-            predefinedNodes.LoadFromBinaryResource(context, 
+            predefinedNodes.LoadFromBinaryResource(context,
                 "Quickstarts.DataTypes.Instances.Quickstarts.DataTypes.Instances.PredefinedNodes.uanodes",
-                typeof(DataTypesNodeManager).GetTypeInfo().Assembly, 
+                typeof(DataTypesNodeManager).GetTypeInfo().Assembly,
                 true);
 
             return predefinedNodes;
@@ -180,7 +184,7 @@ namespace Quickstarts.DataTypes
         {
             lock (Lock)
             {
-                // quickly exclude nodes that are not in the namespace. 
+                // quickly exclude nodes that are not in the namespace.
                 if (!IsNodeIdInNamespace(nodeId))
                 {
                     return null;
@@ -212,7 +216,7 @@ namespace Quickstarts.DataTypes
 
                 // node not found.
                 return null;
-            } 
+            }
         }
 
         /// <summary>

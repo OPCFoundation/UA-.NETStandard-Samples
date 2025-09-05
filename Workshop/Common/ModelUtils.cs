@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,8 @@ using System.Text;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Quickstarts
 {
@@ -43,25 +45,25 @@ namespace Quickstarts
         /// <summary>
         /// Collects the instance declarations for a type.
         /// </summary>
-        public static List<InstanceDeclaration> CollectInstanceDeclarationsForType(Session session, NodeId typeId)
+        public static async Task<List<InstanceDeclaration>> CollectInstanceDeclarationsForTypeAsync(ISession session, NodeId typeId, CancellationToken ct = default)
         {
             // process the types starting from the top of the tree.
             List<InstanceDeclaration> instances = new List<InstanceDeclaration>();
             Dictionary<string, InstanceDeclaration> map = new Dictionary<string, InstanceDeclaration>();
 
             // get the supertypes.
-            ReferenceDescriptionCollection supertypes = FormUtils.BrowseSuperTypes(session, typeId, false);
+            ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
 
             if (supertypes != null)
             {
                 for (int ii = supertypes.Count - 1; ii >= 0; ii--)
                 {
-                    CollectInstanceDeclarations(session, (NodeId)supertypes[ii].NodeId, null, instances, map);
+                    await CollectInstanceDeclarationsAsync(session, (NodeId)supertypes[ii].NodeId, null, instances, map, ct);
                 }
             }
 
             // collect the fields for the selected type.
-            CollectInstanceDeclarations(session, typeId, null, instances, map);
+            await CollectInstanceDeclarationsAsync(session, typeId, null, instances, map, ct);
 
             // return the complete list.
             return instances;
@@ -70,12 +72,13 @@ namespace Quickstarts
         /// <summary>
         /// Collects the fields for the instance node.
         /// </summary>
-        private static void CollectInstanceDeclarations(
-            Session session,
+        private static async Task CollectInstanceDeclarationsAsync(
+            ISession session,
             NodeId typeId,
             InstanceDeclaration parent,
             List<InstanceDeclaration> instances,
-            IDictionary<string, InstanceDeclaration> map)
+            IDictionary<string, InstanceDeclaration> map,
+            CancellationToken ct = default)
         {
             // find the children.
             BrowseDescription nodeToBrowse = new BrowseDescription();
@@ -96,7 +99,7 @@ namespace Quickstarts
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
             // ignore any browsing errors.
-            ReferenceDescriptionCollection references = FormUtils.Browse(session, nodeToBrowse, false);
+            ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
 
             if (references == null)
             {
@@ -170,7 +173,7 @@ namespace Quickstarts
             }
 
             // find the modelling rules.
-            List<NodeId> modellingRules = FindTargetOfReference(session, nodeIds, Opc.Ua.ReferenceTypeIds.HasModellingRule, false);
+            List<NodeId> modellingRules = await FindTargetOfReferenceAsync(session, nodeIds, Opc.Ua.ReferenceTypeIds.HasModellingRule, false, ct);
 
             if (modellingRules != null)
             {
@@ -187,7 +190,7 @@ namespace Quickstarts
             }
 
             // update the descriptions.
-            UpdateInstanceDescriptions(session, children, false);
+            await UpdateInstanceDescriptionsAsync(session, children, false, ct);
 
             // recusively collect instance declarations for the tree below.
             for (int ii = 0; ii < children.Count; ii++)
@@ -195,7 +198,7 @@ namespace Quickstarts
                 if (!NodeId.IsNull(children[ii].ModellingRule))
                 {
                     instances.Add(children[ii]);
-                    CollectInstanceDeclarations(session, typeId, children[ii], instances, map);
+                    await CollectInstanceDeclarationsAsync(session, typeId, children[ii], instances, map, ct);
                 }
             }
         }
@@ -203,7 +206,7 @@ namespace Quickstarts
         /// <summary>
         /// Finds the targets for the specified reference.
         /// </summary>
-        private static List<NodeId> FindTargetOfReference(Session session, List<NodeId> nodeIds, NodeId referenceTypeId, bool throwOnError)
+        private static async Task<List<NodeId>> FindTargetOfReferenceAsync(ISession session, List<NodeId> nodeIds, NodeId referenceTypeId, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
@@ -223,16 +226,15 @@ namespace Quickstarts
                 }
 
                 // start the browse operation.
-                BrowseResultCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                session.Browse(
+                BrowseResponse response = await session.BrowseAsync(
                     null,
                     null,
                     1,
                     nodesToBrowse,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                BrowseResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -271,12 +273,14 @@ namespace Quickstarts
                 // release continuation points.
                 if (continuationPoints.Count > 0)
                 {
-                    session.BrowseNext(
+                    BrowseNextResponse response2 = await session.BrowseNextAsync(
                         null,
                         true,
                         continuationPoints,
-                        out results,
-                        out diagnosticInfos);
+                        ct);
+
+                    results = response2.Results;
+                    diagnosticInfos = response2.DiagnosticInfos;
 
                     ClientBase.ValidateResponse(results, nodesToBrowse);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -299,7 +303,7 @@ namespace Quickstarts
         /// <summary>
         /// Finds the targets for the specified reference.
         /// </summary>
-        private static void UpdateInstanceDescriptions(Session session, List<InstanceDeclaration> instances, bool throwOnError)
+        private static async Task UpdateInstanceDescriptionsAsync(ISession session, List<InstanceDeclaration> instances, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
@@ -324,16 +328,15 @@ namespace Quickstarts
                 }
 
                 // start the browse operation.
-                DataValueCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                session.Read(
+                ReadResponse response = await session.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                DataValueCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -350,7 +353,7 @@ namespace Quickstarts
                     if (!NodeId.IsNull(instance.DataType))
                     {
                         instance.BuiltInType = DataTypes.GetBuiltInType(instance.DataType);
-                        instance.DataTypeDisplayText = session.NodeCache.GetDisplayText(instance.DataType);
+                        instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType, ct);
 
                         if (instance.ValueRank >= 0)
                         {
@@ -621,7 +624,7 @@ namespace Quickstarts
             filter.WhereClause = GetWhereClause();
             return filter;
         }
-        
+
         /// <summary>
         /// Adds a simple field to the declaration.
         /// </summary>
@@ -676,14 +679,14 @@ namespace Quickstarts
             {
                 operand = new SimpleAttributeOperand();
                 operand.TypeDefinitionId = field.InstanceDeclaration.RootTypeId;
-                operand.AttributeId = (field.InstanceDeclaration.NodeClass == NodeClass.Object)?Attributes.NodeId:Attributes.Value;
+                operand.AttributeId = (field.InstanceDeclaration.NodeClass == NodeClass.Object) ? Attributes.NodeId : Attributes.Value;
                 operand.BrowsePath = field.InstanceDeclaration.BrowsePath;
                 selectClause.Add(operand);
             }
 
             return selectClause;
         }
-        
+
         /// <summary>
         /// Returns the where clause defined by the filter declaration.
         /// </summary>
@@ -728,12 +731,12 @@ namespace Quickstarts
             {
                 if (this.Fields[ii].InstanceDeclaration.BrowseName == browseName)
                 {
-                    if (ii >= fields.Count+1)
+                    if (ii >= fields.Count + 1)
                     {
                         return defaultValue;
                     }
 
-                    object value = fields[ii+1].Value;
+                    object value = fields[ii + 1].Value;
 
                     if (typeof(T).IsInstanceOfType(value))
                     {

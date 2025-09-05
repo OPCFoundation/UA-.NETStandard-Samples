@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,10 +32,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -153,7 +154,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public MonitoredItem CreateItem(Subscription subscription)
         {
-            if (subscription == null) throw new ArgumentNullException("subscription");
+            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
             MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem);
             monitoredItem.QueueSize = 1;
@@ -192,7 +193,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the parent for the node.
         /// </summary>
-        private Node FindParent(Node node)
+        private async Task<Node> FindParentAsync(Node node, CancellationToken ct = default)
         {
             IList<IReference> parents = node.ReferenceTable.Find(ReferenceTypeIds.Aggregates, true, true, m_subscription.Session.TypeTree);
 
@@ -202,7 +203,7 @@ namespace Opc.Ua.Sample.Controls
 
                 foreach (IReference parentReference in parents)
                 {
-                    Node parent = m_subscription.Session.NodeCache.Find(parentReference.TargetId) as Node;
+                    Node parent = await m_subscription.Session.NodeCache.FindAsync(parentReference.TargetId, ct) as Node;
 
                     if (followToType)
                     {
@@ -224,14 +225,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates an item from a reference.
         /// </summary>
-        public void AddItem(ReferenceDescription reference)
+        public async Task AddItemAsync(ReferenceDescription reference, CancellationToken ct = default)
         {
             if (reference == null)
             {
                 return;
             }
 
-            Node node = m_subscription.Session.NodeCache.Find(reference.NodeId) as Node;
+            Node node = await m_subscription.Session.NodeCache.FindAsync(reference.NodeId, ct) as Node;
 
             if (node == null)
             {
@@ -243,7 +244,7 @@ namespace Opc.Ua.Sample.Controls
             // if the NodeId is of type string and contains '.' do not use relative paths
             if (node.NodeId.IdType != IdType.String || (node.NodeId.Identifier.ToString().IndexOf('.') == -1 && node.NodeId.Identifier.ToString().IndexOf('/') == -1))
             {
-                parent = FindParent(node);
+                parent = await FindParentAsync(node, ct);
             }
 
             MonitoredItem monitoredItem = new MonitoredItem(m_subscription.DefaultItem);
@@ -267,7 +268,7 @@ namespace Opc.Ua.Sample.Controls
 
                 while (parent.NodeClass != NodeClass.ObjectType && parent.NodeClass != NodeClass.VariableType)
                 {
-                    parent = FindParent(parent);
+                    parent = await FindParentAsync(parent, ct);
 
                     if (parent == null)
                     {
@@ -305,7 +306,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Apply any changes to the set of items.
         /// </summary>
-        public void ApplyChanges(bool force)
+        public async Task ApplyChangesAsync(bool force, CancellationToken ct = default)
         {
             if (m_batchUpdates && !force)
             {
@@ -314,11 +315,11 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_subscription != null)
             {
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync(ct);
 
                 foreach (ListViewItem listItem in ItemsLV.Items)
                 {
-                    UpdateItem(listItem, listItem.Tag);
+                    await UpdateItemAsync(listItem, listItem.Tag, ct);
                 }
 
                 AdjustColumns();
@@ -368,14 +369,14 @@ namespace Opc.Ua.Sample.Controls
             MonitorMI_Click(this, null);
         }
 
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             MonitoredItem monitoredItem = item as MonitoredItem;
 
             if (monitoredItem == null)
             {
-                base.UpdateItem(listItem, item);
+                await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 
@@ -439,7 +440,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Handles a drop event.
         /// </summary>
-        protected override void ItemsLV_DragDrop(object sender, DragEventArgs e)
+        protected override async Task OnDragDropAsync(object sender, DragEventArgs e, CancellationToken ct = default)
         {
             try
             {
@@ -450,7 +451,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                AddItem(reference);
+                await AddItemAsync(reference, ct);
                 AdjustColumns();
             }
             catch (Exception exception)
@@ -461,7 +462,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Event Handlers
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -471,7 +472,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 CreateItem(m_subscription);
-                ApplyChanges(false);
+                await ApplyChangesAsync(false);
             }
             catch (Exception exception)
             {
@@ -479,7 +480,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -500,7 +501,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                ApplyChanges(false);
+                await ApplyChangesAsync(false);
             }
             catch (Exception exception)
             {
@@ -508,7 +509,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void DeleteMI_Click(object sender, EventArgs e)
+        private async void DeleteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -524,7 +525,7 @@ namespace Opc.Ua.Sample.Controls
                     m_subscription.RemoveItems(monitoredItems);
                 }
 
-                IList<MonitoredItem> deletedItems = m_subscription.DeleteItems();
+                IList<MonitoredItem> deletedItems = await m_subscription.DeleteItemsAsync();
 
                 string errorString = string.Empty;
 
@@ -538,7 +539,7 @@ namespace Opc.Ua.Sample.Controls
 
                 foreach (ListViewItem listItem in ItemsLV.Items)
                 {
-                    UpdateItem(listItem, listItem.Tag);
+                    await UpdateItemAsync(listItem, listItem.Tag);
                 }
 
                 AdjustColumns();
@@ -554,7 +555,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SetMonitoringModeMI_Click(object sender, EventArgs e)
+        private async void SetMonitoringModeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -574,7 +575,7 @@ namespace Opc.Ua.Sample.Controls
                         return;
                     }
 
-                    List<ServiceResult> errors = m_subscription.SetMonitoringMode(monitoringMode, monitoredItems);
+                    List<ServiceResult> errors = await m_subscription.SetMonitoringModeAsync(monitoringMode, monitoredItems);
 
                     if (errors != null)
                     {
@@ -595,7 +596,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SetFilterMI_Click(object sender, EventArgs e)
+        private async void SetFilterMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -627,8 +628,8 @@ namespace Opc.Ua.Sample.Controls
                         monitoredItems[0].Filter = filter;
                     }
 
-                    m_subscription.ModifyItems();
-                    ApplyChanges(false);
+                    await m_subscription.ModifyItemsAsync();
+                    await ApplyChangesAsync(false);
                 }
             }
             catch (Exception exception)

@@ -53,7 +53,7 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
@@ -77,7 +77,7 @@ namespace Opc.Ua.Client.Controls
             {
                 return false;
             }
-            
+
             value = ValueCTRL.Value;
 
             if (value == ValueCTRL.MinDate)

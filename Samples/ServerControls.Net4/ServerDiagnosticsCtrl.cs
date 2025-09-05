@@ -57,7 +57,7 @@ namespace Opc.Ua.Server.Controls
         private StandardServer m_server;
         private ApplicationConfiguration m_configuration;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Creates a form which displays the status for a UA server.
@@ -69,7 +69,7 @@ namespace Opc.Ua.Server.Controls
             m_server = server;
             m_configuration = configuration;
             UpdateTimerCTRL.Enabled = true;
-            
+
             // add the urls to the drop down.
             UrlCB.Items.Clear();
 
@@ -96,11 +96,11 @@ namespace Opc.Ua.Server.Controls
         {
             SessionsLV.Items.Clear();
 
-            IList<Session> sessions = m_server.CurrentInstance.SessionManager.GetSessions();
+            IList<ISession> sessions = m_server.CurrentInstance.SessionManager.GetSessions();
 
             for (int ii = 0; ii < sessions.Count; ii++)
             {
-                Session session = sessions[ii];
+                ISession session = sessions[ii];
 
                 lock (session.DiagnosticsLock)
                 {
@@ -136,11 +136,11 @@ namespace Opc.Ua.Server.Controls
         {
             SubscriptionsLV.Items.Clear();
 
-            IList<Subscription> subscriptions = m_server.CurrentInstance.SubscriptionManager.GetSubscriptions();
+            IList<ISubscription> subscriptions = m_server.CurrentInstance.SubscriptionManager.GetSubscriptions();
 
             for (int ii = 0; ii < subscriptions.Count; ii++)
             {
-                Subscription subscription = subscriptions[ii];
+                ISubscription subscription = subscriptions[ii];
 
                 ListViewItem item = new ListViewItem(subscription.Id.ToString());
 
@@ -173,15 +173,15 @@ namespace Opc.Ua.Server.Controls
                 ServerStateLB.Text = m_server.CurrentInstance.CurrentState.ToString();
                 ServerTimeLB.Text = String.Format("{0:HH:mm:ss}", DateTime.Now);
                 UpdateSessions();
-                sessionsLB.Text = Convert.ToString( SessionsLV.Items.Count );
+                sessionsLB.Text = Convert.ToString(SessionsLV.Items.Count);
                 UpdateSubscriptions();
-                subscriptionsLB.Text = Convert.ToString( SubscriptionsLV.Items.Count );
+                subscriptionsLB.Text = Convert.ToString(SubscriptionsLV.Items.Count);
                 int itemTotal = 0;
-                for ( int i = 0; i < SubscriptionsLV.Items.Count; i++ )
+                for (int i = 0; i < SubscriptionsLV.Items.Count; i++)
                 {
-                    itemTotal += Convert.ToInt32( SubscriptionsLV.Items[i].SubItems[2].Text );
+                    itemTotal += Convert.ToInt32(SubscriptionsLV.Items[i].SubItems[2].Text);
                 }
-                itemsLB.Text = Convert.ToString( itemTotal );
+                itemsLB.Text = Convert.ToString(itemTotal);
             }
             catch (Exception exception)
             {

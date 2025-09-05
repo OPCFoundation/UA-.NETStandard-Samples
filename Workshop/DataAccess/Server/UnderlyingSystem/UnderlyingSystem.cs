@@ -48,21 +48,21 @@ namespace Quickstarts.DataAccessServer
             m_blocks = new Dictionary<string, UnderlyingSystemBlock>();
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// The finializer implementation.
         /// </summary>
-        ~UnderlyingSystem() 
+        ~UnderlyingSystem()
         {
             Dispose(false);
         }
-        
+
         /// <summary>
         /// Frees any unmanaged reblocks.
         /// </summary>
         public void Dispose()
-        {   
+        {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -71,7 +71,7 @@ namespace Quickstarts.DataAccessServer
         /// An overrideable version of the Dispose.
         /// </summary>
         protected virtual void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 if (m_simulationTimer != null)
@@ -97,27 +97,27 @@ namespace Quickstarts.DataAccessServer
         /// </remarks>
         private string[] s_BlockPathDatabase = new string[]
         {
-            "Factory/East/Boiler1/Pipe1001",  
-            "Factory/East/Boiler1/Drum1002",     
-            "Factory/East/Boiler1/Pipe1002", 
+            "Factory/East/Boiler1/Pipe1001",
+            "Factory/East/Boiler1/Drum1002",
+            "Factory/East/Boiler1/Pipe1002",
             "Factory/East/Boiler1/FC1001",
             "Factory/East/Boiler1/LC1001",
             "Factory/East/Boiler1/CC1001",
-            "Factory/West/Boiler2/Pipe2001",  
-            "Factory/West/Boiler2/Drum2002",     
-            "Factory/West/Boiler2/Pipe2002", 
+            "Factory/West/Boiler2/Pipe2001",
+            "Factory/West/Boiler2/Drum2002",
+            "Factory/West/Boiler2/Pipe2002",
             "Factory/West/Boiler2/FC2001",
             "Factory/West/Boiler2/LC2001",
             "Factory/West/Boiler2/CC2001",
-            "Assets/Sensors/Flow/Pipe1001",  
-            "Assets/Sensors/Level/Drum1002",     
-            "Assets/Sensors/Flow/Pipe1002", 
+            "Assets/Sensors/Flow/Pipe1001",
+            "Assets/Sensors/Level/Drum1002",
+            "Assets/Sensors/Flow/Pipe1002",
             "Assets/Controllers/Flow/FC1001",
             "Assets/Controllers/Level/LC1001",
             "Assets/Controllers/Custom/CC1001",
-            "Assets/Sensors/Flow/Pipe2001",  
-            "Assets/Sensors/Level/Drum2002",     
-            "Assets/Sensors/Flow/Pipe2002", 
+            "Assets/Sensors/Flow/Pipe2001",
+            "Assets/Sensors/Level/Drum2002",
+            "Assets/Sensors/Flow/Pipe2002",
             "Assets/Controllers/Flow/FC2001",
             "Assets/Controllers/Level/LC2001",
             "Assets/Controllers/Custom/CC2001",
@@ -141,17 +141,17 @@ namespace Quickstarts.DataAccessServer
         /// </remarks>
         private string[] s_BlockDatabase = new string[]
         {
-            "Pipe1001/FlowSensor",  
-            "Drum1002/LevelSensor",  
-            "Pipe1002/FlowSensor",  
-            "Pipe2001/FlowSensor",  
-            "Drum2002/LevelSensor",  
-            "Pipe2002/FlowSensor",  
-            "FC1001/Controller",  
-            "LC1001/Controller",  
-            "CC1001/CustomController",  
-            "FC2001/Controller",  
-            "LC2001/Controller",  
+            "Pipe1001/FlowSensor",
+            "Drum1002/LevelSensor",
+            "Pipe1002/FlowSensor",
+            "Pipe2001/FlowSensor",
+            "Drum2002/LevelSensor",
+            "Pipe2002/FlowSensor",
+            "FC1001/Controller",
+            "LC1001/Controller",
+            "CC1001/CustomController",
+            "FC2001/Controller",
+            "LC2001/Controller",
             "CC2001/CustomController"
         };
 
@@ -177,7 +177,7 @@ namespace Quickstarts.DataAccessServer
 
                 if (index != -1)
                 {
-                    segmentName = segmentName.Substring(index+1);
+                    segmentName = segmentName.Substring(index + 1);
                 }
 
                 if (string.IsNullOrEmpty(segmentName))
@@ -201,7 +201,7 @@ namespace Quickstarts.DataAccessServer
                     if (blockPath.StartsWith(segmentPath))
                     {
                         UnderlyingSystemSegment segment = new UnderlyingSystemSegment();
-                        
+
                         segment.Id = segmentPath;
                         segment.Name = segmentName;
                         segment.SegmentType = null;
@@ -229,7 +229,7 @@ namespace Quickstarts.DataAccessServer
                     segmentPath = String.Empty;
                 }
 
-                Dictionary<string,UnderlyingSystemSegment> segments = new Dictionary<string, UnderlyingSystemSegment>();
+                Dictionary<string, UnderlyingSystemSegment> segments = new Dictionary<string, UnderlyingSystemSegment>();
 
                 // find all block paths that start with the specified segment.
                 int length = segmentPath.Length;
@@ -251,7 +251,7 @@ namespace Quickstarts.DataAccessServer
                             continue;
                         }
 
-                        blockPath = blockPath.Substring(length+1);
+                        blockPath = blockPath.Substring(length + 1);
                     }
 
                     // extract segment name.
@@ -325,7 +325,7 @@ namespace Quickstarts.DataAccessServer
                             continue;
                         }
 
-                        blockPath = blockPath.Substring(length+1);
+                        blockPath = blockPath.Substring(length + 1);
                     }
 
                     // check if there are no more segments in the path.
@@ -333,7 +333,7 @@ namespace Quickstarts.DataAccessServer
 
                     if (index == -1)
                     {
-                        blockPath = blockPath.Substring(index+1);
+                        blockPath = blockPath.Substring(index + 1);
 
                         if (!blocks.Contains(blockPath))
                         {
@@ -370,7 +370,7 @@ namespace Quickstarts.DataAccessServer
                 {
                     return null;
                 }
-                
+
                 // construct the parent.
                 UnderlyingSystemSegment parent = new UnderlyingSystemSegment();
 
@@ -431,7 +431,7 @@ namespace Quickstarts.DataAccessServer
 
                     if (blockType.StartsWith(blockId))
                     {
-                        blockType = blockType.Substring(length+1);
+                        blockType = blockType.Substring(length + 1);
                         break;
                     }
 
@@ -443,7 +443,7 @@ namespace Quickstarts.DataAccessServer
                 {
                     return null;
                 }
-                
+
                 // create a new block.
                 block = new UnderlyingSystemBlock();
 
@@ -521,7 +521,7 @@ namespace Quickstarts.DataAccessServer
                 {
                     string blockPath = s_BlockPathDatabase[ii];
 
-                    if (length >= blockPath.Length || blockPath[blockPath.Length-length] != '/')
+                    if (length >= blockPath.Length || blockPath[blockPath.Length - length] != '/')
                     {
                         continue;
                     }
@@ -531,7 +531,7 @@ namespace Quickstarts.DataAccessServer
                         continue;
                     }
 
-                    string segmentPath = blockPath.Substring(0, blockPath.Length-length-1);
+                    string segmentPath = blockPath.Substring(0, blockPath.Length - length - 1);
 
                     // construct segment.
                     UnderlyingSystemSegment segment = new UnderlyingSystemSegment();
@@ -629,7 +629,7 @@ namespace Quickstarts.DataAccessServer
 
         #region Private Fields
         private object m_lock = new object();
-        private Dictionary<string,UnderlyingSystemBlock> m_blocks;
+        private Dictionary<string, UnderlyingSystemBlock> m_blocks;
         private Timer m_simulationTimer;
         private long m_simulationCounter;
         private Opc.Ua.Test.DataGenerator m_generator;

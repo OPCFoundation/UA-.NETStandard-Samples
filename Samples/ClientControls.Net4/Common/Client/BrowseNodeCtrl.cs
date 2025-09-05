@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -59,26 +61,28 @@ namespace Opc.Ua.Client.Controls
 
         #region Public Interface
         /// <summary>
-        /// Initializes the control with a root and a set of hierarchial reference types to follow. 
+        /// Initializes the control with a root and a set of hierarchial reference types to follow.
         /// </summary>
         /// <param name="session">The session.</param>
         /// <param name="rootId">The root of the hierarchy to browse.</param>
+        /// <param name="ct">The cancellation token.</param>
         /// <param name="referenceTypeIds">The reference types to follow.</param>
-        public void Initialize(
-            Session session,
+        public async Task InitializeAsync(
+            ISession session,
             NodeId rootId,
+            CancellationToken ct,
             params NodeId[] referenceTypeIds)
         {
-            BrowseCTRL.Initialize(session, rootId, referenceTypeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, ct, referenceTypeIds);
         }
 
         /// <summary>
         /// Changes the session used by the control.
         /// </summary>
         /// <param name="session">The session.</param>
-        public void ChangeSession(Session session)
+        public async Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
-            BrowseCTRL.ChangeSession(session);
+            await BrowseCTRL.ChangeSessionAsync(session, ct);
         }
 
         /// <summary>
@@ -102,9 +106,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets a flag that indicates whether the attributes should be displayed.
         /// </summary>
-        public bool AttributesListCollapsed 
+        public bool AttributesListCollapsed
         {
-            get { return MainPN.Panel2Collapsed;  }
+            get { return MainPN.Panel2Collapsed; }
             set { MainPN.Panel2Collapsed = value; }
         }
 
@@ -175,10 +179,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Raised after a node is selected in the control.
         /// </summary>
-        public event EventHandler AfterSelect 
+        public event EventHandler AfterSelect
         {
             add { BrowseCTRL.AfterSelect += value; }
-            remove { BrowseCTRL.AfterSelect -= value; } 
+            remove { BrowseCTRL.AfterSelect -= value; }
         }
         #endregion
 

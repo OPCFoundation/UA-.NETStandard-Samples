@@ -51,7 +51,7 @@ namespace Quickstarts.EmptyClient
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Client;
+            application.ApplicationType = ApplicationType.Client;
             application.ConfigSectionName = "Quickstarts.EmptyClient";
 
             try
@@ -61,12 +61,12 @@ namespace Quickstarts.EmptyClient
                 {
                     return;
                 }
-                
+
                 // load the application configuration.
-                application.LoadApplicationConfiguration(false).Wait();
+                application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificates(false).Wait();
+                application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
 
                 // run the application interactively.
                 Application.Run(new MainForm(application.ApplicationConfiguration));

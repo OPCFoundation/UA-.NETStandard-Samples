@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -54,7 +54,7 @@ namespace Quickstarts.DataTypes
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
         }
-        
+
         /// <summary>
         /// Creates a form which uses the specified client configuration.
         /// </summary>
@@ -72,7 +72,7 @@ namespace Quickstarts.DataTypes
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Private Methods
@@ -86,7 +86,7 @@ namespace Quickstarts.DataTypes
         {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.ConnectAsync();
             }
             catch (Exception exception)
             {
@@ -127,23 +127,24 @@ namespace Quickstarts.DataTypes
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
                 m_session = ConnectServerCTRL.Session;
 
                 // browse the instances in the server.
-                BrowseCTRL.Initialize(m_session, 
-                    ObjectIds.RootFolder, 
-                    ReferenceTypeIds.Organizes, 
+                await BrowseCTRL.InitializeAsync(m_session,
+                    ObjectIds.RootFolder,
+                    default,
+                    ReferenceTypeIds.Organizes,
                     ReferenceTypeIds.Aggregates,
                     ReferenceTypeIds.HierarchicalReferences);
 
                 if (m_session != null)
                 {
                     var typeSystem = new ComplexTypeSystem(m_session);
-                    typeSystem.Load().Wait();
+                    await typeSystem.LoadAsync();
                 }
             }
             catch (Exception exception)
@@ -155,11 +156,11 @@ namespace Quickstarts.DataTypes
         /// <summary>
         /// Updates the application after a communicate error was detected.
         /// </summary>
-        private void Server_ReconnectStarting(object sender, EventArgs e)
+        private async void Server_ReconnectStartingAsync(object sender, EventArgs e)
         {
             try
             {
-                BrowseCTRL.ChangeSession(null);
+                await BrowseCTRL.ChangeSessionAsync(null);
             }
             catch (Exception exception)
             {
@@ -170,12 +171,12 @@ namespace Quickstarts.DataTypes
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
                 m_session = ConnectServerCTRL.Session;
-                BrowseCTRL.ChangeSession(m_session);
+                await BrowseCTRL.ChangeSessionAsync(m_session);
             }
             catch (Exception exception)
             {
@@ -191,7 +192,7 @@ namespace Quickstarts.DataTypes
             ConnectServerCTRL.Disconnect();
         }
 
-        private void Browse_ViewValueMI_Click(object sender, EventArgs e)
+        private async void Browse_ViewValueMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -199,7 +200,7 @@ namespace Quickstarts.DataTypes
 
                 if (reference != null)
                 {
-                    new EditComplexValue2Dlg().ShowDialog(m_session, (NodeId)reference.NodeId, Variant.Null, "Read/Write Value");
+                    await new EditComplexValue2Dlg().ShowDialogAsync(m_session, (NodeId)reference.NodeId, Variant.Null, "Read/Write Value");
                 }
             }
             catch (Exception exception)

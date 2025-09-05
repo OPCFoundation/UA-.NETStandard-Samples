@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.Drawing;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -54,7 +56,7 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         #endregion
 
@@ -62,17 +64,17 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public void ChangeSession(Session session)
+        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
-            HistoryDataCTRL.ChangeSession(session);
+            return HistoryDataCTRL.ChangeSessionAsync(session, ct);
         }
 
         /// <summary>
         /// Sets the variable shown in the dialog.
         /// </summary>
-        public void SetVariable(NodeId variableId)
+        public Task SetVariableAsync(NodeId variableId, CancellationToken ct = default)
         {
-            HistoryDataCTRL.ChangeNode(variableId);
+            return HistoryDataCTRL.ChangeNodeAsync(variableId, ct);
         }
         #endregion
 

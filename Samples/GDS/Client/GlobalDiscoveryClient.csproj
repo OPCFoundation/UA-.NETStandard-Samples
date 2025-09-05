@@ -27,6 +27,7 @@
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -37,6 +38,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup>
@@ -139,10 +141,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.5.376.244</Version>
+      <Version>1.5.377.11-preview</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Client.Common">
-      <Version>1.5.376.244</Version>
+      <Version>1.5.377.11-preview</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -43,6 +43,7 @@ using System.IO;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -64,24 +65,24 @@ namespace Opc.Ua.Sample.Controls
         private ServiceMessageContext m_messageContext;
         private X509Certificate2 m_clientCertificate;
         private string m_filePath;
-        
+
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public EndpointDescription ShowDialog(
-            ApplicationConfiguration     configuration,
+            ApplicationConfiguration configuration,
             ConfiguredEndpointCollection endpoints,
-            X509Certificate2             clientCertificate)
+            X509Certificate2 clientCertificate)
         {
-            m_configuration     = configuration;
-            m_endpoints         = endpoints;
-            m_messageContext    = configuration.CreateMessageContext();
+            m_configuration = configuration;
+            m_endpoints = endpoints;
+            m_messageContext = configuration.CreateMessageContext();
             m_clientCertificate = clientCertificate;
-            m_running           = false;
-            m_filePath          = @".\perftest.csv";
-                        
+            m_running = false;
+            m_filePath = @".\perftest.csv";
+
             EndpointSelectorCTRL.Initialize(m_endpoints, configuration);
-            
+
             lock (m_lock)
             {
                 OkBTN.Enabled = m_running = false;
@@ -105,7 +106,7 @@ namespace Opc.Ua.Sample.Controls
             DataContractSerializer serializer = new DataContractSerializer(typeof(PerformanceTestResult[]));
             PerformanceTestResult[] results = (PerformanceTestResult[])serializer.ReadObject(istrm);
             istrm.Close();
-            
+
             ResultsCTRL.Clear();
 
             foreach (PerformanceTestResult result in results)
@@ -127,7 +128,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 return;
             }
-                        
+
             Stream ostrm = File.Open(filePath, FileMode.Create);
             StreamWriter writer = new StreamWriter(ostrm);
 
@@ -137,8 +138,8 @@ namespace Opc.Ua.Sample.Controls
             writer.Write(",Algorithms");
             writer.Write(",Encoding");
 
-            foreach (KeyValuePair<int,double> result in results[0].Results)
-            {                    
+            foreach (KeyValuePair<int, double> result in results[0].Results)
+            {
                 writer.Write(",{0} Values", result.Key);
             }
 
@@ -154,17 +155,17 @@ namespace Opc.Ua.Sample.Controls
                 writer.Write(",{0}", uri.Scheme);
                 writer.Write(",{0}", endpoint.SecurityMode);
                 writer.Write(",{0}", SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri));
-                writer.Write(",{0}", (results[ii].Endpoint.Configuration.UseBinaryEncoding)?"Binary":"XML");
+                writer.Write(",{0}", (results[ii].Endpoint.Configuration.UseBinaryEncoding) ? "Binary" : "XML");
 
-                foreach (KeyValuePair<int,double> result in results[ii].Results)
-                {                    
+                foreach (KeyValuePair<int, double> result in results[ii].Results)
+                {
                     writer.Write(",{0}", result.Value);
                 }
 
                 writer.Write("\r\n");
             }
 
-            writer.Close();            
+            writer.Close();
             m_filePath = filePath;
         }
 
@@ -180,13 +181,13 @@ namespace Opc.Ua.Sample.Controls
             }
 
             try
-            {                
+            {
                 ProgressCTRL.Value = ProgressCTRL.Maximum;
                 ResultsCTRL.Add((PerformanceTestResult)state);
-            }                
+            }
             catch (Exception e)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
 
@@ -204,15 +205,15 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 ProgressCTRL.Value = (int)state;
-            }                
+            }
             catch (Exception e)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
 
         /// <summary>
-        /// Called when the the test fails with an exception.
+        /// Called when the test fails with an exception.
         /// </summary>
         private void TestException(object state)
         {
@@ -225,26 +226,26 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 OkBTN.Enabled = m_running = false;
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), (Exception)state);                
-            }                
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), (Exception)state);
+            }
             catch (Exception e)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
-        
+
         /// <summary>
         /// Runs all tests in a background thread.
         /// </summary>
-        private void DoAllTests(object state)
+        private async Task DoAllTestsAsync(CancellationToken ct = default)
         {
             for (int ii = 0; ii < m_endpoints.Count; ii++)
             {
                 try
                 {
-                    DoTest(m_endpoints[ii]);
+                    await DoTestAsync(m_endpoints[ii], ct);
                 }
-                catch 
+                catch
                 {
                     // ignore.
                 }
@@ -256,24 +257,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Runs the test in a background thread.
         /// </summary>
-        private void DoTest(object state)
-        {
-            try
-            {
-                DoTest((ConfiguredEndpoint)state);
-            }
-            catch (Exception e)
-            {
-                TestException(e);
-            }
-
-            m_running = false;
-        }
-
-        /// <summary>
-        /// Runs the test in a background thread.
-        /// </summary>
-        private void DoTest(ConfiguredEndpoint endpoint)
+        private async Task DoTestAsync(ConfiguredEndpoint endpoint, CancellationToken ct = default)
         {
             PerformanceTestResult result = new PerformanceTestResult(endpoint, 100);
 
@@ -289,7 +273,7 @@ namespace Opc.Ua.Sample.Controls
                 // update the endpoint.
                 if (endpoint.UpdateBeforeConnect)
                 {
-                    endpoint.UpdateFromServer();
+                    await endpoint.UpdateFromServerAsync(ct);
                 }
 
                 SessionClient client = null;
@@ -339,16 +323,15 @@ namespace Opc.Ua.Sample.Controls
                     }
 
                     // ensure valid connection.
-                    DataValueCollection results = null;
-                    DiagnosticInfoCollection diagnosticInfos = null;
-
-                    client.Read(
+                    ReadResponse response = await client.ReadAsync(
                         requestHeader,
                         0,
                         TimestampsToReturn.Both,
                         nodesToRead,
-                        out results,
-                        out diagnosticInfos);
+                        ct);
+
+                    DataValueCollection results = response.Results;
+                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                     if (results.Count != count)
                     {
@@ -360,13 +343,15 @@ namespace Opc.Ua.Sample.Controls
 
                     for (int jj = 0; jj < result.Iterations; jj++)
                     {
-                        client.Read(
+                        response = await client.ReadAsync(
                             requestHeader,
                             0,
                             TimestampsToReturn.Both,
                             nodesToRead,
-                            out results,
-                            out diagnosticInfos);
+                            ct);
+
+                        results = response.Results;
+                        diagnosticInfos = response.DiagnosticInfos;
 
                         if (results.Count != count)
                         {
@@ -404,11 +389,11 @@ namespace Opc.Ua.Sample.Controls
 
                 // start processing.
                 OkBTN.Enabled = m_running = true;
-                ThreadPool.QueueUserWorkItem(new WaitCallback(DoTest), endpoint);
+                Task.Run(() => DoTestAsync(endpoint));
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
                 e.UpdateControl = false;
             }
         }
@@ -424,70 +409,70 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void SaveBTN_Click(object sender, EventArgs e)
         {
-			try
-			{
+            try
+            {
                 FileInfo fileInfo = new FileInfo(m_filePath);
 
-				SaveFileDialog dialog = new SaveFileDialog();
+                SaveFileDialog dialog = new SaveFileDialog();
 
-				dialog.CheckFileExists  = false;
-				dialog.CheckPathExists  = true;
-				dialog.DefaultExt       = ".csv";
-				dialog.Filter           = "Result Files (*.csv)|*.csv|All Files (*.*)|*.*";
-				dialog.ValidateNames    = true;
-				dialog.Title            = "Save Performance Test Result File";
-				dialog.FileName         = m_filePath;
+                dialog.CheckFileExists = false;
+                dialog.CheckPathExists = true;
+                dialog.DefaultExt = ".csv";
+                dialog.Filter = "Result Files (*.csv)|*.csv|All Files (*.*)|*.*";
+                dialog.ValidateNames = true;
+                dialog.Title = "Save Performance Test Result File";
+                dialog.FileName = m_filePath;
                 dialog.InitialDirectory = fileInfo.DirectoryName;
                 dialog.RestoreDirectory = true;
 
-				if (dialog.ShowDialog() != DialogResult.OK)
-				{
-					return;
-				}
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
 
                 SaveResults(dialog.FileName);
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void LoadBTN_Click(object sender, EventArgs e)
-        {            
-			try
-			{
+        {
+            try
+            {
                 FileInfo fileInfo = new FileInfo(m_filePath);
 
-				OpenFileDialog dialog = new OpenFileDialog();
+                OpenFileDialog dialog = new OpenFileDialog();
 
-				dialog.CheckFileExists  = true;
-				dialog.CheckPathExists  = true;
-				dialog.DefaultExt       = ".csv";
-				dialog.Filter           = "Result Files (*.csv)|*.csv|All Files (*.*)|*.*";
-				dialog.Multiselect      = false;
-				dialog.ValidateNames    = true;
-				dialog.Title            = "Open Performance Test Result File";
-				dialog.FileName         = m_filePath;
+                dialog.CheckFileExists = true;
+                dialog.CheckPathExists = true;
+                dialog.DefaultExt = ".csv";
+                dialog.Filter = "Result Files (*.csv)|*.csv|All Files (*.*)|*.*";
+                dialog.Multiselect = false;
+                dialog.ValidateNames = true;
+                dialog.Title = "Open Performance Test Result File";
+                dialog.FileName = m_filePath;
                 dialog.InitialDirectory = fileInfo.DirectoryName;
                 dialog.RestoreDirectory = true;
 
-				if (dialog.ShowDialog() != DialogResult.OK)
-				{
-					return;
-				}
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
 
                 LoadResults(dialog.FileName);
-			}
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -502,7 +487,7 @@ namespace Opc.Ua.Sample.Controls
 
                 ResultsCTRL.Clear();
                 OkBTN.Enabled = m_running = true;
-                ThreadPool.QueueUserWorkItem(new WaitCallback(DoAllTests), null);
+                Task.Run(() => DoAllTestsAsync());
             }
             catch (Exception exception)
             {
@@ -525,19 +510,19 @@ namespace Opc.Ua.Sample.Controls
         {
             Initialize();
 
-            m_endpoint   = endpoint;
+            m_endpoint = endpoint;
             m_iterations = iterations;
         }
 
-		/// <summary>
-		/// Sets private members to default values.
-		/// </summary>
-		private void Initialize()
-		{
-            m_endpoint   = null;
+        /// <summary>
+        /// Sets private members to default values.
+        /// </summary>
+        private void Initialize()
+        {
+            m_endpoint = null;
             m_iterations = 0;
-            m_results    = new Dictionary<int,double>();
-		}
+            m_results = new Dictionary<int, double>();
+        }
 
         /// <summary>
         /// Initializes the object during deserialization.
@@ -577,14 +562,14 @@ namespace Opc.Ua.Sample.Controls
         private List<PerformanceTestResultItem> TestCaseResults
         {
             get
-            { 
+            {
                 List<PerformanceTestResultItem> results = new List<PerformanceTestResultItem>();
 
-                foreach (KeyValuePair<int,double> entry in m_results)
+                foreach (KeyValuePair<int, double> entry in m_results)
                 {
                     PerformanceTestResultItem item = new PerformanceTestResultItem();
 
-                    item.Count   = entry.Key;
+                    item.Count = entry.Key;
                     item.Average = entry.Value;
 
                     results.Add(item);
@@ -592,8 +577,8 @@ namespace Opc.Ua.Sample.Controls
                 return results;
             }
 
-            set 
-            { 
+            set
+            {
                 m_results.Clear();
 
                 if (value != null)
@@ -607,18 +592,18 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// The average roundtrip time in milliseconds indexed by the payload size in bytes. 
+        /// The average roundtrip time in milliseconds indexed by the payload size in bytes.
         /// </summary>
-        public IDictionary<int,double> Results
+        public IDictionary<int, double> Results
         {
             get { return m_results; }
         }
         #endregion
-        
+
         #region Private Fields
         private ConfiguredEndpoint m_endpoint;
         private int m_iterations;
-        private Dictionary<int,double> m_results;
+        private Dictionary<int, double> m_results;
         #endregion
     }
 
@@ -637,14 +622,14 @@ namespace Opc.Ua.Sample.Controls
             Initialize();
         }
 
-		/// <summary>
-		/// Sets private members to default values.
-		/// </summary>
-		private void Initialize()
-		{
-            m_count   = 0;
+        /// <summary>
+        /// Sets private members to default values.
+        /// </summary>
+        private void Initialize()
+        {
+            m_count = 0;
             m_average = 0;
-		}
+        }
 
         /// <summary>
         /// Initializes the object during deserialization.
@@ -663,7 +648,7 @@ namespace Opc.Ua.Sample.Controls
         [DataMember(Order = 1)]
         public int Count
         {
-            get { return m_count;  }
+            get { return m_count; }
             set { m_count = value; }
         }
 
@@ -673,11 +658,11 @@ namespace Opc.Ua.Sample.Controls
         [DataMember(Order = 2)]
         public double Average
         {
-            get { return m_average;  }
+            get { return m_average; }
             set { m_average = value; }
         }
         #endregion
-        
+
         #region Private Fields
         private int m_count;
         private double m_average;

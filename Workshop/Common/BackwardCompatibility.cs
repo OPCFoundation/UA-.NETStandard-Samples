@@ -71,7 +71,7 @@ namespace Quickstarts
     public partial class BrowseNodeCtrl : Opc.Ua.Client.Controls.BrowseNodeCtrl
     {
     }
-    
+
     public partial class ServerForm : Opc.Ua.Server.Controls.ServerForm
     {
         /// <summary>

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -45,8 +47,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public NodeListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -58,12 +60,12 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Name",   HorizontalAlignment.Left, null },  
-			new object[] { "NodeId", HorizontalAlignment.Left, null },  
-			new object[] { "Class",  HorizontalAlignment.Left, null }
-		};
-		#endregion
+        {
+            new object[] { "Name",   HorizontalAlignment.Left, null },
+            new object[] { "NodeId", HorizontalAlignment.Left, null },
+            new object[] { "Class",  HorizontalAlignment.Left, null }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -78,24 +80,24 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, NodeIdCollection nodeIds, NodeClass nodeClassMask)
+        public async Task InitializeAsync(Session session, NodeIdCollection nodeIds, NodeClass nodeClassMask, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
-            
-            m_session       = session;
-            m_nodeIds       = nodeIds;
-            m_nodeClassMask = (nodeClassMask == 0)?(NodeClass)Byte.MaxValue:nodeClassMask;
+
+            m_session = session;
+            m_nodeIds = nodeIds;
+            m_nodeClassMask = (nodeClassMask == 0) ? (NodeClass)Byte.MaxValue : nodeClassMask;
 
             if (nodeIds == null)
             {
-                return;                
+                return;
             }
 
             foreach (NodeId nodeId in nodeIds)
             {
-                INode node = m_session.NodeCache.Find(nodeId);
+                INode node = await m_session.NodeCache.FindAsync(nodeId, ct);
 
                 if (node != null && (m_nodeClassMask & node.NodeClass) != 0)
                 {
@@ -105,15 +107,15 @@ namespace Opc.Ua.Sample.Controls
 
             AdjustColumns();
         }
-        
+
         /// <summary>
         /// Adds a node to the list.
         /// </summary>
-        public void AddNodeId(ReferenceDescription reference)
+        public async Task AddNodeIdAsync(ReferenceDescription reference, CancellationToken ct = default)
         {
             if (reference != null)
             {
-                AddNodeId(reference.NodeId);
+                await AddNodeIdAsync(reference.NodeId, ct);
                 AdjustColumns();
             }
         }
@@ -121,9 +123,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a node to the list.
         /// </summary>
-        public void AddNodeId(ExpandedNodeId nodeId)
+        public async Task AddNodeIdAsync(ExpandedNodeId nodeId, CancellationToken ct = default)
         {
-            Node node = m_session.NodeCache.Find(nodeId) as Node;
+            Node node = await m_session.NodeCache.FindAsync(nodeId, ct) as Node;
 
             if (node == null)
             {
@@ -140,12 +142,12 @@ namespace Opc.Ua.Sample.Controls
                     {
                         if (target.NodeId == node.NodeId)
                         {
-                            UpdateItem(listItem, node);
+                            await UpdateItemAsync(listItem, node, ct);
                             return;
                         }
                     }
                 }
-            
+
                 AddItem(node, "Property", -1);
                 return;
             }
@@ -156,15 +158,15 @@ namespace Opc.Ua.Sample.Controls
 
                 if (supertypeId != null)
                 {
-                    AddNodeId(supertypeId);
+                    await AddNodeIdAsync(supertypeId, ct);
                 }
             }
-            
+
             IList<IReference> properties = node.ReferenceTable.Find(ReferenceTypeIds.HasProperty, false, true, m_session.TypeTree);
 
             for (int ii = 0; ii < properties.Count; ii++)
             {
-                AddNodeId(properties[ii].TargetId);
+                await AddNodeIdAsync(properties[ii].TargetId, ct);
             }
         }
 
@@ -187,40 +189,40 @@ namespace Opc.Ua.Sample.Controls
 
             return nodeIds;
         }
-		#endregion
-        
+        #endregion
+
         #region Private Methods
-		#endregion
-        
+        #endregion
+
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
-		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{               
-            ViewMI.Enabled   = ItemsLV.SelectedItems.Count == 1;
-            DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
-		}
-        
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override void EnableMenuItems(ListViewItem clickedItem)
         {
-			Node node = item as Node;
+            ViewMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+            DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+        }
 
-			if (node == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
+        {
+            Node node = item as Node;
+
+            if (node == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
             listItem.SubItems[0].Text = String.Format("{0}", node);
-		    listItem.SubItems[1].Text = String.Format("{0}", node.NodeId);
-		    listItem.SubItems[2].Text = String.Format("{0}", (NodeClass)node.NodeClass);
+            listItem.SubItems[1].Text = String.Format("{0}", node.NodeId);
+            listItem.SubItems[2].Text = String.Format("{0}", (NodeClass)node.NodeClass);
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
         #endregion
-        
+
         #region Event Handlers
-        private void ViewMI_Click(object sender, EventArgs e)
+        private async void ViewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -228,24 +230,24 @@ namespace Opc.Ua.Sample.Controls
 
                 if (nodes == null || nodes.Length == 1)
                 {
-                    new NodeAttributesDlg().ShowDialog(m_session, nodes[0].NodeId);
+                    await new NodeAttributesDlg().ShowDialogAsync(m_session, nodes[0].NodeId);
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        protected override void ItemsLV_DragDrop(object sender, DragEventArgs e)
-        {            
+        protected override async Task OnDragDropAsync(object sender, DragEventArgs e, CancellationToken ct = default)
+        {
             try
             {
                 ReferenceDescription reference = e.Data.GetData(typeof(ReferenceDescription)) as ReferenceDescription;
 
                 if (reference != null)
                 {
-                    AddNodeId(reference);
+                    await AddNodeIdAsync(reference, ct);
                 }
 
                 ReferenceDescriptionCollection references = e.Data.GetData(typeof(ReferenceDescriptionCollection)) as ReferenceDescriptionCollection;
@@ -254,7 +256,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     foreach (ReferenceDescription current in references)
                     {
-                        AddNodeId(current);
+                        await AddNodeIdAsync(current, ct);
                     }
                 }
 
@@ -270,7 +272,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -292,7 +294,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

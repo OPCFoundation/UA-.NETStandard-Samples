@@ -53,21 +53,21 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private event EventHandler m_ProfilesChanged;
         private Opc.Ua.Security.ListOfSecurityProfiles m_profiles;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// The list of available security profiles.
         /// </summary>
-        public Opc.Ua.Security.ListOfSecurityProfiles Profiles 
+        public Opc.Ua.Security.ListOfSecurityProfiles Profiles
         {
-            get 
-            { 
-                return m_profiles; 
+            get
+            {
+                return m_profiles;
             }
 
             set
@@ -99,7 +99,7 @@ namespace Opc.Ua.Client.Controls
 
             }
         }
-        
+
         /// <summary>
         /// Gets or sets the control that is stores with the current file path.
         /// </summary>

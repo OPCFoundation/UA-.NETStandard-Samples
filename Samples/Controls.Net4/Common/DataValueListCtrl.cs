@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,10 +32,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -46,8 +47,8 @@ namespace Opc.Ua.Sample.Controls
         #region Constructors
         public DataValueListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
         #endregion
 
@@ -59,15 +60,15 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Node",        HorizontalAlignment.Left, null     },  
-			new object[] { "Attribute",   HorizontalAlignment.Left, "Value", }, 
-			new object[] { "Value",       HorizontalAlignment.Left, "", 200  }, 
-			new object[] { "Status",      HorizontalAlignment.Left, ""       }, 
-			new object[] { "Source Time", HorizontalAlignment.Left, ""       },
-			new object[] { "Server Time", HorizontalAlignment.Left, ""       },
-		};
-		#endregion
+        {
+            new object[] { "Node",        HorizontalAlignment.Left, null     },
+            new object[] { "Attribute",   HorizontalAlignment.Left, "Value", },
+            new object[] { "Value",       HorizontalAlignment.Left, "", 200  },
+            new object[] { "Status",      HorizontalAlignment.Left, ""       },
+            new object[] { "Source Time", HorizontalAlignment.Left, ""       },
+            new object[] { "Server Time", HorizontalAlignment.Left, ""       },
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -75,8 +76,8 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public DataListCtrl DataListCtrl
         {
-            get { return m_DataListCtrl;  }
-            set { m_DataListCtrl = value; } 
+            get { return m_DataListCtrl; }
+            set { m_DataListCtrl = value; }
         }
 
         /// <summary>
@@ -91,17 +92,18 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(
-            Session               session,
-            ReadValueIdCollection valueIds, 
-            DataValueCollection   values, 
-            List<ServiceResult>   results)
+        public async Task InitializeAsync(
+            Session session,
+            ReadValueIdCollection valueIds,
+            DataValueCollection values,
+            List<ServiceResult> results,
+            CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
-                        
-            m_session  = session;
+
+            m_session = session;
 
             if (valueIds != null)
             {
@@ -109,7 +111,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     ValueItem item = new ValueItem();
 
-                    item.Node        = m_session.NodeCache.Find(valueIds[ii].NodeId) as Node;
+                    item.Node = await m_session.NodeCache.FindAsync(valueIds[ii].NodeId, ct) as Node;
                     item.AttributeId = valueIds[ii].AttributeId;
 
                     if (values != null && ii < values.Count)
@@ -132,26 +134,27 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(
-            Session               session,
-            WriteValueCollection  values,
-            List<ServiceResult>   results)
+        public async Task InitializeAsync(
+            Session session,
+            WriteValueCollection values,
+            List<ServiceResult> results,
+            CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
-                        
+
             m_session = session;
-            
+
             if (values != null)
             {
                 for (int ii = 0; ii < values.Count; ii++)
                 {
                     ValueItem item = new ValueItem();
 
-                    item.Node        = m_session.NodeCache.Find(values[ii].NodeId) as Node;
+                    item.Node = await m_session.NodeCache.FindAsync(values[ii].NodeId, ct) as Node;
                     item.AttributeId = values[ii].AttributeId;
-                    item.Value       = values[ii].Value;
+                    item.Value = values[ii].Value;
 
                     if (results != null && ii < results.Count)
                     {
@@ -164,35 +167,35 @@ namespace Opc.Ua.Sample.Controls
 
             AdjustColumns();
         }
-		#endregion
-        
+        #endregion
+
         #region NodeField Class
         /// <summary>
         /// A field associated with a node.
         /// </summary>
-        private class ValueItem
-        {            
+        private sealed class ValueItem
+        {
             public Node Node;
             public uint AttributeId;
             public DataValue Value;
             public ServiceResult Result;
         }
-		#endregion
+        #endregion
 
         #region Private Methods
-		#endregion
-        
-        #region Overridden Methods
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
-        {
-			ValueItem dataValue = item as ValueItem;
+        #endregion
 
-			if (dataValue == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+        #region Overridden Methods
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
+        {
+            ValueItem dataValue = item as ValueItem;
+
+            if (dataValue == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
             listItem.SubItems[0].Text = String.Format("{0}", dataValue.Node);
             listItem.SubItems[1].Text = Attributes.GetBrowseName(dataValue.AttributeId);
@@ -218,12 +221,12 @@ namespace Opc.Ua.Sample.Controls
 
             if (dataValue.Result != null)
             {
-                listItem.SubItems[3].Text =String.Format("{0}", dataValue.Result);
+                listItem.SubItems[3].Text = String.Format("{0}", dataValue.Result);
             }
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
-        
+
         /// <see cref="BaseListCtrl.SelectItems" />
         protected override void SelectItems()
         {
@@ -235,11 +238,11 @@ namespace Opc.Ua.Sample.Controls
 
                 if (values != null && values.Length > 0)
                 {
-                    m_DataListCtrl.ShowValue(values[0].Value);
+                    m_DataListCtrl.ShowValueAsync(values[0].Value);
                 }
                 else
                 {
-                    m_DataListCtrl.ShowValue(null);
+                    m_DataListCtrl.ShowValueAsync(null);
                 }
             }
         }

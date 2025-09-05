@@ -38,7 +38,7 @@ namespace Quickstarts.SimpleEvents.Server
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Namespaces.SimpleEvents)]
+    [DataContract(Namespace = Namespaces.SimpleEvents)]
     public class SimpleEventsServerConfiguration
     {
         #region Constructors

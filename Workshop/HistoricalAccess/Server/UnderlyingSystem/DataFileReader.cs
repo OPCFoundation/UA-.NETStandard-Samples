@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -82,7 +82,7 @@ namespace Quickstarts.HistoricalAccessServer
             dataset.Tables[2].Columns.Add("Annotation", typeof(Annotation));
 
             dataset.Tables[2].DefaultView.Sort = "SourceTimestamp";
-            
+
             return dataset;
         }
 
@@ -201,7 +201,7 @@ namespace Quickstarts.HistoricalAccessServer
                     {
                         return false;
                     }
-                    
+
                     // update the item.
                     item.DataType = dataType;
                     item.ValueRank = valueRank;
@@ -245,7 +245,7 @@ namespace Quickstarts.HistoricalAccessServer
             if (dataset.Tables[0].Rows.Count > 0)
             {
                 int index = dataset.Tables[0].DefaultView.Count;
-                DateTime endTime = (DateTime)dataset.Tables[0].DefaultView[index-1].Row[0];
+                DateTime endTime = (DateTime)dataset.Tables[0].DefaultView[index - 1].Row[0];
                 endTime = startTime.AddMilliseconds(item.SamplingInterval);
             }
 
@@ -268,7 +268,7 @@ namespace Quickstarts.HistoricalAccessServer
                 {
                     dataValue.Value = generator.GetRandomArray(item.DataType, false, 10, false);
                 }
-                
+
                 // add record to table.
                 DataRow row = dataset.Tables[0].NewRow();
 
@@ -320,7 +320,7 @@ namespace Quickstarts.HistoricalAccessServer
         private DataSet LoadData(ISystemContext context, DateTime baseline, StreamReader reader)
         {
             DataSet dataset = CreateDataSet();
-         
+
             ServiceMessageContext messageContext = new ServiceMessageContext();
 
             if (context != null)
@@ -362,7 +362,7 @@ namespace Quickstarts.HistoricalAccessServer
                 // ignore blank lines.
                 line = line.Trim();
                 lineCount++;
-                
+
                 if (String.IsNullOrEmpty(line))
                 {
                     continue;
@@ -391,7 +391,7 @@ namespace Quickstarts.HistoricalAccessServer
                 {
                     continue;
                 }
-                
+
                 // get modification type.
                 if (!ExtractField(lineCount, ref line, out recordType))
                 {
@@ -554,7 +554,7 @@ namespace Quickstarts.HistoricalAccessServer
             value = field;
             return true;
         }
-        
+
         /// <summary>
         /// Extracts an integer value from the line.
         /// </summary>
@@ -664,9 +664,11 @@ namespace Quickstarts.HistoricalAccessServer
             builder.AppendFormat("</{0}>", valueType);
             builder.Append("</Value>");
 
-            XmlDocument document = new XmlDocument();
-            document.InnerXml = builder.ToString();
-
+            XmlDocument document = new XmlDocument { XmlResolver = null };
+            using (XmlReader reader = XmlReader.Create(builder.ToString(), new XmlReaderSettings() { XmlResolver = null }))
+            {
+                document.Load(reader);
+            }
             try
             {
                 XmlDecoder decoder = new XmlDecoder(document.DocumentElement, context);

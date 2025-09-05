@@ -228,7 +228,7 @@ namespace Quickstarts.UserAuthenticationClient
             this.ChangeLogFileBTN.TabIndex = 14;
             this.ChangeLogFileBTN.Text = "Change";
             this.ChangeLogFileBTN.UseVisualStyleBackColor = true;
-            this.ChangeLogFileBTN.Click += new System.EventHandler(this.ChangeLogFileBTN_Click);
+            this.ChangeLogFileBTN.Click += new System.EventHandler(this.ChangeLogFileBTN_ClickAsync);
             // 
             // tabControl1
             // 
@@ -560,7 +560,7 @@ namespace Quickstarts.UserAuthenticationClient
             this.ConnectServerCTRL.StatusStrip = this.StatusBar;
             this.ConnectServerCTRL.TabIndex = 4;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
             this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
             // 

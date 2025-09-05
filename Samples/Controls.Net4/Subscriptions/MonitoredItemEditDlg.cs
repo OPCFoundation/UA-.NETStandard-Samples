@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
@@ -48,8 +49,8 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            AttributeIdCB.Items.AddRange(Attributes.GetBrowseNames());
-            
+            AttributeIdCB.Items.AddRange(Attributes.BrowseNames.ToArray());
+
             foreach (MonitoringMode value in Enum.GetValues(typeof(MonitoringMode)))
             {
                 MonitoringModeCB.Items.Add(value);
@@ -76,7 +77,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public bool ShowDialog(Session session, MonitoredItem monitoredItem, bool editMonitoredItem)
         {
-            if (monitoredItem == null) throw new ArgumentNullException("monitoredItem");
+            if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
             m_session = session;
 
@@ -84,7 +85,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (editMonitoredItem)
             {
-                // Disable the not changeable values            
+                // Disable the not changeable values
                 NodeIdCTRL.Enabled = false;
                 RelativePathTB.Enabled = false;
                 NodeClassCB.Enabled = false;
@@ -152,16 +153,16 @@ namespace Opc.Ua.Sample.Controls
         }
 
         private void OkBTN_Click(object sender, EventArgs e)
-        {              
+        {
             try
             {
                 NodeId nodeId = NodeIdCTRL.Identifier;
             }
             catch (Exception)
             {
-				MessageBox.Show("Please enter a valid node id.", this.Text);
+                MessageBox.Show("Please enter a valid node id.", this.Text);
             }
-            
+
             try
             {
                 if (!String.IsNullOrEmpty(RelativePathTB.Text))
@@ -171,7 +172,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception)
             {
-				MessageBox.Show("Please enter a valid relative path.", this.Text);
+                MessageBox.Show("Please enter a valid relative path.", this.Text);
             }
 
             try
@@ -183,17 +184,17 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception)
             {
-				MessageBox.Show("Please enter a valid index range.", this.Text);
+                MessageBox.Show("Please enter a valid index range.", this.Text);
             }
 
             DialogResult = DialogResult.OK;
         }
 
-        private void NodeIdCTRL_IdentifierChanged(object sender, EventArgs e)
+        private async void NodeIdCTRL_IdentifierChangedAsync(object sender, EventArgs e)
         {
             if (NodeIdCTRL.Reference != null)
             {
-                DisplayNameTB.Text = m_session.NodeCache.GetDisplayText(NodeIdCTRL.Reference);
+                DisplayNameTB.Text = await m_session.NodeCache.GetDisplayTextAsync(NodeIdCTRL.Reference);
                 NodeClassCB.SelectedItem = (NodeClass)NodeIdCTRL.Reference.NodeClass;
             }
         }

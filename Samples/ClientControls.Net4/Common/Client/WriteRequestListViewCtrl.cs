@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -53,7 +55,7 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
             ResultsDV.AutoGenerateColumns = false;
             ImageList = new ClientUtils().ImageList;
-            
+
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Requests");
 
@@ -75,14 +77,14 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private DataSet m_dataset;
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Public Members
         /// <summary>
         /// Changes the session used for the write request.
         /// </summary>
-        public void ChangeSession(Session session)
+        public void ChangeSession(ISession session)
         {
             m_session = session;
         }
@@ -90,32 +92,32 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the nodes to the write request.
         /// </summary>
-        public void AddNodes(params WriteValue[] nodesToWrite)
+        public async Task AddNodesAsync(CancellationToken ct, params WriteValue[] nodesToWrite)
         {
             if (nodesToWrite != null && nodesToWrite.Length > 0)
             {
                 foreach (WriteValue nodeToWrite in nodesToWrite)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, nodeToWrite);
+                    await UpdateRowAsync(row, nodeToWrite, ct);
                     nodeToWrite.Handle = row;
                     m_dataset.Tables[0].Rows.Add(row);
                 }
 
-                Read(nodesToWrite);
+                await ReadAsync(ct, nodesToWrite);
             }
         }
 
         /// <summary>
         /// Updates the values with the current values read from the server.
         /// </summary>
-        public void Read(params WriteValue[] nodesToWrite)
+        public async Task ReadAsync(CancellationToken ct = default, params WriteValue[] nodesToWrite)
         {
             if (m_session == null)
             {
                 throw new ServiceResultException(StatusCodes.BadNotConnected);
             }
-            
+
             // build list of values to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 
@@ -151,16 +153,15 @@ namespace Opc.Ua.Client.Controls
             }
 
             // read the values.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -182,7 +183,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the values displayed in the control and moves to the display results state.
         /// </summary>
-        public void Write()
+        public async Task WriteAsync(CancellationToken ct = default)
         {
             if (m_session == null)
             {
@@ -199,16 +200,15 @@ namespace Opc.Ua.Client.Controls
                 row.Selected = false;
                 nodesToWrite.Add(value);
             }
-            
-            // read the values.
-            StatusCodeCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            m_session.Write(
+            // read the values.
+            WriteResponse response = await m_session.WriteAsync(
                 null,
                 nodesToWrite,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            StatusCodeCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToWrite);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);
@@ -270,11 +270,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the node to write.
         /// </summary>
-        public void UpdateRow(DataRow row, WriteValue nodeToWrite)
+        public async Task UpdateRowAsync(DataRow row, WriteValue nodeToWrite, CancellationToken ct = default)
         {
             row[0] = nodeToWrite;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(nodeToWrite.AttributeId, null)];
-            row[2] = (m_session != null) ? m_session.NodeCache.GetDisplayText(nodeToWrite.NodeId) : Utils.ToString(nodeToWrite.NodeId);
+            row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToWrite.NodeId, ct) : Utils.ToString(nodeToWrite.NodeId);
             row[3] = Attributes.GetBrowseName(nodeToWrite.AttributeId);
             row[4] = nodeToWrite.IndexRange;
 
@@ -289,7 +289,7 @@ namespace Opc.Ua.Client.Controls
             {
                 EditMI.Enabled = ResultsDV.SelectedRows.Count == 1;
                 EditValueMI.Enabled = ResultsDV.SelectedRows.Count > 0;
-                DeleteMI.Enabled = ResultsDV.SelectedRows.Count > 0; 
+                DeleteMI.Enabled = ResultsDV.SelectedRows.Count > 0;
             }
             catch (Exception exception)
             {
@@ -297,7 +297,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -318,12 +318,12 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // prompt use to edit new value.
-                WriteValue result = new EditWriteValueDlg().ShowDialog(m_session, nodeToWrite);
+                WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, nodeToWrite);
 
                 if (result != null)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, result);
+                    await UpdateRowAsync(row, result);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -333,7 +333,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -343,11 +343,11 @@ namespace Opc.Ua.Client.Controls
                     DataRowView source = row.DataBoundItem as DataRowView;
                     WriteValue value = (WriteValue)source.Row[0];
 
-                    WriteValue result = new EditWriteValueDlg().ShowDialog(m_session, value);
+                    WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, value);
 
                     if (result != null)
                     {
-                        UpdateRow(source.Row, result);
+                        await UpdateRowAsync(source.Row, result);
                     }
 
                     break;
@@ -359,7 +359,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditValueMI_Click(object sender, EventArgs e)
+        private async void EditValueMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -376,7 +376,7 @@ namespace Opc.Ua.Client.Controls
                 if (nodeToWrite != null)
                 {
                     // prompt use to edit value.
-                    object value = new EditComplexValueDlg().ShowDialog(
+                    object value = new EditComplexValueDlg().ShowDialogAsync(
                         m_session,
                         nodeToWrite.NodeId,
                         nodeToWrite.AttributeId,
@@ -393,10 +393,10 @@ namespace Opc.Ua.Client.Controls
                             DataRowView source = row.DataBoundItem as DataRowView;
                             nodeToWrite = (WriteValue)source.Row[0];
                             nodeToWrite.Value.Value = value;
-                            UpdateRow(source.Row, nodeToWrite);
+                            await UpdateRowAsync(source.Row, nodeToWrite);
                         }
                     }
-                }            
+                }
             }
             catch (Exception exception)
             {

@@ -74,7 +74,7 @@ namespace Opc.Ua.Client.Controls
             // 
             this.ItemsLV.ContextMenuStrip = this.PopupMenu;
             this.ItemsLV.MultiSelect = false;
-            this.ItemsLV.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ItemsLV_MouseClick);
+            this.ItemsLV.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ItemsLV_MouseClickAsync);
             // 
             // PopupMenu
             // 
@@ -121,7 +121,7 @@ namespace Opc.Ua.Client.Controls
             this.EditMI.Name = "EditMI";
             this.EditMI.Size = new System.Drawing.Size(135, 22);
             this.EditMI.Text = "Edit Value...";
-            this.EditMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.EditMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // DataListCtrl
             // 

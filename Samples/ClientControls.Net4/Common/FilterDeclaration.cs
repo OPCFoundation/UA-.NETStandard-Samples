@@ -295,7 +295,7 @@ namespace Opc.Ua.Client.Controls
             filter.WhereClause = GetWhereClause();
             return filter;
         }
-        
+
         /// <summary>
         /// Adds a simple field to the declaration.
         /// </summary>
@@ -394,7 +394,7 @@ namespace Opc.Ua.Client.Controls
 
             return selectClause;
         }
-        
+
         /// <summary>
         /// Returns the where clause defined by the filter declaration.
         /// </summary>
@@ -444,12 +444,12 @@ namespace Opc.Ua.Client.Controls
             {
                 if (this.Fields[ii].InstanceDeclaration.BrowseName == browseName)
                 {
-                    if (ii >= fields.Count+1)
+                    if (ii >= fields.Count + 1)
                     {
                         return defaultValue;
                     }
 
-                    object value = fields[ii+1].Value;
+                    object value = fields[ii + 1].Value;
 
                     if (typeof(T).IsInstanceOfType(value))
                     {

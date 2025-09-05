@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -50,7 +50,7 @@ namespace Quickstarts.UserAuthenticationServer
     /// Each server instance must have one instance of a StandardServer object which is
     /// responsible for reading the configuration file, creating the endpoints and dispatching
     /// incoming requests to the appropriate handler.
-    /// 
+    ///
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the UserAuthenticationNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
@@ -61,7 +61,7 @@ namespace Quickstarts.UserAuthenticationServer
         /// Initializes the server before it starts up.
         /// </summary>
         /// <remarks>
-        /// This method is called before any startup processing occurs. The sub-class may update the 
+        /// This method is called before any startup processing occurs. The sub-class may update the
         /// configuration object or do any other application specific startup tasks.
         /// </remarks>
         protected override void OnServerStarting(ApplicationConfiguration configuration)
@@ -102,7 +102,7 @@ namespace Quickstarts.UserAuthenticationServer
 
             // create the custom node managers.
             nodeManagers.Add(new UserAuthenticationNodeManager(server, configuration));
-            
+
             // create master node manager.
             return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
         }
@@ -118,11 +118,11 @@ namespace Quickstarts.UserAuthenticationServer
             ServerProperties properties = new ServerProperties();
 
             properties.ManufacturerName = "OPC Foundation";
-            properties.ProductName      = "OPC UA Quickstarts";
-            properties.ProductUri       = "http://opcfoundation.org/Quickstarts/UserAuthenticationServer/v1.0";
-            properties.SoftwareVersion  = Utils.GetAssemblySoftwareVersion();
-            properties.BuildNumber      = Utils.GetAssemblyBuildNumber();
-            properties.BuildDate        = Utils.GetAssemblyTimestamp();
+            properties.ProductName = "OPC UA Quickstarts";
+            properties.ProductUri = "http://opcfoundation.org/Quickstarts/UserAuthenticationServer/v1.0";
+            properties.SoftwareVersion = Utils.GetAssemblySoftwareVersion();
+            properties.BuildNumber = Utils.GetAssemblyBuildNumber();
+            properties.BuildDate = Utils.GetAssemblyTimestamp();
 
             // TBD - All applications have software certificates that need to added to the properties.
 
@@ -134,7 +134,7 @@ namespace Quickstarts.UserAuthenticationServer
         /// </summary>
         protected override ResourceManager CreateResourceManager(IServerInternal server, ApplicationConfiguration configuration)
         {
-            ResourceManager resourceManager = new ResourceManager(server, configuration);
+            ResourceManager resourceManager = new ResourceManager(configuration);
 
             // add some localized strings to the resource manager to demonstrate that localization occurs.
             resourceManager.Add("InvalidPassword", "de-DE", "Das Passwort ist nicht gültig für Konto '{0}'.");
@@ -145,7 +145,7 @@ namespace Quickstarts.UserAuthenticationServer
 
             resourceManager.Add("BadUserAccessDenied", "fr-FR", "Utilisateur ne peut pas changer la valeur.");
             resourceManager.Add("BadUserAccessDenied", "de-DE", "User nicht ändern können, Wert.");
-                        
+
             return resourceManager;
         }
 
@@ -186,7 +186,7 @@ namespace Quickstarts.UserAuthenticationServer
         /// <summary>
         /// Called when a client tries to change its user identity.
         /// </summary>
-        private void SessionManager_ImpersonateUser(Session session, ImpersonateEventArgs args)
+        private void SessionManager_ImpersonateUser(ISession session, ImpersonateEventArgs args)
         {
 
 #if TODO
@@ -232,11 +232,11 @@ namespace Quickstarts.UserAuthenticationServer
         {
             if (issuerCertificate == null)
             {
-                throw new ArgumentNullException("issuerCertificate");
+                throw new ArgumentNullException(nameof(issuerCertificate));
             }
 
             // find the certificate.
-            X509Certificate2 certificate = issuerCertificate.Find(false).Result;
+            X509Certificate2 certificate = issuerCertificate.FindAsync(false).Result;
 
             if (certificate == null)
             {
@@ -319,12 +319,15 @@ namespace Quickstarts.UserAuthenticationServer
         /// </summary>
         private SecurityToken ParseAndVerifyKerberosToken(byte[] tokenData)
         {
-            XmlDocument document = new XmlDocument();
+            var document = new XmlDocument { XmlResolver = null };
             XmlNodeReader reader = null;
-
             try
             {
-                document.InnerXml = new UTF8Encoding().GetString(tokenData).Trim();
+                using (var xml = XmlReader.Create(Encoding.UTF8.GetString(tokenData).Trim(), new XmlReaderSettings() { XmlResolver = null }))
+                {
+                    document.Load(xml);
+                }
+
                 reader = new XmlNodeReader(document.DocumentElement);
 
                 SecurityToken securityToken = new WSSecurityTokenSerializer().ReadToken(reader, null);
@@ -364,56 +367,44 @@ namespace Quickstarts.UserAuthenticationServer
                 }
             }
         }
-#endregion
+        #endregion
 
 
         private static class NativeMethods
         {
             [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
             public static extern bool LogonUser(
-                string lpszUsername, 
-                string lpszDomain, 
+                string lpszUsername,
+                string lpszDomain,
                 string lpszPassword,
-                int dwLogonType, 
-                int dwLogonProvider, 
+                int dwLogonType,
+                int dwLogonProvider,
                 ref IntPtr phToken);
 
             [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
             public extern static bool CloseHandle(IntPtr handle);
         }
 
-        private class ImpersonationContext : IDisposable
+        private sealed class ImpersonationContext : IDisposable
         {
             public WindowsImpersonationContext Context;
             public IntPtr Handle;
-        
-#region IDisposable Members
+
+            #region IDisposable Members
             /// <summary>
             /// The finializer implementation.
             /// </summary>
-            ~ImpersonationContext() 
+            ~ImpersonationContext()
             {
-                Dispose(false);
+                Dispose();
             }
-            
+
             /// <summary>
             /// Frees any unmanaged resources.
             /// </summary>
             public void Dispose()
-            {   
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            /// <summary>
-            /// An overrideable version of the Dispose.
-            /// </summary>
-            protected virtual void Dispose(bool disposing)
             {
-                if (disposing) 
-                {
-                    Utils.SilentDispose(Context);
-                }
+                Utils.SilentDispose(Context);
 
                 if (Handle != IntPtr.Zero)
                 {
@@ -421,12 +412,12 @@ namespace Quickstarts.UserAuthenticationServer
                     Handle = IntPtr.Zero;
                 }
             }
-#endregion
+            #endregion
         }
 
         // need to ensure the contexts are undone.
         private Dictionary<uint, ImpersonationContext> m_contexts = new Dictionary<uint, ImpersonationContext>();
-        
+
         /// <summary>
         /// Impersonates the windows user identifed by the security token.
         /// </summary>
@@ -440,10 +431,10 @@ namespace Quickstarts.UserAuthenticationServer
             // const int LOGON32_LOGON_BATCH = 4;
 
             bool result = NativeMethods.LogonUser(
-                securityToken.UserName, 
-                String.Empty, 
+                securityToken.UserName,
+                String.Empty,
                 securityToken.Password,
-                LOGON32_LOGON_NETWORK, 
+                LOGON32_LOGON_NETWORK,
                 LOGON32_PROVIDER_DEFAULT,
                 ref handle);
 
@@ -524,7 +515,7 @@ namespace Quickstarts.UserAuthenticationServer
         /// </summary>
         protected override void OnRequestComplete(OperationContext context)
         {
-           ImpersonationContext impersonationContext = null;
+            ImpersonationContext impersonationContext = null;
 
             lock (this.m_impersonationLock)
             {
@@ -543,9 +534,9 @@ namespace Quickstarts.UserAuthenticationServer
             base.OnRequestComplete(context);
         }
 
-#region Private Fields
+        #region Private Fields
         private object m_impersonationLock = new object();
         private X509CertificateValidator m_certificateValidator;
-#endregion
+        #endregion
     }
 }

@@ -55,12 +55,12 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         private string m_domain;
         private string m_hostname;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
@@ -82,11 +82,11 @@ namespace Opc.Ua.Client.Controls
             {
                 return null;
             }
-  
+
             return m_hostname;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

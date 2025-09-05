@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -45,8 +47,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public WriteValueListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -56,16 +58,16 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Name",       HorizontalAlignment.Left, null },  
-			new object[] { "NodeId",     HorizontalAlignment.Left, null }, 
-			new object[] { "Attribute",  HorizontalAlignment.Left, "Value" }, 
-			new object[] { "IndexRange", HorizontalAlignment.Left, "" }, 
-			new object[] { "Value",      HorizontalAlignment.Left, "" }, 
-			new object[] { "Status",     HorizontalAlignment.Left, "" }, 
-			new object[] { "Timestamp",  HorizontalAlignment.Left, "" }
-		};
-		#endregion
+        {
+            new object[] { "Name",       HorizontalAlignment.Left, null },
+            new object[] { "NodeId",     HorizontalAlignment.Left, null },
+            new object[] { "Attribute",  HorizontalAlignment.Left, "Value" },
+            new object[] { "IndexRange", HorizontalAlignment.Left, "" },
+            new object[] { "Value",      HorizontalAlignment.Left, "" },
+            new object[] { "Status",     HorizontalAlignment.Left, "" },
+            new object[] { "Timestamp",  HorizontalAlignment.Left, "" }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -82,10 +84,10 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public void Initialize(Session session, WriteValueCollection values)
         {
-            if (session == null)  throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
-            
+
             m_session = session;
 
             if (values != null)
@@ -102,9 +104,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a value to the control.
         /// </summary>
-        public void AddValue(ReferenceDescription reference)
+        public async Task AddValueAsync(ReferenceDescription reference, CancellationToken ct = default)
         {
-            Node node = m_session.NodeCache.Find(reference.NodeId) as Node;
+            Node node = await m_session.NodeCache.FindAsync(reference.NodeId, ct) as Node;
 
             if (node == null)
             {
@@ -113,17 +115,17 @@ namespace Opc.Ua.Sample.Controls
 
             WriteValue value = new WriteValue();
 
-            value.NodeId      = node.NodeId;
+            value.NodeId = node.NodeId;
             value.AttributeId = Attributes.Value;
-            value.IndexRange  = null;
+            value.IndexRange = null;
 
             // read the display name for non-variables.
             if ((node.NodeClass & (NodeClass.Variable | NodeClass.VariableType)) == 0)
             {
-                value.AttributeId  = Attributes.DisplayName;
+                value.AttributeId = Attributes.DisplayName;
             }
 
-            value.Value = GetDefaultValue(value.NodeId, value.AttributeId);
+            value.Value = await GetDefaultValueAsync(value.NodeId, value.AttributeId, ct);
 
             AddItem(value);
             AdjustColumns();
@@ -157,10 +159,10 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns a default value for the node.
         /// </summary>
-        private DataValue GetDefaultValue(NodeId nodeId, uint attributeId)
+        private async Task<DataValue> GetDefaultValueAsync(NodeId nodeId, uint attributeId, CancellationToken ct = default)
         {
             // find the node.
-            Node node = m_session.NodeCache.Find(nodeId) as Node;
+            Node node = await m_session.NodeCache.FindAsync(nodeId, ct) as Node;
 
             if (node == null)
             {
@@ -176,13 +178,13 @@ namespace Opc.Ua.Sample.Controls
             {
                 value.Value = GuiUtils.GetDefaultValue(Attributes.GetDataTypeId(attributeId), ValueRanks.Scalar);
             }
-                        
+
             // update the value attribute.
             if (attributeId == Attributes.Value)
             {
                 try
                 {
-                    return m_session.ReadValue(node.NodeId);
+                    return await m_session.ReadValueAsync(node.NodeId, ct);
                 }
                 catch (Exception)
                 {
@@ -194,50 +196,50 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
             }
-          
+
             return value;
         }
-		#endregion
-                
+        #endregion
+
         #region Overridden Methods
         /// <see cref="BaseListCtrl.PickItems" />
         protected override void PickItems()
         {
             base.PickItems();
-            EditValueMI_Click(this, null);
+            EditValueMI_ClickAsync(this, null);
         }
 
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
-            NewMI.Enabled         = true;
-            EditMI.Enabled        = ItemsLV.SelectedItems.Count == 1;
-            EditValueMI.Enabled   = ItemsLV.SelectedItems.Count == 1;
-            DeleteMI.Enabled      = ItemsLV.SelectedItems.Count > 0;
-		}
-        
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
         {
-			WriteValue value = item as WriteValue;
+            NewMI.Enabled = true;
+            EditMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+            EditValueMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+            DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+        }
 
-			if (value == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
-            
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
+        {
+            WriteValue value = item as WriteValue;
+
+            if (value == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
+
             if (value.Value == null)
             {
                 value.Value = new DataValue();
             }
-            
+
             if (value.Value.Value == null)
             {
-                value.Value = GetDefaultValue(value.NodeId, value.AttributeId);
+                value.Value = await GetDefaultValueAsync(value.NodeId, value.AttributeId, ct);
             }
-            
-            Node node = m_session.NodeCache.Find(value.NodeId) as Node;
+
+            Node node = await m_session.NodeCache.FindAsync(value.NodeId, ct) as Node;
 
             if (node != null)
             {
@@ -247,23 +249,23 @@ namespace Opc.Ua.Sample.Controls
             {
                 listItem.SubItems[0].Text = String.Format("{0}", value.NodeId);
             }
-            
+
             listItem.SubItems[1].Text = String.Format("{0}", value.NodeId);
             listItem.SubItems[2].Text = String.Format("{0}", Attributes.GetBrowseName(value.AttributeId));
             listItem.SubItems[3].Text = String.Format("{0}", value.IndexRange);
             listItem.SubItems[4].Text = String.Format("{0}", value.Value.Value);
             listItem.SubItems[5].Text = String.Format("{0}", value.Value.StatusCode);
             listItem.SubItems[6].Text = String.Format("{0}", value.Value.SourceTimestamp);
-            
-			listItem.Tag = item;
+
+            listItem.Tag = item;
             listItem.ImageKey = "DataType";
         }
 
         /// <summary>
         /// Handles a drop event.
         /// </summary>
-        protected override void ItemsLV_DragDrop(object sender, DragEventArgs e)
-        {            
+        protected override async Task OnDragDropAsync(object sender, DragEventArgs e, CancellationToken ct = default)
+        {
             try
             {
                 ReferenceDescription reference = e.Data.GetData(typeof(ReferenceDescription)) as ReferenceDescription;
@@ -272,24 +274,24 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                    
-                AddValue(reference);
+
+                await AddValueAsync(reference, ct);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
-        
+
         #region Event Handlers
-        private void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 WriteValue value = new WriteValue();
 
-                if (new WriteValueEditDlg().ShowDialog(m_session, value))
+                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value))
                 {
                     AddItem(value);
                 }
@@ -298,11 +300,11 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -313,9 +315,9 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (new WriteValueEditDlg().ShowDialog(m_session, values[0]))
+                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0]))
                 {
-                    Node node = m_session.NodeCache.Find(values[0].NodeId) as Node;
+                    Node node = await m_session.NodeCache.FindAsync(values[0].NodeId) as Node;
 
                     if (node != null)
                     {
@@ -329,16 +331,16 @@ namespace Opc.Ua.Sample.Controls
                         }
                     }
 
-                    UpdateItem(ItemsLV.SelectedItems[0], values[0]);
+                    await UpdateItemAsync(ItemsLV.SelectedItems[0], values[0]);
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void EditValueMI_Click(object sender, EventArgs e)
+        private async void EditValueMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -354,7 +356,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (values[0].AttributeId == Attributes.Value)
                 {
-                    VariableNode node = m_session.NodeCache.Find(values[0].NodeId) as VariableNode;
+                    VariableNode node = await m_session.NodeCache.FindAsync(values[0].NodeId) as VariableNode;
 
                     if (node != null)
                     {
@@ -399,7 +401,7 @@ namespace Opc.Ua.Sample.Controls
                     values[0].Value.Value = value;
                     values[0].Value.StatusCode = StatusCodes.Good;
 
-                    UpdateItem(ItemsLV.SelectedItems[0], values[0]);
+                    await UpdateItemAsync(ItemsLV.SelectedItems[0], values[0]);
 
                     AdjustColumns();
                 }
@@ -430,7 +432,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

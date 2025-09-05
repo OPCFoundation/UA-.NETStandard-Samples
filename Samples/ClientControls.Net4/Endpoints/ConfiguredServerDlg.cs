@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,7 @@ using System.Reflection;
 using System.Threading;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua.Security.Certificates;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -112,7 +113,7 @@ namespace Opc.Ua.Client.Controls
         /// Initialize it with the number of status channels and update "StatusChannel" accordingly.
         /// Provides a general view of all the statuses (joined texts, worst status).
         /// </summary>
-        private class StatusObject
+        private sealed class StatusObject
         {
             public StatusObject(int maxChannels)
             {
@@ -201,7 +202,7 @@ namespace Opc.Ua.Client.Controls
         /// Also prepares a user-friendly text representation of all the endpoint-rellevant characteristics.
         /// The extracted EndpointDescription properties are used in selecting the right combo-box values when user clicks in the endpoint list box.
         /// </summary>
-        private class EndpointDescriptionString
+        private sealed class EndpointDescriptionString
         {
             public EndpointDescriptionString(EndpointDescription endpointDescription)
             {
@@ -348,7 +349,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public ConfiguredEndpoint ShowDialog(ApplicationDescription server, ApplicationConfiguration configuration)
         {
-            if (server == null) throw new ArgumentNullException("server");
+            if (server == null) throw new ArgumentNullException(nameof(server));
 
             m_configuration = configuration;
 
@@ -368,7 +369,7 @@ namespace Opc.Ua.Client.Controls
             // discover endpoints in the background.
             m_discoverySucceeded = false;
             Interlocked.Increment(ref m_discoverCount);
-            ThreadPool.QueueUserWorkItem(new WaitCallback(OnDiscoverEndpoints), server);
+            Task.Run(() => OnDiscoverEndpointsAsync(server));
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -383,7 +384,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public ConfiguredEndpoint ShowDialog(ConfiguredEndpoint endpoint, ApplicationConfiguration configuration)
         {
-            if (endpoint == null) throw new ArgumentNullException("endpoint");
+            if (endpoint == null) throw new ArgumentNullException(nameof(endpoint));
 
             m_endpoint = endpoint;
             m_configuration = configuration;
@@ -452,7 +453,7 @@ namespace Opc.Ua.Client.Controls
 
             // discover endpoints in the background.
             Interlocked.Increment(ref m_discoverCount);
-            ThreadPool.QueueUserWorkItem(new WaitCallback(OnDiscoverEndpoints), m_endpoint.Description.Server);
+            Task.Run(() => OnDiscoverEndpointsAsync(m_endpoint.Description.Server));
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -555,7 +556,7 @@ namespace Opc.Ua.Client.Controls
             // filter by the current security policy.
             string currentPolicy = (string)SecurityPolicyCB.SelectedItem;
 
-            // find all matching descriptions.      
+            // find all matching descriptions.
             EndpointDescriptionCollection matches = new EndpointDescriptionCollection();
 
             if (endpoints != null)
@@ -614,7 +615,7 @@ namespace Opc.Ua.Client.Controls
             return bestMatch;
         }
 
-        private class Protocol
+        private sealed class Protocol
         {
             public Uri Url;
             public string Profile;
@@ -683,7 +684,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (!String.IsNullOrEmpty(Profile))
                 {
-                    builder.Append(" ");
+                    builder.Append(' ');
                     builder.Append(Profile);
                 }
 
@@ -692,11 +693,11 @@ namespace Opc.Ua.Client.Controls
 
                 if (Url.Port != -1)
                 {
-                    builder.Append(":");
+                    builder.Append(':');
                     builder.Append(Url.Port);
                 }
 
-                builder.Append("]");
+                builder.Append(']');
 
                 return builder.ToString();
             }
@@ -869,14 +870,10 @@ namespace Opc.Ua.Client.Controls
             // set all available security policies.
             if (m_showAllOptions)
             {
-                var securityPolicies = SecurityPolicies.GetDisplayNames();
-                foreach (var policy in securityPolicies)
-                {
-                    SecurityPolicyCB.Items.Add(policy);
-                }
+                SecurityPolicyCB.Items.AddRange(SecurityPolicies.GetDisplayNames());
             }
 
-            // find all unique security policies.    
+            // find all unique security policies.
             else
             {
                 if (endpoints != null)
@@ -1015,7 +1012,7 @@ namespace Opc.Ua.Client.Controls
             EncodingCB.SelectedIndex = index;
         }
 
-        private class UserTokenItem
+        private sealed class UserTokenItem
         {
             public UserTokenPolicy Policy;
 
@@ -1084,22 +1081,20 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Attempts fetch the list of servers from the discovery server.
         /// </summary>
-        private void OnDiscoverEndpoints(object state)
+        private async Task OnDiscoverEndpointsAsync(ApplicationDescription server, CancellationToken ct = default)
         {
             int discoverCount = m_discoverCount;
 
             // do nothing if a valid list is not provided.
-            ApplicationDescription server = state as ApplicationDescription;
-
             if (server == null)
             {
                 return;
-
             }
 
             OnUpdateStatus(new Tuple<String, StatusType>("Attempting to read latest configuration options from server.", StatusType.Ok));
 
             String discoveryMessage = String.Empty;
+            bool success;
 
             // process each url.
             foreach (string discoveryUrl in server.DiscoveryUrls)
@@ -1108,7 +1103,8 @@ namespace Opc.Ua.Client.Controls
 
                 if (url != null)
                 {
-                    if (DiscoverEndpoints(url, out discoveryMessage))
+                    (success, discoveryMessage) = await DiscoverEndpointsAsync(url, ct);
+                    if (success)
                     {
                         m_discoverySucceeded = true;
                         m_discoveryUrl = url;
@@ -1131,7 +1127,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Fetches the servers from the discovery server.
         /// </summary>
-        private bool DiscoverEndpoints(Uri discoveryUrl, out String message)
+        private async Task<(bool Success, string Message)> DiscoverEndpointsAsync(Uri discoveryUrl, CancellationToken ct = default)
         {
             // use a short timeout.
             EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
@@ -1144,20 +1140,18 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                EndpointDescriptionCollection endpoints = client.GetEndpoints(null);
+                EndpointDescriptionCollection endpoints = await client.GetEndpointsAsync(null, ct);
                 OnUpdateEndpoints(endpoints);
-                message = String.Empty;
-                return true;
+                return (true, String.Empty);
             }
             catch (Exception e)
             {
                 Utils.Trace("Could not fetch endpoints from url: {0}. Reason={1}", discoveryUrl, e.Message);
-                message = e.Message;
-                return false;
+                return (false, e.Message);
             }
             finally
             {
-                client.Close();
+                await client.CloseAsync(ct);
             }
         }
 
@@ -1396,7 +1390,7 @@ namespace Opc.Ua.Client.Controls
                 // the discovery endpoint should always be on the same machine as the server.
                 // if there is a mismatch it is likely because the server has multiple addresses
                 // and was not configured to return the current address to the client.
-                // The code automatically updates the domain in the url. 
+                // The code automatically updates the domain in the url.
                 Uri endpointUrl = Utils.ParseUri(m_currentDescription.EndpointUrl);
 
                 if (m_discoverySucceeded)
@@ -1515,7 +1509,7 @@ namespace Opc.Ua.Client.Controls
                 if (SecurityModeCB.SelectedItem != null)
                 {
                     if ((((MessageSecurityMode)SecurityModeCB.SelectedItem) == MessageSecurityMode.None) &&
-                        (ProtocolCB.SelectedItem != null) && (((Protocol)ProtocolCB.SelectedItem).ToString().IndexOf("https") != 0))
+                        (ProtocolCB.SelectedItem != null) && (!((Protocol)ProtocolCB.SelectedItem).ToString().StartsWith("https")))
                     {
                         m_statusObject.SetStatus(StatusChannel.SelectedSecurityMode, "Warning: Selected Endpoint has no security.", StatusType.Warning);
                     }

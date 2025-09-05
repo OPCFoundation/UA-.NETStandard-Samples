@@ -87,14 +87,14 @@ namespace Opc.Ua.Sample.Controls
             this.NewMI.Name = "NewMI";
             this.NewMI.Size = new System.Drawing.Size(174, 22);
             this.NewMI.Text = "New...";
-            this.NewMI.Click += new System.EventHandler(this.NewMI_Click);
+            this.NewMI.Click += new System.EventHandler(this.NewMI_ClickAsync);
             // 
             // EditMI
             // 
             this.EditMI.Name = "EditMI";
             this.EditMI.Size = new System.Drawing.Size(174, 22);
             this.EditMI.Text = "Edit...";
-            this.EditMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.EditMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // DeleteMI
             // 

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -37,6 +37,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -98,7 +99,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Closes all open sessions within the control.
         /// </summary>
-        public void Close()
+        public async Task CloseAsync(CancellationToken ct = default)
         {
             // close any dialogs.
             foreach (SubscriptionDlg dialog in new List<SubscriptionDlg>(m_dialogs.Values))
@@ -113,17 +114,17 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    session.Close();
+                    await session.CloseAsync(ct);
                 }
             }
 
-            Clear();
+            await ClearAsync(ct);
         }
 
         /// <summary>
         /// Clears the contents of the control,
         /// </summary>
-        public void Clear()
+        public async Task ClearAsync(CancellationToken ct = default)
         {
             // close all active sessions.
             foreach (TreeNode root in NodesTV.Nodes)
@@ -132,7 +133,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    session.Close();
+                    await session.CloseAsync(ct);
                 }
             }
 
@@ -169,9 +170,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a session with the endpoint.
         /// </summary>
-        public async Task<Session> Connect(ConfiguredEndpoint endpoint)
+        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, CancellationToken ct = default)
         {
-            if (endpoint == null) throw new ArgumentNullException("endpoint");
+            if (endpoint == null) throw new ArgumentNullException(nameof(endpoint));
 
             EndpointDescriptionCollection availableEndpoints = null;
 
@@ -204,7 +205,7 @@ namespace Opc.Ua.Sample.Controls
                     throw ServiceResultException.Create(StatusCodes.BadConfigurationError, "ApplicationCertificate must be specified.");
                 }
 
-                clientCertificate = await m_configuration.SecurityConfiguration.ApplicationCertificate.Find(true);
+                clientCertificate = await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true, ct: ct);
 
                 if (clientCertificate == null)
                 {
@@ -214,7 +215,7 @@ namespace Opc.Ua.Sample.Controls
                 // load certificate chain
                 clientCertificateChain = new X509Certificate2Collection(clientCertificate);
                 List<CertificateIdentifier> issuers = new List<CertificateIdentifier>();
-                await m_configuration.CertificateValidator.GetIssuers(clientCertificate, issuers);
+                await m_configuration.CertificateValidator.GetIssuersAsync(clientCertificate, issuers);
                 for (int i = 0; i < issuers.Count; i++)
                 {
                     clientCertificateChain.Add(issuers[i].Certificate);
@@ -231,15 +232,15 @@ namespace Opc.Ua.Sample.Controls
                 m_messageContext);
 
             // create the session.
-            return Connect(endpoint, channel, availableEndpoints);
+            return await ConnectAsync(endpoint, channel, availableEndpoints, ct);
         }
 
         /// <summary>
         /// Opens a new session.
         /// </summary>
-        public Session Connect(ConfiguredEndpoint endpoint, ITransportChannel channel, EndpointDescriptionCollection availableEndpoints)
+        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, EndpointDescriptionCollection availableEndpoints, CancellationToken ct = default)
         {
-            if (channel == null) throw new ArgumentNullException("channel");
+            if (channel == null) throw new ArgumentNullException(nameof(channel));
 
             try
             {
@@ -256,7 +257,7 @@ namespace Opc.Ua.Sample.Controls
                 channel = null;
 
                 // delete the existing session.
-                Close();
+                await CloseAsync(ct);
 
                 // add session to tree.
                 AddNode(session);
@@ -277,9 +278,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Deletes a session.
         /// </summary>
-        public void Delete(Session session)
+        public async Task DeleteAsync(Session session, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             TreeNode node = FindNode(NodesTV.Nodes, session);
 
@@ -295,7 +296,7 @@ namespace Opc.Ua.Sample.Controls
                 dialog.Close();
             }
 
-            session.Close();
+            await session.CloseAsync(ct);
             NodesTV.SelectedNode = null;
             SelectNode();
         }
@@ -303,9 +304,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Deletes a subscription.
         /// </summary>
-        public void Delete(Subscription subscription)
+        public async Task DeleteAsync(Subscription subscription, CancellationToken ct = default)
         {
-            if (subscription == null) throw new ArgumentNullException("subscription");
+            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
             // close any dialog.
             SubscriptionDlg dialog = null;
@@ -316,7 +317,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             Session session = subscription.Session as Session;
-            session.RemoveSubscription(subscription);
+            await session.RemoveSubscriptionAsync(subscription, ct);
 
             TreeNode node = FindNode(NodesTV.Nodes, subscription);
 
@@ -332,9 +333,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Deletes a monitored item.
         /// </summary>
-        public void Delete(MonitoredItem monitoredItem)
+        public async Task DeleteAsync(MonitoredItem monitoredItem, CancellationToken ct = default)
         {
-            if (monitoredItem == null) throw new ArgumentNullException("monitoredItem");
+            if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
             TreeNode node = FindNode(NodesTV.Nodes, monitoredItem);
 
@@ -346,21 +347,21 @@ namespace Opc.Ua.Sample.Controls
 
             Subscription subscription = monitoredItem.Subscription;
             subscription.RemoveItem(monitoredItem);
-            subscription.ApplyChanges();
+            await subscription.ApplyChangesAsync(ct);
             NodesTV.SelectedNode = FindNode(NodesTV.Nodes, subscription);
         }
 
         /// <summary>
         /// Creates a new subscription.
         /// </summary>
-        public Subscription CreateSubscription(Session session)
+        public async Task<Subscription> CreateSubscriptionAsync(Session session, CancellationToken ct = default)
         {
             // create form.
             SubscriptionDlg dialog = new SubscriptionDlg();
             dialog.FormClosing += new FormClosingEventHandler(Subscription_FormClosing);
 
             // create subscription.
-            Subscription subscription = dialog.New(session);
+            Subscription subscription = await dialog.NewAsync(session, ct);
 
             if (subscription != null)
             {
@@ -480,7 +481,7 @@ namespace Opc.Ua.Sample.Controls
             // update address space control.
             if (m_AddressSpaceCtrl != null)
             {
-                m_AddressSpaceCtrl.SetView(session, BrowseViewType.Objects, null);
+                m_AddressSpaceCtrl.SetViewAsync(session, BrowseViewType.Objects, null);
             }
 
             // update notification messages control.
@@ -613,7 +614,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         private void AddNode(Session session)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             TreeNode node = AddNode(null, session, session.SessionName, "Server");
             UpdateNode(node, session);
@@ -672,7 +673,7 @@ namespace Opc.Ua.Sample.Controls
                 AddNode(parent, monitoredItem, monitoredItem.DisplayName, "Property");
             }
         }
-        #endregion       
+        #endregion
 
         private void BrowseAllMI_Click(object sender, EventArgs e)
         {
@@ -726,7 +727,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseObjectTypesMI_Click(object sender, EventArgs e)
+        private async void BrowseObjectTypesMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -743,7 +744,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new BrowseTypesDlg().Show(session, ObjectTypeIds.BaseObjectType);
+                    await new BrowseTypesDlg().ShowAsync(session, ObjectTypeIds.BaseObjectType);
                 }
             }
             catch (Exception exception)
@@ -752,7 +753,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseVariableTypesMI_Click(object sender, EventArgs e)
+        private async void BrowseVariableTypesMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -769,7 +770,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new BrowseTypesDlg().Show(session, VariableTypeIds.BaseDataVariableType);
+                    await new BrowseTypesDlg().ShowAsync(session, VariableTypeIds.BaseDataVariableType);
                 }
             }
             catch (Exception exception)
@@ -830,7 +831,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseEventTypesMI_Click(object sender, EventArgs e)
+        private async void BrowseEventTypesMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -847,7 +848,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new BrowseTypesDlg().Show(session, ObjectTypeIds.BaseEventType);
+                    await new BrowseTypesDlg().ShowAsync(session, ObjectTypeIds.BaseEventType);
                 }
             }
             catch (Exception exception)
@@ -856,7 +857,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseServerViewsMI_DropDownOpening(object sender, EventArgs e)
+        private async void BrowseServerViewsMI_DropDownOpeningAsync(object sender, EventArgs e)
         {
             try
             {
@@ -883,7 +884,7 @@ namespace Opc.Ua.Sample.Controls
                     browser.NodeClassMask = (int)NodeClass.View;
                     browser.ContinueUntilDone = true;
 
-                    ReferenceDescriptionCollection references = browser.Browse(Objects.ViewsFolder);
+                    ReferenceDescriptionCollection references = await browser.BrowseAsync(Objects.ViewsFolder);
 
                     foreach (ReferenceDescription reference in references)
                     {
@@ -935,7 +936,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SubscriptionCreateMI_Click(object sender, EventArgs e)
+        private async void SubscriptionCreateMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -956,7 +957,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // create the subscription.
-                CreateSubscription(session);
+                await CreateSubscriptionAsync(session);
             }
             catch (Exception exception)
             {
@@ -964,7 +965,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        void Subscription_FormClosing(object sender, FormClosingEventArgs e)
+        private void Subscription_FormClosing(object sender, FormClosingEventArgs e)
         {
             foreach (KeyValuePair<Subscription, SubscriptionDlg> current in m_dialogs)
             {
@@ -976,11 +977,11 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void NewSessionMI_Click(object sender, EventArgs e)
+        private async void NewSessionMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                await Connect(m_endpoint);
+                await ConnectAsync(m_endpoint);
             }
             catch (Exception exception)
             {
@@ -988,7 +989,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void DeleteMI_Click(object sender, EventArgs e)
+        private async void DeleteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1005,7 +1006,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    Delete(session);
+                    await DeleteAsync(session);
                 }
 
                 // delete subscription
@@ -1013,7 +1014,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (subscription != null)
                 {
-                    Delete(subscription);
+                    await DeleteAsync(subscription);
                 }
 
                 // delete monitored item
@@ -1021,7 +1022,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (monitoredItem != null)
                 {
-                    Delete(monitoredItem);
+                    await DeleteAsync(monitoredItem);
                 }
             }
             catch (Exception exception)
@@ -1030,7 +1031,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ReadMI_Click(object sender, EventArgs e)
+        private async void ReadMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1079,7 +1080,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
-                new ReadDlg().Show(session, valueIds);
+                await new ReadDlg().ShowAsync(session, valueIds);
             }
             catch (Exception exception)
             {
@@ -1087,7 +1088,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void WriteMI_Click(object sender, EventArgs e)
+        private async void WriteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1148,7 +1149,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
-                new WriteDlg().Show(session, values);
+                await new WriteDlg().ShowAsync(session, values);
             }
             catch (Exception exception)
             {
@@ -1156,7 +1157,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SubscriptionEnabledPublishingMI_Click(object sender, EventArgs e)
+        private async void SubscriptionEnabledPublishingMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1173,7 +1174,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (subscription != null)
                 {
-                    subscription.SetPublishingMode(SubscriptionEnabledPublishingMI.Checked);
+                    await subscription.SetPublishingModeAsync(SubscriptionEnabledPublishingMI.Checked);
                 }
             }
             catch (Exception exception)
@@ -1268,7 +1269,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SessionLoadMI_Click(object sender, EventArgs e)
+        private async void SessionLoadMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1322,7 +1323,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     foreach (Subscription subscription in subscriptions)
                     {
-                        subscription.Create();
+                        await subscription.CreateAsync();
                     }
                 }
             }
@@ -1349,7 +1350,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SetLocaleMI_Click(object sender, EventArgs e)
+        private async void SetLocaleMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1361,7 +1362,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                string locale = new SelectLocaleDlg().ShowDialog(session);
+                string locale = await new SelectLocaleDlg().ShowDialogAsync(session);
 
                 if (locale == null)
                 {
@@ -1369,7 +1370,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 PreferredLocales = new string[] { locale };
-                session.ChangePreferredLocales(new StringCollection(PreferredLocales));
+                await session.ChangePreferredLocalesAsync(new StringCollection(PreferredLocales), CancellationToken.None);
             }
             catch (Exception exception)
             {

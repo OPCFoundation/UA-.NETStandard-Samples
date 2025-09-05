@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -54,45 +56,46 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Session m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public NodeIdCollection ShowDialog(
-            Session          session, 
-            BrowseViewType   browseView, 
+        public async Task<NodeIdCollection> ShowDialogAsync(
+            Session session,
+            BrowseViewType browseView,
             NodeIdCollection nodesIds,
-            NodeClass        nodeClassMask)
+            NodeClass nodeClassMask,
+            CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_session = session;
 
-            BrowseCTRL.SetView(session, browseView, null);
-            NodeListCTRL.Initialize(session, nodesIds, nodeClassMask);
-            
+            await BrowseCTRL.SetViewAsync(session, browseView, null, ct);
+            await NodeListCTRL.InitializeAsync(session, nodesIds, nodeClassMask, ct);
+
             if (ShowDialog() != DialogResult.OK)
             {
                 return null;
             }
-                        
+
             return NodeListCTRL.GetNodeIds();
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
-        
+
         #region Event Handler
-        private void BrowseCTRL_NodesSelected(object sender, NodesSelectedEventArgs e)
+        private async void BrowseCTRL_NodesSelectedAsync(object sender, NodesSelectedEventArgs e)
         {
             try
             {
                 foreach (ReferenceDescription reference in e.References)
                 {
-                    NodeListCTRL.AddNodeId(reference);
-                }    
+                    await NodeListCTRL.AddNodeIdAsync(reference);
+                }
             }
             catch (Exception exception)
             {

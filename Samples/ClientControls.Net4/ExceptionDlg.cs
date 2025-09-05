@@ -91,7 +91,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     buffer.Append("color:#FFFFFF;font-weight:bold;font-size:10pt;font-family:Verdana'><td>");
-                    buffer.Append("<p>"); 
+                    buffer.Append("<p>");
                 }
                 else
                 {
@@ -183,7 +183,7 @@ namespace Opc.Ua.Client.Controls
                 Utils.Trace(e, "Unexpected error in '{0}'.", caption);
                 return;
             }
-            
+
             new ExceptionDlg().ShowDialog(caption, e);
         }
 
@@ -198,12 +198,12 @@ namespace Opc.Ua.Client.Controls
             }
 
             m_exception = e;
-            
-            #if _DEBUG
+
+#if _DEBUG
             ShowStackTracesCK.Checked = true;
-            #else
+#else
             ShowStackTracesCK.Checked = false;
-            #endif
+#endif
 
             Show(ShowStackTracesCK.Checked);
             ShowDialog();

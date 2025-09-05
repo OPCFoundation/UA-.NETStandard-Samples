@@ -82,7 +82,7 @@ namespace Opc.Ua.Client.Controls
             id.Certificate = CertificatesCTRL.SelectedCertificate;
             return id;
         }
-        
+
         private void OkBTN_Click(object sender, EventArgs e)
         {
             try
@@ -152,14 +152,14 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void CertificateStoreCTRL_StoreChanged(object sender, EventArgs e)
+        private async void CertificateStoreCTRL_StoreChangedAsync(object sender, EventArgs e)
         {
             try
             {
                 CertificateStoreIdentifier store = new CertificateStoreIdentifier();
                 store.StoreType = CertificateStoreCTRL.StoreType;
                 store.StorePath = CertificateStoreCTRL.StorePath;
-                CertificatesCTRL.Initialize(store, null).Wait();
+                await CertificatesCTRL.InitializeAsync(store, null);
 
                 FilterBTN_Click(sender, e);
             }

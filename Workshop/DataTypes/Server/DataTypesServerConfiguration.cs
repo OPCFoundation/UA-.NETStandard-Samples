@@ -38,7 +38,7 @@ namespace Quickstarts.DataTypes
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Namespaces.DataTypes)]
+    [DataContract(Namespace = Namespaces.DataTypes)]
     public class DataTypesServerConfiguration
     {
         #region Constructors

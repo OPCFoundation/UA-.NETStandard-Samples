@@ -60,7 +60,7 @@ namespace Opc.Ua.Client.Controls
             StoreTypeCB.SelectedIndex = 0;
         }
         #endregion
-       
+
         #region Private Fields
         private event EventHandler m_StoreChanged;
         #endregion
@@ -117,9 +117,9 @@ namespace Opc.Ua.Client.Controls
         [DefaultValue(Utils.DefaultStoreType)]
         public string StoreType
         {
-            get 
-            { 
-                return StoreTypeCB.SelectedItem as string; 
+            get
+            {
+                return StoreTypeCB.SelectedItem as string;
             }
 
             set

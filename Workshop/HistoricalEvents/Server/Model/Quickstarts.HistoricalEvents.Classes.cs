@@ -37,7 +37,7 @@ using Opc.Ua;
 namespace Quickstarts.HistoricalEvents
 {
     #region WellTestReportState Class
-    #if (!OPCUA_EXCLUDE_WellTestReportState)
+#if (!OPCUA_EXCLUDE_WellTestReportState)
     /// <summary>
     /// Stores an instance of the WellTestReportType ObjectType.
     /// </summary>
@@ -61,7 +61,7 @@ namespace Quickstarts.HistoricalEvents
             return Opc.Ua.NodeId.Create(Quickstarts.HistoricalEvents.ObjectTypes.WellTestReportType, Quickstarts.HistoricalEvents.Namespaces.HistoricalEvents, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -110,7 +110,7 @@ namespace Quickstarts.HistoricalEvents
            "YXNvbiBmb3IgdGhlIHdlbGwgdGVzdDogaW5pdGlhbCwgcGVyaW9kaWMsIHJldmlzaW9uLgAuAEQIAQAA" +
            "AAz/////AQH/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -343,11 +343,11 @@ namespace Quickstarts.HistoricalEvents
         private PropertyState<string> m_testReason;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region FluidLevelTestReportState Class
-    #if (!OPCUA_EXCLUDE_FluidLevelTestReportState)
+#if (!OPCUA_EXCLUDE_FluidLevelTestReportState)
     /// <summary>
     /// Stores an instance of the FluidLevelTestReportType ObjectType.
     /// </summary>
@@ -371,7 +371,7 @@ namespace Quickstarts.HistoricalEvents
             return Opc.Ua.NodeId.Create(Quickstarts.HistoricalEvents.ObjectTypes.FluidLevelTestReportType, Quickstarts.HistoricalEvents.Namespaces.HistoricalEvents, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -427,7 +427,7 @@ namespace Quickstarts.HistoricalEvents
            "ZHVjdGVkIHRoZSB0ZXN0LiBUaGlzIGlzIGdlbmVyYWxseSBhIHBlcnNvbi4ALgBEGwEAAAAM/////wEB" +
            "/////wAAAAA=";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -568,11 +568,11 @@ namespace Quickstarts.HistoricalEvents
         private PropertyState<string> m_testedBy;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region InjectionTestReportState Class
-    #if (!OPCUA_EXCLUDE_InjectionTestReportState)
+#if (!OPCUA_EXCLUDE_InjectionTestReportState)
     /// <summary>
     /// Stores an instance of the InjectionTestReportType ObjectType.
     /// </summary>
@@ -596,7 +596,7 @@ namespace Quickstarts.HistoricalEvents
             return Opc.Ua.NodeId.Create(Quickstarts.HistoricalEvents.ObjectTypes.InjectionTestReportType, Quickstarts.HistoricalEvents.Namespaces.HistoricalEvents, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -650,7 +650,7 @@ namespace Quickstarts.HistoricalEvents
            "ADVgiQoCAAAAAQANAAAASW5qZWN0ZWRGbHVpZAEBLgEDAAAAACMAAABUaGUgZmx1aWQgdGhhdCBpcyBi" +
            "ZWluZyBpbmplY3RlZC4gLgAuAEQuAQAAAAz/////AQH/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -791,11 +791,11 @@ namespace Quickstarts.HistoricalEvents
         private PropertyState<string> m_injectedFluid;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region WellState Class
-    #if (!OPCUA_EXCLUDE_WellState)
+#if (!OPCUA_EXCLUDE_WellState)
     /// <summary>
     /// Stores an instance of the WellType ObjectType.
     /// </summary>
@@ -819,7 +819,7 @@ namespace Quickstarts.HistoricalEvents
             return Opc.Ua.NodeId.Create(Quickstarts.HistoricalEvents.ObjectTypes.WellType, Quickstarts.HistoricalEvents.Namespaces.HistoricalEvents, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -852,7 +852,7 @@ namespace Quickstarts.HistoricalEvents
            "AQAAADUAAABodHRwOi8vb3BjZm91bmRhdGlvbi5vcmcvUXVpY2tzdGFydHMvSGlzdG9yaWNhbEV2ZW50" +
            "c/////8EYIACAQAAAAEAEAAAAFdlbGxUeXBlSW5zdGFuY2UBATQBAQE0ATQBAAD/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -864,6 +864,6 @@ namespace Quickstarts.HistoricalEvents
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 }

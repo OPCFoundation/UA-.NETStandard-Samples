@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,11 +30,13 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
-using System.Text;
-using System.Windows.Forms;
+using System.Drawing;
 using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -59,85 +61,85 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         protected System.Windows.Forms.TreeView NodesTV;
 
-		/// <summary>
-		/// Raised whenever a node is 'picked' in the control.
-		/// </summary>
-		public event TreeNodeActionEventHandler NodePicked
-		{
-			add    { m_NodePicked += value; }
-			remove { m_NodePicked -= value; }
-		}
+        /// <summary>
+        /// Raised whenever a node is 'picked' in the control.
+        /// </summary>
+        public event TreeNodeActionEventHandler NodePicked
+        {
+            add { m_NodePicked += value; }
+            remove { m_NodePicked -= value; }
+        }
 
-		/// <summary>
-		/// Raised whenever a node is selected in the control.
-		/// </summary>
-		public event TreeNodeActionEventHandler NodeSelected
-		{
-			add    { m_NodeSelected += value; }
-			remove { m_NodeSelected -= value; }
-		}
+        /// <summary>
+        /// Raised whenever a node is selected in the control.
+        /// </summary>
+        public event TreeNodeActionEventHandler NodeSelected
+        {
+            add { m_NodeSelected += value; }
+            remove { m_NodeSelected -= value; }
+        }
 
-		/// <summary>
-		/// Whether the control should allow items to be dragged.
-		/// </summary>
-		public bool EnableDragging
-		{
-			get { return m_enableDragging;  }
-			set { m_enableDragging = value; }
-		}
-		#endregion
+        /// <summary>
+        /// Whether the control should allow items to be dragged.
+        /// </summary>
+        public bool EnableDragging
+        {
+            get { return m_enableDragging; }
+            set { m_enableDragging = value; }
+        }
+        #endregion
 
-		#region Private Fields
-		private event TreeNodeActionEventHandler m_NodePicked;
-		private event TreeNodeActionEventHandler m_NodeSelected;
+        #region Private Fields
+        private event TreeNodeActionEventHandler m_NodePicked;
+        private event TreeNodeActionEventHandler m_NodeSelected;
         private bool m_enableDragging;
-		#endregion
+        #endregion
 
-		#region Protected Methods
-		/// <summary>
-		/// Adds an item to the tree.
-		/// </summary>
-		protected virtual TreeNode AddNode(TreeNode treeNode, object item)
-		{
+        #region Protected Methods
+        /// <summary>
+        /// Adds an item to the tree.
+        /// </summary>
+        protected virtual TreeNode AddNode(TreeNode treeNode, object item)
+        {
             return AddNode(treeNode, item, String.Format("{0}", item), "ClosedFolder");
-		}
+        }
 
-		/// <summary>
-		/// Adds an item to the tree.
-		/// </summary>
-		protected virtual TreeNode AddNode(TreeNode parent, object item, string text, string icon)
-		{
-			// create node.
-			TreeNode treeNode = new TreeNode();
-		
-			// update text/icon.
-			UpdateNode(treeNode, item, text, icon);
+        /// <summary>
+        /// Adds an item to the tree.
+        /// </summary>
+        protected virtual TreeNode AddNode(TreeNode parent, object item, string text, string icon)
+        {
+            // create node.
+            TreeNode treeNode = new TreeNode();
 
-			// add to control.
-			if (parent == null)
-			{
-				NodesTV.Nodes.Add(treeNode);
-			}
-			else
-			{
-				parent.Nodes.Add(treeNode);
-			}
+            // update text/icon.
+            UpdateNode(treeNode, item, text, icon);
 
-			// return new tree node.
-			return treeNode;
-		}
+            // add to control.
+            if (parent == null)
+            {
+                NodesTV.Nodes.Add(treeNode);
+            }
+            else
+            {
+                parent.Nodes.Add(treeNode);
+            }
 
-		/// <summary>
-		/// Updates a tree node with the current contents of an object.
-		/// </summary>
-		protected virtual void UpdateNode(TreeNode treeNode, object item, string text, string icon)
-		{
-			treeNode.Text             = text;
-			treeNode.Tag              = item;
-            treeNode.ImageKey         = icon;
+            // return new tree node.
+            return treeNode;
+        }
+
+        /// <summary>
+        /// Updates a tree node with the current contents of an object.
+        /// </summary>
+        protected virtual void UpdateNode(TreeNode treeNode, object item, string text, string icon)
+        {
+            treeNode.Text = text;
+            treeNode.Tag = item;
+            treeNode.ImageKey = icon;
             treeNode.SelectedImageKey = icon;
-		}
-		
+        }
+
         /// <summary>
         /// Returns the data to drag.
         /// </summary>
@@ -146,31 +148,31 @@ namespace Opc.Ua.Client.Controls
             return node.Tag;
         }
 
-		/// <summary>
-		/// Enables the state of menu items.
-		/// </summary>
-		protected virtual void EnableMenuItems(TreeNode clickedNode)
-		{
-			// do nothing.
-		}
-		
-		/// <summary>
-		/// Initializes a node before expanding it.
-		/// </summary>
-		protected virtual bool BeforeExpand(TreeNode clickedNode)
-		{
-			return false;
-		}
+        /// <summary>
+        /// Enables the state of menu items.
+        /// </summary>
+        protected virtual void EnableMenuItems(TreeNode clickedNode)
+        {
+            // do nothing.
+        }
 
-		/// <summary>
-		/// Sends notifications whenever a node in the control is 'picked'.
-		/// </summary>
-		protected virtual void PickNode()
-		{
-			if (m_NodePicked != null)
-			{
-				if (NodesTV.SelectedNode != null)
-				{
+        /// <summary>
+        /// Initializes a node before expanding it.
+        /// </summary>
+        protected virtual Task<bool> BeforeExpandAsync(TreeNode clickedNode, CancellationToken ct = default)
+        {
+            return Task.FromResult(false);
+        }
+
+        /// <summary>
+        /// Sends notifications whenever a node in the control is 'picked'.
+        /// </summary>
+        protected virtual void PickNode()
+        {
+            if (m_NodePicked != null)
+            {
+                if (NodesTV.SelectedNode != null)
+                {
                     object parent = null;
 
                     if (NodesTV.SelectedNode.Parent != null)
@@ -178,20 +180,20 @@ namespace Opc.Ua.Client.Controls
                         parent = NodesTV.SelectedNode.Tag;
                     }
 
-					m_NodePicked(this, new TreeNodeActionEventArgs(TreeNodeAction.Picked, NodesTV.SelectedNode.Tag, parent));
-				}
-			}
-		}
+                    m_NodePicked(this, new TreeNodeActionEventArgs(TreeNodeAction.Picked, NodesTV.SelectedNode.Tag, parent));
+                }
+            }
+        }
 
-		/// <summary>
-		/// Sends notifications whenever a node in the control is 'selected'.
-		/// </summary>
-		protected virtual void SelectNode()
-		{
-			if (m_NodeSelected != null)
-			{
-				if (NodesTV.SelectedNode != null)
-				{
+        /// <summary>
+        /// Sends notifications whenever a node in the control is 'selected'.
+        /// </summary>
+        protected virtual void SelectNode()
+        {
+            if (m_NodeSelected != null)
+            {
+                if (NodesTV.SelectedNode != null)
+                {
                     object parent = null;
 
                     if (NodesTV.SelectedNode.Parent != null)
@@ -199,10 +201,10 @@ namespace Opc.Ua.Client.Controls
                         parent = NodesTV.SelectedNode.Tag;
                     }
 
-					m_NodeSelected(this, new TreeNodeActionEventArgs(TreeNodeAction.Selected, NodesTV.SelectedNode.Tag, parent));
-				}
-			}
-		}
+                    m_NodeSelected(this, new TreeNodeActionEventArgs(TreeNodeAction.Selected, NodesTV.SelectedNode.Tag, parent));
+                }
+            }
+        }
 
         /// <summary>
         /// Returns the Tag for the current selection.
@@ -219,27 +221,27 @@ namespace Opc.Ua.Client.Controls
                 return null;
             }
         }
-		#endregion
-        
-		#region Event Handlers
+        #endregion
+
+        #region Event Handlers
         private void NodesTV_AfterSelect(object sender, TreeViewEventArgs e)
         {
             try
             {
-				SelectNode();
+                SelectNode();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void NodesTV_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        private async void NodesTV_BeforeExpandAsync(object sender, TreeViewCancelEventArgs e)
         {
             try
             {
-			    Cursor = Cursors.WaitCursor;
-                e.Cancel = BeforeExpand(e.Node);
+                Cursor = Cursors.WaitCursor;
+                e.Cancel = await BeforeExpandAsync(e.Node);
             }
             catch (Exception exception)
             {
@@ -247,31 +249,31 @@ namespace Opc.Ua.Client.Controls
             }
             finally
             {
-			    Cursor = Cursors.Default;
+                Cursor = Cursors.Default;
             }
         }
 
         private void NodesTV_DoubleClick(object sender, EventArgs e)
-        {  
+        {
             try
             {
-				PickNode();
+                PickNode();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void NodesTV_MouseDown(object sender, MouseEventArgs e)
-        {            
+        {
             try
             {
-			    // selects the item that was right clicked on.
-			    TreeNode clickedNode = NodesTV.SelectedNode = NodesTV.GetNodeAt(e.X, e.Y);
+                // selects the item that was right clicked on.
+                TreeNode clickedNode = NodesTV.SelectedNode = NodesTV.GetNodeAt(e.X, e.Y);
 
-			    // no item clicked on - do nothing.
-			    if (clickedNode == null) return;
+                // no item clicked on - do nothing.
+                if (clickedNode == null) return;
 
                 // start drag operation.
                 if (e.Button == MouseButtons.Left)
@@ -289,11 +291,11 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-			    // disable everything.
-			    if (NodesTV.ContextMenuStrip != null)
-			    {
-				    foreach (ToolStripItem item in NodesTV.ContextMenuStrip.Items)
-				    {
+                // disable everything.
+                if (NodesTV.ContextMenuStrip != null)
+                {
+                    foreach (ToolStripItem item in NodesTV.ContextMenuStrip.Items)
+                    {
                         ToolStripMenuItem menuItem = item as ToolStripMenuItem;
 
                         if (menuItem == null)
@@ -315,10 +317,10 @@ namespace Opc.Ua.Client.Controls
                                 }
                             }
                         }
-				    }
-			    }
+                    }
+                }
 
-			    // enable menu items according to context.
+                // enable menu items according to context.
                 if (e.Button == MouseButtons.Right)
                 {
                     EnableMenuItems(clickedNode);
@@ -326,7 +328,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -376,15 +378,15 @@ namespace Opc.Ua.Client.Controls
         {
             // overridden by sub-class.
         }
-		#endregion
+        #endregion
     }
-    
+
     #region TreeNodeAction Eumeration
-	/// <summary>
-	/// The possible actions that could affect a node.
-	/// </summary>
-	public enum TreeNodeAction
-	{
+    /// <summary>
+    /// The possible actions that could affect a node.
+    /// </summary>
+    public enum TreeNodeAction
+    {
         /// <summary>
         /// A node was picked in the tree.
         /// </summary>
@@ -394,27 +396,27 @@ namespace Opc.Ua.Client.Controls
         /// A node was selected in the tree.
         /// </summary>
 		Selected
-	}
+    }
     #endregion
-    
+
     #region TreeNodeActionEventArgs class
-	/// <summary>
-	/// The event argurments passed when an node event occurs.
-	/// </summary>
-	public class TreeNodeActionEventArgs : EventArgs
-	{
+    /// <summary>
+    /// The event argurments passed when an node event occurs.
+    /// </summary>
+    public class TreeNodeActionEventArgs : EventArgs
+    {
         #region Constructor
         /// <summary>
         /// Initializes the object.
         /// </summary>
 		public TreeNodeActionEventArgs(TreeNodeAction action, object node, object parent)
-		{
-			m_node   = node;
+        {
+            m_node = node;
             m_parent = parent;
-			m_action = action;
-		}
+            m_action = action;
+        }
         #endregion
-        
+
         #region Private Fields
         /// <summary>
         /// The tag associated with the node that was acted on.
@@ -423,7 +425,7 @@ namespace Opc.Ua.Client.Controls
         {
             get { return m_node; }
         }
-		
+
         /// <summary>
         /// The tag associated with the parent of the node that was acted on.
         /// </summary>
@@ -431,22 +433,22 @@ namespace Opc.Ua.Client.Controls
         {
             get { return m_parent; }
         }
-		
+
         /// <summary>
         /// The action in question.
         /// </summary>
-        public TreeNodeAction Action 
+        public TreeNodeAction Action
         {
             get { return m_action; }
         }
         #endregion
 
         #region Private Fields
-		private object m_node;
+        private object m_node;
         private object m_parent;
-		private TreeNodeAction m_action;
+        private TreeNodeAction m_action;
         #endregion
-	}
+    }
 
     /// <summary>
     /// The delegate used to receive node action events.

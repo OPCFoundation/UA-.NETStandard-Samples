@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,7 +29,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 
@@ -46,32 +49,32 @@ namespace Opc.Ua.Client.Controls
         public AttributeListCtrl()
         {
             InitializeComponent();
-			SetColumns(m_ColumnNames);
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
-        private Session m_session;
-       
-		// The columns to display in the control.		
-		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Name",  HorizontalAlignment.Left, null },  
-			new object[] { "Value", HorizontalAlignment.Left, null }
-		};
+        private ISession m_session;
 
-        private class ItemInfo
+        // The columns to display in the control.
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Name",  HorizontalAlignment.Left, null },
+            new object[] { "Value", HorizontalAlignment.Left, null }
+        };
+
+        private sealed class ItemInfo
         {
             public NodeId NodeId;
             public uint AttributeId;
             public string Name;
             public DataValue Value;
         }
-		#endregion
-            
+        #endregion
+
         /// <summary>
         /// Initializes the control with a set of items.
         /// </summary>
-        public void Initialize(Session session, ExpandedNodeId nodeId)
+        public async Task InitializeAsync(ISession session, ExpandedNodeId nodeId, CancellationToken ct = default)
         {
             ItemsLV.Items.Clear();
             m_session = session;
@@ -81,19 +84,15 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            ILocalNode node = m_session.NodeCache.Find(nodeId) as ILocalNode;
+            ILocalNode node = await m_session.NodeCache.FindAsync(nodeId, ct) as ILocalNode;
 
             if (node == null)
             {
                 return;
             }
 
-            uint[] attributesIds = Attributes.GetIdentifiers();
-
-            for (int ii = 0; ii < attributesIds.Length; ii++)
+            foreach (uint attributesId in Attributes.Identifiers)
             {
-                uint attributesId = attributesIds[ii];
-
                 if (!node.SupportsAttribute(attributesId))
                 {
                     continue;
@@ -105,7 +104,7 @@ namespace Opc.Ua.Client.Controls
                 info.AttributeId = attributesId;
                 info.Name = Attributes.GetBrowseName(attributesId);
                 info.Value = new DataValue(StatusCodes.BadWaitingForInitialData);
-                
+
                 ServiceResult result = node.Read(null, attributesId, info.Value);
 
                 if (ServiceResult.IsBad(result))
@@ -122,7 +121,7 @@ namespace Opc.Ua.Client.Controls
             {
                 IReference reference = references[ii];
 
-                ILocalNode property = m_session.NodeCache.Find(reference.TargetId) as ILocalNode;
+                ILocalNode property = await m_session.NodeCache.FindAsync(reference.TargetId, ct) as ILocalNode;
 
                 if (property == null)
                 {
@@ -135,7 +134,7 @@ namespace Opc.Ua.Client.Controls
                 info.AttributeId = Attributes.Value;
                 info.Name = Utils.Format("{0}", property.DisplayName);
                 info.Value = new DataValue(StatusCodes.BadWaitingForInitialData);
-                
+
                 ServiceResult result = property.Read(null, Attributes.Value, info.Value);
 
                 if (ServiceResult.IsBad(result))
@@ -146,13 +145,13 @@ namespace Opc.Ua.Client.Controls
                 AddItem(info);
             }
 
-            UpdateValues();
+            await UpdateValuesAsync(ct);
         }
 
         /// <summary>
         /// Updates the values from the server.
         /// </summary>
-        private void UpdateValues()
+        private async Task UpdateValuesAsync(CancellationToken ct = default)
         {
             ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
 
@@ -160,8 +159,8 @@ namespace Opc.Ua.Client.Controls
             {
                 ItemInfo info = item.Tag as ItemInfo;
 
-			    if (info == null)
-			    {
+                if (info == null)
+                {
                     continue;
                 }
 
@@ -174,16 +173,15 @@ namespace Opc.Ua.Client.Controls
                 valuesToRead.Add(valueToRead);
             }
 
-            DataValueCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 valuesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, valuesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
@@ -193,16 +191,16 @@ namespace Opc.Ua.Client.Controls
                 ListViewItem item = (ListViewItem)valuesToRead[ii].Handle;
                 ItemInfo info = (ItemInfo)item.Tag;
                 info.Value = results[ii];
-                UpdateItem(item, info);
+                await UpdateItemAsync(item, info, ct);
             }
 
             AdjustColumns();
         }
-        
+
         /// <summary>
         /// Formats the value of an attribute.
         /// </summary>
-        private string FormatAttributeValue(uint attributeId, object value)
+        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value, CancellationToken ct = default)
         {
             switch (attributeId)
             {
@@ -215,14 +213,14 @@ namespace Opc.Ua.Client.Controls
 
                     return "(null)";
                 }
-                    
+
                 case Attributes.DataType:
                 {
                     NodeId datatypeId = value as NodeId;
 
                     if (datatypeId != null)
                     {
-                        INode datatype = m_session.NodeCache.Find(datatypeId);
+                        INode datatype = await m_session.NodeCache.FindAsync(datatypeId, ct);
 
                         if (datatype != null)
                         {
@@ -233,10 +231,10 @@ namespace Opc.Ua.Client.Controls
                             return String.Format("{0}", datatypeId);
                         }
                     }
-                
+
                     return String.Format("{0}", value);
                 }
-                      
+
                 case Attributes.ValueRank:
                 {
                     int? valueRank = value as int?;
@@ -245,21 +243,21 @@ namespace Opc.Ua.Client.Controls
                     {
                         switch (valueRank.Value)
                         {
-                            case ValueRanks.Scalar:              return "Scalar";
-                            case ValueRanks.OneDimension:        return "OneDimension";
+                            case ValueRanks.Scalar: return "Scalar";
+                            case ValueRanks.OneDimension: return "OneDimension";
                             case ValueRanks.OneOrMoreDimensions: return "OneOrMoreDimensions";
-                            case ValueRanks.Any:                 return "Any";
+                            case ValueRanks.Any: return "Any";
 
                             default:
                             {
                                 return String.Format("{0}", valueRank.Value);
                             }
-                        }                            
+                        }
                     }
 
                     return String.Format("{0}", value);
                 }
-                      
+
                 case Attributes.MinimumSamplingInterval:
                 {
                     double? minimumSamplingInterval = value as double?;
@@ -276,7 +274,7 @@ namespace Opc.Ua.Client.Controls
                             return "Continuous";
                         }
 
-                       return String.Format("{0}", minimumSamplingInterval.Value);
+                        return String.Format("{0}", minimumSamplingInterval.Value);
                     }
 
                     return String.Format("{0}", value);
@@ -293,37 +291,37 @@ namespace Opc.Ua.Client.Controls
                     {
                         bits.Append("Readable");
                     }
-                    
+
                     if ((accessLevel & AccessLevels.CurrentWrite) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("Writeable");
                     }
-                    
+
                     if ((accessLevel & AccessLevels.HistoryRead) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("History Read");
                     }
-                    
+
                     if ((accessLevel & AccessLevels.HistoryWrite) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("History Update");
                     }
-                    
+
                     if (bits.Length == 0)
                     {
                         bits.Append("No Access");
@@ -331,7 +329,7 @@ namespace Opc.Ua.Client.Controls
 
                     return String.Format("{0}", bits);
                 }
-               
+
                 case Attributes.EventNotifier:
                 {
                     byte notifier = Convert.ToByte(value);
@@ -342,27 +340,27 @@ namespace Opc.Ua.Client.Controls
                     {
                         bits.Append("Subscribe");
                     }
-                    
+
                     if ((notifier & EventNotifiers.HistoryRead) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("History");
                     }
-                    
+
                     if ((notifier & EventNotifiers.HistoryWrite) != 0)
                     {
                         if (bits.Length > 0)
                         {
                             bits.Append(" | ");
                         }
-                           
+
                         bits.Append("History Update");
                     }
-                    
+
                     if (bits.Length == 0)
                     {
                         bits.Append("No Access");
@@ -380,38 +378,46 @@ namespace Opc.Ua.Client.Controls
 
         #region Overridden Methods
         /// <see cref="Opc.Ua.Client.Controls.BaseListCtrl.UpdateItem(ListViewItem,object)" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-            ItemInfo info = item as ItemInfo;
-
-			if (info == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
-            
-			listItem.SubItems[0].Text = Utils.Format("{0}", info.Name);
-
-            if (StatusCode.IsBad(info.Value.StatusCode))
+            try
             {
-			    listItem.SubItems[1].Text = Utils.Format("{0}", info.Value.StatusCode);
-            }
-            else
-            {
-			    listItem.SubItems[1].Text = FormatAttributeValue(info.AttributeId, info.Value.Value);
-            }
+                ItemInfo info = item as ItemInfo;
 
-            if (info.AttributeId != Attributes.Value)
-            {
-                listItem.ImageKey = GuiUtils.Icons.Attribute;
-            }
-            else
-            {
-                listItem.ImageKey = GuiUtils.Icons.Property;
-            }
+                if (info == null)
+                {
+                    await base.UpdateItemAsync(listItem, item, ct);
+                    return;
+                }
 
-			listItem.Tag = info;
+                listItem.SubItems[0].Text = Utils.Format("{0}", info.Name);
+
+                if (StatusCode.IsBad(info.Value.StatusCode))
+                {
+                    listItem.SubItems[1].Text = Utils.Format("{0}", info.Value.StatusCode);
+                }
+                else
+                {
+                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(info.AttributeId, info.Value.Value, ct);
+                }
+
+                if (info.AttributeId != Attributes.Value)
+                {
+                    listItem.ImageKey = GuiUtils.Icons.Attribute;
+                }
+                else
+                {
+                    listItem.ImageKey = GuiUtils.Icons.Property;
+                }
+
+                listItem.Tag = info;
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
         #endregion
     }
 }
+

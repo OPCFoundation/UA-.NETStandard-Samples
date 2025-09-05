@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -37,6 +37,7 @@ using System.Windows.Forms;
 using System.Threading;
 
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -57,17 +58,17 @@ namespace Opc.Ua.Client.Controls
             ItemsLV.MultiSelect = false;
         }
         #endregion
-        
+
         #region Private Fields
-        // The columns to display in the control.		
-		private readonly object[][] m_ColumnNames = new object[][]
-		{ 
-			new object[] { "Name", HorizontalAlignment.Left, null },  
-			new object[] { "Type", HorizontalAlignment.Left, null },
-			new object[] { "Host", HorizontalAlignment.Left, null },
-			new object[] { "URI",  HorizontalAlignment.Left, null }
-		};
-        
+        // The columns to display in the control.
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Name", HorizontalAlignment.Left, null },
+            new object[] { "Type", HorizontalAlignment.Left, null },
+            new object[] { "Host", HorizontalAlignment.Left, null },
+            new object[] { "URI",  HorizontalAlignment.Left, null }
+        };
+
         private ApplicationConfiguration m_configuration;
         private int m_discoveryTimeout;
         private int m_discoverCount;
@@ -125,7 +126,7 @@ namespace Opc.Ua.Client.Controls
             {
                 hostname = System.Net.Dns.GetHostName();
             }
-            
+
             this.Instructions = Utils.Format("Discovering servers on host '{0}'.", hostname);
             AdjustColumns();
 
@@ -141,7 +142,7 @@ namespace Opc.Ua.Client.Controls
             {
                 discoveryUrls = new StringCollection(Utils.DiscoveryUrls);
             }
-            
+
             // update the urls with the hostname.
             StringCollection urlsToUse = new StringCollection();
 
@@ -151,7 +152,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             Interlocked.Increment(ref m_discoverCount);
-            ThreadPool.QueueUserWorkItem(new WaitCallback(OnDiscoverServers), urlsToUse);
+            Task.Run(() => OnDiscoverServersAsync(urlsToUse));
         }
 
         /// <summary>
@@ -164,7 +165,7 @@ namespace Opc.Ua.Client.Controls
                 this.BeginInvoke(new WaitCallback(OnUpdateServers), state);
                 return;
             }
-            
+
             ItemsLV.Items.Clear();
 
             ApplicationDescriptionCollection servers = state as ApplicationDescriptionCollection;
@@ -193,14 +194,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Attempts fetch the list of servers from the discovery server.
         /// </summary>
-        private void OnDiscoverServers(object state)
+        private async Task OnDiscoverServersAsync(IList<string> discoveryUrls, CancellationToken ct = default)
         {
             try
             {
                 int discoverCount = m_discoverCount;
-
-                // do nothing if a valid list is not provided.
-                IList<string> discoveryUrls = state as IList<string>;
 
                 if (discoveryUrls == null)
                 {
@@ -214,7 +212,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (url != null)
                     {
-                        if (DiscoverServers(url))
+                        if (await DiscoverServersAsync(url, ct))
                         {
                             return;
                         }
@@ -239,7 +237,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Fetches the servers from the discovery server.
         /// </summary>
-        private bool DiscoverServers(Uri discoveryUrl)
+        private async Task<bool> DiscoverServersAsync(Uri discoveryUrl, CancellationToken ct = default)
         {
             // use a short timeout.
             EndpointConfiguration configuration = EndpointConfiguration.Create(m_configuration);
@@ -253,7 +251,7 @@ namespace Opc.Ua.Client.Controls
                     discoveryUrl,
                     EndpointConfiguration.Create(m_configuration));
 
-                ApplicationDescriptionCollection servers = client.FindServers(null);
+                ApplicationDescriptionCollection servers = await client.FindServersAsync(null, ct);
                 m_discoveryUrl = discoveryUrl.ToString();
                 OnUpdateServers(servers);
                 return true;
@@ -267,7 +265,7 @@ namespace Opc.Ua.Client.Controls
             {
                 if (client != null)
                 {
-                    client.Close();
+                    await client.CloseAsync(ct);
                 }
             }
         }
@@ -277,13 +275,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates an item in the control.
         /// </summary>
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             ApplicationDescription server = listItem.Tag as ApplicationDescription;
 
             if (server == null)
             {
-                base.UpdateItem(listItem, server);
+                await base.UpdateItemAsync(listItem, server, ct);
                 return;
             }
 
@@ -291,10 +289,10 @@ namespace Opc.Ua.Client.Controls
 
             // extract host from application uri.
             Uri uri = Utils.ParseUri(server.ApplicationUri);
-            
+
             if (uri != null)
             {
-                hostname = uri.DnsSafeHost; 
+                hostname = uri.DnsSafeHost;
             }
 
             // get the host name from the discovery urls.
@@ -312,10 +310,10 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
-			listItem.SubItems[0].Text = String.Format("{0}", server.ApplicationName);
-			listItem.SubItems[1].Text = String.Format("{0}", server.ApplicationType);
-			listItem.SubItems[2].Text = String.Format("{0}", hostname);
-			listItem.SubItems[3].Text = String.Format("{0}", server.ApplicationUri); 
+            listItem.SubItems[0].Text = String.Format("{0}", server.ApplicationName);
+            listItem.SubItems[1].Text = String.Format("{0}", server.ApplicationType);
+            listItem.SubItems[2].Text = String.Format("{0}", hostname);
+            listItem.SubItems[3].Text = String.Format("{0}", server.ApplicationUri);
 
             listItem.ImageKey = GuiUtils.Icons.Service;
         }

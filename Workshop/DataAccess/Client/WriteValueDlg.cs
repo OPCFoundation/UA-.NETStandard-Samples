@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -53,14 +55,14 @@ namespace Quickstarts.DataAccessClient
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_nodeId;
         private uint m_attributeId;
         private DataValue m_value;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Prompts the user to enter a value to write.
@@ -68,11 +70,12 @@ namespace Quickstarts.DataAccessClient
         /// <param name="session">The session to use.</param>
         /// <param name="nodeId">The identifier for the node to write to.</param>
         /// <param name="attributeId">The attribute being written.</param>
+        /// <param name="ct">The token to cancel the request</param>
         /// <returns>True if successful. False if the operation was cancelled.</returns>
-        public bool ShowDialog(Session session, NodeId nodeId, uint attributeId)
+        public async Task<bool> ShowDialogAsync(ISession session, NodeId nodeId, uint attributeId, CancellationToken ct = default)
         {
             m_session = session;
-            m_nodeId  = nodeId;
+            m_nodeId = nodeId;
             m_attributeId = attributeId;
 
             ReadValueId nodeToRead = new ReadValueId();
@@ -81,25 +84,24 @@ namespace Quickstarts.DataAccessClient
 
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
-            
-            // read current value.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            m_session.Read(
+            // read current value.
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             m_value = results[0];
             ValueTB.Text = Utils.Format("{0}", m_value.WrappedValue);
-            
+
             // display the dialog.
             if (ShowDialog() != DialogResult.OK)
             {
@@ -109,7 +111,7 @@ namespace Quickstarts.DataAccessClient
             return true;
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Changes the value in the text box to the data type required for the write operation.
@@ -117,8 +119,8 @@ namespace Quickstarts.DataAccessClient
         /// <returns>A value with the correct type.</returns>
         private object ChangeType()
         {
-            object value = (m_value != null)?m_value.Value:null;
-                
+            object value = (m_value != null) ? m_value.Value : null;
+
             switch (m_value.WrappedValue.TypeInfo.BuiltInType)
             {
                 case BuiltInType.Boolean:
@@ -197,15 +199,15 @@ namespace Quickstarts.DataAccessClient
             return value;
         }
         #endregion
-                
+
         #region Event Handlers
         /// <summary>
         /// Parses the value and writes it to server. Closes the dialog if successful.
         /// </summary>
-        private void OkBTN_Click(object sender, EventArgs e)
+        private async void OkBTN_ClickAsync(object sender, EventArgs e)
         {
             try
-            {                
+            {
                 WriteValue valueToWrite = new WriteValue();
 
                 valueToWrite.NodeId = m_nodeId;
@@ -214,23 +216,22 @@ namespace Quickstarts.DataAccessClient
                 valueToWrite.Value.StatusCode = StatusCodes.Good;
                 valueToWrite.Value.ServerTimestamp = DateTime.MinValue;
                 valueToWrite.Value.SourceTimestamp = DateTime.MinValue;
-            
+
                 WriteValueCollection valuesToWrite = new WriteValueCollection();
                 valuesToWrite.Add(valueToWrite);
 
                 // write current value.
-                StatusCodeCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                m_session.Write(
+                WriteResponse response = await m_session.WriteAsync(
                     null,
                     valuesToWrite,
-                    out results,
-                    out diagnosticInfos);
+                    default);
+
+                StatusCodeCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, valuesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);
-            
+
                 if (StatusCode.IsBad(results[0]))
                 {
                     throw new ServiceResultException(results[0]);

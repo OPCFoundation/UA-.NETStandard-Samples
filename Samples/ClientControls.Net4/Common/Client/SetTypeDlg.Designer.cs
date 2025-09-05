@@ -203,7 +203,7 @@ namespace Opc.Ua.Client.Controls
             this.StructureTypeBTN.NodeControl = this.StructureTypeTB;
             this.StructureTypeBTN.ReferenceTypeIds = null;
             this.StructureTypeBTN.RootId = null;
-            this.StructureTypeBTN.SelectedNode = null;
+            this.StructureTypeBTN.ClearSelectedNode();
             this.StructureTypeBTN.SelectedReference = null;
             this.StructureTypeBTN.Session = null;
             this.StructureTypeBTN.Size = new System.Drawing.Size(24, 24);

@@ -38,7 +38,7 @@ namespace Quickstarts.MethodsServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Namespaces.Methods)]
+    [DataContract(Namespace = Namespaces.Methods)]
     public class MethodsServerConfiguration
     {
         #region Constructors

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -34,6 +34,8 @@ using System.Text;
 using System.Data;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -65,9 +67,9 @@ namespace Opc.Ua.Client.Controls
             ResultsDV.DataSource = m_dataset.Tables[0];
         }
         #endregion
-        
+
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private DataSet m_dataset;
         #endregion
 
@@ -75,7 +77,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit a value.
         /// </summary>
-        public bool ShowDialog(Session session, NodeState node, string caption)
+        public async Task<bool> ShowDialogAsync(ISession session, NodeState node, string caption, CancellationToken ct = default)
         {
             m_session = session;
 
@@ -84,7 +86,7 @@ namespace Opc.Ua.Client.Controls
                 this.Text = caption;
             }
 
-            PopulateDataView(m_session.SystemContext, node, String.Empty);
+            await PopulateDataViewAsync(m_session.SystemContext, node, String.Empty, ct);
             m_dataset.AcceptChanges();
 
             if (ShowDialog() != DialogResult.OK)
@@ -98,10 +100,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Recursively populates the data view.
         /// </summary>
-        private void PopulateDataView(
+        private async Task PopulateDataViewAsync(
             ISystemContext context,
             NodeState parent,
-            string parentPath)
+            string parentPath,
+            CancellationToken ct = default)
         {
             List<BaseInstanceState> children = new List<BaseInstanceState>();
             parent.GetChildren(context, children);
@@ -115,7 +118,7 @@ namespace Opc.Ua.Client.Controls
                 if (!String.IsNullOrEmpty(parentPath))
                 {
                     childPath.Append(parentPath);
-                    childPath.Append("/");
+                    childPath.Append('/');
                 }
 
                 childPath.Append(child.GetDisplayText());
@@ -126,11 +129,11 @@ namespace Opc.Ua.Client.Controls
 
                     if (StatusCode.IsGood(variable.StatusCode))
                     {
-                        string dataType = m_session.NodeCache.GetDisplayText(variable.DataType);
+                        string dataType = await m_session.NodeCache.GetDisplayTextAsync(variable.DataType, ct);
 
                         if (variable.ValueRank >= 0)
                         {
-                            dataType += "[]"; 
+                            dataType += "[]";
                         }
 
                         DataRow row = m_dataset.Tables[0].NewRow();
@@ -142,11 +145,11 @@ namespace Opc.Ua.Client.Controls
                     }
                 }
 
-                PopulateDataView(context, child, childPath.ToString());
+                await PopulateDataViewAsync(context, child, childPath.ToString(), ct);
             }
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

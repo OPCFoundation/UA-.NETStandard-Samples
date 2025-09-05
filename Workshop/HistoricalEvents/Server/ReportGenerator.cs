@@ -51,7 +51,7 @@ namespace Quickstarts.HistoricalEvents.Server
             m_dataset.Tables[0].Columns.Add(BrowseNames.FluidLevel, typeof(double));
             m_dataset.Tables[0].Columns.Add(Opc.Ua.BrowseNames.EngineeringUnits, typeof(string));
             m_dataset.Tables[0].Columns.Add(BrowseNames.TestedBy, typeof(string));
-            
+
             m_dataset.Tables.Add("InjectionTests");
             m_dataset.Tables[1].Columns.Add(Opc.Ua.BrowseNames.EventId, typeof(string));
             m_dataset.Tables[1].Columns.Add(Opc.Ua.BrowseNames.Time, typeof(DateTime));
@@ -80,7 +80,7 @@ namespace Quickstarts.HistoricalEvents.Server
             "Area99/Saturn",
             "Area99/Mars"
         };
-        
+
         static readonly string[] s_WellUIDs = new string[]
         {
             "Well_24412",
@@ -88,7 +88,7 @@ namespace Quickstarts.HistoricalEvents.Server
             "Well_86234",
             "Well_91423"
         };
-        
+
         static readonly string[] s_TestReasons = new string[]
         {
             "initial",
@@ -97,7 +97,7 @@ namespace Quickstarts.HistoricalEvents.Server
             "unknown",
             "other"
         };
-        
+
         static readonly string[] s_Testers = new string[]
         {
             "Anne",
@@ -105,13 +105,13 @@ namespace Quickstarts.HistoricalEvents.Server
             "Charley",
             "Dawn"
         };
-        
+
         static readonly string[] s_UnitLengths = new string[]
         {
             "m",
             "yd"
         };
-        
+
         static readonly string[] s_UnitTimes = new string[]
         {
             "s",
@@ -142,14 +142,14 @@ namespace Quickstarts.HistoricalEvents.Server
 
         private int GetRandom(int min, int max)
         {
-            return (int)(Math.Truncate(m_random.NextDouble()*(max-min+1) + min));
+            return (int)(Math.Truncate(m_random.NextDouble() * (max - min + 1) + min));
         }
 
         private string GetRandom(string[] values)
         {
-            return values[GetRandom(0, values.Length-1)];
+            return values[GetRandom(0, values.Length - 1)];
         }
-        
+
         public string[] GetAreas()
         {
             List<string> area = new List<string>();
@@ -161,7 +161,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 if (index >= 0)
                 {
                     string areaName = s_WellNames[ii].Substring(0, index);
-                    
+
                     if (!area.Contains(areaName))
                     {
                         area.Add(areaName);
@@ -222,7 +222,7 @@ namespace Quickstarts.HistoricalEvents.Server
             row[6] = GetRandom(0, 1000);
             row[7] = GetRandom(s_UnitLengths);
             row[8] = GetRandom(s_Testers);
-           
+
             m_dataset.Tables[0].Rows.Add(row);
             m_dataset.AcceptChanges();
 
@@ -394,7 +394,7 @@ namespace Quickstarts.HistoricalEvents.Server
             e.EventId.Value = new Guid((string)row[Opc.Ua.BrowseNames.EventId]).ToByteArray();
             e.Time.Value = (DateTime)row[Opc.Ua.BrowseNames.Time];
 
-            
+
             string nameWell = (string)row[BrowseNames.NameWell];
             string uidWell = (string)row[BrowseNames.UidWell];
 
@@ -429,7 +429,7 @@ namespace Quickstarts.HistoricalEvents.Server
             row[6] = GetRandom(0, 1000);
             row[7] = GetRandom(s_UnitTimes);
             row[8] = GetRandom(s_InjectionFluids);
-           
+
             m_dataset.Tables[1].Rows.Add(row);
             m_dataset.AcceptChanges();
 

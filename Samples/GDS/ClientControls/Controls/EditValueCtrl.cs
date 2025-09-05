@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -58,7 +58,7 @@ namespace Opc.Ua.Gds.Client.Controls
             MaxDisplayTextLength = 100;
             ValuesDV.AutoGenerateColumns = false;
             ImageList = new ImageListControl().ImageList;
-            
+
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Values");
 
@@ -81,7 +81,7 @@ namespace Opc.Ua.Gds.Client.Controls
         #endregion
 
         #region AccessInfo Class
-        private class AccessInfo
+        private sealed class AccessInfo
         {
             public AccessInfo Parent;
             public PropertyInfo PropertyInfo;
@@ -161,7 +161,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     return false;
                 }
-                
+
                 if (ButtonPanel.Controls.Count > 0)
                 {
                     AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
@@ -186,7 +186,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 if (ButtonPanel.Controls.Count > 0)
                 {
                     AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
-                    
+
                     if (info != null)
                     {
                         Variant? value = info.Value as Variant?;
@@ -263,7 +263,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (currentValue == null)
             {
-                dimensions = new int[0];
+                dimensions = Array.Empty<int>();
             }
 
             Array array = currentValue as Array;
@@ -384,7 +384,7 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 return;
             }
-            
+
             AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
 
             Opc.Ua.TypeInfo currentType = info.TypeInfo;
@@ -485,7 +485,8 @@ namespace Opc.Ua.Gds.Client.Controls
                     MemoryStream mstrm = new MemoryStream();
                     serializer.Serialize(mstrm, value);
                     mstrm.Position = 0;
-                    return serializer.Deserialize(mstrm);
+                    using XmlReader reader = XmlReader.Create(mstrm, new XmlReaderSettings() { XmlResolver = null });
+                    return serializer.Deserialize(reader);
                 }
             }
 
@@ -536,7 +537,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     }
                 }
             }
-            
+
             AccessInfo info = new AccessInfo();
             info.Value = value;
             info.TypeInfo = expectedType;
@@ -645,7 +646,7 @@ namespace Opc.Ua.Gds.Client.Controls
             if (parent.Parent != null || ButtonPanel.Controls.Count == 0)
             {
                 item = new Button();
-             
+
                 item.AutoSize = true;
                 item.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
                 item.FlatStyle = FlatStyle.Standard;
@@ -1033,7 +1034,7 @@ namespace Opc.Ua.Gds.Client.Controls
             DataRow row = m_dataset.Tables[0].NewRow();
 
             StringBuilder buffer = new StringBuilder();
-            buffer.Append("[");
+            buffer.Append('[');
 
             if (info.Indexes != null)
             {
@@ -1041,14 +1042,14 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     if (ii > 0)
                     {
-                        buffer.Append(",");
+                        buffer.Append(',');
                     }
 
                     buffer.Append(info.Indexes[ii]);
                 }
             }
 
-            buffer.Append("]");
+            buffer.Append(']');
             info.Name = buffer.ToString();
 
             row[0] = info;
@@ -1421,7 +1422,7 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 return false;
             }
-            
+
             switch (typeInfo.BuiltInType)
             {
                 case BuiltInType.String:

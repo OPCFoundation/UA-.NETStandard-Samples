@@ -129,7 +129,7 @@ namespace Opc.Ua.Client.Controls
             this.FindBTN.TabIndex = 4;
             this.FindBTN.Text = "Find";
             this.FindBTN.UseVisualStyleBackColor = true;
-            this.FindBTN.Click += new System.EventHandler(this.FindBTN_Click);
+            this.FindBTN.Click += new System.EventHandler(this.FindBTN_ClickAsync);
             // 
             // DiscoverServerDlg
             // 

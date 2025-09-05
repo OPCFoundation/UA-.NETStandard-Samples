@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -37,6 +37,7 @@ using System.Windows.Forms;
 using System.Threading;
 
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -59,7 +60,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        // The columns to display in the control.		
+        // The columns to display in the control.
         private readonly object[][] m_ColumnNames = new object[][]
         {
             new object[] { "RecordId", HorizontalAlignment.Left, null },
@@ -141,7 +142,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             Interlocked.Increment(ref m_discoverCount);
-            ThreadPool.QueueUserWorkItem(new WaitCallback(OnDiscoverServersOnNetwork), urlsToUse);
+            Task.Run(() => OnDiscoverServersOnNetworkAsync(urlsToUse));
         }
 
         /// <summary>
@@ -178,15 +179,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Attempts fetch the list of network servers from the discovery server.
         /// </summary>
-        private void OnDiscoverServersOnNetwork(object state)
+        private async Task OnDiscoverServersOnNetworkAsync(IList<string> discoveryUrls, CancellationToken ct = default)
         {
             try
             {
                 int discoverCount = m_discoverCount;
 
                 // do nothing if a valid list is not provided.
-                IList<string> discoveryUrls = state as IList<string>;
-
                 if (discoveryUrls == null)
                 {
                     return;
@@ -199,7 +198,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (url != null)
                     {
-                        if (DiscoverServersOnNetwork(url))
+                        if (await DiscoverServersOnNetworkAsync(url, ct))
                         {
                             return;
                         }
@@ -224,7 +223,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Fetches the network servers from the discovery server.
         /// </summary>
-        private bool DiscoverServersOnNetwork(Uri discoveryUrl)
+        private async Task<bool> DiscoverServersOnNetworkAsync(Uri discoveryUrl, CancellationToken ct = default)
         {
             // use a short timeout.
             EndpointConfiguration configuration = EndpointConfiguration.Create(m_configuration);
@@ -258,7 +257,8 @@ namespace Opc.Ua.Client.Controls
                     return false;
                 }
 
-                ServerOnNetworkCollection servers = client.FindServersOnNetwork(startingRecordId, maxRecordsToReturn, serverCapabilityFilter, out lastCounterResetTime);
+                ServerOnNetworkCollection servers;
+                (servers, lastCounterResetTime) = await client.FindServersOnNetworkAsync(startingRecordId, maxRecordsToReturn, serverCapabilityFilter, ct);
                 m_discoveryUrl = discoveryUrl.ToString();
                 OnUpdateServers(servers);
                 return true;
@@ -272,7 +272,7 @@ namespace Opc.Ua.Client.Controls
             {
                 if (client != null)
                 {
-                    client.Close();
+                    await client.CloseAsync(ct);
                 }
             }
         }
@@ -282,13 +282,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates an item in the control.
         /// </summary>
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             ServerOnNetwork server = listItem.Tag as ServerOnNetwork;
 
             if (server == null)
             {
-                base.UpdateItem(listItem, server);
+                await base.UpdateItemAsync(listItem, server, ct);
                 return;
             }
 

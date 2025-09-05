@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -48,7 +48,7 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
             this.Icon = this.TrayIcon.Icon = ClientUtils.GetAppIcon();
-                        
+
             GuiUtils.DisplayUaTcpImplementation(this, configuration);
 
             m_server = server;
@@ -59,46 +59,46 @@ namespace Opc.Ua.Sample.Controls
             }
         }
         #endregion
-        
+
         #region Private Fields
         private bool m_exit;
         private StandardServer m_server;
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Shows the diagnostics window and starts the update timer.
         /// </summary>
         private void ShowStatus()
-        {            
+        {
             this.WindowState = FormWindowState.Normal;
             this.BringToFront();
             Timer.Enabled = true;
         }
-        
+
         /// <summary>
         /// Hides the diagnostics window and starts the update timer.
         /// </summary>
         private void HideStatus()
-        {            
+        {
             this.WindowState = FormWindowState.Minimized;
             Timer.Enabled = false;
         }
-        
-		/// <summary>
-		/// Displays an unhandled exception.
-		/// </summary>
-		public static void HandleException(string caption, MethodBase method, Exception e)
-		{
+
+        /// <summary>
+        /// Displays an unhandled exception.
+        /// </summary>
+        public static void HandleException(string caption, MethodBase method, Exception e)
+        {
             if (String.IsNullOrEmpty(caption))
             {
                 caption = method.Name;
             }
 
-			MessageBox.Show(e.Message, caption);
-		}
+            MessageBox.Show(e.Message, caption);
+        }
         #endregion
-        
+
         #region Event Handlers
         /// <summary>
         /// Handles a certificate validation error.
@@ -111,7 +111,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				Opc.Ua.Client.Controls.GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                Opc.Ua.Client.Controls.GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -125,11 +125,11 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ShowStatus();          
+                ShowStatus();
             }
             catch (Exception exception)
             {
-				HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -141,11 +141,11 @@ namespace Opc.Ua.Sample.Controls
                 {
                     e.Cancel = true;
                     HideStatus();
-                }       
+                }
             }
             catch (Exception exception)
             {
-				HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -153,11 +153,11 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ShowStatus();          
+                ShowStatus();
             }
             catch (Exception exception)
             {
-				HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -165,15 +165,17 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 ServerStatusDataType status = m_server.GetStatus();
+#pragma warning restore CS0618 // Type or member is obsolete
 
-                StartTimeTB.Text   = Utils.Format("{0:HH:mm:ss.ff}", status.StartTime.ToLocalTime());
+                StartTimeTB.Text = Utils.Format("{0:HH:mm:ss.ff}", status.StartTime.ToLocalTime());
                 CurrentTimeTB.Text = Utils.Format("{0:HH:mm:ss.ff}", status.CurrentTime.ToLocalTime());
                 ServerStateTB.Text = Utils.Format("{0}", status.State);
             }
             catch (Exception exception)
             {
-				HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

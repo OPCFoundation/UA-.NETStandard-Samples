@@ -107,7 +107,7 @@ namespace Opc.Ua.Client.Controls
             this.ExportBTN.TabIndex = 3;
             this.ExportBTN.Text = "Export...";
             this.ExportBTN.UseVisualStyleBackColor = true;
-            this.ExportBTN.Click += new System.EventHandler(this.ExportBTN_Click);
+            this.ExportBTN.Click += new System.EventHandler(this.ExportBTN_ClickAsync);
             // 
             // DetailsBTN
             // 
@@ -118,7 +118,7 @@ namespace Opc.Ua.Client.Controls
             this.DetailsBTN.TabIndex = 2;
             this.DetailsBTN.Text = "Details...";
             this.DetailsBTN.UseVisualStyleBackColor = true;
-            this.DetailsBTN.Click += new System.EventHandler(this.DetailsBTN_Click);
+            this.DetailsBTN.Click += new System.EventHandler(this.DetailsBTN_ClickAsync);
             // 
             // OkBTN
             // 

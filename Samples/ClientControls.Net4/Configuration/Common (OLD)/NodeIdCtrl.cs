@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -46,7 +46,7 @@ namespace Opc.Ua.Client.Controls
     /// </summary>
     public partial class NodeIdCtrl : UserControl
     {
-		#region Constructors
+        #region Constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="NodeIdCtrl"/> class.
         /// </summary>
@@ -57,43 +57,43 @@ namespace Opc.Ua.Client.Controls
             m_rootId = Objects.RootFolder;
             BrowseBTN.Enabled = false;
         }
-		#endregion
-        
-		#region Event Handlers
+        #endregion
+
+        #region Event Handlers
         private Browser m_browser;
         private NodeId m_rootId;
         private ReferenceDescription m_reference;
         private event EventHandler m_IdentifierChanged;
-		#endregion
-        
-		#region Public Interface
+        #endregion
+
+        #region Public Interface
         /// <summary>
         /// Raised if the node id is changed.
         /// </summary>
         public event EventHandler IdentifierChanged
         {
-            add    { m_IdentifierChanged += value; }
+            add { m_IdentifierChanged += value; }
             remove { m_IdentifierChanged -= value; }
         }
-        
+
         /// <summary>
         /// The browser to used browse for a node id.
         /// </summary>
         [DefaultValue(null)]
         public Browser Browser
         {
-            get 
-            { 
-                return m_browser;  
+            get
+            {
+                return m_browser;
             }
-            
-            set 
-            { 
-                m_browser = value; 
+
+            set
+            {
+                m_browser = value;
                 BrowseBTN.Enabled = m_browser != null;
             }
         }
-        
+
         /// <summary>
         /// The root node id to display when browsing.
         /// </summary>
@@ -102,7 +102,7 @@ namespace Opc.Ua.Client.Controls
         {
             get
             {
-                return m_rootId;                
+                return m_rootId;
             }
 
             set
@@ -123,7 +123,7 @@ namespace Opc.Ua.Client.Controls
         public bool IsEmpty
         {
             get
-            { 
+            {
                 return String.IsNullOrEmpty(NodeIdTB.Text);
             }
         }
@@ -135,16 +135,16 @@ namespace Opc.Ua.Client.Controls
         public NodeId Identifier
         {
             get
-            { 
-                return NodeId.Parse(NodeIdTB.Text);  
+            {
+                return NodeId.Parse(NodeIdTB.Text);
             }
-            
+
             set
-            { 
-                NodeIdTB.Text = Utils.Format("{0}", value); 
+            {
+                NodeIdTB.Text = Utils.Format("{0}", value);
             }
         }
-        
+
         /// <summary>
         /// The reference seleected if the browse feature was used.
         /// </summary>
@@ -152,12 +152,12 @@ namespace Opc.Ua.Client.Controls
         public ReferenceDescription Reference
         {
             get
-            { 
-                return m_reference;  
+            {
+                return m_reference;
             }
-            
+
             set
-            { 
+            {
                 m_reference = value;
 
                 if (m_reference != null)
@@ -166,14 +166,14 @@ namespace Opc.Ua.Client.Controls
                 }
             }
         }
-		#endregion
-        
-		#region Event Handlers
-        private void BrowseBTN_Click(object sender, EventArgs e)
+        #endregion
+
+        #region Event Handlers
+        private async void BrowseBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                ReferenceDescription reference = new SelectNodeDlg().ShowDialog(m_browser.Session as Session, RootId, null, "", null);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", default, null);
 
                 if (reference != null && reference.NodeId != null)
                 {
@@ -188,7 +188,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -199,6 +199,6 @@ namespace Opc.Ua.Client.Controls
                 m_IdentifierChanged(this, null);
             }
         }
-		#endregion
+        #endregion
     }
 }

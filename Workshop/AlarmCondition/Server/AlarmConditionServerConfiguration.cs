@@ -118,7 +118,7 @@ namespace Quickstarts.AlarmConditionServer
             m_sourcePaths = null;
         }
         #endregion
-        
+
         #region Public Properties
         /// <summary>
         /// The browse name for the instance.
@@ -157,7 +157,7 @@ namespace Quickstarts.AlarmConditionServer
         private StringCollection m_sourcePaths;
         #endregion
     }
-    
+
     #region AreaConfigurationCollection Class
     /// <summary>
     /// A collection of AreaConfiguration objects.

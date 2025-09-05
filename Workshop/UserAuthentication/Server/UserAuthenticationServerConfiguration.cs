@@ -38,7 +38,7 @@ namespace Quickstarts.UserAuthenticationServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Namespaces.UserAuthentication)]
+    [DataContract(Namespace = Namespaces.UserAuthentication)]
     public class UserAuthenticationServerConfiguration
     {
         #region Constructors

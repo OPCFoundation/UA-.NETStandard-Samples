@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,7 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
@@ -53,7 +54,7 @@ namespace Quickstarts.HistoricalEvents.Client
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
         }
-        
+
         /// <summary>
         /// Creates a form which uses the specified client configuration.
         /// </summary>
@@ -68,10 +69,10 @@ namespace Quickstarts.HistoricalEvents.Client
             this.Text = m_configuration.ApplicationName;
         }
         #endregion
-        
+
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private bool m_connectedOnce;
         #endregion
 
@@ -83,10 +84,10 @@ namespace Quickstarts.HistoricalEvents.Client
         /// Connects to a server.
         /// </summary>
         private async void Server_ConnectMI_ClickAsync(object sender, EventArgs e)
-        {            
+        {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.ConnectAsync();
             }
             catch (Exception exception)
             {
@@ -127,7 +128,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -136,19 +137,19 @@ namespace Quickstarts.HistoricalEvents.Client
                 // set a suitable initial state.
                 if (m_session != null && !m_connectedOnce)
                 {
-                    EventsLV.IsSubscribed = false;
-                    EventsLV.ChangeArea(ExpandedNodeId.ToNodeId(ObjectIds.Plaforms, m_session.NamespaceUris), true);
+                    await EventsLV.SetSubscribedAsync(false);
+                    await EventsLV.ChangeAreaAsync(ExpandedNodeId.ToNodeId(ObjectIds.Plaforms, m_session.NamespaceUris), true);
 
                     TypeDeclaration type = new TypeDeclaration();
                     type.NodeId = ExpandedNodeId.ToNodeId(ObjectTypeIds.WellTestReportType, m_session.NamespaceUris);
-                    type.Declarations = ModelUtils.CollectInstanceDeclarationsForType(m_session, type.NodeId);
+                    type.Declarations = await ModelUtils.CollectInstanceDeclarationsForTypeAsync(m_session, type.NodeId);
 
-                    EventsLV.ChangeFilter(new FilterDeclaration(type, null), true);
+                    await EventsLV.ChangeFilterAsync(new FilterDeclaration(type, null), true);
                     m_connectedOnce = true;
                 }
 
-                EventsLV.IsSubscribed = Events_EnableSubscriptionMI.Checked;
-                EventsLV.ChangeSession(m_session, true);
+                await EventsLV.SetSubscribedAsync(Events_EnableSubscriptionMI.Checked);
+                await EventsLV.ChangeSessionAsync(m_session, true);
             }
             catch (Exception exception)
             {
@@ -180,7 +181,7 @@ namespace Quickstarts.HistoricalEvents.Client
             ConnectServerCTRL.Disconnect();
         }
 
-        private void Events_SelectEventTypeMI_Click(object sender, EventArgs e)
+        private async void Events_SelectEventTypeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -189,14 +190,14 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                TypeDeclaration type = new SelectTypeDlg().ShowDialog(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, "Select Event Type");
+                TypeDeclaration type = await new SelectTypeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, "Select Event Type");
 
                 if (type == null)
                 {
                     return;
                 }
 
-                EventsLV.ChangeFilter(new FilterDeclaration(type, EventsLV.Filter), true);
+                await EventsLV.ChangeFilterAsync(new FilterDeclaration(type, EventsLV.Filter), true);
             }
             catch (Exception exception)
             {
@@ -204,7 +205,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void Events_ModifyEventFilterMI_Click(object sender, EventArgs e)
+        private async void Events_ModifyEventFilterMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -218,7 +219,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                EventsLV.ChangeFilter(EventsLV.Filter, true);
+                await EventsLV.ChangeFilterAsync(EventsLV.Filter, true);
             }
             catch (Exception exception)
             {
@@ -226,7 +227,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void Events_SelectEventAreaMI_Click(object sender, EventArgs e)
+        private async void Events_SelectEventAreaMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -235,14 +236,14 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                NodeId areaId = new SelectNodeDlg().ShowDialog(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", Opc.Ua.ReferenceTypeIds.HasEventSource);
+                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId == null)
                 {
                     return;
                 }
 
-                EventsLV.ChangeArea(areaId, true);
+                await EventsLV.ChangeAreaAsync(areaId, true);
             }
             catch (Exception exception)
             {
@@ -250,11 +251,11 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void Events_EnableSubscriptionMI_CheckedChanged(object sender, EventArgs e)
+        private async void Events_EnableSubscriptionMI_CheckedChangedAsync(object sender, EventArgs e)
         {
             try
             {
-                EventsLV.IsSubscribed = Events_EnableSubscriptionMI.Checked;
+                await EventsLV.SetSubscribedAsync(Events_EnableSubscriptionMI.Checked);
             }
             catch (Exception exception)
             {
@@ -262,7 +263,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void Events_EditEventHistoryMI_Click(object sender, EventArgs e)
+        private async void Events_EditEventHistoryMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -271,7 +272,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                new ReadEventHistoryDlg().ShowDialog(m_session, EventsLV.AreaId, new FilterDeclaration(EventsLV.Filter));
+                await new ReadEventHistoryDlg().ShowDialogAsync(m_session, EventsLV.AreaId, new FilterDeclaration(EventsLV.Filter));
             }
             catch (Exception exception)
             {
@@ -282,7 +283,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Sets the locale to use.
         /// </summary>
-        private void Server_SetLocaleMI_Click(object sender, EventArgs e)
+        private async void Server_SetLocaleMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -291,7 +292,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                string locale = new SelectLocaleDlg().ShowDialog(m_session);
+                string locale = await new SelectLocaleDlg().ShowDialogAsync(m_session);
 
                 if (locale == null)
                 {
@@ -320,7 +321,7 @@ namespace Quickstarts.HistoricalEvents.Client
         {
             try
             {
-                System.Diagnostics.Process.Start( Path.GetDirectoryName(Application.ExecutablePath) + "\\WebHelp\\haeventsclientoverview.htm");
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + "\\WebHelp\\haeventsclientoverview.htm");
             }
             catch (Exception ex)
             {

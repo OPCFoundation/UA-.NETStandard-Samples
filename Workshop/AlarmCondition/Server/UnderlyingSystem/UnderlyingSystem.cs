@@ -48,21 +48,21 @@ namespace Quickstarts.AlarmConditionServer
             m_sources = new Dictionary<string, UnderlyingSystemSource>();
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// The finializer implementation.
         /// </summary>
-        ~UnderlyingSystem() 
+        ~UnderlyingSystem()
         {
             Dispose(false);
         }
-        
+
         /// <summary>
         /// Frees any unmanaged resources.
         /// </summary>
         public void Dispose()
-        {   
+        {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -71,7 +71,7 @@ namespace Quickstarts.AlarmConditionServer
         /// An overrideable version of the Dispose.
         /// </summary>
         protected virtual void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 if (m_simulationTimer != null)
@@ -106,7 +106,7 @@ namespace Quickstarts.AlarmConditionServer
 
                 if (index != -1)
                 {
-                    name = name.Substring(index+1);
+                    name = name.Substring(index + 1);
                 }
 
                 // extract the type from the path.
@@ -226,7 +226,7 @@ namespace Quickstarts.AlarmConditionServer
 
         #region Private Fields
         private object m_lock = new object();
-        private Dictionary<string,UnderlyingSystemSource> m_sources;
+        private Dictionary<string, UnderlyingSystemSource> m_sources;
         private Timer m_simulationTimer;
         private long m_simulationCounter;
         #endregion

@@ -125,7 +125,7 @@ namespace Quickstarts.ReferenceClient
             this.Server_ConnectMI.Name = "Server_ConnectMI";
             this.Server_ConnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_ConnectMI.Text = "Connect";
-            this.Server_ConnectMI.Click += new System.EventHandler(this.Server_ConnectMI_Click);
+            this.Server_ConnectMI.Click += new System.EventHandler(this.Server_ConnectMI_ClickAsync);
             // 
             // Server_DisconnectMI
             // 
@@ -173,9 +173,9 @@ namespace Quickstarts.ReferenceClient
             this.ConnectServerCTRL.TabIndex = 6;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
-            this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
-            this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
+            this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStartingAsync);
+            this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectCompleteAsync);
             // 
             // BrowseCTRL
             // 

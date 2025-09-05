@@ -86,8 +86,8 @@ namespace Opc.Ua.Client.Controls
             this.BrowseTV.Name = "BrowseTV";
             this.BrowseTV.Size = new System.Drawing.Size(1003, 569);
             this.BrowseTV.TabIndex = 2;
-            this.BrowseTV.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.BrowseTV_BeforeExpand);
-            this.BrowseTV.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.BrowseTV_AfterSelect);
+            this.BrowseTV.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.BrowseTV_BeforeExpandAsync);
+            this.BrowseTV.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.BrowseTV_AfterSelectAsync);
             // 
             // BrowseTreeViewCtrl
             // 

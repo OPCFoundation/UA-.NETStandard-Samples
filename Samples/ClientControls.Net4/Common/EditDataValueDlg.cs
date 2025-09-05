@@ -51,7 +51,7 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         private DataValue m_value;
         #endregion
@@ -104,7 +104,7 @@ namespace Opc.Ua.Client.Controls
             return m_value;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

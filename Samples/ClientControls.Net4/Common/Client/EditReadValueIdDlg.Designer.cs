@@ -240,7 +240,7 @@ namespace Opc.Ua.Client.Controls
             this.NodeBTN.NodeControl = this.NodeTB;
             this.NodeBTN.ReferenceTypeIds = null;
             this.NodeBTN.RootId = null;
-            this.NodeBTN.SelectedNode = null;
+            this.NodeBTN.ClearSelectedNode();
             this.NodeBTN.SelectedReference = null;
             this.NodeBTN.Session = null;
             this.NodeBTN.Size = new System.Drawing.Size(24, 24);

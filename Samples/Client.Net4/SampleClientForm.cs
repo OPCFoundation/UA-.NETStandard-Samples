@@ -43,8 +43,8 @@ namespace Opc.Ua.Sample
         }
 
         public SampleClientForm(
-            ApplicationInstance application, 
-            ClientForm masterForm, 
+            ApplicationInstance application,
+            ClientForm masterForm,
             ApplicationConfiguration configuration)
         :
             base(configuration.CreateMessageContext(), application, masterForm, configuration)
@@ -71,7 +71,7 @@ namespace Opc.Ua.Sample
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

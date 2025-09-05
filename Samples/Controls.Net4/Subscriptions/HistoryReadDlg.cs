@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -54,27 +56,27 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Session m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public void Show(Session session, ReadValueIdCollection valueIds)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             m_session = session;
 
-            BrowseCTRL.SetView(m_session, BrowseViewType.Objects, null);
+            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
             ReadValuesCTRL.Initialize(session, valueIds);
 
-            MoveBTN_Click(BackBTN, null);
+            MoveBTN_ClickAsync(BackBTN, null);
 
             Show();
             BringToFront();
         }
 
-        private void Read()
+        private async Task ReadAsync(CancellationToken ct = default)
         {
             ReadValueIdCollection nodesToRead = ReadValuesCTRL.GetValueIds();
 
@@ -83,26 +85,25 @@ namespace Opc.Ua.Sample.Controls
                 return;
             }
 
-            DataValueCollection values = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-            
-            ResponseHeader responseHeader = m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Both,
                 nodesToRead,
-                out values,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection values = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, nodesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);  
-     
-            ReadResultsCTRL.ShowValue(values, true);
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
+
+            await ReadResultsCTRL.ShowValueAsync(values, true, ct);
         }
         #endregion
-        
+
         #region Event Handlers
-        private void BrowseCTRL_ItemsSelected(object sender, NodesSelectedEventArgs e)
+        private async void BrowseCTRL_ItemsSelectedAsync(object sender, NodesSelectedEventArgs e)
         {
             try
             {
@@ -110,57 +111,57 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference.ReferenceTypeId == ReferenceTypeIds.HasProperty || reference.IsForward)
                     {
-                        ReadValuesCTRL.AddValueId(reference);
+                        await ReadValuesCTRL.AddValueIdAsync(reference);
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void MoveBTN_Click(object sender, EventArgs e)
+        private async void MoveBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 if (sender == NextBTN)
                 {
-                    Read();
+                    await ReadAsync();
 
-                    BackBTN.Visible         = true;
-                    NextBTN.Visible         = false;
-                    ReadBTN.Visible         = true;
-                    ReadValuesCTRL.Visible  = true;
+                    BackBTN.Visible = true;
+                    NextBTN.Visible = false;
+                    ReadBTN.Visible = true;
+                    ReadValuesCTRL.Visible = true;
                     ReadResultsCTRL.Visible = true;
-                    BrowseCTRL.Visible      = false;
+                    BrowseCTRL.Visible = false;
                 }
 
                 else if (sender == BackBTN)
                 {
-                    BackBTN.Visible          = false;
-                    NextBTN.Visible          = true;
-                    ReadBTN.Visible          = false;
-                    ReadResultsCTRL.Visible  = false;
-                    BrowseCTRL.Visible       = true;
-                    ReadValuesCTRL.Visible   = true;
+                    BackBTN.Visible = false;
+                    NextBTN.Visible = true;
+                    ReadBTN.Visible = false;
+                    ReadResultsCTRL.Visible = false;
+                    BrowseCTRL.Visible = true;
+                    ReadValuesCTRL.Visible = true;
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void ReadMI_Click(object sender, EventArgs e)
+        private async void ReadMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Read();
+                await ReadAsync();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -172,7 +173,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

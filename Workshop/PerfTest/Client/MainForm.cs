@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Quickstarts.PerfTestClient
 {
@@ -68,7 +70,7 @@ namespace Quickstarts.PerfTestClient
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
-        private Session m_session;
+        private ISession m_session;
         private bool m_connectedOnce;
         private Tester m_tester;
         #endregion
@@ -84,7 +86,7 @@ namespace Quickstarts.PerfTestClient
         {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.ConnectAsync();
             }
             catch (Exception exception)
             {
@@ -125,7 +127,7 @@ namespace Quickstarts.PerfTestClient
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -135,7 +137,7 @@ namespace Quickstarts.PerfTestClient
                 {
                     if (m_tester != null)
                     {
-                        StopTest();
+                        await StopTestAsync();
                     }
 
                     return;
@@ -152,7 +154,7 @@ namespace Quickstarts.PerfTestClient
                 m_tester = new Tester();
                 m_tester.SamplingRate = (int)UpdateRateCTRL.Value;
                 m_tester.ItemCount = (int)ItemCountCTRL.Value;
-                m_tester.Start(m_session);
+                await m_tester.StartAsync(m_session);
 
                 UpdateTimer.Enabled = true;
                 StopBTN.Visible = true;
@@ -206,11 +208,11 @@ namespace Quickstarts.PerfTestClient
         /// <summary>
         /// Stops the test.
         /// </summary>
-        private void StopTest()
+        private async Task StopTestAsync(CancellationToken ct = default)
         {
             if (m_tester != null)
             {
-                m_tester.Stop();
+                await m_tester.StopAsync(ct);
             }
 
             UpdateTimer.Enabled = false;
@@ -223,8 +225,8 @@ namespace Quickstarts.PerfTestClient
         {
             try
             {
-		        int messageCount = 0;
-		        int totalItemUpdateCount = 0;
+                int messageCount = 0;
+                int totalItemUpdateCount = 0;
                 DateTime firstMessageTime = DateTime.MinValue;
                 DateTime lastMessageTime = DateTime.MinValue;
                 int minItemUpdateCount = 0;
@@ -246,35 +248,35 @@ namespace Quickstarts.PerfTestClient
                     LogTB.AppendText(Environment.NewLine);
                 }
 
-		        MessageCountTB.Text = String.Format("{0}", messageCount);
-		        TotalItemUpdateCountTB.Text = String.Format("{0}", totalItemUpdateCount);
-			    TimeSpan delta = (lastMessageTime - firstMessageTime);
+                MessageCountTB.Text = String.Format("{0}", messageCount);
+                TotalItemUpdateCountTB.Text = String.Format("{0}", totalItemUpdateCount);
+                TimeSpan delta = (lastMessageTime - firstMessageTime);
 
-		        if (delta.TotalMilliseconds > 0)
+                if (delta.TotalMilliseconds > 0)
                 {
                     LogTB.AppendText(Utils.Format("Checking Update Counts. Time={0}, Min={1}, Max={2}", DateTime.UtcNow.ToString("mm:ss.fff"), minItemUpdateCount, maxItemUpdateCount));
                     LogTB.AppendText(Environment.NewLine);
 
-                    MessageRateTB.Text = String.Format("{0}", delta.TotalSeconds); 
-			        TotalItemUpdateRateTB.Text = String.Format("{0}", ((double)totalItemUpdateCount)/delta.TotalSeconds); 
-		        }
-		        else
-		        {	
-			        MessageRateTB.Text = String.Empty;
+                    MessageRateTB.Text = String.Format("{0}", delta.TotalSeconds);
+                    TotalItemUpdateRateTB.Text = String.Format("{0}", ((double)totalItemUpdateCount) / delta.TotalSeconds);
+                }
+                else
+                {
+                    MessageRateTB.Text = String.Empty;
                     TotalItemUpdateRateTB.Text = String.Empty;
-		        }
+                }
             }
-            catch (Exception)
+            catch
             {
                 // TBD
             }
         }
 
-        private void StopBTN_Click(object sender, EventArgs e)
+        private async void StopBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                StopTest();
+                await StopTestAsync();
             }
             catch (Exception exception)
             {

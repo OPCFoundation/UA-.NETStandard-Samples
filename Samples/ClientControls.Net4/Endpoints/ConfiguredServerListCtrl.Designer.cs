@@ -90,7 +90,7 @@ namespace Opc.Ua.Client.Controls
             this.ConfigureMI.Name = "ConfigureMI";
             this.ConfigureMI.Size = new System.Drawing.Size(152, 22);
             this.ConfigureMI.Text = "Configure...";
-            this.ConfigureMI.Click += new System.EventHandler(this.ConfigureMI_Click);
+            this.ConfigureMI.Click += new System.EventHandler(this.ConfigureMI_ClickAsync);
             // 
             // DeleteMI
             // 

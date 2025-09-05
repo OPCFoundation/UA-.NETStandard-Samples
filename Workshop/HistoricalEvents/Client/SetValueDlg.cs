@@ -52,10 +52,10 @@ namespace Quickstarts.HistoricalEvents.Client
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         #endregion
-        
+
         #region Public Interface
         public Variant? ShowDialog(Variant value, BuiltInType builtInType)
         {
@@ -63,7 +63,7 @@ namespace Quickstarts.HistoricalEvents.Client
             {
                 ValueTB.Text = value.ToString();
             }
-            
+
             if (ShowDialog() != DialogResult.OK)
             {
                 return null;
@@ -77,7 +77,7 @@ namespace Quickstarts.HistoricalEvents.Client
             return new Variant(TypeInfo.Cast(ValueTB.Text, builtInType));
         }
         #endregion
-                
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

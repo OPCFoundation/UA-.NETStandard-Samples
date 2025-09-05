@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -53,11 +55,11 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Shows the dialog.
@@ -103,7 +105,7 @@ namespace Opc.Ua.Client.Controls
         /// Gets the endpoints for the host.
         /// </summary>
         /// <param name="hostName">Name of the host.</param>
-        private string[] GetEndpoints(string hostName)
+        private async Task<string[]> GetEndpointsAsync(string hostName, CancellationToken ct = default)
         {
             List<string> urls = new List<string>();
 
@@ -118,7 +120,7 @@ namespace Opc.Ua.Client.Controls
                 // Connect to the local discovery server and find the available servers.
                 using (DiscoveryClient client = DiscoveryClient.Create(new Uri(Utils.Format("opc.tcp://{0}:4840", hostName)), configuration))
                 {
-                    ApplicationDescriptionCollection servers = client.FindServers(null);
+                    ApplicationDescriptionCollection servers = await client.FindServersAsync(null, ct);
 
                     // populate the drop down list with the discovery URLs for the available servers.
                     for (int ii = 0; ii < servers.Count; ii++)
@@ -134,7 +136,7 @@ namespace Opc.Ua.Client.Controls
                             string discoveryUrl = servers[ii].DiscoveryUrls[jj];
 
                             // Many servers will use the '/discovery' suffix for the discovery endpoint.
-                            // The URL without this prefix should be the base URL for the server. 
+                            // The URL without this prefix should be the base URL for the server.
                             if (discoveryUrl.EndsWith("/discovery"))
                             {
                                 discoveryUrl = discoveryUrl.Substring(0, discoveryUrl.Length - "/discovery".Length);
@@ -161,7 +163,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
         #endregion
-                
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {
@@ -190,7 +192,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void FindBTN_Click(object sender, EventArgs e)
+        private async void FindBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -206,10 +208,7 @@ namespace Opc.Ua.Client.Controls
 
                 ServersLB.Items.Clear();
 
-                foreach (string url in GetEndpoints(ValueTB.Text))
-                {
-                    ServersLB.Items.Add(url);
-                }
+                ServersLB.Items.AddRange(await GetEndpointsAsync(ValueTB.Text));
 
                 if (ServersLB.Items.Count == 0)
                 {

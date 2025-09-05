@@ -71,8 +71,8 @@ namespace Opc.Ua.Client.Controls
             this.ItemsLV.TabIndex = 0;
             this.ItemsLV.UseCompatibleStateImageBehavior = false;
             this.ItemsLV.View = System.Windows.Forms.View.Details;
-            this.ItemsLV.DragEnter += new System.Windows.Forms.DragEventHandler(this.ItemsLV_DragEnter);
-            this.ItemsLV.DragDrop += new System.Windows.Forms.DragEventHandler(this.ItemsLV_DragDrop);
+            this.ItemsLV.DragEnter += new System.Windows.Forms.DragEventHandler(this.ItemsLV_DragEnterAsync);
+            this.ItemsLV.DragDrop += new System.Windows.Forms.DragEventHandler(this.ItemsLV_DragDropAsync);
             this.ItemsLV.DoubleClick += new System.EventHandler(this.ItemsLV_DoubleClick);
             this.ItemsLV.SelectedIndexChanged += new System.EventHandler(this.ItemsLV_SelectedIndexChanged);
             this.ItemsLV.MouseUp += new System.Windows.Forms.MouseEventHandler(this.ItemsLV_MouseUp);

@@ -136,7 +136,7 @@ namespace Opc.Ua.Sample.Controls
             this.BrowseCTRL.SessionTreeCtrl = null;
             this.BrowseCTRL.Size = new System.Drawing.Size(375, 285);
             this.BrowseCTRL.TabIndex = 1;
-            this.BrowseCTRL.ItemsSelected += new Opc.Ua.Sample.Controls.NodesSelectedEventHandler(this.BrowseCTRL_NodesSelected);
+            this.BrowseCTRL.ItemsSelected += new Opc.Ua.Sample.Controls.NodesSelectedEventHandler(this.BrowseCTRL_NodesSelectedAsync);
             // 
             // AttributesCTRL
             // 

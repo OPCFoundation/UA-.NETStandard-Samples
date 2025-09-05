@@ -52,7 +52,7 @@ namespace Quickstarts.DataAccessServer
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Server;
+            application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "DataAccessServer";
 
             try
@@ -71,13 +71,13 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 // load the application configuration.
-                application.LoadApplicationConfiguration(false).Wait();
+                application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificates(false).Wait();
+                application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
 
                 // start the server.
-                application.Start(new DataAccessServer()).Wait();
+                application.StartAsync(new DataAccessServer()).Wait();
 
                 // run the application interactively.
                 Application.Run(new ServerForm(application));

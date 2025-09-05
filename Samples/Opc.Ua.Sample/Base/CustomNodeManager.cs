@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -59,7 +59,7 @@ namespace Opc.Ua.Sample
             m_systemContext.SystemHandle = null;
             m_systemContext.NodeIdFactory = this;
 
-            // create the table of nodes. 
+            // create the table of nodes.
             m_predefinedNodes = new NodeIdDictionary<NodeState>();
             m_rootNotifiers = new List<NodeState>();
             m_sampledItems = new List<DataChangeMonitoredItem>();
@@ -341,7 +341,7 @@ namespace Opc.Ua.Sample
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public virtual void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -519,7 +519,7 @@ namespace Opc.Ua.Sample
         /// </summary>
         protected virtual void OnNodeRemoved(NodeState node)
         {
-            // overridden by the sub-class.            
+            // overridden by the sub-class.
         }
 
         /// <summary>
@@ -721,7 +721,7 @@ namespace Opc.Ua.Sample
         }
 
         /// <summary>
-        /// Finds the specified and checks if it is of the expected type. 
+        /// Finds the specified and checks if it is of the expected type.
         /// </summary>
         /// <returns>Returns null if not found or not of the correct type.</returns>
         public NodeState FindPredefinedNode(NodeId nodeId, Type expectedType)
@@ -765,7 +765,7 @@ namespace Opc.Ua.Sample
         /// Returns a unique handle for the node.
         /// </summary>
         /// <remarks>
-        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to 
+        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to
         /// NodeManager it should return a handle that does not require the NodeId to be validated again when
         /// the handle is passed into other methods such as 'Read' or 'Write'.
         /// </remarks>
@@ -781,7 +781,7 @@ namespace Opc.Ua.Sample
         /// Returns a unique handle for the node.
         /// </summary>
         /// <remarks>
-        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to 
+        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to
         /// NodeManager it should return a handle that does not require the NodeId to be validated again when
         /// the handle is passed into other methods such as 'Read' or 'Write'.
         /// </remarks>
@@ -1030,7 +1030,7 @@ namespace Opc.Ua.Sample
                 // apply filters to references.
                 for (IReference reference = browser.Next(); reference != null; reference = browser.Next())
                 {
-                    // create the type definition reference.        
+                    // create the type definition reference.
                     ReferenceDescription description = GetReferenceDescription(context, reference, continuationPoint);
 
                     if (description == null)
@@ -1064,7 +1064,7 @@ namespace Opc.Ua.Sample
             IReference reference,
             ContinuationPoint continuationPoint)
         {
-            // create the type definition reference.        
+            // create the type definition reference.
             ReferenceDescription description = new ReferenceDescription();
 
             description.NodeId = reference.TargetId;
@@ -1146,9 +1146,9 @@ namespace Opc.Ua.Sample
         /// Returns the target of the specified browse path fragment(s).
         /// </summary>
         /// <remarks>
-        /// If reference exists but the node manager does not know the browse name it must 
+        /// If reference exists but the node manager does not know the browse name it must
         /// return the NodeId as an unresolvedTargetIds. The caller will try to check the
-        /// browse name. 
+        /// browse name.
         /// </remarks>
         public virtual void TranslateBrowsePath(
             OperationContext context,
@@ -1970,8 +1970,8 @@ namespace Opc.Ua.Sample
         /// Subscribes or unsubscribes to events produced by the specified source.
         /// </summary>
         /// <remarks>
-        /// This method is called when a event subscription is created or deletes. The node manager 
-        /// must  start/stop reporting events for the specified object and all objects below it in 
+        /// This method is called when a event subscription is created or deletes. The node manager
+        /// must  start/stop reporting events for the specified object and all objects below it in
         /// the notifier hierarchy.
         /// </remarks>
         public virtual ServiceResult SubscribeToEvents(
@@ -2037,7 +2037,7 @@ namespace Opc.Ua.Sample
         /// Subscribes or unsubscribes to events produced by all event sources.
         /// </summary>
         /// <remarks>
-        /// This method is called when a event subscription is created or deleted. The node 
+        /// This method is called when a event subscription is created or deleted. The node
         /// manager must start/stop reporting events for all objects that it manages.
         /// </remarks>
         public virtual ServiceResult SubscribeToAllEvents(
@@ -2544,15 +2544,14 @@ namespace Opc.Ua.Sample
         /// Reads the initial value for a monitored item.
         /// </summary>
         /// <param name="context">The context.</param>
-        /// <param name="handle">The item handle.</param>
+        /// <param name="monitoredNode">The monitored node.</param>
         /// <param name="monitoredItem">The monitored item.</param>
         protected virtual ServiceResult ReadInitialValue(
             ISystemContext context,
             MonitoredNode monitoredNode,
             IDataChangeMonitoredItem2 monitoredItem)
         {
-            DataValue initialValue = new DataValue
-            {
+            DataValue initialValue = new DataValue {
                 Value = null,
                 ServerTimestamp = DateTime.UtcNow,
                 SourceTimestamp = DateTime.MinValue,
@@ -2629,7 +2628,7 @@ namespace Opc.Ua.Sample
         }
 
         /// <summary>
-        /// Polls each monitored item which requires sample. 
+        /// Polls each monitored item which requires sample.
         /// </summary>
         private void DoSample(object state)
         {

@@ -119,7 +119,7 @@ namespace Opc.Ua.Sample.Controls
             this.EditMI.Name = "EditMI";
             this.EditMI.Size = new System.Drawing.Size(306, 22);
             this.EditMI.Text = "Edit...";
-            this.EditMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.EditMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // SubscriptionEnablePublishingMI
             // 
@@ -127,7 +127,7 @@ namespace Opc.Ua.Sample.Controls
             this.SubscriptionEnablePublishingMI.Name = "SubscriptionEnablePublishingMI";
             this.SubscriptionEnablePublishingMI.Size = new System.Drawing.Size(306, 22);
             this.SubscriptionEnablePublishingMI.Text = "Enable Publishing";
-            this.SubscriptionEnablePublishingMI.Click += new System.EventHandler(this.SubscriptionEnablePublishingMI_Click);
+            this.SubscriptionEnablePublishingMI.Click += new System.EventHandler(this.SubscriptionEnablePublishingMI_ClickAsync);
             // 
             // SubscriptionCreateItemMI
             // 
@@ -187,7 +187,7 @@ namespace Opc.Ua.Sample.Controls
             this.ConditionRefreshMI.Name = "ConditionRefreshMI";
             this.ConditionRefreshMI.Size = new System.Drawing.Size(122, 22);
             this.ConditionRefreshMI.Text = "Refresh...";
-            this.ConditionRefreshMI.Click += new System.EventHandler(this.ConditionRefreshMI_Click);
+            this.ConditionRefreshMI.Click += new System.EventHandler(this.ConditionRefreshMI_ClickAsync);
             // 
             // StatusBarCTRL
             // 

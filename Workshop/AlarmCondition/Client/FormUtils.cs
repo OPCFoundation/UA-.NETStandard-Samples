@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,6 +29,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
 
@@ -42,7 +44,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// The known event types which can be constructed by ConstructEvent()
         /// </summary>
-        public static NodeId[] KnownEventTypes = new NodeId[] 
+        public static NodeId[] KnownEventTypes = new NodeId[]
         {
             ObjectTypeIds.BaseEventType,
             ObjectTypeIds.ConditionType,
@@ -60,7 +62,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="discoveryUrl">The discovery URL.</param>
         /// <param name="useSecurity">if set to <c>true</c> select an endpoint that uses security.</param>
         /// <returns>The best available endpoint.</returns>
-        public static EndpointDescription SelectEndpoint(string discoveryUrl, bool useSecurity)
+        public static async Task<EndpointDescription> SelectEndpointAsync(string discoveryUrl, bool useSecurity, CancellationToken ct = default)
         {
             // needs to add the '/discovery' back onto non-UA TCP URLs.
             if (!discoveryUrl.StartsWith(Utils.UriSchemeOpcTcp))
@@ -83,9 +85,9 @@ namespace Quickstarts.AlarmConditionClient
             // Connect to the server's discovery endpoint and find the available configuration.
             using (DiscoveryClient client = DiscoveryClient.Create(uri, configuration))
             {
-                EndpointDescriptionCollection endpoints = client.GetEndpoints(null);
+                EndpointDescriptionCollection endpoints = await client.GetEndpointsAsync(null, ct);
 
-                // select the best endpoint to use based on the selected URL and the UseSecurity checkbox. 
+                // select the best endpoint to use based on the selected URL and the UseSecurity checkbox.
                 for (int ii = 0; ii < endpoints.Count; ii++)
                 {
                     EndpointDescription endpoint = endpoints[ii];
@@ -104,7 +106,7 @@ namespace Quickstarts.AlarmConditionClient
                         {
                             if (endpoint.SecurityMode != MessageSecurityMode.None)
                             {
-                                // The security level is a relative measure assigned by the server to the 
+                                // The security level is a relative measure assigned by the server to the
                                 // endpoints that it returns. Clients should always pick the highest level
                                 // unless they have a reason not too.
                                 if (endpoint.SecurityLevel > selectedEndpoint.SecurityLevel)
@@ -133,7 +135,7 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // if a server is behind a firewall it may return URLs that are not accessible to the client.
-            // This problem can be avoided by assuming that the domain in the URL used to call 
+            // This problem can be avoided by assuming that the domain in the URL used to call
             // GetEndpoints can be used to access any of the endpoints. This code makes that conversion.
             // Note that the conversion only makes sense if discovery uses the same protocol as the endpoint.
 
@@ -184,14 +186,16 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="monitoredItem">The monitored item that produced the notification.</param>
         /// <param name="notification">The notification.</param>
         /// <param name="eventTypeMappings">Mapping between event types and known event types.</param>
+        /// <param name="ct">The token to cancel the request</param>
         /// <returns>
         /// The event object. Null if the notification is not a valid event type.
         /// </returns>
-        public static BaseEventState ConstructEvent(
-            Session session,
+        public static async Task<BaseEventState> ConstructEventAsync(
+            ISession session,
             MonitoredItem monitoredItem,
             EventFieldList notification,
-            Dictionary<NodeId,NodeId> eventTypeMappings)
+            Dictionary<NodeId, NodeId> eventTypeMappings,
+            CancellationToken ct = default)
         {
             // find the event type.
             NodeId eventTypeId = FindEventType(monitoredItem, notification);
@@ -216,11 +220,11 @@ namespace Quickstarts.AlarmConditionClient
                         break;
                     }
                 }
-                
+
                 // browse for the supertypes of the event type.
                 if (knownTypeId == null)
                 {
-                    ReferenceDescriptionCollection supertypes = FormUtils.BrowseSuperTypes(session, eventTypeId, false);
+                    ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
 
                     // can't do anything with unknown types.
                     if (supertypes == null)
@@ -293,7 +297,7 @@ namespace Quickstarts.AlarmConditionClient
 
             return e;
         }
-        
+
         /// <summary>
         /// Browses the address space and returns the references found.
         /// </summary>
@@ -303,7 +307,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection Browse(Session session, BrowseDescription nodeToBrowse, bool throwOnError)
+        public static async Task<ReferenceDescriptionCollection> BrowseAsync(ISession session, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
@@ -314,16 +318,15 @@ namespace Quickstarts.AlarmConditionClient
                 nodesToBrowse.Add(nodeToBrowse);
 
                 // start the browse operation.
-                BrowseResultCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                session.Browse(
+                BrowseResponse response = await session.BrowseAsync(
                     null,
                     null,
                     0,
                     nodesToBrowse,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                BrowseResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -352,12 +355,14 @@ namespace Quickstarts.AlarmConditionClient
                     ByteStringCollection continuationPoints = new ByteStringCollection();
                     continuationPoints.Add(results[0].ContinuationPoint);
 
-                    session.BrowseNext(
+                    BrowseNextResponse response2 = await session.BrowseNextAsync(
                         null,
                         false,
                         continuationPoints,
-                        out results,
-                        out diagnosticInfos);
+                        ct);
+
+                    results = response2.Results;
+                    diagnosticInfos = response2.DiagnosticInfos;
 
                     ClientBase.ValidateResponse(results, continuationPoints);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
@@ -387,7 +392,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection BrowseSuperTypes(Session session, NodeId typeId, bool throwOnError)
+        public static async Task<ReferenceDescriptionCollection> BrowseSuperTypesAsync(ISession session, NodeId typeId, bool throwOnError, CancellationToken ct = default)
         {
             ReferenceDescriptionCollection supertypes = new ReferenceDescriptionCollection();
 
@@ -400,15 +405,15 @@ namespace Quickstarts.AlarmConditionClient
                 nodeToBrowse.BrowseDirection = BrowseDirection.Inverse;
                 nodeToBrowse.ReferenceTypeId = ReferenceTypeIds.HasSubtype;
                 nodeToBrowse.IncludeSubtypes = false; // more efficient to use IncludeSubtypes=False when possible.
-                nodeToBrowse.NodeClassMask = 0; // the HasSubtype reference already restricts the targets to Types. 
+                nodeToBrowse.NodeClassMask = 0; // the HasSubtype reference already restricts the targets to Types.
                 nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
-                                
-                ReferenceDescriptionCollection references = Browse(session, nodeToBrowse, throwOnError);
+
+                ReferenceDescriptionCollection references = await BrowseAsync(session, nodeToBrowse, throwOnError, ct);
 
                 while (references != null && references.Count > 0)
                 {
                     // should never be more than one supertype.
-                    supertypes.Add(references[0]); 
+                    supertypes.Add(references[0]);
 
                     // only follow references within this server.
                     if (references[0].NodeId.IsAbsolute)
@@ -418,7 +423,7 @@ namespace Quickstarts.AlarmConditionClient
 
                     // get the references for the next level up.
                     nodeToBrowse.NodeId = (NodeId)references[0].NodeId;
-                    references = Browse(session, nodeToBrowse, throwOnError);
+                    references = await BrowseAsync(session, nodeToBrowse, throwOnError, ct);
                 }
 
                 // return complete list.

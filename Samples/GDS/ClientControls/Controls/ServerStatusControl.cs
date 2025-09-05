@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,6 +29,8 @@
 
 using System;
 using System.Drawing;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 
@@ -43,10 +45,10 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private ServerPushConfigurationClient m_server;
 
-        public void Initialize(ServerPushConfigurationClient server)
+        public Task InitializeAsync(ServerPushConfigurationClient server, CancellationToken ct = default)
         {
             m_server = server;
-            ServerBrowseControl.Initialize((server != null) ? server.Session as Session : null, Opc.Ua.ObjectIds.ObjectsFolder, ReferenceTypeIds.HierarchicalReferences);
+            return ServerBrowseControl.InitializeAsync((server != null) ? server.Session as Session : null, Opc.Ua.ObjectIds.ObjectsFolder, ct, ReferenceTypeIds.HierarchicalReferences);
         }
 
         public void SetServerStatus(ServerStatusDataType status)
@@ -82,8 +84,8 @@ namespace Opc.Ua.Gds.Client.Controls
                 StateTextBox.Text = status.State.ToString();
             }
         }
-        
-        private void ApplyChangesButton_Click(object sender, EventArgs e)
+
+        private async void ApplyChangesButton_Click(object sender, EventArgs e)
         {
             if (m_server == null)
             {
@@ -92,7 +94,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             try
             {
-                m_server.ApplyChanges();
+                await m_server.ApplyChangesAsync();
             }
             catch (Exception exception)
             {
@@ -106,9 +108,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
             try
             {
-                m_server.Disconnect();
+                await m_server.DisconnectAsync();
             }
-            catch (Exception)
+            catch
             {
                 // ignore.
             }

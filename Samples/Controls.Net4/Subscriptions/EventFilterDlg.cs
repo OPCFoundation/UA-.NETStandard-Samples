@@ -55,25 +55,25 @@ namespace Opc.Ua.Sample.Controls
         private Session m_session;
         private EventFilter m_filter;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public EventFilter ShowDialog(Session session, EventFilter filter, bool editWhereClause)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            if (filter == null)  throw new ArgumentNullException("filter");
-            
-            m_session = session;
-            m_filter  = filter;
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (filter == null) throw new ArgumentNullException(nameof(filter));
 
-            BrowseCTRL.SetView(m_session, BrowseViewType.EventTypes, null);
+            m_session = session;
+            m_filter = filter;
+
+            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, null);
             SelectClauseCTRL.Initialize(session, filter.SelectClauses);
             ContentFilterCTRL.Initialize(session, filter.WhereClause);
             FilterOperandsCTRL.Initialize(session, null, -1);
 
-            MoveBTN_Click((editWhereClause)?NextBTN:BackBTN, null);
+            MoveBTN_Click((editWhereClause) ? NextBTN : BackBTN, null);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -83,9 +83,9 @@ namespace Opc.Ua.Sample.Controls
             return m_filter;
         }
         #endregion
-        
+
         #region Event Handlers
-        private void BrowseCTRL_ItemsSelected(object sender, NodesSelectedEventArgs e)
+        private async void BrowseCTRL_ItemsSelectedAsync(object sender, NodesSelectedEventArgs e)
         {
             try
             {
@@ -93,13 +93,13 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference.ReferenceTypeId == ReferenceTypeIds.HasProperty || reference.IsForward)
                     {
-                        SelectClauseCTRL.AddSelectClause(reference);
+                        await SelectClauseCTRL.AddSelectClauseAsync(reference);
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -126,12 +126,12 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    FilterOperandsCTRL.Initialize(m_session, null, -1);       
+                    FilterOperandsCTRL.Initialize(m_session, null, -1);
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -140,30 +140,30 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 if (sender == NextBTN)
-                {           
-                    BackBTN.Visible            = true;
-                    NextBTN.Visible            = false;
-                    OkBTN.Visible              = true;
-                    ContentFilterCTRL.Visible  = true;
+                {
+                    BackBTN.Visible = true;
+                    NextBTN.Visible = false;
+                    OkBTN.Visible = true;
+                    ContentFilterCTRL.Visible = true;
                     FilterOperandsCTRL.Visible = true;
-                    BrowseCTRL.Visible         = false;
-                    SelectClauseCTRL.Visible   = false;
+                    BrowseCTRL.Visible = false;
+                    SelectClauseCTRL.Visible = false;
                 }
 
                 else if (sender == BackBTN)
-                {           
-                    BackBTN.Visible            = false;
-                    NextBTN.Visible            = true;
-                    OkBTN.Visible              = false;
-                    ContentFilterCTRL.Visible  = false;
+                {
+                    BackBTN.Visible = false;
+                    NextBTN.Visible = true;
+                    OkBTN.Visible = false;
+                    ContentFilterCTRL.Visible = false;
                     FilterOperandsCTRL.Visible = false;
-                    BrowseCTRL.Visible         = true;
-                    SelectClauseCTRL.Visible   = true;
+                    BrowseCTRL.Visible = true;
+                    SelectClauseCTRL.Visible = true;
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -175,7 +175,7 @@ namespace Opc.Ua.Sample.Controls
 
                 filter.SelectClauses.AddRange(SelectClauseCTRL.GetSelectClauses());
                 filter.WhereClause = ContentFilterCTRL.GetFilter();
-                
+
                 EventFilter.Result result = filter.Validate(new FilterContext(m_session.NamespaceUris, m_session.TypeTree));
 
                 if (ServiceResult.IsBad(result.Status))
@@ -189,7 +189,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
 
         }

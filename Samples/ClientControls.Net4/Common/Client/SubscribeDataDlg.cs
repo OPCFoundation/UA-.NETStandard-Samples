@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -53,19 +55,20 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Changes the session used for the subscription.
         /// </summary>
-        public void ChangeSession(Session session)
+        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
             SubscribeRequestCTRL.ChangeSession(session);
             m_session = session;
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -92,9 +95,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the items to monitor.
         /// </summary>
-        public void AddItems(params ReadValueId[] nodesToRead)
+        public async Task AddItemsAsync(CancellationToken ct, params ReadValueId[] nodesToRead)
         {
-            SubscribeRequestCTRL.AddItems(nodesToRead);
+            await SubscribeRequestCTRL.AddItemsAsync(ct, nodesToRead);
             NextBTN.Visible = SubscribeRequestCTRL.CanCallNext;
             BackBTN.Visible = SubscribeRequestCTRL.CanCallBack;
         }
@@ -104,11 +107,11 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void NextBTN_Click(object sender, EventArgs e)
+        private async void NextBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                SubscribeRequestCTRL.Next();
+                await SubscribeRequestCTRL.NextAsync();
                 NextBTN.Visible = SubscribeRequestCTRL.CanCallNext;
                 BackBTN.Visible = SubscribeRequestCTRL.CanCallBack;
             }
@@ -118,11 +121,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                SubscribeRequestCTRL.Back();
+                await SubscribeRequestCTRL.BackAsync();
                 NextBTN.Visible = SubscribeRequestCTRL.CanCallNext;
                 BackBTN.Visible = SubscribeRequestCTRL.CanCallBack;
             }

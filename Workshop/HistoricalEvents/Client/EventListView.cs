@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,9 +30,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
+using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -48,7 +50,7 @@ namespace Quickstarts.HistoricalEvents.Client
         }
 
         #region Private Methods
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private FilterDeclaration m_filter;
@@ -60,26 +62,23 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Whether the control subscribes for new events.
         /// </summary>
-        public bool IsSubscribed
-        {
-            get { return m_isSubscribed; }
-            
-            set 
-            {
-                if (m_isSubscribed != value)
-                {
-                    m_isSubscribed = value;
+        public bool IsSubscribed => m_isSubscribed;
 
-                    if (m_session != null)
+        public async Task SetSubscribedAsync(bool subscribed, CancellationToken ct = default)
+        {
+            if (m_isSubscribed != subscribed)
+            {
+                m_isSubscribed = subscribed;
+
+                if (m_session != null)
+                {
+                    if (m_isSubscribed)
                     {
-                        if (m_isSubscribed)
-                        {
-                            CreateSubscription();
-                        }
-                        else
-                        {
-                            DeleteSubscription();
-                        }
+                        await CreateSubscriptionAsync(ct);
+                    }
+                    else
+                    {
+                        await DeleteSubscriptionAsync(ct);
                     }
                 }
             }
@@ -104,7 +103,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public void ChangeSession(Session session, bool fetchRecent)
+        public async Task ChangeSessionAsync(ISession session, bool fetchRecent, CancellationToken ct = default)
         {
             if (Object.ReferenceEquals(session, m_session))
             {
@@ -113,7 +112,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
             if (m_session != null)
             {
-                DeleteSubscription();
+                await DeleteSubscriptionAsync(ct);
                 m_session = null;
             }
 
@@ -122,22 +121,22 @@ namespace Quickstarts.HistoricalEvents.Client
 
             if (m_session != null && m_isSubscribed)
             {
-                CreateSubscription();
+                await CreateSubscriptionAsync(ct);
 
                 if (fetchRecent)
                 {
-                    ReadRecentHistory();
+                    await ReadRecentHistoryAsync(ct);
                 }
             }
         }
-        
+
         /// <summary>
         /// Updates the control after the session has reconnected.
         /// </summary>
-        public void SessionReconnected(Session session)
+        public void SessionReconnected(ISession session)
         {
             m_session = session;
-            
+
             if (m_isSubscribed)
             {
                 foreach (Subscription subscription in m_session.Subscriptions)
@@ -161,14 +160,14 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Changes the area monitored by the control.
         /// </summary>
-        public void ChangeArea(NodeId areaId, bool fetchRecent)
+        public async Task ChangeAreaAsync(NodeId areaId, bool fetchRecent, CancellationToken ct = default)
         {
             m_areaId = areaId;
             EventsLV.Items.Clear();
 
             if (fetchRecent)
             {
-                ReadRecentHistory();
+                await ReadRecentHistoryAsync(ct);
             }
 
             if (m_subscription != null)
@@ -180,16 +179,16 @@ namespace Quickstarts.HistoricalEvents.Client
                 m_subscription.RemoveItem(m_monitoredItem);
                 m_monitoredItem = monitoredItem;
 
-                monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+                monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
 
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync(ct);
             }
         }
 
         /// <summary>
         /// Changes the filter used to select the events.
         /// </summary>
-        public void ChangeFilter(FilterDeclaration filter, bool fetchRecent)
+        public async Task ChangeFilterAsync(FilterDeclaration filter, bool fetchRecent, CancellationToken ct = default)
         {
             m_filter = filter;
             EventsLV.Items.Clear();
@@ -227,14 +226,14 @@ namespace Quickstarts.HistoricalEvents.Client
             // fetch recent history.
             if (fetchRecent)
             {
-                ReadRecentHistory();
+                await ReadRecentHistoryAsync(ct);
             }
 
             // update subscription.
             if (m_subscription != null)
             {
                 m_monitoredItem.Filter = m_filter.GetFilter();
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync(ct);
             }
         }
 
@@ -255,11 +254,11 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Adds the event history to the control.
         /// </summary>
-        public void AddEventHistory(HistoryEvent events)
+        public async Task AddEventHistoryAsync(HistoryEvent events, CancellationToken ct = default)
         {
             for (int ii = 0; ii < events.Events.Count; ii++)
             {
-                ListViewItem item = CreateListItem(m_filter, events.Events[ii].EventFields);
+                ListViewItem item = await CreateListItemAsync(m_filter, events.Events[ii].EventFields, ct);
                 EventsLV.Items.Add(item);
             }
 
@@ -275,7 +274,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Creates the subscription.
         /// </summary>
-        private void CreateSubscription()
+        private async Task CreateSubscriptionAsync(CancellationToken ct = default)
         {
             m_subscription = new Subscription();
             m_subscription.Handle = this;
@@ -288,7 +287,7 @@ namespace Quickstarts.HistoricalEvents.Client
             m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
 
             m_session.AddSubscription(m_subscription);
-            m_subscription.Create();
+            await m_subscription.CreateAsync(ct);
 
             m_monitoredItem = new MonitoredItem();
             m_monitoredItem.StartNodeId = m_areaId;
@@ -297,23 +296,23 @@ namespace Quickstarts.HistoricalEvents.Client
             m_monitoredItem.QueueSize = 1000;
             m_monitoredItem.DiscardOldest = true;
 
-            ChangeFilter(m_filter, false);
+            await ChangeFilterAsync(m_filter, false, ct);
 
-            m_monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+            m_monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
 
             m_subscription.AddItem(m_monitoredItem);
-            m_subscription.ApplyChanges();
+            await m_subscription.ApplyChangesAsync(ct);
         }
 
         /// <summary>
         /// Deletes the subscription.
         /// </summary>
-        private void DeleteSubscription()
+        private async Task DeleteSubscriptionAsync(CancellationToken ct = default)
         {
             if (m_subscription != null)
             {
-                m_subscription.Delete(true);
-                m_session.RemoveSubscription(m_subscription);
+                await m_subscription.DeleteAsync(true, ct);
+                await m_session.RemoveSubscriptionAsync(m_subscription, ct);
                 m_subscription = null;
                 m_monitoredItem = null;
             }
@@ -322,14 +321,14 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Creates list item for an event.
         /// </summary>
-        private ListViewItem CreateListItem(FilterDeclaration filter, VariantCollection fieldValues)
+        private async Task<ListViewItem> CreateListItemAsync(FilterDeclaration filter, VariantCollection fieldValues, CancellationToken ct = default)
         {
             ListViewItem item = new ListViewItem();
             item.Tag = fieldValues;
 
             for (int ii = 1; ii < fieldValues.Count; ii++)
             {
-                if (!filter.Fields[ii-1].DisplayInList)
+                if (!filter.Fields[ii - 1].DisplayInList)
                 {
                     continue;
                 }
@@ -345,7 +344,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 // display the name of a node instead of the node id.
                 else if (fieldValues[ii].TypeInfo.BuiltInType == BuiltInType.NodeId)
                 {
-                    INode node = m_session.NodeCache.Find((NodeId)fieldValues[ii].Value);
+                    INode node = await m_session.NodeCache.FindAsync((NodeId)fieldValues[ii].Value, ct);
 
                     if (node != null)
                     {
@@ -358,7 +357,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 {
                     DateTime value = (DateTime)fieldValues[ii].Value;
 
-                    if (m_filter.Fields[ii-1].InstanceDeclaration.DisplayName.Contains("Time"))
+                    if (m_filter.Fields[ii - 1].InstanceDeclaration.DisplayName.Contains("Time"))
                     {
                         text = value.ToLocalTime().ToString("HH:mm:ss.fff");
                     }
@@ -390,13 +389,13 @@ namespace Quickstarts.HistoricalEvents.Client
         }
 
         /// <summary>
-        /// Updates the display with a new value for a monitored variable. 
+        /// Updates the display with a new value for a monitored variable.
         /// </summary>
-        private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_Notification), monitoredItem, e);
+                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync), monitoredItem, e);
                 return;
             }
 
@@ -417,13 +416,13 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // check if the filter has changed.
-                if (notification.EventFields.Count != m_filter.Fields.Count+1)
+                if (notification.EventFields.Count != m_filter.Fields.Count + 1)
                 {
                     return;
                 }
 
                 // create an item and add to top of list.
-                ListViewItem item = CreateListItem(m_filter, notification.EventFields);
+                ListViewItem item = await CreateListItemAsync(m_filter, notification.EventFields);
                 EventsLV.Items.Insert(0, item);
 
                 // adjust the width of the columns.
@@ -437,17 +436,17 @@ namespace Quickstarts.HistoricalEvents.Client
                 ClientUtils.HandleException(this.Text, exception);
             }
         }
-        
+
         /// <summary>
         /// Fetches the recent history.
         /// </summary>
-        private void ReadRecentHistory()
+        private async Task ReadRecentHistoryAsync(CancellationToken ct = default)
         {
             // check if session is active.
             if (m_session != null)
             {
                 // check if area supports history.
-                IObject area = m_session.NodeCache.Find(m_areaId) as IObject;
+                IObject area = await m_session.NodeCache.FindAsync(m_areaId, ct) as IObject;
 
                 if (area != null && ((area.EventNotifier & EventNotifiers.HistoryRead) != 0))
                 {
@@ -459,7 +458,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     details.Filter = m_filter.GetFilter();
 
                     // read the history.
-                    ReadHistory(details, m_areaId);
+                    await ReadHistoryAsync(details, m_areaId, ct);
                 }
             }
         }
@@ -467,24 +466,23 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Fetches the recent history.
         /// </summary>
-        private void ReadHistory(ReadEventDetails details, NodeId areaId)
+        private async Task ReadHistoryAsync(ReadEventDetails details, NodeId areaId, CancellationToken ct = default)
         {
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = areaId;
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Neither,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -495,28 +493,30 @@ namespace Quickstarts.HistoricalEvents.Client
             }
 
             HistoryEvent events = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryEvent;
-            AddEventHistory(events);
+            await AddEventHistoryAsync(events, ct);
 
             // release continuation points.
             if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
-                m_session.HistoryRead(
+                response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(details),
                     TimestampsToReturn.Neither,
                     true,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                results = response.Results;
+                diagnosticInfos = response.DiagnosticInfos;
             }
         }
 
         /// <summary>
         /// Deletes the recent history.
         /// </summary>
-        private void DeleteHistory(NodeId areaId, List<VariantCollection> events, FilterDeclaration filter)
+        private async Task DeleteHistoryAsync(NodeId areaId, List<VariantCollection> events, FilterDeclaration filter, CancellationToken ct = default)
         {
             // find the event id.
             int index = 0;
@@ -557,14 +557,13 @@ namespace Quickstarts.HistoricalEvents.Client
             ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
             nodesToUpdate.Add(new ExtensionObject(details));
 
-            HistoryUpdateResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryUpdate(
+            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
                 null,
                 nodesToUpdate,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryUpdateResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -591,7 +590,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 if (count > 0)
                 {
                     throw ServiceResultException.Create(
-                        StatusCodes.BadEventIdUnknown, 
+                        StatusCodes.BadEventIdUnknown,
                         "Error deleting events. Only {0} of {1} deletes succeeded.",
                         events.Count - count,
                         events.Count);
@@ -621,7 +620,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void DeleteHistoryMI_Click(object sender, EventArgs e)
+        private async void DeleteHistoryMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -644,7 +643,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
                 if (events.Count > 0)
                 {
-                    DeleteHistory(m_areaId, events, m_filter);
+                    await DeleteHistoryAsync(m_areaId, events, m_filter);
 
                     foreach (ListViewItem item in EventsLV.SelectedItems)
                     {

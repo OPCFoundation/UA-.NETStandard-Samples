@@ -167,7 +167,7 @@ namespace Opc.Ua.Gds.Client
             this.ReadTrustListButton.Text = "Reload";
             this.ToolTips.SetToolTip(this.ReadTrustListButton, "Reloads the Trust List from disk or by reading it from the remote Server.");
             this.ReadTrustListButton.UseVisualStyleBackColor = false;
-            this.ReadTrustListButton.Click += new System.EventHandler(this.ReloadTrustListButton_Click);
+            this.ReadTrustListButton.Click += new System.EventHandler(this.ReloadTrustListButton_ClickAsync);
             this.ReadTrustListButton.MouseEnter += new System.EventHandler(this.Button_MouseEnter);
             this.ReadTrustListButton.MouseLeave += new System.EventHandler(this.Button_MouseLeave);
             // 

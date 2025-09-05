@@ -18,6 +18,18 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reference Client", "Samples\ReferenceClient\Reference Client.csproj", "{9C1E7F15-2EE3-440D-8E17-00C38073822A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{792419FF-6D50-432A-97A6-6C2A6AB7F1A7}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		.whitesource = .whitesource
+		azure-pipelines.yml = azure-pipelines.yml
+		Directory.Build.props = Directory.Build.props
+		managed.ruleset = managed.ruleset
+		README.md = README.md
+		SECURITY.md = SECURITY.md
+		targets.props = targets.props
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reference Server", "Samples\ReferenceServer\Reference Server.csproj", "{42EF4F25-29BF-4AB7-B403-8523694A3B36}"
 EndProject

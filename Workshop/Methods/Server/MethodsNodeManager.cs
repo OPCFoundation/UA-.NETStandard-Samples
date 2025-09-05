@@ -43,7 +43,7 @@ namespace Quickstarts.MethodsServer
     /// <summary>
     /// A node manager for a server that exposes several variables.
     /// </summary>
-    public class MethodsNodeManager :CustomNodeManager2
+    public class MethodsNodeManager : CustomNodeManager2
     {
         #region Constructors
         /// <summary>
@@ -65,13 +65,13 @@ namespace Quickstarts.MethodsServer
             }
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 // TBD
@@ -108,7 +108,7 @@ namespace Quickstarts.MethodsServer
                 process.NodeId = new NodeId(1, NamespaceIndex);
                 process.BrowseName = new QualifiedName("My Process", NamespaceIndex);
                 process.DisplayName = process.BrowseName.Name;
-                process.TypeDefinitionId = ObjectTypeIds.BaseObjectType; 
+                process.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
 
                 // ensure the process object can be found via the server object. 
                 IList<IReference> references = null;
@@ -201,7 +201,7 @@ namespace Quickstarts.MethodsServer
 
                 // set up method handlers. 
                 start.OnCallMethod = new GenericMethodCalledEventHandler(OnStart);
-            } 
+            }
         }
 
         private object m_processLock = new object();
@@ -219,9 +219,9 @@ namespace Quickstarts.MethodsServer
         /// <param name="outputArguments">The output arguments.</param>
         /// <returns></returns>
         public ServiceResult OnStart(
-            ISystemContext context, 
-            MethodState method, 
-            IList<object> inputArguments, 
+            ISystemContext context,
+            MethodState method,
+            IList<object> inputArguments,
             IList<object> outputArguments)
         {
             // all arguments must be provided.
@@ -268,7 +268,7 @@ namespace Quickstarts.MethodsServer
 
             return ServiceResult.Good;
         }
-        
+
         /// <summary>
         /// Called when updating the process.
         /// </summary>
@@ -296,7 +296,8 @@ namespace Quickstarts.MethodsServer
                     {
                         m_processTimer.Dispose();
                         m_processTimer = null;
-                    };
+                    }
+                    ;
                 }
 
                 // signal update to state node.
@@ -350,7 +351,7 @@ namespace Quickstarts.MethodsServer
                 handle.Validated = true;
 
                 return handle;
-            } 
+            }
         }
 
         /// <summary>
@@ -372,7 +373,7 @@ namespace Quickstarts.MethodsServer
             {
                 return handle.Node;
             }
-            
+
             // TBD
 
             return null;

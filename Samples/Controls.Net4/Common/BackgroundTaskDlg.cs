@@ -48,10 +48,10 @@ namespace Opc.Ua.Sample.Controls
 
         public int Progress
         {
-            get { return ProgressCTRL.Value;  }
-            
-            set 
-            { 
+            get { return ProgressCTRL.Value; }
+
+            set
+            {
                 ProgressCTRL.Value = value;
 
                 if (value == ProgressCTRL.Maximum)

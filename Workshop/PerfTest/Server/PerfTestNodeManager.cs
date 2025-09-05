@@ -66,13 +66,13 @@ namespace Quickstarts.PerfTestServer
             }
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 // TBD
@@ -154,7 +154,7 @@ namespace Quickstarts.PerfTestServer
                 uint id = (uint)nodeId.Identifier;
 
                 // find register
-                int registerId = (int)((id & 0xFF000000)>>24);
+                int registerId = (int)((id & 0xFF000000) >> 24);
                 int index = (int)(id & 0x00FFFFFF);
 
                 if (registerId == 0)
@@ -213,13 +213,13 @@ namespace Quickstarts.PerfTestServer
             {
                 return handle.Node;
             }
-            
+
             // TBD
 
             return null;
         }
         #endregion
-        
+
         #region Overridden Methods
         protected override void OnCreateMonitoredItemsComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
         {

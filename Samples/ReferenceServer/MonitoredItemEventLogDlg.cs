@@ -45,7 +45,7 @@ namespace Quickstarts.ReferenceServer
             InitializeComponent();
             DataGridCTRL.AutoGenerateColumns = false;
         }
-        
+
         public void Display()
         {
             ServerUtils.EventsEnabled = true;
@@ -65,7 +65,7 @@ namespace Quickstarts.ReferenceServer
             }
 
             m_dataset = ServerUtils.EmptyQueue(m_dataset);
-            
+
             if (count != m_dataset.Tables[0].Rows.Count)
             {
                 DataGridCTRL.DataSource = m_dataset.Tables[0];

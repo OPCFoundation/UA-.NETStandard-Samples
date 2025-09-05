@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,7 @@ using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -56,7 +57,7 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
             ServersLV.SmallImageList = new ClientUtils().ImageList;
 
-            List<object> items = new  List<object>();
+            List<object> items = new List<object>();
 
             foreach (object value in Enum.GetValues(typeof(Match)))
             {
@@ -115,7 +116,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Shows the dialog.
         /// </summary>
-        public async Task<ApplicationDescription> ShowDialog(ApplicationConfiguration configuration, bool showSearchPanel)
+        public async Task<ApplicationDescription> ShowDialogAsync(ApplicationConfiguration configuration, bool showSearchPanel, CancellationToken ct = default)
         {
             List<string> urls = new List<string>();
 
@@ -135,7 +136,7 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                await ServerCTRL.Connect();
+                await ServerCTRL.ConnectAsync(ct: ct);
             }
             catch (Exception exception)
             {
@@ -161,7 +162,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the results to the control.
         /// </summary>
-        private void UpdateResults(ApplicationDescription[] descriptions)
+        private async Task UpdateResultsAsync(ApplicationDescription[] descriptions, CancellationToken ct = default)
         {
             ServersLV.Items.Clear();
 
@@ -181,7 +182,7 @@ namespace Opc.Ua.Client.Controls
 
                 ListViewItem item = new ListViewItem();
                 item.Text = Utils.Format("{0}", description.ApplicationName);
-                item.ImageIndex = ClientUtils.GetImageIndex(ServerCTRL.Session, NodeClass.Object, null, false);
+                item.ImageIndex = await ClientUtils.GetImageIndexAsync(ServerCTRL.Session, NodeClass.Object, null, false, ct);
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
@@ -194,7 +195,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     continue;
                 }
-                
+
                 // collect the domains and protocols.
                 List<string> domains = new List<string>();
                 List<string> protocols = new List<string>();
@@ -264,7 +265,7 @@ namespace Opc.Ua.Client.Controls
             {
                 return String.Empty;
             }
-                    
+
             string text = filter.Text;
             Match match = (Match)selection.SelectedItem;
 
@@ -290,16 +291,16 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Searches the server for servers.
         /// </summary>
-        private void Search()
+        private async Task SearchAsync(CancellationToken ct = default)
         {
-            Session session = ServerCTRL.Session;
+            ISession session = ServerCTRL.Session;
 
             if (session == null)
             {
                 return;
             }
 
-            NodeId elementId = null;            
+            NodeId elementId = null;
             ReferenceDescription reference = SystemElementBTN.SelectedReference;
 
             if (reference != null && !reference.NodeId.IsAbsolute)
@@ -309,9 +310,10 @@ namespace Opc.Ua.Client.Controls
 
             ushort namespaceIndex = (ushort)session.NamespaceUris.GetIndex(Namespaces.OpcUaGds);
 
-            IList<object> outputArguments = session.Call(
+            IList<object> outputArguments = await session.CallAsync(
                 new NodeId(GdsId_Directory, namespaceIndex),
                 new NodeId(GdsId_RootDirectoryEntryType_QueryServers, namespaceIndex),
+                ct,
                 elementId,
                 ProcessFilter(ApplicationNameCB, ApplicationNameTB),
                 ProcessFilter(MachineNameCB, MachineNameTB),
@@ -322,19 +324,19 @@ namespace Opc.Ua.Client.Controls
             {
                 ExtensionObject[] extensions = outputArguments[0] as ExtensionObject[];
                 ApplicationDescription[] descriptions = (ApplicationDescription[])ExtensionObject.ToArray(extensions, typeof(ApplicationDescription));
-                UpdateResults(descriptions);
+                await UpdateResultsAsync(descriptions, ct);
             }
         }
 
         /// <summary>
         /// Reads the application description from the GDS.
         /// </summary>
-        private ApplicationDescription Read(NodeId nodeId)
+        private async Task<ApplicationDescription> ReadAsync(NodeId nodeId, CancellationToken ct = default)
         {
             NamespaceTable wellKnownNamespaceUris = new NamespaceTable();
             wellKnownNamespaceUris.Append(Namespaces.OpcUaGds);
 
-            string[] browsePaths = new string[] 
+            string[] browsePaths = new string[]
             {
                 "1:ApplicationName",
                 "1:ApplicationType",
@@ -344,10 +346,11 @@ namespace Opc.Ua.Client.Controls
                 "1:DiscoveryUrls"
             };
 
-            List<NodeId> propertyIds = ClientUtils.TranslateBrowsePaths(
+            List<NodeId> propertyIds = await ClientUtils.TranslateBrowsePathsAsync(
                 ServerCTRL.Session,
                 nodeId,
                 wellKnownNamespaceUris,
+                ct,
                 browsePaths);
 
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
@@ -360,16 +363,16 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead.Add(nodeToRead);
             }
 
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            ServerCTRL.Session.Read(
+            ReadResponse response = await ServerCTRL.Session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -394,11 +397,11 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void SearchBTN_Click(object sender, EventArgs e)
+        private async void SearchBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Search();
+                await SearchAsync();
             }
             catch (Exception exception)
             {
@@ -418,11 +421,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void ServerCTRL_ConnectComplete(object sender, EventArgs e)
+        private async void ServerCTRL_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
-                Session session = ServerCTRL.Session;
+                ISession session = ServerCTRL.Session;
 
                 if (session != null)
                 {
@@ -430,14 +433,14 @@ namespace Opc.Ua.Client.Controls
                     NodeId rootId = new NodeId(GdsId_Directory_Applications, namespaceIndex);
                     NodeId[] referenceTypeIds = new NodeId[] { Opc.Ua.ReferenceTypeIds.Organizes, Opc.Ua.ReferenceTypeIds.HasChild };
 
-                    BrowseCTRL.Initialize(session, rootId, referenceTypeIds);
+                    await BrowseCTRL.InitializeAsync(session, rootId, default, referenceTypeIds);
                     SystemElementBTN.Session = session;
                     SystemElementBTN.RootId = rootId;
                     SystemElementBTN.ReferenceTypeIds = referenceTypeIds;
                 }
                 else
                 {
-                    BrowseCTRL.ChangeSession(session);
+                    await BrowseCTRL.ChangeSessionAsync(session);
                     SystemElementBTN.Session = session;
                 }
             }
@@ -447,12 +450,12 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void ServerCTRL_ReconnectComplete(object sender, EventArgs e)
+        private async void ServerCTRL_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
-                Session session = ServerCTRL.Session;
-                BrowseCTRL.ChangeSession(session);
+                ISession session = ServerCTRL.Session;
+                await BrowseCTRL.ChangeSessionAsync(session);
                 SystemElementBTN.Session = session;
             }
             catch (Exception exception)
@@ -500,10 +503,10 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void BrowseCTRL_AfterSelect(object sender, EventArgs e)
+        private async void BrowseCTRL_AfterSelectAsync(object sender, EventArgs e)
         {
             try
-            {         
+            {
                 if (ServerCTRL.Session == null)
                 {
                     return;
@@ -518,7 +521,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (reference.TypeDefinition == typeId)
                     {
-                        m_application = Read((NodeId)reference.NodeId);
+                        m_application = await ReadAsync((NodeId)reference.NodeId);
                         OkBTN.Enabled = m_application.ApplicationType == ApplicationType.Server || m_application.ApplicationType == ApplicationType.ClientAndServer;
                         return;
                     }

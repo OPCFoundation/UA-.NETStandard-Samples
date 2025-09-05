@@ -97,9 +97,10 @@ namespace Opc.Ua.Client.Controls
             // 
             this.CancelBTN.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.CancelBTN.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.CancelBTN.Location = new System.Drawing.Point(293, 4);
+            this.CancelBTN.Location = new System.Drawing.Point(440, 6);
+            this.CancelBTN.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.CancelBTN.Name = "CancelBTN";
-            this.CancelBTN.Size = new System.Drawing.Size(75, 23);
+            this.CancelBTN.Size = new System.Drawing.Size(112, 35);
             this.CancelBTN.TabIndex = 0;
             this.CancelBTN.Text = "Cancel";
             this.CancelBTN.UseVisualStyleBackColor = true;
@@ -107,9 +108,10 @@ namespace Opc.Ua.Client.Controls
             // OkBTN
             // 
             this.OkBTN.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.OkBTN.Location = new System.Drawing.Point(3, 4);
+            this.OkBTN.Location = new System.Drawing.Point(4, 6);
+            this.OkBTN.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.OkBTN.Name = "OkBTN";
-            this.OkBTN.Size = new System.Drawing.Size(75, 23);
+            this.OkBTN.Size = new System.Drawing.Size(112, 35);
             this.OkBTN.TabIndex = 1;
             this.OkBTN.Text = "OK";
             this.OkBTN.UseVisualStyleBackColor = true;
@@ -120,9 +122,10 @@ namespace Opc.Ua.Client.Controls
             this.BottomPN.Controls.Add(this.OkBTN);
             this.BottomPN.Controls.Add(this.CancelBTN);
             this.BottomPN.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.BottomPN.Location = new System.Drawing.Point(0, 285);
+            this.BottomPN.Location = new System.Drawing.Point(0, 439);
+            this.BottomPN.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.BottomPN.Name = "BottomPN";
-            this.BottomPN.Size = new System.Drawing.Size(371, 30);
+            this.BottomPN.Size = new System.Drawing.Size(556, 46);
             this.BottomPN.TabIndex = 0;
             // 
             // MainPN
@@ -132,8 +135,9 @@ namespace Opc.Ua.Client.Controls
             this.MainPN.Controls.Add(this.ControlsPN);
             this.MainPN.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainPN.Location = new System.Drawing.Point(0, 0);
+            this.MainPN.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MainPN.Name = "MainPN";
-            this.MainPN.Size = new System.Drawing.Size(371, 285);
+            this.MainPN.Size = new System.Drawing.Size(556, 439);
             this.MainPN.TabIndex = 1;
             // 
             // ControlsPN
@@ -169,6 +173,7 @@ namespace Opc.Ua.Client.Controls
             this.ControlsPN.Controls.Add(this.DiscardOldestCK, 1, 7);
             this.ControlsPN.Dock = System.Windows.Forms.DockStyle.Fill;
             this.ControlsPN.Location = new System.Drawing.Point(0, 0);
+            this.ControlsPN.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.ControlsPN.Name = "ControlsPN";
             this.ControlsPN.RowCount = 12;
             this.ControlsPN.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -183,8 +188,8 @@ namespace Opc.Ua.Client.Controls
             this.ControlsPN.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.ControlsPN.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.ControlsPN.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.ControlsPN.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.ControlsPN.Size = new System.Drawing.Size(371, 285);
+            this.ControlsPN.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 31F));
+            this.ControlsPN.Size = new System.Drawing.Size(556, 439);
             this.ControlsPN.TabIndex = 0;
             // 
             // TriggerTypeCB
@@ -193,18 +198,20 @@ namespace Opc.Ua.Client.Controls
             | System.Windows.Forms.AnchorStyles.Left)));
             this.TriggerTypeCB.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.TriggerTypeCB.FormattingEnabled = true;
-            this.TriggerTypeCB.Location = new System.Drawing.Point(97, 261);
+            this.TriggerTypeCB.Location = new System.Drawing.Point(143, 369);
+            this.TriggerTypeCB.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.TriggerTypeCB.Name = "TriggerTypeCB";
-            this.TriggerTypeCB.Size = new System.Drawing.Size(138, 21);
+            this.TriggerTypeCB.Size = new System.Drawing.Size(205, 28);
             this.TriggerTypeCB.TabIndex = 22;
             // 
             // TriggerTypeLB
             // 
             this.TriggerTypeLB.AutoSize = true;
             this.TriggerTypeLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.TriggerTypeLB.Location = new System.Drawing.Point(3, 258);
+            this.TriggerTypeLB.Location = new System.Drawing.Point(4, 364);
+            this.TriggerTypeLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.TriggerTypeLB.Name = "TriggerTypeLB";
-            this.TriggerTypeLB.Size = new System.Drawing.Size(88, 27);
+            this.TriggerTypeLB.Size = new System.Drawing.Size(131, 38);
             this.TriggerTypeLB.TabIndex = 21;
             this.TriggerTypeLB.Text = "Trigger Type";
             this.TriggerTypeLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -213,23 +220,25 @@ namespace Opc.Ua.Client.Controls
             // 
             this.DeadbandValueLB.AutoSize = true;
             this.DeadbandValueLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.DeadbandValueLB.Location = new System.Drawing.Point(3, 232);
+            this.DeadbandValueLB.Location = new System.Drawing.Point(4, 328);
+            this.DeadbandValueLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.DeadbandValueLB.Name = "DeadbandValueLB";
-            this.DeadbandValueLB.Size = new System.Drawing.Size(88, 26);
+            this.DeadbandValueLB.Size = new System.Drawing.Size(131, 36);
             this.DeadbandValueLB.TabIndex = 19;
             this.DeadbandValueLB.Text = "Deadband Value";
             this.DeadbandValueLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // DeadbandValueUP
             // 
-            this.DeadbandValueUP.Location = new System.Drawing.Point(97, 235);
+            this.DeadbandValueUP.Location = new System.Drawing.Point(143, 333);
+            this.DeadbandValueUP.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.DeadbandValueUP.Maximum = new decimal(new int[] {
             0,
             1,
             0,
             0});
             this.DeadbandValueUP.Name = "DeadbandValueUP";
-            this.DeadbandValueUP.Size = new System.Drawing.Size(138, 20);
+            this.DeadbandValueUP.Size = new System.Drawing.Size(207, 26);
             this.DeadbandValueUP.TabIndex = 20;
             // 
             // DeadbandTypeCB
@@ -238,9 +247,10 @@ namespace Opc.Ua.Client.Controls
             | System.Windows.Forms.AnchorStyles.Left)));
             this.DeadbandTypeCB.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.DeadbandTypeCB.FormattingEnabled = true;
-            this.DeadbandTypeCB.Location = new System.Drawing.Point(97, 208);
+            this.DeadbandTypeCB.Location = new System.Drawing.Point(143, 295);
+            this.DeadbandTypeCB.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.DeadbandTypeCB.Name = "DeadbandTypeCB";
-            this.DeadbandTypeCB.Size = new System.Drawing.Size(138, 21);
+            this.DeadbandTypeCB.Size = new System.Drawing.Size(205, 28);
             this.DeadbandTypeCB.TabIndex = 18;
             // 
             // MonitoringModeCB
@@ -249,18 +259,20 @@ namespace Opc.Ua.Client.Controls
             | System.Windows.Forms.AnchorStyles.Left)));
             this.MonitoringModeCB.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.MonitoringModeCB.FormattingEnabled = true;
-            this.MonitoringModeCB.Location = new System.Drawing.Point(97, 109);
+            this.MonitoringModeCB.Location = new System.Drawing.Point(143, 154);
+            this.MonitoringModeCB.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MonitoringModeCB.Name = "MonitoringModeCB";
-            this.MonitoringModeCB.Size = new System.Drawing.Size(138, 21);
+            this.MonitoringModeCB.Size = new System.Drawing.Size(205, 28);
             this.MonitoringModeCB.TabIndex = 10;
             // 
             // MonitoringModeLB
             // 
             this.MonitoringModeLB.AutoSize = true;
             this.MonitoringModeLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.MonitoringModeLB.Location = new System.Drawing.Point(3, 106);
+            this.MonitoringModeLB.Location = new System.Drawing.Point(4, 149);
+            this.MonitoringModeLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.MonitoringModeLB.Name = "MonitoringModeLB";
-            this.MonitoringModeLB.Size = new System.Drawing.Size(88, 27);
+            this.MonitoringModeLB.Size = new System.Drawing.Size(131, 38);
             this.MonitoringModeLB.TabIndex = 9;
             this.MonitoringModeLB.Text = "Monitoring Mode";
             this.MonitoringModeLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -269,9 +281,10 @@ namespace Opc.Ua.Client.Controls
             // 
             this.DeadbandTypeLB.AutoSize = true;
             this.DeadbandTypeLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.DeadbandTypeLB.Location = new System.Drawing.Point(3, 205);
+            this.DeadbandTypeLB.Location = new System.Drawing.Point(4, 290);
+            this.DeadbandTypeLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.DeadbandTypeLB.Name = "DeadbandTypeLB";
-            this.DeadbandTypeLB.Size = new System.Drawing.Size(88, 27);
+            this.DeadbandTypeLB.Size = new System.Drawing.Size(131, 38);
             this.DeadbandTypeLB.TabIndex = 17;
             this.DeadbandTypeLB.Text = "Deadband Type";
             this.DeadbandTypeLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -280,9 +293,10 @@ namespace Opc.Ua.Client.Controls
             // 
             this.DiscardOldestLB.AutoSize = true;
             this.DiscardOldestLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.DiscardOldestLB.Location = new System.Drawing.Point(3, 185);
+            this.DiscardOldestLB.Location = new System.Drawing.Point(4, 259);
+            this.DiscardOldestLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.DiscardOldestLB.Name = "DiscardOldestLB";
-            this.DiscardOldestLB.Size = new System.Drawing.Size(88, 20);
+            this.DiscardOldestLB.Size = new System.Drawing.Size(131, 31);
             this.DiscardOldestLB.TabIndex = 15;
             this.DiscardOldestLB.Text = "Discard Oldest";
             this.DiscardOldestLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -291,9 +305,10 @@ namespace Opc.Ua.Client.Controls
             // 
             this.QueueSizeLB.AutoSize = true;
             this.QueueSizeLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.QueueSizeLB.Location = new System.Drawing.Point(3, 159);
+            this.QueueSizeLB.Location = new System.Drawing.Point(4, 223);
+            this.QueueSizeLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.QueueSizeLB.Name = "QueueSizeLB";
-            this.QueueSizeLB.Size = new System.Drawing.Size(88, 26);
+            this.QueueSizeLB.Size = new System.Drawing.Size(131, 36);
             this.QueueSizeLB.TabIndex = 13;
             this.QueueSizeLB.Text = "Queue Size";
             this.QueueSizeLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -302,9 +317,10 @@ namespace Opc.Ua.Client.Controls
             // 
             this.SamplingIntervalLB.AutoSize = true;
             this.SamplingIntervalLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.SamplingIntervalLB.Location = new System.Drawing.Point(3, 133);
+            this.SamplingIntervalLB.Location = new System.Drawing.Point(4, 187);
+            this.SamplingIntervalLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.SamplingIntervalLB.Name = "SamplingIntervalLB";
-            this.SamplingIntervalLB.Size = new System.Drawing.Size(88, 26);
+            this.SamplingIntervalLB.Size = new System.Drawing.Size(131, 36);
             this.SamplingIntervalLB.TabIndex = 11;
             this.SamplingIntervalLB.Text = "Sampling Interval";
             this.SamplingIntervalLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -314,9 +330,10 @@ namespace Opc.Ua.Client.Controls
             this.NodeLB.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
             this.NodeLB.AutoSize = true;
-            this.NodeLB.Location = new System.Drawing.Point(3, 0);
+            this.NodeLB.Location = new System.Drawing.Point(4, 0);
+            this.NodeLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.NodeLB.Name = "NodeLB";
-            this.NodeLB.Size = new System.Drawing.Size(33, 26);
+            this.NodeLB.Size = new System.Drawing.Size(47, 37);
             this.NodeLB.TabIndex = 0;
             this.NodeLB.Text = "Node";
             this.NodeLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -324,9 +341,10 @@ namespace Opc.Ua.Client.Controls
             // IndexRangeTB
             // 
             this.IndexRangeTB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.IndexRangeTB.Location = new System.Drawing.Point(97, 56);
+            this.IndexRangeTB.Location = new System.Drawing.Point(143, 80);
+            this.IndexRangeTB.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.IndexRangeTB.Name = "IndexRangeTB";
-            this.IndexRangeTB.Size = new System.Drawing.Size(247, 20);
+            this.IndexRangeTB.Size = new System.Drawing.Size(373, 26);
             this.IndexRangeTB.TabIndex = 6;
             // 
             // AttributeCB
@@ -335,18 +353,20 @@ namespace Opc.Ua.Client.Controls
             | System.Windows.Forms.AnchorStyles.Left)));
             this.AttributeCB.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.AttributeCB.FormattingEnabled = true;
-            this.AttributeCB.Location = new System.Drawing.Point(97, 29);
+            this.AttributeCB.Location = new System.Drawing.Point(143, 42);
+            this.AttributeCB.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.AttributeCB.Name = "AttributeCB";
-            this.AttributeCB.Size = new System.Drawing.Size(138, 21);
+            this.AttributeCB.Size = new System.Drawing.Size(205, 28);
             this.AttributeCB.TabIndex = 4;
             // 
             // AttributeLB
             // 
             this.AttributeLB.AutoSize = true;
             this.AttributeLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.AttributeLB.Location = new System.Drawing.Point(3, 26);
+            this.AttributeLB.Location = new System.Drawing.Point(4, 37);
+            this.AttributeLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.AttributeLB.Name = "AttributeLB";
-            this.AttributeLB.Size = new System.Drawing.Size(88, 27);
+            this.AttributeLB.Size = new System.Drawing.Size(131, 38);
             this.AttributeLB.TabIndex = 3;
             this.AttributeLB.Text = "Attribute";
             this.AttributeLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -355,9 +375,10 @@ namespace Opc.Ua.Client.Controls
             // 
             this.IndexRangeLB.AutoSize = true;
             this.IndexRangeLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.IndexRangeLB.Location = new System.Drawing.Point(3, 53);
+            this.IndexRangeLB.Location = new System.Drawing.Point(4, 75);
+            this.IndexRangeLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.IndexRangeLB.Name = "IndexRangeLB";
-            this.IndexRangeLB.Size = new System.Drawing.Size(88, 26);
+            this.IndexRangeLB.Size = new System.Drawing.Size(131, 36);
             this.IndexRangeLB.TabIndex = 5;
             this.IndexRangeLB.Text = "Index Range";
             this.IndexRangeLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -366,9 +387,10 @@ namespace Opc.Ua.Client.Controls
             // 
             this.DataEncodingLB.AutoSize = true;
             this.DataEncodingLB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.DataEncodingLB.Location = new System.Drawing.Point(3, 79);
+            this.DataEncodingLB.Location = new System.Drawing.Point(4, 111);
+            this.DataEncodingLB.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.DataEncodingLB.Name = "DataEncodingLB";
-            this.DataEncodingLB.Size = new System.Drawing.Size(88, 27);
+            this.DataEncodingLB.Size = new System.Drawing.Size(131, 38);
             this.DataEncodingLB.TabIndex = 7;
             this.DataEncodingLB.Text = "Data Encoding";
             this.DataEncodingLB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -379,45 +401,48 @@ namespace Opc.Ua.Client.Controls
             | System.Windows.Forms.AnchorStyles.Left)));
             this.DataEncodingCB.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.DataEncodingCB.FormattingEnabled = true;
-            this.DataEncodingCB.Location = new System.Drawing.Point(97, 82);
+            this.DataEncodingCB.Location = new System.Drawing.Point(143, 116);
+            this.DataEncodingCB.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.DataEncodingCB.Name = "DataEncodingCB";
-            this.DataEncodingCB.Size = new System.Drawing.Size(138, 21);
+            this.DataEncodingCB.Size = new System.Drawing.Size(205, 28);
             this.DataEncodingCB.TabIndex = 8;
             // 
             // NodeTB
             // 
             this.NodeTB.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.NodeTB.Location = new System.Drawing.Point(97, 3);
+            this.NodeTB.Location = new System.Drawing.Point(143, 5);
+            this.NodeTB.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.NodeTB.Name = "NodeTB";
             this.NodeTB.ReadOnly = true;
-            this.NodeTB.Size = new System.Drawing.Size(247, 20);
+            this.NodeTB.Size = new System.Drawing.Size(373, 26);
             this.NodeTB.TabIndex = 1;
             // 
             // NodeBTN
             // 
-            this.NodeBTN.Location = new System.Drawing.Point(347, 0);
+            this.NodeBTN.Location = new System.Drawing.Point(520, 0);
             this.NodeBTN.Margin = new System.Windows.Forms.Padding(0);
             this.NodeBTN.Name = "NodeBTN";
             this.NodeBTN.NodeControl = this.NodeTB;
             this.NodeBTN.ReferenceTypeIds = null;
             this.NodeBTN.RootId = null;
-            this.NodeBTN.SelectedNode = null;
+            this.NodeBTN.ClearSelectedNode();
             this.NodeBTN.SelectedReference = null;
             this.NodeBTN.Session = null;
-            this.NodeBTN.Size = new System.Drawing.Size(24, 24);
+            this.NodeBTN.Size = new System.Drawing.Size(36, 37);
             this.NodeBTN.TabIndex = 2;
             this.NodeBTN.View = null;
             // 
             // QueueSizeUP
             // 
-            this.QueueSizeUP.Location = new System.Drawing.Point(97, 162);
+            this.QueueSizeUP.Location = new System.Drawing.Point(143, 228);
+            this.QueueSizeUP.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.QueueSizeUP.Maximum = new decimal(new int[] {
             0,
             1,
             0,
             0});
             this.QueueSizeUP.Name = "QueueSizeUP";
-            this.QueueSizeUP.Size = new System.Drawing.Size(138, 20);
+            this.QueueSizeUP.Size = new System.Drawing.Size(207, 26);
             this.QueueSizeUP.TabIndex = 14;
             // 
             // SamplingIntervalUP
@@ -427,7 +452,8 @@ namespace Opc.Ua.Client.Controls
             0,
             0,
             0});
-            this.SamplingIntervalUP.Location = new System.Drawing.Point(97, 136);
+            this.SamplingIntervalUP.Location = new System.Drawing.Point(143, 192);
+            this.SamplingIntervalUP.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.SamplingIntervalUP.Maximum = new decimal(new int[] {
             0,
             1,
@@ -439,7 +465,7 @@ namespace Opc.Ua.Client.Controls
             0,
             -2147483648});
             this.SamplingIntervalUP.Name = "SamplingIntervalUP";
-            this.SamplingIntervalUP.Size = new System.Drawing.Size(138, 20);
+            this.SamplingIntervalUP.Size = new System.Drawing.Size(207, 26);
             this.SamplingIntervalUP.TabIndex = 12;
             this.SamplingIntervalUP.ThousandsSeparator = true;
             // 
@@ -448,23 +474,25 @@ namespace Opc.Ua.Client.Controls
             this.DiscardOldestCK.AutoSize = true;
             this.DiscardOldestCK.Checked = true;
             this.DiscardOldestCK.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.DiscardOldestCK.Location = new System.Drawing.Point(97, 188);
+            this.DiscardOldestCK.Location = new System.Drawing.Point(143, 264);
+            this.DiscardOldestCK.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.DiscardOldestCK.Name = "DiscardOldestCK";
-            this.DiscardOldestCK.Size = new System.Drawing.Size(15, 14);
+            this.DiscardOldestCK.Size = new System.Drawing.Size(22, 21);
             this.DiscardOldestCK.TabIndex = 16;
             this.DiscardOldestCK.UseVisualStyleBackColor = true;
             // 
             // EditMonitoredItemDlg
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.CancelButton = this.CancelBTN;
-            this.ClientSize = new System.Drawing.Size(371, 315);
+            this.ClientSize = new System.Drawing.Size(556, 485);
             this.Controls.Add(this.MainPN);
             this.Controls.Add(this.BottomPN);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "EditMonitoredItemDlg";

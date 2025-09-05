@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -75,13 +75,13 @@ namespace Quickstarts.HistoricalEvents.Server
             m_generator.Initialize();
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 if (m_simulationTimer != null)
@@ -110,7 +110,7 @@ namespace Quickstarts.HistoricalEvents.Server
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
             NodeStateCollection predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(context, 
+            predefinedNodes.LoadFromBinaryResource(context,
                 "Quickstarts.HistoricalEvents.Server.Model.Quickstarts.HistoricalEvents.PredefinedNodes.uanodes",
                 typeof(HistoricalEventsNodeManager).GetTypeInfo().Assembly,
                 true);
@@ -125,7 +125,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -146,7 +146,7 @@ namespace Quickstarts.HistoricalEvents.Server
                         CreateWell(SystemContext, area, well.Id, well.Name);
                     }
                 }
-                
+
                 // start the simulation.
                 m_simulationTimer = new Timer(this.DoSimulation, null, 10000, 10000);
             }
@@ -232,7 +232,7 @@ namespace Quickstarts.HistoricalEvents.Server
                         return handle;
                     }
                 }
-                
+
                 return null;
             }
         }
@@ -256,7 +256,7 @@ namespace Quickstarts.HistoricalEvents.Server
             {
                 return handle.Node;
             }
-            
+
             // TBD
 
             return null;
@@ -590,7 +590,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Stores a read history request.
         /// </summary>
-        private class HistoryReadRequest
+        private sealed class HistoryReadRequest
         {
             public byte[] ContinuationPoint;
             public LinkedList<BaseEventState> Events;
@@ -636,7 +636,7 @@ namespace Quickstarts.HistoricalEvents.Server
             ServerSystemContext context,
             byte[] continuationPoint)
         {
-            Session session = context.OperationContext.Session;
+            ISession session = context.OperationContext.Session;
 
             if (session == null)
             {
@@ -660,7 +660,7 @@ namespace Quickstarts.HistoricalEvents.Server
             ServerSystemContext context,
             HistoryReadRequest request)
         {
-            Session session = context.OperationContext.Session;
+            ISession session = context.OperationContext.Session;
 
             if (session == null)
             {

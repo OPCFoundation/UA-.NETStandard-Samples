@@ -156,12 +156,12 @@ namespace Quickstarts
             buffer.Append('/');
             buffer.Append((dataset.UseSlopedExtrapolation) ? "Sloped" : "Stepped");
             buffer.Append(':');
-            buffer.Append((dataset.TreatUncertainAsBad)?"AsBad":"AsUncertain");
+            buffer.Append((dataset.TreatUncertainAsBad) ? "AsBad" : "AsUncertain");
             buffer.Append(':');
             buffer.Append(dataset.PercentBad);
             buffer.Append('/');
             buffer.Append(dataset.PercentGood);
-            buffer.Append("]");
+            buffer.Append(']');
 
             return buffer.ToString();
         }
@@ -206,7 +206,7 @@ namespace Quickstarts
                 }
 
                 int index = datasets.IndexOf(dataset);
-                
+
                 if (index >= 0)
                 {
                     datasets.RemoveAt(index);
@@ -214,7 +214,7 @@ namespace Quickstarts
                 }
             }
         }
-                
+
         /// <summary>
         /// Returns the values in the specified raw dataset.
         /// </summary>
@@ -232,7 +232,7 @@ namespace Quickstarts
 
         public class DataValue
         {
-            public DataValue() { m_value = new Opc.Ua.DataValue();  }
+            public DataValue() { m_value = new Opc.Ua.DataValue(); }
             public DataValue(Opc.Ua.DataValue value) { m_value = value; }
             public string Comment { get; set; }
             public object Value { get { return m_value.Value; } set { m_value.Value = value; } }
@@ -255,7 +255,7 @@ namespace Quickstarts
                 return ToDataValues(dataset.Values);
             }
 
-            return new SortedDictionary<DateTime,DataValue>();
+            return new SortedDictionary<DateTime, DataValue>();
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace Quickstarts
         /// </summary>
         public void UpdateProcessedValues(ProcessedDataSetType dataset, params DataValue[] newValues)
         {
-            SortedDictionary<DateTime,DataValue> existingValues = ToDataValues(dataset.Values);
+            SortedDictionary<DateTime, DataValue> existingValues = ToDataValues(dataset.Values);
 
             if (newValues != null)
             {
@@ -315,7 +315,7 @@ namespace Quickstarts
                     return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:F4}", doubleValue);
                 }
             }
-            
+
             return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}", value);
         }
 
@@ -379,7 +379,7 @@ namespace Quickstarts
                 throw new FormatException("Timestamp must have format 'HH:MM:SS'");
             }
 
-            ushort hours  = Convert.ToUInt16(fields[0]);
+            ushort hours = Convert.ToUInt16(fields[0]);
             timestamp = timestamp.AddHours(hours);
 
             if (hours > 23)
@@ -402,13 +402,13 @@ namespace Quickstarts
 
             if (seconds > 60)
             {
-              throw new FormatException("The second must be less than 60.'");
+                throw new FormatException("The second must be less than 60.'");
             }
 
             if (secondsWithMs.Length == 2)
             {
-              double milliseconds = Convert.ToDouble(secondsWithMs[1]);
-              timestamp.AddMilliseconds(milliseconds);
+                double milliseconds = Convert.ToDouble(secondsWithMs[1]);
+                timestamp.AddMilliseconds(milliseconds);
             }
 
             return timestamp;
@@ -435,7 +435,7 @@ namespace Quickstarts
             {
                 return new Variant(false, TypeInfo.Scalars.Boolean);
             }
-            
+
             try
             {
                 return new Variant(Convert.ToDouble(value), TypeInfo.Scalars.Double);
@@ -504,7 +504,7 @@ namespace Quickstarts
                     case "Partial": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.Partial); break; }
                     case "M": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.MultipleValues); break; }
                     case "MultipleValues": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.MultipleValues); break; }
-                    
+
                     default:
                     {
                         throw new FormatException("Aggregate bits are not valid.");
@@ -559,7 +559,7 @@ namespace Quickstarts
                 value.Value = FormatValue(dv.WrappedValue);
                 value.Quality = FormatQuality(dv.StatusCode);
                 value.Comment = dv.Comment;
-                serializedValues.Add(value);            
+                serializedValues.Add(value);
             }
 
             return serializedValues.ToArray();

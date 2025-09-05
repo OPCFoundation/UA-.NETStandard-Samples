@@ -37,7 +37,7 @@ using Opc.Ua;
 namespace Quickstarts.Boiler
 {
     #region GenericControllerState Class
-    #if (!OPCUA_EXCLUDE_GenericControllerState)
+#if (!OPCUA_EXCLUDE_GenericControllerState)
     /// <summary>
     /// Stores an instance of the GenericControllerType ObjectType.
     /// </summary>
@@ -61,7 +61,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.GenericControllerType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -97,7 +97,7 @@ namespace Quickstarts.Boiler
            "AAgAAABTZXRQb2ludAEBBQAALgBEBQAAAAAL/////wMD/////wAAAAAVYIkKAgAAAAEACgAAAENvbnRy" +
            "b2xPdXQBAQYAAC4ARAYAAAAAC/////8BAf////8AAAAA";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -284,11 +284,11 @@ namespace Quickstarts.Boiler
         private PropertyState<double> m_controlOut;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region GenericSensorState Class
-    #if (!OPCUA_EXCLUDE_GenericSensorState)
+#if (!OPCUA_EXCLUDE_GenericSensorState)
     /// <summary>
     /// Stores an instance of the GenericSensorType ObjectType.
     /// </summary>
@@ -312,7 +312,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.GenericSensorType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -347,7 +347,7 @@ namespace Quickstarts.Boiler
            "AAABAAYAAABPdXRwdXQBAQgAAC8BAEAJCAAAAAAL/////wEB/////wEAAAAVYIkKAgAAAAAABwAAAEVV" +
            "UmFuZ2UBAQsAAC4ARAsAAAABAHQD/////wEB/////wAAAAA=";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -442,11 +442,11 @@ namespace Quickstarts.Boiler
         private AnalogItemState<double> m_output;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region GenericActuatorState Class
-    #if (!OPCUA_EXCLUDE_GenericActuatorState)
+#if (!OPCUA_EXCLUDE_GenericActuatorState)
     /// <summary>
     /// Stores an instance of the GenericActuatorType ObjectType.
     /// </summary>
@@ -470,7 +470,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.GenericActuatorType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -505,7 +505,7 @@ namespace Quickstarts.Boiler
            "AgAAAAEABQAAAElucHV0AQEPAAAvAQBACQ8AAAAAC/////8CAv////8BAAAAFWCJCgIAAAAAAAcAAABF" +
            "VVJhbmdlAQESAAAuAEQSAAAAAQB0A/////8BAf////8AAAAA";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -600,11 +600,11 @@ namespace Quickstarts.Boiler
         private AnalogItemState<double> m_input;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region CustomControllerState Class
-    #if (!OPCUA_EXCLUDE_CustomControllerState)
+#if (!OPCUA_EXCLUDE_CustomControllerState)
     /// <summary>
     /// Stores an instance of the CustomControllerType ObjectType.
     /// </summary>
@@ -628,7 +628,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.CustomControllerType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -665,7 +665,7 @@ namespace Quickstarts.Boiler
            "RBgAAAAAC/////8CAv////8AAAAAFWCJCgIAAAABAAoAAABDb250cm9sT3V0AQEZAAAuAEQZAAAAAAv/" +
            "////AQH/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -898,11 +898,11 @@ namespace Quickstarts.Boiler
         private PropertyState<double> m_controlOut;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region ValveState Class
-    #if (!OPCUA_EXCLUDE_ValveState)
+#if (!OPCUA_EXCLUDE_ValveState)
     /// <summary>
     /// Stores an instance of the ValveType ObjectType.
     /// </summary>
@@ -926,7 +926,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.ValveType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -961,7 +961,7 @@ namespace Quickstarts.Boiler
            "SW5wdXQBARsAAC8BAEAJGwAAAAAL/////wIC/////wEAAAAVYIkKAgAAAAAABwAAAEVVUmFuZ2UBAR4A" +
            "AC4ARB4AAAABAHQD/////wEB/////wAAAAA=";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -973,11 +973,11 @@ namespace Quickstarts.Boiler
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region LevelControllerState Class
-    #if (!OPCUA_EXCLUDE_LevelControllerState)
+#if (!OPCUA_EXCLUDE_LevelControllerState)
     /// <summary>
     /// Stores an instance of the LevelControllerType ObjectType.
     /// </summary>
@@ -1001,7 +1001,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.LevelControllerType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -1037,7 +1037,7 @@ namespace Quickstarts.Boiler
            "AAAAU2V0UG9pbnQBASMAAC4ARCMAAAAAC/////8DA/////8AAAAAFWCJCgIAAAABAAoAAABDb250cm9s" +
            "T3V0AQEkAAAuAEQkAAAAAAv/////AQH/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -1049,11 +1049,11 @@ namespace Quickstarts.Boiler
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region FlowControllerState Class
-    #if (!OPCUA_EXCLUDE_FlowControllerState)
+#if (!OPCUA_EXCLUDE_FlowControllerState)
     /// <summary>
     /// Stores an instance of the FlowControllerType ObjectType.
     /// </summary>
@@ -1077,7 +1077,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.FlowControllerType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -1113,7 +1113,7 @@ namespace Quickstarts.Boiler
            "AABTZXRQb2ludAEBJwAALgBEJwAAAAAL/////wMD/////wAAAAAVYIkKAgAAAAEACgAAAENvbnRyb2xP" +
            "dXQBASgAAC4ARCgAAAAAC/////8BAf////8AAAAA";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -1125,11 +1125,11 @@ namespace Quickstarts.Boiler
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region LevelIndicatorState Class
-    #if (!OPCUA_EXCLUDE_LevelIndicatorState)
+#if (!OPCUA_EXCLUDE_LevelIndicatorState)
     /// <summary>
     /// Stores an instance of the LevelIndicatorType ObjectType.
     /// </summary>
@@ -1153,7 +1153,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.LevelIndicatorType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -1188,7 +1188,7 @@ namespace Quickstarts.Boiler
            "AAAAAQAGAAAAT3V0cHV0AQEqAAAvAQBACSoAAAAAC/////8BAf////8BAAAAFWCJCgIAAAAAAAcAAABF" +
            "VVJhbmdlAQEtAAAuAEQtAAAAAQB0A/////8BAf////8AAAAA";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -1200,11 +1200,11 @@ namespace Quickstarts.Boiler
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region FlowTransmitterState Class
-    #if (!OPCUA_EXCLUDE_FlowTransmitterState)
+#if (!OPCUA_EXCLUDE_FlowTransmitterState)
     /// <summary>
     /// Stores an instance of the FlowTransmitterType ObjectType.
     /// </summary>
@@ -1228,7 +1228,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.FlowTransmitterType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -1263,7 +1263,7 @@ namespace Quickstarts.Boiler
            "AgAAAAEABgAAAE91dHB1dAEBMQAALwEAQAkxAAAAAAv/////AQH/////AQAAABVgiQoCAAAAAAAHAAAA" +
            "RVVSYW5nZQEBNAAALgBENAAAAAEAdAP/////AQH/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -1275,11 +1275,11 @@ namespace Quickstarts.Boiler
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region BoilerInputPipeState Class
-    #if (!OPCUA_EXCLUDE_BoilerInputPipeState)
+#if (!OPCUA_EXCLUDE_BoilerInputPipeState)
     /// <summary>
     /// Stores an instance of the BoilerInputPipeType ObjectType.
     /// </summary>
@@ -1303,7 +1303,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.BoilerInputPipeType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -1342,7 +1342,7 @@ namespace Quickstarts.Boiler
            "AAAASW5wdXQBAVIAAC8BAEAJUgAAAAAL/////wIC/////wEAAAAVYIkKAgAAAAAABwAAAEVVUmFuZ2UB" +
            "AVUAAC4ARFUAAAABAHQD/////wEB/////wAAAAA=";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -1483,11 +1483,11 @@ namespace Quickstarts.Boiler
         private ValveState m_valve;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region BoilerDrumState Class
-    #if (!OPCUA_EXCLUDE_BoilerDrumState)
+#if (!OPCUA_EXCLUDE_BoilerDrumState)
     /// <summary>
     /// Stores an instance of the BoilerDrumType ObjectType.
     /// </summary>
@@ -1511,7 +1511,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.BoilerDrumType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -1547,7 +1547,7 @@ namespace Quickstarts.Boiler
            "WAABAAAAFWCJCgIAAAABAAYAAABPdXRwdXQBAVoAAC8BAEAJWgAAAAAL/////wEB/////wEAAAAVYIkK" +
            "AgAAAAAABwAAAEVVUmFuZ2UBAV0AAC4ARF0AAAABAHQD/////wEB/////wAAAAA=";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -1642,11 +1642,11 @@ namespace Quickstarts.Boiler
         private LevelIndicatorState m_levelIndicator;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region BoilerOutputPipeState Class
-    #if (!OPCUA_EXCLUDE_BoilerOutputPipeState)
+#if (!OPCUA_EXCLUDE_BoilerOutputPipeState)
     /// <summary>
     /// Stores an instance of the BoilerOutputPipeType ObjectType.
     /// </summary>
@@ -1670,7 +1670,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.BoilerOutputPipeType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -1706,7 +1706,7 @@ namespace Quickstarts.Boiler
            "AAAAADABAQFgAAEAAAAVYIkKAgAAAAEABgAAAE91dHB1dAEBYgAALwEAQAliAAAAAAv/////AQH/////" +
            "AQAAABVgiQoCAAAAAAAHAAAARVVSYW5nZQEBZQAALgBEZQAAAAEAdAP/////AQH/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -1801,11 +1801,11 @@ namespace Quickstarts.Boiler
         private FlowTransmitterState m_flowTransmitter2;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region BoilerState Class
-    #if (!OPCUA_EXCLUDE_BoilerState)
+#if (!OPCUA_EXCLUDE_BoilerState)
     /// <summary>
     /// Stores an instance of the BoilerType ObjectType.
     /// </summary>
@@ -1829,7 +1829,7 @@ namespace Quickstarts.Boiler
             return Opc.Ua.NodeId.Create(Quickstarts.Boiler.ObjectTypes.BoilerType, Quickstarts.Boiler.Namespaces.Boiler, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -1891,7 +1891,7 @@ namespace Quickstarts.Boiler
            "FWCJCgIAAAABAAYAAABJbnB1dDMBAYgAAC4ARIgAAAAAC/////8CAgEAAAABAQIAAQEBdwAAAAAAFWCJ" +
            "CgIAAAABAAoAAABDb250cm9sT3V0AQGJAAAuAESJAAAAAAv/////AQEBAAAAAQECAAABAX8AAAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -2216,6 +2216,6 @@ namespace Quickstarts.Boiler
         private CustomControllerState m_customController;
         #endregion
     }
-    #endif
+#endif
     #endregion
 }

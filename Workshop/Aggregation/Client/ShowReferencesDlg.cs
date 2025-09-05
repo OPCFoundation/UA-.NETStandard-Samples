@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -34,6 +34,8 @@ using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace AggregationClient
 {
@@ -51,20 +53,20 @@ namespace AggregationClient
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private Session m_session;
         private NodeId m_nodeId;
         private ReferenceDescription m_reference;
         #endregion
-        
+
         #region Public Interface
-        public ReferenceDescription ShowDialog(Session session, NodeId nodeId)
+        public async Task<ReferenceDescription> ShowDialogAsync(Session session, NodeId nodeId, CancellationToken ct = default)
         {
             m_session = session;
 
             #region Task #B1 - Browse References
-            UpdateList(session, nodeId);
+            await UpdateListAsync(session, nodeId, ct);
             #endregion
 
             // display the dialog.
@@ -81,18 +83,18 @@ namespace AggregationClient
         /// <summary>
         /// Updates the list of references.
         /// </summary>
-        private void UpdateList(Session session, NodeId nodeId)
+        private async Task UpdateListAsync(Session session, NodeId nodeId, CancellationToken ct = default)
         {
             m_nodeId = nodeId;
             ReferencesLV.Items.Clear();
-            List<ReferenceDescription> references = Browse(session, nodeId);
-            DisplayReferences(session, references);
+            List<ReferenceDescription> references = await BrowseAsync(session, nodeId, ct);
+            await DisplayReferencesAsync(session, references, ct);
         }
 
         /// <summary>
         /// Fetches the references for the node.
         /// </summary>
-        private List<ReferenceDescription> Browse(Session session, NodeId nodeId)
+        private async Task<List<ReferenceDescription>> BrowseAsync(Session session, NodeId nodeId, CancellationToken ct = default)
         {
             List<ReferenceDescription> references = new List<ReferenceDescription>();
 
@@ -108,18 +110,18 @@ namespace AggregationClient
 
             BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
             nodesToBrowse.Add(nodeToBrowse);
-            
-            // start the browse operation.
-            BrowseResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            ResponseHeader responseHeader = session.Browse(
+            // start the browse operation.
+            BrowseResponse response = await session.BrowseAsync(
                 null,
                 null,
                 2,
                 nodesToBrowse,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            ResponseHeader responseHeader = response.ResponseHeader;
+            BrowseResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             // these do sanity checks on the result - make sure response matched the request.
             ClientBase.ValidateResponse(results, nodesToBrowse);
@@ -142,16 +144,19 @@ namespace AggregationClient
                 continuationPoints.Add(results[0].ContinuationPoint);
 
                 // continue browse operation.
-                responseHeader = session.BrowseNext(
+                BrowseNextResponse response2 = await session.BrowseNextAsync(
                     null,
                     false,
                     continuationPoints,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                responseHeader = response2.ResponseHeader;
+                results = response2.Results;
+                diagnosticInfos = response2.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, continuationPoints);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
-                
+
                 // check status.
                 if (StatusCode.IsBad(results[0].StatusCode))
                 {
@@ -171,7 +176,7 @@ namespace AggregationClient
         /// <summary>
         /// Displays the references in the control.
         /// </summary>
-        private void DisplayReferences(Session session, List<ReferenceDescription> references)
+        private async Task DisplayReferencesAsync(Session session, List<ReferenceDescription> references, CancellationToken ct = default)
         {
             ReferencesLV.Items.Clear();
 
@@ -182,7 +187,7 @@ namespace AggregationClient
                 string referenceType = null;
 
                 // look up the name for the reference
-                IReferenceType referenceTypeNode = session.NodeCache.Find(reference.ReferenceTypeId) as IReferenceType;
+                IReferenceType referenceTypeNode = await session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as IReferenceType;
 
                 if (referenceTypeNode != null)
                 {
@@ -195,7 +200,7 @@ namespace AggregationClient
                 }
 
                 // the node cache is used to store the type model so it can be accessed locally.
-                string typeDefinition = session.NodeCache.GetDisplayText(reference.TypeDefinition);
+                string typeDefinition = await session.NodeCache.GetDisplayTextAsync(reference.TypeDefinition, ct);
 
                 ListViewItem item = new ListViewItem(referenceType);
 

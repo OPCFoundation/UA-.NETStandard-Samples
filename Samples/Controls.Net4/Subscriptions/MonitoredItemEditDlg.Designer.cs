@@ -203,7 +203,7 @@ namespace Opc.Ua.Sample.Controls
             this.NodeIdCTRL.Name = "NodeIdCTRL";
             this.NodeIdCTRL.Size = new System.Drawing.Size(259, 20);
             this.NodeIdCTRL.TabIndex = 22;
-            this.NodeIdCTRL.IdentifierChanged += new System.EventHandler(this.NodeIdCTRL_IdentifierChanged);
+            this.NodeIdCTRL.IdentifierChanged += new System.EventHandler(this.NodeIdCTRL_IdentifierChangedAsync);
             // 
             // MonitoringModeCB
             // 

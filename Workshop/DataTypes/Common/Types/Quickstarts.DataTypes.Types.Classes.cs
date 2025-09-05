@@ -37,7 +37,7 @@ using Opc.Ua;
 namespace Quickstarts.DataTypes.Types
 {
     #region DriverState Class
-    #if (!OPCUA_EXCLUDE_DriverState)
+#if (!OPCUA_EXCLUDE_DriverState)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -55,7 +55,7 @@ namespace Quickstarts.DataTypes.Types
             return Opc.Ua.NodeId.Create(Quickstarts.DataTypes.Types.ObjectTypes.DriverType, Quickstarts.DataTypes.Types.Namespaces.DataTypes, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <remarks />
         protected override void Initialize(ISystemContext context)
         {
@@ -100,7 +100,7 @@ namespace Quickstarts.DataTypes.Types
            "Z2luZT5FbGVjdHJpY18zPC9FbmdpbmU+PE5vT2ZQYXNzZW5nZXJzPjQ8L05vT2ZQYXNzZW5nZXJzPjwv" +
            "VmVoaWNsZVR5cGU+AQE6AQEAAAABAAAAAAAAAAMD/////wAAAAA=";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -161,7 +161,7 @@ namespace Quickstarts.DataTypes.Types
 
             base.GetChildren(context, children);
         }
-            
+
         /// <remarks />
         protected override BaseInstanceState FindChild(
             ISystemContext context,
@@ -235,6 +235,6 @@ namespace Quickstarts.DataTypes.Types
         private PropertyState<VehicleType[]> m_ownedVehicles;
         #endregion
     }
-    #endif
+#endif
     #endregion
 }

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -53,7 +55,7 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
             ResultsDV.AutoGenerateColumns = false;
             ImageList = new ClientUtils().ImageList;
-            
+
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Arguments");
 
@@ -70,7 +72,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private DataSet m_dataset;
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_objectId;
         private NodeId m_methodId;
         private Argument[] m_inputArguments;
@@ -81,7 +83,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used for the call request.
         /// </summary>
-        public void ChangeSession(Session session)
+        public void ChangeSession(ISession session)
         {
             m_session = session;
         }
@@ -89,29 +91,29 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Sets the method for the call request.
         /// </summary>
-        public void SetMethod(NodeId objectId, NodeId methodId)
+        public async Task SetMethodAsync(NodeId objectId, NodeId methodId, CancellationToken ct = default)
         {
             if (objectId == null)
             {
-                new ArgumentNullException("objectId");
+                throw new ArgumentNullException(nameof(objectId));
             }
 
             if (methodId == null)
             {
-                new ArgumentNullException("methodId");
+                throw new ArgumentNullException(nameof(methodId));
             }
 
             m_objectId = objectId;
             m_methodId = methodId;
 
-            ReadArguments(methodId);
-            DisplayInputArguments();
+            await ReadArgumentsAsync(methodId, ct);
+            await DisplayInputArgumentsAsync(ct);
         }
 
         /// <summary>
         /// Calls the method.
         /// </summary>
-        public void Call()
+        public async Task CallAsync(CancellationToken ct = default)
         {
             // build list of methods to call.
             CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
@@ -132,18 +134,19 @@ namespace Opc.Ua.Client.Controls
             methodsToCall.Add(methodToCall);
 
             // call the method.
-            CallMethodResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            ResponseHeader responseHeader = m_session.Call(
+            CallResponse response = await m_session.CallAsync(
                 null,
                 methodsToCall,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            ResponseHeader responseHeader = response.ResponseHeader;
+            CallMethodResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
-            
+
             for (int ii = 0; ii < results.Count; ii++)
             {
                 // display any input argument errors.
@@ -180,13 +183,13 @@ namespace Opc.Ua.Client.Controls
 
                         if (results[ii].OutputArguments.Count > jj)
                         {
-                            UpdateRow(row, m_outputArguments[jj], results[ii].OutputArguments[jj], true);
+                            await UpdateRowAsync(row, m_outputArguments[jj], results[ii].OutputArguments[jj], true, ct);
                         }
                         else
                         {
-                            UpdateRow(row, m_outputArguments[jj], Variant.Null, true);
+                            await UpdateRowAsync(row, m_outputArguments[jj], Variant.Null, true, ct);
                         }
-                        
+
                         m_dataset.Tables[0].Rows.Add(row);
                     }
                 }
@@ -196,9 +199,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the grid to the enter input arguments state.
         /// </summary>
-        public void Back()
+        public async Task BackAsync(CancellationToken ct = default)
         {
-            DisplayInputArguments();
+            await DisplayInputArgumentsAsync(ct);
 
             // clear any selection.
             foreach (DataGridViewRow row in ResultsDV.Rows)
@@ -212,20 +215,20 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the input arguments.
         /// </summary>
-        private void DisplayInputArguments()
+        private async Task DisplayInputArgumentsAsync(CancellationToken ct = default)
         {
             ResultCH.Visible = false;
             NoArgumentsLB.Visible = m_inputArguments == null || m_inputArguments.Length == 0;
             NoArgumentsLB.Text = "No input arguments to display.";
 
             m_dataset.Tables[0].Rows.Clear();
-            
+
             if (m_inputArguments != null)
             {
                 foreach (Argument argument in m_inputArguments)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    UpdateRow(row, argument, new Variant(argument.Value), false);
+                    await UpdateRowAsync(row, argument, new Variant(argument.Value), false, ct);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -234,9 +237,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with an argument and its value.
         /// </summary>
-        private void UpdateRow(DataRow row, Argument argument, Variant value, bool isOutputArgument)
+        private async Task UpdateRowAsync(DataRow row, Argument argument, Variant value, bool isOutputArgument, CancellationToken ct = default)
         {
-            string dataType = m_session.NodeCache.GetDisplayText(argument.DataType);
+            string dataType = await m_session.NodeCache.GetDisplayTextAsync(argument.DataType, ct);
 
             if (argument.ValueRank >= 0)
             {
@@ -254,7 +257,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the arguments for the method.
         /// </summary>
-        private void ReadArguments(NodeId nodeId)
+        private async Task ReadArgumentsAsync(NodeId nodeId, CancellationToken ct = default)
         {
             m_inputArguments = null;
             m_outputArguments = null;
@@ -274,7 +277,7 @@ namespace Opc.Ua.Client.Controls
             nodesToBrowse.Add(nodeToBrowse);
 
             // find properties.
-            ReferenceDescriptionCollection references = ClientUtils.Browse(m_session, null, nodesToBrowse, false);
+            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, null, nodesToBrowse, false, ct);
 
             // build list of properties to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
@@ -309,16 +312,15 @@ namespace Opc.Ua.Client.Controls
             }
 
             // read the arguments.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -354,7 +356,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -374,7 +376,7 @@ namespace Opc.Ua.Client.Controls
                     if (result != null)
                     {
                         argument.Value = result;
-                        UpdateRow(source.Row, argument, new Variant(result), false);
+                        await UpdateRowAsync(source.Row, argument, new Variant(result), false);
                     }
 
                     break;

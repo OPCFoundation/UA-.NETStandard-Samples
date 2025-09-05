@@ -103,7 +103,7 @@ namespace Opc.Ua.Sample.Controls
             this.ApplyBTN.TabIndex = 4;
             this.ApplyBTN.Text = "Apply";
             this.ApplyBTN.UseVisualStyleBackColor = true;
-            this.ApplyBTN.Click += new System.EventHandler(this.ApplyBTN_Click);
+            this.ApplyBTN.Click += new System.EventHandler(this.ApplyBTN_ClickAsync);
             // 
             // SplitterPN
             // 
@@ -133,7 +133,7 @@ namespace Opc.Ua.Sample.Controls
             this.BrowseCTRL.SessionTreeCtrl = null;
             this.BrowseCTRL.Size = new System.Drawing.Size(276, 392);
             this.BrowseCTRL.TabIndex = 1;
-            this.BrowseCTRL.ItemsSelected += new Opc.Ua.Sample.Controls.NodesSelectedEventHandler(this.BrowseCTRL_ItemsSelected);
+            this.BrowseCTRL.ItemsSelected += new Opc.Ua.Sample.Controls.NodesSelectedEventHandler(this.BrowseCTRL_ItemsSelectedAsync);
             // 
             // MonitoredItemsCTRL
             // 

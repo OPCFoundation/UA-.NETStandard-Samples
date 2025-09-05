@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -53,7 +53,7 @@ namespace AggregationServer
         public NodeId ClientSessionId { get; }
         public NodeId SessionSessionId { get; private set; }
         public bool IsMetaDataSession { get; }
-        public Opc.Ua.Client.Session Session
+        public Opc.Ua.Client.ISession Session
         {
             get => m_session;
             set
@@ -65,7 +65,7 @@ namespace AggregationServer
         public Opc.Ua.Client.SessionReconnectHandler ReconnectHandler { get; set; }
         public DateTime LastUsed { get; set; }
 
-        private Opc.Ua.Client.Session m_session;
+        private Opc.Ua.Client.ISession m_session;
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ namespace AggregationServer
             if (endpoint.ReverseConnect != null &&
                 endpoint.ReverseConnect.Enabled)
             {
-                // reverse connect manager endpoint is required 
+                // reverse connect manager endpoint is required
                 if (reverseConnectManager == null) throw new ArgumentNullException(nameof(reverseConnectManager));
                 m_reverseConnectManager = reverseConnectManager;
             }
@@ -148,7 +148,7 @@ namespace AggregationServer
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -217,7 +217,7 @@ namespace AggregationServer
 
                 AddPredefinedNode(SystemContext, status);
 
-                StartMetadataUpdates(DoMetadataUpdate, null, DefaultMetadataInitDelay, DefaultMetadataRefresh);
+                StartMetadataUpdates(DoMetadataUpdateAsync, null, DefaultMetadataInitDelay, DefaultMetadataRefresh);
             }
         }
 
@@ -239,7 +239,7 @@ namespace AggregationServer
         {
             lock (Lock)
             {
-                // quickly exclude nodes that are not in the namespace. 
+                // quickly exclude nodes that are not in the namespace.
                 if (!IsNodeIdInNamespace(nodeId))
                 {
                     return null;
@@ -337,18 +337,18 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(context);
+                Opc.Ua.Client.ISession client = GetClientSession(context);
 
-                DataValueCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = client.Read(
+                ReadResponse response = client.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Both,
                     requests,
-                    out results,
-                    out diagnosticInfos);
+                    default).Result;
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                DataValueCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, requests);
@@ -434,16 +434,16 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(context);
+                Opc.Ua.Client.ISession client = GetClientSession(context);
 
-                StatusCodeCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = client.Write(
+                WriteResponse response = client.WriteAsync(
                     null,
                     requests,
-                    out results,
-                    out diagnosticInfos);
+                    default).Result;
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                StatusCodeCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, requests);
@@ -575,16 +575,16 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(systemContext);
+                Opc.Ua.Client.ISession client = GetClientSession(systemContext);
 
-                CallMethodResultCollection results2 = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = client.Call(
+                CallResponse response = client.CallAsync(
                     null,
                     requests,
-                    out results2,
-                    out diagnosticInfos);
+                    default).Result;
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                CallMethodResultCollection results2 = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results2, requests);
@@ -662,7 +662,7 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(context);
+                Opc.Ua.Client.ISession client = GetClientSession(context);
 
                 lock (client)
                 {
@@ -683,7 +683,7 @@ namespace AggregationServer
                         subscription.FastEventCallback = OnEventNotification;
 
                         client.AddSubscription(subscription);
-                        subscription.Create();
+                        subscription.CreateAsync().GetAwaiter().GetResult();
                     }
 
                     // add items.
@@ -700,7 +700,7 @@ namespace AggregationServer
                         target.AddItem(requests[ii]);
                     }
 
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     // check status.
                     int index = 0;
@@ -731,7 +731,7 @@ namespace AggregationServer
         /// </summary>
         protected override void OnModifyMonitoredItemsComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
         {
-            Opc.Ua.Client.Session client = GetClientSession(context);
+            Opc.Ua.Client.ISession client = GetClientSession(context);
             List<Opc.Ua.Client.MonitoredItem> remoteItems = new List<Opc.Ua.Client.MonitoredItem>();
 
             lock (client)
@@ -784,7 +784,7 @@ namespace AggregationServer
                 // send request to external system.
                 try
                 {
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     // check status.
                     foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
@@ -813,7 +813,7 @@ namespace AggregationServer
         /// </summary>
         protected override void OnDeleteMonitoredItemsComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
         {
-            Opc.Ua.Client.Session client = GetClientSession(context);
+            Opc.Ua.Client.ISession client = GetClientSession(context);
 
             lock (client)
             {
@@ -862,11 +862,11 @@ namespace AggregationServer
                 // send request to external system.
                 try
                 {
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     if (target.MonitoredItemCount == 0)
                     {
-                        client.RemoveSubscription(target);
+                        client.RemoveSubscriptionAsync(target).GetAwaiter().GetResult();
                     }
                 }
                 catch (Exception e)
@@ -881,7 +881,7 @@ namespace AggregationServer
         /// </summary>
         protected override void OnSetMonitoringModeComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
         {
-            Opc.Ua.Client.Session client = GetClientSession(context);
+            Opc.Ua.Client.ISession client = GetClientSession(context);
             List<Opc.Ua.Client.MonitoredItem> remoteItems = new List<Opc.Ua.Client.MonitoredItem>();
 
             lock (client)
@@ -932,7 +932,7 @@ namespace AggregationServer
                 // send request to external system.
                 try
                 {
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     // check status.
                     foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
@@ -990,7 +990,7 @@ namespace AggregationServer
                     return ServiceResult.Good;
                 }
 
-                Opc.Ua.Client.Session client = GetClientSession(systemContext);
+                Opc.Ua.Client.ISession client = GetClientSession(systemContext);
 
                 if (unsubscribe)
                 {
@@ -1020,11 +1020,11 @@ namespace AggregationServer
 
                         // apply changes.
                         target.RemoveItem(remoteItem);
-                        target.ApplyChanges();
+                        target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                         if (target.MonitoredItemCount == 0)
                         {
-                            target.Session.RemoveSubscription(target);
+                            target.Session.RemoveSubscriptionAsync(target).GetAwaiter().GetResult();
                         }
                     }
 
@@ -1070,7 +1070,7 @@ namespace AggregationServer
                         subscription.FastEventCallback = OnEventNotification;
 
                         client.AddSubscription(subscription);
-                        subscription.Create();
+                        subscription.CreateAsync().GetAwaiter().GetResult();
                     }
 
                     // get the subscription.
@@ -1088,7 +1088,7 @@ namespace AggregationServer
                     }
 
                     target.AddItem(request);
-                    target.ApplyChanges();
+                    target.ApplyChangesAsync().GetAwaiter().GetResult();
 
                     if (ServiceResult.IsBad(request.Status.Error))
                     {
@@ -1176,7 +1176,7 @@ namespace AggregationServer
         /// <summary>
         /// Get a cached client session or create a new one per server connection.
         /// </summary>
-        Opc.Ua.Client.Session GetClientSession(ServerSystemContext context)
+        Opc.Ua.Client.ISession GetClientSession(ServerSystemContext context)
         {
             NodeId sessionId;
             string sessionName;
@@ -1233,7 +1233,7 @@ namespace AggregationServer
                         {
                             // the client session is stale and not reconnecting
                             m_clients.Remove(sessionId);
-                            session.Close();
+                            session.CloseAsync().GetAwaiter().GetResult();
                             session.Dispose();
                             clientSession = null;
                         }
@@ -1262,7 +1262,7 @@ namespace AggregationServer
             try
             {
                 Utils.Trace($"Create Connect Session: {m_endpoint} for {sessionName}");
-                var session = Opc.Ua.Client.Session.Create(
+                var session = Opc.Ua.Client.Session.CreateAsync(
                     m_configuration,
                     m_reverseConnectManager,
                     m_endpoint,
@@ -1341,7 +1341,7 @@ namespace AggregationServer
                 m_metadataUpdateCallback = callback;
                 m_timerPeriod = period;
                 m_initialDelay = initialDelay;
-                m_metadataUpdateTimer = new Timer(DoMetadataUpdate, callbackData, initialDelay, -1);
+                m_metadataUpdateTimer = new Timer(DoMetadataUpdateAsync, callbackData, initialDelay, -1);
             }
         }
 
@@ -1363,10 +1363,10 @@ namespace AggregationServer
         /// <summary>
         /// Updates the metadata.
         /// </summary>
-        private void DoMetadataUpdate(object state)
+        private async void DoMetadataUpdateAsync(object state)
         {
             int nextTimerPeriod = m_initialDelay;
-            Opc.Ua.Client.Session client = null;
+            Opc.Ua.Client.ISession client = null;
             try
             {
                 if (!Server.IsRunning)
@@ -1422,7 +1422,7 @@ namespace AggregationServer
                 }
 
                 AggregatedTypeCache cache = new AggregatedTypeCache();
-                cache.LoadTypes(client, Server, m_mapper);
+                await cache.LoadTypesAsync(client, Server, m_mapper);
 
                 lock (Lock)
                 {
@@ -1483,11 +1483,11 @@ namespace AggregationServer
 
             try
             {
-                Opc.Ua.Client.Session client = GetClientSession(context);
+                Opc.Ua.Client.ISession client = GetClientSession(context);
 
                 // get remote node.
                 NodeId targetId = m_mapper.ToRemoteId(handle.NodeId);
-                ILocalNode node = client.ReadNode(targetId) as ILocalNode;
+                ILocalNode node = client.ReadNodeAsync(targetId).GetAwaiter().GetResult();
 
                 if (node == null)
                 {

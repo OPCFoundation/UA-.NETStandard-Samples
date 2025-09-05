@@ -50,7 +50,7 @@ namespace Opc.Ua.Sample
         {
             InitializeComponent();
         }
-        
+
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
@@ -135,7 +135,7 @@ namespace Opc.Ua.Sample
                 if (server != null)
                 {
                     TrayIcon.Text = String.Format(
-                        "{0} [{1} {2:HH:mm:ss}]", 
+                        "{0} [{1} {2:HH:mm:ss}]",
                         m_application.ApplicationName,
                         server.CurrentInstance.CurrentState,
                         DateTime.Now);
@@ -150,7 +150,7 @@ namespace Opc.Ua.Sample
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Quit this application", "Generic Server", MessageBoxButtons.YesNoCancel)== DialogResult.Yes)
+            if (MessageBox.Show("Quit this application", "Generic Server", MessageBoxButtons.YesNoCancel) == DialogResult.Yes)
             {
                 Application.Exit();
             }
@@ -160,7 +160,7 @@ namespace Opc.Ua.Sample
         {
             try
             {
-                System.Diagnostics.Process.Start( Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "ua_sample_server.htm");
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "ua_sample_server.htm");
             }
             catch (Exception ex)
             {

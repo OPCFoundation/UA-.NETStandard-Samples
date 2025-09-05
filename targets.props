@@ -1,11 +1,11 @@
 <Project>
 
-	<PropertyGroup>
-	  <LangVersion>7.3</LangVersion>
-	</PropertyGroup>
-	
+  <PropertyGroup>
+    <LangVersion>13.0</LangVersion>
+  </PropertyGroup>
+
   <Choose>
-    <!-- .NET 4.8 is only available on Windows builds, 
+    <!-- .NET 4.8 is only available on Windows builds,
           however for mono builds on linux it can be enabled.
           msbuild ... /p:MonoBuild=true ...
       -->
@@ -21,38 +21,28 @@
     </Otherwise>
   </Choose>
 
-  <Choose>
-    <!-- Visual Studio 2022 -->
-    <When  Condition="'$(VisualStudioVersion)' == '17.0'">
-      <PropertyGroup>
-        <AnalysisLevel>preview-all</AnalysisLevel>
-        <AppTargetFrameworks>$(DotNetTargetFramework)net8.0</AppTargetFrameworks>
-        <AppTargetFramework>net6.0</AppTargetFramework>
-        <TestsTargetFrameworks>$(DotNetTargetFramework);net8.0</TestsTargetFrameworks>
-        <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0;netstandard2.1;net8.0</LibTargetFrameworks>
-        <LibxTargetFrameworks>$(DotNetTargetFramework)netstandard2.1;net8.0</LibxTargetFrameworks>
-      </PropertyGroup>
-    </When>
-    <!-- Visual Studio 2019 -->
-    <When  Condition="'$(VisualStudioVersion)' == '16.0'">
-      <PropertyGroup>
-        <AnalysisLevel>latest</AnalysisLevel>
-        <AppTargetFrameworks>$(DotNetTargetFramework)netcoreapp3.1</AppTargetFrameworks>
-        <AppTargetFramework>netcoreapp3.1</AppTargetFramework>
-        <TestsTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1;netcoreapp3.1</TestsTargetFrameworks>
-        <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0;netstandard2.1</LibTargetFrameworks>
-        <LibxTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1;netstandard2.1</LibxTargetFrameworks>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <AppTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1</AppTargetFrameworks>
-        <AppTargetFramework>netcoreapp2.1</AppTargetFramework>
-        <TestsTargetFrameworks>netcoreapp2.1</TestsTargetFrameworks>
-        <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0</LibTargetFrameworks>
-        <LibxTargetFrameworks>$(DotNetTargetFramework)netcoreapp2.1</LibxTargetFrameworks>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
+  <PropertyGroup>
+    <AppTargetFrameworks>$(DotNetTargetFramework)net8.0</AppTargetFrameworks>
+    <AppTargetFramework>net8.0</AppTargetFramework>
+    <TestsTargetFrameworks>$(DotNetTargetFramework);net8.0</TestsTargetFrameworks>
+    <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0;netstandard2.1;net8.0</LibTargetFrameworks>
+    <LibxTargetFrameworks>$(DotNetTargetFramework)netstandard2.1;net8.0</LibxTargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+    <AnalysisLevel>preview-all</AnalysisLevel>
+    <AnalysisMode>all</AnalysisMode>
+    <AnalysisModeStyle>default</AnalysisModeStyle>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(NO_RCS) == ''">
+    <PackageReference Include="Roslynator.Analyzers" Version="4.14.0" PrivateAssets="All" />
+    <PackageReference Include="Roslynator.Formatting.Analyzers" Version="4.14.0" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" PrivateAssets="All" />
+  </ItemGroup>
 
 </Project>

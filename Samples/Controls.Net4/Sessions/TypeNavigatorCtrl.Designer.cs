@@ -87,7 +87,7 @@ namespace Opc.Ua.Sample
             this.RootBTN.Size = new System.Drawing.Size(45, 21);
             this.RootBTN.Text = "Root";
             this.RootBTN.ToolTipText = "Root";
-            this.RootBTN.DropDownOpening += new System.EventHandler(this.RootBTN_DropDownOpening);
+            this.RootBTN.DropDownOpening += new System.EventHandler(this.RootBTN_DropDownOpeningAsync);
             this.RootBTN.Click += new System.EventHandler(this.RootBTN_Click);
             // 
             // childToolStripMenuItem

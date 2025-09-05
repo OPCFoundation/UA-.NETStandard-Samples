@@ -37,7 +37,7 @@ using Opc.Ua;
 namespace Quickstarts.SimpleEvents
 {
     #region SystemCycleStatusEventState Class
-    #if (!OPCUA_EXCLUDE_SystemCycleStatusEventState)
+#if (!OPCUA_EXCLUDE_SystemCycleStatusEventState)
     /// <summary>
     /// Stores an instance of the SystemCycleStatusEventType ObjectType.
     /// </summary>
@@ -61,7 +61,7 @@ namespace Quickstarts.SimpleEvents
             return Opc.Ua.NodeId.Create(Quickstarts.SimpleEvents.ObjectTypes.SystemCycleStatusEventType, Quickstarts.SimpleEvents.Namespaces.SimpleEvents, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -103,7 +103,7 @@ namespace Quickstarts.SimpleEvents
            "AAAAAQAHAAAAQ3ljbGVJZAEB9QAALgBE9QAAAAAM/////wEB/////wAAAAAVYIkKAgAAAAEACwAAAEN1" +
            "cnJlbnRTdGVwAQH2AAAuAET2AAAAAQG3AP////8BAf////8AAAAA";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -244,11 +244,11 @@ namespace Quickstarts.SimpleEvents
         private PropertyState<CycleStepDataType> m_currentStep;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region SystemCycleStartedEventState Class
-    #if (!OPCUA_EXCLUDE_SystemCycleStartedEventState)
+#if (!OPCUA_EXCLUDE_SystemCycleStartedEventState)
     /// <summary>
     /// Stores an instance of the SystemCycleStartedEventType ObjectType.
     /// </summary>
@@ -272,7 +272,7 @@ namespace Quickstarts.SimpleEvents
             return Opc.Ua.NodeId.Create(Quickstarts.SimpleEvents.ObjectTypes.SystemCycleStartedEventType, Quickstarts.SimpleEvents.Namespaces.SimpleEvents, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -315,7 +315,7 @@ namespace Quickstarts.SimpleEvents
            "dXJyZW50U3RlcAEB9wAALgBE9wAAAAEBtwD/////AQH/////AAAAABdgiQoCAAAAAQAFAAAAU3RlcHMB" +
            "AcQAAC4ARMQAAAABAbcAAQAAAAEAAAAAAAAAAQH/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -410,11 +410,11 @@ namespace Quickstarts.SimpleEvents
         private PropertyState<CycleStepDataType[]> m_steps;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region SystemCycleAbortedEventState Class
-    #if (!OPCUA_EXCLUDE_SystemCycleAbortedEventState)
+#if (!OPCUA_EXCLUDE_SystemCycleAbortedEventState)
     /// <summary>
     /// Stores an instance of the SystemCycleAbortedEventType ObjectType.
     /// </summary>
@@ -438,7 +438,7 @@ namespace Quickstarts.SimpleEvents
             return Opc.Ua.NodeId.Create(Quickstarts.SimpleEvents.ObjectTypes.SystemCycleAbortedEventType, Quickstarts.SimpleEvents.Namespaces.SimpleEvents, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -481,7 +481,7 @@ namespace Quickstarts.SimpleEvents
            "dXJyZW50U3RlcAEB+AAALgBE+AAAAAEBtwD/////AQH/////AAAAABVgiQoCAAAAAQAFAAAARXJyb3IB" +
            "AfkAAC4ARPkAAAAAE/////8BAf////8AAAAA";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -576,11 +576,11 @@ namespace Quickstarts.SimpleEvents
         private PropertyState<StatusCode> m_error;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region SystemCycleFinishedEventState Class
-    #if (!OPCUA_EXCLUDE_SystemCycleFinishedEventState)
+#if (!OPCUA_EXCLUDE_SystemCycleFinishedEventState)
     /// <summary>
     /// Stores an instance of the SystemCycleFinishedEventType ObjectType.
     /// </summary>
@@ -604,7 +604,7 @@ namespace Quickstarts.SimpleEvents
             return Opc.Ua.NodeId.Create(Quickstarts.SimpleEvents.ObjectTypes.SystemCycleFinishedEventType, Quickstarts.SimpleEvents.Namespaces.SimpleEvents, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -646,7 +646,7 @@ namespace Quickstarts.SimpleEvents
            "CgIAAAABAAcAAABDeWNsZUlkAQHcAAAuAETcAAAAAAz/////AQH/////AAAAABVgiQoCAAAAAQALAAAA" +
            "Q3VycmVudFN0ZXABAfoAAC4ARPoAAAABAbcA/////wEB/////wAAAAA=";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -658,6 +658,6 @@ namespace Quickstarts.SimpleEvents
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 }

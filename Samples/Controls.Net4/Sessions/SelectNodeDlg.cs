@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -39,6 +39,8 @@ using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -65,27 +67,27 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private ReferenceDescription m_reference;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ReferenceDescription ShowDialog(Browser browser, NodeId rootId)
+        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, CancellationToken ct = default)
         {
-            if (browser == null) throw new ArgumentNullException("browser");
+            if (browser == null) throw new ArgumentNullException(nameof(browser));
 
-            BrowseCTRL.SetRoot(browser, rootId);
+            await BrowseCTRL.SetRootAsync(browser, rootId, ct);
 
             NamespaceUriCB.Items.Clear();
             NamespaceUriCB.Items.AddRange(browser.Session.NamespaceUris.ToArray());
-            
+
             OkBTN.Enabled = false;
 
             if (ShowDialog() != DialogResult.OK)
             {
                 return null;
             }
-            
+
             return m_reference;
         }
         #endregion
@@ -134,7 +136,7 @@ namespace Opc.Ua.Sample.Controls
                 OkBTN.Enabled = false;
 
                 ReferenceDescription reference = e.Node as ReferenceDescription;
-                
+
                 if (reference == null)
                 {
                     return;
@@ -146,9 +148,9 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // set the display name.
-                DisplayNameTB.Text       = reference.ToString();
+                DisplayNameTB.Text = reference.ToString();
                 NodeClassCB.SelectedItem = (NodeClass)reference.NodeClass;
-                
+
                 // set identifier type.
                 IdentifierTypeCB.SelectedItem = reference.NodeId.IdType;
 
@@ -170,7 +172,7 @@ namespace Opc.Ua.Sample.Controls
                         NamespaceUriCB.Text = null;
                     }
                 }
-                
+
                 // set identifier.
                 switch (reference.NodeId.IdType)
                 {

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,46 +30,48 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
 
 namespace Quickstarts.PerfTestClient
 {
-    class Tester
+    internal sealed class Tester
     {
-		// gets or sets the update rate.
+        // gets or sets the update rate.
         public int SamplingRate
         {
             get { return m_samplingRate; }
             set { m_samplingRate = value; }
         }
-	
-		// gets or sets the item count.
+
+        // gets or sets the item count.
         public int ItemCount
         {
             get { return m_itemCount; }
             set { m_itemCount = value; }
         }
 
-		// returns the number of callbacks that have arrived.
+        // returns the number of callbacks that have arrived.
         public int MessageCount
         {
             get { return m_messageCount; }
         }
 
-		// returns the total number of item updates that have arrived.
+        // returns the total number of item updates that have arrived.
         public int TotalItemUpdateCount
         {
             get { return m_totalItemUpdateCount; }
         }
 
-		// returns the time of the first callback.
+        // returns the time of the first callback.
         public DateTime FirstMessageTime
         {
             get { return m_firstMessageTime; }
         }
 
-		// returns the time of the last callback.
+        // returns the time of the last callback.
         public DateTime LastMessageTime
         {
             get { return m_lastMessageTime; }
@@ -142,7 +144,7 @@ namespace Quickstarts.PerfTestClient
         /// Starts the specified session.
         /// </summary>
         /// <param name="session">The session.</param>
-        public void Start(Session session)
+        public async Task StartAsync(ISession session)
         {
             m_NotificationEventHandler = new NotificationEventHandler(Session_Notification);
             session.Notification += m_NotificationEventHandler;
@@ -159,7 +161,7 @@ namespace Quickstarts.PerfTestClient
             subscription.DisableMonitoredItemCache = true;
 
             session.AddSubscription(subscription);
-            subscription.Create();
+            await subscription.CreateAsync();
 
             DateTime start = HiResClock.UtcNow;
 
@@ -167,7 +169,7 @@ namespace Quickstarts.PerfTestClient
             {
                 MonitoredItem monitoredItem = new MonitoredItem((uint)ii);
 
-                monitoredItem.StartNodeId = new NodeId((uint)((1<<24) + ii), 2);
+                monitoredItem.StartNodeId = new NodeId((uint)((1 << 24) + ii), 2);
                 monitoredItem.AttributeId = Attributes.Value;
                 monitoredItem.SamplingInterval = -1;
                 monitoredItem.Filter = null;
@@ -178,13 +180,13 @@ namespace Quickstarts.PerfTestClient
                 subscription.AddItem(monitoredItem);
             }
 
-            subscription.ApplyChanges();
+            await subscription.ApplyChangesAsync();
             DateTime end = HiResClock.UtcNow;
 
             ReportMessage("Time to add {1} items {0}ms.", (end - start).TotalMilliseconds, m_itemCount);
 
             start = HiResClock.UtcNow;
-            subscription.SetPublishingMode(true);
+            await subscription.SetPublishingModeAsync(true);
             end = HiResClock.UtcNow;
 
             ReportMessage("Time to emable publishing {0}ms.", (end - start).TotalMilliseconds);
@@ -193,8 +195,9 @@ namespace Quickstarts.PerfTestClient
         /// <summary>
         /// Stops the test.
         /// </summary>
-        public void Stop()
+        public async Task StopAsync(CancellationToken ct = default)
         {
+            Subscription subscription = null;
             lock (m_lock)
             {
                 if (m_subscription != null && m_subscription.Session != null)
@@ -204,43 +207,45 @@ namespace Quickstarts.PerfTestClient
                         m_subscription.Session.Notification -= m_NotificationEventHandler;
                     }
 
-                    m_subscription.Delete(true);
+                    subscription = m_subscription;
+                    m_subscription = null;
                 }
             }
+            await subscription.DeleteAsync(true, ct);
         }
 
         void ReportMessage(string message, params object[] args)
         {
-	        lock (m_lock)
-	        {        		
-		        if (m_logMessages == null)
-		        {
+            lock (m_lock)
+            {
+                if (m_logMessages == null)
+                {
                     m_logMessages = new List<string>();
-		        }
+                }
 
-		        if (args != null && args.Length > 0)
-		        {
-			        m_logMessages.Add(Utils.Format(message, args));
-		        }
-		        else
-		        {
+                if (args != null && args.Length > 0)
+                {
+                    m_logMessages.Add(Utils.Format(message, args));
+                }
+                else
+                {
                     m_logMessages.Add(message);
-		        }
-	        }
+                }
+            }
         }
 
         void Session_Notification(ISession session, NotificationEventArgs e)
         {
             lock (m_lock)
             {
-		        if (m_messageCount == 0)
-		        {
-			        m_firstMessageTime = DateTime.UtcNow;
-			        m_totalItemUpdateCount = 0;
+                if (m_messageCount == 0)
+                {
+                    m_firstMessageTime = DateTime.UtcNow;
+                    m_totalItemUpdateCount = 0;
                     m_itemUpdateCounts = new int[m_itemCount];
-		        }
+                }
 
-		        m_messageCount++;
+                m_messageCount++;
                 m_lastMessageTime = DateTime.UtcNow;
 
                 int count = 0;

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,10 +32,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -51,33 +52,33 @@ namespace Opc.Ua.Sample.Controls
         {
             MaxMessageCount = 10;
 
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
 
             ItemsLV.Sorting = SortOrder.Descending;
             m_SessionNotification = new NotificationEventHandler(Session_Notification);
         }
-		#endregion
+        #endregion
 
         #region Private Fields
         private Session m_session;
         private Subscription m_subscription;
         private NotificationEventHandler m_SessionNotification;
         private int m_maxMessageCount;
-        
+
         /// <summary>
-		/// The columns to display in the control.
-		/// </summary>
-		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Subscription",  HorizontalAlignment.Left,   null   },
-			new object[] { "Message ID",    HorizontalAlignment.Center, null   },
-			new object[] { "Publish Time",  HorizontalAlignment.Center, null   },
-			new object[] { "Notifications", HorizontalAlignment.Center, null   },
-			new object[] { "Data Changes",  HorizontalAlignment.Center, null   },
-			new object[] { "EventTypes",    HorizontalAlignment.Center, null   }
-		};
-		#endregion
+        /// The columns to display in the control.
+        /// </summary>
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Subscription",  HorizontalAlignment.Left,   null   },
+            new object[] { "Message ID",    HorizontalAlignment.Center, null   },
+            new object[] { "Publish Time",  HorizontalAlignment.Center, null   },
+            new object[] { "Notifications", HorizontalAlignment.Center, null   },
+            new object[] { "Data Changes",  HorizontalAlignment.Center, null   },
+            new object[] { "EventTypes",    HorizontalAlignment.Center, null   }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -85,7 +86,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public int MaxMessageCount
         {
-            get { return m_maxMessageCount;  }
+            get { return m_maxMessageCount; }
             set { m_maxMessageCount = value; }
         }
 
@@ -132,8 +133,8 @@ namespace Opc.Ua.Sample.Controls
             if (m_session == null)
             {
                 return;
-            }                     
-                        
+            }
+
             List<ItemData> tags = new List<ItemData>();
 
             // display only items for current subscription.
@@ -156,26 +157,26 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
             }
-            
+
             // update control.
             Update(tags);
         }
         #endregion
-        
+
         #region ItemData Class
         /// <summary>
         /// Stores the data associated with a list view item.
         /// </summary>
         public class ItemData
         {
-            public Subscription        Subscription;
+            public Subscription Subscription;
             public NotificationMessage NotificationMessage;
 
             public ItemData(
-                Subscription        subscription,
+                Subscription subscription,
                 NotificationMessage notificationMessage)
             {
-                Subscription        = subscription;
+                Subscription = subscription;
                 NotificationMessage = notificationMessage;
             }
         }
@@ -184,11 +185,11 @@ namespace Opc.Ua.Sample.Controls
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
+        {
             if (m_session != null)
             {
-                OptionsMI.Enabled   = true;
-                ClearMI.Enabled     = true;
+                OptionsMI.Enabled = true;
+                ClearMI.Enabled = true;
                 RepublishMI.Enabled = m_subscription != null;
 
                 if (clickedItem != null)
@@ -197,28 +198,28 @@ namespace Opc.Ua.Sample.Controls
 
                     if (itemData != null)
                     {
-                        ViewMI.Enabled   = true;
+                        ViewMI.Enabled = true;
                         DeleteMI.Enabled = true;
                     }
                 }
             }
-		}
+        }
 
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             ItemData itemData = item as ItemData;
 
-			if (itemData == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+            if (itemData == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
-			listItem.SubItems[0].Text  = String.Format("{0}", itemData.Subscription.DisplayName);
-			listItem.SubItems[1].Text  = String.Format("{0}", itemData.NotificationMessage.SequenceNumber);
-			listItem.SubItems[2].Text  = String.Format("{0:HH:mm:ss.fff}", itemData.NotificationMessage.PublishTime.ToLocalTime());
-			
+            listItem.SubItems[0].Text = String.Format("{0}", itemData.Subscription.DisplayName);
+            listItem.SubItems[1].Text = String.Format("{0}", itemData.NotificationMessage.SequenceNumber);
+            listItem.SubItems[2].Text = String.Format("{0:HH:mm:ss.fff}", itemData.NotificationMessage.PublishTime.ToLocalTime());
+
             int events = 0;
             int datachanges = 0;
             int notifications = 0;
@@ -247,23 +248,23 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            listItem.SubItems[3].Text  = String.Format("{0}", notifications);
-            listItem.SubItems[4].Text  = String.Format("{0}", datachanges);
-            listItem.SubItems[5].Text  = String.Format("{0}", events);
+            listItem.SubItems[3].Text = String.Format("{0}", notifications);
+            listItem.SubItems[4].Text = String.Format("{0}", datachanges);
+            listItem.SubItems[5].Text = String.Format("{0}", events);
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
-		#endregion
+        #endregion
 
         private void Update(List<ItemData> tags)
         {
             if (tags.Count > MaxMessageCount)
             {
-                tags.RemoveRange(MaxMessageCount, tags.Count-MaxMessageCount);
+                tags.RemoveRange(MaxMessageCount, tags.Count - MaxMessageCount);
             }
-                            
+
             BeginUpdate();
-            
+
             foreach (ItemData tag in tags)
             {
                 AddItem(tag);
@@ -283,7 +284,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 return;
             }
-            
+
             try
             {
                 if (m_subscription != null)
@@ -306,7 +307,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -317,7 +318,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -332,7 +333,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -344,7 +345,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -367,7 +368,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

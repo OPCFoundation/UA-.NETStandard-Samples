@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -43,6 +43,8 @@ using System.ServiceModel.Channels;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -67,7 +69,7 @@ namespace Opc.Ua.Sample.Controls
             AggregateCB.Items.Add(BrowseNames.AggregateFunction_Count);
             AggregateCB.Items.Add(BrowseNames.AggregateFunction_Maximum);
             AggregateCB.Items.Add(BrowseNames.AggregateFunction_Minimum);
-            AggregateCB.Items.Add(BrowseNames.AggregateFunction_Total);         
+            AggregateCB.Items.Add(BrowseNames.AggregateFunction_Total);
         }
 
         private enum ReadType
@@ -82,17 +84,17 @@ namespace Opc.Ua.Sample.Controls
         private NodeId m_nodeId;
         private HistoryReadResult m_result;
         private int m_index;
-        
+
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public bool ShowDialog(Session session, NodeId nodeId)
+        public async Task<bool> ShowDialogAsync(Session session, NodeId nodeId, CancellationToken ct = default)
         {
             m_session = session;
             m_nodeId = nodeId;
 
             // update the title.
-            string displayText = session.NodeCache.GetDisplayText(nodeId);
+            string displayText = await session.NodeCache.GetDisplayTextAsync(nodeId, ct);
 
             if (!String.IsNullOrEmpty(displayText))
             {
@@ -104,7 +106,7 @@ namespace Opc.Ua.Sample.Controls
 
             try
             {
-                startTime = ReadFirstDate().ToLocalTime(); 
+                startTime = (await ReadFirstDateAsync(ct)).ToLocalTime();
             }
             catch (Exception)
             {
@@ -115,7 +117,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 startTime = StartTimeDP.MinDate;
             }
-            
+
             ReadTypeCB.SelectedItem = ReadType.Raw;
             StartTimeDP.Value = startTime;
             StartTimeCK.Checked = true;
@@ -134,7 +136,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 return false;
             }
-                       
+
             return true;
         }
 
@@ -182,8 +184,8 @@ namespace Opc.Ua.Sample.Controls
                 ResultsLV.Columns[ii].Width = -2;
             }
         }
-        
-        private void ReleaseContinuationPoints()
+
+        private async Task ReleaseContinuationPointsAsync(CancellationToken ct = default)
         {
             ReadRawModifiedDetails details = new ReadRawModifiedDetails();
 
@@ -198,17 +200,16 @@ namespace Opc.Ua.Sample.Controls
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Source,
                 true,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -218,7 +219,7 @@ namespace Opc.Ua.Sample.Controls
             ShowResults();
         }
 
-        private DateTime ReadFirstDate()
+        private async Task<DateTime> ReadFirstDateAsync(CancellationToken ct = default)
         {
             ReadRawModifiedDetails details = new ReadRawModifiedDetails();
             details.StartTime = new DateTime(1970, 1, 1);
@@ -233,17 +234,16 @@ namespace Opc.Ua.Sample.Controls
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Source,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -266,14 +266,16 @@ namespace Opc.Ua.Sample.Controls
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
-                m_session.HistoryRead(
+                response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(details),
                     TimestampsToReturn.Source,
                     true,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                results = response.Results;
+                diagnosticInfos = response.DiagnosticInfos;
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -282,7 +284,7 @@ namespace Opc.Ua.Sample.Controls
             return startTime;
         }
 
-        private void ReadRaw(bool isReadModified)
+        private async Task ReadRawAsync(bool isReadModified, CancellationToken ct = default)
         {
             ReadRawModifiedDetails details = new ReadRawModifiedDetails();
             details.StartTime = DateTime.MinValue;
@@ -317,36 +319,36 @@ namespace Opc.Ua.Sample.Controls
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Source,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-            
+
             if (StatusCode.IsBad(results[0].StatusCode))
             {
                 throw new ServiceResultException(results[0].StatusCode);
             }
 
             m_result = results[0];
-       
+
             ShowResults();
         }
 
-        private void ReadAtTime()
+        private Task ReadAtTimeAsync(CancellationToken ct = default)
         {
+            return Task.CompletedTask;
         }
 
-        private void ReadProcessed()
+        private async Task ReadProcessedAsync(CancellationToken ct = default)
         {
             ReadProcessedDetails details = new ReadProcessedDetails();
             details.StartTime = StartTimeDP.Value.ToUniversalTime();
@@ -379,17 +381,16 @@ namespace Opc.Ua.Sample.Controls
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Source,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -404,34 +405,31 @@ namespace Opc.Ua.Sample.Controls
             ShowResults();
         }
 
-        private void Read()
+        private Task ReadAsync(CancellationToken ct = default)
         {
             switch ((ReadType)ReadTypeCB.SelectedItem)
             {
                 case ReadType.Raw:
                 {
-                    ReadRaw(false);
-                    break;
+                    return ReadRawAsync(false, ct);
                 }
 
                 case ReadType.Modified:
                 {
-                    ReadRaw(true);
-                    break;
+                    return ReadRawAsync(true, ct);
                 }
 
                 case ReadType.AtTime:
                 {
-                    ReadAtTime();
-                    break;
+                    return ReadAtTimeAsync(ct);
                 }
 
                 case ReadType.Processed:
                 {
-                    ReadProcessed();
-                    break;
+                    return ReadProcessedAsync(ct);
                 }
             }
+            return Task.CompletedTask;
         }
 
         private void GoBTN_Click(object sender, EventArgs e)
@@ -442,7 +440,7 @@ namespace Opc.Ua.Sample.Controls
                 ResultsLV.Items.Clear();
                 m_result = null;
 
-                Read();
+                ReadAsync();
             }
             catch (Exception exception)
             {
@@ -454,7 +452,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                Read();
+                ReadAsync();
             }
             catch (Exception exception)
             {
@@ -462,11 +460,11 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void StopBTN_Click(object sender, EventArgs e)
+        private async void StopBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                ReleaseContinuationPoints();
+                await ReleaseContinuationPointsAsync();
             }
             catch (Exception exception)
             {
@@ -474,13 +472,13 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ReadTypeCB_SelectedIndexChanged(object sender, EventArgs e)
+        private async void ReadTypeCB_SelectedIndexChangedAsync(object sender, EventArgs e)
         {
             try
             {
-                ReleaseContinuationPoints();
+                await ReleaseContinuationPointsAsync();
             }
-            catch (Exception)
+            catch
             {
                 // ignore is ok.
             }

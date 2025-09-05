@@ -86,7 +86,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (index > 0)
             {
-                Name = Name.Substring(index+1);
+                Name = Name.Substring(index + 1);
             }
         }
 
@@ -129,7 +129,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (ResourceInfo.Assembly != null)
             {
-                return new StreamReader(ResourceInfo.Assembly.GetManifestResourceStream(ResourceInfo.ResourcePath), Encoding.UTF8); 
+                return new StreamReader(ResourceInfo.Assembly.GetManifestResourceStream(ResourceInfo.ResourcePath), Encoding.UTF8);
             }
 
             return null;
@@ -169,7 +169,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// The period of the simulated data.
         /// </summary>
         public double Period { get; set; }
-        
+
         /// <summary>
         /// Whether the simulation is running.
         /// </summary>
@@ -194,7 +194,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// The last the dataset was loaded from its source.
         /// </summary>
         public DateTime LastLoadTime { get; set; }
-                
+
         /// <summary>
         /// Whether the source is perisistent and needs to be reloaded.
         /// </summary>
@@ -224,7 +224,7 @@ namespace Quickstarts.HistoricalAccessServer
             public string ResourcePath { get; set; }
         }
     }
-    
+
     /// <summary>
     /// The types of simulations.
     /// </summary>

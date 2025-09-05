@@ -53,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
         #endregion
-                
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
@@ -66,9 +66,9 @@ namespace Opc.Ua.Sample.Controls
             {
                 return false;
             }
-            
+
             value = (FilterOperator)OperatorCB.SelectedItem;
-            
+
             return true;
         }
         #endregion

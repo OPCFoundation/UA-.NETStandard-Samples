@@ -98,7 +98,7 @@ namespace Opc.Ua.Sample.Controls
             this.BackBTN.TabIndex = 3;
             this.BackBTN.Text = "< Back";
             this.BackBTN.UseVisualStyleBackColor = true;
-            this.BackBTN.Click += new System.EventHandler(this.MoveBTN_Click);
+            this.BackBTN.Click += new System.EventHandler(this.MoveBTN_ClickAsync);
             // 
             // CancelBTN
             // 
@@ -121,7 +121,7 @@ namespace Opc.Ua.Sample.Controls
             this.NextBTN.TabIndex = 2;
             this.NextBTN.Text = "Next >";
             this.NextBTN.UseVisualStyleBackColor = true;
-            this.NextBTN.Click += new System.EventHandler(this.MoveBTN_Click);
+            this.NextBTN.Click += new System.EventHandler(this.MoveBTN_ClickAsync);
             // 
             // ReadBTN
             // 
@@ -132,7 +132,7 @@ namespace Opc.Ua.Sample.Controls
             this.ReadBTN.TabIndex = 4;
             this.ReadBTN.Text = "Read";
             this.ReadBTN.UseVisualStyleBackColor = true;
-            this.ReadBTN.Click += new System.EventHandler(this.ReadMI_Click);
+            this.ReadBTN.Click += new System.EventHandler(this.ReadMI_ClickAsync);
             // 
             // SplitterPN
             // 
@@ -173,7 +173,7 @@ namespace Opc.Ua.Sample.Controls
             this.BrowseCTRL.SessionTreeCtrl = null;
             this.BrowseCTRL.Size = new System.Drawing.Size(291, 392);
             this.BrowseCTRL.TabIndex = 1;
-            this.BrowseCTRL.ItemsSelected += new Opc.Ua.Sample.Controls.NodesSelectedEventHandler(this.BrowseCTRL_ItemsSelected);
+            this.BrowseCTRL.ItemsSelected += new Opc.Ua.Sample.Controls.NodesSelectedEventHandler(this.BrowseCTRL_ItemsSelectedAsync);
             // 
             // ReadResultsCTRL
             // 

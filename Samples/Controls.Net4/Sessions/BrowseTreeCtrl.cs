@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -48,7 +50,7 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
             m_references = new ReferenceDescriptionCollection();
-            m_BrowserMoreReferences = new BrowserEventHandler(Browser_MoreReferences);
+            m_BrowserMoreReferences = new BrowserEventHandler(Browser_MoreReferencesAsync);
         }
         #endregion
 
@@ -66,14 +68,14 @@ namespace Opc.Ua.Sample.Controls
         private BrowserEventHandler m_BrowserMoreReferences;
         private SessionTreeCtrl m_SessionTreeCtrl;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// The control used to display the address space for a session.
         /// </summary>
         public SessionTreeCtrl SessionTreeCtrl
         {
-            get { return m_SessionTreeCtrl;  }
+            get { return m_SessionTreeCtrl; }
             set { m_SessionTreeCtrl = value; }
         }
 
@@ -83,32 +85,32 @@ namespace Opc.Ua.Sample.Controls
         [DefaultValue(false)]
         public bool AllowPick
         {
-            get { return m_allowPick;  }
+            get { return m_allowPick; }
             set { m_allowPick = value; }
         }
-        
+
         /// <summary>
         /// Whether references should be displayed in the control.
         /// </summary>
         [DefaultValue(false)]
         public bool ShowReferences
         {
-            get { return m_showReferences;  }
+            get { return m_showReferences; }
             set { m_showReferences = value; }
         }
-        
+
         /// <summary>
         /// Whether references should be displayed in the control.
         /// </summary>
         public ReferenceDescriptionCollection SelectedReferences
         {
-            get 
-            {     
+            get
+            {
                 return m_references;
             }
 
-            set 
-            { 
+            set
+            {
                 m_references = value;
 
                 if (m_references == null)
@@ -123,16 +125,16 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public AttributeListCtrl AttributesCtrl
         {
-            get { return m_AttributesCtrl;  }
+            get { return m_AttributesCtrl; }
             set { m_AttributesCtrl = value; }
         }
-        
+
         /// <summary>
         /// Raised when nodes are selected in the control.
         /// </summary>
         public event NodesSelectedEventHandler ItemsSelected
         {
-            add    { m_ItemsSelected += value; }
+            add { m_ItemsSelected += value; }
             remove { m_ItemsSelected -= value; }
         }
 
@@ -141,7 +143,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public event MethodCalledEventHandler MethodCalled
         {
-            add    { m_MethodCalled += value; }
+            add { m_MethodCalled += value; }
             remove { m_MethodCalled -= value; }
         }
 
@@ -161,13 +163,13 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public void SetRoot(Browser browser, NodeId rootId)
-        {     
+        public async Task SetRootAsync(Browser browser, NodeId rootId, CancellationToken ct = default)
+        {
             Clear();
-            
+
             ShowReferencesMI.Checked = m_showReferences;
-            
-            m_rootId  = rootId;
+
+            m_rootId = rootId;
             m_browser = browser;
 
             if (m_browser != null)
@@ -188,7 +190,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_browser != null)
             {
-                INode node = m_browser.Session.NodeCache.Find(m_rootId);
+                INode node = await m_browser.Session.NodeCache.FindAsync(m_rootId, ct);
 
                 if (node == null)
                 {
@@ -196,53 +198,53 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 ReferenceDescription reference = new ReferenceDescription();
-                
+
                 reference.ReferenceTypeId = ReferenceTypeIds.References;
-                reference.IsForward       = true;
-                reference.NodeId          = node.NodeId;
-                reference.NodeClass       = (NodeClass)node.NodeClass;
-                reference.BrowseName      = node.BrowseName;
-                reference.DisplayName     = node.DisplayName;
-                reference.TypeDefinition  = null;
-                                
+                reference.IsForward = true;
+                reference.NodeId = node.NodeId;
+                reference.NodeClass = (NodeClass)node.NodeClass;
+                reference.BrowseName = node.BrowseName;
+                reference.DisplayName = node.DisplayName;
+                reference.TypeDefinition = null;
+
                 string text = GetTargetText(reference);
-                string icon = GuiUtils.GetTargetIcon(m_browser.Session as Session, reference);
+                string icon = await GuiUtils.GetTargetIconAsync(m_browser.Session as Session, reference, ct);
 
                 TreeNode root = AddNode(null, reference, text, icon);
                 root.Nodes.Add(new TreeNode());
                 root.Expand();
             }
         }
-                
+
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public void SetRoot(Session session, NodeId rootId)
+        public Task SetRootAsync(Session session, NodeId rootId, CancellationToken ct = default)
         {
-            SetRoot(new Browser(session), rootId);
+            return SetRootAsync(new Browser(session), rootId, ct);
         }
 
         /// <summary>
         /// Sets the view for the control.
         /// </summary>
-        public void SetView(Session session, BrowseViewType viewType, NodeId viewId)
-        {            
+        public Task SetViewAsync(Session session, BrowseViewType viewType, NodeId viewId, CancellationToken ct = default)
+        {
             Clear();
 
             // check if session is connected.
             if (session == null || !session.Connected)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             Browser browser = new Browser(session);
 
-            browser.BrowseDirection   = BrowseDirection.Forward;
-            browser.ReferenceTypeId   = null;
-            browser.IncludeSubtypes   = true;
-            browser.NodeClassMask     = 0;
+            browser.BrowseDirection = BrowseDirection.Forward;
+            browser.ReferenceTypeId = null;
+            browser.IncludeSubtypes = true;
+            browser.NodeClassMask = 0;
             browser.ContinueUntilDone = false;
-            
+
             NodeId rootId = Objects.RootFolder;
             ShowReferences = false;
 
@@ -305,8 +307,8 @@ namespace Opc.Ua.Sample.Controls
                     break;
                 }
             }
-            
-            SetRoot(browser, rootId);
+
+            return SetRootAsync(browser, rootId, ct);
         }
 
         /// <summary>
@@ -317,249 +319,249 @@ namespace Opc.Ua.Sample.Controls
             get { return m_rootId; }
         }
         #endregion
-        
+
         #region Overridden Members
-        /// <see cref="BaseTreeCtrl.BeforeExpand" />
-        protected override bool BeforeExpand(TreeNode clickedNode)
+        /// <see cref="BaseTreeCtrl.BeforeExpandAsync" />
+        protected override Task<bool> BeforeExpandAsync(TreeNode clickedNode, CancellationToken ct = default)
         {
             // check if a placeholder child is present.
             if (clickedNode.Nodes.Count == 1 && clickedNode.Nodes[0].Text == String.Empty)
             {
                 // clear dummy children.
                 clickedNode.Nodes.Clear();
-                
+
                 // do nothing if an error is detected.
                 if (m_browser.Session.KeepAliveStopped)
                 {
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 // browse.
-                return Browse(clickedNode);
+                return BrowseAsync(clickedNode, ct);
             }
 
             // do not cancel expand.
-            return false;
+            return Task.FromResult(false);
         }
 
         /// <see cref="BaseTreeCtrl.EnableMenuItems" />
-        protected override void EnableMenuItems(TreeNode clickedNode)
+        protected override async void EnableMenuItems(TreeNode clickedNode)
         {
-            BrowseOptionsMI.Enabled   = true;
-            ShowReferencesMI.Enabled  = true;    
-            SelectMI.Visible          = m_allowPick;
-            SelectSeparatorMI.Visible = m_allowPick;
-
-            if (clickedNode != null)
+            try
             {
-                // do nothing if an error is detected.
-                if (m_browser.Session.KeepAliveStopped)
+                BrowseOptionsMI.Enabled = true;
+                ShowReferencesMI.Enabled = true;
+                SelectMI.Visible = m_allowPick;
+                SelectSeparatorMI.Visible = m_allowPick;
+
+                if (clickedNode != null)
                 {
-                    return;
-                }
-
-                SelectMI.Enabled         = true;
-                SelectItemMI.Enabled     = true;
-                SelectChildrenMI.Enabled = clickedNode.Nodes.Count > 0;
-                BrowseRefreshMI.Enabled  = true;
-
-                ReferenceDescription reference = clickedNode.Tag as ReferenceDescription;
-
-                if (reference != null)
-                {
-                    BrowseMI.Enabled         = (reference.NodeId != null && !reference.NodeId.IsAbsolute);
-                    ViewAttributesMI.Enabled = true;
-
-                    NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_browser.Session.NamespaceUris);
-
-                    INode node = m_browser.Session.ReadNode(nodeId);
-    
-                    byte accessLevel = 0;
-                    byte eventNotifier = 0;
-                    bool executable = false;
-
-                    VariableNode variableNode = node as VariableNode;
-
-                    if (variableNode != null)
+                    // do nothing if an error is detected.
+                    if (m_browser.Session.KeepAliveStopped)
                     {
-                        accessLevel = variableNode.UserAccessLevel;
-                    }
-                    
-                    ObjectNode objectNode = node as ObjectNode;
-
-                    if (objectNode != null)
-                    {
-                        eventNotifier = objectNode.EventNotifier;
-                    }
-                    
-                    ViewNode viewNode = node as ViewNode;
-
-                    if (viewNode != null)
-                    {
-                        eventNotifier = viewNode.EventNotifier;
-                    }
-                    
-                    MethodNode methodNode = node as MethodNode;
-
-                    if (methodNode != null)
-                    {
-                        executable = methodNode.UserExecutable;
-                    }
-                    
-                    ReadMI.Visible         = false;
-                    HistoryReadMI.Visible   = false;
-                    WriteMI.Visible         = false;
-                    HistoryUpdateMI.Visible = false;
-                    EncodingsMI.Visible     = false;
-                    SubscribeMI.Visible     = false;
-                    CallMI.Visible          = false;
-
-                    if (accessLevel != 0)
-                    {
-                        ReadMI.Visible          = true;
-                        HistoryReadMI.Visible   = true;
-                        WriteMI.Visible         = true;
-                        HistoryUpdateMI.Visible = true;
-                        EncodingsMI.Visible     = true;
-                        SubscribeMI.Visible     = m_SessionTreeCtrl != null;
-
-                        if ((accessLevel & (byte)AccessLevels.CurrentRead) != 0)
-                        {
-                            ReadMI.Enabled         = true;
-                            EncodingsMI.Enabled    = true;
-                            SubscribeMI.Enabled    = true;
-                            SubscribeNewMI.Enabled = true;
-                        }
-
-                        if ((accessLevel & (byte)AccessLevels.CurrentWrite) != 0)
-                        {
-                            WriteMI.Enabled     = true;
-                            EncodingsMI.Enabled = true;
-                        }
-
-                        if ((accessLevel & (byte)AccessLevels.HistoryRead) != 0)
-                        {
-                            HistoryReadMI.Enabled = true;
-                        }
-
-                        if ((accessLevel & (byte)AccessLevels.HistoryWrite) != 0)
-                        {
-                            HistoryUpdateMI.Enabled = true;
-                        }
-                    }
-                    
-                    if (eventNotifier != 0)
-                    {
-                        HistoryReadMI.Visible   = true;
-                        HistoryUpdateMI.Visible = true;
-                        SubscribeMI.Visible     = true;
-                        
-                        if ((eventNotifier & (byte)EventNotifiers.HistoryRead) != 0)
-                        {
-                            HistoryReadMI.Enabled = true;
-                        }
-
-                        if ((eventNotifier & (byte)EventNotifiers.HistoryWrite) != 0)
-                        {
-                            HistoryUpdateMI.Enabled = true;
-                        }
-
-                        SubscribeMI.Enabled    = (eventNotifier & (byte)EventNotifiers.SubscribeToEvents) != 0;
-                        SubscribeNewMI.Enabled = SubscribeMI.Enabled;
-                    }
-                    
-                    if (methodNode != null)
-                    {
-                        CallMI.Visible = true;
-                        CallMI.Enabled = executable;
-                    }                   
-                    
-                    if (variableNode != null && EncodingsMI.Enabled)
-                    {
-                        ReferenceDescriptionCollection encodings = m_browser.Session.ReadAvailableEncodings(variableNode.NodeId);
-
-                        if (encodings.Count == 0)
-                        {
-                            EncodingsMI.Visible = false;
-                        }
+                        return;
                     }
 
-                    if (SubscribeMI.Enabled)
+                    SelectMI.Enabled = true;
+                    SelectItemMI.Enabled = true;
+                    SelectChildrenMI.Enabled = clickedNode.Nodes.Count > 0;
+                    BrowseRefreshMI.Enabled = true;
+
+                    ReferenceDescription reference = clickedNode.Tag as ReferenceDescription;
+
+                    if (reference != null)
                     {
-                        while (SubscribeMI.DropDown.Items.Count > 1)
+                        BrowseMI.Enabled = (reference.NodeId != null && !reference.NodeId.IsAbsolute);
+                        ViewAttributesMI.Enabled = true;
+
+                        NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_browser.Session.NamespaceUris);
+
+                        INode node = await m_browser.Session.ReadNodeAsync(nodeId);
+
+                        byte accessLevel = 0;
+                        byte eventNotifier = 0;
+                        bool executable = false;
+
+                        VariableNode variableNode = node as VariableNode;
+
+                        if (variableNode != null)
                         {
-                            SubscribeMI.DropDown.Items.RemoveAt(SubscribeMI.DropDown.Items.Count - 1);
+                            accessLevel = variableNode.UserAccessLevel;
                         }
 
-                        foreach (Subscription subscription in m_browser.Session.Subscriptions)
+                        ObjectNode objectNode = node as ObjectNode;
+
+                        if (objectNode != null)
                         {
-                            if (subscription.Created)
+                            eventNotifier = objectNode.EventNotifier;
+                        }
+
+                        ViewNode viewNode = node as ViewNode;
+
+                        if (viewNode != null)
+                        {
+                            eventNotifier = viewNode.EventNotifier;
+                        }
+
+                        MethodNode methodNode = node as MethodNode;
+
+                        if (methodNode != null)
+                        {
+                            executable = methodNode.UserExecutable;
+                        }
+
+                        ReadMI.Visible = false;
+                        HistoryReadMI.Visible = false;
+                        WriteMI.Visible = false;
+                        HistoryUpdateMI.Visible = false;
+                        SubscribeMI.Visible = false;
+                        CallMI.Visible = false;
+
+                        if (accessLevel != 0)
+                        {
+                            ReadMI.Visible = true;
+                            HistoryReadMI.Visible = true;
+                            WriteMI.Visible = true;
+                            HistoryUpdateMI.Visible = true;
+                            SubscribeMI.Visible = m_SessionTreeCtrl != null;
+
+                            if ((accessLevel & (byte)AccessLevels.CurrentRead) != 0)
                             {
-                                ToolStripItem item = SubscribeMI.DropDown.Items.Add(subscription.DisplayName);
-                                item.Click += new EventHandler(Subscription_Click);
-                                item.Tag = subscription;
+                                ReadMI.Enabled = true;
+                                SubscribeMI.Enabled = true;
+                                SubscribeNewMI.Enabled = true;
+                            }
+
+                            if ((accessLevel & (byte)AccessLevels.CurrentWrite) != 0)
+                            {
+                                WriteMI.Enabled = true;
+                            }
+
+                            if ((accessLevel & (byte)AccessLevels.HistoryRead) != 0)
+                            {
+                                HistoryReadMI.Enabled = true;
+                            }
+
+                            if ((accessLevel & (byte)AccessLevels.HistoryWrite) != 0)
+                            {
+                                HistoryUpdateMI.Enabled = true;
+                            }
+                        }
+
+                        if (eventNotifier != 0)
+                        {
+                            HistoryReadMI.Visible = true;
+                            HistoryUpdateMI.Visible = true;
+                            SubscribeMI.Visible = true;
+
+                            if ((eventNotifier & (byte)EventNotifiers.HistoryRead) != 0)
+                            {
+                                HistoryReadMI.Enabled = true;
+                            }
+
+                            if ((eventNotifier & (byte)EventNotifiers.HistoryWrite) != 0)
+                            {
+                                HistoryUpdateMI.Enabled = true;
+                            }
+
+                            SubscribeMI.Enabled = (eventNotifier & (byte)EventNotifiers.SubscribeToEvents) != 0;
+                            SubscribeNewMI.Enabled = SubscribeMI.Enabled;
+                        }
+
+                        if (methodNode != null)
+                        {
+                            CallMI.Visible = true;
+                            CallMI.Enabled = executable;
+                        }
+
+                        if (SubscribeMI.Enabled)
+                        {
+                            while (SubscribeMI.DropDown.Items.Count > 1)
+                            {
+                                SubscribeMI.DropDown.Items.RemoveAt(SubscribeMI.DropDown.Items.Count - 1);
+                            }
+
+                            foreach (Subscription subscription in m_browser.Session.Subscriptions)
+                            {
+                                if (subscription.Created)
+                                {
+                                    ToolStripItem item = SubscribeMI.DropDown.Items.Add(subscription.DisplayName);
+                                    item.Click += new EventHandler(Subscription_ClickAsync);
+                                    item.Tag = subscription;
+                                }
                             }
                         }
                     }
                 }
             }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
 
         /// <see cref="BaseTreeCtrl.SelectNode" />
-        protected override void SelectNode()
+        protected override async void SelectNode()
         {
-            base.SelectNode();
-            
-            // check if node is selected.
-            if (NodesTV.SelectedNode == null)
+            try
             {
-                return;
-            }
-            
-            m_parent = GetParentOfSelected();
+                base.SelectNode();
 
-            ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
-
-            // update the attributes control.
-            if (m_AttributesCtrl != null)
-            {              
-                if (reference != null)
+                // check if node is selected.
+                if (NodesTV.SelectedNode == null)
                 {
-                    m_AttributesCtrl.Initialize(m_browser.Session as Session, reference.NodeId);
+                    return;
                 }
-                else
+
+                m_parent = GetParentOfSelected();
+
+                ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
+
+                // update the attributes control.
+                if (m_AttributesCtrl != null)
                 {
-                    m_AttributesCtrl.Clear();
-                }
-            }
-                        
-            // check for single reference.
-            if (reference != null)
-            {
-                m_references = new ReferenceDescription[] { reference };
-                return;
-            }
-            
-            // check if reference type folder is selected.
-            NodeId referenceTypeId = NodesTV.SelectedNode.Tag as NodeId;
-
-            if (referenceTypeId != null)
-            {
-                m_references = new ReferenceDescriptionCollection();
-
-                foreach (TreeNode child in NodesTV.SelectedNode.Nodes)
-                {                        
-                    reference = child.Tag as ReferenceDescription;
-
                     if (reference != null)
                     {
-                        m_references.Add(reference);
+                        await m_AttributesCtrl.InitializeAsync(m_browser.Session as Session, reference.NodeId);
+                    }
+                    else
+                    {
+                        m_AttributesCtrl.Clear();
                     }
                 }
-            }      
+
+                // check for single reference.
+                if (reference != null)
+                {
+                    m_references = new ReferenceDescription[] { reference };
+                    return;
+                }
+
+                // check if reference type folder is selected.
+                NodeId referenceTypeId = NodesTV.SelectedNode.Tag as NodeId;
+
+                if (referenceTypeId != null)
+                {
+                    m_references = new ReferenceDescriptionCollection();
+
+                    foreach (TreeNode child in NodesTV.SelectedNode.Nodes)
+                    {
+                        reference = child.Tag as ReferenceDescription;
+
+                        if (reference != null)
+                        {
+                            m_references.Add(reference);
+                        }
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
         #endregion
-        
+
         #region Private Members
         /// <summary>
         /// Returns the parent node of the selected reference.
@@ -587,16 +589,16 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a item to a subscription.
         /// </summary>
-        private void Subscribe(Subscription subscription, ReferenceDescription reference)
-        {    
+        private async Task SubscribeAsync(Subscription subscription, ReferenceDescription reference, CancellationToken ct = default)
+        {
             MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem);
 
-            monitoredItem.DisplayName      = subscription.Session.NodeCache.GetDisplayText(reference);
-            monitoredItem.StartNodeId      = (NodeId)reference.NodeId;
-            monitoredItem.NodeClass        = (NodeClass)reference.NodeClass;
-            monitoredItem.AttributeId      = Attributes.Value;
+            monitoredItem.DisplayName = await subscription.Session.NodeCache.GetDisplayTextAsync(reference, ct);
+            monitoredItem.StartNodeId = (NodeId)reference.NodeId;
+            monitoredItem.NodeClass = (NodeClass)reference.NodeClass;
+            monitoredItem.AttributeId = Attributes.Value;
             monitoredItem.SamplingInterval = 0;
-            monitoredItem.QueueSize        = 1;
+            monitoredItem.QueueSize = 1;
 
             // add condition fields to any event filter.
             EventFilter filter = monitoredItem.Filter as EventFilter;
@@ -604,18 +606,18 @@ namespace Opc.Ua.Sample.Controls
             if (filter != null)
             {
                 monitoredItem.AttributeId = Attributes.EventNotifier;
-				monitoredItem.QueueSize = 0;
+                monitoredItem.QueueSize = 0;
             }
-            
+
             subscription.AddItem(monitoredItem);
-            subscription.ApplyChanges();
+            await subscription.ApplyChangesAsync(ct);
         }
 
         /// <summary>
         /// Browses the server address space and adds the targets to the tree.
         /// </summary>
-        private bool Browse(TreeNode node)
-        {      
+        private async Task<bool> BrowseAsync(TreeNode node, CancellationToken ct = default)
+        {
             // save node being browsed.
             m_nodeToBrowse = node;
 
@@ -626,21 +628,21 @@ namespace Opc.Ua.Sample.Controls
             {
                 return false;
             }
-            
+
             // fetch references.
             ReferenceDescriptionCollection references = null;
 
             if (reference != null)
             {
-                references = m_browser.Browse((NodeId)reference.NodeId);
+                references = await m_browser.BrowseAsync((NodeId)reference.NodeId, ct);
             }
             else
             {
-                references = m_browser.Browse(m_rootId);
+                references = await m_browser.BrowseAsync(m_rootId, ct);
             }
-            
+
             // add nodes to tree.
-            AddReferences(m_nodeToBrowse, references);
+            await AddReferencesAsync(m_nodeToBrowse, references, ct);
 
             return false;
         }
@@ -648,7 +650,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a target to the tree control.
         /// </summary>
-        private void AddReferences(TreeNode parent, ReferenceDescriptionCollection references)
+        private async Task AddReferencesAsync(TreeNode parent, ReferenceDescriptionCollection references, CancellationToken ct = default)
         {
             foreach (ReferenceDescription reference in references)
             {
@@ -658,7 +660,7 @@ namespace Opc.Ua.Sample.Controls
                     continue;
                 }
 
-                ReferenceTypeNode typeNode = m_browser.Session.NodeCache.Find(reference.ReferenceTypeId) as ReferenceTypeNode;
+                ReferenceTypeNode typeNode = await m_browser.Session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
                 if (typeNode == null)
                 {
                     Utils.Trace("Reference {0} has invalid reference type id.", reference.DisplayName);
@@ -689,7 +691,7 @@ namespace Opc.Ua.Sample.Controls
                     Utils.Trace("Node class is an unknown or unspecified value, for reference {0}", reference.DisplayName);
                     continue;
                 }
-                
+
                 if (m_browser.NodeClassMask != 0 && m_browser.NodeClassMask != 255)
                 {
                     if (reference.TypeDefinition == null || reference.TypeDefinition.IsNull)
@@ -725,13 +727,13 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 string text = GetTargetText(reference);
-                string icon = GuiUtils.GetTargetIcon(m_browser.Session as Session, reference);
+                string icon = await GuiUtils.GetTargetIconAsync(m_browser.Session as Session, reference, ct);
 
                 TreeNode container = parent;
 
                 if (m_showReferences)
                 {
-                    container = FindReferenceTypeContainer(parent, reference);
+                    container = await FindReferenceTypeContainerAsync(parent, reference, ct);
                 }
 
                 if (container != null)
@@ -741,11 +743,11 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
         }
-        
+
         /// <summary>
         /// Adds a container for the reference type to the tree control.
         /// </summary>
-        private TreeNode FindReferenceTypeContainer(TreeNode parent, ReferenceDescription reference)
+        private async Task<TreeNode> FindReferenceTypeContainerAsync(TreeNode parent, ReferenceDescription reference, CancellationToken ct = default)
         {
             if (parent == null)
             {
@@ -758,7 +760,7 @@ namespace Opc.Ua.Sample.Controls
                 return null;
             }
 
-            ReferenceTypeNode typeNode = m_browser.Session.NodeCache.Find(reference.ReferenceTypeId) as ReferenceTypeNode;
+            ReferenceTypeNode typeNode = await m_browser.Session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
 
             foreach (TreeNode child in parent.Nodes)
             {
@@ -805,7 +807,7 @@ namespace Opc.Ua.Sample.Controls
 
             return null;
         }
-                
+
         /// <summary>
         /// Returns to display text for the target of a reference.
         /// </summary>
@@ -824,52 +826,52 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            return null;  
+            return null;
         }
         #endregion
-        
-        private void BrowseOptionsMI_Click(object sender, EventArgs e)
+
+        private async void BrowseOptionsMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                if (new BrowseOptionsDlg().ShowDialog(m_browser))
-                {                    
+                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser))
+                {
                     if (NodesTV.SelectedNode != null)
                     {
                         NodesTV.SelectedNode.Nodes.Clear();
-                        Browse(NodesTV.SelectedNode);
+                        await BrowseAsync(NodesTV.SelectedNode);
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void BrowseRefreshMI_Click(object sender, EventArgs e)
+        private async void BrowseRefreshMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 if (NodesTV.SelectedNode != null)
                 {
                     NodesTV.SelectedNode.Nodes.Clear();
-                    Browse(NodesTV.SelectedNode);
+                    await BrowseAsync(NodesTV.SelectedNode);
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void Browser_MoreReferences(Browser sender, BrowserEventArgs e)
+        private async void Browser_MoreReferencesAsync(Browser sender, BrowserEventArgs e)
         {
             try
             {
-                AddReferences(m_nodeToBrowse, e.References);
+                await AddReferencesAsync(m_nodeToBrowse, e.References);
                 e.References.Clear();
-                
+
                 if (MessageBox.Show("More references exist. Continue?", "Browse", MessageBoxButtons.YesNo) == DialogResult.No)
                 {
                     e.Cancel = true;
@@ -877,7 +879,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -897,10 +899,10 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
-        
+
         private void SelectChildrenMI_Click(object sender, EventArgs e)
         {
             try
@@ -920,7 +922,7 @@ namespace Opc.Ua.Sample.Controls
                     if (reference != null)
                     {
                         m_references.Add(reference);
-                    }                    
+                    }
                 }
 
                 if (m_references.Count > 0)
@@ -930,17 +932,24 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void ShowReferencesMI_CheckedChanged(object sender, EventArgs e)
+        private async void ShowReferencesMI_CheckedChangedAsync(object sender, EventArgs e)
         {
             m_showReferences = ShowReferencesMI.Checked;
-            SetRoot(m_browser, m_rootId);
+            try
+            {
+                await SetRootAsync(m_browser, m_rootId);
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
 
-        private void ViewAttributesMI_Click(object sender, EventArgs e)
+        private async void ViewAttributesMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -948,23 +957,23 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                    
+
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
-                
+
                 if (reference == null)
                 {
                     return;
                 }
-                
-                new NodeAttributesDlg().ShowDialog(m_browser.Session as Session, reference.NodeId);
+
+                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void CallMI_Click(object sender, EventArgs e)
+        private async void CallMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -974,18 +983,18 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 Session session = m_browser.Session as Session;
-                                    
+
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
-                
+
                 if (reference == null || reference.NodeClass != NodeClass.Method)
                 {
                     return;
                 }
 
                 NodeId methodId = (NodeId)reference.NodeId;
-                                
+
                 reference = NodesTV.SelectedNode.Parent.Tag as ReferenceDescription;
-                
+
                 if (reference == null)
                 {
                     reference = NodesTV.SelectedNode.Parent.Parent.Tag as ReferenceDescription;
@@ -995,7 +1004,7 @@ namespace Opc.Ua.Sample.Controls
                         return;
                     }
                 }
-                                
+
                 NodeId objectId = (NodeId)reference.NodeId;
 
                 if (m_MethodCalled != null)
@@ -1009,15 +1018,15 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                new CallMethodDlg().Show(m_browser.Session as Session, objectId, methodId);
+                await new CallMethodDlg().ShowAsync(m_browser.Session as Session, objectId, methodId);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void ReadMI_Click(object sender, EventArgs e)
+        private async void ReadMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1025,9 +1034,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                                    
+
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
-                
+
                 if (reference == null || (reference.NodeClass & (NodeClass.Variable | NodeClass.VariableType)) == 0)
                 {
                     return;
@@ -1040,23 +1049,23 @@ namespace Opc.Ua.Sample.Controls
 
                 ReadValueId valueId = new ReadValueId();
 
-                valueId.NodeId       = (NodeId)reference.NodeId;
-                valueId.AttributeId  = Attributes.Value;
-                valueId.IndexRange   = null;
+                valueId.NodeId = (NodeId)reference.NodeId;
+                valueId.AttributeId = Attributes.Value;
+                valueId.IndexRange = null;
                 valueId.DataEncoding = null;
 
                 valueIds.Add(valueId);
 
                 // show form.
-                new ReadDlg().Show(session, valueIds);
+                await new ReadDlg().ShowAsync(session, valueIds);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void WriteMI_Click(object sender, EventArgs e)
+        private async void WriteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1064,9 +1073,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                                    
+
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
-                
+
                 if (reference == null || (reference.NodeClass & (NodeClass.Variable | NodeClass.VariableType)) == 0)
                 {
                     return;
@@ -1079,23 +1088,23 @@ namespace Opc.Ua.Sample.Controls
 
                 WriteValue value = new WriteValue();
 
-                value.NodeId      = (NodeId)reference.NodeId;
+                value.NodeId = (NodeId)reference.NodeId;
                 value.AttributeId = Attributes.Value;
-                value.IndexRange  = null;
-                value.Value       = null;
+                value.IndexRange = null;
+                value.Value = null;
 
                 values.Add(value);
 
                 // show form.
-                new WriteDlg().Show(session, values);
+                await new WriteDlg().ShowAsync(session, values);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void SubscribeNewMI_Click(object sender, EventArgs e)
+        private async void SubscribeNewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1112,22 +1121,22 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 if (m_SessionTreeCtrl != null)
-                {                    
-                    Subscription subscription = m_SessionTreeCtrl.CreateSubscription(m_browser.Session as Session);
+                {
+                    Subscription subscription = await m_SessionTreeCtrl.CreateSubscriptionAsync(m_browser.Session as Session);
 
                     if (subscription != null)
                     {
-                        Subscribe(subscription, reference);
+                        await SubscribeAsync(subscription, reference);
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        void Subscription_Click(object sender, EventArgs e)
+        private async void Subscription_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1142,61 +1151,13 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                    
+
                 Subscription subscription = ((ToolStripItem)sender).Tag as Subscription;
 
                 if (subscription != null)
                 {
-                    Subscribe(subscription, reference);
-                }               
-            }
-            catch (Exception exception)
-            {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
-            }
-        }
-
-        private void EncodingsMI_Click(object sender, EventArgs e)
-        {           
-            try
-            {
-                if (NodesTV.SelectedNode == null)
-                {
-                    return;
+                    await SubscribeAsync(subscription, reference);
                 }
-
-                ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
-
-                if (reference == null || (reference.NodeClass & NodeClass.Variable) == 0)
-                {
-                    return;
-                }
-                                
-                new DataEncodingDlg().ShowDialog(m_browser.Session as Session, (NodeId)reference.NodeId);
-            }
-            catch (Exception exception)
-            {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
-            }
-        }
-
-        private void HistoryReadMI_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (NodesTV.SelectedNode == null)
-                {
-                    return;
-                }
-
-                ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
-
-                if (reference == null || reference.NodeId == null || reference.NodeId.IsAbsolute)
-                {
-                    return;
-                }
-
-                new ReadHistoryDlg().ShowDialog(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -1204,7 +1165,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BrowseMI_Click(object sender, EventArgs e)
+        private async void HistoryReadMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1220,15 +1181,39 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                new BrowseDlg().Show(m_browser.Session as Session, (NodeId)reference.NodeId);
+                await new ReadHistoryDlg().ShowDialogAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+
+        private async void BrowseMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (NodesTV.SelectedNode == null)
+                {
+                    return;
+                }
+
+                ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
+
+                if (reference == null || reference.NodeId == null || reference.NodeId.IsAbsolute)
+                {
+                    return;
+                }
+
+                await new BrowseDlg().ShowAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }
-    
+
     #region NodesSelectedEventArgs Class
     /// <summary>
     /// The event arguments provided nodes are picked in the dialog.
@@ -1241,7 +1226,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         internal NodesSelectedEventArgs(ExpandedNodeId sourceId, ReferenceDescriptionCollection references)
         {
-            m_sourceId   = sourceId;
+            m_sourceId = sourceId;
             m_references = references;
         }
         #endregion
@@ -1263,7 +1248,7 @@ namespace Opc.Ua.Sample.Controls
             get { return m_references; }
         }
         #endregion
-        
+
         #region Private Fields
         private ExpandedNodeId m_sourceId;
         private ReferenceDescriptionCollection m_references;
@@ -1274,11 +1259,11 @@ namespace Opc.Ua.Sample.Controls
     /// The delegate used to receive notifications when nodes are picked in the dialog.
     /// </summary>
     public delegate void NodesSelectedEventHandler(object sender, NodesSelectedEventArgs e);
-    #endregion   
-    
+    #endregion
+
     #region BrowseViewType Enumeration
     /// <summary>
-    /// The type views that can be used when browsing the address space. 
+    /// The type views that can be used when browsing the address space.
     /// </summary>
     public enum BrowseViewType
     {
@@ -1322,9 +1307,9 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         ServerDefinedView
     }
-    #endregion 
+    #endregion
 
-    
+
     #region MethodCalledEventArgs Class
     /// <summary>
     /// The event arguments provided nodes are picked in the dialog.
@@ -1337,7 +1322,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         internal MethodCalledEventArgs(Session session, NodeId objectId, NodeId methodId)
         {
-            m_session  = session;
+            m_session = session;
             m_objectId = objectId;
             m_methodId = methodId;
         }
@@ -1345,7 +1330,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Public Properties
         /// <summary>
-        /// The session 
+        /// The session
         /// </summary>
         public Session Session
         {
@@ -1373,11 +1358,11 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public bool Handled
         {
-            get { return m_handled;  }
+            get { return m_handled; }
             set { m_handled = value; }
         }
         #endregion
-        
+
         #region Private Fields
         private Session m_session;
         private NodeId m_objectId;
@@ -1390,5 +1375,5 @@ namespace Opc.Ua.Sample.Controls
     /// The delegate used to receive notifications when nodes are picked in the dialog.
     /// </summary>
     public delegate void MethodCalledEventHandler(object sender, MethodCalledEventArgs e);
-    #endregion   
+    #endregion
 }

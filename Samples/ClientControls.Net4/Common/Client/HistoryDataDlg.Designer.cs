@@ -67,7 +67,7 @@ namespace Opc.Ua.Client.Controls
             this.HistoryDataCTRL.Location = new System.Drawing.Point(0, 0);
             this.HistoryDataCTRL.MaxReturnValues = ((uint)(0u));
             this.HistoryDataCTRL.Name = "HistoryDataCTRL";
-            this.HistoryDataCTRL.NodeId = null;
+            this.HistoryDataCTRL.ClearNodeId();
             this.HistoryDataCTRL.ProcessingInterval = 10000D;
             this.HistoryDataCTRL.ReadType = Opc.Ua.Client.Controls.HistoryDataListView.HistoryReadType.Raw;
             this.HistoryDataCTRL.ReturnBounds = false;

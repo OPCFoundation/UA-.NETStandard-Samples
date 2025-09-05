@@ -87,7 +87,7 @@ namespace Opc.Ua.Sample.Controls
             this.BrowseCTRL.Size = new System.Drawing.Size(696, 372);
             this.BrowseCTRL.TabIndex = 0;
             this.BrowseCTRL.PositionChanged += new System.EventHandler(this.BrowseCTRL_PositionChanged);
-            this.BrowseCTRL.PositionAdded += new System.EventHandler(this.BrowseCTRL_PositionAdded);
+            this.BrowseCTRL.PositionAdded += new System.EventHandler(this.BrowseCTRL_PositionAddedAsync);
             // 
             // TopPN
             // 
@@ -111,7 +111,7 @@ namespace Opc.Ua.Sample.Controls
             this.NodeCTRL.Name = "NodeCTRL";
             this.NodeCTRL.Size = new System.Drawing.Size(642, 21);
             this.NodeCTRL.TabIndex = 2;
-            this.NodeCTRL.SelectedIndexChanged += new System.EventHandler(this.NodeCTRL_SelectedIndexChanged);
+            this.NodeCTRL.SelectedIndexChanged += new System.EventHandler(this.NodeCTRL_SelectedIndexChangedAsync);
             // 
             // ForwardBTN
             // 
@@ -122,7 +122,7 @@ namespace Opc.Ua.Sample.Controls
             this.ForwardBTN.TabIndex = 1;
             this.ForwardBTN.Text = ">";
             this.ForwardBTN.UseVisualStyleBackColor = true;
-            this.ForwardBTN.Click += new System.EventHandler(this.ForwardBTN_Click);
+            this.ForwardBTN.Click += new System.EventHandler(this.ForwardBTN_ClickAsync);
             // 
             // BackBTN
             // 
@@ -132,7 +132,7 @@ namespace Opc.Ua.Sample.Controls
             this.BackBTN.TabIndex = 0;
             this.BackBTN.Text = "<";
             this.BackBTN.UseVisualStyleBackColor = true;
-            this.BackBTN.Click += new System.EventHandler(this.BackBTN_Click);
+            this.BackBTN.Click += new System.EventHandler(this.BackBTN_ClickAsync);
             // 
             // BrowseDlg
             // 

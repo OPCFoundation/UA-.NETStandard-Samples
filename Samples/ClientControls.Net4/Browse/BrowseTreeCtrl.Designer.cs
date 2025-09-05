@@ -95,7 +95,7 @@ namespace Opc.Ua.Client.Controls
             this.RootBTN.TabIndex = 2;
             this.RootBTN.Text = "Root";
             this.RootBTN.UseVisualStyleBackColor = true;
-            this.RootBTN.Click += new System.EventHandler(this.RootBTN_Click);
+            this.RootBTN.Click += new System.EventHandler(this.RootBTN_ClickAsync);
             // 
             // BrowseDirectionCTRL
             // 

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -35,6 +35,8 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -55,16 +57,16 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_baseTypeId;
         private event EventHandler<ReferenceSelectedEventArgs> m_referenceSelectionChanged;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Initializes the control with references starting with the specified based type.
         /// </summary>
-        public void Initialize(Session session, NodeId baseTypeId)
+        public async Task InitializeAsync(ISession session, NodeId baseTypeId, CancellationToken ct = default)
         {
             m_session = session;
             m_baseTypeId = baseTypeId;
@@ -79,10 +81,10 @@ namespace Opc.Ua.Client.Controls
             // recurcively fetch the reference types from the server.
             if (m_session != null)
             {
-                AddReferenceTypes(m_baseTypeId, null);
+                await AddReferenceTypesAsync(m_baseTypeId, null, ct);
             }
         }
-        
+
         /// <summary>
         /// The currently seleected reference type id.
         /// </summary>
@@ -97,7 +99,7 @@ namespace Opc.Ua.Client.Controls
                     return null;
                 }
 
-                return choice.ReferenceType.NodeId;            
+                return choice.ReferenceType.NodeId;
             }
 
             set
@@ -105,7 +107,7 @@ namespace Opc.Ua.Client.Controls
                 for (int ii = 0; ii < ReferenceTypesCB.Items.Count; ii++)
                 {
                     ReferenceTypeChoice choice = ReferenceTypesCB.Items[ii] as ReferenceTypeChoice;
-                    
+
                     if (choice != null && choice.ReferenceType.NodeId == value)
                     {
                         ReferenceTypesCB.SelectedIndex = ii;
@@ -125,8 +127,8 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public event EventHandler<ReferenceSelectedEventArgs> ReferenceSelectionChanged
         {
-            add { m_referenceSelectionChanged += value;  }
-            remove { m_referenceSelectionChanged -= value;  }
+            add { m_referenceSelectionChanged += value; }
+            remove { m_referenceSelectionChanged -= value; }
         }
 
         #region ReferenceSelectedEventArgs Class
@@ -155,12 +157,12 @@ namespace Opc.Ua.Client.Controls
         }
         #endregion
         #endregion
-        
+
         #region ReferenceTypeChoice Class
         /// <summary>
         /// A reference type that may be used as a browse filter.
         /// </summary>
-        private class ReferenceTypeChoice
+        private sealed class ReferenceTypeChoice
         {
             /// <summary>
             /// The text to display in the control.
@@ -172,35 +174,35 @@ namespace Opc.Ua.Client.Controls
                     return "<None>";
                 }
 
-                StringBuilder text = new StringBuilder();   
-             
+                StringBuilder text = new StringBuilder();
+
                 GetPrefix(text);
 
                 if (text.Length > 0)
                 {
                     text.Append("> ");
                 }
-                           
+
                 if (ReferenceType != null)
                 {
                     text.Append(ReferenceType.ToString());
                 }
-                
+
                 return text.ToString();
             }
-            
+
             /// <summary>
             /// Adds a prefix for subtypes.
             /// </summary>
             private void GetPrefix(StringBuilder prefix)
-            {                
+            {
                 if (SuperType != null)
                 {
                     SuperType.GetPrefix(prefix);
-                    prefix.Append("--");                   
+                    prefix.Append("--");
                 }
             }
-            
+
             public ReferenceTypeNode ReferenceType;
             public ReferenceTypeChoice SuperType;
         }
@@ -210,14 +212,14 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the reference types to drop down box.
         /// </summary>
-        private void AddReferenceTypes(ExpandedNodeId referenceTypeId, ReferenceTypeChoice supertype)
+        private async Task AddReferenceTypesAsync(ExpandedNodeId referenceTypeId, ReferenceTypeChoice supertype, CancellationToken ct = default)
         {
             if (referenceTypeId == null) throw new ApplicationException("referenceTypeId");
-                        
+
             try
             {
                 // find reference.
-                ReferenceTypeNode node =  m_session.NodeCache.Find(referenceTypeId) as ReferenceTypeNode;
+                ReferenceTypeNode node = await m_session.NodeCache.FindAsync(referenceTypeId, ct) as ReferenceTypeNode;
 
                 if (node == null)
                 {
@@ -228,16 +230,16 @@ namespace Opc.Ua.Client.Controls
                 ReferenceTypeChoice choice = new ReferenceTypeChoice();
 
                 choice.ReferenceType = node;
-                choice.SuperType     = supertype;
+                choice.SuperType = supertype;
 
                 ReferenceTypesCB.Items.Add(choice);
-                
+
                 // recursively add subtypes.
-                IList<INode> subtypes = m_session.NodeCache.FindReferences(node.NodeId, ReferenceTypeIds.HasSubtype, false, true);
+                IList<INode> subtypes = await m_session.NodeCache.FindReferencesAsync(node.NodeId, ReferenceTypeIds.HasSubtype, false, true, ct);
 
                 foreach (INode subtype in subtypes)
                 {
-                    AddReferenceTypes(subtype.NodeId, choice);
+                    await AddReferenceTypesAsync(subtype.NodeId, choice, ct);
                 }
             }
             catch (Exception e)
@@ -261,11 +263,11 @@ namespace Opc.Ua.Client.Controls
                     {
                         m_referenceSelectionChanged(this, new ReferenceSelectedEventArgs(referenceTypeId));
                     }
-                }                
-			}
+                }
+            }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

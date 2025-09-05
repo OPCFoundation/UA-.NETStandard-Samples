@@ -56,11 +56,11 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         private object m_value;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
@@ -78,7 +78,7 @@ namespace Opc.Ua.Client.Controls
             m_value = Utils.Clone(value);
 
             ValueCTRL.MonitoredItem = monitoredItem;
-            ValueCTRL.ShowValue(m_value);
+            ValueCTRL.ShowValueAsync(m_value);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -88,17 +88,17 @@ namespace Opc.Ua.Client.Controls
             return m_value;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
-        {        
+        {
             try
             {
                 DialogResult = DialogResult.OK;
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

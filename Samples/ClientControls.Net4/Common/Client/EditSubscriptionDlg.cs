@@ -51,7 +51,7 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-      
+
         #region Private Fields
         #endregion
 
@@ -78,12 +78,12 @@ namespace Opc.Ua.Client.Controls
             subscription.LifetimeCount = (uint)LifetimeCountUP.Value;
             subscription.MaxNotificationsPerPublish = (uint)MaxNotificationsPerPublishUP.Value;
             subscription.Priority = (byte)PriorityTB.Value;
-            subscription.PublishingEnabled  = PublishingEnabledCK.Checked;
+            subscription.PublishingEnabled = PublishingEnabledCK.Checked;
 
             return true;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

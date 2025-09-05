@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,6 +33,8 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -51,7 +53,7 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
 
             // add the attributes in numerical order.
-            foreach (uint attributeId in Attributes.GetIdentifiers())
+            foreach (uint attributeId in Attributes.Identifiers)
             {
                 AttributeCB.Items.Add(Attributes.GetBrowseName(attributeId));
             }
@@ -62,7 +64,7 @@ namespace Opc.Ua.Client.Controls
             MonitoringModeCB.Items.Add(MonitoringMode.Sampling);
             MonitoringModeCB.Items.Add(MonitoringMode.Disabled);
             MonitoringModeCB.SelectedIndex = 0;
-            
+
             DeadbandTypeCB.Items.Add(DeadbandType.None);
             DeadbandTypeCB.Items.Add(DeadbandType.Absolute);
             DeadbandTypeCB.Items.Add(DeadbandType.Percent);
@@ -79,7 +81,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Stores information about a data encoding.
         /// </summary>
-        private class EncodingInfo
+        private sealed class EncodingInfo
         {
             public QualifiedName EncodingName;
 
@@ -94,7 +96,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
         #endregion
-      
+
         #region Private Fields
         #endregion
 
@@ -102,12 +104,12 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the monitored item.
         /// </summary>
-        public bool ShowDialog(Session session, MonitoredItem monitoredItem, bool isEvent)
+        public async Task<bool> ShowDialogAsync(ISession session, MonitoredItem monitoredItem, bool isEvent, CancellationToken ct = default)
         {
             if (!monitoredItem.Created)
             {
                 NodeBTN.Session = session;
-                NodeBTN.SelectedNode = monitoredItem.StartNodeId;
+                await NodeBTN.SetSelectedNodeIdAsync(monitoredItem.StartNodeId, ct);
             }
 
             // hide fields not used for events.
@@ -134,7 +136,7 @@ namespace Opc.Ua.Client.Controls
             DeadbandValueUP.Visible = !isEvent;
             TriggerTypeLB.Visible = !isEvent;
             TriggerTypeCB.Visible = !isEvent;
-            
+
             // fill in values.
             SamplingIntervalUP.Value = monitoredItem.SamplingInterval;
             DiscardOldestCK.Checked = monitoredItem.DiscardOldest;
@@ -158,16 +160,16 @@ namespace Opc.Ua.Client.Controls
                 if (!monitoredItem.Created)
                 {
                     // fetch the available encodings for the first node in the list from the server.
-                    IVariableBase variable = session.NodeCache.Find(monitoredItem.StartNodeId) as IVariableBase;
+                    IVariableBase variable = await session.NodeCache.FindAsync(monitoredItem.StartNodeId, ct) as IVariableBase;
 
                     DataEncodingCB.Items.Add(new EncodingInfo());
                     DataEncodingCB.SelectedIndex = 0;
 
                     if (variable != null)
                     {
-                        if (session.NodeCache.IsTypeOf(variable.DataType, Opc.Ua.DataTypeIds.Structure))
+                        if (await session.NodeCache.IsTypeOfAsync(variable.DataType, Opc.Ua.DataTypeIds.Structure, ct))
                         {
-                            foreach (INode encoding in session.NodeCache.Find(variable.DataType, Opc.Ua.ReferenceTypeIds.HasEncoding, false, true))
+                            foreach (INode encoding in await session.NodeCache.FindAsync(variable.DataType, Opc.Ua.ReferenceTypeIds.HasEncoding, false, true, ct))
                             {
                                 DataEncodingCB.Items.Add(new EncodingInfo() { EncodingName = encoding.BrowseName });
 
@@ -194,7 +196,7 @@ namespace Opc.Ua.Client.Controls
             if (!monitoredItem.Created)
             {
                 monitoredItem.StartNodeId = NodeBTN.SelectedNode;
-                monitoredItem.DisplayName = session.NodeCache.GetDisplayText(monitoredItem.StartNodeId);
+                monitoredItem.DisplayName = await session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId, ct);
                 monitoredItem.RelativePath = null;
                 monitoredItem.AttributeId = (uint)(AttributeCB.SelectedIndex + 1);
                 monitoredItem.MonitoringMode = (MonitoringMode)MonitoringModeCB.SelectedItem;
@@ -236,7 +238,7 @@ namespace Opc.Ua.Client.Controls
                 monitoredItem.QueueSize = 0;
                 monitoredItem.Filter = new EventFilter();
             }
-            
+
             return true;
         }
 
@@ -279,7 +281,7 @@ namespace Opc.Ua.Client.Controls
             return (MonitoringMode)MonitoringModeCB.SelectedItem;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

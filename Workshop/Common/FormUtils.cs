@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,8 @@ using System.Text;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Quickstarts
 {
@@ -105,7 +107,7 @@ namespace Quickstarts
         /// <summary>
         /// Gets the display text for the event notifier attribute.
         /// </summary>
-        /// <param name="accessLevel">The event notifier.</param>
+        /// <param name="eventNotifier">The event notifier.</param>
         /// <returns>The event notifier formatted as a string.</returns>
         private static string GetEventNotifierDisplayText(byte eventNotifier)
         {
@@ -147,7 +149,7 @@ namespace Quickstarts
         /// <summary>
         /// Gets the display text for the value rank attribute.
         /// </summary>
-        /// <param name="accessLevel">The value rank.</param>
+        /// <param name="valueRank">The value rank.</param>
         /// <returns>The value rank formatted as a string.</returns>
         private static string GetValueRankDisplayText(int valueRank)
         {
@@ -170,8 +172,9 @@ namespace Quickstarts
         /// <param name="session">The currently active session.</param>
         /// <param name="attributeId">The id of the attribute.</param>
         /// <param name="value">The value of the attribute.</param>
+        /// <param name="ct">A cancellation token to cancel the operation</param>
         /// <returns>The attribute formatted as a string.</returns>
-        public static string GetAttributeDisplayText(Session session, uint attributeId, Variant value)
+        public static async Task<string> GetAttributeDisplayTextAsync(Session session, uint attributeId, Variant value, CancellationToken ct = default)
         {
             if (value == Variant.Null)
             {
@@ -184,7 +187,7 @@ namespace Quickstarts
                 case Attributes.UserAccessLevel:
                 {
                     byte? field = value.Value as byte?;
-                    
+
                     if (field != null)
                     {
                         return GetAccessLevelDisplayText(field.Value);
@@ -207,7 +210,7 @@ namespace Quickstarts
 
                 case Attributes.DataType:
                 {
-                    return session.NodeCache.GetDisplayText(value.Value as NodeId);
+                    return await session.NodeCache.GetDisplayTextAsync(value.Value as NodeId, ct);
                 }
 
                 case Attributes.ValueRank:
@@ -254,7 +257,7 @@ namespace Quickstarts
             }
 
             // use default format.
-            return value.ToString();            
+            return value.ToString();
         }
 
         /// <summary>
@@ -262,7 +265,7 @@ namespace Quickstarts
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <returns>A list of server urls.</returns>
-        public static IList<string> DiscoverServers(ApplicationConfiguration configuration)
+        public static async Task<IList<string>> DiscoverServersAsync(ApplicationConfiguration configuration, CancellationToken ct = default)
         {
             List<string> serverUrls = new List<string>();
 
@@ -273,7 +276,7 @@ namespace Quickstarts
             // Connect to the local discovery server and find the available servers.
             using (DiscoveryClient client = DiscoveryClient.Create(new Uri("opc.tcp://localhost:4840"), endpointConfiguration))
             {
-                ApplicationDescriptionCollection servers = client.FindServers(null);
+                ApplicationDescriptionCollection servers = await client.FindServersAsync(null, ct);
 
                 // populate the drop down list with the discovery URLs for the available servers.
                 for (int ii = 0; ii < servers.Count; ii++)
@@ -288,7 +291,7 @@ namespace Quickstarts
                         string discoveryUrl = servers[ii].DiscoveryUrls[jj];
 
                         // Many servers will use the '/discovery' suffix for the discovery endpoint.
-                        // The URL without this prefix should be the base URL for the server. 
+                        // The URL without this prefix should be the base URL for the server.
                         if (discoveryUrl.EndsWith("/discovery"))
                         {
                             discoveryUrl = discoveryUrl.Substring(0, discoveryUrl.Length - "/discovery".Length);
@@ -311,8 +314,9 @@ namespace Quickstarts
         /// </summary>
         /// <param name="discoveryUrl">The discovery URL.</param>
         /// <param name="useSecurity">if set to <c>true</c> select an endpoint that uses security.</param>
+        /// <param name="ct">The token to cancel the operation with</param>
         /// <returns>The best available endpoint.</returns>
-        public static EndpointDescription SelectEndpoint(string discoveryUrl, bool useSecurity)
+        public static async Task<EndpointDescription> SelectEndpointAsync(string discoveryUrl, bool useSecurity, CancellationToken ct = default)
         {
             // needs to add the '/discovery' back onto non-UA TCP URLs.
             if (!discoveryUrl.StartsWith(Utils.UriSchemeOpcTcp))
@@ -335,9 +339,9 @@ namespace Quickstarts
             // Connect to the server's discovery endpoint and find the available configuration.
             using (DiscoveryClient client = DiscoveryClient.Create(uri, configuration))
             {
-                EndpointDescriptionCollection endpoints = client.GetEndpoints(null);
+                EndpointDescriptionCollection endpoints = await client.GetEndpointsAsync(null, ct);
 
-                // select the best endpoint to use based on the selected URL and the UseSecurity checkbox. 
+                // select the best endpoint to use based on the selected URL and the UseSecurity checkbox.
                 for (int ii = 0; ii < endpoints.Count; ii++)
                 {
                     EndpointDescription endpoint = endpoints[ii];
@@ -367,7 +371,7 @@ namespace Quickstarts
                             selectedEndpoint = endpoint;
                         }
 
-                        // The security level is a relative measure assigned by the server to the 
+                        // The security level is a relative measure assigned by the server to the
                         // endpoints that it returns. Clients should always pick the highest level
                         // unless they have a reason not too.
                         if (endpoint.SecurityLevel > selectedEndpoint.SecurityLevel)
@@ -385,7 +389,7 @@ namespace Quickstarts
             }
 
             // if a server is behind a firewall it may return URLs that are not accessible to the client.
-            // This problem can be avoided by assuming that the domain in the URL used to call 
+            // This problem can be avoided by assuming that the domain in the URL used to call
             // GetEndpoints can be used to access any of the endpoints. This code makes that conversion.
             // Note that the conversion only makes sense if discovery uses the same protocol as the endpoint.
 
@@ -409,10 +413,11 @@ namespace Quickstarts
         /// <param name="session">The session.</param>
         /// <param name="nodesToBrowse">The set of browse operations to perform.</param>
         /// <param name="throwOnError">if set to <c>true</c> a exception will be thrown on an error.</param>
+        /// <param name="ct">A cancellation token to cancel the operation</param>
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection Browse(Session session, BrowseDescriptionCollection nodesToBrowse, bool throwOnError)
+        public static async Task<ReferenceDescriptionCollection> BrowseAsync(ISession session, BrowseDescriptionCollection nodesToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
@@ -422,16 +427,14 @@ namespace Quickstarts
                 while (nodesToBrowse.Count > 0)
                 {
                     // start the browse operation.
-                    BrowseResultCollection results = null;
-                    DiagnosticInfoCollection diagnosticInfos = null;
-
-                    session.Browse(
+                    BrowseResponse response = await session.BrowseAsync(
                         null,
                         null,
                         0,
                         nodesToBrowse,
-                        out results,
-                        out diagnosticInfos);
+                        ct);
+                    BrowseResultCollection results = response.Results;
+                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                     ClientBase.ValidateResponse(results, nodesToBrowse);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -443,7 +446,7 @@ namespace Quickstarts
                         // check for error.
                         if (StatusCode.IsBad(results[ii].StatusCode))
                         {
-                            // this error indicates that the server does not have enough simultaneously active 
+                            // this error indicates that the server does not have enough simultaneously active
                             // continuation points. This request will need to be resent after the other operations
                             // have been completed and their continuation points released.
                             if (results[ii].StatusCode == StatusCodes.BadNoContinuationPoints)
@@ -453,7 +456,7 @@ namespace Quickstarts
 
                             continue;
                         }
-                        
+
                         // check if all references have been fetched.
                         if (results[ii].References.Count == 0)
                         {
@@ -476,12 +479,14 @@ namespace Quickstarts
                     while (continuationPoints.Count > 0)
                     {
                         // continue browse operation.
-                        session.BrowseNext(
+                        BrowseNextResponse response2 = await session.BrowseNextAsync(
                             null,
                             false,
                             continuationPoints,
-                            out results,
-                            out diagnosticInfos);
+                            ct);
+
+                        results = response2.Results;
+                        diagnosticInfos = response2.DiagnosticInfos;
 
                         ClientBase.ValidateResponse(results, continuationPoints);
                         ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
@@ -531,7 +536,7 @@ namespace Quickstarts
                 return null;
             }
         }
-        
+
         /// <summary>
         /// Finds the type of the event for the notification.
         /// </summary>
@@ -567,7 +572,7 @@ namespace Quickstarts
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection Browse(Session session, BrowseDescription nodeToBrowse, bool throwOnError)
+        public static async Task<ReferenceDescriptionCollection> BrowseAsync(ISession session, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
@@ -578,16 +583,15 @@ namespace Quickstarts
                 nodesToBrowse.Add(nodeToBrowse);
 
                 // start the browse operation.
-                BrowseResultCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                session.Browse(
+                BrowseResponse response = await session.BrowseAsync(
                     null,
                     null,
                     0,
                     nodesToBrowse,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                BrowseResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -616,12 +620,14 @@ namespace Quickstarts
                     ByteStringCollection continuationPoints = new ByteStringCollection();
                     continuationPoints.Add(results[0].ContinuationPoint);
 
-                    session.BrowseNext(
+                    BrowseNextResponse response2 = await session.BrowseNextAsync(
                         null,
                         false,
                         continuationPoints,
-                        out results,
-                        out diagnosticInfos);
+                        ct);
+
+                    results = response2.Results;
+                    diagnosticInfos = response2.DiagnosticInfos;
 
                     ClientBase.ValidateResponse(results, continuationPoints);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
@@ -648,10 +654,11 @@ namespace Quickstarts
         /// <param name="session">The session.</param>
         /// <param name="typeId">The NodeId for a type node in the address space.</param>
         /// <param name="throwOnError">if set to <c>true</c> a exception will be thrown on an error.</param>
+        /// <param name="ct">A cancellation token to cancel the operation</param>
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static ReferenceDescriptionCollection BrowseSuperTypes(Session session, NodeId typeId, bool throwOnError)
+        public static async Task<ReferenceDescriptionCollection> BrowseSuperTypesAsync(ISession session, NodeId typeId, bool throwOnError, CancellationToken ct = default)
         {
             ReferenceDescriptionCollection supertypes = new ReferenceDescriptionCollection();
 
@@ -664,10 +671,10 @@ namespace Quickstarts
                 nodeToBrowse.BrowseDirection = BrowseDirection.Inverse;
                 nodeToBrowse.ReferenceTypeId = ReferenceTypeIds.HasSubtype;
                 nodeToBrowse.IncludeSubtypes = false; // more efficient to use IncludeSubtypes=False when possible.
-                nodeToBrowse.NodeClassMask = 0; // the HasSubtype reference already restricts the targets to Types. 
+                nodeToBrowse.NodeClassMask = 0; // the HasSubtype reference already restricts the targets to Types.
                 nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-                ReferenceDescriptionCollection references = Browse(session, nodeToBrowse, throwOnError);
+                ReferenceDescriptionCollection references = await BrowseAsync(session, nodeToBrowse, throwOnError, ct);
 
                 while (references != null && references.Count > 0)
                 {
@@ -682,7 +689,7 @@ namespace Quickstarts
 
                     // get the references for the next level up.
                     nodeToBrowse.NodeId = (NodeId)references[0].NodeId;
-                    references = Browse(session, nodeToBrowse, throwOnError);
+                    references = await BrowseAsync(session, nodeToBrowse, throwOnError, ct);
                 }
 
                 // return complete list.
@@ -707,15 +714,17 @@ namespace Quickstarts
         /// <param name="notification">The notification.</param>
         /// <param name="knownEventTypes">The known event types.</param>
         /// <param name="eventTypeMappings">Mapping between event types and known event types.</param>
+        /// <param name="ct">The cancellation token to cancel the operation with</param>
         /// <returns>
         /// The event object. Null if the notification is not a valid event type.
         /// </returns>
-        public static BaseEventState ConstructEvent(
+        public static async Task<BaseEventState> ConstructEventAsync(
             Session session,
             MonitoredItem monitoredItem,
             EventFieldList notification,
             Dictionary<NodeId, Type> knownEventTypes,
-            Dictionary<NodeId, NodeId> eventTypeMappings)
+            Dictionary<NodeId, NodeId> eventTypeMappings,
+            CancellationToken ct = default)
         {
             // find the event type.
             NodeId eventTypeId = FindEventType(monitoredItem, notification);
@@ -748,7 +757,7 @@ namespace Quickstarts
             if (knownType == null)
             {
                 // browse for the supertypes of the event type.
-                ReferenceDescriptionCollection supertypes = FormUtils.BrowseSuperTypes(session, eventTypeId, false);
+                ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
 
                 // can't do anything with unknown types.
                 if (supertypes == null)
@@ -801,12 +810,14 @@ namespace Quickstarts
         /// <param name="session">An open session with the server to use.</param>
         /// <param name="startNodeId">The starting node for the relative paths.</param>
         /// <param name="namespacesUris">The namespace URIs referenced by the relative paths.</param>
+        /// <param name="ct">A cancellation token to cancel the operation</param>
         /// <param name="relativePaths">The relative paths.</param>
         /// <returns>A collection of local nodes.</returns>
-        public static List<NodeId> TranslateBrowsePaths(
+        public static async Task<List<NodeId>> TranslateBrowsePathsAsync(
             Session session,
             NodeId startNodeId,
             NamespaceTable namespacesUris,
+            CancellationToken ct,
             params string[] relativePaths)
         {
             // build the list of browse paths to follow by parsing the relative paths.
@@ -818,7 +829,7 @@ namespace Quickstarts
                 {
                     BrowsePath browsePath = new BrowsePath();
 
-                    // The relative paths used indexes in the namespacesUris table. These must be 
+                    // The relative paths used indexes in the namespacesUris table. These must be
                     // converted to indexes used by the server. An error occurs if the relative path
                     // refers to a namespaceUri that the server does not recognize.
 
@@ -838,14 +849,14 @@ namespace Quickstarts
             }
 
             // make the call to the server.
-            BrowsePathResultCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            ResponseHeader responseHeader = session.TranslateBrowsePathsToNodeIds(
+            TranslateBrowsePathsToNodeIdsResponse response = await session.TranslateBrowsePathsToNodeIdsAsync(
                 null,
                 browsePaths,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            ResponseHeader responseHeader = response.ResponseHeader;
+            BrowsePathResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             // ensure that the server returned valid results.
             Session.ValidateResponse(results, browsePaths);
@@ -880,7 +891,7 @@ namespace Quickstarts
                     continue;
                 }
 
-                // The targetId is an ExpandedNodeId because it could be node in another server. 
+                // The targetId is an ExpandedNodeId because it could be node in another server.
                 // The ToNodeId function is used to convert a local NodeId stored in a ExpandedNodeId to a NodeId.
                 nodes.Add(ExpandedNodeId.ToNodeId(target.TargetId, session.NamespaceUris));
             }
@@ -893,13 +904,14 @@ namespace Quickstarts
         /// Collects the fields for the type.
         /// </summary>
         /// <param name="session">The session.</param>
-        /// <param name="eventTypeId">The type id.</param>
+        /// <param name="typeId">The type id.</param>
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
-        public static void CollectFieldsForType(Session session, NodeId typeId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds)
+        /// <param name="ct">The cancellation token to cancel the operation with</param>
+        public static async Task CollectFieldsForTypeAsync(Session session, NodeId typeId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             // get the supertypes.
-            ReferenceDescriptionCollection supertypes = FormUtils.BrowseSuperTypes(session, typeId, false);
+            ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
 
             if (supertypes == null)
             {
@@ -912,25 +924,26 @@ namespace Quickstarts
 
             for (int ii = supertypes.Count - 1; ii >= 0; ii--)
             {
-                CollectFields(session, (NodeId)supertypes[ii].NodeId, parentPath, fields, fieldNodeIds, foundNodes);
+                await CollectFieldsAsync(session, (NodeId)supertypes[ii].NodeId, parentPath, fields, fieldNodeIds, foundNodes, ct);
             }
 
             // collect the fields for the selected type.
-            CollectFields(session, typeId, parentPath, fields, fieldNodeIds, foundNodes);
+            await CollectFieldsAsync(session, typeId, parentPath, fields, fieldNodeIds, foundNodes, ct);
         }
 
         /// <summary>
         /// Collects the fields for the instance.
         /// </summary>
         /// <param name="session">The session.</param>
-        /// <param name="eventTypeId">The instance id.</param>
+        /// <param name="instanceId">The instance id.</param>
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
-        public static void CollectFieldsForInstance(Session session, NodeId instanceId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds)
+        /// <param name="ct">The cancellation token to cancel the operation with</param>
+        public static async Task CollectFieldsForInstanceAsync(Session session, NodeId instanceId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
             QualifiedNameCollection parentPath = new QualifiedNameCollection();
-            CollectFields(session, instanceId, parentPath, fields, fieldNodeIds, foundNodes);
+            await CollectFieldsAsync(session, instanceId, parentPath, fields, fieldNodeIds, foundNodes, ct);
         }
 
         /// <summary>
@@ -942,13 +955,15 @@ namespace Quickstarts
         /// <param name="fields">The event fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
         /// <param name="foundNodes">The table of found nodes.</param>
-        private static void CollectFields(
+        /// <param name="ct">The cancellation token to cancel the operation with</param>
+        private static async Task CollectFieldsAsync(
             Session session,
             NodeId nodeId,
             QualifiedNameCollection parentPath,
             SimpleAttributeOperandCollection fields,
             List<NodeId> fieldNodeIds,
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes)
+            Dictionary<NodeId, QualifiedNameCollection> foundNodes,
+            CancellationToken ct = default)
         {
             // find all of the children of the field.
             BrowseDescription nodeToBrowse = new BrowseDescription();
@@ -960,7 +975,7 @@ namespace Quickstarts
             nodeToBrowse.NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable);
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-            ReferenceDescriptionCollection children = FormUtils.Browse(session, nodeToBrowse, false);
+            ReferenceDescriptionCollection children = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
 
             if (children == null)
             {
@@ -1003,7 +1018,7 @@ namespace Quickstarts
                 if (!foundNodes.ContainsKey(targetId))
                 {
                     foundNodes.Add(targetId, browsePath);
-                    CollectFields(session, (NodeId)child.NodeId, browsePath, fields, fieldNodeIds, foundNodes);
+                    await CollectFieldsAsync(session, (NodeId)child.NodeId, browsePath, fields, fieldNodeIds, foundNodes, ct);
                 }
             }
         }

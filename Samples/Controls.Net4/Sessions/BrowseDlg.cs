@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -51,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
             m_SessionClosing = new EventHandler(Session_Closing);
         }
         #endregion
-        
+
         #region Private Fields
         private Session m_session;
         private EventHandler m_SessionClosing;
@@ -61,27 +63,27 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the address space with the specified view
         /// </summary>
-        public void Show(Session session, NodeId startId)
-        {   
-            if (session == null) throw new ArgumentNullException("session");
-            
+        public async Task ShowAsync(Session session, NodeId startId, CancellationToken ct = default)
+        {
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             if (m_session != null)
             {
                 m_session.SessionClosing -= m_SessionClosing;
             }
 
-            m_session = session;            
+            m_session = session;
             m_session.SessionClosing += m_SessionClosing;
-            
-            Browser browser  = new Browser(session);
+
+            Browser browser = new Browser(session);
 
             browser.BrowseDirection = BrowseDirection.Both;
             browser.ContinueUntilDone = true;
             browser.ReferenceTypeId = ReferenceTypeIds.References;
 
-            BrowseCTRL.Initialize(browser, startId);
-            
-            UpdateNavigationBar();
+            await BrowseCTRL.InitializeAsync(browser, startId, ct);
+
+            await UpdateNavigationBarAsync(ct);
 
             Show();
             BringToFront();
@@ -91,15 +93,15 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates the navigation bar with the current positions in the browse control.
         /// </summary>
-        private void UpdateNavigationBar()
+        private async Task UpdateNavigationBarAsync(CancellationToken ct = default)
         {
             int index = 0;
 
             foreach (NodeId nodeId in BrowseCTRL.Positions)
             {
-                Node node = m_session.NodeCache.Find(nodeId) as Node;
+                Node node = await m_session.NodeCache.FindAsync(nodeId, ct) as Node;
 
-                string displayText = m_session.NodeCache.GetDisplayText(node);
+                string displayText = await m_session.NodeCache.GetDisplayTextAsync(node, ct);
 
                 if (index < NodeCTRL.Items.Count)
                 {
@@ -114,16 +116,16 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 index++;
-            }        
-         
+            }
+
             while (index < NodeCTRL.Items.Count)
             {
-                NodeCTRL.Items.RemoveAt(NodeCTRL.Items.Count-1);
+                NodeCTRL.Items.RemoveAt(NodeCTRL.Items.Count - 1);
             }
-                                
+
             NodeCTRL.SelectedIndex = BrowseCTRL.Position;
         }
-        
+
         private void Session_Closing(object sender, EventArgs e)
         {
             if (Object.ReferenceEquals(sender, m_session))
@@ -143,44 +145,44 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_ClickAsync(object sender, EventArgs e)
         {
             try
-            {   
-                BrowseCTRL.Back();
+            {
+                await BrowseCTRL.BackAsync();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void ForwardBTN_Click(object sender, EventArgs e)
+        private async void ForwardBTN_ClickAsync(object sender, EventArgs e)
         {
             try
-            {   
-                BrowseCTRL.Forward();
+            {
+                await BrowseCTRL.ForwardAsync();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void NodeCTRL_SelectedIndexChanged(object sender, EventArgs e)
-        {            
+        private async void NodeCTRL_SelectedIndexChangedAsync(object sender, EventArgs e)
+        {
             try
-            {   
-                BrowseCTRL.SetPosition(NodeCTRL.SelectedIndex);
+            {
+                await BrowseCTRL.SetPositionAsync(NodeCTRL.SelectedIndex);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void BrowseCTRL_PositionChanged(object sender, EventArgs e)
-        { 
+        {
             try
             {
                 if (BrowseCTRL.Position < NodeCTRL.Items.Count)
@@ -190,23 +192,23 @@ namespace Opc.Ua.Sample.Controls
                 else
                 {
                     NodeCTRL.SelectedIndex = -1;
-                }                   
+                }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void BrowseCTRL_PositionAdded(object sender, EventArgs e)
+        private async void BrowseCTRL_PositionAddedAsync(object sender, EventArgs e)
         {
             try
             {
-                UpdateNavigationBar();
+                await UpdateNavigationBarAsync();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

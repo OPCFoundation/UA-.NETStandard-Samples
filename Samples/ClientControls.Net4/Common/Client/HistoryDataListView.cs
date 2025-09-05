@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,9 +30,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
+using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -67,7 +69,7 @@ namespace Opc.Ua.Client.Controls
             ReadTypeCB.Items.Add(HistoryReadType.DeleteModified);
             ReadTypeCB.Items.Add(HistoryReadType.DeleteAtTime);
             ReadTypeCB.SelectedIndex = 0;
-            
+
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Results");
 
@@ -159,9 +161,9 @@ namespace Opc.Ua.Client.Controls
 
         #region AvailableAggregate Class
         /// <summary>
-        /// An aggregate supported by server. 
+        /// An aggregate supported by server.
         /// </summary>
-        private class AvailableAggregate
+        private sealed class AvailableAggregate
         {
             public NodeId NodeId { get; set; }
             public string DisplayName { get; set; }
@@ -177,7 +179,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// A session available in the conntrol.
         /// </summary>
-        private class AvailableSession
+        private sealed class AvailableSession
         {
             public Session Session { get; set; }
 
@@ -192,7 +194,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Stores the metadata about a property with history to read or update.
         /// </summary>
-        private class PropertyWithHistory
+        private sealed class PropertyWithHistory
         {
             public PropertyWithHistory()
             {
@@ -219,7 +221,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private NodeId m_nodeId;
@@ -236,34 +238,34 @@ namespace Opc.Ua.Client.Controls
         #region Public Members
         /// <summary>
         /// The node id to use.
-        /// </summary>        
+        /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public NodeId NodeId
-        {
-            get 
-            { 
-                return m_nodeId; 
-            }
-            
-            set
-            {
-                m_nodeId = value;
+        public NodeId NodeId => m_nodeId;
 
-                if (m_session != null)
+        public void ClearNodeId()
+        {
+            m_nodeId = null;
+            NodeIdTB.Text = String.Empty;
+        }
+
+        public async Task SetNodeIdAsync(NodeId value, CancellationToken ct = default)
+        {
+            m_nodeId = value;
+
+            if (m_session != null)
+            {
+                NodeIdTB.Text = await m_session.NodeCache.GetDisplayTextAsync(m_nodeId, ct);
+            }
+            else
+            {
+                if (NodeId.IsNull(m_nodeId))
                 {
-                    NodeIdTB.Text = m_session.NodeCache.GetDisplayText(m_nodeId);
+                    NodeIdTB.Text = String.Empty;
                 }
                 else
                 {
-                    if (NodeId.IsNull(m_nodeId))
-                    {
-                        NodeIdTB.Text = String.Empty;
-                    }
-                    else
-                    {
-                        NodeIdTB.Text = m_nodeId.ToString();
-                    }
+                    NodeIdTB.Text = m_nodeId.ToString();
                 }
             }
         }
@@ -446,7 +448,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public void ChangeSession(Session session)
+        public async Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
             if (Object.ReferenceEquals(session, m_session))
             {
@@ -455,7 +457,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_session != null)
             {
-                DeleteSubscription();
+                await DeleteSubscriptionAsync(ct);
                 m_session = null;
             }
 
@@ -472,19 +474,19 @@ namespace Opc.Ua.Client.Controls
             {
                 AggregateCB.Items.Clear();
 
-                ILocalNode node = m_session.NodeCache.Find(ObjectIds.Server_ServerCapabilities_AggregateFunctions) as ILocalNode;
+                ILocalNode node = await m_session.NodeCache.FindAsync(ObjectIds.Server_ServerCapabilities_AggregateFunctions, ct) as ILocalNode;
 
                 if (node != null)
                 {
                     foreach (IReference reference in node.References.Find(ReferenceTypeIds.HierarchicalReferences, false, true, m_session.TypeTree))
                     {
-                        ILocalNode aggregate = m_session.NodeCache.Find(reference.TargetId) as ILocalNode;
+                        ILocalNode aggregate = await m_session.NodeCache.FindAsync(reference.TargetId, ct) as ILocalNode;
 
                         if (aggregate != null && aggregate.TypeDefinitionId == ObjectTypeIds.AggregateFunctionType)
                         {
                             AvailableAggregate item = new AvailableAggregate();
                             item.NodeId = aggregate.NodeId;
-                            item.DisplayName = m_session.NodeCache.GetDisplayText(aggregate);
+                            item.DisplayName = await m_session.NodeCache.GetDisplayTextAsync(aggregate, ct);
                             AggregateCB.Items.Add(item);
                         }
                     }
@@ -507,11 +509,11 @@ namespace Opc.Ua.Client.Controls
                 SubscriptionStateChanged();
             }
         }
-        
+
         /// <summary>
         /// Updates the control after the session has reconnected.
         /// </summary>
-        public void SessionReconnected(Session session)
+        public void SessionReconnected(ISession session)
         {
             m_session = session;
 
@@ -538,18 +540,18 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the node monitored by the control.
         /// </summary>
-        public void ChangeNode(NodeId nodeId)
+        public async Task ChangeNodeAsync(NodeId nodeId, CancellationToken ct = default)
         {
             m_nodeId = nodeId;
             m_configuration = null;
             m_properties = null;
             PropertyCB.Items.Clear();
             m_dataset.Clear();
-            NodeIdTB.Text = m_session.NodeCache.GetDisplayText(m_nodeId);
+            NodeIdTB.Text = await m_session.NodeCache.GetDisplayTextAsync(m_nodeId, ct);
 
             if (!NodeId.IsNull(nodeId))
             {
-                m_properties = FindPropertiesWithHistory();
+                m_properties = await FindPropertiesWithHistoryAsync(ct);
 
                 if (m_properties == null || m_properties.Count <= 1)
                 {
@@ -564,7 +566,7 @@ namespace Opc.Ua.Client.Controls
                     PropertyCB.Visible = true;
                 }
 
-                m_configuration = ReadConfiguration();
+                m_configuration = await ReadConfigurationAsync(ct);
 
                 if (StatusCode.IsBad(m_configuration.Stepped.StatusCode))
                 {
@@ -577,14 +579,14 @@ namespace Opc.Ua.Client.Controls
 
                     if (!m_timesChanged)
                     {
-                        DateTime startTime = ReadFirstDate();
+                        DateTime startTime = await ReadFirstDateAsync(ct);
 
                         if (startTime != DateTime.MinValue)
                         {
                             StartTimeDP.Value = startTime;
                         }
 
-                        DateTime endTime = ReadLastDate();
+                        DateTime endTime = await ReadLastDateAsync(ct);
 
                         if (endTime != DateTime.MinValue)
                         {
@@ -593,7 +595,7 @@ namespace Opc.Ua.Client.Controls
                     }
                 }
             }
-            
+
             if (m_subscription != null)
             {
                 MonitoredItem monitoredItem = new MonitoredItem(m_monitoredItem);
@@ -605,7 +607,7 @@ namespace Opc.Ua.Client.Controls
 
                 monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
 
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync(ct);
                 SubscriptionStateChanged();
             }
         }
@@ -634,7 +636,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void Reset()
         {
-            NodeId = null;
+            ClearNodeId();
             ReadType = HistoryReadType.Raw;
             StartTime = DateTime.MinValue;
             EndTime = DateTime.MinValue;
@@ -651,13 +653,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Shows the configuration.
         /// </summary>
-        public void ShowConfiguration()
+        public async Task ShowConfigurationAsync(CancellationToken ct = default)
         {
             if (m_session != null)
             {
                 if (m_configuration != null)
                 {
-                    new ViewNodeStateDlg().ShowDialog(m_session, m_configuration, null);
+                    await new ViewNodeStateDlg().ShowDialogAsync(m_session, m_configuration, null, ct);
                 }
             }
         }
@@ -703,14 +705,14 @@ namespace Opc.Ua.Client.Controls
                     browsePaths.Add(browsePath);
                 }
 
-                GetBrowsePathFromNodeState(context, rootId, child, browsePath.RelativePath, browsePaths); 
+                GetBrowsePathFromNodeState(context, rootId, child, browsePath.RelativePath, browsePaths);
             }
         }
 
         /// <summary>
         /// Reads the historical configuration for the node.
         /// </summary>
-        private List<PropertyWithHistory> FindPropertiesWithHistory()
+        private async Task<List<PropertyWithHistory>> FindPropertiesWithHistoryAsync(CancellationToken ct = default)
         {
             BrowseDescription nodeToBrowse = new BrowseDescription();
             nodeToBrowse.NodeId = m_nodeId;
@@ -720,7 +722,7 @@ namespace Opc.Ua.Client.Controls
             nodeToBrowse.NodeClassMask = 0;
             nodeToBrowse.ResultMask = (uint)(BrowseResultMask.DisplayName | BrowseResultMask.BrowseName);
 
-            ReferenceDescriptionCollection references = ClientUtils.Browse(m_session, nodeToBrowse, false);
+            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, nodeToBrowse, false, ct);
 
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 
@@ -743,16 +745,15 @@ namespace Opc.Ua.Client.Controls
 
             if (nodesToRead.Count > 0)
             {
-                DataValueCollection values = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                m_session.Read(
+                ReadResponse response = await m_session.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
                     nodesToRead,
-                    out values,
-                    out diagnosticInfos);
+                    ct);
+
+                DataValueCollection values = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(values, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -774,9 +775,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the historical configuration for the node.
         /// </summary>
-        private HistoricalDataConfigurationState ReadConfiguration()
+        private async Task<HistoricalDataConfigurationState> ReadConfigurationAsync(CancellationToken ct = default)
         {
-            // load the defaults for the historical configuration object. 
+            // load the defaults for the historical configuration object.
             HistoricalDataConfigurationState configuration = new HistoricalDataConfigurationState(null);
 
             configuration.Definition = new PropertyState<string>(configuration);
@@ -793,7 +794,7 @@ namespace Opc.Ua.Client.Controls
                 Opc.Ua.BrowseNames.HAConfiguration,
                 null,
                 false);
-            
+
             // get the browse paths to query.
             RelativePathElement element = new RelativePathElement();
             element.ReferenceTypeId = Opc.Ua.ReferenceTypeIds.HasHistoricalConfiguration;
@@ -814,14 +815,15 @@ namespace Opc.Ua.Client.Controls
                 pathsToTranslate);
 
             // translate browse paths.
-            BrowsePathResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            m_session.TranslateBrowsePathsToNodeIds(
+            TranslateBrowsePathsToNodeIdsResponse response = await m_session.TranslateBrowsePathsToNodeIdsAsync(
                 null,
                 pathsToTranslate,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            BrowsePathResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+
 
             ClientBase.ValidateResponse(results, pathsToTranslate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, pathsToTranslate);
@@ -851,19 +853,19 @@ namespace Opc.Ua.Client.Controls
                     valuesToRead.Add(valueToRead);
                 }
             }
-            
+
             // read the values.
             if (valuesToRead.Count > 0)
             {
-                DataValueCollection values = null;
-
-                m_session.Read(
+                ReadResponse response2 = await m_session.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
                     valuesToRead,
-                    out values,
-                    out diagnosticInfos);
+                    ct);
+
+                DataValueCollection values = response2.Results;
+                diagnosticInfos = response2.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(values, valuesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
@@ -882,7 +884,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the first date in the archive (truncates milliseconds and converts to local).
         /// </summary>
-        private DateTime ReadFirstDate()
+        private async Task<DateTime> ReadFirstDateAsync(CancellationToken ct = default)
         {
             // use the historical data configuration if available.
             if (m_configuration != null)
@@ -912,17 +914,16 @@ namespace Opc.Ua.Client.Controls
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Source,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -945,19 +946,21 @@ namespace Opc.Ua.Client.Controls
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
-                m_session.HistoryRead(
+                response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(details),
                     TimestampsToReturn.Source,
                     true,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                results = response.Results;
+                diagnosticInfos = response.DiagnosticInfos;
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
             }
-            
+
             startTime = new DateTime(startTime.Year, startTime.Month, startTime.Day, startTime.Hour, startTime.Minute, startTime.Second, 0, DateTimeKind.Utc);
             startTime = startTime.ToLocalTime();
 
@@ -967,7 +970,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the last date in the archive (truncates milliseconds and converts to local).
         /// </summary>
-        private DateTime ReadLastDate()
+        private async Task<DateTime> ReadLastDateAsync(CancellationToken ct = default)
         {
             ReadRawModifiedDetails details = new ReadRawModifiedDetails();
             details.StartTime = DateTime.MinValue;
@@ -982,17 +985,16 @@ namespace Opc.Ua.Client.Controls
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Source,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1015,14 +1017,16 @@ namespace Opc.Ua.Client.Controls
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
-                m_session.HistoryRead(
+                response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(details),
                     TimestampsToReturn.Source,
                     true,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                results = response.Results;
+                diagnosticInfos = response.DiagnosticInfos;
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1038,7 +1042,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Creates the subscription.
         /// </summary>
-        private void CreateSubscription()
+        private async Task CreateSubscriptionAsync(CancellationToken ct = default)
         {
             if (m_session == null)
             {
@@ -1056,7 +1060,7 @@ namespace Opc.Ua.Client.Controls
             m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
 
             m_session.AddSubscription(m_subscription);
-            m_subscription.Create();
+            await m_subscription.CreateAsync(ct);
 
             m_monitoredItem = new MonitoredItem();
             m_monitoredItem.StartNodeId = m_nodeId;
@@ -1091,19 +1095,19 @@ namespace Opc.Ua.Client.Controls
             m_monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
 
             m_subscription.AddItem(m_monitoredItem);
-            m_subscription.ApplyChanges();
+            await m_subscription.ApplyChangesAsync(ct);
             SubscriptionStateChanged();
         }
 
         /// <summary>
         /// Deletes the subscription.
         /// </summary>
-        private void DeleteSubscription()
+        private async Task DeleteSubscriptionAsync(CancellationToken ct = default)
         {
             if (m_subscription != null)
             {
-                m_subscription.Delete(true);
-                m_session.RemoveSubscription(m_subscription);
+                await m_subscription.DeleteAsync(true, ct);
+                _ = await m_session.RemoveSubscriptionAsync(m_subscription, ct);
                 m_subscription = null;
                 m_monitoredItem = null;
             }
@@ -1146,7 +1150,7 @@ namespace Opc.Ua.Client.Controls
         /// Adds a value to the grid.
         /// </summary>
         private void AddValue(DataValue value, ModificationInfo modificationInfo)
-        {            
+        {
             DataRow row = m_dataset.Tables[0].NewRow();
 
             m_nextId += 10000;
@@ -1179,7 +1183,7 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Updates the display with a new value for a monitored variable. 
+        /// Updates the display with a new value for a monitored variable.
         /// </summary>
         private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
@@ -1220,7 +1224,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Fetches the next batch of history.
         /// </summary>
-        private void ReadNext()
+        private async Task ReadNextAsync(CancellationToken ct = default)
         {
             if (m_nodeToContinue == null)
             {
@@ -1230,17 +1234,16 @@ namespace Opc.Ua.Client.Controls
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(m_nodeToContinue);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(m_details),
                 TimestampsToReturn.Both,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1254,7 +1257,7 @@ namespace Opc.Ua.Client.Controls
             DisplayResults(values);
 
             // save any continuation point.
-            SaveContinuationPoint(m_details, m_nodeToContinue, results[0].ContinuationPoint);
+            await SaveContinuationPointAsync(m_details, m_nodeToContinue, results[0].ContinuationPoint, ct);
         }
 
         /// <summary>
@@ -1273,33 +1276,32 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Fetches the recent history.
         /// </summary>
-        private void ReadRaw(bool isReadModified)
+        private async Task ReadRawAsync(bool isReadModified, CancellationToken ct = default)
         {
             m_dataset.Clear();
 
             ReadRawModifiedDetails details = new ReadRawModifiedDetails();
-            details.StartTime =(StartTimeCK.Checked)?StartTimeDP.Value.ToUniversalTime():DateTime.MinValue;
-            details.EndTime = (EndTimeCK.Checked)?EndTimeDP.Value.ToUniversalTime():DateTime.MinValue;
-            details.NumValuesPerNode = (MaxReturnValuesCK.Checked)?(uint)MaxReturnValuesNP.Value:0;
+            details.StartTime = (StartTimeCK.Checked) ? StartTimeDP.Value.ToUniversalTime() : DateTime.MinValue;
+            details.EndTime = (EndTimeCK.Checked) ? EndTimeDP.Value.ToUniversalTime() : DateTime.MinValue;
+            details.NumValuesPerNode = (MaxReturnValuesCK.Checked) ? (uint)MaxReturnValuesNP.Value : 0;
             details.IsReadModified = isReadModified;
-            details.ReturnBounds = (isReadModified)?false:ReturnBoundsCK.Checked;
+            details.ReturnBounds = (isReadModified) ? false : ReturnBoundsCK.Checked;
 
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = GetSelectedNode();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Both,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1313,13 +1315,13 @@ namespace Opc.Ua.Client.Controls
             DisplayResults(values);
 
             // save any continuation point.
-            SaveContinuationPoint(details, nodeToRead, results[0].ContinuationPoint);
+            await SaveContinuationPointAsync(details, nodeToRead, results[0].ContinuationPoint, ct);
         }
 
         /// <summary>
         /// Fetches the recent history.
         /// </summary>
-        private void ReadAtTime()
+        private async Task ReadAtTimeAsync(CancellationToken ct = default)
         {
             m_dataset.Clear();
 
@@ -1331,7 +1333,7 @@ namespace Opc.Ua.Client.Controls
 
             for (int ii = 0; ii < MaxReturnValuesNP.Value; ii++)
             {
-                details.ReqTimes.Add(startTime.AddMilliseconds((double)(ii*TimeStepNP.Value)));
+                details.ReqTimes.Add(startTime.AddMilliseconds((double)(ii * TimeStepNP.Value)));
             }
 
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
@@ -1339,17 +1341,16 @@ namespace Opc.Ua.Client.Controls
             nodeToRead.NodeId = GetSelectedNode();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Both,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1363,13 +1364,13 @@ namespace Opc.Ua.Client.Controls
             DisplayResults(values);
 
             // save any continuation point.
-            SaveContinuationPoint(details, nodeToRead, results[0].ContinuationPoint);
+            await SaveContinuationPointAsync(details, nodeToRead, results[0].ContinuationPoint, ct);
         }
 
         /// <summary>
         /// Fetches the recent history.
         /// </summary>
-        private void ReadProcessed()
+        private async Task ReadProcessedAsync(CancellationToken ct = default)
         {
             m_dataset.Clear();
 
@@ -1392,17 +1393,16 @@ namespace Opc.Ua.Client.Controls
             nodeToRead.NodeId = m_nodeId;
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Both,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1416,31 +1416,30 @@ namespace Opc.Ua.Client.Controls
             DisplayResults(values);
 
             // save any continuation point.
-            SaveContinuationPoint(details, nodeToRead, results[0].ContinuationPoint);
+            await SaveContinuationPointAsync(details, nodeToRead, results[0].ContinuationPoint, ct);
         }
 
         /// <summary>
         /// Saves a continuation point for later use.
         /// </summary>
-        private void SaveContinuationPoint(HistoryReadDetails details, HistoryReadValueId nodeToRead, byte[] continuationPoint)
+        private async Task SaveContinuationPointAsync(HistoryReadDetails details, HistoryReadValueId nodeToRead, byte[] continuationPoint, CancellationToken ct = default)
         {
             // clear existing continuation point.
             if (m_nodeToContinue != null)
             {
                 HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
                 nodesToRead.Add(m_nodeToContinue);
-                                
-                HistoryReadResultCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
 
-                m_session.HistoryRead(
+                HistoryReadResponse response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(m_details),
                     TimestampsToReturn.Neither,
                     true,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                HistoryReadResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1477,7 +1476,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the history.
         /// </summary>
-        private void InsertReplace(PerformUpdateType updateType)
+        private async Task InsertReplaceAsync(PerformUpdateType updateType, CancellationToken ct = default)
         {
             DataValueCollection values = new DataValueCollection();
 
@@ -1486,7 +1485,7 @@ namespace Opc.Ua.Client.Controls
                 DataValue value = (DataValue)row.Row[9];
                 values.Add(value);
             }
-            
+
             bool isStructured = false;
 
             PropertyWithHistory property = PropertyCB.SelectedItem as PropertyWithHistory;
@@ -1496,7 +1495,7 @@ namespace Opc.Ua.Client.Controls
                 isStructured = true;
             }
 
-            HistoryUpdateResultCollection results = InsertReplace(GetSelectedNode(), updateType, isStructured, values);
+            HistoryUpdateResultCollection results = await InsertReplaceAsync(GetSelectedNode(), updateType, isStructured, values, ct);
 
             ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
 
@@ -1511,7 +1510,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the history.
         /// </summary>
-        private HistoryUpdateResultCollection InsertReplace(NodeId nodeId, PerformUpdateType updateType, bool isStructure, IList<DataValue> values)
+        private async Task<HistoryUpdateResultCollection> InsertReplaceAsync(NodeId nodeId, PerformUpdateType updateType, bool isStructure, IList<DataValue> values, CancellationToken ct = default)
         {
             HistoryUpdateDetails details = null;
 
@@ -1535,14 +1534,13 @@ namespace Opc.Ua.Client.Controls
             ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
             nodesToUpdate.Add(new ExtensionObject(details));
 
-            HistoryUpdateResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryUpdate(
+            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
                 null,
                 nodesToUpdate,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryUpdateResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -1558,7 +1556,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Deletes the block of data.
         /// </summary>
-        private void DeleteRaw(bool isModified)
+        private async Task DeleteRawAsync(bool isModified, CancellationToken ct = default)
         {
             DeleteRawModifiedDetails details = new DeleteRawModifiedDetails();
             details.NodeId = m_nodeId;
@@ -1569,14 +1567,13 @@ namespace Opc.Ua.Client.Controls
             ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
             nodesToUpdate.Add(new ExtensionObject(details));
 
-            HistoryUpdateResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
+            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
+                 null,
+                 nodesToUpdate,
+                 ct);
 
-            m_session.HistoryUpdate(
-                null,
-                nodesToUpdate,
-                out results,
-                out diagnosticInfos);
+            HistoryUpdateResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -1593,7 +1590,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Deletes the history.
         /// </summary>
-        private void DeleteAtTime()
+        private async Task DeleteAtTimeAsync(CancellationToken ct = default)
         {
             DeleteAtTimeDetails details = new DeleteAtTimeDetails();
             details.NodeId = m_nodeId;
@@ -1607,14 +1604,13 @@ namespace Opc.Ua.Client.Controls
             ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
             nodesToUpdate.Add(new ExtensionObject(details));
 
-            HistoryUpdateResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
+            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
+                 null,
+                 nodesToUpdate,
+                 ct);
 
-            m_session.HistoryUpdate(
-                null,
-                nodesToUpdate,
-                out results,
-                out diagnosticInfos);
+            HistoryUpdateResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -1624,7 +1620,7 @@ namespace Opc.Ua.Client.Controls
                 throw new ServiceResultException(results[0].StatusCode);
             }
 
-            ResultsDV.Columns[ResultsDV.Columns.Count-1].Visible = true;
+            ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
 
             for (int ii = 0; ii < m_dataset.Tables[0].DefaultView.Count; ii++)
             {
@@ -1672,7 +1668,7 @@ namespace Opc.Ua.Client.Controls
             m_dataset.AcceptChanges();
         }
 
-        private void NodeIdBTN_Click(object sender, EventArgs e)
+        private async void NodeIdBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1681,11 +1677,12 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                ReferenceDescription reference = new SelectNodeDlg().ShowDialog(
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
                     m_session,
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     null,
                     "Select Variable",
+                    default,
                     Opc.Ua.ReferenceTypeIds.Organizes,
                     Opc.Ua.ReferenceTypeIds.Aggregates);
 
@@ -1696,7 +1693,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (reference.NodeId != m_nodeId)
                 {
-                    ChangeNode((NodeId)reference.NodeId);
+                    await ChangeNodeAsync((NodeId)reference.NodeId);
                 }
             }
             catch (Exception exception)
@@ -1705,7 +1702,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void SubscribeCK_CheckedChanged(object sender, EventArgs e)
+        private async void SubscribeCK_CheckedChangedAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1713,11 +1710,11 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (m_isSubscribed)
                     {
-                        CreateSubscription();
+                        await CreateSubscriptionAsync();
                     }
                     else
                     {
-                        DeleteSubscription();
+                        await DeleteSubscriptionAsync();
                     }
                 }
             }
@@ -1727,7 +1724,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void GoBTN_Click(object sender, EventArgs e)
+        private async void GoBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1737,73 +1734,73 @@ namespace Opc.Ua.Client.Controls
                 {
                     case HistoryReadType.Subscribe:
                     {
-                        CreateSubscription();
+                        await CreateSubscriptionAsync();
                         break;
                     }
 
                     case HistoryReadType.Raw:
                     {
-                        ReadRaw(false);
+                        await ReadRawAsync(false);
                         break;
                     }
 
                     case HistoryReadType.Modified:
                     {
-                        ReadRaw(true);
+                        await ReadRawAsync(true);
                         break;
                     }
 
                     case HistoryReadType.Processed:
                     {
-                        ReadProcessed();
+                        await ReadProcessedAsync();
                         break;
                     }
 
                     case HistoryReadType.AtTime:
                     {
-                        ReadAtTime();
+                        await ReadAtTimeAsync();
                         break;
                     }
 
                     case HistoryReadType.Insert:
                     {
-                        InsertReplace(PerformUpdateType.Insert);
+                        await InsertReplaceAsync(PerformUpdateType.Insert);
                         break;
                     }
 
                     case HistoryReadType.Replace:
                     {
-                        InsertReplace(PerformUpdateType.Replace);
+                        await InsertReplaceAsync(PerformUpdateType.Replace);
                         break;
                     }
 
                     case HistoryReadType.InsertReplace:
                     {
-                        InsertReplace(PerformUpdateType.Update);
+                        await InsertReplaceAsync(PerformUpdateType.Update);
                         break;
                     }
 
                     case HistoryReadType.Remove:
                     {
-                        InsertReplace(PerformUpdateType.Remove);
+                        await InsertReplaceAsync(PerformUpdateType.Remove);
                         break;
                     }
 
                     case HistoryReadType.DeleteRaw:
                     {
-                        DeleteRaw(false);
+                        await DeleteRawAsync(false);
                         break;
                     }
 
                     case HistoryReadType.DeleteModified:
                     {
-                        DeleteRaw(true);
+                        await DeleteRawAsync(true);
                         break;
                     }
 
                     case HistoryReadType.DeleteAtTime:
                     {
-                        DeleteAtTime();
+                        await DeleteAtTimeAsync();
                         break;
                     }
                 }
@@ -1815,11 +1812,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void NextBTN_Click(object sender, EventArgs e)
+        private async void NextBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                ReadNext();
+                await ReadNextAsync();
             }
             catch (Exception exception)
             {
@@ -1827,11 +1824,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void StopBTN_Click(object sender, EventArgs e)
+        private async void StopBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                DeleteSubscription();
+                await DeleteSubscriptionAsync();
             }
             catch (Exception exception)
             {
@@ -2168,18 +2165,18 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void DetectLimitsBTN_Click(object sender, EventArgs e)
+        private async void DetectLimitsBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                DateTime startTime = ReadFirstDate();
+                DateTime startTime = await ReadFirstDateAsync();
 
                 if (startTime != DateTime.MinValue)
                 {
                     StartTimeDP.Value = startTime;
                 }
 
-                DateTime endTime = ReadLastDate();
+                DateTime endTime = await ReadLastDateAsync();
 
                 if (endTime != DateTime.MinValue)
                 {
@@ -2250,7 +2247,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void InsertAnnotationMI_Click(object sender, EventArgs e)
+        private async void InsertAnnotationMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -2291,7 +2288,7 @@ namespace Opc.Ua.Client.Controls
 
                     }
 
-                    HistoryUpdateResultCollection results = InsertReplace(propertyId, PerformUpdateType.Insert, true, valuesToUpdate); 
+                    HistoryUpdateResultCollection results = await InsertReplaceAsync(propertyId, PerformUpdateType.Insert, true, valuesToUpdate);
 
                     ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
 
@@ -2319,7 +2316,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     return;
                 }
-                
+
                 foreach (DataGridViewRow row in ResultsDV.SelectedRows)
                 {
                     DataRowView source = row.DataBoundItem as DataRowView;

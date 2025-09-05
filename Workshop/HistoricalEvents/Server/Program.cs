@@ -58,7 +58,7 @@ namespace Quickstarts.HistoricalEvents.Server
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Server;
+            application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "HistoricalEventsServer";
 
             try
@@ -77,13 +77,13 @@ namespace Quickstarts.HistoricalEvents.Server
                 }
 
                 // load the application configuration.
-                application.LoadApplicationConfiguration(false).Wait();
+                application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificates(false).Wait();
+                application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
 
                 // start the server.
-                application.Start(new HistoricalEventsServer()).Wait();
+                application.StartAsync(new HistoricalEventsServer()).Wait();
 
                 // run the application interactively.
                 Application.Run(new ServerForm(application));

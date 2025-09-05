@@ -47,14 +47,14 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
-            
+
             Array values = Enum.GetValues(typeof(DataChangeTrigger));
 
             foreach (object value in values)
             {
                 TriggerCB.Items.Add(value);
             }
-                        
+
             values = Enum.GetValues(typeof(DeadbandType));
 
             foreach (object value in values)
@@ -68,7 +68,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public bool ShowDialog(Session session, MonitoredItem monitoredItem)
         {
-            if (monitoredItem == null) throw new ArgumentNullException("monitoredItem");
+            if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
             DataChangeFilter filter = monitoredItem.Filter as DataChangeFilter;
 
@@ -76,22 +76,22 @@ namespace Opc.Ua.Sample.Controls
             {
                 filter = new DataChangeFilter();
 
-                filter.Trigger       = DataChangeTrigger.StatusValue;
+                filter.Trigger = DataChangeTrigger.StatusValue;
                 filter.DeadbandValue = 0;
-                filter.DeadbandType  = (uint)(int)DeadbandType.None;
+                filter.DeadbandType = (uint)(int)DeadbandType.None;
             }
 
-            TriggerCB.SelectedItem      = filter.Trigger;
+            TriggerCB.SelectedItem = filter.Trigger;
             DeadbandTypeCB.SelectedItem = (DeadbandType)(int)filter.DeadbandType;
-            DeadbandNC.Value            = (decimal)filter.DeadbandValue;
-            
+            DeadbandNC.Value = (decimal)filter.DeadbandValue;
+
             if (ShowDialog() != DialogResult.OK)
             {
                 return false;
             }
 
-            filter.Trigger       = (DataChangeTrigger)TriggerCB.SelectedItem;
-            filter.DeadbandType  = Convert.ToUInt32(DeadbandTypeCB.SelectedItem);
+            filter.Trigger = (DataChangeTrigger)TriggerCB.SelectedItem;
+            filter.DeadbandType = Convert.ToUInt32(DeadbandTypeCB.SelectedItem);
             filter.DeadbandValue = (double)DeadbandNC.Value;
 
             monitoredItem.Filter = filter;
@@ -100,7 +100,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         private void OkBTN_Click(object sender, EventArgs e)
-        {              
+        {
             DialogResult = DialogResult.OK;
         }
 

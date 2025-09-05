@@ -38,7 +38,7 @@ namespace Quickstarts.Boiler.Server
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Namespaces.Boiler)]
+    [DataContract(Namespace = Namespaces.Boiler)]
     public class BoilerServerConfiguration
     {
         #region Constructors

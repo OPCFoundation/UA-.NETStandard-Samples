@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -61,23 +61,23 @@ namespace Opc.Ua.Gds.Server
             try
             {
                 // load the application configuration.
-                var config = application.LoadApplicationConfiguration(false).Result;
+                var config = application.LoadApplicationConfigurationAsync(false).AsTask().GetAwaiter().GetResult();
 
                 // check the application certificate.
-                bool haveAppCertificate = application.CheckApplicationInstanceCertificates(false).Result;
+                bool haveAppCertificate = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().GetAwaiter().GetResult();
                 if (!haveAppCertificate)
                 {
                     throw new Exception("Application instance certificate invalid!");
                 }
 
-               
+
                 // load the user database.
                 var userDatabase = new SqlUsersDatabase();
                 //initialize users Database
                 userDatabase.Initialize();
 
                 bool createStandardUsers = ConfigureUsers(userDatabase);
-                
+
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
@@ -88,7 +88,7 @@ namespace Opc.Ua.Gds.Server
                     userDatabase,
                     true,
                     createStandardUsers);
-                application.Start(server).Wait();
+                application.StartAsync(server).Wait();
 
                 // run the application interactively.
                 System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration));
@@ -102,7 +102,7 @@ namespace Opc.Ua.Gds.Server
         private static bool ConfigureUsers(SqlUsersDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
-            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().Result;
+            bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().GetAwaiter().GetResult();
             if (!createStandardUsers)
             {
                 //Delete existing standard users

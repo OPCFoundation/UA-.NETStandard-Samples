@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,10 +32,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -45,8 +46,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public SelectClauseListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -57,12 +58,12 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Event Type",  HorizontalAlignment.Left, null },  
-			new object[] { "Field Name",  HorizontalAlignment.Left, null },  
-			new object[] { "Index Range", HorizontalAlignment.Left, null }
-		};
-		#endregion
+        {
+            new object[] { "Event Type",  HorizontalAlignment.Left, null },
+            new object[] { "Field Name",  HorizontalAlignment.Left, null },
+            new object[] { "Index Range", HorizontalAlignment.Left, null }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -79,16 +80,16 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public void Initialize(Session session, SimpleAttributeOperandCollection selectClauses)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
-            
-            m_session       = session;
+
+            m_session = session;
             m_selectClauses = selectClauses;
 
             if (selectClauses == null)
             {
-                return;                
+                return;
             }
 
             foreach (SimpleAttributeOperand clause in selectClauses)
@@ -105,28 +106,28 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a select clause to the control.
         /// </summary>
-        public void AddSelectClause(ReferenceDescription reference)
+        public async Task AddSelectClauseAsync(ReferenceDescription reference, CancellationToken ct = default)
         {
             if (reference == null)
             {
                 return;
             }
 
-            ILocalNode node = m_session.NodeCache.Find(reference.NodeId) as ILocalNode;
+            ILocalNode node = await m_session.NodeCache.FindAsync(reference.NodeId, ct) as ILocalNode;
 
             if (node == null)
             {
                 return;
             }
-            
+
             SimpleAttributeOperand clause = new SimpleAttributeOperand();
-            
+
             clause.TypeDefinitionId = m_session.NodeCache.BuildBrowsePath(node, clause.BrowsePath);
-            clause.AttributeId      = Attributes.Value;
-            
+            clause.AttributeId = Attributes.Value;
+
             AddItem(clause, "Property", -1);
 
-            AdjustColumns();            
+            AdjustColumns();
         }
 
         /// <summary>
@@ -148,28 +149,28 @@ namespace Opc.Ua.Sample.Controls
 
             return clauses;
         }
-		#endregion
-        
+        #endregion
+
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
-		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{               
-            ViewMI.Enabled   = ItemsLV.SelectedItems.Count == 1;
-            DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
-		}
-        
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override void EnableMenuItems(ListViewItem clickedItem)
         {
-			SimpleAttributeOperand clause = item as SimpleAttributeOperand;
+            ViewMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+            DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+        }
 
-			if (clause == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
+        {
+            SimpleAttributeOperand clause = item as SimpleAttributeOperand;
 
-            INode eventType = m_session.NodeCache.Find(clause.TypeDefinitionId);
+            if (clause == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
+
+            INode eventType = await m_session.NodeCache.FindAsync(clause.TypeDefinitionId, ct);
 
             if (eventType != null)
             {
@@ -180,17 +181,17 @@ namespace Opc.Ua.Sample.Controls
                 listItem.SubItems[0].Text = String.Format("(unspecified)");
             }
 
-		    listItem.SubItems[1].Text = String.Format("{0}", SimpleAttributeOperand.Format(clause.BrowsePath));
-		    listItem.SubItems[2].Text = String.Format("{0}", clause.IndexRange);
+            listItem.SubItems[1].Text = String.Format("{0}", SimpleAttributeOperand.Format(clause.BrowsePath));
+            listItem.SubItems[2].Text = String.Format("{0}", clause.IndexRange);
 
-			listItem.Tag = item;
+            listItem.Tag = item;
         }
 
         /// <summary>
         /// Handles a drop event.
         /// </summary>
-        protected override void ItemsLV_DragDrop(object sender, DragEventArgs e)
-        {            
+        protected override async Task OnDragDropAsync(object sender, DragEventArgs e, CancellationToken ct = default)
+        {
             try
             {
                 ReferenceDescription reference = e.Data.GetData(typeof(ReferenceDescription)) as ReferenceDescription;
@@ -199,16 +200,16 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                    
-                AddSelectClause(reference);
+
+                await AddSelectClauseAsync(reference, ct);
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
-        
+
         #region Event Handlers
         private void ViewMI_Click(object sender, EventArgs e)
         {
@@ -223,7 +224,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -245,7 +246,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -39,6 +39,8 @@ using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -56,20 +58,20 @@ namespace Opc.Ua.Sample.Controls
         private Session m_session;
         private ExpandedNodeId m_nodeId;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void ShowDialog(Session session, ExpandedNodeId nodeId)
+        public async Task ShowDialogAsync(Session session, ExpandedNodeId nodeId, CancellationToken ct = default)
         {
-            if (session == null)   throw new ArgumentNullException("session");
-            if (nodeId == null) throw new ArgumentNullException("nodeId");
-            
-            m_session = session;
-            m_nodeId  = nodeId;
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (nodeId == null) throw new ArgumentNullException(nameof(nodeId));
 
-            AttributesCTRL.Initialize(session, nodeId);
+            m_session = session;
+            m_nodeId = nodeId;
+
+            await AttributesCTRL.InitializeAsync(session, nodeId, ct);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -78,11 +80,11 @@ namespace Opc.Ua.Sample.Controls
         }
         #endregion
 
-        private void OkBTN_Click(object sender, EventArgs e)
+        private async void OkBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                AttributesCTRL.Initialize(m_session, m_nodeId);
+                await AttributesCTRL.InitializeAsync(m_session, m_nodeId);
             }
             catch (Exception exception)
             {

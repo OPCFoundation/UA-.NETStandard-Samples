@@ -52,7 +52,7 @@ namespace Quickstarts.EmptyServer
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Server;
+            application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "Quickstarts.EmptyServer";
 
             try
@@ -71,13 +71,13 @@ namespace Quickstarts.EmptyServer
                 }
 
                 // load the application configuration.
-                application.LoadApplicationConfiguration(false).Wait();
+                application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
                 // check the application certificate.
-                application.CheckApplicationInstanceCertificates(false).Wait();
-                
+                application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
+
                 // start the server.
-                application.Start(new EmptyServer()).Wait();
+                application.StartAsync(new EmptyServer()).Wait();
 
                 // run the application interactively.
                 Application.Run(new Opc.Ua.Server.Controls.ServerForm(application));

@@ -83,7 +83,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.OkBTN.TabIndex = 4;
             this.OkBTN.Text = "OK";
             this.OkBTN.UseVisualStyleBackColor = true;
-            this.OkBTN.Click += new System.EventHandler(this.OkBTN_Click);
+            this.OkBTN.Click += new System.EventHandler(this.OkBTN_ClickAsync);
             // 
             // ValueLB
             // 
