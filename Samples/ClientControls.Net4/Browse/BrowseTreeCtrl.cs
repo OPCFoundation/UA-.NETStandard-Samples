@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -128,7 +128,8 @@ namespace Opc.Ua.Client.Controls
             NodeId rootId,
             NodeId viewId,
             NodeId referenceTypeId,
-            BrowseDirection browseDirection)
+            BrowseDirection browseDirection,
+            CancellationToken ct = default)
         {
             m_session = session;
             m_rootId = rootId;
@@ -153,10 +154,10 @@ namespace Opc.Ua.Client.Controls
                 m_referenceTypeId = ReferenceTypeIds.HierarchicalReferences;
             }
 
-            ReferenceTypeCTRL.Initialize(m_session, ReferenceTypeIds.HierarchicalReferences);
+            await ReferenceTypeCTRL.InitializeAsync(m_session, ReferenceTypeIds.HierarchicalReferences, ct);
             ReferenceTypeCTRL.SelectedTypeId = m_referenceTypeId;
 
-            ILocalNode root = await m_session.NodeCache.FindAsync(m_rootId) as ILocalNode;
+            ILocalNode root = await m_session.NodeCache.FindAsync(m_rootId, ct) as ILocalNode;
 
             if (root == null)
             {
@@ -175,7 +176,7 @@ namespace Opc.Ua.Client.Controls
 
             TreeNode rootNode = new TreeNode(reference.ToString());
 
-            rootNode.ImageKey = rootNode.SelectedImageKey = GuiUtils.GetTargetIcon(session, reference);
+            rootNode.ImageKey = rootNode.SelectedImageKey = await GuiUtils.GetTargetIconAsync(session, reference, ct);
             rootNode.Tag = reference;
             rootNode.Nodes.Add(new TreeNode());
 
@@ -185,7 +186,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Browses the children of the node and updates the tree.
         /// </summary>
-        private bool BrowseChildren(TreeNode parent)
+        private async Task<bool> BrowseChildrenAsync(TreeNode parent, CancellationToken ct = default)
         {
             ReferenceDescription reference = parent.Tag as ReferenceDescription;
 
@@ -223,51 +224,52 @@ namespace Opc.Ua.Client.Controls
                 view.ViewVersion = 0;
             }
 
-            BrowseResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.Browse(
+            BrowseResponse response = await m_session.BrowseAsync(
                 null,
                 view,
                 0,
                 nodesToBrowse,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            BrowseResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             if (results.Count != 1 || StatusCode.IsBad(results[0].StatusCode))
             {
                 return false;
             }
 
-            UpdateNode(parent, results[0].References);
+            await UpdateNodeAsync(parent, results[0].References, ct);
 
             while (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
             {
                 ByteStringCollection continuationPoints = new ByteStringCollection();
                 continuationPoints.Add(results[0].ContinuationPoint);
 
-                m_session.BrowseNext(
+                BrowseNextResponse response2 = await m_session.BrowseNextAsync(
                     null,
                     parent == null,
                     continuationPoints,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                results = response2.Results;
+                diagnosticInfos = response2.DiagnosticInfos;
 
                 if (results.Count != 1 || StatusCode.IsBad(results[0].StatusCode))
                 {
                     return false;
                 }
 
-                UpdateNode(parent, results[0].References);
+                await UpdateNodeAsync(parent, results[0].References, ct);
             }
 
             return true;
         }
 
         /// <summary>
-        /// Adds the browse results to the node (if not null). 
+        /// Adds the browse results to the node (if not null).
         /// </summary>
-        private void UpdateNode(TreeNode parent, ReferenceDescriptionCollection references)
+        private async Task UpdateNodeAsync(TreeNode parent, ReferenceDescriptionCollection references, CancellationToken ct = default)
         {
             try
             {
@@ -277,7 +279,7 @@ namespace Opc.Ua.Client.Controls
 
                     TreeNode childNode = new TreeNode(reference.ToString());
 
-                    childNode.ImageKey = childNode.SelectedImageKey = GuiUtils.GetTargetIcon(m_session, reference);
+                    childNode.ImageKey = childNode.SelectedImageKey = await GuiUtils.GetTargetIconAsync(m_session, reference, ct);
                     childNode.Tag = reference;
 
                     childNode.Nodes.Add(new TreeNode());
@@ -292,7 +294,7 @@ namespace Opc.Ua.Client.Controls
         }
 
         #region Overridden Members
-        /// <see cref="BaseTreeCtrl.SelectNode" />
+        /// <inheritdoc/>
         protected override async void SelectNode()
         {
             try
@@ -324,8 +326,8 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        /// <see cref="BaseTreeCtrl.BeforeExpand" />
-        protected override bool BeforeExpand(TreeNode clickedNode)
+        /// <inheritdoc/>
+        protected override async Task<bool> BeforeExpandAsync(TreeNode clickedNode, CancellationToken ct = default)
         {
             try
             {
@@ -333,7 +335,7 @@ namespace Opc.Ua.Client.Controls
                 if (clickedNode.Nodes.Count == 1 && clickedNode.Nodes[0].Text == String.Empty)
                 {
                     // browse.
-                    return !BrowseChildren(clickedNode);
+                    return !await BrowseChildrenAsync(clickedNode, ct);
                 }
 
                 // do not cancel expand.
@@ -346,7 +348,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        /// <see cref="BaseTreeCtrl.EnableMenuItems" />
+        /// <inheritdoc/>
         protected override void EnableMenuItems(TreeNode clickedNode)
         {
             if (NodesTV.SelectedNode == null)
@@ -364,7 +366,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private async void RootBTN_Click(object sender, EventArgs e)
+        private async void RootBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {

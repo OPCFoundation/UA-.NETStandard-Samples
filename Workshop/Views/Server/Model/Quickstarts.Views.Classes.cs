@@ -39,7 +39,7 @@ using Quickstarts.Operations;
 namespace Quickstarts.Views
 {
     #region GenericControllerState Class
-    #if (!OPCUA_EXCLUDE_GenericControllerState)
+#if (!OPCUA_EXCLUDE_GenericControllerState)
     /// <summary>
     /// Stores an instance of the GenericControllerType ObjectType.
     /// </summary>
@@ -63,7 +63,7 @@ namespace Quickstarts.Views
             return Opc.Ua.NodeId.Create(Quickstarts.Views.ObjectTypes.GenericControllerType, Quickstarts.Views.Namespaces.Views, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -104,7 +104,7 @@ namespace Quickstarts.Views
            "C/////8BAf////8BAAAAFWCJCgIAAAAAAAcAAABFVVJhbmdlAQNlAQAuAERlAQAAAQB0A/////8BAf//" +
            "//8AAAAA";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -337,11 +337,11 @@ namespace Quickstarts.Views
         private AnalogItemState<double> m_measurement;
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region FlowControllerState Class
-    #if (!OPCUA_EXCLUDE_FlowControllerState)
+#if (!OPCUA_EXCLUDE_FlowControllerState)
     /// <summary>
     /// Stores an instance of the FlowControllerType ObjectType.
     /// </summary>
@@ -365,7 +365,7 @@ namespace Quickstarts.Views
             return Opc.Ua.NodeId.Create(Quickstarts.Views.ObjectTypes.FlowControllerType, Quickstarts.Views.Namespaces.Views, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -406,7 +406,7 @@ namespace Quickstarts.Views
            "//8BAf////8BAAAAFWCJCgIAAAAAAAcAAABFVVJhbmdlAQN0AQAuAER0AQAAAQB0A/////8BAf////8A" +
            "AAAA";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -418,11 +418,11 @@ namespace Quickstarts.Views
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region LevelControllerState Class
-    #if (!OPCUA_EXCLUDE_LevelControllerState)
+#if (!OPCUA_EXCLUDE_LevelControllerState)
     /// <summary>
     /// Stores an instance of the LevelControllerType ObjectType.
     /// </summary>
@@ -446,7 +446,7 @@ namespace Quickstarts.Views
             return Opc.Ua.NodeId.Create(Quickstarts.Views.ObjectTypes.LevelControllerType, Quickstarts.Views.Namespaces.Views, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -487,7 +487,7 @@ namespace Quickstarts.Views
            "////AQH/////AQAAABVgiQoCAAAAAAAHAAAARVVSYW5nZQEDgwEALgBEgwEAAAEAdAP/////AQH/////" +
            "AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -499,11 +499,11 @@ namespace Quickstarts.Views
         #region Private Fields
         #endregion
     }
-    #endif
+#endif
     #endregion
 
     #region BoilerState Class
-    #if (!OPCUA_EXCLUDE_BoilerState)
+#if (!OPCUA_EXCLUDE_BoilerState)
     /// <summary>
     /// Stores an instance of the BoilerType ObjectType.
     /// </summary>
@@ -527,7 +527,7 @@ namespace Quickstarts.Views
             return Opc.Ua.NodeId.Create(Quickstarts.Views.ObjectTypes.BoilerType, Quickstarts.Views.Namespaces.Views, namespaceUris);
         }
 
-        #if (!OPCUA_EXCLUDE_InitializationStrings)
+#if (!OPCUA_EXCLUDE_InitializationStrings)
         /// <summary>
         /// Initializes the instance.
         /// </summary>
@@ -582,7 +582,7 @@ namespace Quickstarts.Views
            "ZWFzdXJlbWVudAEDsQEALwEAQAmxAQAAAAv/////AQH/////AQAAABVgiQoCAAAAAAAHAAAARVVSYW5n" +
            "ZQEDtAEALgBEtAEAAAEAdAP/////AQH/////AAAAAA==";
         #endregion
-        #endif
+#endif
         #endregion
 
         #region Public Properties
@@ -769,6 +769,6 @@ namespace Quickstarts.Views
         private BaseObjectState m_drum;
         #endregion
     }
-    #endif
+#endif
     #endregion
 }

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,13 +30,14 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
+using System.Drawing;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
-using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -54,7 +55,7 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
             ResultsDV.AutoGenerateColumns = false;
             ImageList = new ClientUtils().ImageList;
-            
+
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Requests");
 
@@ -87,7 +88,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the components of the type in the control.
         /// </summary>
-        public async Task ShowTypeAsync(NodeId typeId)
+        public async Task ShowTypeAsync(NodeId typeId, CancellationToken ct = default)
         {
             if (NodeId.IsNull(typeId))
             {
@@ -95,7 +96,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            m_declarations = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId, false);
+            m_declarations = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId, false, ct);
 
             // update existing rows.
             for (int ii = 0; ii < m_declarations.Count && ii < m_dataset.Tables[0].Rows.Count; ii++)
@@ -165,7 +166,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the values displayed in the control and moves to the display results state.
         /// </summary>
-        public void Read()
+        public async Task ReadAsync(CancellationToken ct = default)
         {
             if (m_session == null)
             {
@@ -186,18 +187,17 @@ namespace Opc.Ua.Client.Controls
                 nodeToRead.AttributeId = (value.NodeClass == NodeClass.Variable) ? Attributes.Value : Attributes.NodeId;
                 nodesToRead.Add(nodeToRead);
             }
-            
-            // read the values.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            m_session.Read(
+            // read the values.
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Both,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

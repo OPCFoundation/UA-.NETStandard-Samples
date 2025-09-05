@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,13 +32,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -96,9 +96,10 @@ namespace Opc.Ua.Sample.Controls
             Session session,
             ReadValueIdCollection valueIds,
             DataValueCollection values,
-            List<ServiceResult> results)
+            List<ServiceResult> results,
+            CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             Clear();
 
@@ -110,7 +111,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     ValueItem item = new ValueItem();
 
-                    item.Node = await m_session.NodeCache.FindAsync(valueIds[ii].NodeId) as Node;
+                    item.Node = await m_session.NodeCache.FindAsync(valueIds[ii].NodeId, ct) as Node;
                     item.AttributeId = valueIds[ii].AttributeId;
 
                     if (values != null && ii < values.Count)
@@ -136,9 +137,10 @@ namespace Opc.Ua.Sample.Controls
         public async Task InitializeAsync(
             Session session,
             WriteValueCollection values,
-            List<ServiceResult> results)
+            List<ServiceResult> results,
+            CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             Clear();
 
@@ -150,7 +152,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     ValueItem item = new ValueItem();
 
-                    item.Node = await m_session.NodeCache.FindAsync(values[ii].NodeId) as Node;
+                    item.Node = await m_session.NodeCache.FindAsync(values[ii].NodeId, ct) as Node;
                     item.AttributeId = values[ii].AttributeId;
                     item.Value = values[ii].Value;
 
@@ -171,7 +173,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// A field associated with a node.
         /// </summary>
-        private class ValueItem
+        private sealed class ValueItem
         {
             public Node Node;
             public uint AttributeId;
@@ -184,14 +186,14 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Overridden Methods
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             ValueItem dataValue = item as ValueItem;
 
             if (dataValue == null)
             {
-                base.UpdateItem(listItem, item);
+                await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 
@@ -236,11 +238,11 @@ namespace Opc.Ua.Sample.Controls
 
                 if (values != null && values.Length > 0)
                 {
-                    m_DataListCtrl.ShowValue(values[0].Value);
+                    m_DataListCtrl.ShowValueAsync(values[0].Value);
                 }
                 else
                 {
-                    m_DataListCtrl.ShowValue(null);
+                    m_DataListCtrl.ShowValueAsync(null);
                 }
             }
         }

@@ -166,7 +166,7 @@ namespace Opc.Ua.Client.Controls
             this.InsertAnnotationMI.Name = "InsertAnnotationMI";
             this.InsertAnnotationMI.Size = new System.Drawing.Size(347, 38);
             this.InsertAnnotationMI.Text = "Insert Annotation...";
-            this.InsertAnnotationMI.Click += new System.EventHandler(this.InsertAnnotationMI_Click);
+            this.InsertAnnotationMI.Click += new System.EventHandler(this.InsertAnnotationMI_ClickAsync);
             // 
             // ShowServerTimestampMI
             // 
@@ -527,7 +527,7 @@ namespace Opc.Ua.Client.Controls
             this.NodeIdBTN.TabIndex = 4;
             this.NodeIdBTN.Text = "...";
             this.NodeIdBTN.UseVisualStyleBackColor = true;
-            this.NodeIdBTN.Click += new System.EventHandler(this.NodeIdBTN_Click);
+            this.NodeIdBTN.Click += new System.EventHandler(this.NodeIdBTN_ClickAsync);
             // 
             // NodeIdTB
             // 
@@ -848,7 +848,7 @@ namespace Opc.Ua.Client.Controls
             this.StopBTN.TabIndex = 2;
             this.StopBTN.Text = "Stop";
             this.StopBTN.UseVisualStyleBackColor = true;
-            this.StopBTN.Click += new System.EventHandler(this.StopBTN_Click);
+            this.StopBTN.Click += new System.EventHandler(this.StopBTN_ClickAsync);
             // 
             // NextBTN
             // 
@@ -859,7 +859,7 @@ namespace Opc.Ua.Client.Controls
             this.NextBTN.TabIndex = 1;
             this.NextBTN.Text = "Next";
             this.NextBTN.UseVisualStyleBackColor = true;
-            this.NextBTN.Click += new System.EventHandler(this.NextBTN_Click);
+            this.NextBTN.Click += new System.EventHandler(this.NextBTN_ClickAsync);
             // 
             // TimeShiftBTN
             // 
@@ -882,7 +882,7 @@ namespace Opc.Ua.Client.Controls
             this.GoBTN.TabIndex = 37;
             this.GoBTN.Text = "Go";
             this.GoBTN.UseVisualStyleBackColor = true;
-            this.GoBTN.Click += new System.EventHandler(this.GoBTN_Click);
+            this.GoBTN.Click += new System.EventHandler(this.GoBTN_ClickAsync);
             // 
             // DetectLimitsBTN
             // 
@@ -893,7 +893,7 @@ namespace Opc.Ua.Client.Controls
             this.DetectLimitsBTN.TabIndex = 41;
             this.DetectLimitsBTN.Text = "Auto Detect";
             this.DetectLimitsBTN.UseVisualStyleBackColor = true;
-            this.DetectLimitsBTN.Click += new System.EventHandler(this.DetectLimitsBTN_Click);
+            this.DetectLimitsBTN.Click += new System.EventHandler(this.DetectLimitsBTN_ClickAsync);
             // 
             // RightPN
             // 

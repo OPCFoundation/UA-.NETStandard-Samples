@@ -70,13 +70,13 @@ namespace Quickstarts.SimpleEvents.Server
             }
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 if (m_simulationTimer != null)
@@ -107,7 +107,7 @@ namespace Quickstarts.SimpleEvents.Server
             NodeStateCollection predefinedNodes = new NodeStateCollection();
             predefinedNodes.LoadFromBinaryResource(context,
                 "Quickstarts.SimpleEvents.Server.Quickstarts.SimpleEvents.PredefinedNodes.uanodes",
-                typeof(SimpleEventsNodeManager).GetTypeInfo().Assembly, 
+                typeof(SimpleEventsNodeManager).GetTypeInfo().Assembly,
                 true);
             return predefinedNodes;
         }
@@ -173,7 +173,7 @@ namespace Quickstarts.SimpleEvents.Server
                         return handle;
                     }
                 }
-                
+
                 return null;
             }
         }
@@ -197,7 +197,7 @@ namespace Quickstarts.SimpleEvents.Server
             {
                 return handle.Node;
             }
-            
+
             // TBD
 
             return null;

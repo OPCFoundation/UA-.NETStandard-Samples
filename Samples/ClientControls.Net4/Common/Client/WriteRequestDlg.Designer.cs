@@ -98,7 +98,7 @@ namespace Opc.Ua.Client.Controls
             this.WriteBTN.TabIndex = 3;
             this.WriteBTN.Text = "Write";
             this.WriteBTN.UseVisualStyleBackColor = true;
-            this.WriteBTN.Click += new System.EventHandler(this.WriteBTN_Click);
+            this.WriteBTN.Click += new System.EventHandler(this.WriteBTN_ClickAsync);
             // 
             // ReadBTN
             // 
@@ -108,7 +108,7 @@ namespace Opc.Ua.Client.Controls
             this.ReadBTN.TabIndex = 1;
             this.ReadBTN.Text = "Read";
             this.ReadBTN.UseVisualStyleBackColor = true;
-            this.ReadBTN.Click += new System.EventHandler(this.ReadBTN_Click);
+            this.ReadBTN.Click += new System.EventHandler(this.ReadBTN_ClickAsync);
             // 
             // BackBTN
             // 

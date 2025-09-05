@@ -30,7 +30,7 @@ namespace Opc.Ua.Server.Controls
         }
 
         private void buttonOk_Click(object sender, EventArgs e)
-        {           
+        {
             Close();
         }
     }

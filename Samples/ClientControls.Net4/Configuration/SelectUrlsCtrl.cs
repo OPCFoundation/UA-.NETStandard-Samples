@@ -53,21 +53,21 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private event EventHandler m_UrlsChanged;
         private List<Uri> m_urls;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// The list of urls.
         /// </summary>
-        public List<Uri> Urls 
+        public List<Uri> Urls
         {
-            get 
+            get
             {
-                return m_urls; 
+                return m_urls;
             }
 
             set
@@ -89,7 +89,7 @@ namespace Opc.Ua.Client.Controls
 
                             if (value[ii].Port > 0)
                             {
-                                builder.Append(":");
+                                builder.Append(':');
                                 builder.Append(value[ii].Port);
                             }
                         }
@@ -101,7 +101,7 @@ namespace Opc.Ua.Client.Controls
                 m_urls = value;
             }
         }
-        
+
         /// <summary>
         /// Gets or sets the control that is stores with the current file path.
         /// </summary>

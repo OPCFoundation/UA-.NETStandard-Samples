@@ -62,7 +62,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The value being edited in the control.
         /// </summary>
-        public Variant Value 
+        public Variant Value
         {
             get
             {

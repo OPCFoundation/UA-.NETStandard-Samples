@@ -65,13 +65,13 @@ namespace Quickstarts.UserAuthenticationServer
             }
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 // TBD
@@ -108,7 +108,7 @@ namespace Quickstarts.UserAuthenticationServer
                 process.NodeId = new NodeId(1, NamespaceIndex);
                 process.BrowseName = new QualifiedName("My Process", NamespaceIndex);
                 process.DisplayName = process.BrowseName.Name;
-                process.TypeDefinitionId = ObjectTypeIds.BaseObjectType; 
+                process.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
 
                 // ensure the process object can be found via the server object. 
                 IList<IReference> references = null;
@@ -136,13 +136,13 @@ namespace Quickstarts.UserAuthenticationServer
                 state.Value = ".\\Log.txt";
 
                 process.AddChild(state);
-                
+
                 state.OnReadUserAccessLevel = OnReadUserAccessLevel;
                 state.OnSimpleWriteValue = OnWriteValue;
 
                 // save in dictionary. 
                 AddPredefinedNode(SystemContext, process);
-            } 
+            }
         }
 
         public ServiceResult OnWriteValue(ISystemContext context, NodeState node, ref object value)
@@ -245,7 +245,7 @@ namespace Quickstarts.UserAuthenticationServer
                 handle.Validated = true;
 
                 return handle;
-            } 
+            }
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 return handle.Node;
             }
-            
+
             // TBD
 
             return null;

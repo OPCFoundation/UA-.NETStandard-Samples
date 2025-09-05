@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,10 +32,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -45,8 +46,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public DataChangeNotificationListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -59,15 +60,15 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Item",        HorizontalAlignment.Left, null },
-			new object[] { "Variable",    HorizontalAlignment.Left, null },
-			new object[] { "Value",       HorizontalAlignment.Left, String.Empty, 250 },
-			new object[] { "Status",      HorizontalAlignment.Left, String.Empty },
-			new object[] { "Source Time", HorizontalAlignment.Center, String.Empty },
-			new object[] { "Server Time", HorizontalAlignment.Center, String.Empty }
-		};
-		#endregion
+        {
+            new object[] { "Item",        HorizontalAlignment.Left, null },
+            new object[] { "Variable",    HorizontalAlignment.Left, null },
+            new object[] { "Value",       HorizontalAlignment.Left, String.Empty, 250 },
+            new object[] { "Status",      HorizontalAlignment.Left, String.Empty },
+            new object[] { "Source Time", HorizontalAlignment.Center, String.Empty },
+            new object[] { "Server Time", HorizontalAlignment.Center, String.Empty }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -76,17 +77,17 @@ namespace Opc.Ua.Sample.Controls
         [DefaultValue(20)]
         public int MaxChangeCount
         {
-            get { return m_maxChangeCount;  }
+            get { return m_maxChangeCount; }
             set { m_maxChangeCount = value; }
         }
-        
+
         /// <summary>
         /// Whether to show previous values in the control after an update.
         /// </summary>
         [DefaultValue(false)]
         public bool ShowHistory
         {
-            get { return m_showHistory;  }
+            get { return m_showHistory; }
             set { m_showHistory = value; }
         }
 
@@ -102,14 +103,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Subscription subscription, MonitoredItem monitoredItem)
+        public async void InitializeAsync(Subscription subscription, MonitoredItem monitoredItem, CancellationToken ct = default)
         {
-            if (subscription == null) throw new ArgumentNullException("subscription");
-            
+            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+
             Clear();
-                        
+
             // start receiving notifications from the new subscription.
-            m_subscription  = subscription;
+            m_subscription = subscription;
             m_monitoredItem = monitoredItem;
 
             // get the events.
@@ -148,14 +149,14 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            UpdateChanges(changes, 0);
+            await UpdateChangesAsync(changes, 0, ct);
             AdjustColumns();
         }
-        
+
         /// <summary>
         /// Processes a new notification.
         /// </summary>
-        public void NotificationReceived(NotificationEventArgs e)
+        public async Task NotificationReceivedAsync(NotificationEventArgs e, CancellationToken ct = default)
         {
             // get the changes.
             List<MonitoredItemNotification> changes = new List<MonitoredItemNotification>();
@@ -194,7 +195,7 @@ namespace Opc.Ua.Sample.Controls
                 foreach (ListViewItem listItem in ItemsLV.Items)
                 {
                     MonitoredItemNotification change = listItem.Tag as MonitoredItemNotification;
-                
+
                     if (change == null)
                     {
                         continue;
@@ -220,22 +221,22 @@ namespace Opc.Ua.Sample.Controls
                 changes.Reverse();
             }
 
-            UpdateChanges(changes, offset);
+            await UpdateChangesAsync(changes, offset, ct);
             AdjustColumns();
         }
-        
+
         /// <summary>
         /// Processes a new notification.
         /// </summary>
-        public void NotificationReceived(MonitoredItemNotificationEventArgs e)
+        public async Task NotificationReceivedAsync(MonitoredItemNotificationEventArgs e, CancellationToken ct = default)
         {
             MonitoredItemNotification change = e.NotificationValue as MonitoredItemNotification;
-        
+
             if (change == null)
             {
                 return;
             }
-            
+
             if (m_monitoredItem != null)
             {
                 if (m_monitoredItem.ClientHandle != change.ClientHandle)
@@ -248,13 +249,13 @@ namespace Opc.Ua.Sample.Controls
             List<MonitoredItemNotification> changes = new List<MonitoredItemNotification>();
             changes.Add(change);
 
-            // fill in earlier changes.            
+            // fill in earlier changes.
             if (m_showHistory)
             {
                 foreach (ListViewItem listItem in ItemsLV.Items)
                 {
                     change = listItem.Tag as MonitoredItemNotification;
-                
+
                     if (change == null)
                     {
                         continue;
@@ -276,11 +277,11 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
             }
-            
-            UpdateChanges(changes, 1);
+
+            await UpdateChangesAsync(changes, 1, ct);
             AdjustColumns();
         }
-                
+
         /// <summary>
         /// Processes a change to the subscription.
         /// </summary>
@@ -303,19 +304,19 @@ namespace Opc.Ua.Sample.Controls
                         }
                     }
                 }
-                
+
                 // remove events for items that have been deleted.
                 foreach (ListViewItem listItem in itemsToRemove)
                 {
                     listItem.Remove();
-                }           
+                }
             }
         }
 
         /// <summary>
         /// Updates the display after the publish status for the subscription changes.
         /// </summary>
-        public void PublishStatusChanged()
+        public async Task PublishStatusChangedAsync(CancellationToken ct = default)
         {
             foreach (ListViewItem listItem in ItemsLV.Items)
             {
@@ -323,10 +324,10 @@ namespace Opc.Ua.Sample.Controls
 
                 if (change != null)
                 {
-                    UpdateItem(listItem, change);
+                    await UpdateItemAsync(listItem, change, ct);
                 }
             }
-            
+
             AdjustColumns();
         }
         #endregion
@@ -334,22 +335,22 @@ namespace Opc.Ua.Sample.Controls
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
-            ViewMI.Enabled   = ItemsLV.SelectedItems.Count == 1;
+        {
+            ViewMI.Enabled = ItemsLV.SelectedItems.Count == 1;
             DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
-		}
-        
+        }
+
         /// <see cref="BaseListCtrl.PickItems" />
         protected override void PickItems()
         {
             base.PickItems();
             ViewMI_Click(this, null);
         }
-                        
+
         /// <summary>
         /// Updates the events displayed in the control.
         /// </summary>
-        private void UpdateChanges(IList<MonitoredItemNotification> changes, int offset)
+        private async Task UpdateChangesAsync(IList<MonitoredItemNotification> changes, int offset, CancellationToken ct = default)
         {
             // save selected indexes.
             List<int> indexes = new List<int>(ItemsLV.SelectedIndices.Count);
@@ -358,7 +359,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 indexes.Add(index);
             }
-                     
+
             // add all new values.
             if (m_showHistory)
             {
@@ -374,13 +375,13 @@ namespace Opc.Ua.Sample.Controls
 
             // only update changed values.
             else
-            {          
+            {
                 foreach (ListViewItem listItem in ItemsLV.Items)
                 {
                     listItem.ForeColor = Color.Gray;
                 }
 
-                for (int ii = changes.Count-1; ii >= 0; ii--)
+                for (int ii = changes.Count - 1; ii >= 0; ii--)
                 {
                     bool found = false;
 
@@ -390,7 +391,7 @@ namespace Opc.Ua.Sample.Controls
 
                         if (change != null && change.ClientHandle == changes[ii].ClientHandle)
                         {
-                            UpdateItem(listItem, changes[ii]);
+                            await UpdateItemAsync(listItem, changes[ii], ct);
                             found = true;
                             listItem.ForeColor = Color.Empty;
                             break;
@@ -398,7 +399,7 @@ namespace Opc.Ua.Sample.Controls
                     }
 
                     if (!found)
-                    {                
+                    {
                         AddItem(changes[ii]);
                     }
                 }
@@ -409,29 +410,29 @@ namespace Opc.Ua.Sample.Controls
             {
                 ItemsLV.Items[index].Selected = false;
 
-                if (index+offset < ItemsLV.Items.Count)
+                if (index + offset < ItemsLV.Items.Count)
                 {
-                    ItemsLV.Items[index+offset].Selected = true;
+                    ItemsLV.Items[index + offset].Selected = true;
                 }
             }
         }
 
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-			MonitoredItemNotification change = item as MonitoredItemNotification;
+            MonitoredItemNotification change = item as MonitoredItemNotification;
 
-			if (change == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}                        
-            
+            if (change == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
+
             // fill in the columns.
             listItem.SubItems[0].Text = String.Format("[{0}]", change.ClientHandle);
 
             MonitoredItem monitoredItem = null;
-            
+
             if (m_subscription != null)
             {
                 monitoredItem = m_subscription.FindItemByClientHandle(change.ClientHandle);
@@ -445,7 +446,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 listItem.SubItems[1].Text = "(unknown)";
             }
-                
+
             listItem.SubItems[2].Text = String.Format("{0}", change.Value.WrappedValue);
 
             // check of publishing has stopped for some reason.
@@ -468,7 +469,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 listItem.SubItems[4].Text = String.Empty;
             }
-            
+
             time = change.Value.ServerTimestamp;
 
             if (time != null && time != DateTime.MinValue)
@@ -479,12 +480,12 @@ namespace Opc.Ua.Sample.Controls
             {
                 listItem.SubItems[5].Text = String.Empty;
             }
-   
+
             listItem.Tag = change;
-            listItem.ForeColor = (m_subscription.PublishingStopped)?Color.Red:Color.Empty;
+            listItem.ForeColor = (m_subscription.PublishingStopped) ? Color.Red : Color.Empty;
         }
         #endregion
-               
+
         #region Event Handlers
         private void ViewMI_Click(object sender, EventArgs e)
         {
@@ -501,7 +502,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

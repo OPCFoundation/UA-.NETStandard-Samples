@@ -37,7 +37,7 @@ using Opc.Ua;
 namespace Quickstarts.SimpleEvents
 {
     #region CycleStepDataType Class
-    #if (!OPCUA_EXCLUDE_CycleStepDataType)
+#if (!OPCUA_EXCLUDE_CycleStepDataType)
     /// <summary>
     /// 
     /// </summary>
@@ -79,7 +79,7 @@ namespace Quickstarts.SimpleEvents
         [DataMember(Name = "Name", IsRequired = false, Order = 1)]
         public string Name
         {
-            get { return m_name;  }
+            get { return m_name; }
             set { m_name = value; }
         }
 
@@ -87,7 +87,7 @@ namespace Quickstarts.SimpleEvents
         [DataMember(Name = "Duration", IsRequired = false, Order = 2)]
         public double Duration
         {
-            get { return m_duration;  }
+            get { return m_duration; }
             set { m_duration = value; }
         }
         #endregion
@@ -154,13 +154,13 @@ namespace Quickstarts.SimpleEvents
             return true;
         }
 
-        #if !NET_STANDARD
+#if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (CycleStepDataType)this.MemberwiseClone();
         }
-        #endif
+#endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -187,27 +187,27 @@ namespace Quickstarts.SimpleEvents
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfCycleStepDataType", Namespace = Quickstarts.SimpleEvents.Namespaces.SimpleEvents, ItemName = "CycleStepDataType")]
-    #if !NET_STANDARD
+#if !NET_STANDARD
     public partial class CycleStepDataTypeCollection : List<CycleStepDataType>, ICloneable
-    #else
+#else
     public partial class CycleStepDataTypeCollection : List<CycleStepDataType>
-    #endif
+#endif
     {
         #region Constructors
         /// <summary>
         /// Initializes the collection with default values.
         /// </summary>
-        public CycleStepDataTypeCollection() {}
+        public CycleStepDataTypeCollection() { }
 
         /// <summary>
         /// Initializes the collection with an initial capacity.
         /// </summary>
-        public CycleStepDataTypeCollection(int capacity) : base(capacity) {}
+        public CycleStepDataTypeCollection(int capacity) : base(capacity) { }
 
         /// <summary>
         /// Initializes the collection with another collection.
         /// </summary>
-        public CycleStepDataTypeCollection(IEnumerable<CycleStepDataType> collection) : base(collection) {}
+        public CycleStepDataTypeCollection(IEnumerable<CycleStepDataType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -238,7 +238,7 @@ namespace Quickstarts.SimpleEvents
         }
         #endregion
 
-        #if !NET_STANDARD
+#if !NET_STANDARD
         #region ICloneable Methods
         /// <summary>
         /// Creates a deep copy of the collection.
@@ -248,7 +248,7 @@ namespace Quickstarts.SimpleEvents
             return (CycleStepDataTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
+#endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -264,6 +264,6 @@ namespace Quickstarts.SimpleEvents
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 }

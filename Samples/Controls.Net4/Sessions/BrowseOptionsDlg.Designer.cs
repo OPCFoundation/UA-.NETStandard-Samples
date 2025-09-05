@@ -223,7 +223,7 @@ namespace Opc.Ua.Sample.Controls
             this.BrowseBTN.TabIndex = 17;
             this.BrowseBTN.Text = "...";
             this.BrowseBTN.UseVisualStyleBackColor = true;
-            this.BrowseBTN.Click += new System.EventHandler(this.BrowseBTN_Click);
+            this.BrowseBTN.Click += new System.EventHandler(this.BrowseBTN_ClickAsync);
             // 
             // ViewIdTB
             // 

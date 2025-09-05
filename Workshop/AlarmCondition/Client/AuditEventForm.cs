@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,6 +29,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -45,7 +47,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        private AuditEventForm()
+        public AuditEventForm()
         {
             InitializeComponent();
         }
@@ -55,7 +57,8 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="session">The session.</param>
         /// <param name="subscription">The subscription.</param>
-        public AuditEventForm(ISession session, Subscription subscription)
+        /// <param name="ct">The cancellation token.</param>
+        public async Task InitializeAsync(ISession session, Subscription subscription, CancellationToken ct = default)
         {
             InitializeComponent();
 
@@ -74,10 +77,10 @@ namespace Quickstarts.AlarmConditionClient
             m_filter.EventTypes = new NodeId[] { ObjectTypeIds.AuditUpdateMethodEventType };
 
             // find the fields of interest.
-            m_filter.SelectClauses = m_filter.ConstructSelectClauses(m_session, ObjectTypeIds.AuditUpdateMethodEventType);
+            m_filter.SelectClauses = await m_filter.ConstructSelectClausesAsync(m_session, ct, ObjectTypeIds.AuditUpdateMethodEventType);
 
             // declate callback.
-            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
 
             // create a monitored item based on the current filter settings.
             m_monitoredItem = m_filter.CreateMonitoredItem(m_session);
@@ -86,7 +89,7 @@ namespace Quickstarts.AlarmConditionClient
             m_monitoredItem.Notification += m_MonitoredItem_Notification;
 
             m_subscription.AddItem(m_monitoredItem);
-            m_subscription.ApplyChangesAsync().GetAwaiter().GetResult();
+            await m_subscription.ApplyChangesAsync(ct);
         }
         #endregion
 
@@ -117,7 +120,7 @@ namespace Quickstarts.AlarmConditionClient
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private FilterDefinition m_filter;
-        private Dictionary<NodeId,NodeId> m_eventTypeMappings;
+        private Dictionary<NodeId, NodeId> m_eventTypeMappings;
         private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
         #endregion
 
@@ -126,13 +129,13 @@ namespace Quickstarts.AlarmConditionClient
 
         #region Event Handlers
         /// <summary>
-        /// Updates the display with a new value for a monitored variable. 
+        /// Updates the display with a new value for a monitored variable.
         /// </summary>
-        private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_Notification), monitoredItem, e);
+                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync), monitoredItem, e);
                 return;
             }
 
@@ -155,9 +158,9 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // construct the audit object.
-                AuditUpdateMethodEventState audit = FormUtils.ConstructEvent(
-                    m_session, 
-                    monitoredItem, 
+                AuditUpdateMethodEventState audit = await FormUtils.ConstructEventAsync(
+                    m_session,
+                    monitoredItem,
                     notification,
                     m_eventTypeMappings) as AuditUpdateMethodEventState;
 
@@ -175,9 +178,9 @@ namespace Quickstarts.AlarmConditionClient
                 item.SubItems.Add(String.Empty); // Time
                 item.SubItems.Add(String.Empty); // Message
                 item.SubItems.Add(String.Empty); // Arguments
-                
+
                 // look up the condition type metadata in the local cache.
-                INode type = m_session.NodeCache.Find(audit.TypeDefinitionId);
+                INode type = await m_session.NodeCache.FindAsync(audit.TypeDefinitionId);
 
                 // Source
                 if (audit.SourceName != null)
@@ -200,7 +203,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // look up the method metadata in the local cache.
-                INode method = m_session.NodeCache.Find(BaseVariableState.GetValue(audit.MethodId));
+                INode method = await m_session.NodeCache.FindAsync(BaseVariableState.GetValue(audit.MethodId));
 
                 // Method
                 if (method != null)

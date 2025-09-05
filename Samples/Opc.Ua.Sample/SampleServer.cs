@@ -53,7 +53,7 @@ namespace Opc.Ua.Sample
             Utils.Trace("The server is starting.");
 
             base.OnServerStarting(configuration);
-            
+
             // it is up to the application to decide how to validate user identity tokens.
             // this function creates validator for X509 identity tokens.
             CreateUserIdentityValidators(configuration);
@@ -65,7 +65,7 @@ namespace Opc.Ua.Sample
         protected override void OnServerStarted(IServerInternal server)
         {
             base.OnServerStarted(server);
-            
+
             // request notifications when the user identity is changed. all valid users are accepted by default.
             server.SessionManager.ImpersonateUser += new ImpersonateEventHandler(SessionManager_ImpersonateUser);
         }
@@ -81,13 +81,13 @@ namespace Opc.Ua.Sample
             Debug.WriteLine("The Server is stopping.");
 
             base.OnServerStopping();
-            
-            #if INCLUDE_Sample
+
+#if INCLUDE_Sample
             CleanSampleModel();
-            #endif
+#endif
         }
-        
-        #if CUSTOM_NODE_MANAGER
+
+#if CUSTOM_NODE_MANAGER
         /// <summary>
         /// Creates the node managers for the server.
         /// </summary>
@@ -114,11 +114,11 @@ namespace Opc.Ua.Sample
             nodeManagers.Add(factory.Create(server, configuration));
             factory = new global::Boiler.BoilerNodeManagerFactory();
             nodeManagers.Add(factory.Create(server, configuration));
-            
+
             // create master node manager.
             return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
         }
-        #endif
+#endif
 
         /// <summary>
         /// Loads the non-configurable properties for the application.
@@ -131,11 +131,11 @@ namespace Opc.Ua.Sample
             ServerProperties properties = new ServerProperties();
 
             properties.ManufacturerName = "OPC Foundation";
-            properties.ProductName      = "OPC UA SDK Samples";
-            properties.ProductUri       = "http://opcfoundation.org/UA/Samples/v1.0";
-            properties.SoftwareVersion  = Utils.GetAssemblySoftwareVersion();
-            properties.BuildNumber      = Utils.GetAssemblyBuildNumber();
-            properties.BuildDate        = Utils.GetAssemblyTimestamp();
+            properties.ProductName = "OPC UA SDK Samples";
+            properties.ProductUri = "http://opcfoundation.org/UA/Samples/v1.0";
+            properties.SoftwareVersion = Utils.GetAssemblySoftwareVersion();
+            properties.BuildNumber = Utils.GetAssemblyBuildNumber();
+            properties.BuildDate = Utils.GetAssemblyTimestamp();
 
             // TBD - All applications have software certificates that need to added to the properties.
 
@@ -144,7 +144,7 @@ namespace Opc.Ua.Sample
             //    properties.SoftwareCertificates.Add(certificates[ii]);
             // }
 
-            return properties; 
+            return properties;
         }
 
         /// <summary>
@@ -158,15 +158,15 @@ namespace Opc.Ua.Sample
             Debug.WriteLine("The NodeManagers have started.");
 
             // allow base class processing to happen first.
-            base.OnNodeManagerStarted(server); 
-            
+            base.OnNodeManagerStarted(server);
+
             // adds the sample information models to the core node manager. 
-            #if INCLUDE_Sample
+#if INCLUDE_Sample
             InitializeSampleModel();
-            #endif
+#endif
         }
-                
-        #if USER_AUTHENTICATION
+
+#if USER_AUTHENTICATION
         /// <summary>
         /// Creates the resource manager for the server.
         /// </summary>
@@ -183,7 +183,7 @@ namespace Opc.Ua.Sample
            
             return resourceManager;
         }
-        #endif
+#endif
         #endregion
     }
 }

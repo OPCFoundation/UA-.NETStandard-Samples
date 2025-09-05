@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample
 {
@@ -47,35 +49,35 @@ namespace Opc.Ua.Sample
         public TypeHierarchyListCtrl()
         {
             InitializeComponent();
-			SetColumns(m_ColumnNames);
+            SetColumns(m_ColumnNames);
         }
-		#endregion
+        #endregion
 
         #region Private Fields
         private Session m_session;
 
-		// The columns to display in the control.		
-		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Name", HorizontalAlignment.Left, null },  
-			new object[] { "Type", HorizontalAlignment.Left, null },  
-			new object[] { "Description", HorizontalAlignment.Left, null }
-		};
+        // The columns to display in the control.
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Name", HorizontalAlignment.Left, null },
+            new object[] { "Type", HorizontalAlignment.Left, null },
+            new object[] { "Description", HorizontalAlignment.Left, null }
+        };
 
-        private class InstanceDeclaration
+        private sealed class InstanceDeclaration
         {
             public ILocalNode Instance;
             public string DisplayPath;
             public string DataType;
             public string Description;
         }
-		#endregion
+        #endregion
 
         #region Public Interface
         /// <summary>
         /// Initializes the control.
         /// </summary>
-        public void Initialize(Session session, NodeId typeId)
+        public async Task InitializeAsync(Session session, NodeId typeId, CancellationToken ct = default)
         {
             ItemsLV.Items.Clear();
             AdjustColumns();
@@ -85,29 +87,29 @@ namespace Opc.Ua.Sample
                 return;
             }
 
-            ILocalNode root = session.NodeCache.Find(typeId) as ILocalNode;
+            ILocalNode root = await session.NodeCache.FindAsync(typeId, ct) as ILocalNode;
 
             if (root == null)
             {
                 return;
             }
-            
+
             m_session = session;
 
-            SortedDictionary<string,InstanceDeclaration> instances = new SortedDictionary<string,InstanceDeclaration>();
-        
+            SortedDictionary<string, InstanceDeclaration> instances = new SortedDictionary<string, InstanceDeclaration>();
+
             InstanceDeclaration declaration = new InstanceDeclaration();
 
             declaration.Instance = root;
             declaration.DisplayPath = Utils.Format("({0})", root.NodeClass);
             declaration.Description = Utils.Format("{0}", root.Description);
             declaration.DataType = "NodeId";
-            
+
             IVariableBase variable = root as IVariableBase;
 
             if (variable != null)
             {
-                INode dataType =  m_session.NodeCache.Find(variable.DataType);
+                INode dataType = await m_session.NodeCache.FindAsync(variable.DataType, ct);
 
                 if (dataType != null)
                 {
@@ -118,39 +120,39 @@ namespace Opc.Ua.Sample
                 {
                     declaration.DataType += "[]";
                 }
-            }                
+            }
 
             instances.Add(declaration.DisplayPath, declaration);
 
-            CollectInstances(root, String.Empty, instances);
+            await CollectInstancesAsync(root, String.Empty, instances, ct);
 
             foreach (InstanceDeclaration instance in instances.Values)
             {
                 AddItem(instance);
             }
-            
+
             AdjustColumns();
         }
         #endregion
-        
+
         #region Overridden Methods
         /// <see cref="Opc.Ua.Client.Controls.BaseListCtrl.UpdateItem(ListViewItem,object)" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             InstanceDeclaration instance = item as InstanceDeclaration;
 
-			if (instance == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
+            if (instance == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
-			listItem.SubItems[0].Text = instance.DisplayPath;
-			listItem.SubItems[1].Text = instance.DataType;
-			listItem.SubItems[2].Text = instance.Description;
-            
-            listItem.ImageKey = GuiUtils.GetTargetIcon(m_session, instance.Instance.NodeClass, instance.Instance.TypeDefinitionId);
-			listItem.Tag = item;
+            listItem.SubItems[0].Text = instance.DisplayPath;
+            listItem.SubItems[1].Text = instance.DataType;
+            listItem.SubItems[2].Text = instance.Description;
+
+            listItem.ImageKey = await GuiUtils.GetTargetIconAsync(m_session, instance.Instance.NodeClass, instance.Instance.TypeDefinitionId, ct);
+            listItem.Tag = item;
         }
         #endregion
 
@@ -158,8 +160,8 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// Collects the instance declarations to display in the control.
         /// </summary>
-        private void CollectInstances(ILocalNode parent, string basePath, SortedDictionary<string,InstanceDeclaration> instances)
-        {         
+        private async Task CollectInstancesAsync(ILocalNode parent, string basePath, SortedDictionary<string, InstanceDeclaration> instances, CancellationToken ct = default)
+        {
             if (parent == null)
             {
                 return;
@@ -173,14 +175,14 @@ namespace Opc.Ua.Sample
 
             for (int ii = 0; ii < supertypes.Count; ii++)
             {
-                ILocalNode supertype = m_session.NodeCache.Find(supertypes[ii].TargetId) as ILocalNode;
+                ILocalNode supertype = await m_session.NodeCache.FindAsync(supertypes[ii].TargetId, ct) as ILocalNode;
 
                 if (supertype == null)
                 {
                     continue;
                 }
 
-                CollectInstances(supertype, basePath, instances);
+                await CollectInstancesAsync(supertype, basePath, instances, ct);
             }
 
             IList<IReference> children = parent.References.Find(
@@ -191,7 +193,7 @@ namespace Opc.Ua.Sample
 
             for (int ii = 0; ii < children.Count; ii++)
             {
-                ILocalNode child = m_session.NodeCache.Find(children[ii].TargetId) as ILocalNode;
+                ILocalNode child = await m_session.NodeCache.FindAsync(children[ii].TargetId, ct) as ILocalNode;
 
                 if (child == null)
                 {
@@ -209,12 +211,12 @@ namespace Opc.Ua.Sample
                 }
 
                 string displayPath = Utils.Format("{0}", child);
-            
+
                 if (!String.IsNullOrEmpty(basePath))
                 {
                     displayPath = Utils.Format("{0}/{1}", basePath, displayPath);
                 }
-            
+
                 InstanceDeclaration declaration = new InstanceDeclaration();
 
                 declaration.Instance = child;
@@ -226,7 +228,7 @@ namespace Opc.Ua.Sample
 
                 if (variable != null)
                 {
-                    INode dataType =  m_session.NodeCache.Find(variable.DataType);
+                    INode dataType = await m_session.NodeCache.FindAsync(variable.DataType, ct);
 
                     if (dataType != null)
                     {
@@ -238,16 +240,16 @@ namespace Opc.Ua.Sample
                         declaration.DataType += "[]";
                     }
                 }
-                
+
                 IObject objectn = child as IObject;
 
                 if (objectn != null)
-                {                    
+                {
                     declaration.DataType = "NodeId";
                 }
 
                 instances[displayPath] = declaration;
-                CollectInstances(child, displayPath, instances);
+                await CollectInstancesAsync(child, displayPath, instances, ct);
             }
         }
         #endregion

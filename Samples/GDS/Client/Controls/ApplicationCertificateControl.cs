@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -57,7 +58,8 @@ namespace Opc.Ua.Gds.Client
             GlobalDiscoveryServerClient gds,
             ServerPushConfigurationClient server,
             RegisteredApplication application,
-            bool isHttps)
+            bool isHttps,
+            CancellationToken ct = default)
         {
             m_configuration = configuration;
             m_gds = gds;
@@ -100,7 +102,7 @@ namespace Opc.Ua.Gds.Client
                         id.StoreType = CertificateStoreIdentifier.DetermineStoreType(id.StorePath);
                         id.SubjectName = application.CertificateSubjectName.Replace("localhost", Utils.GetHostName());
 
-                        certificate = await id.FindAsync(true);
+                        certificate = await id.FindAsync(true, ct: ct);
                     }
                 }
             }
@@ -131,7 +133,7 @@ namespace Opc.Ua.Gds.Client
                                     SubjectName = "CN=" + url.DnsSafeHost
                                 };
 
-                                certificate = await id.FindAsync();
+                                certificate = await id.FindAsync(ct: ct);
                             }
                         }
                     }
@@ -186,7 +188,7 @@ namespace Opc.Ua.Gds.Client
                 var trustList = await m_gds.ReadTrustListAsync(trustListId);
                 bool applyChanges = await m_server.UpdateTrustListAsync(trustList);
 
-                byte[] unusedNonce = new byte[0];
+                byte[] unusedNonce = Array.Empty<byte>();
                 byte[] certificateRequest = await m_server.CreateSigningRequestAsync(
                     NodeId.Null,
                     m_server.ApplicationCertificateType,
@@ -486,7 +488,7 @@ namespace Opc.Ua.Gds.Client
                         privateKeyPFX = x509.Export(X509ContentType.Pfx);
                     }
 
-                    byte[] unusedPrivateKey = new byte[0];
+                    byte[] unusedPrivateKey = Array.Empty<byte>();
                     bool applyChanges = await m_server.UpdateCertificateAsync(
                         NodeId.Null,
                         m_server.ApplicationCertificateType,
@@ -544,7 +546,7 @@ namespace Opc.Ua.Gds.Client
             {
                 await m_server.DisconnectAsync();
             }
-            catch (Exception)
+            catch
             {
                 // ignore.
             }

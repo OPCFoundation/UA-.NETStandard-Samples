@@ -46,6 +46,7 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -56,6 +57,7 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -199,12 +201,6 @@
     </Compile>
     <Compile Include="Subscriptions\SelectClauseListCtrl.Designer.cs">
       <DependentUpon>SelectClauseListCtrl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Common\DataEncodingDlg.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Common\DataEncodingDlg.Designer.cs">
-      <DependentUpon>DataEncodingDlg.cs</DependentUpon>
     </Compile>
     <Compile Include="Common\PerformanceResultsListCtrl.cs">
       <SubType>UserControl</SubType>
@@ -519,10 +515,6 @@
       <DependentUpon>SelectClauseListCtrl.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Common\DataEncodingDlg.resx">
-      <DependentUpon>DataEncodingDlg.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
     <EmbeddedResource Include="Common\PerformanceResultsListCtrl.resx">
       <SubType>Designer</SubType>
       <DependentUpon>PerformanceResultsListCtrl.cs</DependentUpon>
@@ -708,10 +700,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes">
-      <Version>1.5.377.9-preview</Version>
+      <Version>1.5.377.11-preview</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>1.5.377.9-preview</Version>
+      <Version>1.5.377.11-preview</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

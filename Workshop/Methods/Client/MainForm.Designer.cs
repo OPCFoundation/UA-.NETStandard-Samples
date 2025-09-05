@@ -174,7 +174,7 @@ namespace Quickstarts.MethodsClient
             this.StartBTN.TabIndex = 11;
             this.StartBTN.Text = "Start";
             this.StartBTN.UseVisualStyleBackColor = true;
-            this.StartBTN.Click += new System.EventHandler(this.StartBTN_Click);
+            this.StartBTN.Click += new System.EventHandler(this.StartBTN_ClickAsync);
             // 
             // CurrentStateTB
             // 
@@ -276,7 +276,7 @@ namespace Quickstarts.MethodsClient
             this.ConnectServerCTRL.TabIndex = 4;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
             this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
             // 

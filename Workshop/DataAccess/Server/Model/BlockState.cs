@@ -37,7 +37,7 @@ using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.DataAccessServer
-{    
+{
     /// <summary>
     /// A object which maps a block to a UA object.
     /// </summary>
@@ -51,8 +51,8 @@ namespace Quickstarts.DataAccessServer
         /// <param name="nodeId">The node id.</param>
         /// <param name="block">The block.</param>
         public BlockState(
-            DataAccessServerNodeManager nodeManager, 
-            NodeId nodeId, 
+            DataAccessServerNodeManager nodeManager,
+            NodeId nodeId,
             UnderlyingSystemBlock block) : base(null)
         {
             m_blockId = block.Id;
@@ -152,10 +152,10 @@ namespace Quickstarts.DataAccessServer
             UnderlyingSystemBlock block = system.FindBlock(m_blockId);
 
             if (block == null)
-            {                
+            {
                 return StatusCodes.BadNodeIdUnknown;
             }
-                
+
             uint error = block.WriteTagValue(node.SymbolicName, value);
 
             if (error != 0)
@@ -293,7 +293,7 @@ namespace Quickstarts.DataAccessServer
 
             // update the variable values.
             UpdateVariable(context, tag, variable);
-            
+
             return variable;
         }
 
@@ -311,11 +311,11 @@ namespace Quickstarts.DataAccessServer
 
             switch (tag.DataType)
             {
-                case UnderlyingSystemDataType.Integer1: { variable.DataType = DataTypes.SByte;  break; }
-                case UnderlyingSystemDataType.Integer2: { variable.DataType = DataTypes.Int16;  break; }
-                case UnderlyingSystemDataType.Integer4: { variable.DataType = DataTypes.Int32;  break; }
-                case UnderlyingSystemDataType.Real4:    { variable.DataType = DataTypes.Float;  break; }
-                case UnderlyingSystemDataType.String:   { variable.DataType = DataTypes.String; break; }
+                case UnderlyingSystemDataType.Integer1: { variable.DataType = DataTypes.SByte; break; }
+                case UnderlyingSystemDataType.Integer2: { variable.DataType = DataTypes.Int16; break; }
+                case UnderlyingSystemDataType.Integer4: { variable.DataType = DataTypes.Int32; break; }
+                case UnderlyingSystemDataType.Real4: { variable.DataType = DataTypes.Float; break; }
+                case UnderlyingSystemDataType.String: { variable.DataType = DataTypes.String; break; }
             }
 
             variable.ValueRank = ValueRanks.Scalar;
@@ -334,7 +334,7 @@ namespace Quickstarts.DataAccessServer
 
             variable.MinimumSamplingInterval = MinimumSamplingIntervals.Continuous;
             variable.Historizing = false;
-            
+
             switch (tag.TagType)
             {
                 case UnderlyingSystemTagType.Analog:

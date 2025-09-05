@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -57,44 +59,44 @@ namespace Opc.Ua.Sample.Controls
             BrowseDirectionCB.SelectedIndex = 0;
         }
         #endregion
-        
+
         #region Private Fields
         private Browser m_browser;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public bool ShowDialog(Browser browser)
+        public async Task<bool> ShowDialogAsync(Browser browser, CancellationToken ct = default)
         {
-            if (browser == null) throw new ArgumentNullException("browser");
+            if (browser == null) throw new ArgumentNullException(nameof(browser));
 
             m_browser = browser;
-            ReferenceTypeCTRL.Initialize(m_browser.Session as Session, null);
+            await ReferenceTypeCTRL.InitializeAsync(m_browser.Session as Session, null, ct);
 
-            ViewIdTB.Text         = null;
+            ViewIdTB.Text = null;
             ViewTimestampDP.Value = ViewTimestampDP.MinDate;
-            ViewVersionNC.Value   = 0;
+            ViewVersionNC.Value = 0;
 
             if (browser.View != null)
             {
-                ViewIdTB.Text         = String.Format("{0}", browser.View.ViewId);
-                ViewVersionNC.Value   = browser.View.ViewVersion;
+                ViewIdTB.Text = String.Format("{0}", browser.View.ViewId);
+                ViewVersionNC.Value = browser.View.ViewVersion;
                 ViewVersionCK.Checked = browser.View.ViewVersion != 0;
 
                 if (browser.View.Timestamp > ViewTimestampDP.MinDate)
-                {                
-                    ViewTimestampDP.Value   = browser.View.Timestamp ;
+                {
+                    ViewTimestampDP.Value = browser.View.Timestamp;
                     ViewTimestampCK.Checked = true;
                 }
             }
 
-            MaxReferencesReturnedNC.Value    = browser.MaxReferencesReturned;
-            BrowseDirectionCB.SelectedItem   = browser.BrowseDirection;
+            MaxReferencesReturnedNC.Value = browser.MaxReferencesReturned;
+            BrowseDirectionCB.SelectedItem = browser.BrowseDirection;
             ReferenceTypeCTRL.SelectedTypeId = browser.ReferenceTypeId;
-            IncludeSubtypesCK.Checked        = browser.IncludeSubtypes;
-            NodeClassMaskCK.Checked          = browser.NodeClassMask != 0;             
+            IncludeSubtypesCK.Checked = browser.IncludeSubtypes;
+            NodeClassMaskCK.Checked = browser.NodeClassMask != 0;
 
             NodeClassList.Items.Clear();
 
@@ -117,7 +119,7 @@ namespace Opc.Ua.Sample.Controls
             return true;
         }
         #endregion
-        
+
         #region Event Handlers
         private void ViewIdTB_TextChanged(object sender, EventArgs e)
         {
@@ -125,8 +127,8 @@ namespace Opc.Ua.Sample.Controls
         }
 
         private void NodeClassMask_CheckedChanged(object sender, EventArgs e)
-        {            
-            NodeClassList.Enabled = NodeClassMaskCK.Checked;     
+        {
+            NodeClassList.Enabled = NodeClassMaskCK.Checked;
         }
 
         private void ViewVersionCK_CheckedChanged(object sender, EventArgs e)
@@ -139,14 +141,14 @@ namespace Opc.Ua.Sample.Controls
             ViewTimestampDP.Enabled = ViewTimestampCK.Checked;
         }
 
-        private async void BrowseBTN_Click(object sender, EventArgs e)
+        private async void BrowseBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 Browser browser = new Browser(m_browser.Session);
 
                 browser.BrowseDirection = BrowseDirection.Forward;
-                browser.NodeClassMask   = (int)NodeClass.View | (int)NodeClass.Object;
+                browser.NodeClassMask = (int)NodeClass.View | (int)NodeClass.Object;
                 browser.ReferenceTypeId = ReferenceTypeIds.Organizes;
                 browser.IncludeSubtypes = true;
 
@@ -156,7 +158,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference.NodeClass != NodeClass.View)
                     {
-				        MessageBox.Show("Please select a valid view node id.", this.Text);
+                        MessageBox.Show("Please select a valid view node id.", this.Text);
                         return;
                     }
 
@@ -165,7 +167,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -179,9 +181,9 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception)
             {
-				MessageBox.Show("Please enter a valid node id for the view id.", this.Text);
+                MessageBox.Show("Please enter a valid node id for the view id.", this.Text);
             }
-            
+
             try
             {
                 ViewDescription view = null;
@@ -190,28 +192,28 @@ namespace Opc.Ua.Sample.Controls
                 {
                     view = new ViewDescription();
 
-                    view.ViewId      = viewId;
-                    view.Timestamp   = DateTime.MinValue;
+                    view.ViewId = viewId;
+                    view.Timestamp = DateTime.MinValue;
                     view.ViewVersion = 0;
 
                     if (ViewTimestampCK.Checked && ViewTimestampDP.Value > ViewTimestampDP.MinDate)
                     {
                         view.Timestamp = ViewTimestampDP.Value;
                     }
-                    
+
                     if (ViewVersionCK.Checked)
                     {
                         view.ViewVersion = (uint)ViewVersionNC.Value;
                     }
                 }
 
-                m_browser.View                  = view;
+                m_browser.View = view;
                 m_browser.MaxReferencesReturned = (uint)MaxReferencesReturnedNC.Value;
-                m_browser.BrowseDirection       = (BrowseDirection)BrowseDirectionCB.SelectedItem;
-                m_browser.NodeClassMask         = (int)NodeClass.View | (int)NodeClass.Object;
-                m_browser.ReferenceTypeId       = ReferenceTypeCTRL.SelectedTypeId;
-                m_browser.IncludeSubtypes       = IncludeSubtypesCK.Checked;
-                m_browser.NodeClassMask         = 0;
+                m_browser.BrowseDirection = (BrowseDirection)BrowseDirectionCB.SelectedItem;
+                m_browser.NodeClassMask = (int)NodeClass.View | (int)NodeClass.Object;
+                m_browser.ReferenceTypeId = ReferenceTypeCTRL.SelectedTypeId;
+                m_browser.IncludeSubtypes = IncludeSubtypesCK.Checked;
+                m_browser.NodeClassMask = 0;
 
                 int nodeClassMask = 0;
 
@@ -221,12 +223,12 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 m_browser.NodeClassMask = nodeClassMask;
-                
+
                 DialogResult = DialogResult.OK;
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

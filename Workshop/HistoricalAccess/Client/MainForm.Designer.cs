@@ -174,7 +174,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.Aggregates_SelectVariableMI.Name = "Aggregates_SelectVariableMI";
             this.Aggregates_SelectVariableMI.Size = new System.Drawing.Size(222, 22);
             this.Aggregates_SelectVariableMI.Text = "Select Variable...";
-            this.Aggregates_SelectVariableMI.Click += new System.EventHandler(this.Aggregates_SelectVariableMI_Click);
+            this.Aggregates_SelectVariableMI.Click += new System.EventHandler(this.Aggregates_SelectVariableMI_ClickAsync);
             // 
             // Aggregates_SelectAggregateTypeMI
             // 
@@ -187,7 +187,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.ViewHistoricalConfigurationMI.Name = "ViewHistoricalConfigurationMI";
             this.ViewHistoricalConfigurationMI.Size = new System.Drawing.Size(222, 22);
             this.ViewHistoricalConfigurationMI.Text = "View Historical Configuration...";
-            this.ViewHistoricalConfigurationMI.Click += new System.EventHandler(this.ViewHistoricalConfigurationMI_Click);
+            this.ViewHistoricalConfigurationMI.Click += new System.EventHandler(this.ViewHistoricalConfigurationMI_ClickAsync);
             // 
             // Aggregates_ModifyAggregateFilterMI
             // 
@@ -229,7 +229,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.ReadCTRL.Location = new System.Drawing.Point(2, 25);
             this.ReadCTRL.MaxReturnValues = ((uint)(0u));
             this.ReadCTRL.Name = "ReadCTRL";
-            this.ReadCTRL.NodeId = null;
+            this.ReadCTRL.ClearNodeId();
             this.ReadCTRL.ProcessingInterval = 5000;
             this.ReadCTRL.ReadType = Opc.Ua.Client.Controls.HistoryDataListView.HistoryReadType.Raw;
             this.ReadCTRL.ReturnBounds = false;
@@ -254,7 +254,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.ConnectServerCTRL.TabIndex = 3;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
             // 
             // StatusBar

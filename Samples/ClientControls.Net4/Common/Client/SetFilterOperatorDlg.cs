@@ -63,7 +63,7 @@ namespace Opc.Ua.Client.Controls
             FilterOperatorCB.Items.Add(FilterOperator.BitwiseOr);
         }
         #endregion
-        
+
         #region Private Fields
         #endregion
 
@@ -74,7 +74,7 @@ namespace Opc.Ua.Client.Controls
         public bool ShowDialog(ref FilterOperator filterOperator)
         {
             FilterOperatorCB.SelectedItem = filterOperator;
- 
+
             // display the dialog.
             if (base.ShowDialog() != DialogResult.OK)
             {
@@ -85,7 +85,7 @@ namespace Opc.Ua.Client.Controls
             return true;
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
 

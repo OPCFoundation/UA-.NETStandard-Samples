@@ -61,7 +61,7 @@ namespace Opc.Ua.Client.Controls
         private event EventHandler<SelectHostCtrlEventArgs> m_HostSelected;
         private event EventHandler<SelectHostCtrlEventArgs> m_HostConnected;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Whether the control is used to select domains instead of hosts.
@@ -69,7 +69,7 @@ namespace Opc.Ua.Client.Controls
         [System.ComponentModel.DefaultValue(false)]
         public bool SelectDomains
         {
-            get { return m_selectDomains;  }
+            get { return m_selectDomains; }
             set { m_selectDomains = value; }
         }
 
@@ -79,7 +79,7 @@ namespace Opc.Ua.Client.Controls
         [System.ComponentModel.DefaultValue("Connect")]
         public string CommandText
         {
-            get { return ConnectBTN.Text;  }
+            get { return ConnectBTN.Text; }
             set { ConnectBTN.Text = value; }
         }
 
@@ -89,7 +89,7 @@ namespace Opc.Ua.Client.Controls
         public void Initialize(string defaultHost, IList<string> hostnames)
         {
             HostsCB.Items.Clear();
-            
+
             // add option to browse for hosts.
             HostsCB.Items.Add("<Browse...>");
 
@@ -101,12 +101,12 @@ namespace Opc.Ua.Client.Controls
                     HostsCB.Items.Add(hostname);
                 }
             }
-            
+
             // set a suitable default hostname.
             if (String.IsNullOrEmpty(defaultHost))
             {
                 defaultHost = System.Net.Dns.GetHostName();
-                
+
                 if (hostnames != null && hostnames.Count > 0)
                 {
                     defaultHost = hostnames[0];
@@ -142,12 +142,12 @@ namespace Opc.Ua.Client.Controls
             remove { m_HostConnected -= value; }
         }
         #endregion
-        
+
         #region Event Handlers
         private void HostsCB_SelectedIndexChanged(object sender, EventArgs e)
         {
             try
-            {   
+            {
                 if (HostsCB.SelectedIndex != 0)
                 {
                     if (m_HostSelected != null)
@@ -169,7 +169,7 @@ namespace Opc.Ua.Client.Controls
                         HostsCB.SelectedIndex = m_selectedIndex;
                         return;
                     }
-                    
+
                     // set the current selection.
                     m_selectedIndex = HostsCB.FindString(hostname);
 
@@ -178,19 +178,20 @@ namespace Opc.Ua.Client.Controls
                         m_selectedIndex = HostsCB.Items.Add(hostname);
                     }
                 }
-                
+
                 HostsCB.SelectedIndex = m_selectedIndex;
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         private void ConnectBTN_Click(object sender, EventArgs e)
         {
             try
-            {   int index = HostsCB.SelectedIndex;
+            {
+                int index = HostsCB.SelectedIndex;
 
                 if (index == 0)
                 {
@@ -205,7 +206,7 @@ namespace Opc.Ua.Client.Controls
                         {
                             m_HostConnected(this, new SelectHostCtrlEventArgs(HostsCB.Text));
                         }
-                        
+
                         // add host to list.
                         m_selectedIndex = HostsCB.FindString(HostsCB.Text);
 
@@ -216,13 +217,13 @@ namespace Opc.Ua.Client.Controls
 
                         return;
                     }
-                
+
                     m_HostConnected(this, new SelectHostCtrlEventArgs((string)HostsCB.SelectedItem));
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

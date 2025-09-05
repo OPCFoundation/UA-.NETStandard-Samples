@@ -71,7 +71,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// The root of the archive.
         /// </summary>
-       [DataMember(Order = 1)]
+        [DataMember(Order = 1)]
         public string ArchiveRoot
         {
             get { return m_archiveRoot; }

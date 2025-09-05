@@ -38,7 +38,7 @@ namespace Quickstarts.PerfTestServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Namespaces.PerfTest)]
+    [DataContract(Namespace = Namespaces.PerfTest)]
     public class PerfTestServerConfiguration
     {
         #region Constructors

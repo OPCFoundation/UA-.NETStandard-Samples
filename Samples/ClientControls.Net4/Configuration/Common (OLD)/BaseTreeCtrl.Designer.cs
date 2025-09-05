@@ -69,7 +69,7 @@ namespace Opc.Ua.Client.Controls
             this.NodesTV.Size = new System.Drawing.Size(489, 397);
             this.NodesTV.TabIndex = 1;
             this.NodesTV.GiveFeedback += new System.Windows.Forms.GiveFeedbackEventHandler(this.NodesTV_GiveFeedback);
-            this.NodesTV.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.NodesTV_BeforeExpand);
+            this.NodesTV.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.NodesTV_BeforeExpandAsync);
             this.NodesTV.DoubleClick += new System.EventHandler(this.NodesTV_DoubleClick);
             this.NodesTV.DragDrop += new System.Windows.Forms.DragEventHandler(this.NodesTV_DragDrop);
             this.NodesTV.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.NodesTV_AfterSelect);

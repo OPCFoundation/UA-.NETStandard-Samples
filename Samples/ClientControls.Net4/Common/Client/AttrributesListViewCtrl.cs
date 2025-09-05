@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -37,6 +37,7 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -89,7 +90,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public ReadValueId GetSelectedAttribute(int index)
         {
-            if (index >=0 && index < AttributesLV.SelectedItems.Count)
+            if (index >= 0 && index < AttributesLV.SelectedItems.Count)
             {
                 AttributeInfo info = AttributesLV.SelectedItems[index].Tag as AttributeInfo;
 
@@ -105,7 +106,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the attributes for the node.
         /// </summary>
-        public async Task ReadAttributesAsync(NodeId nodeId, bool showProperties)
+        public async Task ReadAttributesAsync(NodeId nodeId, bool showProperties, CancellationToken ct = default)
         {
             AttributesLV.Items.Clear();
 
@@ -117,7 +118,7 @@ namespace Opc.Ua.Client.Controls
             // build list of attributes to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 
-            foreach (uint attributeId in Attributes.GetIdentifiers())
+            foreach (uint attributeId in Attributes.Identifiers)
             {
                 ReadValueId nodeToRead = new ReadValueId();
                 nodeToRead.NodeId = nodeId;
@@ -126,16 +127,15 @@ namespace Opc.Ua.Client.Controls
             }
 
             // read the attributes.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -169,7 +169,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
-                    item.SubItems.Add(await ClientUtils.GetAttributeDisplayTextAsync(m_session, attributeId, results[ii].WrappedValue));
+                    item.SubItems.Add(await ClientUtils.GetAttributeDisplayTextAsync(m_session, attributeId, results[ii].WrappedValue, ct));
                 }
 
                 item.Tag = new AttributeInfo() { NodeToRead = nodesToRead[ii], Value = results[ii] };
@@ -181,7 +181,7 @@ namespace Opc.Ua.Client.Controls
 
             if (showProperties)
             {
-                await ReadPropertiesAsync(nodeId);
+                await ReadPropertiesAsync(nodeId, ct);
             }
 
             // set the column widths.
@@ -194,9 +194,9 @@ namespace Opc.Ua.Client.Controls
 
         #region AttributeInfo Class
         /// <summary>
-        /// The saved information for an attribute/property displayed in the control. 
+        /// The saved information for an attribute/property displayed in the control.
         /// </summary>
-        private class AttributeInfo
+        private sealed class AttributeInfo
         {
             public ReadValueId NodeToRead;
             public DataValue Value;
@@ -207,7 +207,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the properties for the node.
         /// </summary>
-        private async Task ReadPropertiesAsync(NodeId nodeId)
+        private async Task ReadPropertiesAsync(NodeId nodeId, CancellationToken ct = default)
         {
             // build list of references to browse.
             BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
@@ -224,7 +224,7 @@ namespace Opc.Ua.Client.Controls
             nodesToBrowse.Add(nodeToBrowse);
 
             // find properties.
-            ReferenceDescriptionCollection references = ClientUtils.Browse(m_session, View, nodesToBrowse, false);
+            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false, ct);
 
             // build list of properties to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
@@ -252,16 +252,15 @@ namespace Opc.Ua.Client.Controls
             }
 
             // read the properties.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -293,7 +292,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 item.Tag = new AttributeInfo() { NodeToRead = nodesToRead[ii], Value = results[ii] };
-                item.ImageIndex = await ClientUtils.GetImageIndexAsync(m_session, NodeClass.Variable, Opc.Ua.VariableTypeIds.PropertyType, false);
+                item.ImageIndex = await ClientUtils.GetImageIndexAsync(m_session, NodeClass.Variable, Opc.Ua.VariableTypeIds.PropertyType, false, ct);
 
                 // display in list.
                 AttributesLV.Items.Add(item);
@@ -302,7 +301,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void AttributesLV_DoubleClick(object sender, EventArgs e)
+        private async void AttributesLV_DoubleClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -318,11 +317,11 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                new EditComplexValueDlg().ShowDialog(
+                await new EditComplexValueDlg().ShowDialogAsync(
                     m_session,
                     info.NodeToRead.NodeId,
                     info.NodeToRead.AttributeId,
-                    null, 
+                    null,
                     info.Value.Value,
                     true,
                     "View Attribute Value");

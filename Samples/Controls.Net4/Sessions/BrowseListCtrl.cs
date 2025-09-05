@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -39,6 +39,7 @@ using System.Reflection;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -142,7 +143,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Initializes the control with the session/subscription indicated.
         /// </summary>
-        public async Task InitializeAsync(Browser browser, NodeId startId)
+        public async Task InitializeAsync(Browser browser, NodeId startId, CancellationToken ct = default)
         {
             m_browser = null;
             m_session = null;
@@ -162,29 +163,29 @@ namespace Opc.Ua.Sample.Controls
 
             m_stack.Clear();
 
-            await BrowseAsync(startId);
+            await BrowseAsync(startId, ct);
         }
 
         /// <summary>
         /// Moves to the previous position.
         /// </summary>
-        public async Task BackAsync()
+        public async Task BackAsync(CancellationToken ct = default)
         {
-            await SetPositionAsync(m_position);
+            await SetPositionAsync(m_position, ct);
         }
 
         /// <summary>
         /// Moves to the next position.
         /// </summary>
-        public async Task ForwardAsync()
+        public async Task ForwardAsync(CancellationToken ct = default)
         {
-            await SetPositionAsync(m_position + 2);
+            await SetPositionAsync(m_position + 2, ct);
         }
 
         /// <summary>
         /// Sets the current position.
         /// </summary>
-        public async Task SetPositionAsync(int position)
+        public async Task SetPositionAsync(int position, CancellationToken ct = default)
         {
             position--;
 
@@ -207,11 +208,11 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_position == -1)
             {
-                await BrowseAsync(m_startId);
+                await BrowseAsync(m_startId, ct);
             }
             else
             {
-                await BrowseAsync(m_stack[m_position].Target.NodeId);
+                await BrowseAsync(m_stack[m_position].Target.NodeId, ct);
             }
 
             if (m_PositionChanged != null)
@@ -223,7 +224,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the target of a browse operation in the control.
         /// </summary>
-        private async Task BrowseAsync(NodeId startId)
+        private async Task BrowseAsync(NodeId startId, CancellationToken ct = default)
         {
             if (m_browser == null || NodeId.IsNull(startId))
             {
@@ -236,30 +237,30 @@ namespace Opc.Ua.Sample.Controls
             // browse the references from the node and build list of variables.
             BeginUpdate();
 
-            foreach (ReferenceDescription reference in await m_browser.BrowseAsync(startId))
+            foreach (ReferenceDescription reference in await m_browser.BrowseAsync(startId, ct))
             {
-                Node target = await m_session.NodeCache.FindAsync(reference.NodeId) as Node;
+                Node target = await m_session.NodeCache.FindAsync(reference.NodeId, ct) as Node;
 
                 if (target == null)
                 {
                     continue;
                 }
 
-                ReferenceTypeNode referenceType = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId) as ReferenceTypeNode;
+                ReferenceTypeNode referenceType = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
 
                 Node typeDefinition = null;
 
                 if ((target.NodeClass & (NodeClass.Variable | NodeClass.Object)) != 0)
                 {
-                    typeDefinition = await m_session.NodeCache.FindAsync(reference.TypeDefinition) as Node;
+                    typeDefinition = await m_session.NodeCache.FindAsync(reference.TypeDefinition, ct) as Node;
                 }
                 else
                 {
-                    typeDefinition = await m_session.NodeCache.FindAsync(await m_session.NodeCache.TypeTree.FindSuperTypeAsync(target.NodeId)) as Node;
+                    typeDefinition = await m_session.NodeCache.FindAsync(await m_session.NodeCache.TypeTree.FindSuperTypeAsync(target.NodeId, ct), ct) as Node;
                 }
 
                 ItemData item = new ItemData(referenceType, !reference.IsForward, target, typeDefinition);
-                AddItem(item, GuiUtils.GetTargetIcon(m_browser.Session as Session, reference), -1);
+                AddItem(item, await GuiUtils.GetTargetIconAsync(m_browser.Session as Session, reference, ct), -1);
 
                 if ((target.NodeClass & (NodeClass.Variable | NodeClass.VariableType)) != 0)
                 {
@@ -286,16 +287,15 @@ namespace Opc.Ua.Sample.Controls
                     nodesToRead.Add(valueId);
                 }
 
-                DataValueCollection values;
-                DiagnosticInfoCollection diagnosticInfos;
-
-                m_session.Read(
+                ReadResponse response = await m_session.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
                     nodesToRead,
-                    out values,
-                    out diagnosticInfos);
+                    ct);
+
+                DataValueCollection values = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(values, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -308,7 +308,7 @@ namespace Opc.Ua.Sample.Controls
                     {
                         if (Object.ReferenceEquals(item.Tag, variables[ii]))
                         {
-                            UpdateItem(item, variables[ii]);
+                            await UpdateItemAsync(item, variables[ii], ct);
                             break;
                         }
                     }
@@ -323,7 +323,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Stores the data associated with a list view item.
         /// </summary>
-        private class ItemData : IComparable
+        private sealed class ItemData : IComparable
         {
             public ReferenceTypeNode ReferenceType;
             public bool IsInverse;
@@ -417,14 +417,14 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             ItemData itemData = item as ItemData;
 
             if (itemData == null)
             {
-                base.UpdateItem(listItem, item);
+                await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 

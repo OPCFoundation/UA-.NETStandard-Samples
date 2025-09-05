@@ -51,7 +51,7 @@ namespace Quickstarts.ReferenceServer
             PublishValue
         }
 
-        private class Event
+        private sealed class Event
         {
             public DateTime Timestamp;
             public EventType EventType;
@@ -71,8 +71,8 @@ namespace Quickstarts.ReferenceServer
         public static bool EventsEnabled
         {
             get { return m_eventsEnabled; }
-            
-            set 
+
+            set
             {
                 if (m_eventsEnabled != value)
                 {
@@ -85,7 +85,7 @@ namespace Quickstarts.ReferenceServer
                     }
                 }
 
-                m_eventsEnabled = value; 
+                m_eventsEnabled = value;
             }
         }
 
@@ -289,7 +289,7 @@ namespace Quickstarts.ReferenceServer
         /// Reports a new monitored item.
         /// </summary>
         public static void ReportCreateMonitoredItem(
-            NodeId nodeId, 
+            NodeId nodeId,
             uint serverHandle,
             double samplingInterval,
             uint queueSize,
@@ -360,13 +360,13 @@ namespace Quickstarts.ReferenceServer
         /// Fills in the diagnostic information after an error.
         /// </summary>
         public static uint CreateError(
-            uint                     code, 
-            OperationContext         context, 
-            DiagnosticInfoCollection diagnosticInfos, 
-            int                      index)
+            uint code,
+            OperationContext context,
+            DiagnosticInfoCollection diagnosticInfos,
+            int index)
         {
             ServiceResult error = new ServiceResult(code);
-            
+
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
                 diagnosticInfos[index] = new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable);
@@ -374,19 +374,19 @@ namespace Quickstarts.ReferenceServer
 
             return error.Code;
         }
-        
+
         /// <summary>
         /// Fills in the diagnostic information after an error.
         /// </summary>
         public static bool CreateError(
-            uint                      code,  
-            StatusCodeCollection      results,
-            DiagnosticInfoCollection  diagnosticInfos, 
-            OperationContext          context)
+            uint code,
+            StatusCodeCollection results,
+            DiagnosticInfoCollection diagnosticInfos,
+            OperationContext context)
         {
             ServiceResult error = new ServiceResult(code);
             results.Add(error.Code);
-            
+
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
                 diagnosticInfos.Add(new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable));
@@ -395,20 +395,20 @@ namespace Quickstarts.ReferenceServer
 
             return false;
         }
-        
+
         /// <summary>
         /// Fills in the diagnostic information after an error.
         /// </summary>
         public static bool CreateError(
-            uint                     code,  
-            StatusCodeCollection     results,
-            DiagnosticInfoCollection diagnosticInfos, 
-            int                      index,
-            OperationContext         context)
+            uint code,
+            StatusCodeCollection results,
+            DiagnosticInfoCollection diagnosticInfos,
+            int index,
+            OperationContext context)
         {
             ServiceResult error = new ServiceResult(code);
             results[index] = error.Code;
-            
+
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
                 diagnosticInfos[index] = new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable);
@@ -417,28 +417,28 @@ namespace Quickstarts.ReferenceServer
 
             return false;
         }
-        
+
         /// <summary>
         /// Creates a place holder in the lists for the results.
         /// </summary>
         public static void CreateSuccess(
-            StatusCodeCollection     results,
+            StatusCodeCollection results,
             DiagnosticInfoCollection diagnosticInfos,
-            OperationContext         context)
+            OperationContext context)
         {
             results.Add(StatusCodes.Good);
-            
+
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
                 diagnosticInfos.Add(null);
             }
         }
-        
+
         /// <summary>
         /// Creates a collection of diagnostics from a set of errors.
         /// </summary>
         public static DiagnosticInfoCollection CreateDiagnosticInfoCollection(
-            OperationContext     context,
+            OperationContext context,
             IList<ServiceResult> errors)
         {
             // all done if no diagnostics requested.
@@ -446,7 +446,7 @@ namespace Quickstarts.ReferenceServer
             {
                 return null;
             }
-            
+
             // create diagnostics.
             DiagnosticInfoCollection results = new DiagnosticInfoCollection(errors.Count);
 
@@ -464,13 +464,13 @@ namespace Quickstarts.ReferenceServer
 
             return results;
         }
-        
+
         /// <summary>
         /// Creates a collection of status codes and diagnostics from a set of errors.
         /// </summary>
         public static StatusCodeCollection CreateStatusCodeCollection(
-            OperationContext             context,
-            IList<ServiceResult>         errors, 
+            OperationContext context,
+            IList<ServiceResult> errors,
             out DiagnosticInfoCollection diagnosticInfos)
         {
             diagnosticInfos = null;
@@ -496,7 +496,7 @@ namespace Quickstarts.ReferenceServer
             {
                 diagnosticInfos = CreateDiagnosticInfoCollection(context, errors);
             }
-            
+
             return results;
         }
 
@@ -508,9 +508,9 @@ namespace Quickstarts.ReferenceServer
         /// <param name="error">The error to translate.</param>
         /// <returns>The diagnostics with references to the strings in the context string table.</returns>
         public static DiagnosticInfo CreateDiagnosticInfo(
-            IServerInternal  server,
+            IServerInternal server,
             OperationContext context,
-            ServiceResult    error)
+            ServiceResult error)
         {
             if (error == null)
             {
@@ -525,9 +525,9 @@ namespace Quickstarts.ReferenceServer
             }
 
             DiagnosticInfo diagnosticInfo = new DiagnosticInfo(
-                translatedError, 
-                context.DiagnosticsMask, 
-                false, 
+                translatedError,
+                context.DiagnosticsMask,
+                false,
                 context.StringTable);
 
             return diagnosticInfo;

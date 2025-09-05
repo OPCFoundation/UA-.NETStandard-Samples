@@ -71,13 +71,13 @@ namespace Quickstarts.Boiler.Server
             }
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 if (m_simulationTimer != null)
@@ -107,9 +107,9 @@ namespace Quickstarts.Boiler.Server
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
             NodeStateCollection predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(context, 
+            predefinedNodes.LoadFromBinaryResource(context,
                 "Quickstarts.Boiler.Server.Quickstarts.Boiler.PredefinedNodes.uanodes",
-                typeof(BoilerNodeManager).GetTypeInfo().Assembly, 
+                typeof(BoilerNodeManager).GetTypeInfo().Assembly,
                 true);
             return predefinedNodes;
         }
@@ -129,7 +129,7 @@ namespace Quickstarts.Boiler.Server
             lock (Lock)
             {
                 LoadPredefinedNodes(SystemContext, externalReferences);
-                
+
                 // find the untyped Boiler1 node that was created when the model was loaded.
                 BaseObjectState passiveNode = (BaseObjectState)FindPredefinedNode(new NodeId(Objects.Boiler1, NamespaceIndexes[0]), typeof(BaseObjectState));
 
@@ -209,7 +209,7 @@ namespace Quickstarts.Boiler.Server
                         return handle;
                     }
                 }
-                
+
                 return null;
             }
         }
@@ -233,7 +233,7 @@ namespace Quickstarts.Boiler.Server
             {
                 return handle.Node;
             }
-            
+
             // TBD
 
             return null;
@@ -250,12 +250,12 @@ namespace Quickstarts.Boiler.Server
             try
             {
                 double value1 = m_boiler1.Drum.LevelIndicator.Output.Value;
-                value1 = ((int)(++value1))%100;
+                value1 = ((int)(++value1)) % 100;
                 m_boiler1.Drum.LevelIndicator.Output.Value = value1;
                 m_boiler1.ClearChangeMasks(SystemContext, true);
-                
+
                 double value2 = m_boiler2.Drum.LevelIndicator.Output.Value;
-                value2 = ((int)(++value2))%20;
+                value2 = ((int)(++value2)) % 20;
                 m_boiler2.Drum.LevelIndicator.Output.Value = value2;
                 m_boiler2.ClearChangeMasks(SystemContext, true);
             }

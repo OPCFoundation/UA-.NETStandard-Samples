@@ -55,17 +55,17 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public NodeId ShowDialog(Session session, NodeId value)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
-            ValueCTRL.Browser    = new Browser(session);
-            ValueCTRL.RootId     = Objects.RootFolder;
+            ValueCTRL.Browser = new Browser(session);
+            ValueCTRL.RootId = Objects.RootFolder;
             ValueCTRL.Identifier = value;
 
             if (ShowDialog() != DialogResult.OK)
@@ -81,10 +81,10 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public ExpandedNodeId ShowDialog(Session session, ExpandedNodeId value)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
-            ValueCTRL.Browser    = new Browser(session);
-            ValueCTRL.RootId     = Objects.RootFolder;
+            ValueCTRL.Browser = new Browser(session);
+            ValueCTRL.RootId = Objects.RootFolder;
             ValueCTRL.Identifier = ExpandedNodeId.ToNodeId(value, session.NamespaceUris);
 
             if (ShowDialog() != DialogResult.OK)

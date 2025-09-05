@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -34,6 +34,7 @@ using System.Data;
 using System.Drawing;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -56,7 +57,7 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private ISession m_session;
 
-        // The columns to display in the control.		
+        // The columns to display in the control.
         private readonly object[][] m_ColumnNames = new object[][]
         {
             new object[] { "Type",   HorizontalAlignment.Left, null },
@@ -67,7 +68,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes the control with a set of items.
         /// </summary>
-        public async Task InitializeAsync(ISession session, ExpandedNodeId nodeId)
+        public async Task InitializeAsync(ISession session, ExpandedNodeId nodeId, CancellationToken ct = default)
         {
             ItemsLV.Items.Clear();
             m_session = session;
@@ -77,7 +78,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            ILocalNode node = await m_session.NodeCache.FindAsync(nodeId) as ILocalNode;
+            ILocalNode node = await m_session.NodeCache.FindAsync(nodeId, ct) as ILocalNode;
 
             if (node == null)
             {
@@ -105,7 +106,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Overridden Methods
         /// <see cref="Opc.Ua.Client.Controls.BaseListCtrl.UpdateItem(ListViewItem,object)" />
-        protected override async void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             try
             {
@@ -113,11 +114,11 @@ namespace Opc.Ua.Client.Controls
 
                 if (reference == null)
                 {
-                    base.UpdateItem(listItem, item);
+                    await base.UpdateItemAsync(listItem, item, ct);
                     return;
                 }
 
-                IReferenceType referenceType = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId) as IReferenceType;
+                IReferenceType referenceType = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as IReferenceType;
 
                 if (referenceType != null)
                 {
@@ -135,7 +136,7 @@ namespace Opc.Ua.Client.Controls
                     listItem.SubItems[0].Text = Utils.Format("{0}", reference.ReferenceTypeId);
                 }
 
-                INode target = await m_session.NodeCache.FindAsync(reference.TargetId) as INode;
+                INode target = await m_session.NodeCache.FindAsync(reference.TargetId, ct) as INode;
 
                 if (target != null)
                 {
@@ -146,7 +147,7 @@ namespace Opc.Ua.Client.Controls
                     listItem.SubItems[1].Text = Utils.Format("{0}", reference.TargetId);
                 }
 
-                listItem.ImageKey = GuiUtils.GetTargetIcon(m_session, NodeClass.ReferenceType, null);
+                listItem.ImageKey = await GuiUtils.GetTargetIconAsync(m_session, NodeClass.ReferenceType, null, ct);
                 listItem.Tag = reference;
             }
             catch (Exception exception)

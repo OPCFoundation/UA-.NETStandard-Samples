@@ -277,7 +277,7 @@ namespace Opc.Ua.Client.Controls
             this.NodeIdBTN.TabIndex = 4;
             this.NodeIdBTN.Text = "...";
             this.NodeIdBTN.UseVisualStyleBackColor = true;
-            this.NodeIdBTN.Click += new System.EventHandler(this.NodeIdBTN_Click);
+            this.NodeIdBTN.Click += new System.EventHandler(this.NodeIdBTN_ClickAsync);
             // 
             // NodeIdTB
             // 

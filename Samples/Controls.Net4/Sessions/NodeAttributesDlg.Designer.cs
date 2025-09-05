@@ -85,7 +85,7 @@ namespace Opc.Ua.Sample.Controls
             this.OkBTN.TabIndex = 0;
             this.OkBTN.Text = "Refresh";
             this.OkBTN.UseVisualStyleBackColor = true;
-            this.OkBTN.Click += new System.EventHandler(this.OkBTN_Click);
+            this.OkBTN.Click += new System.EventHandler(this.OkBTN_ClickAsync);
             // 
             // CancelBTN
             // 

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -39,6 +39,7 @@ using System.Reflection;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -62,9 +63,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the address space with the specified view
         /// </summary>
-        public async Task ShowAsync(Session session, NodeId startId)
+        public async Task ShowAsync(Session session, NodeId startId, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             if (m_session != null)
             {
@@ -80,9 +81,9 @@ namespace Opc.Ua.Sample.Controls
             browser.ContinueUntilDone = true;
             browser.ReferenceTypeId = ReferenceTypeIds.References;
 
-            await BrowseCTRL.InitializeAsync(browser, startId);
+            await BrowseCTRL.InitializeAsync(browser, startId, ct);
 
-            await UpdateNavigationBarAsync();
+            await UpdateNavigationBarAsync(ct);
 
             Show();
             BringToFront();
@@ -92,15 +93,15 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates the navigation bar with the current positions in the browse control.
         /// </summary>
-        private async Task UpdateNavigationBarAsync()
+        private async Task UpdateNavigationBarAsync(CancellationToken ct = default)
         {
             int index = 0;
 
             foreach (NodeId nodeId in BrowseCTRL.Positions)
             {
-                Node node = await m_session.NodeCache.FindAsync(nodeId) as Node;
+                Node node = await m_session.NodeCache.FindAsync(nodeId, ct) as Node;
 
-                string displayText = await m_session.NodeCache.GetDisplayTextAsync(node);
+                string displayText = await m_session.NodeCache.GetDisplayTextAsync(node, ct);
 
                 if (index < NodeCTRL.Items.Count)
                 {
@@ -144,7 +145,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -156,7 +157,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void ForwardBTN_Click(object sender, EventArgs e)
+        private async void ForwardBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -168,7 +169,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void NodeCTRL_SelectedIndexChanged(object sender, EventArgs e)
+        private async void NodeCTRL_SelectedIndexChangedAsync(object sender, EventArgs e)
         {
             try
             {
@@ -199,7 +200,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void BrowseCTRL_PositionAdded(object sender, EventArgs e)
+        private async void BrowseCTRL_PositionAddedAsync(object sender, EventArgs e)
         {
             try
             {

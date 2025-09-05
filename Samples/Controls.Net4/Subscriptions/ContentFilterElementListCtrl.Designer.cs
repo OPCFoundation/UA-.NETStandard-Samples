@@ -97,7 +97,7 @@ namespace Opc.Ua.Sample.Controls
             this.SelectNodeMI.Name = "SelectEventTypeMI";
             this.SelectNodeMI.Size = new System.Drawing.Size(161, 22);
             this.SelectNodeMI.Text = "Select Node...";
-            this.SelectNodeMI.Click += new System.EventHandler(this.SelectNodeMI_Click);
+            this.SelectNodeMI.Click += new System.EventHandler(this.SelectNodeMI_ClickAsync);
             // 
             // CreateElementMI
             // 

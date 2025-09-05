@@ -146,7 +146,7 @@ namespace Opc.Ua.Sample.Controls
             this.OkBTN.TabIndex = 1;
             this.OkBTN.Text = "OK";
             this.OkBTN.UseVisualStyleBackColor = true;
-            this.OkBTN.Click += new System.EventHandler(this.OkBTN_Click);
+            this.OkBTN.Click += new System.EventHandler(this.OkBTN_ClickAsync);
             // 
             // CancelBTN
             // 

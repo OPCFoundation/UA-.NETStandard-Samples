@@ -98,9 +98,9 @@ namespace Quickstarts.DataAccessServer
         /// <param name="engineeringUnits">The engineering units.</param>
         /// <param name="writeable">if set to <c>true</c> the tag is writeable.</param>
         public void CreateTag(
-            string tagName, 
-            UnderlyingSystemDataType dataType, 
-            UnderlyingSystemTagType tagType, 
+            string tagName,
+            UnderlyingSystemDataType dataType,
+            UnderlyingSystemTagType tagType,
             string engineeringUnits,
             bool writeable)
         {
@@ -186,7 +186,7 @@ namespace Quickstarts.DataAccessServer
                 return tags;
             }
         }
-                    
+
         /// <summary>
         /// Starts the monitoring.
         /// </summary>
@@ -216,7 +216,7 @@ namespace Quickstarts.DataAccessServer
 
                 // find the tag.
                 tag = FindTag(tagName);
-                
+
                 if (tag == null)
                 {
                     return StatusCodes.BadNodeIdUnknown;
@@ -321,8 +321,8 @@ namespace Quickstarts.DataAccessServer
                         value.Value = tag.Value;
                         value.StatusCode = StatusCodes.Good;
                         value.SourceTimestamp = tag.Timestamp;
-                 
-                        if (counter % (8 + (index%4)) == 0)
+
+                        if (counter % (8 + (index % 4)) == 0)
                         {
                             UpdateTagMetadata(tag, generator);
                         }
@@ -410,7 +410,7 @@ namespace Quickstarts.DataAccessServer
                 {
                     if (tag.Labels != null && tag.Labels.Length > 0)
                     {
-                        high = tag.Labels.Length-1;
+                        high = tag.Labels.Length - 1;
                         low = 0;
                     }
 
@@ -423,7 +423,7 @@ namespace Quickstarts.DataAccessServer
 
             if (high > low)
             {
-                value = (generator.GetRandomUInt16()%(high - low + 1)) + low;
+                value = (generator.GetRandomUInt16() % (high - low + 1)) + low;
             }
 
             // cast value to correct type or generate a random value.
@@ -495,7 +495,7 @@ namespace Quickstarts.DataAccessServer
             tag.Timestamp = DateTime.UtcNow;
             return true;
         }
-        
+
         /// <summary>
         /// Updates the metadata for a tag.
         /// </summary>
@@ -513,7 +513,7 @@ namespace Quickstarts.DataAccessServer
 
                         for (int ii = 0; ii < tag.EuRange.Length; ii++)
                         {
-                            range[ii] = tag.EuRange[ii]+1;
+                            range[ii] = tag.EuRange[ii] + 1;
                         }
 
                         tag.EuRange = range;

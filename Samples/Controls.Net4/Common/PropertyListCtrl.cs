@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,14 +32,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
-using Org.BouncyCastle.Crypto;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -89,9 +88,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task UpdateAsync(Session session, ReferenceDescription reference)
+        public async Task UpdateAsync(Session session, ReferenceDescription reference, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             Clear();
 
@@ -102,7 +101,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_session = session;
 
-            await AddPropertiesAsync(reference.NodeId);
+            await AddPropertiesAsync(reference.NodeId, ct);
 
             AdjustColumns();
         }
@@ -112,7 +111,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// A field associated with a node.
         /// </summary>
-        private class PropertyItem
+        private sealed class PropertyItem
         {
             public ReferenceDescription Reference;
             public VariableNode Property;
@@ -123,10 +122,10 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds the properties to the control.
         /// </summary>
-        private async Task AddPropertiesAsync(ExpandedNodeId nodeId)
+        private async Task AddPropertiesAsync(ExpandedNodeId nodeId, CancellationToken ct = default)
         {
             // get node.
-            Node node = await m_session.NodeCache.FindAsync(nodeId) as Node;
+            Node node = await m_session.NodeCache.FindAsync(nodeId, ct) as Node;
 
             if (node == null)
             {
@@ -138,7 +137,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (supertypeId != null)
             {
-                await AddPropertiesAsync(supertypeId);
+                await AddPropertiesAsync(supertypeId, ct);
             }
 
             // build list of properties to read.
@@ -152,7 +151,7 @@ namespace Opc.Ua.Sample.Controls
             browser.NodeClassMask = (int)NodeClass.Variable;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = await browser.BrowseAsync(node.NodeId);
+            ReferenceDescriptionCollection references = await browser.BrowseAsync(node.NodeId, ct);
 
             // add propertoes to view.
             foreach (ReferenceDescription reference in references)
@@ -160,7 +159,7 @@ namespace Opc.Ua.Sample.Controls
                 PropertyItem field = new PropertyItem();
 
                 field.Reference = reference;
-                field.Property = await m_session.NodeCache.FindAsync(reference.NodeId) as VariableNode;
+                field.Property = await m_session.NodeCache.FindAsync(reference.NodeId, ct) as VariableNode;
 
                 AddItem(field, "Property", -1);
             }
@@ -197,61 +196,54 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override async void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-            try
+            PropertyItem property = item as PropertyItem;
+
+            if (property == null)
             {
-                PropertyItem property = item as PropertyItem;
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
-                if (property == null)
+            listItem.SubItems[0].Text = String.Format("{0}", property.Reference);
+            listItem.SubItems[1].Text = "";
+
+            if (m_showValues)
+            {
+                object value = property.Property.Value;
+                Array array = value as Array;
+
+                if (array == null)
                 {
-                    base.UpdateItem(listItem, item);
-                    return;
-                }
-
-                listItem.SubItems[0].Text = String.Format("{0}", property.Reference);
-                listItem.SubItems[1].Text = "";
-
-                if (m_showValues)
-                {
-                    object value = property.Property.Value;
-                    Array array = value as Array;
-
-                    if (array == null)
-                    {
-                        listItem.SubItems[1].Text = String.Format("{0}", value);
-                    }
-                    else
-                    {
-                        listItem.SubItems[1].Text = String.Format("{0}[{1}]", value.GetType().GetElementType().Name, array.Length);
-                    }
-                }
-
-                INode node = await m_session.NodeCache.FindAsync(property.Property.DataType);
-
-                if (node != null)
-                {
-                    listItem.SubItems[2].Text = String.Format("{0}", node);
+                    listItem.SubItems[1].Text = String.Format("{0}", value);
                 }
                 else
                 {
-                    listItem.SubItems[2].Text = String.Format("{0}", property.Property.DataType);
+                    listItem.SubItems[1].Text = String.Format("{0}[{1}]", value.GetType().GetElementType().Name, array.Length);
                 }
-
-                if (property.Property.ValueRank >= 0)
-                {
-                    listItem.SubItems[2].Text += "[]";
-                }
-
-                listItem.SubItems[3].Text = String.Format("{0}", property.Property.Description);
-
-                listItem.Tag = item;
             }
-            catch (Exception exception)
+
+            INode node = await m_session.NodeCache.FindAsync(property.Property.DataType, ct);
+
+            if (node != null)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                listItem.SubItems[2].Text = String.Format("{0}", node);
             }
+            else
+            {
+                listItem.SubItems[2].Text = String.Format("{0}", property.Property.DataType);
+            }
+
+            if (property.Property.ValueRank >= 0)
+            {
+                listItem.SubItems[2].Text += "[]";
+            }
+
+            listItem.SubItems[3].Text = String.Format("{0}", property.Property.Description);
+
+            listItem.Tag = item;
         }
         #endregion
 

@@ -53,13 +53,13 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         private string m_hostname;
         private ServerOnNetwork m_server;
         private ApplicationConfiguration m_configuration;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
@@ -85,11 +85,11 @@ namespace Opc.Ua.Client.Controls
             {
                 return null;
             }
-  
+
             return m_server;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {
@@ -110,7 +110,7 @@ namespace Opc.Ua.Client.Controls
                 if (m_hostname != e.Hostname)
                 {
                     m_hostname = e.Hostname;
-                    ServersCTRL.Initialize(m_hostname,this.StartingRecordUP, this.MaxRecordsUP, this.CapabilityFilterTB, m_configuration);
+                    ServersCTRL.Initialize(m_hostname, this.StartingRecordUP, this.MaxRecordsUP, this.CapabilityFilterTB, m_configuration);
                     m_server = null;
                     OkBTN.Enabled = false;
                 }

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,6 +33,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Text;
+using System.Linq;
 using System.Windows.Forms;
 using System.Reflection;
 
@@ -59,31 +60,31 @@ namespace Opc.Ua.Sample.Controls
                 DataTypeCB.Items.Add(datatype);
             }
 
-            AttributeIdCB.Items.AddRange(Attributes.GetBrowseNames());
+            AttributeIdCB.Items.AddRange(Attributes.BrowseNames.ToArray());
         }
         #endregion
 
         #region Private Fields
         private Session m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public FilterOperand ShowDialog(
-            Session                     session, 
-            IList<ContentFilterElement> elements, 
-            int                         index, 
-            FilterOperand               operand)
+            Session session,
+            IList<ContentFilterElement> elements,
+            int index,
+            FilterOperand operand)
         {
-            if (session == null)  throw new ArgumentNullException("session");
-            if (elements == null) throw new ArgumentNullException("elements");
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (elements == null) throw new ArgumentNullException(nameof(elements));
 
             m_session = session;
-            
+
             TypeDefinitionIdCTRL.Browser = new Browser(session);
-            TypeDefinitionIdCTRL.RootId  = ObjectTypes.BaseEventType;
+            TypeDefinitionIdCTRL.RootId = ObjectTypes.BaseEventType;
 
             OperandTypeCB.SelectedItem = typeof(LiteralOperand).Name;
 
@@ -91,32 +92,32 @@ namespace Opc.Ua.Sample.Controls
             {
                 OperandTypeCB.SelectedItem = operand.GetType().Name;
             }
-            
+
             ElementsCB.Items.Clear();
 
-            for (int ii = index+1; ii < elements.Count; ii++)
+            for (int ii = index + 1; ii < elements.Count; ii++)
             {
-                ElementsCB.Items.Add(elements[ii].ToString(m_session.NodeCache));
+                ElementsCB.Items.Add(elements[ii].ToString(m_session.NodeCache.AsNodeTable()));
             }
-                        
+
             ElementOperand elementOperand = operand as ElementOperand;
 
             if (elementOperand != null)
             {
-                ElementsCB.SelectedIndex = (int)elementOperand.Index - index -1;
+                ElementsCB.SelectedIndex = (int)elementOperand.Index - index - 1;
             }
-            
+
             AttributeOperand attributeOperand = operand as AttributeOperand;
 
             if (attributeOperand != null)
             {
                 TypeDefinitionIdCTRL.Identifier = attributeOperand.NodeId;
-                BrowsePathTB.Text               = attributeOperand.BrowsePath.Format(session.NodeCache.TypeTree);
-                AttributeIdCB.SelectedItem      = Attributes.GetBrowseName(attributeOperand.AttributeId);
-                IndexRangeTB.Text               = attributeOperand.IndexRange;
-                AliasTB.Text                    = attributeOperand.Alias;
+                BrowsePathTB.Text = attributeOperand.BrowsePath.Format(session.TypeTree);
+                AttributeIdCB.SelectedItem = Attributes.GetBrowseName(attributeOperand.AttributeId);
+                IndexRangeTB.Text = attributeOperand.IndexRange;
+                AliasTB.Text = attributeOperand.Alias;
             }
-            
+
             LiteralOperand literalOperand = operand as LiteralOperand;
 
             if (literalOperand != null)
@@ -147,7 +148,7 @@ namespace Opc.Ua.Sample.Controls
 
                 ValueTB.Text = buffer.ToString();
             }
-                        
+
             if (ShowDialog() != DialogResult.OK)
             {
                 return null;
@@ -156,7 +157,7 @@ namespace Opc.Ua.Sample.Controls
             return operand;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OperandTypeCB_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -166,32 +167,32 @@ namespace Opc.Ua.Sample.Controls
                 {
                     case "LiteralOperand":
                     {
-                        LiteralPN.Visible   = true;
+                        LiteralPN.Visible = true;
                         AttributePN.Visible = false;
-                        ElementPN.Visible   = false;
+                        ElementPN.Visible = false;
                         break;
                     }
 
                     case "AttributeOperand":
                     {
-                        LiteralPN.Visible   = false;
+                        LiteralPN.Visible = false;
                         AttributePN.Visible = true;
-                        ElementPN.Visible   = false;
+                        ElementPN.Visible = false;
                         break;
                     }
 
                     case "ElementOperand":
                     {
-                        LiteralPN.Visible   = false;
+                        LiteralPN.Visible = false;
                         AttributePN.Visible = false;
-                        ElementPN.Visible   = true;
+                        ElementPN.Visible = true;
                         break;
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

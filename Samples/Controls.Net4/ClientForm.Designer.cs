@@ -175,7 +175,7 @@ namespace Opc.Ua.Sample.Controls
             this.PerformanceTestMI.Name = "PerformanceTestMI";
             this.PerformanceTestMI.Size = new System.Drawing.Size(154, 22);
             this.PerformanceTestMI.Text = "Stack Test...";
-            this.PerformanceTestMI.Click += new System.EventHandler(this.PerformanceTestMI_Click);
+            this.PerformanceTestMI.Click += new System.EventHandler(this.PerformanceTestMI_ClickAsync);
             // 
             // toolStripSeparator1
             // 
@@ -333,7 +333,7 @@ namespace Opc.Ua.Sample.Controls
             this.EndpointSelectorCTRL.SelectedEndpoint = null;
             this.EndpointSelectorCTRL.Size = new System.Drawing.Size(553, 27);
             this.EndpointSelectorCTRL.TabIndex = 2;
-            this.EndpointSelectorCTRL.ConnectEndpoint += new Opc.Ua.Client.Controls.ConnectEndpointEventHandler(this.EndpointSelectorCTRL_ConnectEndpoint);
+            this.EndpointSelectorCTRL.ConnectEndpoint += new Opc.Ua.Client.Controls.ConnectEndpointEventHandler(this.EndpointSelectorCTRL_ConnectEndpointAsync);
             this.EndpointSelectorCTRL.EndpointsChanged += new System.EventHandler(this.EndpointSelectorCTRL_OnChange);
             // 
             // serverHeaderBranding1
@@ -369,7 +369,7 @@ namespace Opc.Ua.Sample.Controls
             this.MainMenuStrip = this.MainMenu;
             this.Name = "ClientForm";
             this.Text = "UA Sample Client";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosingAsync);
             this.MainMenu.ResumeLayout(false);
             this.MainMenu.PerformLayout();
             this.StatusStrip.ResumeLayout(false);

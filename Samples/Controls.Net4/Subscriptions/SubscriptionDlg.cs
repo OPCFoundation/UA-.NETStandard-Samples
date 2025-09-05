@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,13 +33,13 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -51,9 +51,9 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            m_SessionNotification = new NotificationEventHandler(Session_Notification);
+            m_SessionNotification = new NotificationEventHandler(Session_NotificationAsync);
             m_SubscriptionStateChanged = new SubscriptionStateChangedEventHandler(Subscription_StateChanged);
-            m_PublishStatusChanged = new PublishStateChangedEventHandler(Subscription_PublishStatusChanged);
+            m_PublishStatusChanged = new PublishStateChangedEventHandler(Subscription_PublishStatusChangedAsync);
         }
         #endregion
 
@@ -69,19 +69,19 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a new subscription.
         /// </summary>
-        public async Task<Subscription> NewAsync(Session session)
+        public async Task<Subscription> NewAsync(Session session, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             Subscription subscription = new Subscription(session.DefaultSubscription);
 
-            if (!await new SubscriptionEditDlg().ShowDialogAsync(subscription))
+            if (!await new SubscriptionEditDlg().ShowDialogAsync(subscription, ct))
             {
                 return null;
             }
 
             session.AddSubscription(subscription);
-            await subscription.CreateAsync();
+            await subscription.CreateAsync(ct);
 
             Subscription duplicateSubscription = session.Subscriptions.FirstOrDefault(s => s.Id != 0 && s.Id.Equals(subscription.Id) && s != subscription);
             if (duplicateSubscription != null)
@@ -91,8 +91,8 @@ namespace Opc.Ua.Sample.Controls
                 DialogResult result = MessageBox.Show("Duplicate subscription was created with the id: " + duplicateSubscription.Id + ". Do you want to keep it?", "Warning", MessageBoxButtons.YesNo);
                 if (result == System.Windows.Forms.DialogResult.No)
                 {
-                    await duplicateSubscription.DeleteAsync(false);
-                    await session.RemoveSubscriptionAsync(subscription);
+                    await duplicateSubscription.DeleteAsync(false, ct);
+                    await session.RemoveSubscriptionAsync(subscription, ct);
 
                     return null;
                 }
@@ -108,7 +108,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public void Show(Subscription subscription)
         {
-            if (subscription == null) throw new ArgumentNullException("subscription");
+            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
             Show();
             BringToFront();
@@ -133,7 +133,7 @@ namespace Opc.Ua.Sample.Controls
 
             MonitoredItemsCTRL.Initialize(subscription);
             EventsCTRL.Initialize(subscription, null);
-            DataChangesCTRL.Initialize(subscription, null);
+            DataChangesCTRL.InitializeAsync(subscription, null);
 
             WindowMI_Click(WindowDataChangesMI, null);
 
@@ -214,7 +214,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Processes a Publish repsonse from the server.
         /// </summary>
-        void Session_Notification(ISession session, NotificationEventArgs e)
+        private async void Session_NotificationAsync(ISession session, NotificationEventArgs e)
         {
             if (InvokeRequired)
             {
@@ -236,7 +236,7 @@ namespace Opc.Ua.Sample.Controls
 
                 // notify controls of the change.
                 EventsCTRL.NotificationReceived(e);
-                DataChangesCTRL.NotificationReceived(e);
+                await DataChangesCTRL.NotificationReceivedAsync(e);
 
                 // update subscription status.
                 UpdateStatus();
@@ -250,7 +250,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Handles a change to the state of the subscription.
         /// </summary>
-        void Subscription_StateChanged(Subscription subscription, SubscriptionStateChangedEventArgs e)
+        private void Subscription_StateChanged(Subscription subscription, SubscriptionStateChangedEventArgs e)
         {
             if (InvokeRequired)
             {
@@ -287,7 +287,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Handles a change to the publish status for the subscription.
         /// </summary>
-        void Subscription_PublishStatusChanged(object subscription, EventArgs e)
+        private async void Subscription_PublishStatusChangedAsync(object subscription, EventArgs e)
         {
             if (InvokeRequired)
             {
@@ -308,7 +308,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // notify controls of the change.
-                DataChangesCTRL.PublishStatusChanged();
+                await DataChangesCTRL.PublishStatusChangedAsync();
             }
             catch (Exception exception)
             {
@@ -368,7 +368,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void SubscriptionEnablePublishingMI_Click(object sender, EventArgs e)
+        private async void SubscriptionEnablePublishingMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -397,7 +397,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -414,7 +414,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void SubscriptionCreateItemMI_Click(object sender, EventArgs e)
+        private void SubscriptionCreateItemMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -424,7 +424,7 @@ namespace Opc.Ua.Sample.Controls
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                await m_createDialog.ShowAsync(m_subscription, false);
+                m_createDialog.Show(m_subscription, false);
             }
             catch (Exception exception)
             {
@@ -447,7 +447,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void SubscriptionCreateItemFromTypeMI_Click(object sender, EventArgs e)
+        private void SubscriptionCreateItemFromTypeMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -457,7 +457,7 @@ namespace Opc.Ua.Sample.Controls
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                await m_createDialog.ShowAsync(m_subscription, true);
+                m_createDialog.Show(m_subscription, true);
             }
             catch (Exception exception)
             {
@@ -465,7 +465,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void ConditionRefreshMI_Click(object sender, EventArgs e)
+        private async void ConditionRefreshMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {

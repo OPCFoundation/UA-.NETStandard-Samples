@@ -74,13 +74,13 @@ namespace Quickstarts.AlarmConditionServer
             m_sources = new Dictionary<string, SourceState>();
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 if (m_system != null)
@@ -200,18 +200,18 @@ namespace Quickstarts.AlarmConditionServer
         private AreaState CreateAndIndexAreas(AreaState parent, AreaConfiguration configuration)
         {
             // create a unique path to the area.
-            string areaPath = Utils.Format("{0}/{1}", (parent != null)?parent.SymbolicName:String.Empty, configuration.Name);
+            string areaPath = Utils.Format("{0}/{1}", (parent != null) ? parent.SymbolicName : String.Empty, configuration.Name);
             NodeId areaId = ModelUtils.ConstructIdForArea(areaPath, NamespaceIndex);
-            
+
             // create the object that will be used to access the area and any variables contained within it.
             AreaState area = new AreaState(SystemContext, parent, areaId, configuration);
             m_areas[areaPath] = area;
-            
+
             if (parent != null)
             {
                 parent.AddChild(area);
             }
-            
+
             // create an index any sub-areas defined for the area.
             if (configuration.SubAreas != null)
             {
@@ -266,7 +266,7 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Returns a unique handle for the node.
         /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId,NodeState> cache)
+        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
         {
             lock (Lock)
             {
@@ -308,14 +308,14 @@ namespace Quickstarts.AlarmConditionServer
                 return null;
             }
         }
-        
+
         /// <summary>
         /// Verifies that the specified node exists.
         /// </summary>
         protected override NodeState ValidateNode(
-            ServerSystemContext context, 
+            ServerSystemContext context,
             NodeHandle handle,
-            IDictionary<NodeId,NodeState> cache)
+            IDictionary<NodeId, NodeState> cache)
         {
             // not valid if no root.
             if (handle == null)
@@ -428,8 +428,8 @@ namespace Quickstarts.AlarmConditionServer
         #region Private Fields
         private UnderlyingSystem m_system;
         private AlarmConditionServerConfiguration m_configuration;
-        private Dictionary<string,AreaState> m_areas;
-        private Dictionary<string,SourceState> m_sources;
+        private Dictionary<string, AreaState> m_areas;
+        private Dictionary<string, SourceState> m_sources;
         private Timer m_simulationTimer;
         #endregion
     }

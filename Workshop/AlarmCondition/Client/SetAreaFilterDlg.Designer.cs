@@ -93,7 +93,7 @@ namespace Quickstarts.AlarmConditionClient
             this.BrowseTV.Name = "BrowseTV";
             this.BrowseTV.Size = new System.Drawing.Size(595, 575);
             this.BrowseTV.TabIndex = 6;
-            this.BrowseTV.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.BrowseTV_BeforeExpand);
+            this.BrowseTV.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.BrowseTV_BeforeExpandAsync);
             this.BrowseTV.DoubleClick += new System.EventHandler(this.BrowseTV_DoubleClick);
             this.BrowseTV.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.BrowseTV_AfterSelect);
             // 

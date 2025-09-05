@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -50,19 +50,19 @@ namespace Opc.Ua.Sample.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         private Subscription m_subscription;
         private NotificationMessage m_message;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public NotificationMessage ShowDialog(Subscription subscription)
         {
-            if (subscription == null) throw new ArgumentNullException("subscription");
+            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
             m_subscription = subscription;
 
@@ -86,16 +86,16 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Event Handlers
-        private void OkBTN_Click(object sender, EventArgs e)
-        {        
+        private async void OkBTN_ClickAsync(object sender, EventArgs e)
+        {
             try
             {
-                m_message = m_subscription.Republish((uint)SequenceNumberNC.Value);
+                m_message = await m_subscription.RepublishAsync((uint)SequenceNumberNC.Value);
                 DialogResult = DialogResult.OK;
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

@@ -135,7 +135,6 @@ namespace Quickstarts.HistoricalEvents.Client
             // ResultsLV
             // 
             this.ResultsLV.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ResultsLV.IsSubscribed = false;
             this.ResultsLV.Location = new System.Drawing.Point(260, 0);
             this.ResultsLV.Name = "ResultsLV";
             this.ResultsLV.Size = new System.Drawing.Size(595, 410);
@@ -180,7 +179,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.EventFilterBTN.TabIndex = 8;
             this.EventFilterBTN.Text = "...";
             this.EventFilterBTN.UseVisualStyleBackColor = true;
-            this.EventFilterBTN.Click += new System.EventHandler(this.EventFilterBTN_Click);
+            this.EventFilterBTN.Click += new System.EventHandler(this.EventFilterBTN_ClickAsync);
             // 
             // EventFilterTB
             // 
@@ -233,7 +232,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.EventTypeBTN.TabIndex = 5;
             this.EventTypeBTN.Text = "...";
             this.EventTypeBTN.UseVisualStyleBackColor = true;
-            this.EventTypeBTN.Click += new System.EventHandler(this.EventTypeBTN_Click);
+            this.EventTypeBTN.Click += new System.EventHandler(this.EventTypeBTN_ClickAsync);
             // 
             // EventAreaLB
             // 
@@ -262,7 +261,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.EventAreaBTN.TabIndex = 2;
             this.EventAreaBTN.Text = "...";
             this.EventAreaBTN.UseVisualStyleBackColor = true;
-            this.EventAreaBTN.Click += new System.EventHandler(this.EventAreaBTN_Click);
+            this.EventAreaBTN.Click += new System.EventHandler(this.EventAreaBTN_ClickAsync);
             // 
             // StopBTN
             // 
@@ -273,7 +272,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.StopBTN.TabIndex = 19;
             this.StopBTN.Text = "Stop";
             this.StopBTN.UseVisualStyleBackColor = true;
-            this.StopBTN.Click += new System.EventHandler(this.StopBTN_Click);
+            this.StopBTN.Click += new System.EventHandler(this.StopBTN_ClickAsync);
             // 
             // NextBTN
             // 
@@ -283,7 +282,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.NextBTN.TabIndex = 18;
             this.NextBTN.Text = "Next";
             this.NextBTN.UseVisualStyleBackColor = true;
-            this.NextBTN.Click += new System.EventHandler(this.NextBTN_Click);
+            this.NextBTN.Click += new System.EventHandler(this.NextBTN_ClickAsync);
             // 
             // GoBTN
             // 
@@ -293,7 +292,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.GoBTN.TabIndex = 17;
             this.GoBTN.Text = "Go";
             this.GoBTN.UseVisualStyleBackColor = true;
-            this.GoBTN.Click += new System.EventHandler(this.GoBTN_Click);
+            this.GoBTN.Click += new System.EventHandler(this.GoBTN_ClickAsync);
             // 
             // MaxReturnValuesCK
             // 

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -42,6 +42,8 @@ using System.Xml.Serialization;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -122,15 +124,15 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a value in the control.
         /// </summary>
-        public void ShowValue(object value)
+        public Task ShowValueAsync(object value, CancellationToken ct = default)
         {
-            ShowValue(value, false);
+            return ShowValueAsync(value, false, ct);
         }
 
         /// <summary>
         /// Displays a value in the control.
         /// </summary>
-        public void ShowValue(object value, bool overwrite)
+        public async Task ShowValueAsync(object value, bool overwrite, CancellationToken ct = default)
         {
             if (!overwrite)
             {
@@ -151,7 +153,7 @@ namespace Opc.Ua.Client.Controls
 
             // show the value.
             int index = 0;
-            ShowValue(ref index, ref overwrite, value);
+            await ShowValueAsync(index, overwrite, value, ct);
 
             // adjust columns.
             AdjustColumns();
@@ -179,7 +181,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Stores the state associated with an item.
         /// </summary>
-        private class ValueState
+        private sealed class ValueState
         {
             public bool Expanded = false;
             public bool Expandable = false;
@@ -217,8 +219,8 @@ namespace Opc.Ua.Client.Controls
 
         /// <summary>
         /// Shows the components of a value in the control.
-        /// </summary>        
-        private void ShowChildren(ListViewItem listItem)
+        /// </summary>
+        private async Task ShowChildrenAsync(ListViewItem listItem, CancellationToken ct = default)
         {
             ValueState state = listItem.Tag as ValueState;
 
@@ -236,14 +238,14 @@ namespace Opc.Ua.Client.Controls
             int index = listItem.Index + 1;
             bool overwrite = false;
 
-            ShowValue(ref index, ref overwrite, state.Component);
+            await ShowValueAsync(index, overwrite, state.Component, ct);
 
             AdjustColumns();
         }
 
         /// <summary>
         /// Hides the components of a value in the control.
-        /// </summary>  
+        /// </summary>
         private void HideChildren(ListViewItem listItem)
         {
             ValueState state = listItem.Tag as ValueState;
@@ -430,7 +432,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Formats a value for display in the control.
         /// </summary>
-        private string GetValueText(object value)
+        private async Task<string> GetValueTextAsync(object value, CancellationToken ct = default)
         {
             // check for null.
             if (value == null)
@@ -449,7 +451,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (ii != 0 && ii % 16 == 0)
                     {
-                        buffer.Append(" ");
+                        buffer.Append(' ');
                     }
 
                     buffer.AppendFormat("{0:X2} ", bytes[ii]);
@@ -536,7 +538,7 @@ namespace Opc.Ua.Client.Controls
 
             if (extension != null)
             {
-                return GetValueText(extension.Body);
+                return await GetValueTextAsync(extension.Body, ct);
             }
 
             // check for event value.
@@ -546,7 +548,7 @@ namespace Opc.Ua.Client.Controls
             {
                 if (m_monitoredItem != null)
                 {
-                    return String.Format("{0}", m_monitoredItem.GetEventType(eventFields));
+                    return String.Format("{0}", await m_monitoredItem.GetEventTypeAsync(eventFields, ct));
                 }
 
                 return eventFields.GetType().Name;
@@ -561,7 +563,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (!StatusCode.IsGood(dataValue.StatusCode))
                 {
-                    formattedValue.Append("[");
+                    formattedValue.Append('[');
                     formattedValue.AppendFormat("Q:{0}", dataValue.StatusCode);
                 }
 
@@ -576,7 +578,7 @@ namespace Opc.Ua.Client.Controls
                     }
                     else
                     {
-                        formattedValue.Append("[");
+                        formattedValue.Append('[');
                     }
 
                     formattedValue.Append("T:future");
@@ -598,14 +600,15 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the list with the specified value.
         /// </summary>
-        private void UpdateList(
-            ref int index,
-            ref bool overwrite,
+        private async Task<(int, bool)> UpdateListAsync(
+            int index,
+            bool overwrite,
             object value,
             object componentValue,
             object componentId,
             string name,
-            string type)
+            string type,
+            CancellationToken ct = default)
         {
             // get the list item to update.
             ListViewItem listitem = GetListItem(index, ref overwrite, name, type);
@@ -616,7 +619,7 @@ namespace Opc.Ua.Client.Controls
             else
             {
                 // update list item.
-                listitem.SubItems[1].Text = GetValueText(componentValue);
+                listitem.SubItems[1].Text = await GetValueTextAsync(componentValue, ct);
             }
 
             // move to next item.
@@ -630,7 +633,7 @@ namespace Opc.Ua.Client.Controls
                 if (state.Expanded && state.Expandable)
                 {
                     m_depth++;
-                    ShowValue(ref index, ref overwrite, componentValue);
+                    (index, overwrite) = await ShowValueAsync(index, overwrite, componentValue, ct);
                     m_depth--;
                 }
             }
@@ -646,20 +649,22 @@ namespace Opc.Ua.Client.Controls
             {
                 listitem.ImageKey = CollapseIcon;
             }
+            return (index, overwrite);
         }
 
         /// <summary>
         /// Updates the list with the specified value.
         /// </summary>
-        private void UpdateList(
-            ref int index,
-            ref bool overwrite,
+        private async Task<(int, bool)> UpdateListAsync(
+            int index,
+            bool overwrite,
             object value,
             object componentValue,
             object componentId,
             string name,
             string type,
-            bool enabled)
+            bool enabled,
+            CancellationToken ct = default)
         {
             // get the list item to update.
             ListViewItem listitem = GetListItem(index, ref overwrite, name, type);
@@ -670,7 +675,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update list item.
-            listitem.SubItems[1].Text = GetValueText(componentValue);
+            listitem.SubItems[1].Text = await GetValueTextAsync(componentValue, ct);
 
             // move to next item.
             index++;
@@ -683,7 +688,7 @@ namespace Opc.Ua.Client.Controls
                 if (state.Expanded && state.Expandable)
                 {
                     m_depth++;
-                    ShowValue(ref index, ref overwrite, componentValue);
+                    (index, overwrite) = await ShowValueAsync(index, overwrite, componentValue, ct);
                     m_depth--;
                 }
             }
@@ -699,18 +704,20 @@ namespace Opc.Ua.Client.Controls
             {
                 listitem.ImageKey = CollapseIcon;
             }
+            return (index, overwrite);
         }
+
         /// <summary>
         /// Shows property of an encodeable object in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, IEncodeable value, PropertyInfo property)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, IEncodeable value, PropertyInfo property, CancellationToken ct = default)
         {
             // get the name of the property.
             string name = Utils.GetDataMemberName(property);
 
             if (name == null)
             {
-                return;
+                return Task.FromResult((index, overwrite));
             }
 
             // get the property value.
@@ -733,20 +740,13 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                propertyValue,
-                property,
-                name,
-                property.PropertyType.Name);
+            return UpdateListAsync(index, overwrite, value, propertyValue, property, name, property.PropertyType.Name, ct);
         }
 
         /// <summary>
         /// Shows the element of an array in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, Array value, int element)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, Array value, int element, CancellationToken ct = default)
         {
             // get the name of the element.
             string name = Utils.Format("[{0}]", element);
@@ -804,20 +804,13 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                elementValue,
-                element,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, elementValue, element, name, type, ct);
         }
 
         /// <summary>
         /// Shows the element of an array in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, Array value, int element, bool enabled)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, Array value, int element, bool enabled, CancellationToken ct = default)
         {
             // get the name of the element.
             string name = Utils.Format("[{0}]", element);
@@ -834,15 +827,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                elementValue,
-                element,
-                name,
-                type,
-                enabled);
+            return UpdateListAsync(index, overwrite, value, elementValue, element, name, type, enabled, ct);
         }
 
         /// <summary>
@@ -868,7 +853,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Shows the element of a list in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, IList value, int element)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, IList value, int element, CancellationToken ct = default)
         {
             // get the name of the element.
             string name = Utils.Format("[{0}]", element);
@@ -885,27 +870,20 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                elementValue,
-                element,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, elementValue, element, name, type, ct);
         }
 
         /// <summary>
         /// Shows an XML element in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, XmlElement value, int childIndex)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, XmlElement value, int childIndex, CancellationToken ct = default)
         {
             // ignore children that are not elements.
             XmlElement child = value.ChildNodes[childIndex] as XmlElement;
 
             if (child == null)
             {
-                return;
+                return Task.FromResult((index, overwrite));
             }
 
             // get the name of the element.
@@ -915,27 +893,20 @@ namespace Opc.Ua.Client.Controls
             string type = value.GetType().Name;
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                child,
-                childIndex,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, child, childIndex, name, type, ct);
         }
 
         /// <summary>
         /// Shows an event in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, EventFieldList value, int fieldIndex)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, EventFieldList value, int fieldIndex, CancellationToken ct = default)
         {
             // ignore children that are not elements.
             object field = value.EventFields[fieldIndex].Value;
 
             if (field == null)
             {
-                return;
+                return Task.FromResult((index, overwrite));
             }
 
             // get the name of the element.
@@ -950,20 +921,13 @@ namespace Opc.Ua.Client.Controls
             string type = value.GetType().Name;
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                field,
-                fieldIndex,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, field, fieldIndex, name, type, ct);
         }
 
         /// <summary>
-        /// Shows a byte array in the control. 
+        /// Shows a byte array in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, byte[] value, int blockStart)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, byte[] value, int blockStart, CancellationToken ct = default)
         {
             // get the name of the element.
             string name = Utils.Format("[{0:X4}]", blockStart);
@@ -983,20 +947,13 @@ namespace Opc.Ua.Client.Controls
             string type = value.GetType().Name;
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                blockValue,
-                blockStart,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, blockValue, blockStart, name, type, ct);
         }
 
         /// <summary>
-        /// Shows a data value in the control. 
+        /// Shows a data value in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, DataValue value, int component)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, DataValue value, int component, CancellationToken ct = default)
         {
             string name = null;
             object componentValue = null;
@@ -1051,7 +1008,7 @@ namespace Opc.Ua.Client.Controls
             // don't display empty components.
             if (name == null)
             {
-                return;
+                return Task.FromResult((index, overwrite));
             }
 
             // get the type name.
@@ -1063,20 +1020,13 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                componentValue,
-                component,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, componentValue, component, name, type, ct);
         }
 
         /// <summary>
-        /// Shows a node id in the control. 
+        /// Shows a node id in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, NodeId value, int component)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, NodeId value, int component, CancellationToken ct = default)
         {
             string name = null;
             object componentValue = null;
@@ -1108,7 +1058,7 @@ namespace Opc.Ua.Client.Controls
             // don't display empty components.
             if (name == null)
             {
-                return;
+                return Task.FromResult((index, overwrite));
             }
 
             // get the type name.
@@ -1120,20 +1070,13 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                componentValue,
-                component,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, componentValue, component, name, type, ct);
         }
 
         /// <summary>
-        /// Shows am expanded node id in the control. 
+        /// Shows am expanded node id in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, ExpandedNodeId value, int component)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, ExpandedNodeId value, int component, CancellationToken ct = default)
         {
             string name = null;
             object componentValue = null;
@@ -1172,7 +1115,7 @@ namespace Opc.Ua.Client.Controls
             // don't display empty components.
             if (name == null)
             {
-                return;
+                return Task.FromResult((index, overwrite));
             }
 
             // get the type name.
@@ -1184,20 +1127,13 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                componentValue,
-                component,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, componentValue, component, name, type, ct);
         }
 
         /// <summary>
-        /// Shows qualified name in the control. 
+        /// Shows qualified name in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, QualifiedName value, int component)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, QualifiedName value, int component, CancellationToken ct = default)
         {
             string name = null;
             object componentValue = null;
@@ -1222,7 +1158,7 @@ namespace Opc.Ua.Client.Controls
             // don't display empty components.
             if (name == null)
             {
-                return;
+                return Task.FromResult((index, overwrite)); ;
             }
 
             // get the type name.
@@ -1234,20 +1170,13 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                componentValue,
-                component,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, componentValue, component, name, type, ct);
         }
 
         /// <summary>
-        /// Shows localized text in the control. 
+        /// Shows localized text in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, LocalizedText value, int component)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, LocalizedText value, int component, CancellationToken ct = default)
         {
             string name = null;
             object componentValue = null;
@@ -1272,7 +1201,7 @@ namespace Opc.Ua.Client.Controls
             // don't display empty components.
             if (name == null)
             {
-                return;
+                return Task.FromResult((index, overwrite)); ;
             }
 
             // get the type name.
@@ -1284,20 +1213,13 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                componentValue,
-                component,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, componentValue, component, name, type, ct);
         }
 
         /// <summary>
-        /// Shows a string in the control. 
+        /// Shows a string in the control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, string value)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, string value, CancellationToken ct = default)
         {
             string name = "Value";
             object componentValue = value;
@@ -1305,7 +1227,7 @@ namespace Opc.Ua.Client.Controls
             // don't display empty components.
             if (name == null)
             {
-                return;
+                return Task.FromResult((index, overwrite));
             }
 
             // get the type name.
@@ -1317,24 +1239,17 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update the list view.
-            UpdateList(
-                ref index,
-                ref overwrite,
-                value,
-                componentValue,
-                0,
-                name,
-                type);
+            return UpdateListAsync(index, overwrite, value, componentValue, 0, name, type, ct);
         }
 
         /// <summary>
         /// Shows a value in control.
         /// </summary>
-        private void ShowValue(ref int index, ref bool overwrite, object value)
+        private async Task<(int, bool)> ShowValueAsync(int index, bool overwrite, object value, CancellationToken ct = default)
         {
             if (value == null)
             {
-                return;
+                return (index, overwrite);
             }
 
             // show monitored items.
@@ -1343,8 +1258,7 @@ namespace Opc.Ua.Client.Controls
             if (monitoredItem != null)
             {
                 m_monitoredItem = monitoredItem;
-                ShowValue(ref index, ref overwrite, monitoredItem.LastValue);
-                return;
+                return await ShowValueAsync(index, overwrite, monitoredItem.LastValue, ct);
             }
 
             // show data changes
@@ -1352,8 +1266,7 @@ namespace Opc.Ua.Client.Controls
 
             if (datachange != null)
             {
-                ShowValue(ref index, ref overwrite, datachange.Value);
-                return;
+                return await ShowValueAsync(index, overwrite, datachange.Value, ct);
             }
 
             // show write value with IndexRange
@@ -1376,10 +1289,10 @@ namespace Opc.Ua.Client.Controls
                             bool enabled = ((indexRange.Begin <= ii && indexRange.End >= ii) ||
                                             (indexRange.End < 0 && indexRange.Begin == ii));
 
-                            ShowValue(ref index, ref overwrite, arrayvalue, ii, enabled);
+                            (index, overwrite) = await ShowValueAsync(index, overwrite, arrayvalue, ii, enabled, ct);
                         }
 
-                        return;
+                        return (index, overwrite);
                     }
                 }
             }
@@ -1391,10 +1304,10 @@ namespace Opc.Ua.Client.Controls
             {
                 for (int ii = 0; ii < eventFields.EventFields.Count; ii++)
                 {
-                    ShowValue(ref index, ref overwrite, eventFields, ii);
+                    (index, overwrite) = await ShowValueAsync(index, overwrite, eventFields, ii, ct);
                 }
 
-                return;
+                return (index, overwrite);
             }
 
             // show extension bodies.
@@ -1402,8 +1315,7 @@ namespace Opc.Ua.Client.Controls
 
             if (extension != null)
             {
-                ShowValue(ref index, ref overwrite, extension.Body);
-                return;
+                return await ShowValueAsync(index, overwrite, extension.Body, ct);
             }
 
             // show encodeables.
@@ -1415,10 +1327,10 @@ namespace Opc.Ua.Client.Controls
 
                 foreach (PropertyInfo property in properties)
                 {
-                    ShowValue(ref index, ref overwrite, encodeable, property);
+                    (index, overwrite) = await ShowValueAsync(index, overwrite, encodeable, property, ct);
                 }
 
-                return;
+                return (index, overwrite);
             }
 
             // show bytes.
@@ -1426,17 +1338,14 @@ namespace Opc.Ua.Client.Controls
 
             if (bytes != null)
             {
-                if (!PromptOnLongList(bytes.Length / 16))
+                if (PromptOnLongList(bytes.Length / 16))
                 {
-                    return;
+                    for (int ii = 0; ii < bytes.Length; ii += 16)
+                    {
+                        (index, overwrite) = await ShowValueAsync(index, overwrite, bytes, ii, ct);
+                    }
                 }
-
-                for (int ii = 0; ii < bytes.Length; ii += 16)
-                {
-                    ShowValue(ref index, ref overwrite, bytes, ii);
-                }
-
-                return;
+                return (index, overwrite);
             }
 
             // show arrays
@@ -1454,17 +1363,14 @@ namespace Opc.Ua.Client.Controls
 
             if (array != null)
             {
-                if (!PromptOnLongList(array.GetLength(0)))
+                if (PromptOnLongList(array.GetLength(0)))
                 {
-                    return;
+                    for (int ii = 0; ii < array.GetLength(0); ii++)
+                    {
+                        (index, overwrite) = await ShowValueAsync(index, overwrite, array, ii, ct);
+                    }
                 }
-
-                for (int ii = 0; ii < array.GetLength(0); ii++)
-                {
-                    ShowValue(ref index, ref overwrite, array, ii);
-                }
-
-                return;
+                return (index, overwrite);
             }
 
             // show lists
@@ -1472,17 +1378,14 @@ namespace Opc.Ua.Client.Controls
 
             if (list != null)
             {
-                if (!PromptOnLongList(list.Count))
+                if (PromptOnLongList(list.Count))
                 {
-                    return;
+                    for (int ii = 0; ii < list.Count; ii++)
+                    {
+                        (index, overwrite) = await ShowValueAsync(index, overwrite, list, ii, ct);
+                    }
                 }
-
-                for (int ii = 0; ii < list.Count; ii++)
-                {
-                    ShowValue(ref index, ref overwrite, list, ii);
-                }
-
-                return;
+                return (index, overwrite);
             }
 
             // show xml elements
@@ -1490,17 +1393,14 @@ namespace Opc.Ua.Client.Controls
 
             if (xml != null)
             {
-                if (!PromptOnLongList(xml.ChildNodes.Count))
+                if (PromptOnLongList(xml.ChildNodes.Count))
                 {
-                    return;
+                    for (int ii = 0; ii < xml.ChildNodes.Count; ii++)
+                    {
+                        (index, overwrite) = await ShowValueAsync(index, overwrite, xml, ii, ct);
+                    }
                 }
-
-                for (int ii = 0; ii < xml.ChildNodes.Count; ii++)
-                {
-                    ShowValue(ref index, ref overwrite, xml, ii);
-                }
-
-                return;
+                return (index, overwrite);
             }
 
             // show data value.
@@ -1508,11 +1408,10 @@ namespace Opc.Ua.Client.Controls
 
             if (datavalue != null)
             {
-                ShowValue(ref index, ref overwrite, datavalue, 0);
-                ShowValue(ref index, ref overwrite, datavalue, 1);
-                ShowValue(ref index, ref overwrite, datavalue, 2);
-                ShowValue(ref index, ref overwrite, datavalue, 3);
-                return;
+                (index, overwrite) = await ShowValueAsync(index, overwrite, datavalue, 0, ct);
+                (index, overwrite) = await ShowValueAsync(index, overwrite, datavalue, 1, ct);
+                (index, overwrite) = await ShowValueAsync(index, overwrite, datavalue, 2, ct);
+                return await ShowValueAsync(index, overwrite, datavalue, 3, ct);
             }
 
             // show node id value.
@@ -1520,10 +1419,9 @@ namespace Opc.Ua.Client.Controls
 
             if (nodeId != null)
             {
-                ShowValue(ref index, ref overwrite, nodeId, 0);
-                ShowValue(ref index, ref overwrite, nodeId, 1);
-                ShowValue(ref index, ref overwrite, nodeId, 2);
-                return;
+                (index, overwrite) = await ShowValueAsync(index, overwrite, nodeId, 0, ct);
+                (index, overwrite) = await ShowValueAsync(index, overwrite, nodeId, 1, ct);
+                return await ShowValueAsync(index, overwrite, nodeId, 2, ct);
             }
 
             // show expanded node id value.
@@ -1531,11 +1429,10 @@ namespace Opc.Ua.Client.Controls
 
             if (expandedNodeId != null)
             {
-                ShowValue(ref index, ref overwrite, expandedNodeId, 0);
-                ShowValue(ref index, ref overwrite, expandedNodeId, 1);
-                ShowValue(ref index, ref overwrite, expandedNodeId, 2);
-                ShowValue(ref index, ref overwrite, expandedNodeId, 3);
-                return;
+                (index, overwrite) = await ShowValueAsync(index, overwrite, expandedNodeId, 0, ct);
+                (index, overwrite) = await ShowValueAsync(index, overwrite, expandedNodeId, 1, ct);
+                (index, overwrite) = await ShowValueAsync(index, overwrite, expandedNodeId, 2, ct);
+                return await ShowValueAsync(index, overwrite, expandedNodeId, 3, ct);
             }
 
             // show qualified name value.
@@ -1543,9 +1440,8 @@ namespace Opc.Ua.Client.Controls
 
             if (qualifiedName != null)
             {
-                ShowValue(ref index, ref overwrite, qualifiedName, 0);
-                ShowValue(ref index, ref overwrite, qualifiedName, 1);
-                return;
+                (index, overwrite) = await ShowValueAsync(index, overwrite, qualifiedName, 0, ct);
+                return await ShowValueAsync(index, overwrite, qualifiedName, 1, ct);
             }
 
             // show qualified name value.
@@ -1553,9 +1449,8 @@ namespace Opc.Ua.Client.Controls
 
             if (localizedText != null)
             {
-                ShowValue(ref index, ref overwrite, localizedText, 0);
-                ShowValue(ref index, ref overwrite, localizedText, 1);
-                return;
+                (index, overwrite) = await ShowValueAsync(index, overwrite, localizedText, 0, ct);
+                return await ShowValueAsync(index, overwrite, localizedText, 1, ct);
             }
 
             // show variant.
@@ -1563,15 +1458,14 @@ namespace Opc.Ua.Client.Controls
 
             if (variant != null)
             {
-                ShowValue(ref index, ref overwrite, variant.Value.Value);
-                return;
+                return await ShowValueAsync(index, overwrite, variant.Value.Value, ct);
             }
 
             // show unknown types as strings.
-            ShowValue(ref index, ref overwrite, String.Format("{0}", value));
+            return await ShowValueAsync(index, overwrite, String.Format("{0}", value), ct);
         }
 
-        private void ItemsLV_MouseClick(object sender, MouseEventArgs e)
+        private async void ItemsLV_MouseClickAsync(object sender, MouseEventArgs e)
         {
             try
             {
@@ -1600,7 +1494,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
-                    ShowChildren(listItem);
+                    await ShowChildrenAsync(listItem);
                 }
             }
             catch (Exception exception)
@@ -1641,7 +1535,7 @@ namespace Opc.Ua.Client.Controls
             {
                 /*
                 Clear();
-                ShowValue(m_monitoredItem);
+                ShowValueAsync(m_monitoredItem);
                 */
             }
             catch (Exception exception)
@@ -1662,7 +1556,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1743,7 +1637,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 bool overwrite = true;
-                ShowValue(ref index, ref overwrite, state.Value);
+                await ShowValueAsync(index, overwrite, state.Value);
             }
             catch (Exception exception)
             {

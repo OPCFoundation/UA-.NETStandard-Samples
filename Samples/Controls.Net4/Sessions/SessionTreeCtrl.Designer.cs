@@ -111,7 +111,7 @@ namespace Opc.Ua.Sample.Controls
             this.NewSessionMI.Name = "NewSessionMI";
             this.NewSessionMI.Size = new System.Drawing.Size(183, 22);
             this.NewSessionMI.Text = "New Session...";
-            this.NewSessionMI.Click += new System.EventHandler(this.NewSessionMI_Click);
+            this.NewSessionMI.Click += new System.EventHandler(this.NewSessionMI_ClickAsync);
             // 
             // NewWindowMI
             // 
@@ -132,14 +132,14 @@ namespace Opc.Ua.Sample.Controls
             this.SessionLoadMI.Name = "SessionLoadMI";
             this.SessionLoadMI.Size = new System.Drawing.Size(183, 22);
             this.SessionLoadMI.Text = "Load Subscriptions...";
-            this.SessionLoadMI.Click += new System.EventHandler(this.SessionLoadMI_Click);
+            this.SessionLoadMI.Click += new System.EventHandler(this.SessionLoadMI_ClickAsync);
             // 
             // DeleteMI
             // 
             this.DeleteMI.Name = "DeleteMI";
             this.DeleteMI.Size = new System.Drawing.Size(183, 22);
             this.DeleteMI.Text = "Delete";
-            this.DeleteMI.Click += new System.EventHandler(this.DeleteMI_Click);
+            this.DeleteMI.Click += new System.EventHandler(this.DeleteMI_ClickAsync);
             // 
             // Separator01
             // 
@@ -180,28 +180,28 @@ namespace Opc.Ua.Sample.Controls
             this.BrowseServerViewsMI.Name = "BrowseServerViewsMI";
             this.BrowseServerViewsMI.Size = new System.Drawing.Size(178, 22);
             this.BrowseServerViewsMI.Text = "Server Defined View";
-            this.BrowseServerViewsMI.DropDownOpening += new System.EventHandler(this.BrowseServerViewsMI_DropDownOpening);
+            this.BrowseServerViewsMI.DropDownOpening += new System.EventHandler(this.BrowseServerViewsMI_DropDownOpeningAsync);
             // 
             // BrowseObjectTypesMI
             // 
             this.BrowseObjectTypesMI.Name = "BrowseObjectTypesMI";
             this.BrowseObjectTypesMI.Size = new System.Drawing.Size(178, 22);
             this.BrowseObjectTypesMI.Text = "Object Types...";
-            this.BrowseObjectTypesMI.Click += new System.EventHandler(this.BrowseObjectTypesMI_Click);
+            this.BrowseObjectTypesMI.Click += new System.EventHandler(this.BrowseObjectTypesMI_ClickAsync);
             // 
             // BrowseEventTypesMI
             // 
             this.BrowseEventTypesMI.Name = "BrowseEventTypesMI";
             this.BrowseEventTypesMI.Size = new System.Drawing.Size(178, 22);
             this.BrowseEventTypesMI.Text = "Event Types...";
-            this.BrowseEventTypesMI.Click += new System.EventHandler(this.BrowseEventTypesMI_Click);
+            this.BrowseEventTypesMI.Click += new System.EventHandler(this.BrowseEventTypesMI_ClickAsync);
             // 
             // BrowseVariableTypesMI
             // 
             this.BrowseVariableTypesMI.Name = "BrowseVariableTypesMI";
             this.BrowseVariableTypesMI.Size = new System.Drawing.Size(178, 22);
             this.BrowseVariableTypesMI.Text = "Variable Types...";
-            this.BrowseVariableTypesMI.Click += new System.EventHandler(this.BrowseVariableTypesMI_Click);
+            this.BrowseVariableTypesMI.Click += new System.EventHandler(this.BrowseVariableTypesMI_ClickAsync);
             // 
             // BrowseDataTypesMI
             // 
@@ -232,7 +232,7 @@ namespace Opc.Ua.Sample.Controls
             this.SubscriptionCreateMI.Name = "SubscriptionCreateMI";
             this.SubscriptionCreateMI.Size = new System.Drawing.Size(168, 22);
             this.SubscriptionCreateMI.Text = "New...";
-            this.SubscriptionCreateMI.Click += new System.EventHandler(this.SubscriptionCreateMI_Click);
+            this.SubscriptionCreateMI.Click += new System.EventHandler(this.SubscriptionCreateMI_ClickAsync);
             // 
             // SubscriptionMonitorMI
             // 
@@ -247,28 +247,28 @@ namespace Opc.Ua.Sample.Controls
             this.SubscriptionEnabledPublishingMI.Name = "SubscriptionEnabledPublishingMI";
             this.SubscriptionEnabledPublishingMI.Size = new System.Drawing.Size(168, 22);
             this.SubscriptionEnabledPublishingMI.Text = "Enable Publishing";
-            this.SubscriptionEnabledPublishingMI.Click += new System.EventHandler(this.SubscriptionEnabledPublishingMI_Click);
+            this.SubscriptionEnabledPublishingMI.Click += new System.EventHandler(this.SubscriptionEnabledPublishingMI_ClickAsync);
             // 
             // ReadMI
             // 
             this.ReadMI.Name = "ReadMI";
             this.ReadMI.Size = new System.Drawing.Size(183, 22);
             this.ReadMI.Text = "Read...";
-            this.ReadMI.Click += new System.EventHandler(this.ReadMI_Click);
+            this.ReadMI.Click += new System.EventHandler(this.ReadMI_ClickAsync);
             // 
             // WriteMI
             // 
             this.WriteMI.Name = "WriteMI";
             this.WriteMI.Size = new System.Drawing.Size(183, 22);
             this.WriteMI.Text = "Write...";
-            this.WriteMI.Click += new System.EventHandler(this.WriteMI_Click);
+            this.WriteMI.Click += new System.EventHandler(this.WriteMI_ClickAsync);
             // 
             // SetLocaleMI
             // 
             this.SetLocaleMI.Name = "SetLocaleMI";
             this.SetLocaleMI.Size = new System.Drawing.Size(183, 22);
             this.SetLocaleMI.Text = "Set Locale...";
-            this.SetLocaleMI.Click += new System.EventHandler(this.SetLocaleMI_Click);
+            this.SetLocaleMI.Click += new System.EventHandler(this.SetLocaleMI_ClickAsync);
             // 
             // SessionTreeCtrl
             // 

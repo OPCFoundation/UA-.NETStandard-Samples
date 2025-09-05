@@ -53,12 +53,12 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         private ConfiguredEndpoint m_endpoint;
         private ApplicationConfiguration m_configuration;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
@@ -80,20 +80,20 @@ namespace Opc.Ua.Client.Controls
 
                 return null;
             }
-            
+
             ServersCTRL.Initialize(null, configuration);
-            
+
             OkBTN.Enabled = false;
 
             if (ShowDialog() != DialogResult.OK)
             {
                 return null;
             }
-  
+
             return m_endpoint;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

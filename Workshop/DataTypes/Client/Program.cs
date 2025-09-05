@@ -51,7 +51,7 @@ namespace Quickstarts.DataTypes
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Client;
+            application.ApplicationType = ApplicationType.Client;
             application.ConfigSectionName = "DataTypesClient";
 
             try
@@ -61,7 +61,7 @@ namespace Quickstarts.DataTypes
                 {
                     return;
                 }
-                
+
                 // load the application configuration.
                 application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 

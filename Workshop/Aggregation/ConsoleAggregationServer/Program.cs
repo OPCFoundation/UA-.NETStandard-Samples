@@ -97,7 +97,7 @@ namespace AggregationServer
 
             try
             {
-                Task t = ConsoleAggregationServer();
+                Task t = ConsoleAggregationServerAsync();
                 t.Wait();
                 Console.WriteLine("Server started. Press any key to exit...");
             }
@@ -137,7 +137,7 @@ namespace AggregationServer
             }
         }
 
-        private async Task ConsoleAggregationServer()
+        private async Task ConsoleAggregationServerAsync()
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
@@ -195,7 +195,7 @@ namespace AggregationServer
             }
 
             // start the status thread
-            status = Task.Run(async () => await StatusThread().ConfigureAwait(false));
+            status = Task.Run(async () => await StatusThreadAsync().ConfigureAwait(false));
 
             // print notification on session events
             server.CurrentInstance.SessionManager.SessionActivated += EventStatus;
@@ -230,7 +230,7 @@ namespace AggregationServer
             }
         }
 
-        private async Task StatusThread()
+        private async Task StatusThreadAsync()
         {
             AggregationServer serverStatus = server;
             while (serverStatus != null)

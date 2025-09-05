@@ -53,11 +53,11 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private event EventHandler m_CertificateStoreSelected;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Gets or sets the control that is stores with the current certificate store.

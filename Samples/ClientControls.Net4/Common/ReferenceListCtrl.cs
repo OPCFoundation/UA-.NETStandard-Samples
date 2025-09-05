@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -70,12 +71,12 @@ namespace Opc.Ua.Client.Controls
             ReferencesDV.DataSource = m_dataset.Tables[0].DefaultView;
         }
         #endregion
-        
+
         #region Private Fields
         private ISession m_session;
         private DataSet m_dataset;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// The node id shown in the control.
@@ -109,7 +110,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public async Task ChangeSessionAsync(ISession session)
+        public async Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
             // do nothing if no change or no node id.
             if (Object.ReferenceEquals(m_session, session))
@@ -120,13 +121,13 @@ namespace Opc.Ua.Client.Controls
             m_session = session;
 
             // update the display.
-            await BrowseAsync();
+            await BrowseAsync(ct);
         }
 
         /// <summary>
         /// Changes the node id.
         /// </summary>
-        public async Task ChangeNodeIdAsync(NodeId nodeId)
+        public async Task ChangeNodeIdAsync(NodeId nodeId, CancellationToken ct = default)
         {
             // do nothing if no change or no session.
             if (NodeId == nodeId)
@@ -138,7 +139,7 @@ namespace Opc.Ua.Client.Controls
             NodeId = nodeId;
 
             // update the display.
-            await BrowseAsync();            
+            await BrowseAsync(ct);
         }
         #endregion
 
@@ -186,7 +187,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Browses for the requested references.
         /// </summary>
-        private async Task BrowseAsync()
+        private async Task BrowseAsync(CancellationToken ct = default)
         {
             m_dataset.Tables[0].Rows.Clear();
 
@@ -195,7 +196,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            ReferenceDescriptionCollection references = ClientUtils.Browse(m_session, View, CreateNodesToBrowse(), false);
+            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, View, CreateNodesToBrowse(), false, ct);
 
             for (int ii = 0; references != null && ii < references.Count; ii++)
             {
@@ -204,12 +205,12 @@ namespace Opc.Ua.Client.Controls
                 DataRow row = m_dataset.Tables[0].NewRow();
 
                 row[0] = reference;
-                row[1] = m_session.NodeCache.GetDisplayText(reference.NodeId);
-                row[2] = m_session.NodeCache.GetDisplayText(reference.ReferenceTypeId);
+                row[1] = await m_session.NodeCache.GetDisplayTextAsync(reference.NodeId, ct);
+                row[2] = await m_session.NodeCache.GetDisplayTextAsync(reference.ReferenceTypeId, ct);
                 row[3] = reference.IsForward.ToString();
                 row[4] = reference.NodeClass.ToString();
-                row[5] = m_session.NodeCache.GetDisplayText(reference.TypeDefinition);
-                row[6] = ImageList.Images[await ClientUtils.GetImageIndexAsync(m_session, reference.NodeClass, reference.TypeDefinition, false)];
+                row[5] = await m_session.NodeCache.GetDisplayTextAsync(reference.TypeDefinition, ct);
+                row[6] = ImageList.Images[await ClientUtils.GetImageIndexAsync(m_session, reference.NodeClass, reference.TypeDefinition, false, ct)];
 
                 m_dataset.Tables[0].Rows.Add(row);
             }

@@ -44,9 +44,9 @@ namespace AggregationServer
         [STAThread]
         static void Main()
         {
-            MyMain().Wait();
+            MyMainAsync().Wait();
         }
-        static async Task MyMain()
+        static async Task MyMainAsync()
         {
             // Initialize the user interface.
             Application.EnableVisualStyles();

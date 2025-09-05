@@ -46,8 +46,8 @@ namespace Quickstarts.AlarmConditionServer
             ISystemContext context,
             AreaState parent,
             NodeId nodeId,
-            AreaConfiguration configuration) 
-        : 
+            AreaConfiguration configuration)
+        :
             base(parent)
         {
             Initialize(context);

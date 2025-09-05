@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -41,6 +41,8 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Quickstarts.UserAuthenticationClient
 {
@@ -124,7 +126,7 @@ namespace Quickstarts.UserAuthenticationClient
         {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.ConnectAsync();
             }
             catch (Exception exception)
             {
@@ -165,7 +167,7 @@ namespace Quickstarts.UserAuthenticationClient
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -186,7 +188,7 @@ namespace Quickstarts.UserAuthenticationClient
 
                 // set the available tokens.
                 SetAvailableUserTokens(m_session.ConfiguredEndpoint.Description);
-                ReadLogFilePath();
+                await ReadLogFilePathAsync();
             }
             catch (Exception exception)
             {
@@ -248,7 +250,7 @@ namespace Quickstarts.UserAuthenticationClient
         /// <summary>
         /// Creates a SAML token for the specified email address.
         /// </summary>
-        public static async System.Threading.Tasks.Task<UserIdentity> CreateSAMLTokenAsync(string emailAddress)
+        public static async Task<UserIdentity> CreateSAMLTokenAsync(string emailAddress, CancellationToken ct = default)
         {
             // Normally this would be done by a server that is capable of verifying that
             // the user is a legimate holder of email address. Using a local certficate to
@@ -259,7 +261,7 @@ namespace Quickstarts.UserAuthenticationClient
             userid.StorePath = "LocalMachine\\My";
             userid.SubjectName = "UA Sample Client";
 
-            X509Certificate2 certificate = await userid.Find();
+            X509Certificate2 certificate = await userid.FindAsync(ct: ct);
             X509SecurityToken signingToken = new X509SecurityToken(certificate);
 
             // Create list of confirmation strings
@@ -268,7 +270,7 @@ namespace Quickstarts.UserAuthenticationClient
             // Add holder-of-key string to list of confirmation strings
             confirmations.Add("urn:oasis:names:tc:SAML:1.0:cm:bearer");
 
-            // Create SAML subject statement based on issuer member variable, confirmation string collection 
+            // Create SAML subject statement based on issuer member variable, confirmation string collection
             // local variable and proof key identifier parameter
             SamlSubject subject = new SamlSubject("urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress", null, emailAddress);
 
@@ -280,7 +282,7 @@ namespace Quickstarts.UserAuthenticationClient
             // Create list of SAML statements
             List<SamlStatement> statements = new List<SamlStatement>();
 
-            // Add a SAML attribute statement to the list of statements. Attribute statement is based on 
+            // Add a SAML attribute statement to the list of statements. Attribute statement is based on
             // subject statement and SAML attributes resulting from claims
             statements.Add(new SamlAttributeStatement(subject, attributes));
 
@@ -332,9 +334,9 @@ namespace Quickstarts.UserAuthenticationClient
             // setspn -U -S <hostname>/<exename> <domain accountname>
             // setspn -C -S <hostname>/<exename> <hostname>
 
-            // The latter form is used if the UA server runs a Windows Service using the builtin Windows Service account.   
+            // The latter form is used if the UA server runs a Windows Service using the builtin Windows Service account.
 
-            // NOTE: Using the KerberosSecurityTokenProvider without the NetworkCredential parameter will use the 
+            // NOTE: Using the KerberosSecurityTokenProvider without the NetworkCredential parameter will use the
             // the credentials of the client process,
 
             // create the token provider.
@@ -422,9 +424,9 @@ namespace Quickstarts.UserAuthenticationClient
                 }
             }
         }
-#endregion
+        #endregion
 
-#region Event Handlers
+        #region Event Handlers
         private void UserNameImpersonateBTN_Click(object sender, EventArgs e)
         {
             if (m_session == null)
@@ -464,8 +466,8 @@ namespace Quickstarts.UserAuthenticationClient
             {
                 // load the certficate.
                 X509Certificate2 certificate = new X509Certificate2(
-                    CertificateTB.Text, 
-                    CertificatePasswordTB.Text, 
+                    CertificateTB.Text,
+                    CertificatePasswordTB.Text,
                     X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
 
                 // want to get error text for this call.
@@ -498,7 +500,7 @@ namespace Quickstarts.UserAuthenticationClient
             {
                 // want to get error text for this call.
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
-                
+
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(new UserIdentity(new AnonymousIdentityToken()), preferredLocales);
 
@@ -547,7 +549,7 @@ namespace Quickstarts.UserAuthenticationClient
         /// <summary>
         /// Reads the log file path.
         /// </summary>
-        private void ReadLogFilePath()
+        private async Task ReadLogFilePathAsync(CancellationToken ct = default)
         {
             if (m_session == null)
             {
@@ -566,16 +568,16 @@ namespace Quickstarts.UserAuthenticationClient
                 ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
                 valuesToRead.Add(value);
 
-                DataValueCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = m_session.Read(
+                ReadResponse response = await m_session.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
                     valuesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                DataValueCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, valuesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
@@ -597,7 +599,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
         }
 
-        private void ChangeLogFileBTN_Click(object sender, EventArgs e)
+        private async void ChangeLogFileBTN_ClickAsync(object sender, EventArgs e)
         {
             if (m_session == null)
             {
@@ -617,14 +619,14 @@ namespace Quickstarts.UserAuthenticationClient
                 WriteValueCollection valuesToWrite = new WriteValueCollection();
                 valuesToWrite.Add(value);
 
-                StatusCodeCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = m_session.Write(
+                WriteResponse response = await m_session.WriteAsync(
                     null,
                     valuesToWrite,
-                    out results,
-                    out diagnosticInfos);
+                    default);
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                StatusCodeCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, valuesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);
@@ -643,6 +645,6 @@ namespace Quickstarts.UserAuthenticationClient
                 m_session.ReturnDiagnostics = DiagnosticsMasks.None;
             }
         }
-#endregion
+        #endregion
     }
 }

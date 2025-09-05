@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -34,6 +34,7 @@ using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -51,25 +52,25 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private Session m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the available areas in a tree view.
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns></returns>
-        public async Task<string> ShowDialogAsync(Session session)
+        public async Task<string> ShowDialogAsync(Session session, CancellationToken ct = default)
         {
             m_session = session;
 
             LocaleCB.Items.Clear();
 
             // get the locales from the server.
-            DataValue value = await m_session.ReadValueAsync(VariableIds.Server_ServerCapabilities_LocaleIdArray);
+            DataValue value = await m_session.ReadValueAsync(VariableIds.Server_ServerCapabilities_LocaleIdArray, ct);
 
             if (value != null)
             {
@@ -99,7 +100,7 @@ namespace Opc.Ua.Sample.Controls
             return LocaleCB.SelectedItem as string;
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
 

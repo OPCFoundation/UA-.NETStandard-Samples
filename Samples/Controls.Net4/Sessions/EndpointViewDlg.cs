@@ -54,17 +54,17 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
         }
-        
+
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public bool ShowDialog(EndpointDescription endpoint)
         {
-            if (endpoint == null) throw new ArgumentNullException("endpoint");
-        
-            EndpointTB.Text   = endpoint.EndpointUrl;
+            if (endpoint == null) throw new ArgumentNullException(nameof(endpoint));
+
+            EndpointTB.Text = endpoint.EndpointUrl;
             ServerNameTB.Text = endpoint.Server.ApplicationName.Text;
-            ServerUriTB.Text  = endpoint.Server.ApplicationUri;
+            ServerUriTB.Text = endpoint.Server.ApplicationUri;
 
             try
             {
@@ -75,11 +75,11 @@ namespace Opc.Ua.Sample.Controls
             {
                 ServerCertificateTB.Text = "<bad certificate>";
             }
-                
-           
-            SecurityModeTB.Text      = String.Format("{0}", endpoint.SecurityMode);;
+
+
+            SecurityModeTB.Text = String.Format("{0}", endpoint.SecurityMode); ;
             SecurityPolicyUriTB.Text = String.Format("{0}", endpoint.SecurityPolicyUri);
-            
+
             UserIdentityTypeTB.Text = "";
 
             foreach (UserTokenPolicy policy in endpoint.UserIdentityTokens)
@@ -91,7 +91,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 return false;
             }
-                       
+
             return true;
         }
     }

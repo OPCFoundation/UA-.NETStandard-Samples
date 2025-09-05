@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Text;
 using System.Windows.Forms;
 using System.Xml;
 using System.Reflection;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls.Common
 {
@@ -77,7 +79,7 @@ namespace Opc.Ua.Client.Controls.Common
         private event EventHandler m_ValueChanged;
         #endregion
 
-        private class AccessInfo
+        private sealed class AccessInfo
         {
             public AccessInfo Parent { get; set; }
             public PropertyInfo PropertyInfo { get; set; }
@@ -223,8 +225,8 @@ namespace Opc.Ua.Client.Controls.Common
             if (!CanGoBack)
             {
                 return;
-            } 
-            
+            }
+
             NavigationMENU_Click(NavigationMENU.Items[NavigationMENU.Items.Count - 2], null);
         }
 
@@ -379,7 +381,7 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 return;
             }
-            
+
             AccessInfo info = NavigationMENU.Items[NavigationMENU.Items.Count - 1].Tag as AccessInfo;
 
             TypeInfo currentType = info.TypeInfo;
@@ -410,9 +412,9 @@ namespace Opc.Ua.Client.Controls.Common
                     }
                 }
             }
-            
+
             TypeInfo targetType = new TypeInfo(builtInType, currentType.ValueRank);
-            object newValue  = Convert(currentValue, currentType, targetType, true);
+            object newValue = Convert(currentValue, currentType, targetType, true);
 
             NavigationMENU.Items.RemoveAt(NavigationMENU.Items.Count - 1);
 
@@ -451,12 +453,13 @@ namespace Opc.Ua.Client.Controls.Common
         /// <summary>
         /// Displays the value in the control.
         /// </summary>
-        public void ShowValue(
+        public async Task ShowValueAsync(
             NodeId nodeId,
             uint attributeId,
-            string name, 
-            object value, 
-            bool readOnly)
+            string name,
+            object value,
+            bool readOnly,
+            CancellationToken ct = default)
         {
             m_readOnly = readOnly;
             NavigationMENU.Items.Clear();
@@ -480,7 +483,7 @@ namespace Opc.Ua.Client.Controls.Common
             // determine the expected data type for value attributes.
             else if (!NodeId.IsNull(nodeId))
             {
-                IVariableBase variable = m_session.NodeCache.Find(nodeId) as IVariableBase;
+                IVariableBase variable = await m_session.NodeCache.FindAsync(nodeId, ct) as IVariableBase;
 
                 if (variable != null)
                 {
@@ -602,7 +605,7 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 name = expectedType.ToString();
             }
-            
+
             AccessInfo info = new AccessInfo();
             info.Value = Utils.Clone(value);
             info.TypeInfo = expectedType;
@@ -933,7 +936,7 @@ namespace Opc.Ua.Client.Controls.Common
             DataRow row = m_dataset.Tables[0].NewRow();
 
             StringBuilder buffer = new StringBuilder();
-            buffer.Append("[");
+            buffer.Append('[');
 
             if (info.Indexes != null)
             {
@@ -941,14 +944,14 @@ namespace Opc.Ua.Client.Controls.Common
                 {
                     if (ii > 0)
                     {
-                        buffer.Append(",");
+                        buffer.Append(',');
                     }
 
                     buffer.Append(info.Indexes[ii]);
                 }
             }
 
-            buffer.Append("]");
+            buffer.Append(']');
             info.Name = buffer.ToString();
 
             row[0] = info;
@@ -1341,7 +1344,7 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 return false;
             }
-            
+
             switch (typeInfo.BuiltInType)
             {
                 case BuiltInType.String:
@@ -1382,7 +1385,7 @@ namespace Opc.Ua.Client.Controls.Common
                 if (item != null)
                 {
                     // remove all menu items appearing after the selected item.
-                    for (int ii = NavigationMENU.Items.Count-1; ii >= 0; ii--)
+                    for (int ii = NavigationMENU.Items.Count - 1; ii >= 0; ii--)
                     {
                         ToolStripItem target = NavigationMENU.Items[ii];
                         NavigationMENU.Items.Remove(target);
@@ -1417,7 +1420,7 @@ namespace Opc.Ua.Client.Controls.Common
                         AccessInfo info = (AccessInfo)source.Row[0];
                         ShowValue(info);
                     }
-                    
+
                     break;
                 }
             }
@@ -1513,7 +1516,7 @@ namespace Opc.Ua.Client.Controls.Common
                     int count = 0;
                     int block = 1;
 
-                    for (int ii = info.Indexes.Length-1; ii >= 0 ; ii--)
+                    for (int ii = info.Indexes.Length - 1; ii >= 0; ii--)
                     {
                         count += info.Indexes[ii] * block;
                         block *= matrix.Dimensions[ii];

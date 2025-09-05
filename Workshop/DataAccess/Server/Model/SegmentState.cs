@@ -37,7 +37,7 @@ using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.DataAccessServer
-{    
+{
     /// <summary>
     /// A object which maps a segment to a UA object.
     /// </summary>
@@ -89,11 +89,11 @@ namespace Quickstarts.DataAccessServer
         /// <param name="internalOnly">If true the browser should not making blocking calls to external systems.</param>
         /// <returns>The browse object (must be disposed).</returns>
         public override INodeBrowser CreateBrowser(
-            ISystemContext context, 
-            ViewDescription view, 
-            NodeId referenceType, 
-            bool includeSubtypes, 
-            BrowseDirection browseDirection, 
+            ISystemContext context,
+            ViewDescription view,
+            NodeId referenceType,
+            bool includeSubtypes,
+            BrowseDirection browseDirection,
             QualifiedName browseName,
             IEnumerable<IReference> additionalReferences,
             bool internalOnly)

@@ -38,7 +38,7 @@ namespace Quickstarts.HistoricalEvents.Server
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Namespaces.HistoricalEvents)]
+    [DataContract(Namespace = Namespaces.HistoricalEvents)]
     public class HistoricalEventsServerConfiguration
     {
         #region Constructors

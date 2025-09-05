@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -34,6 +34,7 @@ using System.Data;
 using System.Drawing;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Net.Mime.MediaTypeNames;
@@ -59,7 +60,7 @@ namespace Opc.Ua.Client.Controls
         private BrowseListCtrl m_referencesCTRL;
         private AttributeListCtrl m_attributesCTRL;
 
-        // The columns to display in the control.		
+        // The columns to display in the control.
         private readonly object[][] m_ColumnNames = new object[][]
         {
             new object[] { "Name",  HorizontalAlignment.Left, null },
@@ -88,7 +89,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes the control with a set of items.
         /// </summary>
-        public async Task InitializeAsync(ISession session, IList<NodeId> nodeIds)
+        public async Task InitializeAsync(ISession session, IList<NodeId> nodeIds, CancellationToken ct = default)
         {
             ItemsLV.Items.Clear();
             m_session = session;
@@ -101,7 +102,7 @@ namespace Opc.Ua.Client.Controls
 
             for (int ii = 0; ii < nodeIds.Count; ii++)
             {
-                ILocalNode node = await m_session.NodeCache.FindAsync(nodeIds[ii]) as ILocalNode;
+                ILocalNode node = await m_session.NodeCache.FindAsync(nodeIds[ii], ct) as ILocalNode;
 
                 if (node == null)
                 {
@@ -117,9 +118,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds a node to the control.
         /// </summary>
-        public async Task AddAsync(NodeId nodeId)
+        public async Task AddAsync(NodeId nodeId, CancellationToken ct = default)
         {
-            ILocalNode node = await m_session.NodeCache.FindAsync(nodeId) as ILocalNode;
+            ILocalNode node = await m_session.NodeCache.FindAsync(nodeId, ct) as ILocalNode;
 
             if (node != null)
             {
@@ -183,27 +184,27 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <see cref="Opc.Ua.Client.Controls.BaseListCtrl.UpdateItem(ListViewItem,object)" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             ILocalNode node = item as ILocalNode;
 
             if (node == null)
             {
-                base.UpdateItem(listItem, item);
+                await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 
             listItem.SubItems[0].Text = Utils.Format("{0}", node.DisplayName);
             listItem.SubItems[1].Text = Utils.Format("{0}", node.NodeId);
 
-            listItem.ImageKey = GuiUtils.GetTargetIcon(m_session, node.NodeClass, node.TypeDefinitionId);
+            listItem.ImageKey = await GuiUtils.GetTargetIconAsync(m_session, node.NodeClass, node.TypeDefinitionId, ct);
             listItem.Tag = item;
         }
 
         /// <summary>
         /// Handles a drop event.
         /// </summary>
-        protected override async void ItemsLV_DragDrop(object sender, DragEventArgs e)
+        protected override async Task OnDragDropAsync(object sender, DragEventArgs e, CancellationToken ct = default)
         {
             try
             {
@@ -214,7 +215,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                ILocalNode node = await m_session.NodeCache.FindAsync(reference.NodeId) as ILocalNode;
+                ILocalNode node = await m_session.NodeCache.FindAsync(reference.NodeId, ct) as ILocalNode;
 
                 if (node == null)
                 {

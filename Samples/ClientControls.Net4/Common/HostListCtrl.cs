@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,7 @@ using System.Threading;
 using System.Net;
 
 using Opc.Ua.Configuration;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -53,17 +54,17 @@ namespace Opc.Ua.Client.Controls
         public HostListCtrl()
         {
             InitializeComponent();
-            SetColumns(m_ColumnNames);            
+            SetColumns(m_ColumnNames);
         }
         #endregion
-        
+
         #region Private Fields
-        // The columns to display in the control.		
-		private readonly object[][] m_ColumnNames = new object[][]
-		{ 
-			new object[] { "Name",        HorizontalAlignment.Left, null },  
-			new object[] { "Addresses",   HorizontalAlignment.Left, null }
-		};
+        // The columns to display in the control.
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Name",        HorizontalAlignment.Left, null },
+            new object[] { "Addresses",   HorizontalAlignment.Left, null }
+        };
         #endregion
 
         #region Public Interface
@@ -78,7 +79,7 @@ namespace Opc.Ua.Client.Controls
             AdjustColumns();
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Finds the addresses for the specified host.
@@ -119,7 +120,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Could not get ip addresses for host: {0}", hostname);                
+                Utils.LogError(e, "Could not get ip addresses for host: {0}", hostname);
                 ThreadPool.QueueUserWorkItem(new WaitCallback(OnUpdateAddress), new object[] { listItem, e.Message });
             }
         }
@@ -134,7 +135,7 @@ namespace Opc.Ua.Client.Controls
                 this.BeginInvoke(new WaitCallback(OnUpdateAddress), state);
                 return;
             }
-            
+
             ListViewItem listItem = ((object[])state)[0] as ListViewItem;
 
             if (listItem == null)
@@ -149,7 +150,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-			listItem.SubItems[1].Text = addresses;
+            listItem.SubItems[1].Text = addresses;
 
             AdjustColumns();
         }
@@ -159,18 +160,18 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates an item in the control.
         /// </summary>
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             string hostname = listItem.Tag as string;
 
             if (hostname == null)
             {
-                base.UpdateItem(listItem, hostname);
+                await base.UpdateItemAsync(listItem, hostname, ct);
                 return;
             }
 
-			listItem.SubItems[0].Text = String.Format("{0}", hostname);
-			listItem.SubItems[1].Text = "<Unknown>";
+            listItem.SubItems[0].Text = String.Format("{0}", hostname);
+            listItem.SubItems[1].Text = "<Unknown>";
 
             listItem.ImageKey = GuiUtils.Icons.Computer;
 

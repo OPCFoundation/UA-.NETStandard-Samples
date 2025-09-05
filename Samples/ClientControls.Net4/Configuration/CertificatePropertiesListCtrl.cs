@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -31,10 +31,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Configuration;
 using Opc.Ua.Security.Certificates;
 
@@ -56,18 +58,18 @@ namespace Opc.Ua.Client.Controls
             SetColumns(m_ColumnNames);
         }
         #endregion
-        
+
         #region Private Fields
-        // The columns to display in the control.		
-		private readonly object[][] m_ColumnNames = new object[][]
-		{ 
-			new object[] { "Field", HorizontalAlignment.Left, null },  
-			new object[] { "Value", HorizontalAlignment.Left, null },
-		};
+        // The columns to display in the control.
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Field", HorizontalAlignment.Left, null },
+            new object[] { "Value", HorizontalAlignment.Left, null },
+        };
         #endregion
-        
+
         #region FieldInfo Class
-        private class FieldInfo
+        private sealed class FieldInfo
         {
             public string Name;
             public string Value;
@@ -80,7 +82,7 @@ namespace Opc.Ua.Client.Controls
         }
         #endregion
 
-        #region Public Interface 
+        #region Public Interface
         /// <summary>
         /// Removes all items in the list.
         /// </summary>
@@ -88,7 +90,7 @@ namespace Opc.Ua.Client.Controls
         {
             ItemsLV.Items.Clear();
             Instructions = String.Empty;
-            AdjustColumns();            
+            AdjustColumns();
         }
 
         /// <summary>
@@ -105,8 +107,8 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            AddItem(new FieldInfo("Version", certificate.Version));            
-            AddItem(new FieldInfo("Subject", certificate.Subject));      
+            AddItem(new FieldInfo("Version", certificate.Version));
+            AddItem(new FieldInfo("Subject", certificate.Subject));
             AddItem(new FieldInfo("FriendlyName", certificate.FriendlyName));
             AddItem(new FieldInfo("Thumbprint", certificate.Thumbprint));
             AddItem(new FieldInfo("Issuer", certificate.Issuer));
@@ -119,8 +121,8 @@ namespace Opc.Ua.Client.Controls
 
             foreach (X509Extension extension in certificate.Extensions)
             {
-                X509BasicConstraintsExtension basicContraints = extension as X509BasicConstraintsExtension; 
-                
+                X509BasicConstraintsExtension basicContraints = extension as X509BasicConstraintsExtension;
+
                 if (basicContraints != null)
                 {
                     StringBuilder buffer = new StringBuilder();
@@ -167,7 +169,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 X509EnhancedKeyUsageExtension enhancedKeyUsage = extension as X509EnhancedKeyUsageExtension;
-                
+
                 if (enhancedKeyUsage != null)
                 {
                     StringBuilder buffer = new StringBuilder();
@@ -194,7 +196,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 X509SubjectKeyIdentifierExtension subjectKeyId = extension as X509SubjectKeyIdentifierExtension;
-                
+
                 if (subjectKeyId != null)
                 {
                     AddItem(new FieldInfo("SubjectKeyIdentifier", subjectKeyId.SubjectKeyIdentifier));
@@ -223,9 +225,9 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 string value = Utils.ToHexString(extension.RawData);
-                
+
                 AddItem(new FieldInfo(name, value));
-            }              
+            }
 
             AdjustColumns();
         }
@@ -245,11 +247,11 @@ namespace Opc.Ua.Client.Controls
             }
 
             AddItem(new FieldInfo("ApplicationName", application.ApplicationName));
-            AddItem(new FieldInfo("ApplicationUri", application.ApplicationUri));   
-            AddItem(new FieldInfo("ProductName", application.ProductName));   
-            AddItem(new FieldInfo("ApplicationType", application.ApplicationType));   
-            AddItem(new FieldInfo("ConfigurationFile", application.ConfigurationFile));  
-            AddItem(new FieldInfo("ExecutableFile", application.ExecutableFile));  
+            AddItem(new FieldInfo("ApplicationUri", application.ApplicationUri));
+            AddItem(new FieldInfo("ProductName", application.ProductName));
+            AddItem(new FieldInfo("ApplicationType", application.ApplicationType));
+            AddItem(new FieldInfo("ConfigurationFile", application.ConfigurationFile));
+            AddItem(new FieldInfo("ExecutableFile", application.ExecutableFile));
 
             AdjustColumns();
         }
@@ -259,19 +261,19 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates an item in the control.
         /// </summary>
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             FieldInfo info = item as FieldInfo;
 
             if (info == null)
             {
-                base.UpdateItem(listItem, item);
+                await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 
-			listItem.SubItems[0].Text = String.Format("{0}", info.Name);
-			listItem.SubItems[1].Text = String.Format("{0}", info.Value);
-            
+            listItem.SubItems[0].Text = String.Format("{0}", info.Name);
+            listItem.SubItems[1].Text = String.Format("{0}", info.Value);
+
             listItem.Tag = item;
         }
         #endregion

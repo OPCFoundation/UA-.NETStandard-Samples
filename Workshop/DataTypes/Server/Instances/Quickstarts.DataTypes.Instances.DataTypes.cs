@@ -38,7 +38,7 @@ using Quickstarts.DataTypes.Types;
 namespace Quickstarts.DataTypes.Instances
 {
     #region ParkingLotType Enumeration
-    #if (!OPCUA_EXCLUDE_ParkingLotType)
+#if (!OPCUA_EXCLUDE_ParkingLotType)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -63,13 +63,13 @@ namespace Quickstarts.DataTypes.Instances
     {
         #region Constructors
         /// <remarks />
-        public ParkingLotTypeCollection() {}
+        public ParkingLotTypeCollection() { }
 
         /// <remarks />
-        public ParkingLotTypeCollection(int capacity) : base(capacity) {}
+        public ParkingLotTypeCollection(int capacity) : base(capacity) { }
 
         /// <remarks />
-        public ParkingLotTypeCollection(IEnumerable<ParkingLotType> collection) : base(collection) {}
+        public ParkingLotTypeCollection(IEnumerable<ParkingLotType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -118,11 +118,11 @@ namespace Quickstarts.DataTypes.Instances
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 
     #region TwoWheelerType Class
-    #if (!OPCUA_EXCLUDE_TwoWheelerType)
+#if (!OPCUA_EXCLUDE_TwoWheelerType)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -153,23 +153,23 @@ namespace Quickstarts.DataTypes.Instances
         [DataMember(Name = "ManufacturerName", IsRequired = false, Order = 1)]
         public string ManufacturerName
         {
-            get { return m_manufacturerName;  }
+            get { return m_manufacturerName; }
             set { m_manufacturerName = value; }
         }
         #endregion
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId => DataTypeIds.TwoWheelerType; 
+        public override ExpandedNodeId TypeId => DataTypeIds.TwoWheelerType;
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
         public override ExpandedNodeId BinaryEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public override ExpandedNodeId XmlEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultXml;
-            
+
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public override ExpandedNodeId JsonEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultJson; 
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -214,7 +214,7 @@ namespace Quickstarts.DataTypes.Instances
             if (!Utils.IsEqual(m_manufacturerName, value.m_manufacturerName)) return false;
 
             return base.IsEqual(encodeable);
-        }    
+        }
 
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
@@ -247,13 +247,13 @@ namespace Quickstarts.DataTypes.Instances
     {
         #region Constructors
         /// <remarks />
-        public TwoWheelerTypeCollection() {}
+        public TwoWheelerTypeCollection() { }
 
         /// <remarks />
-        public TwoWheelerTypeCollection(int capacity) : base(capacity) {}
+        public TwoWheelerTypeCollection(int capacity) : base(capacity) { }
 
         /// <remarks />
-        public TwoWheelerTypeCollection(IEnumerable<TwoWheelerType> collection) : base(collection) {}
+        public TwoWheelerTypeCollection(IEnumerable<TwoWheelerType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -302,11 +302,11 @@ namespace Quickstarts.DataTypes.Instances
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 
     #region BicycleType Class
-    #if (!OPCUA_EXCLUDE_BicycleType)
+#if (!OPCUA_EXCLUDE_BicycleType)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -337,23 +337,23 @@ namespace Quickstarts.DataTypes.Instances
         [DataMember(Name = "NoOfGears", IsRequired = false, Order = 1)]
         public uint NoOfGears
         {
-            get { return m_noOfGears;  }
+            get { return m_noOfGears; }
             set { m_noOfGears = value; }
         }
         #endregion
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId => DataTypeIds.BicycleType; 
+        public override ExpandedNodeId TypeId => DataTypeIds.BicycleType;
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
         public override ExpandedNodeId BinaryEncodingId => ObjectIds.BicycleType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public override ExpandedNodeId XmlEncodingId => ObjectIds.BicycleType_Encoding_DefaultXml;
-            
+
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public override ExpandedNodeId JsonEncodingId => ObjectIds.BicycleType_Encoding_DefaultJson; 
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.BicycleType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -398,7 +398,7 @@ namespace Quickstarts.DataTypes.Instances
             if (!Utils.IsEqual(m_noOfGears, value.m_noOfGears)) return false;
 
             return base.IsEqual(encodeable);
-        }    
+        }
 
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
@@ -431,13 +431,13 @@ namespace Quickstarts.DataTypes.Instances
     {
         #region Constructors
         /// <remarks />
-        public BicycleTypeCollection() {}
+        public BicycleTypeCollection() { }
 
         /// <remarks />
-        public BicycleTypeCollection(int capacity) : base(capacity) {}
+        public BicycleTypeCollection(int capacity) : base(capacity) { }
 
         /// <remarks />
-        public BicycleTypeCollection(IEnumerable<BicycleType> collection) : base(collection) {}
+        public BicycleTypeCollection(IEnumerable<BicycleType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -486,11 +486,11 @@ namespace Quickstarts.DataTypes.Instances
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 
     #region ScooterType Class
-    #if (!OPCUA_EXCLUDE_ScooterType)
+#if (!OPCUA_EXCLUDE_ScooterType)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -521,23 +521,23 @@ namespace Quickstarts.DataTypes.Instances
         [DataMember(Name = "NoOfSeats", IsRequired = false, Order = 1)]
         public uint NoOfSeats
         {
-            get { return m_noOfSeats;  }
+            get { return m_noOfSeats; }
             set { m_noOfSeats = value; }
         }
         #endregion
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId => DataTypeIds.ScooterType; 
+        public override ExpandedNodeId TypeId => DataTypeIds.ScooterType;
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
         public override ExpandedNodeId BinaryEncodingId => ObjectIds.ScooterType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public override ExpandedNodeId XmlEncodingId => ObjectIds.ScooterType_Encoding_DefaultXml;
-            
+
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public override ExpandedNodeId JsonEncodingId => ObjectIds.ScooterType_Encoding_DefaultJson; 
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.ScooterType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -582,7 +582,7 @@ namespace Quickstarts.DataTypes.Instances
             if (!Utils.IsEqual(m_noOfSeats, value.m_noOfSeats)) return false;
 
             return base.IsEqual(encodeable);
-        }    
+        }
 
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
@@ -615,13 +615,13 @@ namespace Quickstarts.DataTypes.Instances
     {
         #region Constructors
         /// <remarks />
-        public ScooterTypeCollection() {}
+        public ScooterTypeCollection() { }
 
         /// <remarks />
-        public ScooterTypeCollection(int capacity) : base(capacity) {}
+        public ScooterTypeCollection(int capacity) : base(capacity) { }
 
         /// <remarks />
-        public ScooterTypeCollection(IEnumerable<ScooterType> collection) : base(collection) {}
+        public ScooterTypeCollection(IEnumerable<ScooterType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -670,6 +670,6 @@ namespace Quickstarts.DataTypes.Instances
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 }

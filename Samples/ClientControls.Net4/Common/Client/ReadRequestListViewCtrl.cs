@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -37,6 +37,7 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -54,7 +55,7 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
             ResultsDV.AutoGenerateColumns = false;
             ImageList = new ClientUtils().ImageList;
-            
+
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Requests");
 
@@ -93,7 +94,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds a node to the read request.
         /// </summary>
-        public async Task AddNodesAsync(params ReadValueId[] nodesToRead)
+        public async Task AddNodesAsync(CancellationToken ct, params ReadValueId[] nodesToRead)
         {
             if (nodesToRead != null)
             {
@@ -105,7 +106,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    await UpdateRowAsync(row, nodesToRead[ii]);
+                    await UpdateRowAsync(row, nodesToRead[ii], ct);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -114,7 +115,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Reads the values displayed in the control and moves to the display results state.
         /// </summary>
-        public void Read()
+        public async Task ReadAsync(CancellationToken ct = default)
         {
             if (m_session == null)
             {
@@ -131,18 +132,17 @@ namespace Opc.Ua.Client.Controls
                 row.Selected = false;
                 nodesToRead.Add(value);
             }
-            
-            // read the values.
-            DataValueCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
 
-            m_session.Read(
+            // read the values.
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Both,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -203,11 +203,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the node to read.
         /// </summary>
-        public async Task UpdateRowAsync(DataRow row, ReadValueId nodeToRead)
+        public async Task UpdateRowAsync(DataRow row, ReadValueId nodeToRead, CancellationToken ct = default)
         {
             row[0] = nodeToRead;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(nodeToRead.AttributeId, null)];
-            row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToRead.NodeId) : Utils.ToString(nodeToRead.NodeId);
+            row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToRead.NodeId, ct) : Utils.ToString(nodeToRead.NodeId);
             row[3] = Attributes.GetBrowseName(nodeToRead.AttributeId);
             row[4] = nodeToRead.IndexRange;
             row[5] = (nodeToRead.DataEncoding != null) ? nodeToRead.DataEncoding : QualifiedName.Null;
@@ -223,7 +223,7 @@ namespace Opc.Ua.Client.Controls
             DeleteMI.Visible = !m_showResults;
         }
 
-        private async void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -246,7 +246,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     // edit the parameters.
-                    ReadValueId[] results = await new EditReadValueIdDlg().ShowDialogAsync(m_session, nodeToRead);
+                    ReadValueId[] results = await new EditReadValueIdDlg().ShowDialogAsync(m_session, default, nodeToRead);
 
                     if (results != null)
                     {
@@ -266,7 +266,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -278,11 +278,11 @@ namespace Opc.Ua.Client.Controls
                         ReadValueId nodeToRead = (ReadValueId)source.Row[0];
                         DataValue value = (DataValue)source.Row[6];
 
-                        new EditComplexValueDlg().ShowDialog(
+                        await new EditComplexValueDlg().ShowDialogAsync(
                             m_session,
                             null,
                             0,
-                            null, 
+                            null,
                             value,
                             true,
                             "View Read Result");
@@ -301,7 +301,7 @@ namespace Opc.Ua.Client.Controls
                         nodesToRead.Add(value);
                     }
 
-                    ReadValueId[] results = await new EditReadValueIdDlg().ShowDialogAsync(m_session, nodesToRead.ToArray());
+                    ReadValueId[] results = await new EditReadValueIdDlg().ShowDialogAsync(m_session, default, nodesToRead.ToArray());
 
                     if (results != null)
                     {

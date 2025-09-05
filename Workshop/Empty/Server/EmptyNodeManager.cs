@@ -65,13 +65,13 @@ namespace Quickstarts.EmptyServer
             }
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 // TBD
@@ -107,7 +107,7 @@ namespace Quickstarts.EmptyServer
                 trigger.NodeId = new NodeId(1, NamespaceIndex);
                 trigger.BrowseName = new QualifiedName("Trigger", NamespaceIndex);
                 trigger.DisplayName = trigger.BrowseName.Name;
-                trigger.TypeDefinitionId = ObjectTypeIds.BaseObjectType; 
+                trigger.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
 
                 // ensure trigger can be found via the server object. 
                 IList<IReference> references = null;
@@ -154,7 +154,7 @@ namespace Quickstarts.EmptyServer
 
                 // save in dictionary. 
                 AddPredefinedNode(SystemContext, referenceType);
-            } 
+            }
         }
 
         /// <summary>
@@ -195,7 +195,7 @@ namespace Quickstarts.EmptyServer
                 handle.Validated = true;
 
                 return handle;
-            } 
+            }
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace Quickstarts.EmptyServer
             {
                 return handle.Node;
             }
-            
+
             // TBD
 
             return null;

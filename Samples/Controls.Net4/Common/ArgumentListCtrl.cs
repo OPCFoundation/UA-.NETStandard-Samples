@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,13 +32,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -78,17 +78,17 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs)
+        public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            if (methodId == null) throw new ArgumentNullException("methodId");
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (methodId == null) throw new ArgumentNullException(nameof(methodId));
 
             Clear();
 
             m_session = session;
 
             // find the method.
-            MethodNode method = await session.NodeCache.FindAsync(methodId) as MethodNode;
+            MethodNode method = await session.NodeCache.FindAsync(methodId, ct) as MethodNode;
 
             if (method == null)
             {
@@ -108,7 +108,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // fetch the argument list.
-            VariableNode argumentsNode = await session.NodeCache.FindAsync(methodId, ReferenceTypeIds.HasProperty, false, true, browseName) as VariableNode;
+            VariableNode argumentsNode = await session.NodeCache.FindAsync(methodId, ReferenceTypeIds.HasProperty, false, true, browseName, ct) as VariableNode;
 
             if (argumentsNode == null)
             {
@@ -116,7 +116,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // read the value from the server.
-            DataValue value = await m_session.ReadValueAsync(argumentsNode.NodeId);
+            DataValue value = await m_session.ReadValueAsync(argumentsNode.NodeId, ct);
 
             ExtensionObject[] argumentsList = value.Value as ExtensionObject[];
 
@@ -156,7 +156,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates the argument values.
         /// </summary>
-        public void SetValues(VariantCollection values)
+        public async Task SetValuesAsync(VariantCollection values, CancellationToken ct = default)
         {
             int ii = 0;
 
@@ -167,7 +167,7 @@ namespace Opc.Ua.Sample.Controls
                 if (argument != null)
                 {
                     argument.Value = values[ii++].Value;
-                    UpdateItem(item, argument);
+                    await UpdateItemAsync(item, argument, ct);
                 }
             }
 
@@ -180,7 +180,7 @@ namespace Opc.Ua.Sample.Controls
         protected override void PickItems()
         {
             base.PickItems();
-            EditMI_Click(this, null);
+            EditMI_ClickAsync(this, null);
         }
 
         /// <see cref="BaseListCtrl.EnableMenuItems" />
@@ -190,8 +190,8 @@ namespace Opc.Ua.Sample.Controls
             ClearValueMI.Enabled = EditMI.Enabled;
         }
 
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override async void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             try
             {
@@ -199,13 +199,13 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument == null)
                 {
-                    base.UpdateItem(listItem, item);
+                    await base.UpdateItemAsync(listItem, item, ct);
                     return;
                 }
 
                 listItem.SubItems[0].Text = String.Format("{0}", argument.Name);
 
-                INode datatype = await m_session.NodeCache.FindAsync(argument.DataType);
+                INode datatype = await m_session.NodeCache.FindAsync(argument.DataType, ct);
 
                 if (datatype != null)
                 {
@@ -237,7 +237,7 @@ namespace Opc.Ua.Sample.Controls
                             }
                             else
                             {
-                                argument.Value = new ExtensionObject[0];
+                                argument.Value = Array.Empty<ExtensionObject>();
                             }
                         }
                     }
@@ -255,7 +255,7 @@ namespace Opc.Ua.Sample.Controls
         }
         #endregion
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -273,7 +273,7 @@ namespace Opc.Ua.Sample.Controls
                     arguments[0].Value = value;
                 }
 
-                UpdateItem(ItemsLV.SelectedItems[0], arguments[0]);
+                await UpdateItemAsync(ItemsLV.SelectedItems[0], arguments[0]);
             }
             catch (Exception exception)
             {
@@ -281,7 +281,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void ClearValueMI_Click(object sender, EventArgs e)
+        private async void ClearValueMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -294,7 +294,7 @@ namespace Opc.Ua.Sample.Controls
 
                 arguments[0].Value = null;
 
-                UpdateItem(ItemsLV.SelectedItems[0], arguments[0]);
+                await UpdateItemAsync(ItemsLV.SelectedItems[0], arguments[0]);
             }
             catch (Exception exception)
             {

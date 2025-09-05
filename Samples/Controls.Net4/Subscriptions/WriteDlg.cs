@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,7 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
@@ -55,21 +56,21 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Session m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Session session, WriteValueCollection values)
+        public async Task ShowAsync(Session session, WriteValueCollection values, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             m_session = session;
 
-            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
+            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, ct);
             WriteValuesCTRL.Initialize(session, values);
 
-            MoveBTN_Click(BackBTN, null);
+            MoveBTN_ClickAsync(BackBTN, null);
 
             Show();
             BringToFront();
@@ -78,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Writes the valus to the server.
         /// </summary>
-        private void Write()
+        private async Task WriteAsync(CancellationToken ct = default)
         {
             WriteValueCollection nodesToWrite = Utils.Clone(WriteValuesCTRL.GetValues()) as WriteValueCollection;
 
@@ -106,24 +107,23 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            StatusCodeCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            ResponseHeader responseHeader = m_session.Write(
+            WriteResponse response = await m_session.WriteAsync(
                 null,
                 nodesToWrite,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            StatusCodeCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToWrite);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);
 
-            WriteResultsCTRL.ShowValue(results, true);
+            await WriteResultsCTRL.ShowValueAsync(results, true, ct);
         }
         #endregion
-        
+
         #region Event Handlers
-        private void BrowseCTRL_ItemsSelected(object sender, NodesSelectedEventArgs e)
+        private async void BrowseCTRL_ItemsSelectedAsync(object sender, NodesSelectedEventArgs e)
         {
             try
             {
@@ -131,61 +131,61 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference.ReferenceTypeId == ReferenceTypeIds.HasProperty || reference.IsForward)
                     {
-                        WriteValuesCTRL.AddValue(reference);
+                        await WriteValuesCTRL.AddValueAsync(reference);
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void MoveBTN_Click(object sender, EventArgs e)
+        private async void MoveBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 if (sender == NextBTN)
                 {
-                    Write();
+                    await WriteAsync();
 
-                    WriteValuesCTRL.Parent  = SplitterPN.Panel1;
+                    WriteValuesCTRL.Parent = SplitterPN.Panel1;
 
-                    BackBTN.Visible         = true;
-                    NextBTN.Visible         = false;
-                    WriteBTN.Visible         = true;
-                    WriteValuesCTRL.Visible  = true;
+                    BackBTN.Visible = true;
+                    NextBTN.Visible = false;
+                    WriteBTN.Visible = true;
+                    WriteValuesCTRL.Visible = true;
                     WriteResultsCTRL.Visible = true;
-                    BrowseCTRL.Visible      = false;
+                    BrowseCTRL.Visible = false;
                 }
 
                 else if (sender == BackBTN)
                 {
-                    WriteValuesCTRL.Parent  = SplitterPN.Panel2;
+                    WriteValuesCTRL.Parent = SplitterPN.Panel2;
 
-                    BackBTN.Visible          = false;
-                    NextBTN.Visible          = true;
-                    WriteBTN.Visible          = false;
-                    WriteResultsCTRL.Visible  = false;
-                    BrowseCTRL.Visible       = true;
-                    WriteValuesCTRL.Visible   = true;
+                    BackBTN.Visible = false;
+                    NextBTN.Visible = true;
+                    WriteBTN.Visible = false;
+                    WriteResultsCTRL.Visible = false;
+                    BrowseCTRL.Visible = true;
+                    WriteValuesCTRL.Visible = true;
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void WriteMI_Click(object sender, EventArgs e)
+        private async void WriteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                Write();
+                await WriteAsync();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -197,7 +197,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

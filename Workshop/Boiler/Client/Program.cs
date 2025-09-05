@@ -51,7 +51,7 @@ namespace Quickstarts.Boiler.Client
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Client;
+            application.ApplicationType = ApplicationType.Client;
             application.ConfigSectionName = "BoilerClient";
 
             try

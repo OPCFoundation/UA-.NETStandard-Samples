@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -98,7 +98,7 @@ namespace AggregationServer
             if (endpoint.ReverseConnect != null &&
                 endpoint.ReverseConnect.Enabled)
             {
-                // reverse connect manager endpoint is required 
+                // reverse connect manager endpoint is required
                 if (reverseConnectManager == null) throw new ArgumentNullException(nameof(reverseConnectManager));
                 m_reverseConnectManager = reverseConnectManager;
             }
@@ -148,7 +148,7 @@ namespace AggregationServer
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -217,7 +217,7 @@ namespace AggregationServer
 
                 AddPredefinedNode(SystemContext, status);
 
-                StartMetadataUpdates(DoMetadataUpdate, null, DefaultMetadataInitDelay, DefaultMetadataRefresh);
+                StartMetadataUpdates(DoMetadataUpdateAsync, null, DefaultMetadataInitDelay, DefaultMetadataRefresh);
             }
         }
 
@@ -239,7 +239,7 @@ namespace AggregationServer
         {
             lock (Lock)
             {
-                // quickly exclude nodes that are not in the namespace. 
+                // quickly exclude nodes that are not in the namespace.
                 if (!IsNodeIdInNamespace(nodeId))
                 {
                     return null;
@@ -339,16 +339,16 @@ namespace AggregationServer
             {
                 Opc.Ua.Client.ISession client = GetClientSession(context);
 
-                DataValueCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = client.Read(
+                ReadResponse response = client.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Both,
                     requests,
-                    out results,
-                    out diagnosticInfos);
+                    default).Result;
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                DataValueCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, requests);
@@ -436,14 +436,14 @@ namespace AggregationServer
             {
                 Opc.Ua.Client.ISession client = GetClientSession(context);
 
-                StatusCodeCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = client.Write(
+                WriteResponse response = client.WriteAsync(
                     null,
                     requests,
-                    out results,
-                    out diagnosticInfos);
+                    default).Result;
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                StatusCodeCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, requests);
@@ -577,14 +577,14 @@ namespace AggregationServer
             {
                 Opc.Ua.Client.ISession client = GetClientSession(systemContext);
 
-                CallMethodResultCollection results2 = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                ResponseHeader responseHeader = client.Call(
+                CallResponse response = client.CallAsync(
                     null,
                     requests,
-                    out results2,
-                    out diagnosticInfos);
+                    default).Result;
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                CallMethodResultCollection results2 = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results2, requests);
@@ -1341,7 +1341,7 @@ namespace AggregationServer
                 m_metadataUpdateCallback = callback;
                 m_timerPeriod = period;
                 m_initialDelay = initialDelay;
-                m_metadataUpdateTimer = new Timer(DoMetadataUpdate, callbackData, initialDelay, -1);
+                m_metadataUpdateTimer = new Timer(DoMetadataUpdateAsync, callbackData, initialDelay, -1);
             }
         }
 
@@ -1363,7 +1363,7 @@ namespace AggregationServer
         /// <summary>
         /// Updates the metadata.
         /// </summary>
-        private void DoMetadataUpdate(object state)
+        private async void DoMetadataUpdateAsync(object state)
         {
             int nextTimerPeriod = m_initialDelay;
             Opc.Ua.Client.ISession client = null;
@@ -1422,7 +1422,7 @@ namespace AggregationServer
                 }
 
                 AggregatedTypeCache cache = new AggregatedTypeCache();
-                cache.LoadTypes(client, Server, m_mapper);
+                await cache.LoadTypesAsync(client, Server, m_mapper);
 
                 lock (Lock)
                 {

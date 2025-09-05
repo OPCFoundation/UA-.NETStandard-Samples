@@ -52,7 +52,7 @@ namespace Quickstarts.Boiler.Server
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Server;
+            application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "BoilerServer";
 
             try

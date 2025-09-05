@@ -38,7 +38,7 @@ namespace Quickstarts.EmptyServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Namespaces.Empty)]
+    [DataContract(Namespace = Namespaces.Empty)]
     public class EmptyServerConfiguration
     {
         #region Constructors

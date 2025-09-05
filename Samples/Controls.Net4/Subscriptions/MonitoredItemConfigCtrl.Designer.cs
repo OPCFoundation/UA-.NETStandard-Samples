@@ -95,21 +95,21 @@ namespace Opc.Ua.Sample.Controls
             this.NewMI.Name = "NewMI";
             this.NewMI.Size = new System.Drawing.Size(196, 22);
             this.NewMI.Text = "New...";
-            this.NewMI.Click += new System.EventHandler(this.NewMI_Click);
+            this.NewMI.Click += new System.EventHandler(this.NewMI_ClickAsync);
             // 
             // EditMI
             // 
             this.EditMI.Name = "EditMI";
             this.EditMI.Size = new System.Drawing.Size(196, 22);
             this.EditMI.Text = "Edit...";
-            this.EditMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.EditMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // DeleteMI
             // 
             this.DeleteMI.Name = "DeleteMI";
             this.DeleteMI.Size = new System.Drawing.Size(196, 22);
             this.DeleteMI.Text = "Delete";
-            this.DeleteMI.Click += new System.EventHandler(this.DeleteMI_Click);
+            this.DeleteMI.Click += new System.EventHandler(this.DeleteMI_ClickAsync);
             // 
             // Separator1
             // 
@@ -128,14 +128,14 @@ namespace Opc.Ua.Sample.Controls
             this.SetFilterMI.Name = "SetFilterMI";
             this.SetFilterMI.Size = new System.Drawing.Size(196, 22);
             this.SetFilterMI.Text = "Set Filter...";
-            this.SetFilterMI.Click += new System.EventHandler(this.SetFilterMI_Click);
+            this.SetFilterMI.Click += new System.EventHandler(this.SetFilterMI_ClickAsync);
             // 
             // SetMonitoringModeMI
             // 
             this.SetMonitoringModeMI.Name = "SetMonitoringModeMI";
             this.SetMonitoringModeMI.Size = new System.Drawing.Size(196, 22);
             this.SetMonitoringModeMI.Text = "Set Monitoring Mode...";
-            this.SetMonitoringModeMI.Click += new System.EventHandler(this.SetMonitoringModeMI_Click);
+            this.SetMonitoringModeMI.Click += new System.EventHandler(this.SetMonitoringModeMI_ClickAsync);
             // 
             // Separator2
             // 

@@ -65,13 +65,13 @@ namespace Quickstarts.ViewsServer
             }
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 // TBD
@@ -100,7 +100,7 @@ namespace Quickstarts.ViewsServer
             return node.NodeId;
         }
         #endregion
-        
+
         #region Overridden Methods
         /// <summary>
         /// Loads a node set from a file or resource and addes them to the set of predefined nodes.
@@ -108,9 +108,9 @@ namespace Quickstarts.ViewsServer
         protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
         {
             NodeStateCollection predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(context, 
+            predefinedNodes.LoadFromBinaryResource(context,
                 "Quickstarts.ViewsServer.Model.Quickstarts.Views.PredefinedNodes.uanodes",
-                typeof(ViewsNodeManager).GetTypeInfo().Assembly, 
+                typeof(ViewsNodeManager).GetTypeInfo().Assembly,
                 true);
             return predefinedNodes;
         }
@@ -162,7 +162,7 @@ namespace Quickstarts.ViewsServer
                 root.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, boiler2.NodeId);
 
                 AddPredefinedNode(SystemContext, boiler2);
-            } 
+            }
         }
 
         /// <summary>
@@ -264,7 +264,7 @@ namespace Quickstarts.ViewsServer
                 }
 
                 return null;
-            } 
+            }
         }
 
         /// <summary>

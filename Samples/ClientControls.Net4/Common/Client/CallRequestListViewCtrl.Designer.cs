@@ -84,7 +84,7 @@ namespace Opc.Ua.Client.Controls
             this.EditMI.Name = "EditMI";
             this.EditMI.Size = new System.Drawing.Size(103, 22);
             this.EditMI.Text = "Edit...";
-            this.EditMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.EditMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // ImageList
             // 
@@ -125,7 +125,7 @@ namespace Opc.Ua.Client.Controls
             this.ResultsDV.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.ResultsDV.Size = new System.Drawing.Size(779, 365);
             this.ResultsDV.TabIndex = 5;
-            this.ResultsDV.DoubleClick += new System.EventHandler(this.EditMI_Click);
+            this.ResultsDV.DoubleClick += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // Icon
             // 

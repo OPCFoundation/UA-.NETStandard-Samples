@@ -134,21 +134,21 @@ namespace Opc.Ua.Sample.Controls
             this.MonitoringModeReportingMI.Name = "MonitoringModeReportingMI";
             this.MonitoringModeReportingMI.Size = new System.Drawing.Size(126, 22);
             this.MonitoringModeReportingMI.Text = "Reporting";
-            this.MonitoringModeReportingMI.Click += new System.EventHandler(this.MonitoringModeMI_Click);
+            this.MonitoringModeReportingMI.Click += new System.EventHandler(this.MonitoringModeMI_ClickAsync);
             // 
             // MonitoringModeSamplingMI
             // 
             this.MonitoringModeSamplingMI.Name = "MonitoringModeSamplingMI";
             this.MonitoringModeSamplingMI.Size = new System.Drawing.Size(126, 22);
             this.MonitoringModeSamplingMI.Text = "Sampling";
-            this.MonitoringModeSamplingMI.Click += new System.EventHandler(this.MonitoringModeMI_Click);
+            this.MonitoringModeSamplingMI.Click += new System.EventHandler(this.MonitoringModeMI_ClickAsync);
             // 
             // MonitoringModeDisabledMI
             // 
             this.MonitoringModeDisabledMI.Name = "MonitoringModeDisabledMI";
             this.MonitoringModeDisabledMI.Size = new System.Drawing.Size(126, 22);
             this.MonitoringModeDisabledMI.Text = "Disabled";
-            this.MonitoringModeDisabledMI.Click += new System.EventHandler(this.MonitoringModeMI_Click);
+            this.MonitoringModeDisabledMI.Click += new System.EventHandler(this.MonitoringModeMI_ClickAsync);
             // 
             // WindowMI
             // 

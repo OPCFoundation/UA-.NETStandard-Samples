@@ -234,7 +234,7 @@ namespace Quickstarts.Boiler.Client
             this.BoilerCB.Name = "BoilerCB";
             this.BoilerCB.Size = new System.Drawing.Size(164, 21);
             this.BoilerCB.TabIndex = 2;
-            this.BoilerCB.SelectedIndexChanged += new System.EventHandler(this.BoilerCB_SelectedIndexChanged);
+            this.BoilerCB.SelectedIndexChanged += new System.EventHandler(this.BoilerCB_SelectedIndexChangedAsync);
             // 
             // BoilerLB
             // 
@@ -257,7 +257,7 @@ namespace Quickstarts.Boiler.Client
             this.ConnectServerCTRL.StatusStrip = this.StatusBar;
             this.ConnectServerCTRL.TabIndex = 4;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
             this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
             // 

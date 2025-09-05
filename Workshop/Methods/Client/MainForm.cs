@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -89,7 +89,7 @@ namespace Quickstarts.MethodsClient
         {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.ConnectAsync();
             }
             catch (Exception exception)
             {
@@ -130,7 +130,7 @@ namespace Quickstarts.MethodsClient
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -152,17 +152,18 @@ namespace Quickstarts.MethodsClient
                 NamespaceTable wellKnownNamespaceUris = new NamespaceTable();
                 wellKnownNamespaceUris.Append(Namespaces.Methods);
 
-                string[] browsePaths = new string[] 
+                string[] browsePaths = new string[]
                 {
                     "1:My Process/1:State",
                     "1:My Process",
                     "1:My Process/1:Start"
                 };
 
-                List<NodeId> nodes = ClientUtils.TranslateBrowsePaths(
+                List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
                     m_session,
                     ObjectIds.ObjectsFolder,
                     wellKnownNamespaceUris,
+                    default,
                     browsePaths);
 
                 // subscribe to the state if available.
@@ -178,7 +179,7 @@ namespace Quickstarts.MethodsClient
                     m_subscription.MaxNotificationsPerPublish = 1000;
 
                     m_session.AddSubscription(m_subscription);
-                    m_subscription.Create();
+                    await m_subscription.CreateAsync();
 
                     MonitoredItem monitoredItem = new MonitoredItem();
                     monitoredItem.StartNodeId = nodes[0];
@@ -186,7 +187,7 @@ namespace Quickstarts.MethodsClient
                     monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
                     m_subscription.AddItem(monitoredItem);
 
-                    m_subscription.ApplyChanges();
+                    await m_subscription.ApplyChangesAsync();
                 }
 
                 // save the object/method
@@ -237,7 +238,7 @@ namespace Quickstarts.MethodsClient
                 }
 
                 StartBTN.Enabled = true;
-                StartBTN_Click(this, null);
+                StartBTN_ClickAsync(this, null);
             }
             catch (Exception exception)
             {
@@ -255,7 +256,7 @@ namespace Quickstarts.MethodsClient
         #endregion
 
         #region Event Handlers
-        private void StartBTN_Click(object sender, EventArgs e)
+        private async void StartBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -270,9 +271,10 @@ namespace Quickstarts.MethodsClient
                 RevisedInitialStateTB.Text = String.Empty;
                 RevisedFinalStateTB.Text = String.Empty;
 
-                IList<object> outputArguments = m_session.Call(
+                IList<object> outputArguments = await m_session.CallAsync(
                     m_objectNode,
                     m_methodNode,
+                    default,
                     initialState,
                     finalState);
 

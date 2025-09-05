@@ -51,10 +51,10 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Shows all fields for the current condition.
@@ -71,7 +71,7 @@ namespace Opc.Ua.Client.Controls
                 string text = null;
 
                 // check for missing fields.
-                if (fields.Count <= ii+1 || fields[ii+1].Value == null)
+                if (fields.Count <= ii + 1 || fields[ii + 1].Value == null)
                 {
                     text = String.Empty;
                 }
@@ -79,7 +79,7 @@ namespace Opc.Ua.Client.Controls
                 // use default string format.
                 else
                 {
-                    text = fields[ii+1].ToString();
+                    text = fields[ii + 1].ToString();
                 }
 
                 item.SubItems.Add(text);

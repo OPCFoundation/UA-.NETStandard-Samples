@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,7 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Quickstarts.SimpleEvents.Client
@@ -93,7 +94,7 @@ namespace Quickstarts.SimpleEvents.Client
         {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.ConnectAsync();
             }
             catch (Exception exception)
             {
@@ -134,7 +135,7 @@ namespace Quickstarts.SimpleEvents.Client
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private async void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -208,12 +209,12 @@ namespace Quickstarts.SimpleEvents.Client
             ConnectServerCTRL.Disconnect();
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Creates the subscription.
         /// </summary>
-        private async Task CreateSubscriptionAsync()
+        private async Task CreateSubscriptionAsync(CancellationToken ct = default)
         {
             // create the default subscription.
             m_subscription = new Subscription();
@@ -227,7 +228,7 @@ namespace Quickstarts.SimpleEvents.Client
             m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
 
             m_session.AddSubscription(m_subscription);
-            await m_subscription.CreateAsync();
+            await m_subscription.CreateAsync(ct);
 
             // a table used to track event types.
             m_eventTypeMappings = new Dictionary<NodeId, NodeId>();
@@ -236,18 +237,18 @@ namespace Quickstarts.SimpleEvents.Client
 
             m_knownEventTypes = new Dictionary<NodeId, Type>();
             m_knownEventTypes.Add(knownEventId, typeof(SystemCycleStatusEventState));
-            
+
             TypeDeclaration type = new TypeDeclaration();
             type.NodeId = ExpandedNodeId.ToNodeId(ObjectTypeIds.SystemCycleStatusEventType, m_session.NamespaceUris);
-            type.Declarations = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, type.NodeId);
+            type.Declarations = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, type.NodeId, ct);
 
             // the filter to use.
             m_filter = new FilterDeclaration(type, null);
 
             // declate callback.
-            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
 
-            // create a monitored item based on the current filter settings.            
+            // create a monitored item based on the current filter settings.
             m_monitoredItem = new MonitoredItem();
             m_monitoredItem.StartNodeId = Opc.Ua.ObjectIds.Server;
             m_monitoredItem.AttributeId = Attributes.EventNotifier;
@@ -260,18 +261,18 @@ namespace Quickstarts.SimpleEvents.Client
             m_monitoredItem.Notification += m_MonitoredItem_Notification;
 
             m_subscription.AddItem(m_monitoredItem);
-            m_subscription.ApplyChanges();
+            await m_subscription.ApplyChangesAsync(ct);
         }
 
         /// <summary>
         /// Deletes the subscription.
         /// </summary>
-        private void DeleteSubscription()
+        private async Task DeleteSubscriptionAsync(CancellationToken ct = default)
         {
             if (m_subscription != null)
             {
-                m_subscription.Delete(true);
-                m_session.RemoveSubscription(m_subscription);
+                await m_subscription.DeleteAsync(true, ct);
+                await m_session.RemoveSubscriptionAsync(m_subscription, ct);
                 m_subscription = null;
                 m_filter = null;
                 m_monitoredItem = null;
@@ -281,13 +282,13 @@ namespace Quickstarts.SimpleEvents.Client
 
         #region Event Handlers
         /// <summary>
-        /// Updates the display with a new value for a monitored variable. 
+        /// Updates the display with a new value for a monitored variable.
         /// </summary>
-        private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_Notification), monitoredItem, e);
+                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync), monitoredItem, e);
                 return;
             }
 
@@ -310,7 +311,7 @@ namespace Quickstarts.SimpleEvents.Client
                 }
 
                 // construct the audit object.
-                SystemCycleStatusEventState status = ClientUtils.ConstructEvent(
+                SystemCycleStatusEventState status = await ClientUtils.ConstructEventAsync(
                     m_session,
                     monitoredItem,
                     notification,
@@ -332,7 +333,7 @@ namespace Quickstarts.SimpleEvents.Client
                 item.SubItems.Add(String.Empty); // Message
 
                 // look up the condition type metadata in the local cache.
-                INode type = m_session.NodeCache.Find(status.TypeDefinitionId);
+                INode type = await m_session.NodeCache.FindAsync(status.TypeDefinitionId);
 
                 // Source
                 if (status.SourceName != null)
@@ -412,7 +413,7 @@ namespace Quickstarts.SimpleEvents.Client
         /// <summary>
         /// Sets the locale to use.
         /// </summary>
-        private void Server_SetLocaleMI_Click(object sender, EventArgs e)
+        private async void Server_SetLocaleMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -421,7 +422,7 @@ namespace Quickstarts.SimpleEvents.Client
                     return;
                 }
 
-                string locale = new SelectLocaleDlg().ShowDialog(m_session);
+                string locale = await new SelectLocaleDlg().ShowDialogAsync(m_session);
 
                 if (locale == null)
                 {

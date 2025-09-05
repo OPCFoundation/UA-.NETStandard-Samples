@@ -114,14 +114,14 @@ namespace Opc.Ua.Client.Controls
             this.NewMI.Name = "NewMI";
             this.NewMI.Size = new System.Drawing.Size(196, 22);
             this.NewMI.Text = "New...";
-            this.NewMI.Click += new System.EventHandler(this.NewMI_Click);
+            this.NewMI.Click += new System.EventHandler(this.NewMI_ClickAsync);
             // 
             // EditMI
             // 
             this.EditMI.Name = "EditMI";
             this.EditMI.Size = new System.Drawing.Size(196, 22);
             this.EditMI.Text = "Edit...";
-            this.EditMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.EditMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // DeleteMI
             // 
@@ -135,14 +135,14 @@ namespace Opc.Ua.Client.Controls
             this.ViewValueMI.Name = "ViewValueMI";
             this.ViewValueMI.Size = new System.Drawing.Size(196, 22);
             this.ViewValueMI.Text = "View Value....";
-            this.ViewValueMI.Click += new System.EventHandler(this.ViewValueMI_Click);
+            this.ViewValueMI.Click += new System.EventHandler(this.ViewValueMI_ClickAsync);
             // 
             // SetMonitoringModeMI
             // 
             this.SetMonitoringModeMI.Name = "SetMonitoringModeMI";
             this.SetMonitoringModeMI.Size = new System.Drawing.Size(196, 22);
             this.SetMonitoringModeMI.Text = "Set Monitoring Mode...";
-            this.SetMonitoringModeMI.Click += new System.EventHandler(this.SetMonitoringModeMI_Click);
+            this.SetMonitoringModeMI.Click += new System.EventHandler(this.SetMonitoringModeMI_ClickAsync);
             // 
             // ResultsDV
             // 
@@ -362,7 +362,7 @@ namespace Opc.Ua.Client.Controls
             this.Subscription_EditMI.Name = "Subscription_EditMI";
             this.Subscription_EditMI.Size = new System.Drawing.Size(152, 22);
             this.Subscription_EditMI.Text = "Edit...";
-            this.Subscription_EditMI.Click += new System.EventHandler(this.Subscription_EditMI_Click);
+            this.Subscription_EditMI.Click += new System.EventHandler(this.Subscription_EditMI_ClickAsync);
             // 
             // SequenceNumberLB
             // 

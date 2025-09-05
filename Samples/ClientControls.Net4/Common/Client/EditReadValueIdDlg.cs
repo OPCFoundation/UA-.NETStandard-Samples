@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,6 +33,7 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
@@ -52,7 +53,7 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
 
             // add the attributes in numerical order.
-            foreach (uint attributeId in Attributes.GetIdentifiers())
+            foreach (uint attributeId in Attributes.Identifiers)
             {
                 AttributeCB.Items.Add(Attributes.GetBrowseName(attributeId));
             }
@@ -63,7 +64,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Stores information about a data encoding.
         /// </summary>
-        private class EncodingInfo
+        private sealed class EncodingInfo
         {
             public QualifiedName EncodingName;
 
@@ -78,7 +79,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
         #endregion
-      
+
         #region Private Fields
         #endregion
 
@@ -86,7 +87,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the read request parameters for the set of nodes provided.
         /// </summary>
-        public async Task<ReadValueId[]> ShowDialogAsync(ISession session, params ReadValueId[] nodesToRead)
+        public async Task<ReadValueId[]> ShowDialogAsync(ISession session, CancellationToken ct, params ReadValueId[] nodesToRead)
         {
             NodeBTN.Session = session;
             NodeBTN.SelectedReference = null;
@@ -120,7 +121,7 @@ namespace Opc.Ua.Client.Controls
                         }
                         else
                         {
-                            NodeBTN.SelectedNode = nodesToRead[ii].NodeId;
+                            await NodeBTN.SetSelectedNodeIdAsync(nodesToRead[ii].NodeId, ct);
                         }
                     }
 
@@ -160,16 +161,16 @@ namespace Opc.Ua.Client.Controls
                     IndexRangeTB.Text = nodesToRead[0].IndexRange;
 
                     // fetch the available encodings for the first node in the list from the server.
-                    IVariableBase variable = await session.NodeCache.FindAsync(nodesToRead[0].NodeId) as IVariableBase;
+                    IVariableBase variable = await session.NodeCache.FindAsync(nodesToRead[0].NodeId, ct) as IVariableBase;
 
                     if (variable != null)
                     {
-                        if (await session.NodeCache.IsTypeOfAsync(variable.DataType, Opc.Ua.DataTypeIds.Structure))
+                        if (await session.NodeCache.IsTypeOfAsync(variable.DataType, Opc.Ua.DataTypeIds.Structure, ct))
                         {
                             DataEncodingCB.Items.Add(new EncodingInfo());
                             DataEncodingCB.SelectedIndex = 0;
 
-                            foreach (INode encoding in await session.NodeCache.FindAsync(variable.DataType, Opc.Ua.ReferenceTypeIds.HasEncoding, false, true))
+                            foreach (INode encoding in await session.NodeCache.FindAsync(variable.DataType, Opc.Ua.ReferenceTypeIds.HasEncoding, false, true, ct))
                             {
                                 DataEncodingCB.Items.Add(new EncodingInfo() { EncodingName = encoding.BrowseName });
 
@@ -226,7 +227,7 @@ namespace Opc.Ua.Client.Controls
                     results[ii] = new ReadValueId();
                 }
 
-                // only copy results that were actually being edited. 
+                // only copy results that were actually being edited.
                 if (editNode)
                 {
                     results[ii].NodeId = NodeBTN.SelectedNode;
@@ -267,7 +268,7 @@ namespace Opc.Ua.Client.Controls
             return results;
         }
         #endregion
-        
+
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {

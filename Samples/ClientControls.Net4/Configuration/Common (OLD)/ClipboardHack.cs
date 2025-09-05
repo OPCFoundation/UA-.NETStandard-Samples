@@ -58,7 +58,7 @@ namespace Opc.Ua.Client.Controls
 
                 Thread thread = new Thread(new ThreadStart(GetClipboardPrivate));
                 thread.IsBackground = true;
-                
+
                 thread.SetApartmentState(ApartmentState.STA);
                 thread.Start();
                 thread.Join();
@@ -71,7 +71,7 @@ namespace Opc.Ua.Client.Controls
                 return m_data;
             }
         }
-        
+
         /// <summary>
         /// Saves the data in the clipboard.
         /// </summary>
@@ -85,7 +85,7 @@ namespace Opc.Ua.Client.Controls
 
                 Thread thread = new Thread(new ThreadStart(SetClipboardPrivate));
                 thread.IsBackground = true;
-                
+
                 thread.SetApartmentState(ApartmentState.STA);
                 thread.Start();
                 thread.Join();
@@ -109,11 +109,11 @@ namespace Opc.Ua.Client.Controls
                 m_error = null;
 
                 if (String.IsNullOrEmpty(m_format) || !Clipboard.ContainsData(m_format))
-                { 
+                {
                     m_data = null;
                     return;
                 }
-                
+
                 m_data = Clipboard.GetData(m_format);
             }
             catch (Exception e)
@@ -121,7 +121,7 @@ namespace Opc.Ua.Client.Controls
                 m_error = e;
             }
         }
-        
+
         /// <summary>
         /// Saves the data in the clipboard if it is the correct format.
         /// </summary>
@@ -132,7 +132,7 @@ namespace Opc.Ua.Client.Controls
                 m_error = null;
 
                 if (String.IsNullOrEmpty(m_format) || m_data == null)
-                { 
+                {
                     return;
                 }
 

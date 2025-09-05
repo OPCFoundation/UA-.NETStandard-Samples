@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -35,6 +35,7 @@ using System.Security.Cryptography.X509Certificates;
 using Opc.Ua.Gds;
 using System.Threading.Tasks;
 using Opc.Ua.Security.Certificates;
+using System.Threading;
 
 namespace Opc.Ua.Gds.Client
 {
@@ -53,7 +54,7 @@ namespace Opc.Ua.Gds.Client
         private string m_trustListStorePath;
         private string m_issuerListStorePath;
 
-        public void Initialize(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient server, RegisteredApplication application, bool isHttps)
+        public async Task Initialize(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient server, RegisteredApplication application, bool isHttps, CancellationToken ct = default)
         {
             m_gds = gds;
             m_server = server;
@@ -64,14 +65,14 @@ namespace Opc.Ua.Gds.Client
             {
                 m_trustListStorePath = (isHttps) ? m_application.HttpsTrustListStorePath : m_application.TrustListStorePath;
                 m_issuerListStorePath = (isHttps) ? m_application.HttpsIssuerListStorePath : m_application.IssuerListStorePath;
-                CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
+                await CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null, ct);
                 MergeWithGdsButton.Enabled = !String.IsNullOrEmpty(m_trustListStorePath) || m_application.RegistrationType == RegistrationType.ServerPush;
             }
 
             ApplyChangesButton.Enabled = false;
         }
 
-        private async void ReloadTrustListButton_Click(object sender, EventArgs e)
+        private async void ReloadTrustListButton_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -89,12 +90,12 @@ namespace Opc.Ua.Gds.Client
                     }
                     else
                     {
-                        CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
+                        await CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
                     }
                 }
                 else
                 {
-                    CertificateStoreControl.Initialize(null, null, null);
+                    await CertificateStoreControl.Initialize(null, null, null);
                 }
             }
             catch (Exception ex)
@@ -105,15 +106,29 @@ namespace Opc.Ua.Gds.Client
 
         private async void MergeWithGdsButton_Click(object sender, EventArgs e)
         {
-            await PullFromGdsAsync(false);
+            try
+            {
+                await PullFromGdsAsync(false);
+            }
+            catch (Exception ex)
+            {
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+            }
         }
 
         private async void PullFromGdsButton_Click(object sender, EventArgs e)
         {
-            await PullFromGdsAsync(true);
+            try
+            {
+                await PullFromGdsAsync(true);
+            }
+            catch (Exception ex)
+            {
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+            }
         }
 
-        private async Task DeleteExistingFromStore(string storePath)
+        private async Task DeleteExistingFromStoreAsync(string storePath, CancellationToken ct = default)
         {
             if (String.IsNullOrEmpty(storePath))
             {
@@ -123,7 +138,7 @@ namespace Opc.Ua.Gds.Client
             var certificateStoreIdentifier = new CertificateStoreIdentifier(storePath);
             using (var store = certificateStoreIdentifier.OpenStore())
             {
-                X509Certificate2Collection certificates = await store.EnumerateAsync();
+                X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
                 foreach (var certificate in certificates)
                 {
                     List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
@@ -162,24 +177,24 @@ namespace Opc.Ua.Gds.Client
                         }
                     }
 
-                    await store.DeleteAsync(certificate.Thumbprint);
+                    await store.DeleteAsync(certificate.Thumbprint, ct);
                 }
             }
         }
 
-        private async Task PullFromGdsAsync(bool deleteBeforeAdd)
+        private async Task PullFromGdsAsync(bool deleteBeforeAdd, CancellationToken ct = default)
         {
             try
             {
-                NodeId trustListId = await m_gds.GetTrustListAsync(m_application.ApplicationId, NodeId.Null);
+                NodeId trustListId = await m_gds.GetTrustListAsync(m_application.ApplicationId, NodeId.Null, ct);
 
                 if (trustListId == null)
                 {
-                    CertificateStoreControl.Initialize(null, null, null);
+                    await CertificateStoreControl.Initialize(null, null, null, ct);
                     return;
                 }
 
-                var trustList = await m_gds.ReadTrustListAsync(trustListId);
+                var trustList = await m_gds.ReadTrustListAsync(trustListId, ct);
 
                 if (m_application.RegistrationType == RegistrationType.ServerPush)
                 {
@@ -199,8 +214,8 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (deleteBeforeAdd)
                     {
-                        await DeleteExistingFromStore(m_trustListStorePath);
-                        await DeleteExistingFromStore(m_issuerListStorePath);
+                        await DeleteExistingFromStoreAsync(m_trustListStorePath, ct);
+                        await DeleteExistingFromStoreAsync(m_issuerListStorePath, ct);
                     }
                 }
 
@@ -215,10 +230,10 @@ namespace Opc.Ua.Gds.Client
                             {
                                 var x509 = new X509Certificate2(certificate);
 
-                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint);
+                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
                                 if (certs.Count == 0)
                                 {
-                                    await store.AddAsync(x509);
+                                    await store.AddAsync(x509, ct: ct);
                                 }
                             }
                         }
@@ -227,7 +242,7 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (var crl in trustList.TrustedCrls)
                             {
-                                await store.AddCRLAsync(new X509CRL(crl));
+                                await store.AddCRLAsync(new X509CRL(crl), ct);
                             }
                         }
                     }
@@ -244,10 +259,10 @@ namespace Opc.Ua.Gds.Client
                             {
                                 var x509 = new X509Certificate2(certificate);
 
-                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint);
+                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
                                 if (certs.Count == 0)
                                 {
-                                    await store.AddAsync(x509);
+                                    await store.AddAsync(x509, ct: ct);
                                 }
                             }
                         }
@@ -256,13 +271,13 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (var crl in trustList.IssuerCrls)
                             {
-                                await store.AddCRLAsync(new X509CRL(crl));
+                                await store.AddCRLAsync(new X509CRL(crl), ct);
                             }
                         }
                     }
                 }
 
-                CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
+                await CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null, ct);
 
                 MessageBox.Show(
                     Parent,
@@ -339,7 +354,7 @@ namespace Opc.Ua.Gds.Client
             {
                 await m_server.DisconnectAsync();
             }
-            catch (Exception)
+            catch
             {
                 // ignore.
             }

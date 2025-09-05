@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,7 +38,6 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -57,15 +56,15 @@ namespace Opc.Ua.Sample.Controls
         private Subscription m_subscription;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Subscription subscription, bool useTypeModel)
+        public void Show(Subscription subscription, bool useTypeModel)
         {
-            if (subscription == null) throw new ArgumentNullException("subscription");
-            
+            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+
             Show();
             BringToFront();
 
@@ -74,24 +73,24 @@ namespace Opc.Ua.Sample.Controls
             {
                 m_subscription.StateChanged -= m_SubscriptionStateChanged;
             }
-            
+
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
-  
+
             if (subscription != null)
             {
                 m_subscription.StateChanged += m_SubscriptionStateChanged;
-            }                    
+            }
 
             m_subscription = subscription;
-            
+
             BrowseCTRL.AllowPick = true;
-            await BrowseCTRL.SetViewAsync(subscription.Session as Session, (useTypeModel)?BrowseViewType.ObjectTypes:BrowseViewType.Objects, null);
+            BrowseCTRL.SetViewAsync(subscription.Session as Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, null);
 
             MonitoredItemsCTRL.Initialize(subscription);
         }
         #endregion
-        
+
         #region Event Handlers
         /// <summary>
         /// Handles a change to the state of the subscription.
@@ -111,7 +110,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // ignore notifications for other subscriptions.
-                if (!Object.ReferenceEquals(m_subscription,  subscription))
+                if (!Object.ReferenceEquals(m_subscription, subscription))
                 {
                     return;
                 }
@@ -121,11 +120,11 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void BrowseCTRL_ItemsSelected(object sender, NodesSelectedEventArgs e)
+        private async void BrowseCTRL_ItemsSelectedAsync(object sender, NodesSelectedEventArgs e)
         {
             try
             {
@@ -133,17 +132,17 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference.ReferenceTypeId == ReferenceTypeIds.HasProperty || reference.IsForward)
                     {
-                        MonitoredItemsCTRL.AddItem(reference);
+                        await MonitoredItemsCTRL.AddItemAsync(reference);
                     }
                 }
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private async void ApplyBTN_Click(object sender, EventArgs e)
+        private async void ApplyBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -151,7 +150,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -163,7 +162,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

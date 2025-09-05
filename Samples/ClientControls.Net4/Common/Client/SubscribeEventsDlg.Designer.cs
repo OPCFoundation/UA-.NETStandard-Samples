@@ -145,7 +145,7 @@ namespace Opc.Ua.Client.Controls
             this.NextBTN.TabIndex = 6;
             this.NextBTN.Text = "Next";
             this.NextBTN.UseVisualStyleBackColor = true;
-            this.NextBTN.Click += new System.EventHandler(this.NextBTN_Click);
+            this.NextBTN.Click += new System.EventHandler(this.NextBTN_ClickAsync);
             // 
             // BackBTN
             // 
@@ -155,7 +155,7 @@ namespace Opc.Ua.Client.Controls
             this.BackBTN.TabIndex = 7;
             this.BackBTN.Text = "Back";
             this.BackBTN.UseVisualStyleBackColor = true;
-            this.BackBTN.Click += new System.EventHandler(this.BackBTN_Click);
+            this.BackBTN.Click += new System.EventHandler(this.BackBTN_ClickAsync);
             // 
             // ImageList
             // 
@@ -195,7 +195,7 @@ namespace Opc.Ua.Client.Controls
             this.SubscriptionStateTB.Name = "SubscriptionStateTB";
             this.SubscriptionStateTB.Size = new System.Drawing.Size(67, 20);
             this.SubscriptionStateTB.Text = "<status>";
-            this.SubscriptionStateTB.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.SubscriptionStateTB_DropDownItemClicked);
+            this.SubscriptionStateTB.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.SubscriptionStateTB_DropDownItemClickedAsync);
             // 
             // Subscription_EditMI
             // 
@@ -323,14 +323,14 @@ namespace Opc.Ua.Client.Controls
             this.NewMI.Name = "NewMI";
             this.NewMI.Size = new System.Drawing.Size(196, 22);
             this.NewMI.Text = "New...";
-            this.NewMI.Click += new System.EventHandler(this.NewMI_Click);
+            this.NewMI.Click += new System.EventHandler(this.NewMI_ClickAsync);
             // 
             // EditMI
             // 
             this.EditMI.Name = "EditMI";
             this.EditMI.Size = new System.Drawing.Size(196, 22);
             this.EditMI.Text = "Edit...";
-            this.EditMI.Click += new System.EventHandler(this.EditMI_Click);
+            this.EditMI.Click += new System.EventHandler(this.EditMI_ClickAsync);
             // 
             // DeleteMI
             // 
@@ -344,7 +344,7 @@ namespace Opc.Ua.Client.Controls
             this.SetMonitoringModeMI.Name = "SetMonitoringModeMI";
             this.SetMonitoringModeMI.Size = new System.Drawing.Size(196, 22);
             this.SetMonitoringModeMI.Text = "Set Monitoring Mode...";
-            this.SetMonitoringModeMI.Click += new System.EventHandler(this.SetMonitoringModeMI_Click);
+            this.SetMonitoringModeMI.Click += new System.EventHandler(this.SetMonitoringModeMI_ClickAsync);
             // 
             // EventTypePN
             // 
@@ -372,7 +372,7 @@ namespace Opc.Ua.Client.Controls
             this.BrowseCTRL.Size = new System.Drawing.Size(261, 311);
             this.BrowseCTRL.TabIndex = 15;
             this.BrowseCTRL.View = null;
-            this.BrowseCTRL.AfterSelect += new System.EventHandler(this.BrowseCTRL_AfterSelect);
+            this.BrowseCTRL.AfterSelect += new System.EventHandler(this.BrowseCTRL_AfterSelectAsync);
             // 
             // EventTypeCTRL
             // 

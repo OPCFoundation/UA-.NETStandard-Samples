@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -41,34 +41,34 @@ using Opc.Ua.Client.Controls;
 
 namespace Opc.Ua.Client.Controls
 {
-	/// <summary>
-	/// 
-	/// </summary>
+    /// <summary>
+    /// Simple value edit dialog
+    /// </summary>
     public partial class SimpleValueEditDlg : Form
     {
         #region Constructors
-		/// <summary>
-		/// Default constructor
-		/// </summary>
+        /// <summary>
+        /// Default constructor
+        /// </summary>
         public SimpleValueEditDlg()
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         private object m_value;
         private Type m_type;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         public object ShowDialog(object value, Type type)
         {
-            if (type == null) throw new ArgumentNullException("type");
+            if (type == null) throw new ArgumentNullException(nameof(type));
 
             m_type = type;
 
@@ -83,47 +83,47 @@ namespace Opc.Ua.Client.Controls
 
             return m_value;
         }
-        
+
         /// <summary>
         /// Returns true if the dialog supports editing the type.
         /// </summary>
         public static bool IsSimpleType(Type type)
         {
-            if (type == typeof(bool))     return true;
-            if (type == typeof(sbyte))    return true;
-            if (type == typeof(byte))     return true;
-            if (type == typeof(short))    return true;
-            if (type == typeof(ushort))   return true;
-            if (type == typeof(int))      return true;
-            if (type == typeof(uint))     return true;
-            if (type == typeof(long))     return true;
-            if (type == typeof(ulong))    return true;
-            if (type == typeof(float))    return true;
-            if (type == typeof(double))   return true;
-            if (type == typeof(string))   return true;
+            if (type == typeof(bool)) return true;
+            if (type == typeof(sbyte)) return true;
+            if (type == typeof(byte)) return true;
+            if (type == typeof(short)) return true;
+            if (type == typeof(ushort)) return true;
+            if (type == typeof(int)) return true;
+            if (type == typeof(uint)) return true;
+            if (type == typeof(long)) return true;
+            if (type == typeof(ulong)) return true;
+            if (type == typeof(float)) return true;
+            if (type == typeof(double)) return true;
+            if (type == typeof(string)) return true;
             if (type == typeof(DateTime)) return true;
-            if (type == typeof(Guid))     return true;
+            if (type == typeof(Guid)) return true;
 
             return false;
         }
         #endregion
-        
+
         private object Parse(string text)
         {
-            if (m_type == typeof(bool))          return Convert.ToBoolean(text);
-            if (m_type == typeof(sbyte))         return Convert.ToSByte(text);
-            if (m_type == typeof(byte))          return Convert.ToByte(text);
-            if (m_type == typeof(short))         return Convert.ToInt16(text);
-            if (m_type == typeof(ushort))        return Convert.ToUInt16(text);
-            if (m_type == typeof(int))           return Convert.ToInt32(text);
-            if (m_type == typeof(uint))          return Convert.ToUInt32(text);
-            if (m_type == typeof(long))          return Convert.ToInt64(text);
-            if (m_type == typeof(ulong))         return Convert.ToUInt64(text);
-            if (m_type == typeof(float))         return Convert.ToSingle(text);
-            if (m_type == typeof(double))        return Convert.ToDouble(text);
-            if (m_type == typeof(string))        return text;
-            if (m_type == typeof(DateTime))      return DateTime.ParseExact(text, "yyyy-MM-dd HH:mm:ss.fff", null);
-            if (m_type == typeof(Guid))          return new Guid(text);
+            if (m_type == typeof(bool)) return Convert.ToBoolean(text);
+            if (m_type == typeof(sbyte)) return Convert.ToSByte(text);
+            if (m_type == typeof(byte)) return Convert.ToByte(text);
+            if (m_type == typeof(short)) return Convert.ToInt16(text);
+            if (m_type == typeof(ushort)) return Convert.ToUInt16(text);
+            if (m_type == typeof(int)) return Convert.ToInt32(text);
+            if (m_type == typeof(uint)) return Convert.ToUInt32(text);
+            if (m_type == typeof(long)) return Convert.ToInt64(text);
+            if (m_type == typeof(ulong)) return Convert.ToUInt64(text);
+            if (m_type == typeof(float)) return Convert.ToSingle(text);
+            if (m_type == typeof(double)) return Convert.ToDouble(text);
+            if (m_type == typeof(string)) return text;
+            if (m_type == typeof(DateTime)) return DateTime.ParseExact(text, "yyyy-MM-dd HH:mm:ss.fff", null);
+            if (m_type == typeof(Guid)) return new Guid(text);
             if (m_type == typeof(QualifiedName)) return new QualifiedName(text);
             if (m_type == typeof(LocalizedText)) return new LocalizedText(text);
 
@@ -132,7 +132,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
-        {        
+        {
             try
             {
                 m_value = Parse(ValueTB.Text);
@@ -140,7 +140,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

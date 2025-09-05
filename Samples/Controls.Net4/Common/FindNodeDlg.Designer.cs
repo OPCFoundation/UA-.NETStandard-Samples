@@ -104,7 +104,7 @@ namespace Opc.Ua.Sample.Controls
             this.FindBTN.TabIndex = 2;
             this.FindBTN.Text = "Find";
             this.FindBTN.UseVisualStyleBackColor = true;
-            this.FindBTN.Click += new System.EventHandler(this.OkBTN_Click);
+            this.FindBTN.Click += new System.EventHandler(this.OkBTN_ClickAsync);
             // 
             // OkBTN
             // 
@@ -116,7 +116,7 @@ namespace Opc.Ua.Sample.Controls
             this.OkBTN.TabIndex = 0;
             this.OkBTN.Text = "OK";
             this.OkBTN.UseVisualStyleBackColor = true;
-            this.OkBTN.Click += new System.EventHandler(this.OkBTN_Click);
+            this.OkBTN.Click += new System.EventHandler(this.OkBTN_ClickAsync);
             // 
             // CancelBTN
             // 

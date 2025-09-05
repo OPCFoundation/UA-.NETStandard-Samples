@@ -162,7 +162,7 @@ namespace Opc.Ua.Client.Controls
             this.BrowseCTRL.ReferencesCTRL = this.ReferencesCTRL;
             this.BrowseCTRL.Size = new System.Drawing.Size(377, 255);
             this.BrowseCTRL.TabIndex = 29;
-            this.BrowseCTRL.NodesSelected += new System.EventHandler<Opc.Ua.Client.Controls.BrowseTreeCtrl.NodesSelectedEventArgs>(this.BrowseCTRL_NodesSelected);
+            this.BrowseCTRL.NodesSelected += new System.EventHandler<Opc.Ua.Client.Controls.BrowseTreeCtrl.NodesSelectedEventArgs>(this.BrowseCTRL_NodesSelectedAsync);
             // 
             // AttributesCTRL
             // 

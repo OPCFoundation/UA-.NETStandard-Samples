@@ -125,7 +125,7 @@ namespace Quickstarts.ReferenceServer
                     case Utils.TraceMasks.StartStop:
                     case Utils.TraceMasks.Information: m_logger.Information(e.Format, e.Arguments); break;
                     case Utils.TraceMasks.Error: m_logger.Error(e.Format, e.Arguments); break;
-                    case Utils.TraceMasks.StackTrace: 
+                    case Utils.TraceMasks.StackTrace:
                     case Utils.TraceMasks.Security: m_logger.Warning(e.Format, e.Arguments); break;
                     default: m_logger.Verbose(e.Format, e.Arguments); break;
                 }

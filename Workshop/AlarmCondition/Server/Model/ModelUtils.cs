@@ -107,7 +107,7 @@ namespace Quickstarts.AlarmConditionServer
 
             // parent must have a string identifier.
             string parentId = instance.Parent.NodeId.Identifier as string;
-            
+
             if (parentId == null)
             {
                 return null;
@@ -115,7 +115,7 @@ namespace Quickstarts.AlarmConditionServer
 
             StringBuilder buffer = new StringBuilder();
             buffer.Append(parentId);
-            
+
             // check if the parent is another component.
             int index = parentId.IndexOf('?');
 

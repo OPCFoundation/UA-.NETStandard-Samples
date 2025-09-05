@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,7 @@ using System.Threading;
 using System.Reflection;
 
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -56,18 +57,18 @@ namespace Opc.Ua.Client.Controls
             SetColumns(m_ColumnNames);
         }
         #endregion
-        
+
         #region Private Fields
-        // The columns to display in the control.		
-		private readonly object[][] m_ColumnNames = new object[][]
-		{ 
-			new object[] { "Name",          HorizontalAlignment.Left, null },  
-			new object[] { "Host",          HorizontalAlignment.Left, null },
-			new object[] { "Protocol",      HorizontalAlignment.Left, null },
-			new object[] { "Security Mode", HorizontalAlignment.Left, null },
-			new object[] { "User Token",    HorizontalAlignment.Left, null }
-		};
-        
+        // The columns to display in the control.
+        private readonly object[][] m_ColumnNames = new object[][]
+        {
+            new object[] { "Name",          HorizontalAlignment.Left, null },
+            new object[] { "Host",          HorizontalAlignment.Left, null },
+            new object[] { "Protocol",      HorizontalAlignment.Left, null },
+            new object[] { "Security Mode", HorizontalAlignment.Left, null },
+            new object[] { "User Token",    HorizontalAlignment.Left, null }
+        };
+
         private ApplicationConfiguration m_configuration;
         private ConfiguredEndpointCollection m_endpoints;
         #endregion
@@ -105,7 +106,7 @@ namespace Opc.Ua.Client.Controls
             base.EnableMenuItems(clickedItem);
 
             NewMI.Enabled = true;
-            
+
             if (clickedItem != null)
             {
                 ConfiguredEndpoint endpoint = clickedItem.Tag as ConfiguredEndpoint;
@@ -123,13 +124,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates an item in the control.
         /// </summary>
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             ConfiguredEndpoint endpoint = listItem.Tag as ConfiguredEndpoint;
 
             if (endpoint == null)
             {
-                base.UpdateItem(listItem, endpoint);
+                await base.UpdateItemAsync(listItem, endpoint, ct);
                 return;
             }
 
@@ -137,23 +138,23 @@ namespace Opc.Ua.Client.Controls
             string protocol = "<Unknown>";
 
             Uri uri = endpoint.EndpointUrl;
-            
+
             if (uri != null)
             {
-                hostname = uri.DnsSafeHost; 
+                hostname = uri.DnsSafeHost;
                 protocol = uri.Scheme;
             }
 
-			listItem.SubItems[0].Text = String.Format("{0}", endpoint.Description.Server.ApplicationName);
-			listItem.SubItems[1].Text = String.Format("{0}", hostname);
-			listItem.SubItems[2].Text = String.Format("{0}", protocol); 
+            listItem.SubItems[0].Text = String.Format("{0}", endpoint.Description.Server.ApplicationName);
+            listItem.SubItems[1].Text = String.Format("{0}", hostname);
+            listItem.SubItems[2].Text = String.Format("{0}", protocol);
 
-			listItem.SubItems[3].Text = String.Format(
-                "{0}/{1}", 
+            listItem.SubItems[3].Text = String.Format(
+                "{0}/{1}",
                 SecurityPolicies.GetDisplayName(endpoint.Description.SecurityPolicyUri),
                 endpoint.Description.SecurityMode);
-            
-			listItem.SubItems[4].Text = "<Unknown>";
+
+            listItem.SubItems[4].Text = "<Unknown>";
 
             UserTokenPolicy policy = endpoint.SelectedUserTokenPolicy;
 
@@ -165,17 +166,17 @@ namespace Opc.Ua.Client.Controls
 
                 if (endpoint.UserIdentity != null)
                 {
-                    buffer.Append("/");
+                    buffer.Append('/');
                     buffer.Append(endpoint.UserIdentity);
                 }
 
-			    listItem.SubItems[4].Text = buffer.ToString();
+                listItem.SubItems[4].Text = buffer.ToString();
             }
 
             listItem.ImageKey = GuiUtils.Icons.Process;
         }
         #endregion
-        
+
         #region Event Handlers
         private void NewMI_Click(object sender, EventArgs e)
         {
@@ -204,12 +205,12 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void ConfigureMI_Click(object sender, EventArgs e)
+        private async void ConfigureMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 ConfiguredEndpoint endpoint = SelectedTag as ConfiguredEndpoint;
-                
+
                 if (endpoint == null)
                 {
                     return;
@@ -221,8 +222,8 @@ namespace Opc.Ua.Client.Controls
                 {
                     return;
                 }
-                
-                UpdateItem(ItemsLV.SelectedItems[0], endpoint);
+
+                await UpdateItemAsync(ItemsLV.SelectedItems[0], endpoint);
                 AdjustColumns();
             }
             catch (Exception exception)
@@ -236,7 +237,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 ConfiguredEndpoint endpoint = SelectedTag as ConfiguredEndpoint;
-                
+
                 if (endpoint == null)
                 {
                     return;

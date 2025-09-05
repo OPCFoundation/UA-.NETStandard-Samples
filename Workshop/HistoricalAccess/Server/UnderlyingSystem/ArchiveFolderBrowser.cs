@@ -81,7 +81,7 @@ namespace Quickstarts.HistoricalAccessServer
             m_stage = Stage.Begin;
         }
         #endregion
-        
+
         #region Overridden Methods
         /// <summary>
         /// Returns the next reference.
@@ -116,7 +116,7 @@ namespace Quickstarts.HistoricalAccessServer
                 {
                     return null;
                 }
-                
+
                 // enumerate folders.
                 if (m_stage == Stage.Folders)
                 {
@@ -134,7 +134,7 @@ namespace Quickstarts.HistoricalAccessServer
                     m_stage = Stage.Items;
                     m_position = 0;
                 }
-                
+
                 // enumerate items.
                 if (m_stage == Stage.Items)
                 {

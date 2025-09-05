@@ -93,14 +93,14 @@ namespace Opc.Ua.Client.Controls
             this.ViewMI.Name = "ViewMI";
             this.ViewMI.Size = new System.Drawing.Size(118, 22);
             this.ViewMI.Text = "View...";
-            this.ViewMI.Click += new System.EventHandler(this.ViewMI_Click);
+            this.ViewMI.Click += new System.EventHandler(this.ViewMI_ClickAsync);
             // 
             // DeleteMI
             // 
             this.DeleteMI.Name = "DeleteMI";
             this.DeleteMI.Size = new System.Drawing.Size(118, 22);
             this.DeleteMI.Text = "Delete";
-            this.DeleteMI.Click += new System.EventHandler(this.DeleteMI_Click);
+            this.DeleteMI.Click += new System.EventHandler(this.DeleteMI_ClickAsync);
             // 
             // toolStripSeparator1
             // 

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,6 +29,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
 
@@ -49,7 +51,7 @@ namespace Quickstarts.AlarmConditionClient
         /// The minimum severity for the events of interest.
         /// </summary>
         public EventSeverity Severity;
-        
+
         /// <summary>
         /// The types for the events of interest.
         /// </summary>
@@ -59,12 +61,12 @@ namespace Quickstarts.AlarmConditionClient
         /// Whether suppressed or shelved condition events are of interest.
         /// </summary>
         public bool IgnoreSuppressedOrShelved;
-        
+
         /// <summary>
         /// The select clauses to use with the filter.
         /// </summary>
         public SimpleAttributeOperandCollection SelectClauses;
-        
+
         /// <summary>
         /// Creates the monitored item based on the current definition.
         /// </summary>
@@ -109,13 +111,14 @@ namespace Quickstarts.AlarmConditionClient
         /// <remarks>
         /// Each event type is an ObjectType in the address space. The fields supported by the
         /// server are defined as children of the ObjectType. Many of the fields are manadatory
-        /// and are defined by the UA information model, however, indiviudual servers many not 
+        /// and are defined by the UA information model, however, indiviudual servers many not
         /// support all of the optional fields.
-        /// 
-        /// This method browses the type model and 
+        ///
+        /// This method browses the type model and
         /// </remarks>
-        public SimpleAttributeOperandCollection ConstructSelectClauses(
+        public async Task<SimpleAttributeOperandCollection> ConstructSelectClausesAsync(
             ISession session,
+            CancellationToken ct,
             params NodeId[] eventTypeIds)
         {
             // browse the type model in the server address space to find the fields available for the event type.
@@ -136,14 +139,14 @@ namespace Quickstarts.AlarmConditionClient
             {
                 for (int ii = 0; ii < eventTypeIds.Length; ii++)
                 {
-                    CollectFields(session, eventTypeIds[ii], selectClauses);
+                    await CollectFieldsAsync(session, eventTypeIds[ii], selectClauses, ct);
                 }
             }
 
             // use BaseEventType as the default if no EventTypes specified.
             else
             {
-                CollectFields(session, ObjectTypeIds.BaseEventType, selectClauses);
+                await CollectFieldsAsync(session, ObjectTypeIds.BaseEventType, selectClauses, ct);
             }
 
             return selectClauses;
@@ -203,7 +206,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 // specify that the Severity property must Equal the value specified.
                 element2 = whereClause.Push(FilterOperator.Equals, operand1, operand2);
-                
+
                 // chain multiple elements together with an AND clause.
                 if (element1 != null)
                 {
@@ -223,7 +226,7 @@ namespace Quickstarts.AlarmConditionClient
                 // save the last element.
                 for (int ii = 0; ii < EventTypes.Count; ii++)
                 {
-                    // for this example uses the 'OfType' operator to limit events to thoses with specified event type. 
+                    // for this example uses the 'OfType' operator to limit events to thoses with specified event type.
                     LiteralOperand operand1 = new LiteralOperand();
                     operand1.Value = new Variant(EventTypes[ii]);
                     ContentFilterElement element3 = whereClause.Push(FilterOperator.OfType, operand1);
@@ -252,7 +255,7 @@ namespace Quickstarts.AlarmConditionClient
             return filter;
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Collects the fields for the event type.
@@ -260,10 +263,11 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="session">The session.</param>
         /// <param name="eventTypeId">The event type id.</param>
         /// <param name="eventFields">The event fields.</param>
-        private void CollectFields(ISession session, NodeId eventTypeId, SimpleAttributeOperandCollection eventFields)
+        /// <param name="ct">The token to cancel the request</param>
+        private async Task CollectFieldsAsync(ISession session, NodeId eventTypeId, SimpleAttributeOperandCollection eventFields, CancellationToken ct = default)
         {
             // get the supertypes.
-            ReferenceDescriptionCollection supertypes = FormUtils.BrowseSuperTypes(session, eventTypeId, false);
+            ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
 
             if (supertypes == null)
             {
@@ -271,16 +275,16 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // process the types starting from the top of the tree.
-            Dictionary<NodeId,QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
+            Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
             QualifiedNameCollection parentPath = new QualifiedNameCollection();
 
-            for (int ii = supertypes.Count-1; ii >= 0; ii--)
+            for (int ii = supertypes.Count - 1; ii >= 0; ii--)
             {
-                CollectFields(session, (NodeId)supertypes[ii].NodeId, parentPath, eventFields, foundNodes);
+                await CollectFieldsAsync(session, (NodeId)supertypes[ii].NodeId, parentPath, eventFields, foundNodes, ct);
             }
 
             // collect the fields for the selected type.
-            CollectFields(session, eventTypeId, parentPath, eventFields, foundNodes);
+            await CollectFieldsAsync(session, eventTypeId, parentPath, eventFields, foundNodes, ct);
         }
 
         /// <summary>
@@ -291,12 +295,14 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="parentPath">The parent path.</param>
         /// <param name="eventFields">The event fields.</param>
         /// <param name="foundNodes">The table of found nodes.</param>
-        private void CollectFields(
+        /// <param name="ct">The token to cancel the request</param>
+        private async Task CollectFieldsAsync(
             ISession session,
             NodeId nodeId,
             QualifiedNameCollection parentPath,
             SimpleAttributeOperandCollection eventFields,
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes)
+            Dictionary<NodeId, QualifiedNameCollection> foundNodes,
+            CancellationToken ct = default)
         {
             // find all of the children of the field.
             BrowseDescription nodeToBrowse = new BrowseDescription();
@@ -308,7 +314,7 @@ namespace Quickstarts.AlarmConditionClient
             nodeToBrowse.NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable);
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-            ReferenceDescriptionCollection children = FormUtils.Browse(session, nodeToBrowse, false);
+            ReferenceDescriptionCollection children = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
 
             if (children == null)
             {
@@ -336,7 +342,7 @@ namespace Quickstarts.AlarmConditionClient
 
                     field.TypeDefinitionId = ObjectTypeIds.BaseEventType;
                     field.BrowsePath = browsePath;
-                    field.AttributeId = (child.NodeClass == NodeClass.Variable)?Attributes.Value:Attributes.NodeId;
+                    field.AttributeId = (child.NodeClass == NodeClass.Variable) ? Attributes.Value : Attributes.NodeId;
 
                     eventFields.Add(field);
                 }
@@ -348,7 +354,7 @@ namespace Quickstarts.AlarmConditionClient
                 if (!foundNodes.ContainsKey(targetId))
                 {
                     foundNodes.Add(targetId, browsePath);
-                    CollectFields(session, (NodeId)child.NodeId, browsePath, eventFields, foundNodes);
+                    await CollectFieldsAsync(session, (NodeId)child.NodeId, browsePath, eventFields, foundNodes, ct);
                 }
             }
         }

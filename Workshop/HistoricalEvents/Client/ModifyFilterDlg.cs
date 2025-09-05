@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -51,7 +51,7 @@ namespace Quickstarts.HistoricalEvents.Client
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private FilterDeclaration m_filter;
 
@@ -72,7 +72,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Stores the state of FilterDeclarationField element.
         /// </summary>
-        private class FilterItem
+        private sealed class FilterItem
         {
             public FilterItem(FilterDeclarationField declaration)
             {
@@ -82,7 +82,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 FilterValue = declaration.FilterValue;
                 Declaration = declaration;
             }
-              
+
             public bool DisplayInList;
             public bool FilterEnabled;
             public FilterOperator FilterOperator;
@@ -90,13 +90,11 @@ namespace Quickstarts.HistoricalEvents.Client
             public FilterDeclarationField Declaration;
         }
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the available areas in a tree view.
         /// </summary>
-        /// <param name="session">The session.</param>
-        /// <returns></returns>
         public bool ShowDialog(FilterDeclaration filter)
         {
             m_filter = filter;
@@ -133,7 +131,7 @@ namespace Quickstarts.HistoricalEvents.Client
             return true;
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Displays an X for a boolean value.
@@ -158,7 +156,7 @@ namespace Quickstarts.HistoricalEvents.Client
             for (int ii = 0; ii < m_filter.Fields.Count; ii++)
             {
                 FilterDeclarationField field = m_filter.Fields[ii];
-                
+
                 ListViewItem item = new ListViewItem(field.InstanceDeclaration.DisplayPath);
 
                 item.SubItems.Add(ToCheck(field.DisplayInList));
@@ -168,7 +166,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 item.SubItems.Add(field.InstanceDeclaration.DataTypeDisplayText);
 
                 item.Tag = new FilterItem(field);
-                
+
                 EventFieldsLV.Items.Add(item);
             }
 
@@ -176,7 +174,7 @@ namespace Quickstarts.HistoricalEvents.Client
             for (int ii = 0; ii < EventFieldsLV.Columns.Count; ii++)
             {
                 EventFieldsLV.Columns[ii].Width = -2;
-            } 
+            }
         }
         #endregion
 
@@ -189,7 +187,7 @@ namespace Quickstarts.HistoricalEvents.Client
             if (EventFieldsLV.SelectedItems.Count > 0)
             {
                 FilterItem field = EventFieldsLV.SelectedItems[0].Tag as FilterItem;
-                
+
                 if (field != null)
                 {
                     displayInList = (field.DisplayInList) ? CheckState.Checked : CheckState.Unchecked;

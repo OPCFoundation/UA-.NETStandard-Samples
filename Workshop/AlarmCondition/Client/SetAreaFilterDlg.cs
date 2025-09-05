@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -50,11 +50,11 @@ namespace Quickstarts.AlarmConditionClient
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private ISession m_session;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the available areas in a tree view.
@@ -94,7 +94,7 @@ namespace Quickstarts.AlarmConditionClient
             return (NodeId)reference.NodeId;
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
 
@@ -160,7 +160,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.Windows.Forms.TreeViewCancelEventArgs"/> instance containing the event data.</param>
-        private void BrowseTV_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        private async void BrowseTV_BeforeExpandAsync(object sender, TreeViewCancelEventArgs e)
         {
             try
             {
@@ -181,10 +181,10 @@ namespace Quickstarts.AlarmConditionClient
                 {
                     nodeToBrowse.NodeId = (NodeId)reference.NodeId;
                 }
-                
+
                 // add the childen to the control.
-                ReferenceDescriptionCollection references = FormUtils.Browse(m_session, nodeToBrowse, false);
-                
+                ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(m_session, nodeToBrowse, false);
+
                 for (int ii = 0; ii < references.Count; ii++)
                 {
                     reference = references[ii];

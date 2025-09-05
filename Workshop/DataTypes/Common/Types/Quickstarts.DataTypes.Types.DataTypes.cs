@@ -37,7 +37,7 @@ using Opc.Ua;
 namespace Quickstarts.DataTypes.Types
 {
     #region EngineType Enumeration
-    #if (!OPCUA_EXCLUDE_EngineType)
+#if (!OPCUA_EXCLUDE_EngineType)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -74,13 +74,13 @@ namespace Quickstarts.DataTypes.Types
     {
         #region Constructors
         /// <remarks />
-        public EngineTypeCollection() {}
+        public EngineTypeCollection() { }
 
         /// <remarks />
-        public EngineTypeCollection(int capacity) : base(capacity) {}
+        public EngineTypeCollection(int capacity) : base(capacity) { }
 
         /// <remarks />
-        public EngineTypeCollection(IEnumerable<EngineType> collection) : base(collection) {}
+        public EngineTypeCollection(IEnumerable<EngineType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -129,11 +129,11 @@ namespace Quickstarts.DataTypes.Types
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 
     #region VehicleType Class
-    #if (!OPCUA_EXCLUDE_VehicleType)
+#if (!OPCUA_EXCLUDE_VehicleType)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -146,13 +146,13 @@ namespace Quickstarts.DataTypes.Types
         {
             Initialize();
         }
-            
+
         [OnDeserializing]
         private void Initialize(StreamingContext context)
         {
             Initialize();
         }
-            
+
         private void Initialize()
         {
             m_make = null;
@@ -166,7 +166,7 @@ namespace Quickstarts.DataTypes.Types
         [DataMember(Name = "Make", IsRequired = false, Order = 1)]
         public string Make
         {
-            get { return m_make;  }
+            get { return m_make; }
             set { m_make = value; }
         }
 
@@ -174,7 +174,7 @@ namespace Quickstarts.DataTypes.Types
         [DataMember(Name = "Model", IsRequired = false, Order = 2)]
         public string Model
         {
-            get { return m_model;  }
+            get { return m_model; }
             set { m_model = value; }
         }
 
@@ -182,23 +182,23 @@ namespace Quickstarts.DataTypes.Types
         [DataMember(Name = "Engine", IsRequired = false, Order = 3)]
         public EngineType Engine
         {
-            get { return m_engine;  }
+            get { return m_engine; }
             set { m_engine = value; }
         }
         #endregion
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public virtual ExpandedNodeId TypeId => DataTypeIds.VehicleType; 
+        public virtual ExpandedNodeId TypeId => DataTypeIds.VehicleType;
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
         public virtual ExpandedNodeId BinaryEncodingId => ObjectIds.VehicleType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public virtual ExpandedNodeId XmlEncodingId => ObjectIds.VehicleType_Encoding_DefaultXml;
-                    
+
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.VehicleType_Encoding_DefaultJson; 
+        public virtual ExpandedNodeId JsonEncodingId => ObjectIds.VehicleType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public virtual void Encode(IEncoder encoder)
@@ -281,13 +281,13 @@ namespace Quickstarts.DataTypes.Types
     {
         #region Constructors
         /// <remarks />
-        public VehicleTypeCollection() {}
+        public VehicleTypeCollection() { }
 
         /// <remarks />
-        public VehicleTypeCollection(int capacity) : base(capacity) {}
+        public VehicleTypeCollection(int capacity) : base(capacity) { }
 
         /// <remarks />
-        public VehicleTypeCollection(IEnumerable<VehicleType> collection) : base(collection) {}
+        public VehicleTypeCollection(IEnumerable<VehicleType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -336,11 +336,11 @@ namespace Quickstarts.DataTypes.Types
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 
     #region CarType Class
-    #if (!OPCUA_EXCLUDE_CarType)
+#if (!OPCUA_EXCLUDE_CarType)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -371,23 +371,23 @@ namespace Quickstarts.DataTypes.Types
         [DataMember(Name = "NoOfPassengers", IsRequired = false, Order = 1)]
         public uint NoOfPassengers
         {
-            get { return m_noOfPassengers;  }
+            get { return m_noOfPassengers; }
             set { m_noOfPassengers = value; }
         }
         #endregion
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId => DataTypeIds.CarType; 
+        public override ExpandedNodeId TypeId => DataTypeIds.CarType;
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
         public override ExpandedNodeId BinaryEncodingId => ObjectIds.CarType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public override ExpandedNodeId XmlEncodingId => ObjectIds.CarType_Encoding_DefaultXml;
-            
+
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public override ExpandedNodeId JsonEncodingId => ObjectIds.CarType_Encoding_DefaultJson; 
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.CarType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -431,7 +431,7 @@ namespace Quickstarts.DataTypes.Types
             if (!Utils.IsEqual(m_noOfPassengers, value.m_noOfPassengers)) return false;
 
             return base.IsEqual(encodeable);
-        }    
+        }
 
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
@@ -464,13 +464,13 @@ namespace Quickstarts.DataTypes.Types
     {
         #region Constructors
         /// <remarks />
-        public CarTypeCollection() {}
+        public CarTypeCollection() { }
 
         /// <remarks />
-        public CarTypeCollection(int capacity) : base(capacity) {}
+        public CarTypeCollection(int capacity) : base(capacity) { }
 
         /// <remarks />
-        public CarTypeCollection(IEnumerable<CarType> collection) : base(collection) {}
+        public CarTypeCollection(IEnumerable<CarType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -519,11 +519,11 @@ namespace Quickstarts.DataTypes.Types
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 
     #region TruckType Class
-    #if (!OPCUA_EXCLUDE_TruckType)
+#if (!OPCUA_EXCLUDE_TruckType)
     /// <remarks />
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
@@ -554,23 +554,23 @@ namespace Quickstarts.DataTypes.Types
         [DataMember(Name = "CargoCapacity", IsRequired = false, Order = 1)]
         public uint CargoCapacity
         {
-            get { return m_cargoCapacity;  }
+            get { return m_cargoCapacity; }
             set { m_cargoCapacity = value; }
         }
         #endregion
 
         #region IEncodeable Members
         /// <summary cref="IEncodeable.TypeId" />
-        public override ExpandedNodeId TypeId => DataTypeIds.TruckType; 
+        public override ExpandedNodeId TypeId => DataTypeIds.TruckType;
 
         /// <summary cref="IEncodeable.BinaryEncodingId" />
         public override ExpandedNodeId BinaryEncodingId => ObjectIds.TruckType_Encoding_DefaultBinary;
 
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public override ExpandedNodeId XmlEncodingId => ObjectIds.TruckType_Encoding_DefaultXml;
-            
+
         /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public override ExpandedNodeId JsonEncodingId => ObjectIds.TruckType_Encoding_DefaultJson; 
+        public override ExpandedNodeId JsonEncodingId => ObjectIds.TruckType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -614,7 +614,7 @@ namespace Quickstarts.DataTypes.Types
             if (!Utils.IsEqual(m_cargoCapacity, value.m_cargoCapacity)) return false;
 
             return base.IsEqual(encodeable);
-        }    
+        }
 
         /// <summary cref="ICloneable.Clone" />
         public override object Clone()
@@ -647,13 +647,13 @@ namespace Quickstarts.DataTypes.Types
     {
         #region Constructors
         /// <remarks />
-        public TruckTypeCollection() {}
+        public TruckTypeCollection() { }
 
         /// <remarks />
-        public TruckTypeCollection(int capacity) : base(capacity) {}
+        public TruckTypeCollection(int capacity) : base(capacity) { }
 
         /// <remarks />
-        public TruckTypeCollection(IEnumerable<TruckType> collection) : base(collection) {}
+        public TruckTypeCollection(IEnumerable<TruckType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -702,6 +702,6 @@ namespace Quickstarts.DataTypes.Types
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 }

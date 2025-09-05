@@ -51,7 +51,7 @@ namespace Quickstarts.UserAuthenticationClient
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Client;
+            application.ApplicationType = ApplicationType.Client;
             application.ConfigSectionName = "Quickstarts.UserAuthenticationClient";
 
             try
@@ -61,7 +61,7 @@ namespace Quickstarts.UserAuthenticationClient
                 {
                     return;
                 }
-                
+
                 // load the application configuration.
                 application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 

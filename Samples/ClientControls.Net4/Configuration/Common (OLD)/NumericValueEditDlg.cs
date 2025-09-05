@@ -53,7 +53,7 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
@@ -82,7 +82,7 @@ namespace Opc.Ua.Client.Controls
             return Convert.ChangeType(ValueCTRL.Value, type);
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Sets the limits according to the data type.

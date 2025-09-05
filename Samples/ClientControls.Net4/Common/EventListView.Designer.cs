@@ -97,7 +97,7 @@ namespace Opc.Ua.Client.Controls
             this.DeleteHistoryMI.Name = "DeleteHistoryMI";
             this.DeleteHistoryMI.Size = new System.Drawing.Size(196, 22);
             this.DeleteHistoryMI.Text = "Delete from Historian...";
-            this.DeleteHistoryMI.Click += new System.EventHandler(this.DeleteHistoryMI_Click);
+            this.DeleteHistoryMI.Click += new System.EventHandler(this.DeleteHistoryMI_ClickAsync);
             // 
             // EventListView
             // 

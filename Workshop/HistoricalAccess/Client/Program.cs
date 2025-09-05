@@ -50,7 +50,7 @@ namespace Quickstarts.HistoricalAccess.Client
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Client;
+            application.ApplicationType = ApplicationType.Client;
             application.ConfigSectionName = "HistoricalAccessClient";
 
             try

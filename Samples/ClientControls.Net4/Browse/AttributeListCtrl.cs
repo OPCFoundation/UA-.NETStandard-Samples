@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -54,14 +55,14 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private ISession m_session;
 
-        // The columns to display in the control.		
+        // The columns to display in the control.
         private readonly object[][] m_ColumnNames = new object[][]
         {
             new object[] { "Name",  HorizontalAlignment.Left, null },
             new object[] { "Value", HorizontalAlignment.Left, null }
         };
 
-        private class ItemInfo
+        private sealed class ItemInfo
         {
             public NodeId NodeId;
             public uint AttributeId;
@@ -73,7 +74,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes the control with a set of items.
         /// </summary>
-        public async Task InitializeAsync(ISession session, ExpandedNodeId nodeId)
+        public async Task InitializeAsync(ISession session, ExpandedNodeId nodeId, CancellationToken ct = default)
         {
             ItemsLV.Items.Clear();
             m_session = session;
@@ -83,19 +84,15 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            ILocalNode node = await m_session.NodeCache.FindAsync(nodeId) as ILocalNode;
+            ILocalNode node = await m_session.NodeCache.FindAsync(nodeId, ct) as ILocalNode;
 
             if (node == null)
             {
                 return;
             }
 
-            uint[] attributesIds = Attributes.GetIdentifiers();
-
-            for (int ii = 0; ii < attributesIds.Length; ii++)
+            foreach (uint attributesId in Attributes.Identifiers)
             {
-                uint attributesId = attributesIds[ii];
-
                 if (!node.SupportsAttribute(attributesId))
                 {
                     continue;
@@ -124,7 +121,7 @@ namespace Opc.Ua.Client.Controls
             {
                 IReference reference = references[ii];
 
-                ILocalNode property = await m_session.NodeCache.FindAsync(reference.TargetId) as ILocalNode;
+                ILocalNode property = await m_session.NodeCache.FindAsync(reference.TargetId, ct) as ILocalNode;
 
                 if (property == null)
                 {
@@ -148,13 +145,13 @@ namespace Opc.Ua.Client.Controls
                 AddItem(info);
             }
 
-            UpdateValues();
+            await UpdateValuesAsync(ct);
         }
 
         /// <summary>
         /// Updates the values from the server.
         /// </summary>
-        private void UpdateValues()
+        private async Task UpdateValuesAsync(CancellationToken ct = default)
         {
             ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
 
@@ -176,16 +173,15 @@ namespace Opc.Ua.Client.Controls
                 valuesToRead.Add(valueToRead);
             }
 
-            DataValueCollection results;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 valuesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, valuesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
@@ -195,7 +191,7 @@ namespace Opc.Ua.Client.Controls
                 ListViewItem item = (ListViewItem)valuesToRead[ii].Handle;
                 ItemInfo info = (ItemInfo)item.Tag;
                 info.Value = results[ii];
-                UpdateItem(item, info);
+                await UpdateItemAsync(item, info, ct);
             }
 
             AdjustColumns();
@@ -204,7 +200,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Formats the value of an attribute.
         /// </summary>
-        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value)
+        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value, CancellationToken ct = default)
         {
             switch (attributeId)
             {
@@ -224,7 +220,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (datatypeId != null)
                     {
-                        INode datatype = await m_session.NodeCache.FindAsync(datatypeId);
+                        INode datatype = await m_session.NodeCache.FindAsync(datatypeId, ct);
 
                         if (datatype != null)
                         {
@@ -382,7 +378,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Overridden Methods
         /// <see cref="Opc.Ua.Client.Controls.BaseListCtrl.UpdateItem(ListViewItem,object)" />
-        protected override async void UpdateItem(ListViewItem listItem, object item)
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
             try
             {
@@ -390,7 +386,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (info == null)
                 {
-                    base.UpdateItem(listItem, item);
+                    await base.UpdateItemAsync(listItem, item, ct);
                     return;
                 }
 
@@ -402,7 +398,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
-                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(info.AttributeId, info.Value.Value);
+                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(info.AttributeId, info.Value.Value, ct);
                 }
 
                 if (info.AttributeId != Attributes.Value)

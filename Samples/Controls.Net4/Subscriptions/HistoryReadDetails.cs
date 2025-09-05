@@ -44,14 +44,14 @@ namespace Opc.Ua.Sample
         public HistoryReadDetails()
         {
             InitializeComponent();
-            
+
             QueryTypeCB.Items.Clear();
             QueryTypeCB.Items.Add("Read Raw or Modified");
         }
 
         private Session m_session;
         private ReadRawModifiedDetails m_details;
-        
+
         #region Private Methods
         /// <summary>
         /// Initializes the control
@@ -76,18 +76,18 @@ namespace Opc.Ua.Sample
             IsModifiedCHK.Checked = details.IsReadModified;
         }
         #endregion
-        
+
         #region Private Methods
         private DateTime ToControlDateTime(DateTime value)
         {
-            if (value < new DateTime(1900,1,1))
+            if (value < new DateTime(1900, 1, 1))
             {
-                return new DateTime(1900,1,1);
+                return new DateTime(1900, 1, 1);
             }
 
-            if (value > new DateTime(2100,1,1))
+            if (value > new DateTime(2100, 1, 1))
             {
-                return new DateTime(2100,1,1);
+                return new DateTime(2100, 1, 1);
             }
 
             return value;
@@ -95,12 +95,12 @@ namespace Opc.Ua.Sample
 
         private DateTime FromControlDateTime(DateTime value)
         {
-            if (value <= new DateTime(1900,1,1))
+            if (value <= new DateTime(1900, 1, 1))
             {
                 return DateTime.MinValue;
             }
 
-            if (value >= new DateTime(2100,1,1))
+            if (value >= new DateTime(2100, 1, 1))
             {
                 return DateTime.MaxValue;
             }

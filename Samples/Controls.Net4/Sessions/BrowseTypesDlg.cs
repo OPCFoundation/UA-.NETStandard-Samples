@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -55,32 +57,33 @@ namespace Opc.Ua.Sample.Controls
         private Session m_session;
         private ILocalNode m_selectedType;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(
+        public async Task ShowAsync(
             Session session,
-            NodeId  typeId)
+            NodeId typeId,
+            CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
-            m_session = session;                    
-            
-            TypeNavigatorCTRL.Initialize(m_session, typeId);
-            TypeHierarchyCTRL.Initialize(m_session, typeId);
+            m_session = session;
+
+            await TypeNavigatorCTRL.InitializeAsync(m_session, typeId, ct);
+            await TypeHierarchyCTRL.InitializeAsync(m_session, typeId, ct);
 
             Show();
             BringToFront();
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
-        
+
         #region Event Handler
-        private void TypeNavigatorCTRL_TypeSelected(object sender, TypeNavigatorEventArgs e)
+        private async void TypeNavigatorCTRL_TypeSelectedAsync(object sender, TypeNavigatorEventArgs e)
         {
             try
             {
@@ -88,11 +91,11 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_selectedType != null)
                 {
-                    TypeHierarchyCTRL.Initialize(m_session, m_selectedType.NodeId);
+                    await TypeHierarchyCTRL.InitializeAsync(m_session, m_selectedType.NodeId);
                 }
                 else
                 {
-                    TypeHierarchyCTRL.Initialize(m_session, null);
+                    await TypeHierarchyCTRL.InitializeAsync(m_session, null);
                 }
             }
             catch (Exception exception)

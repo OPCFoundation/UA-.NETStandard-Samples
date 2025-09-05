@@ -186,7 +186,7 @@ namespace Opc.Ua.Client.Controls
                 DataTypeCB.SelectedItem = value;
             }
         }
-        
+
         /// <summary>
         /// The value rank of the value displayed in the control.
         /// </summary>

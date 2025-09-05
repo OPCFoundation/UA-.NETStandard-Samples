@@ -37,7 +37,7 @@ using Opc.Ua;
 namespace Quickstarts.Boiler
 {
     #region ControllerDataType Class
-    #if (!OPCUA_EXCLUDE_ControllerDataType)
+#if (!OPCUA_EXCLUDE_ControllerDataType)
     /// <summary>
     /// 
     /// </summary>
@@ -80,7 +80,7 @@ namespace Quickstarts.Boiler
         [DataMember(Name = "Setpoint", IsRequired = false, Order = 1)]
         public double Setpoint
         {
-            get { return m_setpoint;  }
+            get { return m_setpoint; }
             set { m_setpoint = value; }
         }
 
@@ -88,7 +88,7 @@ namespace Quickstarts.Boiler
         [DataMember(Name = "ControllerOut", IsRequired = false, Order = 2)]
         public double ControllerOut
         {
-            get { return m_controllerOut;  }
+            get { return m_controllerOut; }
             set { m_controllerOut = value; }
         }
 
@@ -96,7 +96,7 @@ namespace Quickstarts.Boiler
         [DataMember(Name = "ProcessVariable", IsRequired = false, Order = 3)]
         public double ProcessVariable
         {
-            get { return m_processVariable;  }
+            get { return m_processVariable; }
             set { m_processVariable = value; }
         }
         #endregion
@@ -166,13 +166,13 @@ namespace Quickstarts.Boiler
             return true;
         }
 
-        #if !NET_STANDARD
+#if !NET_STANDARD
         /// <summary cref="ICloneable.Clone" />
         public virtual object Clone()
         {
             return (ControllerDataType)this.MemberwiseClone();
         }
-        #endif
+#endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -201,27 +201,27 @@ namespace Quickstarts.Boiler
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [CollectionDataContract(Name = "ListOfControllerDataType", Namespace = Quickstarts.Boiler.Namespaces.Boiler, ItemName = "ControllerDataType")]
-    #if !NET_STANDARD
+#if !NET_STANDARD
     public partial class ControllerDataTypeCollection : List<ControllerDataType>, ICloneable
-    #else
+#else
     public partial class ControllerDataTypeCollection : List<ControllerDataType>
-    #endif
+#endif
     {
         #region Constructors
         /// <summary>
         /// Initializes the collection with default values.
         /// </summary>
-        public ControllerDataTypeCollection() {}
+        public ControllerDataTypeCollection() { }
 
         /// <summary>
         /// Initializes the collection with an initial capacity.
         /// </summary>
-        public ControllerDataTypeCollection(int capacity) : base(capacity) {}
+        public ControllerDataTypeCollection(int capacity) : base(capacity) { }
 
         /// <summary>
         /// Initializes the collection with another collection.
         /// </summary>
-        public ControllerDataTypeCollection(IEnumerable<ControllerDataType> collection) : base(collection) {}
+        public ControllerDataTypeCollection(IEnumerable<ControllerDataType> collection) : base(collection) { }
         #endregion
 
         #region Static Operators
@@ -252,7 +252,7 @@ namespace Quickstarts.Boiler
         }
         #endregion
 
-        #if !NET_STANDARD
+#if !NET_STANDARD
         #region ICloneable Methods
         /// <summary>
         /// Creates a deep copy of the collection.
@@ -262,7 +262,7 @@ namespace Quickstarts.Boiler
             return (ControllerDataTypeCollection)this.MemberwiseClone();
         }
         #endregion
-        #endif
+#endif
 
         /// <summary cref="Object.MemberwiseClone" />
         public new object MemberwiseClone()
@@ -278,6 +278,6 @@ namespace Quickstarts.Boiler
         }
     }
     #endregion
-    #endif
+#endif
     #endregion
 }

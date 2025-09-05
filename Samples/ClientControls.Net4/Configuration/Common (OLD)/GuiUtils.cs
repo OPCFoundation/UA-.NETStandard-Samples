@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,8 +33,10 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -272,7 +274,7 @@ namespace Opc.Ua.Client.Controls
                     {
                         if (comma)
                         {
-                            buffer.Append(",");
+                            buffer.Append(',');
                         }
                         buffer.AppendFormat(" {0}", domain);
                         comma = true;
@@ -356,7 +358,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (type == typeof(byte[]))
                 {
-                    return new byte[0];
+                    return Array.Empty<byte>();
                 }
 
                 if (type == typeof(NodeId))
@@ -386,8 +388,9 @@ namespace Opc.Ua.Client.Controls
 
                 if (type == typeof(System.Xml.XmlElement))
                 {
-                    System.Xml.XmlDocument document = new System.Xml.XmlDocument();
-                    document.InnerXml = "<Null/>";
+                    System.Xml.XmlDocument document = new System.Xml.XmlDocument { XmlResolver = null };
+                    using XmlReader reader = XmlReader.Create("<Null/>", new XmlReaderSettings() { XmlResolver = null });
+                    document.Load(reader);
                     return document.DocumentElement;
                 }
 
@@ -524,18 +527,18 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns to display icon for the target of a reference.
         /// </summary>
-        public static string GetTargetIcon(ISession session, ReferenceDescription reference)
+        public static Task<string> GetTargetIconAsync(ISession session, ReferenceDescription reference, CancellationToken ct = default)
         {
-            return GetTargetIcon(session, reference.NodeClass, reference.TypeDefinition);
+            return GetTargetIconAsync(session, reference.NodeClass, reference.TypeDefinition, ct);
         }
 
         /// <summary>
         /// Returns to display icon for the target of a reference.
         /// </summary>
-        public static string GetTargetIcon(ISession session, NodeClass nodeClass, ExpandedNodeId typeDefinitionId)
+        public static async Task<string> GetTargetIconAsync(ISession session, NodeClass nodeClass, ExpandedNodeId typeDefinitionId, CancellationToken ct = default)
         {
             // make sure the type definition is in the cache.
-            INode typeDefinition = session.NodeCache.Find(typeDefinitionId);
+            INode typeDefinition = await session.NodeCache.FindAsync(typeDefinitionId, ct);
 
             switch (nodeClass)
             {

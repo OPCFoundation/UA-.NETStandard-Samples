@@ -148,7 +148,7 @@ namespace Quickstarts.SimpleEvents.Client
             this.Server_SelectLocaleMI.Name = "Server_SelectLocaleMI";
             this.Server_SelectLocaleMI.Size = new System.Drawing.Size(148, 22);
             this.Server_SelectLocaleMI.Text = "Select Locale...";
-            this.Server_SelectLocaleMI.Click += new System.EventHandler(this.Server_SetLocaleMI_Click);
+            this.Server_SelectLocaleMI.Click += new System.EventHandler(this.Server_SetLocaleMI_ClickAsync);
             // 
             // Server_DisconnectMI
             // 
@@ -251,7 +251,7 @@ namespace Quickstarts.SimpleEvents.Client
             this.ConnectServerCTRL.TabIndex = 2;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
             this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
             // 

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Quickstarts.DataAccessClient
 {
@@ -91,7 +93,7 @@ namespace Quickstarts.DataAccessClient
         {
             try
             {
-                await ConnectServerCTRL.Connect().ConfigureAwait(false);
+                await ConnectServerCTRL.ConnectAsync().ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -135,7 +137,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -157,7 +159,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // populate the browse view.
-                PopulateBranch(ObjectIds.ObjectsFolder, BrowseNodesTV.Nodes);
+                await PopulateBranchAsync(ObjectIds.ObjectsFolder, BrowseNodesTV.Nodes);
 
                 BrowseNodesTV.Enabled = true;
                 MonitoredItemsLV.Enabled = true;
@@ -224,7 +226,7 @@ namespace Quickstarts.DataAccessClient
         /// </summary>
         /// <param name="sourceId">The NodeId of the Node to browse.</param>
         /// <param name="nodes">The node collect to populate.</param>
-        private void PopulateBranch(NodeId sourceId, TreeNodeCollection nodes)
+        private async Task PopulateBranchAsync(NodeId sourceId, TreeNodeCollection nodes, CancellationToken ct = default)
         {
             try
             {
@@ -239,7 +241,7 @@ namespace Quickstarts.DataAccessClient
                 nodeToBrowse1.IncludeSubtypes = true;
                 nodeToBrowse1.NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable);
                 nodeToBrowse1.ResultMask = (uint)BrowseResultMask.All;
-                
+
                 // find all nodes organized by the node.
                 BrowseDescription nodeToBrowse2 = new BrowseDescription();
 
@@ -255,8 +257,8 @@ namespace Quickstarts.DataAccessClient
                 nodesToBrowse.Add(nodeToBrowse2);
 
                 // fetch references from the server.
-                ReferenceDescriptionCollection references = FormUtils.Browse(m_session, nodesToBrowse, false);
-                
+                ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(m_session, nodesToBrowse, false, ct);
+
                 // process results.
                 for (int ii = 0; ii < references.Count; ii++)
                 {
@@ -270,7 +272,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // update the attributes display.
-                DisplayAttributes(sourceId);
+                await DisplayAttributesAsync(sourceId, ct);
             }
             catch (Exception exception)
             {
@@ -282,7 +284,7 @@ namespace Quickstarts.DataAccessClient
         /// Displays the attributes and properties in the attributes view.
         /// </summary>
         /// <param name="sourceId">The NodeId of the Node to browse.</param>
-        private void DisplayAttributes(NodeId sourceId)
+        private async Task DisplayAttributesAsync(NodeId sourceId, CancellationToken ct = default)
         {
             try
             {
@@ -315,7 +317,7 @@ namespace Quickstarts.DataAccessClient
                 nodesToBrowse.Add(nodeToBrowse1);
 
                 // fetch property references from the server.
-                ReferenceDescriptionCollection references = FormUtils.Browse(m_session, nodesToBrowse, false);
+                ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(m_session, nodesToBrowse, false, ct);
 
                 if (references == null)
                 {
@@ -337,16 +339,15 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // read all values.
-                DataValueCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                m_session.Read(
+                ReadResponse response = await m_session.ReadAsync(
                     null,
                     0,
                     TimestampsToReturn.Neither,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                DataValueCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -403,7 +404,7 @@ namespace Quickstarts.DataAccessClient
                         }
 
                         // get the name of the property.
-                        name = Utils.Format("{0}", references[ii-startOfProperties]);
+                        name = Utils.Format("{0}", references[ii - startOfProperties]);
 
                         // display any unexpected error.
                         if (StatusCode.IsBad(results[ii].StatusCode))
@@ -483,7 +484,7 @@ namespace Quickstarts.DataAccessClient
         {
             try
             {
-                System.Diagnostics.Process.Start( Path.GetDirectoryName(Application.ExecutablePath) + "\\WebHelp\\daclientoverview.htm");
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + "\\WebHelp\\daclientoverview.htm");
             }
             catch (Exception ex)
             {
@@ -494,7 +495,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Fetches the children for a node the first time the node is expanded in the tree view.
         /// </summary>
-        private void BrowseNodesTV_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        private async void BrowseNodesTV_BeforeExpandAsync(object sender, TreeViewCancelEventArgs e)
         {
             try
             {
@@ -514,7 +515,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // populate children.
-                PopulateBranch((NodeId)reference.NodeId, e.Node.Nodes);
+                await PopulateBranchAsync((NodeId)reference.NodeId, e.Node.Nodes);
             }
             catch (Exception exception)
             {
@@ -525,7 +526,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Updates the display after a node is selected.
         /// </summary>
-        private void BrowseNodesTV_AfterSelect(object sender, TreeViewEventArgs e)
+        private async void BrowseNodesTV_AfterSelectAsync(object sender, TreeViewEventArgs e)
         {
             try
             {
@@ -538,7 +539,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // populate children.
-                PopulateBranch((NodeId)reference.NodeId, e.Node.Nodes);
+                await PopulateBranchAsync((NodeId)reference.NodeId, e.Node.Nodes);
             }
             catch (Exception exception)
             {
@@ -560,23 +561,23 @@ namespace Quickstarts.DataAccessClient
                 ClientUtils.HandleException(this.Text, exception);
             }
         }
-        
+
         /// <summary>
         /// Handles the Click event of the Browse_MonitorMI control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Browse_MonitorMI_Click(object sender, EventArgs e)
+        private async void Browse_MonitorMI_ClickAsync(object sender, EventArgs e)
         {
             try
-            {  
+            {
                 // check if operation is currently allowed.
                 if (m_session == null || BrowseNodesTV.SelectedNode == null)
                 {
                     return;
                 }
 
-                // can only subscribe to local variables. 
+                // can only subscribe to local variables.
                 ReferenceDescription reference = (ReferenceDescription)BrowseNodesTV.SelectedNode.Tag;
 
                 if (reference.NodeId.IsAbsolute || reference.NodeClass != NodeClass.Variable)
@@ -584,12 +585,12 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                ListViewItem item = CreateMonitoredItem((NodeId)reference.NodeId, Utils.Format("{0}", reference));
+                ListViewItem item = await CreateMonitoredItemAsync((NodeId)reference.NodeId, Utils.Format("{0}", reference));
 
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync();
 
                 MonitoredItem monitoredItem = (MonitoredItem)item.Tag;
-                                
+
                 if (ServiceResult.IsBad(monitoredItem.Status.Error))
                 {
                     item.SubItems[8].Text = monitoredItem.Status.Error.StatusCode.ToString();
@@ -599,7 +600,7 @@ namespace Quickstarts.DataAccessClient
                 item.SubItems[1].Text = monitoredItem.MonitoringMode.ToString();
                 item.SubItems[2].Text = monitoredItem.SamplingInterval.ToString();
                 item.SubItems[3].Text = DeadbandFilterToText(monitoredItem.Filter);
-                
+
                 MonitoredItemsLV.Columns[0].Width = -2;
                 MonitoredItemsLV.Columns[1].Width = -2;
                 MonitoredItemsLV.Columns[8].Width = -2;
@@ -613,7 +614,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Creates the monitored item.
         /// </summary>
-        private ListViewItem CreateMonitoredItem(NodeId nodeId, string displayName)
+        private async Task<ListViewItem> CreateMonitoredItemAsync(NodeId nodeId, string displayName, CancellationToken ct = default)
         {
             if (m_subscription == null)
             {
@@ -628,7 +629,7 @@ namespace Quickstarts.DataAccessClient
 
                 m_session.AddSubscription(m_subscription);
 
-                m_subscription.Create();
+                await m_subscription.CreateAsync(ct);
             }
 
             // add the new monitored item.
@@ -666,14 +667,14 @@ namespace Quickstarts.DataAccessClient
             {
                 item.SubItems[8].Text = monitoredItem.Status.Error.StatusCode.ToString();
             }
-            
+
             return item;
         }
 
         /// <summary>
         /// Prompts the use to write the value of a varible.
         /// </summary>
-        private void Browse_WriteMI_Click(object sender, EventArgs e)
+        private async void Browse_WriteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -683,7 +684,7 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                // can only subscribe to local variables. 
+                // can only subscribe to local variables.
                 ReferenceDescription reference = (ReferenceDescription)BrowseNodesTV.SelectedNode.Tag;
 
                 if (reference.NodeId.IsAbsolute || reference.NodeClass != NodeClass.Variable)
@@ -691,20 +692,20 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                new WriteValueDlg().ShowDialog(m_session, (NodeId)reference.NodeId, Attributes.Value);
+                await new WriteValueDlg().ShowDialogAsync(m_session, (NodeId)reference.NodeId, Attributes.Value);
             }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(this.Text, exception);
             }
         }
-        
+
         /// <summary>
         /// Handles the Click event of the Browse_ReadHistoryMI control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Browse_ReadHistoryMI_Click(object sender, EventArgs e)
+        private async void Browse_ReadHistoryMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -714,7 +715,7 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                // can only subscribe to local variables. 
+                // can only subscribe to local variables.
                 ReferenceDescription reference = (ReferenceDescription)BrowseNodesTV.SelectedNode.Tag;
 
                 if (reference.NodeId.IsAbsolute || reference.NodeClass != NodeClass.Variable)
@@ -722,7 +723,7 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                new ReadHistoryDlg().ShowDialog(m_session, (NodeId)reference.NodeId);
+                await new ReadHistoryDlg().ShowDialogAsync(m_session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -731,7 +732,7 @@ namespace Quickstarts.DataAccessClient
         }
 
         /// <summary>
-        /// Updates the display with a new value for a monitored variable. 
+        /// Updates the display with a new value for a monitored variable.
         /// </summary>
         private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
@@ -770,7 +771,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Changes the monitoring mode for the currently selected monitored items.
         /// </summary>
-        private void Monitoring_MonitoringMode_Click(object sender, EventArgs e)
+        private async void Monitoring_MonitoringMode_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -807,7 +808,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // apply the changes to the server.
-                m_subscription.SetMonitoringMode(monitoringMode, itemsToChange);
+                await m_subscription.SetMonitoringModeAsync(monitoringMode, itemsToChange);
 
                 // update the display.
                 for (int ii = 0; ii < itemsToChange.Count; ii++)
@@ -836,7 +837,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Changes the sampling interval for the currently selected monitored items.
         /// </summary>
-        private void Monitoring_SamplingInterval_Click(object sender, EventArgs e)
+        private async void Monitoring_SamplingInterval_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -877,7 +878,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // apply the changes to the server.
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync();
 
                 // update the display.
                 for (int ii = 0; ii < itemsToChange.Count; ii++)
@@ -906,7 +907,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Changes the deadband for the currently selected monitored items.
         /// </summary>
-        private void Monitoring_Deadband_Click(object sender, EventArgs e)
+        private async void Monitoring_Deadband_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -970,7 +971,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // apply the changes to the server.
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync();
 
                 // update the display.
                 for (int ii = 0; ii < itemsToChange.Count; ii++)
@@ -1002,7 +1003,7 @@ namespace Quickstarts.DataAccessClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void Monitoring_DeleteMI_Click(object sender, EventArgs e)
+        private async void Monitoring_DeleteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1034,7 +1035,7 @@ namespace Quickstarts.DataAccessClient
                 // update the server.
                 if (m_subscription != null)
                 {
-                    m_subscription.ApplyChanges();
+                    await m_subscription.ApplyChangesAsync();
 
                     // check the status.
                     for (int ii = 0; ii < itemsToDelete.Count; ii++)
@@ -1090,7 +1091,7 @@ namespace Quickstarts.DataAccessClient
             }
         }
 
-        private void Monitoring_WriteMI_Click(object sender, EventArgs e)
+        private async void Monitoring_WriteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -1104,7 +1105,7 @@ namespace Quickstarts.DataAccessClient
 
                 if (monitoredItem != null)
                 {
-                    new WriteValueDlg().ShowDialog(m_session, (NodeId)monitoredItem.ResolvedNodeId, Attributes.Value);
+                    await new WriteValueDlg().ShowDialogAsync(m_session, (NodeId)monitoredItem.ResolvedNodeId, Attributes.Value);
                 }
             }
             catch (Exception exception)
@@ -1144,7 +1145,7 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Sets the locale to use.
         /// </summary>
-        private void Server_SetLocaleMI_Click(object sender, EventArgs e)
+        private async void Server_SetLocaleMI_ClickAsync(object sender, EventArgs e)
         {
 
             try
@@ -1154,7 +1155,7 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                string locale = new SelectLocaleDlg().ShowDialog(m_session);
+                string locale = await new SelectLocaleDlg().ShowDialogAsync(m_session);
 
                 if (locale == null)
                 {

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,13 +32,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -59,16 +59,16 @@ namespace Opc.Ua.Sample.Controls
         private NodeId m_objectId;
         private NodeId m_methodId;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Session session, NodeId objectId, NodeId methodId)
+        public async Task ShowAsync(Session session, NodeId objectId, NodeId methodId, CancellationToken ct = default)
         {
-            if (session == null)  throw new ArgumentNullException("session");
-            if (methodId == null) throw new ArgumentNullException("methodId");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (methodId == null) throw new ArgumentNullException(nameof(methodId));
+
             if (m_session != null)
             {
                 m_session.SessionClosing -= m_SessionClosing;
@@ -76,15 +76,15 @@ namespace Opc.Ua.Sample.Controls
 
             m_session = session;
             m_session.SessionClosing += m_SessionClosing;
-        
-            m_objectId = objectId;            
+
+            m_objectId = objectId;
             m_methodId = methodId;
 
-            await InputArgumentsCTRL.UpdateAsync(session, methodId, true);     
-            await OutputArgumentsCTRL.UpdateAsync(session, methodId, false);
+            await InputArgumentsCTRL.UpdateAsync(session, methodId, true, ct);
+            await OutputArgumentsCTRL.UpdateAsync(session, methodId, false, ct);
 
-            Node target = await session.NodeCache.FindAsync(objectId) as Node;
-            Node method = await session.NodeCache.FindAsync(methodId) as Node;
+            Node target = await session.NodeCache.FindAsync(objectId, ct) as Node;
+            Node method = await session.NodeCache.FindAsync(methodId, ct) as Node;
 
             if (target != null && method != null)
             {
@@ -95,7 +95,7 @@ namespace Opc.Ua.Sample.Controls
             BringToFront();
         }
         #endregion
-                
+
         private void Session_Closing(object sender, EventArgs e)
         {
             if (Object.ReferenceEquals(sender, m_session))
@@ -106,36 +106,36 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void OkBTN_Click(object sender, EventArgs e)
+        private async void OkBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 VariantCollection inputArguments = InputArgumentsCTRL.GetValues();
-                                
+
                 CallMethodRequest request = new CallMethodRequest();
 
-                request.ObjectId       = m_objectId;
-                request.MethodId       = m_methodId;
+                request.ObjectId = m_objectId;
+                request.MethodId = m_methodId;
                 request.InputArguments = inputArguments;
 
                 CallMethodRequestCollection requests = new CallMethodRequestCollection();
                 requests.Add(request);
 
-                CallMethodResultCollection results;
-                DiagnosticInfoCollection diagnosticInfos;
-
-                ResponseHeader responseHeader = m_session.Call(
+                CallResponse response = await m_session.CallAsync(
                     null,
                     requests,
-                    out results,
-                    out diagnosticInfos);
+                    default);
+
+                ResponseHeader responseHeader = response.ResponseHeader;
+                CallMethodResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 if (StatusCode.IsBad(results[0].StatusCode))
                 {
                     throw new ServiceResultException(new ServiceResult(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable));
                 }
 
-                OutputArgumentsCTRL.SetValues(results[0].OutputArguments);
+                await OutputArgumentsCTRL.SetValuesAsync(results[0].OutputArguments);
 
                 if (results[0].OutputArguments.Count == 0)
                 {

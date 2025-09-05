@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,7 +38,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using static System.Net.Mime.MediaTypeNames;
+using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -68,7 +68,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Public Interface
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public bool ReadOnly
         {
@@ -88,9 +88,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task InitializeAsync(Session session, ExpandedNodeId nodeId)
+        public async Task InitializeAsync(Session session, ExpandedNodeId nodeId, CancellationToken ct = default)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (session == null) throw new ArgumentNullException(nameof(session));
 
             Clear();
 
@@ -102,16 +102,16 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_nodeId = (NodeId)nodeId;
 
-            INode node = await m_session.NodeCache.FindAsync(m_nodeId);
+            INode node = await m_session.NodeCache.FindAsync(m_nodeId, ct);
 
             if (node != null && (node.NodeClass & (NodeClass.Variable | NodeClass.Object)) != 0)
             {
-                await AddReferencesAsync(ReferenceTypeIds.HasTypeDefinition, BrowseDirection.Forward);
-                await AddReferencesAsync(ReferenceTypeIds.HasModellingRule, BrowseDirection.Forward);
+                await AddReferencesAsync(ReferenceTypeIds.HasTypeDefinition, BrowseDirection.Forward, ct);
+                await AddReferencesAsync(ReferenceTypeIds.HasModellingRule, BrowseDirection.Forward, ct);
             }
 
-            AddAttributes();
-            await AddPropertiesAsync();
+            await AddAttributesAsync(ct);
+            await AddPropertiesAsync(ct);
 
             AdjustColumns();
         }
@@ -121,7 +121,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// A field associated with a node.
         /// </summary>
-        private class NodeField
+        private sealed class NodeField
         {
             public string Name;
             public object Value;
@@ -135,12 +135,12 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds the attributes to the control.
         /// </summary>
-        private void AddAttributes()
+        private async Task AddAttributesAsync(CancellationToken ct = default)
         {
             // build list of attributes to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 
-            foreach (uint attributeId in Attributes.GetIdentifiers())
+            foreach (uint attributeId in Attributes.Identifiers)
             {
                 ReadValueId valueId = new ReadValueId();
 
@@ -153,16 +153,15 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // read attributes.
-            DataValueCollection values;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out values,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection values = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -195,7 +194,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds the properties to the control.
         /// </summary>
-        private async Task AddPropertiesAsync()
+        private async Task AddPropertiesAsync(CancellationToken ct = default)
         {
             // build list of properties to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
@@ -208,7 +207,7 @@ namespace Opc.Ua.Sample.Controls
             browser.NodeClassMask = (int)NodeClass.Variable;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = await browser.BrowseAsync(m_nodeId);
+            ReferenceDescriptionCollection references = await browser.BrowseAsync(m_nodeId, ct);
 
             foreach (ReferenceDescription reference in references)
             {
@@ -229,16 +228,15 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // read values.
-            DataValueCollection values;
-            DiagnosticInfoCollection diagnosticInfos;
-
-            m_session.Read(
+            ReadResponse response = await m_session.ReadAsync(
                 null,
                 0,
                 TimestampsToReturn.Neither,
                 nodesToRead,
-                out values,
-                out diagnosticInfos);
+                ct);
+
+            DataValueCollection values = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -265,10 +263,10 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds the targets of references to the control.
         /// </summary>
-        private async Task AddReferencesAsync(NodeId referenceTypeId, BrowseDirection browseDirection)
+        private async Task AddReferencesAsync(NodeId referenceTypeId, BrowseDirection browseDirection, CancellationToken ct = default)
         {
             // fetch the attributes for the reference type.
-            INode referenceType = await m_session.NodeCache.FindAsync(referenceTypeId);
+            INode referenceType = await m_session.NodeCache.FindAsync(referenceTypeId, ct);
 
             if (referenceType == null)
             {
@@ -284,7 +282,7 @@ namespace Opc.Ua.Sample.Controls
             browser.NodeClassMask = 0;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = await browser.BrowseAsync(m_nodeId);
+            ReferenceDescriptionCollection references = await browser.BrowseAsync(m_nodeId, ct);
 
             // add results to list.
             foreach (ReferenceDescription reference in references)
@@ -302,7 +300,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Formats the value of an attribute.
         /// </summary>
-        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value)
+        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value, CancellationToken ct = default)
         {
             switch (attributeId)
             {
@@ -322,7 +320,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (datatypeId != null)
                     {
-                        INode datatype = await m_session.NodeCache.FindAsync(datatypeId);
+                        INode datatype = await m_session.NodeCache.FindAsync(datatypeId, ct);
 
                         if (datatype != null)
                         {
@@ -502,7 +500,7 @@ namespace Opc.Ua.Sample.Controls
         protected override void PickItems()
         {
             base.PickItems();
-            EditMI_Click(this, null);
+            EditMI_ClickAsync(this, null);
         }
 
         /// <see cref="BaseListCtrl.EnableMenuItems" />
@@ -518,51 +516,44 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override async void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-            try
+            NodeField field = item as NodeField;
+
+            if (field == null)
             {
-                NodeField field = item as NodeField;
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
-                if (field == null)
+            Array array = field.Value as Array;
+
+            listItem.SubItems[0].Text = String.Format("{0}", field.Name);
+
+            if (array == null)
+            {
+                if (field.ValueId != null)
                 {
-                    base.UpdateItem(listItem, item);
-                    return;
-                }
-
-                Array array = field.Value as Array;
-
-                listItem.SubItems[0].Text = String.Format("{0}", field.Name);
-
-                if (array == null)
-                {
-                    if (field.ValueId != null)
-                    {
-                        listItem.SubItems[1].Text = await FormatAttributeValueAsync(field.ValueId.AttributeId, field.Value);
-                    }
-                    else
-                    {
-                        listItem.SubItems[1].Text = String.Format("{0}", field.Value);
-                    }
+                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(field.ValueId.AttributeId, field.Value, ct);
                 }
                 else
                 {
-                    listItem.SubItems[1].Text = String.Format("{0}[{1}]", field.Value.GetType().GetElementType().Name, array.Length);
+                    listItem.SubItems[1].Text = String.Format("{0}", field.Value);
                 }
-
-                listItem.SubItems[2].Text = String.Format("{0}", field.StatusCode);
-
-                listItem.Tag = item;
             }
-            catch (Exception exception)
+            else
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                listItem.SubItems[1].Text = String.Format("{0}[{1}]", field.Value.GetType().GetElementType().Name, array.Length);
             }
+
+            listItem.SubItems[2].Text = String.Format("{0}", field.StatusCode);
+
+            listItem.Tag = item;
         }
         #endregion
 
-        private void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -577,7 +568,7 @@ namespace Opc.Ua.Sample.Controls
                         if (value != null)
                         {
                             items[0].Value = value;
-                            UpdateItem(ItemsLV.SelectedItems[0], items[0]);
+                            await UpdateItemAsync(ItemsLV.SelectedItems[0], items[0]);
                         }
                     }
                 }

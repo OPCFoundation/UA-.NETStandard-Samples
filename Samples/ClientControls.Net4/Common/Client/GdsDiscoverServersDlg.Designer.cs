@@ -128,7 +128,7 @@ namespace Opc.Ua.Client.Controls
             this.SearchBTN.TabIndex = 2;
             this.SearchBTN.Text = "Search";
             this.SearchBTN.UseVisualStyleBackColor = true;
-            this.SearchBTN.Click += new System.EventHandler(this.SearchBTN_Click);
+            this.SearchBTN.Click += new System.EventHandler(this.SearchBTN_ClickAsync);
             // 
             // OkBTN
             // 
@@ -380,7 +380,7 @@ namespace Opc.Ua.Client.Controls
             this.SystemElementBTN.NodeControl = this.SystemElementTB;
             this.SystemElementBTN.ReferenceTypeIds = null;
             this.SystemElementBTN.RootId = null;
-            this.SystemElementBTN.SelectedNode = null;
+            this.SystemElementBTN.ClearSelectedNode();
             this.SystemElementBTN.SelectedReference = null;
             this.SystemElementBTN.Session = null;
             this.SystemElementBTN.Size = new System.Drawing.Size(24, 24);
@@ -407,7 +407,7 @@ namespace Opc.Ua.Client.Controls
             this.BrowseCTRL.SplitterDistance = 387;
             this.BrowseCTRL.TabIndex = 9;
             this.BrowseCTRL.View = null;
-            this.BrowseCTRL.AfterSelect += new System.EventHandler(this.BrowseCTRL_AfterSelect);
+            this.BrowseCTRL.AfterSelect += new System.EventHandler(this.BrowseCTRL_AfterSelectAsync);
             // 
             // ServerCTRL
             // 
@@ -430,8 +430,8 @@ namespace Opc.Ua.Client.Controls
             this.ServerCTRL.TabIndex = 10;
             this.ServerCTRL.UserIdentity = null;
             this.ServerCTRL.UseSecurity = true;
-            this.ServerCTRL.ReconnectComplete += new System.EventHandler(this.ServerCTRL_ReconnectComplete);
-            this.ServerCTRL.ConnectComplete += new System.EventHandler(this.ServerCTRL_ConnectComplete);
+            this.ServerCTRL.ReconnectComplete += new System.EventHandler(this.ServerCTRL_ReconnectCompleteAsync);
+            this.ServerCTRL.ConnectComplete += new System.EventHandler(this.ServerCTRL_ConnectCompleteAsync);
             // 
             // GdsDiscoverServersDlg
             // 

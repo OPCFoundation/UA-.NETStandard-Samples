@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -34,6 +34,8 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Security.Certificates;
 
@@ -87,7 +89,7 @@ namespace Opc.Ua.Gds.Client.Controls
             return store;
         }
 
-        public async void Initialize(string trustedStorePath, string issuerStorePath, string rejectedStorePath)
+        public async Task Initialize(string trustedStorePath, string issuerStorePath, string rejectedStorePath, CancellationToken ct = default)
         {
             CertificatesTable.Rows.Clear();
 
@@ -99,14 +101,14 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 using (ICertificateStore store = CreateStore(trustedStorePath))
                 {
-                    X509CertificateCollection certificates = await store.EnumerateAsync();
+                    X509CertificateCollection certificates = await store.EnumerateAsync(ct);
                     foreach (X509Certificate2 certificate in certificates)
                     {
                         var crls = new X509CRLCollection();
 
                         if (store.SupportsCRLs)
                         {
-                            foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificate))
+                            foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificate, ct: ct))
                             {
                                 crls.Add(crl);
                             }
@@ -126,19 +128,19 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     using (ICertificateStore store = CreateStore(issuerStorePath))
                     {
-                        X509Certificate2Collection certificates = await store.EnumerateAsync();
+                        X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
                         foreach (X509Certificate2 certificate in certificates)
                         {
                             var crls = new X509CRLCollection();
 
                             if (store.SupportsCRLs)
                             {
-                                foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificate))
+                                foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificate, ct: ct))
                                 {
                                     crls.Add(crl);
                                 }
                             }
-                            
+
                             AddCertificate(certificate, Status.Issuer, crls);
                         }
                     }
@@ -149,7 +151,7 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 using (ICertificateStore store = CreateStore(rejectedStorePath))
                 {
-                    X509Certificate2Collection certificates = await store.EnumerateAsync();
+                    X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
                     foreach (X509Certificate2 certificate in certificates)
                     {
                         AddCertificate(certificate, Status.Rejected, null);
@@ -183,7 +185,7 @@ namespace Opc.Ua.Gds.Client.Controls
                             foreach (var crlBytes in trustList.TrustedCrls)
                             {
                                 X509CRL crl = new X509CRL(crlBytes);
-                                
+
                                 if (X509Utils.CompareDistinguishedName(crl.Issuer, certificate.Subject) &&
                                     crl.VerifySignature(certificate, false))
                                 {
@@ -388,7 +390,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         store.AddAsync(certificate);
                     }
                 }
-                
+
                 if (!String.IsNullOrEmpty(oldStorePath))
                 {
                     using (ICertificateStore store = CreateStore(oldStorePath))
@@ -443,7 +445,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex); 
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
             }
         }
 

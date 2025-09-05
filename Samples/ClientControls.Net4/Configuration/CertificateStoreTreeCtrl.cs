@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,13 +29,15 @@
 
 using System;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.IO;
-using System.Xml;
-using System.Runtime.Serialization;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Xml;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -63,10 +65,10 @@ namespace Opc.Ua.Client.Controls
             TopLevelStore,
             Service,
             User,
-            Store            
+            Store
         }
 
-        private class ContainerInfo
+        private sealed class ContainerInfo
         {
             public ContainerInfoType Type;
             public string DisplayName;
@@ -107,7 +109,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Returns the currently selected store.
@@ -165,11 +167,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Fetches the children before expanding a node.
         /// </summary>
-        protected override bool BeforeExpand(TreeNode clickedNode)
+        protected override Task<bool> BeforeExpandAsync(TreeNode clickedNode, CancellationToken ct = default)
         {
             if (clickedNode == null)
             {
-                return false;
+                return Task.FromResult(false);
             }
 
             // check for a dummy placeholder node.
@@ -186,7 +188,7 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
-            return base.BeforeExpand(clickedNode);
+            return base.BeforeExpandAsync(clickedNode, ct);
         }
 
         /// <summary>
@@ -340,7 +342,7 @@ namespace Opc.Ua.Client.Controls
 
             // check for a valid node.
             ContainerInfo info = parent.Tag as ContainerInfo;
-            
+
             if (info == null)
             {
                 return;
@@ -352,7 +354,7 @@ namespace Opc.Ua.Client.Controls
                 child.Nodes.Add(new TreeNode());
             }
         }
-        
+
         /// <summary>
         /// Sets the icon for the tree node.
         /// </summary>
@@ -365,7 +367,7 @@ namespace Opc.Ua.Client.Controls
                     treeNode.ImageKey = GuiUtils.Icons.Desktop;
                     treeNode.SelectedImageKey = GuiUtils.Icons.Desktop;
                     break;
-                }      
+                }
 
                 case ContainerInfoType.Service:
                 {
@@ -467,7 +469,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     CertificateIdentifier id = null;
 
-                    using (XmlTextReader reader = new XmlTextReader(new StringReader(xml)))
+                    using (XmlReader reader = XmlReader.Create(xml, new XmlReaderSettings() { XmlResolver = null }))
                     {
                         DataContractSerializer serializer = new DataContractSerializer(typeof(CertificateIdentifier));
                         id = (CertificateIdentifier)serializer.ReadObject(reader, false);

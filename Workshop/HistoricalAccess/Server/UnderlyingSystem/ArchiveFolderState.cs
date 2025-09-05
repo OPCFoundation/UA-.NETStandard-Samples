@@ -45,7 +45,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// Creates a new instance of a folder.
         /// </summary>
         public ArchiveFolderState(ISystemContext context, ArchiveFolder folder, ushort namespaceIndex)
-        : 
+        :
             base(null)
         {
             m_archiveFolder = folder;

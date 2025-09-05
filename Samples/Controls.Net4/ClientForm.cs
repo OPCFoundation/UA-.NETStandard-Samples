@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,6 +33,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
@@ -162,7 +163,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Disconnects from a server.
         /// </summary>
-        public async Task DisconnectAsync()
+        public async Task DisconnectAsync(CancellationToken ct = default)
         {
             if (m_session != null)
             {
@@ -175,7 +176,7 @@ namespace Opc.Ua.Sample.Controls
 
                 m_session.KeepAlive -= StandardClient_KeepAlive;
 
-                await m_session.CloseAsync();
+                await m_session.CloseAsync(ct);
                 m_session = null;
             }
 
@@ -190,7 +191,7 @@ namespace Opc.Ua.Sample.Controls
             MessageBox.Show("A handy place to put test code.");
         }
 
-        private async void EndpointSelectorCTRL_ConnectEndpoint(object sender, ConnectEndpointEventArgs e)
+        private async void EndpointSelectorCTRL_ConnectEndpointAsync(object sender, ConnectEndpointEventArgs e)
         {
             try
             {
@@ -209,7 +210,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 m_endpoints.Save();
             }
-            catch (Exception)
+            catch
             {
                 // GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
@@ -218,14 +219,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Connects to a server.
         /// </summary>
-        public async Task ConnectAsync(ConfiguredEndpoint endpoint)
+        public async Task ConnectAsync(ConfiguredEndpoint endpoint, CancellationToken ct = default)
         {
             if (endpoint == null)
             {
                 return;
             }
 
-            Session session = await SessionsCTRL.ConnectAsync(endpoint);
+            Session session = await SessionsCTRL.ConnectAsync(endpoint, ct);
 
             if (session != null)
             {
@@ -238,7 +239,7 @@ namespace Opc.Ua.Sample.Controls
 
                 m_session = session;
                 m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
-                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
+                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, ct);
                 StandardClient_KeepAlive(m_session, null);
             }
         }
@@ -307,7 +308,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void StandardClient_Server_ReconnectComplete(object sender, EventArgs e)
+        private void StandardClient_Server_ReconnectComplete(object sender, EventArgs e)
         {
             if (InvokeRequired)
             {
@@ -335,7 +336,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
+                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
 
                 SessionsCTRL.Reload(m_session);
 
@@ -347,7 +348,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        private async void MainForm_FormClosingAsync(object sender, FormClosingEventArgs e)
         {
             try
             {
@@ -369,11 +370,11 @@ namespace Opc.Ua.Sample.Controls
             this.Close();
         }
 
-        private async void PerformanceTestMI_Click(object sender, EventArgs e)
+        private async void PerformanceTestMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                new PerformanceTestDlg().ShowDialog(
+                _ = new PerformanceTestDlg().ShowDialog(
                     m_configuration,
                     m_endpoints,
                     await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true));

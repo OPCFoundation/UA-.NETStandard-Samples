@@ -182,7 +182,7 @@ namespace Quickstarts.DataAccessClient
             this.Server_SetLocaleMI.Name = "Server_SetLocaleMI";
             this.Server_SetLocaleMI.Size = new System.Drawing.Size(148, 22);
             this.Server_SetLocaleMI.Text = "Select Locale...";
-            this.Server_SetLocaleMI.Click += new System.EventHandler(this.Server_SetLocaleMI_Click);
+            this.Server_SetLocaleMI.Click += new System.EventHandler(this.Server_SetLocaleMI_ClickAsync);
             // 
             // Server_SetUserMI
             // 
@@ -285,8 +285,8 @@ namespace Quickstarts.DataAccessClient
             this.BrowseNodesTV.Name = "BrowseNodesTV";
             this.BrowseNodesTV.Size = new System.Drawing.Size(391, 278);
             this.BrowseNodesTV.TabIndex = 0;
-            this.BrowseNodesTV.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.BrowseNodesTV_BeforeExpand);
-            this.BrowseNodesTV.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.BrowseNodesTV_AfterSelect);
+            this.BrowseNodesTV.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.BrowseNodesTV_BeforeExpandAsync);
+            this.BrowseNodesTV.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.BrowseNodesTV_AfterSelectAsync);
             this.BrowseNodesTV.MouseDown += new System.Windows.Forms.MouseEventHandler(this.BrowseNodesTV_MouseDown);
             // 
             // BrowsingMenu
@@ -304,21 +304,21 @@ namespace Quickstarts.DataAccessClient
             this.Browse_MonitorMI.Name = "Browse_MonitorMI";
             this.Browse_MonitorMI.Size = new System.Drawing.Size(148, 22);
             this.Browse_MonitorMI.Text = "Monitor";
-            this.Browse_MonitorMI.Click += new System.EventHandler(this.Browse_MonitorMI_Click);
+            this.Browse_MonitorMI.Click += new System.EventHandler(this.Browse_MonitorMI_ClickAsync);
             // 
             // Browse_WriteMI
             // 
             this.Browse_WriteMI.Name = "Browse_WriteMI";
             this.Browse_WriteMI.Size = new System.Drawing.Size(148, 22);
             this.Browse_WriteMI.Text = "Write...";
-            this.Browse_WriteMI.Click += new System.EventHandler(this.Browse_WriteMI_Click);
+            this.Browse_WriteMI.Click += new System.EventHandler(this.Browse_WriteMI_ClickAsync);
             // 
             // Browse_ReadHistoryMI
             // 
             this.Browse_ReadHistoryMI.Name = "Browse_ReadHistoryMI";
             this.Browse_ReadHistoryMI.Size = new System.Drawing.Size(148, 22);
             this.Browse_ReadHistoryMI.Text = "Read History...";
-            this.Browse_ReadHistoryMI.Click += new System.EventHandler(this.Browse_ReadHistoryMI_Click);
+            this.Browse_ReadHistoryMI.Click += new System.EventHandler(this.Browse_ReadHistoryMI_ClickAsync);
             // 
             // AttributesLV
             // 
@@ -427,14 +427,14 @@ namespace Quickstarts.DataAccessClient
             this.Monitoring_DeleteMI.Name = "Monitoring_DeleteMI";
             this.Monitoring_DeleteMI.Size = new System.Drawing.Size(155, 22);
             this.Monitoring_DeleteMI.Text = "Delete";
-            this.Monitoring_DeleteMI.Click += new System.EventHandler(this.Monitoring_DeleteMI_Click);
+            this.Monitoring_DeleteMI.Click += new System.EventHandler(this.Monitoring_DeleteMI_ClickAsync);
             // 
             // Monitoring_WriteMI
             // 
             this.Monitoring_WriteMI.Name = "Monitoring_WriteMI";
             this.Monitoring_WriteMI.Size = new System.Drawing.Size(155, 22);
             this.Monitoring_WriteMI.Text = "Write...";
-            this.Monitoring_WriteMI.Click += new System.EventHandler(this.Monitoring_WriteMI_Click);
+            this.Monitoring_WriteMI.Click += new System.EventHandler(this.Monitoring_WriteMI_ClickAsync);
             // 
             // Monitoring_MonitoringModeMI
             // 
@@ -451,21 +451,21 @@ namespace Quickstarts.DataAccessClient
             this.Monitoring_MonitoringMode_DisabledMI.Name = "Monitoring_MonitoringMode_DisabledMI";
             this.Monitoring_MonitoringMode_DisabledMI.Size = new System.Drawing.Size(121, 22);
             this.Monitoring_MonitoringMode_DisabledMI.Text = "Disabled";
-            this.Monitoring_MonitoringMode_DisabledMI.Click += new System.EventHandler(this.Monitoring_MonitoringMode_Click);
+            this.Monitoring_MonitoringMode_DisabledMI.Click += new System.EventHandler(this.Monitoring_MonitoringMode_ClickAsync);
             // 
             // Monitoring_MonitoringMode_SamplingMI
             // 
             this.Monitoring_MonitoringMode_SamplingMI.Name = "Monitoring_MonitoringMode_SamplingMI";
             this.Monitoring_MonitoringMode_SamplingMI.Size = new System.Drawing.Size(121, 22);
             this.Monitoring_MonitoringMode_SamplingMI.Text = "Sampling";
-            this.Monitoring_MonitoringMode_SamplingMI.Click += new System.EventHandler(this.Monitoring_MonitoringMode_Click);
+            this.Monitoring_MonitoringMode_SamplingMI.Click += new System.EventHandler(this.Monitoring_MonitoringMode_ClickAsync);
             // 
             // Monitoring_MonitoringMode_ReportingMI
             // 
             this.Monitoring_MonitoringMode_ReportingMI.Name = "Monitoring_MonitoringMode_ReportingMI";
             this.Monitoring_MonitoringMode_ReportingMI.Size = new System.Drawing.Size(121, 22);
             this.Monitoring_MonitoringMode_ReportingMI.Text = "Reporting";
-            this.Monitoring_MonitoringMode_ReportingMI.Click += new System.EventHandler(this.Monitoring_MonitoringMode_Click);
+            this.Monitoring_MonitoringMode_ReportingMI.Click += new System.EventHandler(this.Monitoring_MonitoringMode_ClickAsync);
             // 
             // Monitoring_SamplingIntervalMI
             // 
@@ -483,28 +483,28 @@ namespace Quickstarts.DataAccessClient
             this.Monitoring_SamplingInterval_FastMI.Name = "Monitoring_SamplingInterval_FastMI";
             this.Monitoring_SamplingInterval_FastMI.Size = new System.Drawing.Size(150, 22);
             this.Monitoring_SamplingInterval_FastMI.Text = "Fast as Possible";
-            this.Monitoring_SamplingInterval_FastMI.Click += new System.EventHandler(this.Monitoring_SamplingInterval_Click);
+            this.Monitoring_SamplingInterval_FastMI.Click += new System.EventHandler(this.Monitoring_SamplingInterval_ClickAsync);
             // 
             // Monitoring_SamplingInterval_1000MI
             // 
             this.Monitoring_SamplingInterval_1000MI.Name = "Monitoring_SamplingInterval_1000MI";
             this.Monitoring_SamplingInterval_1000MI.Size = new System.Drawing.Size(150, 22);
             this.Monitoring_SamplingInterval_1000MI.Text = "1000ms";
-            this.Monitoring_SamplingInterval_1000MI.Click += new System.EventHandler(this.Monitoring_SamplingInterval_Click);
+            this.Monitoring_SamplingInterval_1000MI.Click += new System.EventHandler(this.Monitoring_SamplingInterval_ClickAsync);
             // 
             // Monitoring_SamplingInterval_2500MI
             // 
             this.Monitoring_SamplingInterval_2500MI.Name = "Monitoring_SamplingInterval_2500MI";
             this.Monitoring_SamplingInterval_2500MI.Size = new System.Drawing.Size(150, 22);
             this.Monitoring_SamplingInterval_2500MI.Text = "2500ms";
-            this.Monitoring_SamplingInterval_2500MI.Click += new System.EventHandler(this.Monitoring_SamplingInterval_Click);
+            this.Monitoring_SamplingInterval_2500MI.Click += new System.EventHandler(this.Monitoring_SamplingInterval_ClickAsync);
             // 
             // Monitoring_SamplingInterval_5000MI
             // 
             this.Monitoring_SamplingInterval_5000MI.Name = "Monitoring_SamplingInterval_5000MI";
             this.Monitoring_SamplingInterval_5000MI.Size = new System.Drawing.Size(150, 22);
             this.Monitoring_SamplingInterval_5000MI.Text = "5000ms";
-            this.Monitoring_SamplingInterval_5000MI.Click += new System.EventHandler(this.Monitoring_SamplingInterval_Click);
+            this.Monitoring_SamplingInterval_5000MI.Click += new System.EventHandler(this.Monitoring_SamplingInterval_ClickAsync);
             // 
             // Monitoring_DeadbandMI
             // 
@@ -521,7 +521,7 @@ namespace Quickstarts.DataAccessClient
             this.Monitoring_Deadband_NoneMI.Name = "Monitoring_Deadband_NoneMI";
             this.Monitoring_Deadband_NoneMI.Size = new System.Drawing.Size(129, 22);
             this.Monitoring_Deadband_NoneMI.Text = "None";
-            this.Monitoring_Deadband_NoneMI.Click += new System.EventHandler(this.Monitoring_Deadband_Click);
+            this.Monitoring_Deadband_NoneMI.Click += new System.EventHandler(this.Monitoring_Deadband_ClickAsync);
             // 
             // Monitoring_Deadband_AbsoluteMI
             // 
@@ -538,21 +538,21 @@ namespace Quickstarts.DataAccessClient
             this.Monitoring_Deadband_Absolute_5MI.Name = "Monitoring_Deadband_Absolute_5MI";
             this.Monitoring_Deadband_Absolute_5MI.Size = new System.Drawing.Size(86, 22);
             this.Monitoring_Deadband_Absolute_5MI.Text = "5";
-            this.Monitoring_Deadband_Absolute_5MI.Click += new System.EventHandler(this.Monitoring_Deadband_Click);
+            this.Monitoring_Deadband_Absolute_5MI.Click += new System.EventHandler(this.Monitoring_Deadband_ClickAsync);
             // 
             // Monitoring_Deadband_Absolute_10MI
             // 
             this.Monitoring_Deadband_Absolute_10MI.Name = "Monitoring_Deadband_Absolute_10MI";
             this.Monitoring_Deadband_Absolute_10MI.Size = new System.Drawing.Size(86, 22);
             this.Monitoring_Deadband_Absolute_10MI.Text = "10";
-            this.Monitoring_Deadband_Absolute_10MI.Click += new System.EventHandler(this.Monitoring_Deadband_Click);
+            this.Monitoring_Deadband_Absolute_10MI.Click += new System.EventHandler(this.Monitoring_Deadband_ClickAsync);
             // 
             // Monitoring_Deadband_Absolute_25MI
             // 
             this.Monitoring_Deadband_Absolute_25MI.Name = "Monitoring_Deadband_Absolute_25MI";
             this.Monitoring_Deadband_Absolute_25MI.Size = new System.Drawing.Size(86, 22);
             this.Monitoring_Deadband_Absolute_25MI.Text = "25";
-            this.Monitoring_Deadband_Absolute_25MI.Click += new System.EventHandler(this.Monitoring_Deadband_Click);
+            this.Monitoring_Deadband_Absolute_25MI.Click += new System.EventHandler(this.Monitoring_Deadband_ClickAsync);
             // 
             // Monitoring_Deadband_PercentageMI
             // 
@@ -569,21 +569,21 @@ namespace Quickstarts.DataAccessClient
             this.Monitoring_Deadband_Percentage_1MI.Name = "Monitoring_Deadband_Percentage_1MI";
             this.Monitoring_Deadband_Percentage_1MI.Size = new System.Drawing.Size(97, 22);
             this.Monitoring_Deadband_Percentage_1MI.Text = "1%";
-            this.Monitoring_Deadband_Percentage_1MI.Click += new System.EventHandler(this.Monitoring_Deadband_Click);
+            this.Monitoring_Deadband_Percentage_1MI.Click += new System.EventHandler(this.Monitoring_Deadband_ClickAsync);
             // 
             // Monitoring_Deadband_Percentage_5MI
             // 
             this.Monitoring_Deadband_Percentage_5MI.Name = "Monitoring_Deadband_Percentage_5MI";
             this.Monitoring_Deadband_Percentage_5MI.Size = new System.Drawing.Size(97, 22);
             this.Monitoring_Deadband_Percentage_5MI.Text = "5%";
-            this.Monitoring_Deadband_Percentage_5MI.Click += new System.EventHandler(this.Monitoring_Deadband_Click);
+            this.Monitoring_Deadband_Percentage_5MI.Click += new System.EventHandler(this.Monitoring_Deadband_ClickAsync);
             // 
             // Monitoring_Deadband_Percentage_10MI
             // 
             this.Monitoring_Deadband_Percentage_10MI.Name = "Monitoring_Deadband_Percentage_10MI";
             this.Monitoring_Deadband_Percentage_10MI.Size = new System.Drawing.Size(97, 22);
             this.Monitoring_Deadband_Percentage_10MI.Text = "10%";
-            this.Monitoring_Deadband_Percentage_10MI.Click += new System.EventHandler(this.Monitoring_Deadband_Click);
+            this.Monitoring_Deadband_Percentage_10MI.Click += new System.EventHandler(this.Monitoring_Deadband_ClickAsync);
             // 
             // ConnectServerCTRL
             // 
@@ -602,7 +602,7 @@ namespace Quickstarts.DataAccessClient
             this.ConnectServerCTRL.TabIndex = 4;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
             this.ConnectServerCTRL.ReconnectStarting += new System.EventHandler(this.Server_ReconnectStarting);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
             // 

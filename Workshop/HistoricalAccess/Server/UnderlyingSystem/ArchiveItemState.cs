@@ -46,7 +46,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// Creates a new instance of a item.
         /// </summary>
         public ArchiveItemState(ISystemContext context, ArchiveItem item, ushort namespaceIndex)
-        : 
+        :
             base(null)
         {
             m_archiveItem = item;
@@ -166,7 +166,7 @@ namespace Quickstarts.HistoricalAccessServer
                 }
             }
 
-            
+
         }
 
         /// <summary>
@@ -500,7 +500,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             string filter = String.Format(
                 System.Globalization.CultureInfo.InvariantCulture,
-                "SourceTimestamp >= #{0}# AND SourceTimestamp < #{1}#", 
+                "SourceTimestamp >= #{0}# AND SourceTimestamp < #{1}#",
                 startTime,
                 endTime);
 
@@ -569,7 +569,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             return info;
         }
-        
+
         /// <summary>
         /// Reads the history for the specified time range.
         /// </summary>
@@ -610,7 +610,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             int min = 0;
             int max = view.Count;
-            int position = (max-min)/2;
+            int position = (max - min) / 2;
 
             while (position >= 0 && position < view.Count)
             {
@@ -620,7 +620,7 @@ namespace Quickstarts.HistoricalAccessServer
                 if (current == timestamp)
                 {
                     // skip the first timestamp.
-                    while (position > 0 && (DateTime)view[position-1].Row[0] == timestamp)
+                    while (position > 0 && (DateTime)view[position - 1].Row[0] == timestamp)
                     {
                         position--;
                     }
@@ -631,13 +631,13 @@ namespace Quickstarts.HistoricalAccessServer
                 // move up.
                 if (current < timestamp)
                 {
-                    min = position+1;
+                    min = position + 1;
                 }
 
                 // move down.
                 if (current > timestamp)
                 {
-                    max = position-1;
+                    max = position - 1;
                 }
 
                 // not found.
@@ -674,7 +674,7 @@ namespace Quickstarts.HistoricalAccessServer
                     return position;
                 }
 
-                position = min + (max - min)/2;
+                position = min + (max - min) / 2;
             }
 
             return -1;

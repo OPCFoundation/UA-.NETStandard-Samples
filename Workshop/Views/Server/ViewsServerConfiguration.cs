@@ -38,7 +38,7 @@ namespace Quickstarts.ViewsServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace=Quickstarts.Views.Namespaces.Views)]
+    [DataContract(Namespace = Quickstarts.Views.Namespaces.Views)]
     public class ViewsServerConfiguration
     {
         #region Constructors

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -50,7 +50,7 @@ namespace Opc.Ua.Sample.Controls
             this.Icon = ClientUtils.GetAppIcon();
 
             m_SubscriptionStateChanged = new SubscriptionStateChangedEventHandler(Subscription_StateChanged);
-            m_MonitoredItemNotification = new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+            m_MonitoredItemNotification = new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
             m_PublishStatusChanged = new PublishStateChangedEventHandler(Subscription_PublishStatusChanged);
         }
         #endregion
@@ -69,7 +69,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public void Show(MonitoredItem monitoredItem)
         {
-            if (monitoredItem == null) throw new ArgumentNullException("monitoredItem");
+            if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
             Show();
             BringToFront();
@@ -99,8 +99,8 @@ namespace Opc.Ua.Sample.Controls
 
             MonitoredItemsCTRL.Initialize(m_monitoredItem);
             EventsCTRL.Initialize(m_subscription, m_monitoredItem);
-            DataChangesCTRL.Initialize(m_subscription, m_monitoredItem);
-            LatestValueCTRL.ShowValue(m_monitoredItem, false);
+            DataChangesCTRL.InitializeAsync(m_subscription, m_monitoredItem);
+            LatestValueCTRL.ShowValueAsync(m_monitoredItem, false);
         }
         #endregion
 
@@ -148,7 +148,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Processes a Publish repsonse from the server.
         /// </summary>
-        void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
             if (InvokeRequired)
             {
@@ -170,11 +170,11 @@ namespace Opc.Ua.Sample.Controls
 
                 // notify controls of the change.
                 EventsCTRL.NotificationReceived(e);
-                DataChangesCTRL.NotificationReceived(e);
+                await DataChangesCTRL.NotificationReceivedAsync(e);
                 if (e != null)
                 {
                     MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
-                    LatestValueCTRL.ShowValue(notification, true);
+                    await LatestValueCTRL.ShowValueAsync(notification, true);
                 }
                 // update item status.
                 UpdateStatus();
@@ -188,7 +188,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Handles a change to the state of the subscription.
         /// </summary>
-        void Subscription_StateChanged(Subscription subscription, SubscriptionStateChangedEventArgs e)
+        private void Subscription_StateChanged(Subscription subscription, SubscriptionStateChangedEventArgs e)
         {
             if (InvokeRequired)
             {
@@ -225,7 +225,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Handles a change to the publish status for the subscription.
         /// </summary>
-        void Subscription_PublishStatusChanged(object subscription, PublishStateChangedEventArgs e)
+        private void Subscription_PublishStatusChanged(object subscription, PublishStateChangedEventArgs e)
         {
             if (InvokeRequired)
             {
@@ -296,7 +296,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private async void MonitoringModeMI_Click(object sender, EventArgs e)
+        private async void MonitoringModeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {

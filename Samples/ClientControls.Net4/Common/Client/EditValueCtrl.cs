@@ -53,21 +53,21 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private event EventHandler m_ValueChanged;
         private Variant m_value;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// The value in the control.
         /// </summary>
-        public Variant Value 
+        public Variant Value
         {
-            get 
+            get
             {
-                return m_value; 
+                return m_value;
             }
 
             set
@@ -80,7 +80,7 @@ namespace Opc.Ua.Client.Controls
                 m_value = value;
             }
         }
-        
+
         /// <summary>
         /// Gets or sets the control that shows the current value.
         /// </summary>
@@ -109,7 +109,7 @@ namespace Opc.Ua.Client.Controls
                 null,
                 m_value.Value,
                 "Edit Value");
-            
+
             if (value == null)
             {
                 return;

@@ -69,7 +69,7 @@ namespace Opc.Ua.Client.Controls
             this.BrowseBTN.TabIndex = 0;
             this.BrowseBTN.Text = "...";
             this.BrowseBTN.UseVisualStyleBackColor = true;
-            this.BrowseBTN.Click += new System.EventHandler(this.BrowseBTN_Click);
+            this.BrowseBTN.Click += new System.EventHandler(this.BrowseBTN_ClickAsync);
             // 
             // SelectFileCtrl
             // 

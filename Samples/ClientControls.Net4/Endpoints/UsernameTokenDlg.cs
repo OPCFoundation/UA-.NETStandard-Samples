@@ -60,7 +60,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the dialog.

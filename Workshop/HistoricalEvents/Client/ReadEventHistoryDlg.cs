@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -31,11 +31,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -43,7 +44,7 @@ using Opc.Ua.Client.Controls;
 namespace Quickstarts.HistoricalEvents.Client
 {
     /// <summary>
-    /// Displays a 
+    /// Displays a
     /// </summary>
     public partial class ReadEventHistoryDlg : Form
     {
@@ -69,33 +70,33 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public bool ShowDialog(ISession session, NodeId areaId, FilterDeclaration filter)
+        public async Task<bool> ShowDialogAsync(ISession session, NodeId areaId, FilterDeclaration filter, CancellationToken ct = default)
         {
             m_session = session;
             m_areaId = areaId;
             m_filter = filter;
 
-            EventAreaTB.Text = session.NodeCache.GetDisplayText(m_areaId);
-            EventTypeTB.Text = session.NodeCache.GetDisplayText(filter.EventTypeId);
+            EventAreaTB.Text = await session.NodeCache.GetDisplayTextAsync(m_areaId, ct);
+            EventTypeTB.Text = await session.NodeCache.GetDisplayTextAsync(filter.EventTypeId, ct);
             EventFilterTB.Text = GetFilterFields(m_filter);
 
-            ResultsLV.IsSubscribed = false;
-            ResultsLV.ChangeSession(session, false);
-            ResultsLV.ChangeArea(areaId, false);
-            ResultsLV.ChangeFilter(filter, false);
-            
+            await ResultsLV.SetSubscribedAsync(false, ct);
+            await ResultsLV.ChangeSessionAsync(session, false, ct);
+            await ResultsLV.ChangeAreaAsync(areaId, false, ct);
+            await ResultsLV.ChangeFilterAsync(filter, false, ct);
+
             // get the beginning of data.
             DateTime startTime;
 
             try
             {
-                startTime = ReadFirstDate().ToLocalTime(); 
+                startTime = (await ReadFirstDateAsync(ct)).ToLocalTime();
             }
             catch (Exception)
             {
                 startTime = new DateTime(2000, 1, 1);
             }
-            
+
             StartTimeDP.Value = startTime;
             StartTimeCK.Checked = true;
             EndTimeDP.Value = DateTime.Now;
@@ -110,7 +111,7 @@ namespace Quickstarts.HistoricalEvents.Client
             {
                 return false;
             }
-                       
+
             return true;
         }
         #endregion
@@ -142,24 +143,23 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Releases any continuation points.
         /// </summary>
-        private void ReleaseContinuationPoints()
+        private async Task ReleaseContinuationPointsAsync(CancellationToken ct = default)
         {
             if (m_details != null)
             {
                 HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
                 nodesToRead.Add(m_nodeToRead);
 
-                HistoryReadResultCollection results = null;
-                DiagnosticInfoCollection diagnosticInfos = null;
-
-                m_session.HistoryRead(
+                HistoryReadResponse response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(m_details),
                     TimestampsToReturn.Neither,
                     true,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                HistoryReadResultCollection results = response.Results;
+                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -175,7 +175,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Returns the UTC timestamp of the first event in the archive.
         /// </summary>
-        private DateTime ReadFirstDate()
+        private async Task<DateTime> ReadFirstDateAsync(CancellationToken ct = default)
         {
             // read the time of the first event in the archive.
             ReadEventDetails details = new ReadEventDetails();
@@ -191,17 +191,16 @@ namespace Quickstarts.HistoricalEvents.Client
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Neither,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -219,14 +218,16 @@ namespace Quickstarts.HistoricalEvents.Client
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
-                m_session.HistoryRead(
+                response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(details),
                     TimestampsToReturn.Neither,
                     true,
                     nodesToRead,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                results = response.Results;
+                diagnosticInfos = response.DiagnosticInfos;
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -253,7 +254,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Starts a new read operation.
         /// </summary>
-        private void ReadFirst()
+        private async Task ReadFirstAsync(CancellationToken ct = default)
         {
             ResultsLV.ClearEventHistory();
 
@@ -278,33 +279,33 @@ namespace Quickstarts.HistoricalEvents.Client
             {
                 details.NumValuesPerNode = (uint)MaxReturnValuesNP.Value;
             }
-            
+
             // read the events from the server.
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_areaId;
 
-            ReadNext(details, nodeToRead);
+            await ReadNextAsync(details, nodeToRead, ct);
         }
 
         /// <summary>
         /// Continues a read operation.
         /// </summary>
-        private void ReadNext(ReadEventDetails details, HistoryReadValueId nodeToRead)
+        private async Task ReadNextAsync(ReadEventDetails details, HistoryReadValueId nodeToRead, CancellationToken ct = default)
         {
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            ResponseHeader responseHeader = m_session.HistoryRead(
+            HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
                 TimestampsToReturn.Neither,
                 false,
                 nodesToRead,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            ResponseHeader responseHeader = response.ResponseHeader;
+            HistoryReadResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -313,10 +314,10 @@ namespace Quickstarts.HistoricalEvents.Client
             {
                 throw ServiceResultException.Create(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable);
             }
-            
+
             // display results.
             HistoryEvent data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryEvent;
-            ResultsLV.AddEventHistory(data);
+            await ResultsLV.AddEventHistoryAsync(data, ct);
 
             // check if a continuation point exists.
             if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
@@ -343,13 +344,13 @@ namespace Quickstarts.HistoricalEvents.Client
         #endregion
 
         #region Event Handlers
-        private void GoBTN_Click(object sender, EventArgs e)
+        private async void GoBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 if (m_details == null)
                 {
-                    ReadFirst();
+                    await ReadFirstAsync();
                 }
             }
             catch (Exception exception)
@@ -358,13 +359,13 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void NextBTN_Click(object sender, EventArgs e)
+        private async void NextBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 if (m_details != null)
                 {
-                    ReadNext(m_details, m_nodeToRead);
+                    await ReadNextAsync(m_details, m_nodeToRead);
                 }
             }
             catch (Exception exception)
@@ -373,11 +374,11 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void StopBTN_Click(object sender, EventArgs e)
+        private async void StopBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                ReleaseContinuationPoints();
+                await ReleaseContinuationPointsAsync();
             }
             catch (Exception exception)
             {
@@ -385,13 +386,13 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void ReadTypeCB_SelectedIndexChanged(object sender, EventArgs e)
+        private async void ReadTypeCB_SelectedIndexChangedAsync(object sender, EventArgs e)
         {
             try
             {
-                ReleaseContinuationPoints();
+                await ReleaseContinuationPointsAsync();
             }
-            catch (Exception)
+            catch
             {
                 // ignore is ok.
             }
@@ -412,7 +413,7 @@ namespace Quickstarts.HistoricalEvents.Client
             MaxReturnValuesNP.Enabled = MaxReturnValuesCK.Checked;
         }
 
-        private async void EventAreaBTN_Click(object sender, EventArgs e)
+        private async void EventAreaBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -421,7 +422,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", Opc.Ua.ReferenceTypeIds.HasEventSource);
+                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId == null)
                 {
@@ -429,8 +430,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 m_areaId = areaId;
-                EventAreaTB.Text = m_session.NodeCache.GetDisplayText(m_areaId);
-                ResultsLV.ChangeArea(areaId, false);
+                EventAreaTB.Text = await m_session.NodeCache.GetDisplayTextAsync(m_areaId);
+                await ResultsLV.ChangeAreaAsync(areaId, false);
             }
             catch (Exception exception)
             {
@@ -438,7 +439,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void EventTypeBTN_Click(object sender, EventArgs e)
+        private async void EventTypeBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -447,7 +448,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                TypeDeclaration type = new SelectTypeDlg().ShowDialog(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, "Select Event Type");
+                TypeDeclaration type = await new SelectTypeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, "Select Event Type");
 
                 if (type == null)
                 {
@@ -455,9 +456,9 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 m_filter = new FilterDeclaration(type, m_filter);
-                EventTypeTB.Text = m_session.NodeCache.GetDisplayText(m_filter.EventTypeId);
+                EventTypeTB.Text = await m_session.NodeCache.GetDisplayTextAsync(m_filter.EventTypeId);
                 EventFilterTB.Text = GetFilterFields(m_filter);
-                ResultsLV.ChangeFilter(m_filter, false);
+                await ResultsLV.ChangeFilterAsync(m_filter, false);
             }
             catch (Exception exception)
             {
@@ -465,7 +466,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
         }
 
-        private void EventFilterBTN_Click(object sender, EventArgs e)
+        private async void EventFilterBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -480,7 +481,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 EventFilterTB.Text = GetFilterFields(m_filter);
-                ResultsLV.ChangeFilter(m_filter, false);
+                await ResultsLV.ChangeFilterAsync(m_filter, false);
             }
             catch (Exception exception)
             {

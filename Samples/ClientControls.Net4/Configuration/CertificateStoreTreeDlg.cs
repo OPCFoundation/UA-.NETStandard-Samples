@@ -51,7 +51,7 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
         }
-        
+
         /// <summary>
         /// Displays the dialog.
         /// </summary>
@@ -63,7 +63,7 @@ namespace Opc.Ua.Client.Controls
             {
                 return null;
             }
-  
+
             return ContainersCTRL.SelectedStore;
         }
 

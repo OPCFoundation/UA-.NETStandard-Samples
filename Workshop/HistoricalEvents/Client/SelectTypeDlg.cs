@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -34,6 +34,8 @@ using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
@@ -51,19 +53,19 @@ namespace Quickstarts.HistoricalEvents.Client
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private ISession m_session;
         private NodeId m_rootId;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Displays the available areas in a tree view.
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns></returns>
-        public TypeDeclaration ShowDialog(ISession session, NodeId rootId, string caption)
+        public async Task<TypeDeclaration> ShowDialogAsync(ISession session, NodeId rootId, string caption, CancellationToken ct = default)
         {
             m_session = session;
 
@@ -82,7 +84,7 @@ namespace Quickstarts.HistoricalEvents.Client
             m_rootId = rootId;
 
             // display root.
-            TreeNode root = new TreeNode(session.NodeCache.GetDisplayText(rootId));
+            TreeNode root = new TreeNode(await session.NodeCache.GetDisplayTextAsync(rootId, ct));
             root.Nodes.Add(new TreeNode());
             BrowseTV.Nodes.Add(root);
             root.Expand();
@@ -128,7 +130,7 @@ namespace Quickstarts.HistoricalEvents.Client
             return declaration;
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
 
@@ -163,7 +165,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.Windows.Forms.TreeViewEventArgs"/> instance containing the event data.</param>
-        private void BrowseTV_AfterSelect(object sender, TreeViewEventArgs e)
+        private async void BrowseTV_AfterSelectAsync(object sender, TreeViewEventArgs e)
         {
             try
             {
@@ -185,9 +187,9 @@ namespace Quickstarts.HistoricalEvents.Client
                 {
                     typeId = (NodeId)reference.NodeId;
                 }
-                
+
                 // get the instance declarations.
-                List<InstanceDeclaration> instances = ModelUtils.CollectInstanceDeclarationsForType(m_session, typeId);
+                List<InstanceDeclaration> instances = await ModelUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId);
 
                 // populate the list box.
                 for (int ii = 0; ii < instances.Count; ii++)
@@ -206,7 +208,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 for (int ii = 0; ii < DeclarationsLV.Columns.Count; ii++)
                 {
                     DeclarationsLV.Columns[ii].Width = -2;
-                } 
+                }
             }
             catch (Exception exception)
             {
@@ -219,7 +221,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.Windows.Forms.TreeViewCancelEventArgs"/> instance containing the event data.</param>
-        private void BrowseTV_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        private async void BrowseTV_BeforeExpandAsync(object sender, TreeViewCancelEventArgs e)
         {
             try
             {
@@ -240,10 +242,10 @@ namespace Quickstarts.HistoricalEvents.Client
                 {
                     nodeToBrowse.NodeId = (NodeId)reference.NodeId;
                 }
-                
+
                 // add the childen to the control.
-                ReferenceDescriptionCollection references = FormUtils.Browse(m_session, nodeToBrowse, false);
-                
+                ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(m_session, nodeToBrowse, false);
+
                 for (int ii = 0; ii < references.Count; ii++)
                 {
                     reference = references[ii];

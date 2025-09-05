@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -36,6 +36,8 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Quickstarts.Boiler.Client
 {
@@ -87,7 +89,7 @@ namespace Quickstarts.Boiler.Client
         {
             try
             {
-                await ConnectServerCTRL.Connect();
+                await ConnectServerCTRL.ConnectAsync();
             }
             catch (Exception exception)
             {
@@ -130,7 +132,7 @@ namespace Quickstarts.Boiler.Client
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
-        private void Server_ConnectComplete(object sender, EventArgs e)
+        private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -152,7 +154,7 @@ namespace Quickstarts.Boiler.Client
                 BoilerCB.Enabled = true;
 
                 // update list of boilers
-                GetBoilers();
+                await GetBoilersAsync();
             }
             catch (Exception exception)
             {
@@ -206,12 +208,12 @@ namespace Quickstarts.Boiler.Client
             ConnectServerCTRL.Disconnect();
         }
         #endregion
-        
+
         #region Private Methods
         /// <summary>
         /// Gets the boilers.
         /// </summary>
-        private void GetBoilers()
+        private async Task GetBoilersAsync(CancellationToken ct = default)
         {
             BoilerCB.Items.Clear();
 
@@ -224,10 +226,11 @@ namespace Quickstarts.Boiler.Client
             nodeToBrowse.NodeClassMask = (uint)(NodeClass.Object);
             nodeToBrowse.ResultMask = (uint)(BrowseResultMask.All);
 
-            ReferenceDescriptionCollection references = ClientUtils.Browse(
+            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(
                 m_session,
                 nodeToBrowse,
-                false);
+                false,
+                ct);
 
             if (references != null)
             {
@@ -250,7 +253,7 @@ namespace Quickstarts.Boiler.Client
         #endregion
 
         #region Event Handlers
-        private void BoilerCB_SelectedIndexChanged(object sender, EventArgs e)
+        private async void BoilerCB_SelectedIndexChangedAsync(object sender, EventArgs e)
         {
             try
             {
@@ -261,17 +264,17 @@ namespace Quickstarts.Boiler.Client
 
                 if (m_subscription != null)
                 {
-                    m_session.RemoveSubscription(m_subscription);
+                    await m_session.RemoveSubscriptionAsync(m_subscription);
                     m_subscription = null;
                 }
-                
+
                 ReferenceDescription boiler = (ReferenceDescription)BoilerCB.SelectedItem;
 
                 if (boiler == null)
                 {
                     return;
                 }
-                
+
                 m_subscription = new Subscription();
 
                 m_subscription.PublishingEnabled = true;
@@ -282,12 +285,12 @@ namespace Quickstarts.Boiler.Client
                 m_subscription.MaxNotificationsPerPublish = 1000;
 
                 m_session.AddSubscription(m_subscription);
-                m_subscription.Create();
+                await m_subscription.CreateAsync();
 
                 NamespaceTable wellKnownNamespaceUris = new NamespaceTable();
                 wellKnownNamespaceUris.Append(Namespaces.Boiler);
 
-                string[] browsePaths = new string[] 
+                string[] browsePaths = new string[]
                 {
                     "1:PipeX001/1:FTX001/1:Output",
                     "1:DrumX001/1:LIX001/1:Output",
@@ -295,13 +298,14 @@ namespace Quickstarts.Boiler.Client
                     "1:LCX001/1:SetPoint",
                 };
 
-                List<NodeId> nodes = ClientUtils.TranslateBrowsePaths(
+                List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
                     m_session,
                     (NodeId)boiler.NodeId,
                     wellKnownNamespaceUris,
+                    default,
                     browsePaths);
 
-                Control[] controls = new Control[] 
+                Control[] controls = new Control[]
                 {
                     InputPipeFlowTB,
                     DrumLevelTB,
@@ -324,7 +328,7 @@ namespace Quickstarts.Boiler.Client
                     }
                 }
 
-                m_subscription.ApplyChanges();
+                await m_subscription.ApplyChangesAsync();
             }
             catch (Exception exception)
             {

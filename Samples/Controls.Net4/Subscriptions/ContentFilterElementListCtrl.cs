@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,8 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -45,8 +47,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public ContentFilterElementListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -58,11 +60,11 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Index",      HorizontalAlignment.Left, null },
-			new object[] { "Expression", HorizontalAlignment.Left, null }
-		};
-		#endregion
+        {
+            new object[] { "Index",      HorizontalAlignment.Left, null },
+            new object[] { "Expression", HorizontalAlignment.Left, null }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -79,17 +81,17 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public void Initialize(Session session, ContentFilter filter)
         {
-            if (session == null) throw new ArgumentNullException("session");
-            
+            if (session == null) throw new ArgumentNullException(nameof(session));
+
             Clear();
-            
+
             m_session = session;
             m_browser = new Browser(session);
-            m_filter  = filter;
+            m_filter = filter;
 
             if (m_filter == null)
             {
-                return;                
+                return;
             }
 
             foreach (ContentFilterElement element in filter.Elements)
@@ -106,7 +108,7 @@ namespace Opc.Ua.Sample.Controls
         public ContentFilter GetFilter()
         {
             ContentFilter filter = new ContentFilter();
-                    
+
             for (int ii = 0; ii < ItemsLV.Items.Count; ii++)
             {
                 ContentFilterElement element = ItemsLV.Items[ii].Tag as ContentFilterElement;
@@ -126,7 +128,7 @@ namespace Opc.Ua.Sample.Controls
         public List<ContentFilterElement> GetElements()
         {
             List<ContentFilterElement> elements = new List<ContentFilterElement>();
-                    
+
             for (int ii = 0; ii < ItemsLV.Items.Count; ii++)
             {
                 ContentFilterElement element = ItemsLV.Items[ii].Tag as ContentFilterElement;
@@ -144,41 +146,41 @@ namespace Opc.Ua.Sample.Controls
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
-            SetOperatorMI.Enabled      = ItemsLV.SelectedItems.Count == 1;
-            SelectNodeMI.Enabled       = true;
-            EditValueMI.Enabled        = ItemsLV.SelectedItems.Count == 1;
-            DeleteMI.Enabled           = ItemsLV.SelectedItems.Count > 0;
-            CreateElementMI.Enabled    = ItemsLV.SelectedItems.Count > 0;
-            CreateElementAndMI.Enabled = ItemsLV.SelectedItems.Count == 2;
-            CreateElementOrMI.Enabled  = ItemsLV.SelectedItems.Count == 2;
-            CreateElementNotMI.Enabled = ItemsLV.SelectedItems.Count == 1;
-		}
-        
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item, int index)
         {
-			ContentFilterElement element = item as ContentFilterElement;
+            SetOperatorMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+            SelectNodeMI.Enabled = true;
+            EditValueMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+            DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+            CreateElementMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+            CreateElementAndMI.Enabled = ItemsLV.SelectedItems.Count == 2;
+            CreateElementOrMI.Enabled = ItemsLV.SelectedItems.Count == 2;
+            CreateElementNotMI.Enabled = ItemsLV.SelectedItems.Count == 1;
+        }
 
-			if (element == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}
-           
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, int index, CancellationToken ct = default)
+        {
+            ContentFilterElement element = item as ContentFilterElement;
+
+            if (element == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
+
             listItem.SubItems[0].Text = String.Format("[{0}]", index);
-            listItem.SubItems[1].Text = String.Format("{0}", element.ToString(m_session.NodeCache));
-                        
+            listItem.SubItems[1].Text = String.Format("{0}", element.ToString(m_session.NodeCache.AsNodeTable()));
+
             listItem.Tag = element;
         }
         #endregion
-               
+
         #region Event Handlers
         /// <summary>
         /// Updates the control with a new filter.
         /// </summary>
         private void Update(ContentFilter filter)
-        {              
+        {
             BeginUpdate();
 
             int index = 0;
@@ -187,7 +189,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 AddItem(element, "Property", index++);
             }
-            
+
             EndUpdate();
 
             AdjustColumns();
@@ -209,15 +211,15 @@ namespace Opc.Ua.Sample.Controls
                 if (!new FilterOperatorEditDlg().ShowDialog(ref op))
                 {
                     return;
-                }          
+                }
 
                 element.FilterOperator = op;
-                UpdateItem(ItemsLV.SelectedItems[0], element);
+                UpdateItemAsync(ItemsLV.SelectedItems[0], element);
                 AdjustColumns();
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -230,11 +232,11 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private async void SelectNodeMI_Click(object sender, EventArgs e)
+        private async void SelectNodeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -242,13 +244,13 @@ namespace Opc.Ua.Sample.Controls
 
                 if (reference != null)
                 {
-                    ILocalNode node = await m_session.NodeCache.FindAsync(reference.NodeId) as ILocalNode;
+                    Node node = await m_session.NodeCache.FindAsync(reference.NodeId) as Node;
 
                     if (node == null)
                     {
                         return;
                     }
-                                        
+
                     ContentFilterElement element = null;
 
                     // build the relative path.
@@ -268,7 +270,7 @@ namespace Opc.Ua.Sample.Controls
 
                             // create attribute operand.
                             SimpleAttributeOperand attribute = new SimpleAttributeOperand(
-                                m_session.FilterContext, 
+                                m_session.FilterContext,
                                 typeId,
                                 browsePath);
 
@@ -284,7 +286,7 @@ namespace Opc.Ua.Sample.Controls
                         {
                             // create attribute operand.
                             SimpleAttributeOperand attribute = new SimpleAttributeOperand(
-                                m_session.FilterContext, 
+                                m_session.FilterContext,
                                 typeId,
                                 browsePath);
 
@@ -317,7 +319,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -329,10 +331,10 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 ContentFilterElement element1 = ItemsLV.SelectedItems[0].Tag as ContentFilterElement;
                 ContentFilterElement element2 = ItemsLV.SelectedItems[1].Tag as ContentFilterElement;
-                
+
                 ContentFilter filter = GetFilter();
                 filter.Push(FilterOperator.And, element1, element2);
 
@@ -340,7 +342,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -352,10 +354,10 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 ContentFilterElement element1 = ItemsLV.SelectedItems[0].Tag as ContentFilterElement;
                 ContentFilterElement element2 = ItemsLV.SelectedItems[1].Tag as ContentFilterElement;
-                
+
                 ContentFilter filter = GetFilter();
                 filter.Push(FilterOperator.Or, element1, element2);
 
@@ -363,7 +365,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -375,7 +377,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-                
+
                 ContentFilterElement element1 = ItemsLV.SelectedItems[0].Tag as ContentFilterElement;
 
                 ContentFilter filter = GetFilter();
@@ -385,10 +387,10 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
- 
+
         private void EditValueMI_Click(object sender, EventArgs e)
         {
             try
@@ -404,7 +406,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (operands.Count != 2)
                 {
-                    return;                    
+                    return;
                 }
 
                 LiteralOperand literal = operands[1] as LiteralOperand;
@@ -437,7 +439,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

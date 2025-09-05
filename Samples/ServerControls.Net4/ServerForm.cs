@@ -55,7 +55,7 @@ namespace Opc.Ua.Server.Controls
         {
             InitializeComponent();
         }
-        
+
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
@@ -184,7 +184,7 @@ namespace Opc.Ua.Server.Controls
         {
             try
             {
-                System.Diagnostics.Process.Start( Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "index.htm");
+                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "WebHelp" + Path.DirectorySeparatorChar + "index.htm");
             }
             catch (Exception ex)
             {
@@ -218,7 +218,7 @@ namespace Opc.Ua.Server.Controls
             ServiceResult error = e.Error;
             while (error != null)
             {
-                buffer.AppendFormat("- {0}\r\n", error.ToString().Split('\r','\n').FirstOrDefault());
+                buffer.AppendFormat("- {0}\r\n", error.ToString().Split('\r', '\n').FirstOrDefault());
                 error = error.InnerResult;
             }
             buffer.AppendFormat("\r\nSubject: {0}\r\n", e.Certificate.Subject);

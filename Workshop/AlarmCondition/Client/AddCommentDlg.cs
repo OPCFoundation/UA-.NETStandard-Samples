@@ -47,10 +47,10 @@ namespace Quickstarts.AlarmConditionClient
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Prompts the user to enter a comment.
@@ -68,10 +68,10 @@ namespace Quickstarts.AlarmConditionClient
             return CommentTB.Text;
         }
         #endregion
-        
+
         #region Private Methods
         #endregion
-                
+
         #region Event Handlers
         #endregion
     }

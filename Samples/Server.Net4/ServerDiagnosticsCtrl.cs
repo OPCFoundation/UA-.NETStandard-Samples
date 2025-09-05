@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -58,7 +58,7 @@ namespace Opc.Ua.Sample
         private StandardServer m_server;
         private ApplicationConfiguration m_configuration;
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Creates a form which displays the status for a UA server.
@@ -70,7 +70,7 @@ namespace Opc.Ua.Sample
             m_server = server;
             m_configuration = configuration;
             UpdateTimerCTRL.Enabled = true;
-            
+
             // add the urls to the drop down.
             UrlCB.Items.Clear();
 
@@ -123,7 +123,7 @@ namespace Opc.Ua.Sample
                 }
             }
 
-            // adjust 
+            // adjust
             for (int ii = 0; ii < SessionsLV.Columns.Count; ii++)
             {
                 SessionsLV.Columns[ii].Width = -2;
@@ -176,7 +176,7 @@ namespace Opc.Ua.Sample
                 UpdateSessions();
                 UpdateSubscriptions();
             }
-            catch (Exception)
+            catch
             {
                 // MessageBox.Show(exception.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }

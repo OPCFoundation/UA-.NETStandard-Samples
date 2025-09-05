@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -442,7 +442,7 @@ namespace Quickstarts
                     // clear the expected values.
                     if (m_currentDataSet != null)
                     {
-                        m_currentDataSet.Values = new ValueType[0];
+                        m_currentDataSet.Values = Array.Empty<ValueType>();
                         AddDataSetToGrid(m_testData.GetRawValues(m_currentDataSet.DataSetName), true);
                         UpdatesComplete();
                     }
@@ -931,8 +931,9 @@ namespace Quickstarts
             {
                 Stream istrm = Assembly.GetExecutingAssembly().GetManifestResourceStream("Quickstarts.DefaultData.xml");
                 XmlSerializer serializer = new XmlSerializer(typeof(TestData));
-                m_testData = (TestData)serializer.Deserialize(istrm);
-                m_testData.ProcessedDataSets = new ProcessedDataSetType[0];
+                using XmlReader reader = XmlReader.Create(istrm, new XmlReaderSettings() { XmlResolver = null });
+                m_testData = (TestData)serializer.Deserialize(reader);
+                m_testData.ProcessedDataSets = Array.Empty<ProcessedDataSetType>();
                 GenerateData();
                 LoadData(m_testData);
             }
@@ -1125,7 +1126,7 @@ namespace Quickstarts
         {
             try
             {
-                XmlReader reader = XmlReader.Create("TestData.xml");
+                using XmlReader reader = XmlReader.Create("TestData.xml", new XmlReaderSettings() { XmlResolver = null });
                 XmlSerializer serializer = new XmlSerializer(typeof(TestData));
                 m_testData = (TestData)serializer.Deserialize(reader);
                 reader.Close();

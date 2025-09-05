@@ -71,13 +71,13 @@ namespace Quickstarts.DataAccessServer
             m_blocks = new Dictionary<NodeId, BlockState>();
         }
         #endregion
-        
+
         #region IDisposable Members
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
         protected override void Dispose(bool disposing)
-        {  
+        {
             if (disposing)
             {
                 m_system.Dispose();
@@ -214,7 +214,7 @@ namespace Quickstarts.DataAccessServer
 
                     return handle;
                 }
-                
+
                 return null;
             }
         }
@@ -399,7 +399,7 @@ namespace Quickstarts.DataAccessServer
         #region Private Fields
         private UnderlyingSystem m_system;
         private DataAccessServerConfiguration m_configuration;
-        private Dictionary<NodeId,BlockState> m_blocks;
+        private Dictionary<NodeId, BlockState> m_blocks;
         #endregion
     }
 }

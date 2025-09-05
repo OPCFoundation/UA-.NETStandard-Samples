@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -27,6 +27,7 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -79,7 +80,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns an image index for the specified attribute.
         /// </summary>
-        #pragma warning disable 0162
+#pragma warning disable 0162
         public static int GetImageIndex(uint attributeId, object value)
         {
             // Workaround to avoid exception when accessing ImageList
@@ -150,11 +151,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns an image index for the specified attribute.
         /// </summary>
-        public static async Task<int> GetImageIndexAsync(ISession session, NodeClass nodeClass, ExpandedNodeId typeDefinitionId, bool selected)
+        public static async Task<int> GetImageIndexAsync(ISession session, NodeClass nodeClass, ExpandedNodeId typeDefinitionId, bool selected, CancellationToken ct = default)
         {
             if (nodeClass == NodeClass.Variable)
             {
-                if (session.NodeCache.IsTypeOf(typeDefinitionId, Opc.Ua.VariableTypeIds.PropertyType))
+                if (await session.NodeCache.IsTypeOfAsync(typeDefinitionId, Opc.Ua.VariableTypeIds.PropertyType, ct))
                 {
                     return ClientUtils.Property;
                 }
@@ -164,7 +165,7 @@ namespace Opc.Ua.Client.Controls
 
             if (nodeClass == NodeClass.Object)
             {
-                if (session.NodeCache.IsTypeOf(typeDefinitionId, Opc.Ua.ObjectTypeIds.FolderType))
+                if (await session.NodeCache.IsTypeOfAsync(typeDefinitionId, Opc.Ua.ObjectTypeIds.FolderType, ct))
                 {
                     if (selected)
                     {

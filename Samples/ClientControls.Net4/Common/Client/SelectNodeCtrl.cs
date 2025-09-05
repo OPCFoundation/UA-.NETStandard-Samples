@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,12 +30,15 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Data;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO;
+using Newtonsoft.Json.Linq;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -53,7 +56,7 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
         }
         #endregion
-        
+
         #region Private Fields
         private event EventHandler m_NodeSelected;
         private ReferenceDescription m_selectedNode;
@@ -79,50 +82,58 @@ namespace Opc.Ua.Client.Controls
         /// Gets or sets the reference types to follow.
         /// </summary>
         public NodeId[] ReferenceTypeIds { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the currently selected node.
         /// </summary>
         public NodeId SelectedNode
         {
-            get
-            {
-                if (m_selectedNode != null)
-                {
-                    return (NodeId)m_selectedNode.NodeId;
-                }
-
-                return null;
-            }
-
+            get => m_selectedNode != null ? (NodeId)m_selectedNode.NodeId : null;
             set
             {
-                if (NodeControl != null)
+                if (value == null)
                 {
-                    NodeControl.Text = null;
-
-                    if (value != null && Session != null)
-                    {
-                        NodeControl.Text = Session.NodeCache.GetDisplayText(value);
-                    }
+                    ClearSelectedNode();
                 }
-
-                ReferenceDescription reference = new ReferenceDescription();
-                reference.NodeId = value;
-                
-                if (Session != null)
+                else
                 {
-                    INode node = Session.NodeCache.Find(value);
-
-                    if (node != null)
-                    {
-                        reference.BrowseName = node.BrowseName;
-                        reference.DisplayName = node.DisplayName;
-                    }
+                    SetSelectedNodeIdAsync(value).Wait();
                 }
-
-                m_selectedNode = reference;
             }
+        }
+
+        public void ClearSelectedNode()
+        {
+            m_selectedNode = new ReferenceDescription();
+        }
+
+        public async Task SetSelectedNodeIdAsync(NodeId value, CancellationToken ct = default)
+        {
+            if (NodeControl != null)
+            {
+                NodeControl.Text = null;
+
+                if (value != null && Session != null)
+                {
+                    NodeControl.Text = await Session.NodeCache.GetDisplayTextAsync(value, ct);
+                }
+            }
+
+            ReferenceDescription reference = new ReferenceDescription();
+            reference.NodeId = value;
+
+            if (Session != null)
+            {
+                INode node = await Session.NodeCache.FindAsync(value, ct);
+
+                if (node != null)
+                {
+                    reference.BrowseName = node.BrowseName;
+                    reference.DisplayName = node.DisplayName;
+                }
+            }
+
+            m_selectedNode = reference;
         }
 
         /// <summary>
@@ -173,13 +184,14 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private async void BrowseBTN_Click(object sender, EventArgs e)
+        private async void BrowseBTN_ClickAsync(object sender, EventArgs e)
         {
             ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
                 Session,
                 RootId,
                 View,
                 null,
+                default,
                 ReferenceTypeIds);
 
             if (reference != null)

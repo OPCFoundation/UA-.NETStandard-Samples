@@ -79,7 +79,7 @@ namespace Opc.Ua.Client.Controls
             this.Attributes_ViewMI.Name = "Attributes_ViewMI";
             this.Attributes_ViewMI.Size = new System.Drawing.Size(99, 22);
             this.Attributes_ViewMI.Text = "View";
-            this.Attributes_ViewMI.Click += new System.EventHandler(this.AttributesLV_DoubleClick);
+            this.Attributes_ViewMI.Click += new System.EventHandler(this.AttributesLV_DoubleClickAsync);
             // 
             // AttributesLV
             // 
@@ -96,7 +96,7 @@ namespace Opc.Ua.Client.Controls
             this.AttributesLV.TabIndex = 2;
             this.AttributesLV.UseCompatibleStateImageBehavior = false;
             this.AttributesLV.View = System.Windows.Forms.View.Details;
-            this.AttributesLV.DoubleClick += new System.EventHandler(this.AttributesLV_DoubleClick);
+            this.AttributesLV.DoubleClick += new System.EventHandler(this.AttributesLV_DoubleClickAsync);
             // 
             // NameCH
             // 

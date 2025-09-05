@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -57,7 +57,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Server;
+            application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "HistoricalAccessServer";
 
             try
@@ -98,7 +98,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
         }
 
-        class TestCase
+        internal sealed class TestCase
         {
             public int TestId { get; set; }
             public string DataPath { get; set; }
@@ -111,8 +111,7 @@ namespace Quickstarts.HistoricalAccessServer
 
         static void DoTests(bool stepped, bool treatUncertainAsBad, string dataPath, string expectedResultsPath)
         {
-            TestCase test8 = new TestCase()
-            {
+            TestCase test8 = new TestCase() {
                 TestId = 8,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -124,8 +123,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             DoTest(test8, "..\\..\\Data\\Results8.csv");
 
-            TestCase test9 = new TestCase()
-            {
+            TestCase test9 = new TestCase() {
                 TestId = 9,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -137,8 +135,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             DoTest(test9, "..\\..\\Data\\Results9.csv");
 
-            TestCase test7 = new TestCase()
-            {
+            TestCase test7 = new TestCase() {
                 TestId = 7,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -150,8 +147,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             DoTest(test7, "..\\..\\Data\\Results7.csv");
 
-            TestCase test6 = new TestCase()
-            {
+            TestCase test6 = new TestCase() {
                 TestId = 6,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -163,8 +159,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             DoTest(test6, "..\\..\\Data\\Results6.csv");
 
-            TestCase test5 = new TestCase()
-            {
+            TestCase test5 = new TestCase() {
                 TestId = 5,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -176,8 +171,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             DoTest(test5, "..\\..\\Data\\Results5.csv");
 
-            TestCase test1 = new TestCase()
-            {
+            TestCase test1 = new TestCase() {
                 TestId = 1,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -189,8 +183,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             DoTest(test1, "..\\..\\Data\\Results1.csv");
 
-            TestCase test2 = new TestCase()
-            {
+            TestCase test2 = new TestCase() {
                 TestId = 2,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -202,8 +195,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             DoTest(test2, "..\\..\\Data\\Results2.csv");
 
-            TestCase test3 = new TestCase()
-            {
+            TestCase test3 = new TestCase() {
                 TestId = 3,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -215,8 +207,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             DoTest(test3, "..\\..\\Data\\Results3.csv");
 
-            TestCase test4 = new TestCase()
-            {
+            TestCase test4 = new TestCase() {
                 TestId = 4,
                 DataPath = dataPath,
                 ExpectedResultsPath = expectedResultsPath,
@@ -262,11 +253,11 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     double time = Convert.ToDouble(fields[0], CultureInfo.InvariantCulture);
-                    double value = Convert.ToDouble(fields[2*testId-1], CultureInfo.InvariantCulture);
+                    double value = Convert.ToDouble(fields[2 * testId - 1], CultureInfo.InvariantCulture);
 
                     StatusCode statusCode = StatusCodes.Good;
 
-                    switch (fields[2*testId])
+                    switch (fields[2 * testId])
                     {
                         case "GI": { statusCode = statusCode.SetAggregateBits(AggregateBits.Interpolated); break; }
                         case "GC": { statusCode = statusCode.SetAggregateBits(AggregateBits.Calculated); break; }
@@ -283,7 +274,7 @@ namespace Quickstarts.HistoricalAccessServer
                     dataValue.SourceTimestamp = startTime.AddSeconds(time);
                     dataValue.ServerTimestamp = dataValue.SourceTimestamp;
                     results.Add(dataValue);
-                    
+
                     if (StatusCode.IsBad(statusCode))
                     {
                         dataValue.Value = null;
@@ -374,7 +365,7 @@ namespace Quickstarts.HistoricalAccessServer
                     }
                 }
             }
-            
+
             foreach (DataValue processedValue in values)
             {
                 buffer.Append(processedValue.SourceTimestamp.ToString("HH:mm:ss"));

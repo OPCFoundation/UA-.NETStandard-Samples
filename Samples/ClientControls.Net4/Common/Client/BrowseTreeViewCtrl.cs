@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -39,6 +39,7 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -76,14 +77,16 @@ namespace Opc.Ua.Client.Controls
         public AttributesListViewCtrl AttributesControl { get; set; }
 
         /// <summary>
-        /// Initializes the control with a root and a set of hierarchial reference types to follow. 
+        /// Initializes the control with a root and a set of hierarchial reference types to follow.
         /// </summary>
         /// <param name="session">The session.</param>
         /// <param name="rootId">The root of the hierarchy to browse.</param>
+        /// <param name="ct">The cancellation token.</param>
         /// <param name="referenceTypeIds">The reference types to follow.</param>
         public async Task InitializeAsync(
             ISession session,
             NodeId rootId,
+            CancellationToken ct,
             params NodeId[] referenceTypeIds)
         {
             // set default root.
@@ -117,21 +120,21 @@ namespace Opc.Ua.Client.Controls
         /// Changes the session used by the control.
         /// </summary>
         /// <param name="session">The session.</param>
-        public async Task ChangeSessionAsync(ISession session)
+        public async Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
             if (Object.ReferenceEquals(session, m_session))
             {
                 return;
             }
 
-            await ChangeSessionAsync(session, false);
+            await ChangeSessionAsync(session, false, ct);
         }
 
         /// <summary>
         /// The view to use.
         /// </summary>
-        public ViewDescription View 
-        { 
+        public ViewDescription View
+        {
             get
             {
                 return m_view;
@@ -264,7 +267,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used by the control.
         /// </summary>
-        private async Task ChangeSessionAsync(ISession session, bool refresh)
+        private async Task ChangeSessionAsync(ISession session, bool refresh, CancellationToken ct = default)
         {
             m_session = session;
 
@@ -277,13 +280,13 @@ namespace Opc.Ua.Client.Controls
 
             if (m_session != null)
             {
-                INode node = m_session.NodeCache.Find(m_rootId);
+                INode node = await m_session.NodeCache.FindAsync(m_rootId, ct);
 
                 if (node != null)
                 {
                     TreeNode root = new TreeNode(node.ToString());
-                    root.ImageIndex = await ClientUtils.GetImageIndexAsync(m_session, node.NodeClass, node.TypeDefinitionId, false);
-                    root.SelectedImageIndex = await ClientUtils.GetImageIndexAsync(m_session, node.NodeClass, node.TypeDefinitionId, true);
+                    root.ImageIndex = await ClientUtils.GetImageIndexAsync(m_session, node.NodeClass, node.TypeDefinitionId, false, ct);
+                    root.SelectedImageIndex = await ClientUtils.GetImageIndexAsync(m_session, node.NodeClass, node.TypeDefinitionId, true, ct);
 
                     ReferenceDescription reference = new ReferenceDescription();
                     reference.NodeId = node.NodeId;
@@ -325,7 +328,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Handles the AfterSelect event of the BrowseTV control.
         /// </summary>
-        private async void BrowseTV_AfterSelect(object sender, TreeViewEventArgs e)
+        private async void BrowseTV_AfterSelectAsync(object sender, TreeViewEventArgs e)
         {
             try
             {
@@ -365,7 +368,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Handles the BeforeExpand event of the BrowseTV control.
         /// </summary>
-        private async void BrowseTV_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        private async void BrowseTV_BeforeExpandAsync(object sender, TreeViewCancelEventArgs e)
         {
             try
             {
@@ -397,7 +400,7 @@ namespace Opc.Ua.Client.Controls
                 // add the childen to the control.
                 SortedDictionary<ExpandedNodeId, TreeNode> dictionary = new SortedDictionary<ExpandedNodeId, TreeNode>();
 
-                ReferenceDescriptionCollection references = ClientUtils.Browse(m_session, View, nodesToBrowse, false);
+                ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false);
 
                 for (int ii = 0; references != null && ii < references.Count; ii++)
                 {
@@ -425,11 +428,11 @@ namespace Opc.Ua.Client.Controls
                         {
                             if (!m_typeImageMapping.ContainsKey((NodeId)reference.TypeDefinition))
                             {
-                                List<NodeId> nodeIds = ClientUtils.TranslateBrowsePaths(m_session, (NodeId)reference.TypeDefinition, m_session.NamespaceUris, Opc.Ua.BrowseNames.Icon);
+                                List<NodeId> nodeIds = await ClientUtils.TranslateBrowsePathsAsync(m_session, (NodeId)reference.TypeDefinition, m_session.NamespaceUris, default, Opc.Ua.BrowseNames.Icon);
 
                                 if (nodeIds.Count > 0 && nodeIds[0] != null)
                                 {
-                                    DataValue value = m_session.ReadValue(nodeIds[0]);
+                                    DataValue value = await m_session.ReadValueAsync(nodeIds[0]);
                                     byte[] bytes = value.Value as byte[];
 
                                     if (bytes != null)

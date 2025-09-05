@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -72,7 +72,7 @@ namespace Opc.Ua.Gds.Client
             m_server.AdminCredentialsRequired += Server_AdminCredentialsRequired;
             m_server.KeepAlive += Server_KeepAlive;
             m_server.ServerStatusChanged += Server_StatusNotification;
-            m_server.ConnectionStatusChanged += Server_ConnectionStatusChanged;
+            m_server.ConnectionStatusChanged += Server_ConnectionStatusChangedAsync;
 
             RegistrationPanel.InitializeAsync(m_gds, m_server, null, m_configuration).GetAwaiter().GetResult();
 
@@ -116,13 +116,13 @@ namespace Opc.Ua.Gds.Client
             Discovery
         }
 
-        private async void Server_ConnectionStatusChanged(object sender, EventArgs e)
+        private async void Server_ConnectionStatusChangedAsync(object sender, EventArgs e)
         {
             try
             {
                 if (InvokeRequired)
                 {
-                    BeginInvoke(new EventHandler(Server_ConnectionStatusChanged), sender, e);
+                    BeginInvoke(new EventHandler(Server_ConnectionStatusChangedAsync), sender, e);
                     return;
                 }
 
@@ -516,11 +516,11 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void TrustListButton_Click(object sender, EventArgs e)
+        private async void TrustListButton_Click(object sender, EventArgs e)
         {
             try
             {
-                TrustListPanel.Initialize(m_gds, m_server, m_registeredApplication, false);
+                await TrustListPanel.Initialize(m_gds, m_server, m_registeredApplication, false);
                 ShowPanel(Panel.TrustList);
             }
             catch (Exception ex)
@@ -529,11 +529,11 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private void HttpsTrustListButton_Click(object sender, EventArgs e)
+        private async void HttpsTrustListButton_Click(object sender, EventArgs e)
         {
             try
             {
-                TrustListPanel.Initialize(m_gds, m_server, m_registeredApplication, true);
+                await TrustListPanel.Initialize(m_gds, m_server, m_registeredApplication, true);
                 ShowPanel(Panel.HttpsTrustList);
             }
             catch (Exception ex)
@@ -600,7 +600,7 @@ namespace Opc.Ua.Gds.Client
                 HttpsTrustListButton.Visible = (e.Application != null && !String.IsNullOrEmpty(e.Application.HttpsTrustListStorePath));
 #endif
                 await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, e.Application, false);
-                TrustListPanel.Initialize(m_gds, m_server, e.Application, false);
+                await TrustListPanel.Initialize(m_gds, m_server, e.Application, false);
                 UpdateMainFormHeader();
             }
             catch (Exception ex)

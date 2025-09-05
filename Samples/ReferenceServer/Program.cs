@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -51,22 +51,24 @@ namespace Quickstarts.ReferenceServer
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
             ApplicationInstance application = new ApplicationInstance();
-            application.ApplicationType   = ApplicationType.Server;
+            application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "Quickstarts.ReferenceServer";
 
             try
             {
                 // load the application configuration.
-                ApplicationConfiguration config = application.LoadApplicationConfigurationAsync(false).Result;
+                ApplicationConfiguration config = application.LoadApplicationConfigurationAsync(false).AsTask().Result;
 
                 LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
 #if DEBUG
+#pragma warning disable CA1305 // Specify IFormatProvider
                 loggerConfiguration.WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning);
+#pragma warning restore CA1305 // Specify IFormatProvider
 #endif
                 SerilogTraceLogger.Create(loggerConfiguration, config);
 
                 // check the application certificate.
-                bool certOk = application.CheckApplicationInstanceCertificatesAsync(false).Result;
+                bool certOk = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Result;
                 if (!certOk)
                 {
                     throw new Exception("Application instance certificate invalid!");

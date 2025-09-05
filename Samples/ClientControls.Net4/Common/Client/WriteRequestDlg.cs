@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
@@ -54,15 +55,15 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
         #endregion
-        
+
         #region Private Fields
         #endregion
-        
+
         #region Public Interface
         /// <summary>
         /// Changes the session used for the read request.
         /// </summary>
-        public Task ChangeSessionAsync(ISession session)
+        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
             WriteRequestCTRL.ChangeSession(session);
             return Task.CompletedTask;
@@ -71,9 +72,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds a node to the read request.
         /// </summary>
-        public async Task AddNodesAsync(params WriteValue[] nodesToWrite)
+        public Task AddNodesAsync(CancellationToken ct, params WriteValue[] nodesToWrite)
         {
-            await WriteRequestCTRL.AddNodesAsync(nodesToWrite);
+            return WriteRequestCTRL.AddNodesAsync(ct, nodesToWrite);
         }
         #endregion
 
@@ -81,11 +82,11 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private void ReadBTN_Click(object sender, EventArgs e)
+        private async void ReadBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                WriteRequestCTRL.Read();
+                await WriteRequestCTRL.ReadAsync();
             }
             catch (Exception exception)
             {
@@ -93,11 +94,11 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void WriteBTN_Click(object sender, EventArgs e)
+        private async void WriteBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                WriteRequestCTRL.Write();
+                await WriteRequestCTRL.WriteAsync();
                 ReadBTN.Visible = false;
                 BackBTN.Visible = true;
             }

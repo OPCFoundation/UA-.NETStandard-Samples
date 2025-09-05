@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -32,10 +32,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -45,8 +46,8 @@ namespace Opc.Ua.Sample.Controls
     {
         public EventNotificationListListCtrl()
         {
-            InitializeComponent();                        
-			SetColumns(m_ColumnNames);
+            InitializeComponent();
+            SetColumns(m_ColumnNames);
         }
 
         #region Private Fields
@@ -58,15 +59,15 @@ namespace Opc.Ua.Sample.Controls
 		/// The columns to display in the control.
 		/// </summary>
 		private readonly object[][] m_ColumnNames = new object[][]
-		{
-			new object[] { "Item",     HorizontalAlignment.Left, null },
-			new object[] { "Type",     HorizontalAlignment.Left, null },
-			new object[] { "Source",   HorizontalAlignment.Left, String.Empty },
-			new object[] { "Time",     HorizontalAlignment.Center, String.Empty },
-			new object[] { "Severity", HorizontalAlignment.Center, String.Empty },
-			new object[] { "Message",  HorizontalAlignment.Left, String.Empty }
-		};
-		#endregion
+        {
+            new object[] { "Item",     HorizontalAlignment.Left, null },
+            new object[] { "Type",     HorizontalAlignment.Left, null },
+            new object[] { "Source",   HorizontalAlignment.Left, String.Empty },
+            new object[] { "Time",     HorizontalAlignment.Center, String.Empty },
+            new object[] { "Severity", HorizontalAlignment.Center, String.Empty },
+            new object[] { "Message",  HorizontalAlignment.Left, String.Empty }
+        };
+        #endregion
 
         #region Public Interface
         /// <summary>
@@ -75,7 +76,7 @@ namespace Opc.Ua.Sample.Controls
         [DefaultValue(20)]
         public int MaxEventCount
         {
-            get { return m_maxEventCount;  }
+            get { return m_maxEventCount; }
             set { m_maxEventCount = value; }
         }
 
@@ -93,12 +94,12 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public void Initialize(Subscription subscription, MonitoredItem monitoredItem)
         {
-            if (subscription == null) throw new ArgumentNullException("subscription");
-            
+            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+
             Clear();
-                        
+
             // start receiving notifications from the new subscription.
-            m_subscription  = subscription;
+            m_subscription = subscription;
             m_monitoredItem = monitoredItem;
 
             // get the events.
@@ -122,7 +123,7 @@ namespace Opc.Ua.Sample.Controls
                             continue;
                         }
                     }
-                    
+
                     events.Add(eventFields);
 
                     if (events.Count >= MaxEventCount)
@@ -140,7 +141,7 @@ namespace Opc.Ua.Sample.Controls
             UpdateEvents(events, 0);
             AdjustColumns();
         }
-        
+
         /// <summary>
         /// Processes a new notification.
         /// </summary>
@@ -164,7 +165,7 @@ namespace Opc.Ua.Sample.Controls
                     {
                         continue;
                     }
-                }   
+                }
 
                 events.Add(eventFields);
 
@@ -199,15 +200,15 @@ namespace Opc.Ua.Sample.Controls
                         continue;
                     }
                 }
-                
-                 events.Add(eventFields);
+
+                events.Add(eventFields);
 
                 if (events.Count >= MaxEventCount)
                 {
                     break;
                 }
             }
-            
+
             UpdateEvents(events, offset);
             AdjustColumns();
         }
@@ -218,12 +219,12 @@ namespace Opc.Ua.Sample.Controls
         public void NotificationReceived(MonitoredItemNotificationEventArgs e)
         {
             EventFieldList eventFields = e.NotificationValue as EventFieldList;
-        
+
             if (eventFields == null)
             {
                 return;
             }
-            
+
             if (m_monitoredItem != null)
             {
                 if (m_monitoredItem.ClientHandle != eventFields.ClientHandle)
@@ -240,7 +241,7 @@ namespace Opc.Ua.Sample.Controls
             foreach (ListViewItem listItem in ItemsLV.Items)
             {
                 eventFields = listItem.Tag as EventFieldList;
-                
+
                 if (m_monitoredItem != null)
                 {
                     if (m_monitoredItem.ClientHandle != eventFields.ClientHandle)
@@ -259,11 +260,11 @@ namespace Opc.Ua.Sample.Controls
                     break;
                 }
             }
-            
+
             UpdateEvents(events, 1);
             AdjustColumns();
         }
-        
+
         /// <summary>
         /// Processes a change to the subscription.
         /// </summary>
@@ -286,12 +287,12 @@ namespace Opc.Ua.Sample.Controls
                         }
                     }
                 }
-                
+
                 // remove events for items that have been deleted.
                 foreach (ListViewItem listItem in itemsToRemove)
                 {
                     listItem.Remove();
-                }           
+                }
             }
         }
         #endregion
@@ -299,18 +300,18 @@ namespace Opc.Ua.Sample.Controls
         #region Overridden Methods
         /// <see cref="BaseListCtrl.EnableMenuItems" />
 		protected override void EnableMenuItems(ListViewItem clickedItem)
-		{
-            ViewMI.Enabled   = ItemsLV.SelectedItems.Count == 1;
+        {
+            ViewMI.Enabled = ItemsLV.SelectedItems.Count == 1;
             DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
-		}
+        }
 
         /// <see cref="BaseListCtrl.PickItems" />
         protected override void PickItems()
         {
             base.PickItems();
             ViewMI_Click(this, null);
-        }                        
-                        
+        }
+
         /// <summary>
         /// Updates the events displayed in the control.
         /// </summary>
@@ -326,7 +327,7 @@ namespace Opc.Ua.Sample.Controls
 
             // update items.
             BeginUpdate();
-            
+
             foreach (EventFieldList eventFields in events)
             {
                 AddItem(eventFields);
@@ -339,23 +340,23 @@ namespace Opc.Ua.Sample.Controls
             {
                 ItemsLV.Items[index].Selected = false;
 
-                if (index+offset < ItemsLV.Items.Count)
+                if (index + offset < ItemsLV.Items.Count)
                 {
-                    ItemsLV.Items[index+offset].Selected = true;
+                    ItemsLV.Items[index + offset].Selected = true;
                 }
             }
         }
 
-        /// <see cref="BaseListCtrl.UpdateItem" />
-        protected override void UpdateItem(ListViewItem listItem, object item)
+        /// <see cref="BaseListCtrl.UpdateItemAsync" />
+        protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-			EventFieldList eventFields = item as EventFieldList;
+            EventFieldList eventFields = item as EventFieldList;
 
-			if (eventFields == null)
-			{
-				base.UpdateItem(listItem, item);
-				return;
-			}                        
+            if (eventFields == null)
+            {
+                await base.UpdateItemAsync(listItem, item, ct);
+                return;
+            }
 
             MonitoredItem monitoredItem = m_subscription.FindItemByClientHandle(eventFields.ClientHandle);
 
@@ -367,22 +368,22 @@ namespace Opc.Ua.Sample.Controls
                 listItem.SubItems[3].Text = null;
                 listItem.SubItems[4].Text = null;
                 listItem.SubItems[5].Text = null;
-                                
+
                 listItem.Tag = eventFields;
                 return;
-            }                       
-    
+            }
+
             // get the event fields.
-            NodeId eventType      = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.EventType) as NodeId;
-            string sourceName     = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.SourceName) as string;
-            DateTime? time        = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Time) as DateTime?;
-            ushort? severity      = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Severity) as ushort?;
+            NodeId eventType = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.EventType) as NodeId;
+            string sourceName = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.SourceName) as string;
+            DateTime? time = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Time) as DateTime?;
+            ushort? severity = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Severity) as ushort?;
             LocalizedText message = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Message) as LocalizedText;
-            
+
             // fill in the columns.
             listItem.SubItems[0].Text = String.Format("[{0}]", eventFields.ClientHandle);
 
-            INode typeNode = m_subscription.Session.NodeCache.Find(eventType);
+            INode typeNode = await m_subscription.Session.NodeCache.FindAsync(eventType, ct);
 
             if (typeNode == null)
             {
@@ -405,7 +406,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             listItem.SubItems[4].Text = String.Format("{0}", severity);
-            
+
             if (message != null)
             {
                 listItem.SubItems[5].Text = String.Format("{0}", message.Text);
@@ -414,11 +415,11 @@ namespace Opc.Ua.Sample.Controls
             {
                 listItem.SubItems[5].Text = String.Empty;
             }
-                        
+
             listItem.Tag = eventFields;
         }
         #endregion
-               
+
         #region Event Handlers
         private void ViewMI_Click(object sender, EventArgs e)
         {
@@ -429,13 +430,13 @@ namespace Opc.Ua.Sample.Controls
                 if (fieldList == null)
                 {
                     return;
-                }               
+                }
 
                 new ComplexValueEditDlg().ShowDialog(fieldList, m_subscription.FindItemByClientHandle(fieldList.ClientHandle));
             }
             catch (Exception exception)
             {
-				GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

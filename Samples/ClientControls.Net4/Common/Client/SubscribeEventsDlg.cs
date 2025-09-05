@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,14 +29,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Text;
 using System.Data;
 using System.Drawing;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -98,13 +99,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public async Task ChangeSessionAsync(ISession session)
+        public async Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
         {
             if (!Object.ReferenceEquals(session, m_session))
             {
                 m_session = session;
 
-                await BrowseCTRL.ChangeSessionAsync(m_session);
+                await BrowseCTRL.ChangeSessionAsync(m_session, ct);
                 EventTypeCTRL.ChangeSession(m_session);
                 EventFilterCTRL.ChangeSession(m_session);
                 EventsCTRL.ChangeSession(m_session);
@@ -173,7 +174,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds items to the subscription.
         /// </summary>
-        public async Task AddItemsAsync(params NodeId[] itemsToMonitor)
+        public async Task AddItemsAsync(CancellationToken ct, params NodeId[] itemsToMonitor)
         {
             if (itemsToMonitor != null)
             {
@@ -206,7 +207,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the sequence forward.
         /// </summary>
-        public async Task NextAsync()
+        public async Task NextAsync(CancellationToken ct = default)
         {
             if (m_state == DisplayState.ViewUpdates)
             {
@@ -215,28 +216,28 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventType)
             {
-                await UpdateFilterAsync();
+                await UpdateFilterAsync(ct);
             }
 
             SetDisplayState(++m_state);
 
             if (m_state == DisplayState.SelectEventType)
             {
-                await BrowseCTRL.InitializeAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, Opc.Ua.ReferenceTypeIds.HasSubtype);
+                await BrowseCTRL.InitializeAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, ct, Opc.Ua.ReferenceTypeIds.HasSubtype);
                 BrowseCTRL.SelectNode((m_filter == null || m_filter.EventTypeId == null) ? Opc.Ua.ObjectTypeIds.BaseEventType : m_filter.EventTypeId);
-                await EventTypeCTRL.ShowTypeAsync(Opc.Ua.ObjectTypeIds.BaseEventType);
+                await EventTypeCTRL.ShowTypeAsync(Opc.Ua.ObjectTypeIds.BaseEventType, ct);
                 return;
             }
 
             if (m_state == DisplayState.SelectEventFields)
             {
-                await EventFilterCTRL.SetFilterAsync(m_filter);
+                await EventFilterCTRL.SetFilterAsync(m_filter, ct);
                 return;
             }
 
             if (m_state == DisplayState.ApplyChanges)
             {
-                await UpdateItemsAsync();
+                await UpdateItemsAsync(ct);
                 return;
             }
 
@@ -250,7 +251,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Moves the sequence backward.
         /// </summary>
-        public async Task BackAsync()
+        public async Task BackAsync(CancellationToken ct = default)
         {
             if (m_state == DisplayState.EditItems)
             {
@@ -261,7 +262,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventFields)
             {
-                await EventFilterCTRL.SetFilterAsync(m_filter);
+                await EventFilterCTRL.SetFilterAsync(m_filter, ct);
                 return;
             }
         }
@@ -352,11 +353,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the row with the monitored item.
         /// </summary>
-        private async Task UpdateRowAsync(DataRow row, MonitoredItem monitoredItem)
+        private async Task UpdateRowAsync(DataRow row, MonitoredItem monitoredItem, CancellationToken ct = default)
         {
             row[0] = monitoredItem;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(monitoredItem.AttributeId, null)];
-            row[2] = await m_session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
+            row[2] = await m_session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId, ct) + "/" + Attributes.GetBrowseName(monitoredItem.AttributeId);
             row[3] = monitoredItem.MonitoringMode;
             row[4] = monitoredItem.SamplingInterval;
             row[5] = monitoredItem.DiscardOldest;
@@ -401,7 +402,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the items with the current filter.
         /// </summary>
-        private async Task UpdateItemsAsync()
+        private async Task UpdateItemsAsync(CancellationToken ct = default)
         {
             List<FilterDeclarationField> fields = new List<FilterDeclarationField>();
 
@@ -441,7 +442,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // apply changes.
-            await m_subscription.ApplyChangesAsync();
+            await m_subscription.ApplyChangesAsync(ct);
 
             // show results.
             for (int ii = 0; ii < m_dataset.Tables[0].Rows.Count; ii++)
@@ -455,11 +456,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the filter from the controls.
         /// </summary>
-        private async Task UpdateFilterAsync()
+        private async Task UpdateFilterAsync(CancellationToken ct = default)
         {
             // get selected declarations.
             List<InstanceDeclaration> declarations = new List<InstanceDeclaration>();
-            NodeId eventTypeId = await CollectInstanceDeclarationsAsync(declarations);
+            NodeId eventTypeId = await CollectInstanceDeclarationsAsync(declarations, ct);
 
             if (m_filter == null)
             {
@@ -523,7 +524,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Collects the instance declarations for the selected types.
         /// </summary>
-        private async Task<NodeId> CollectInstanceDeclarationsAsync(List<InstanceDeclaration> declarations)
+        private async Task<NodeId> CollectInstanceDeclarationsAsync(List<InstanceDeclaration> declarations, CancellationToken ct = default)
         {
             List<NodeId> typeIds = new List<NodeId>();
 
@@ -533,7 +534,7 @@ namespace Opc.Ua.Client.Controls
             // merge declarations from the selected types.
             foreach (NodeId typeId in typeIds)
             {
-                List<InstanceDeclaration> declarations2 = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId);
+                List<InstanceDeclaration> declarations2 = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId, ct);
 
                 for (int ii = 0; ii < declarations2.Count; ii++)
                 {
@@ -706,7 +707,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void BackBTN_Click(object sender, EventArgs e)
+        private async void BackBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -718,7 +719,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void NextBTN_Click(object sender, EventArgs e)
+        private async void NextBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -742,7 +743,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void SubscriptionStateTB_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        private async void SubscriptionStateTB_DropDownItemClickedAsync(object sender, ToolStripItemClickedEventArgs e)
         {
             try
             {
@@ -771,7 +772,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void BrowseCTRL_AfterSelect(object sender, EventArgs e)
+        private async void BrowseCTRL_AfterSelectAsync(object sender, EventArgs e)
         {
             try
             {
@@ -822,7 +823,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void NewMI_Click(object sender, EventArgs e)
+        private async void NewMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -864,7 +865,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void EditMI_Click(object sender, EventArgs e)
+        private async void EditMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -930,7 +931,7 @@ namespace Opc.Ua.Client.Controls
             {
                 if (m_state == DisplayState.EditItems)
                 {
-                    EditMI_Click(sender, e);
+                    EditMI_ClickAsync(sender, e);
                 }
             }
             catch (Exception exception)
@@ -939,7 +940,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void SetMonitoringModeMI_Click(object sender, EventArgs e)
+        private async void SetMonitoringModeMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {

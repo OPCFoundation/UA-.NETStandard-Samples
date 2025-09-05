@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,6 +29,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -47,26 +49,26 @@ namespace AggregationServer
         /// <summary>
         /// Fetches the event type information from the AE server.
         /// </summary>
-        public void LoadTypes(Opc.Ua.Client.ISession client, IServerInternal server, NamespaceMapper mapper)
+        public async Task LoadTypesAsync(Opc.Ua.Client.ISession client, IServerInternal server, NamespaceMapper mapper, CancellationToken ct = default)
         {
             TypeNodes = new NodeIdDictionary<ReferenceDescription>();
-            LoadTypes(client, server, mapper, Opc.Ua.ObjectTypeIds.BaseObjectType);
-            LoadTypes(client, server, mapper, Opc.Ua.VariableTypeIds.BaseVariableType);
-            LoadTypes(client, server, mapper, Opc.Ua.DataTypeIds.BaseDataType);
-            LoadTypes(client, server, mapper, Opc.Ua.ReferenceTypeIds.References);
+            await LoadTypesAsync(client, server, mapper, Opc.Ua.ObjectTypeIds.BaseObjectType, ct);
+            await LoadTypesAsync(client, server, mapper, Opc.Ua.VariableTypeIds.BaseVariableType, ct);
+            await LoadTypesAsync(client, server, mapper, Opc.Ua.DataTypeIds.BaseDataType, ct);
+            await LoadTypesAsync(client, server, mapper, Opc.Ua.ReferenceTypeIds.References, ct);
         }
 
         /// <summary>
         /// Fetches the event categories for the specified event type.
         /// </summary>
-        private void LoadTypes(Opc.Ua.Client.ISession client, IServerInternal server, NamespaceMapper mapper, NodeId parentId)
+        private async Task LoadTypesAsync(Opc.Ua.Client.ISession client, IServerInternal server, NamespaceMapper mapper, NodeId parentId, CancellationToken ct = default)
         {
             List<ReferenceDescription> references = null;
 
             // find references to subtypes.
             try
             {
-                references = BrowseSubTypes(client, parentId);
+                references = await BrowseSubTypesAsync(client, parentId, ct);
             }
             catch (Exception e)
             {
@@ -87,7 +89,7 @@ namespace AggregationServer
                 // recursively browse until a non-UA node is found.
                 if (reference.NodeId.NamespaceIndex == 0)
                 {
-                    LoadTypes(client, server, mapper, (NodeId)reference.NodeId);
+                    await LoadTypesAsync(client, server, mapper, (NodeId)reference.NodeId, ct);
                     continue;
                 }
 
@@ -106,7 +108,7 @@ namespace AggregationServer
         /// <summary>
         /// Fetches the subtypes for the node.
         /// </summary>
-        private List<ReferenceDescription> BrowseSubTypes(Opc.Ua.Client.ISession client, NodeId nodeId)
+        private async Task<List<ReferenceDescription>> BrowseSubTypesAsync(Opc.Ua.Client.ISession client, NodeId nodeId, CancellationToken ct = default)
         {
             List<ReferenceDescription> references = new List<ReferenceDescription>();
 
@@ -124,16 +126,16 @@ namespace AggregationServer
             nodesToBrowse.Add(nodeToBrowse);
 
             // start the browse operation.
-            BrowseResultCollection results = null;
-            DiagnosticInfoCollection diagnosticInfos = null;
-
-            ResponseHeader responseHeader = client.Browse(
+            BrowseResponse response = await client.BrowseAsync(
                 null,
                 null,
                 0,
                 nodesToBrowse,
-                out results,
-                out diagnosticInfos);
+                ct);
+
+            ResponseHeader responseHeader = response.ResponseHeader;
+            BrowseResultCollection results = response.Results;
+            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
 
             // these do sanity checks on the result - make sure response matched the request.
             ClientBase.ValidateResponse(results, nodesToBrowse);
@@ -156,12 +158,15 @@ namespace AggregationServer
                 continuationPoints.Add(results[0].ContinuationPoint);
 
                 // continue browse operation.
-                responseHeader = client.BrowseNext(
+                BrowseNextResponse response2 = await client.BrowseNextAsync(
                     null,
                     false,
                     continuationPoints,
-                    out results,
-                    out diagnosticInfos);
+                    ct);
+
+                responseHeader = response2.ResponseHeader;
+                results = response2.Results;
+                diagnosticInfos = response2.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, continuationPoints);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);

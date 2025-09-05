@@ -184,7 +184,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.Server_SelectLocaleMI.Name = "Server_SelectLocaleMI";
             this.Server_SelectLocaleMI.Size = new System.Drawing.Size(148, 22);
             this.Server_SelectLocaleMI.Text = "Select Locale...";
-            this.Server_SelectLocaleMI.Click += new System.EventHandler(this.Server_SetLocaleMI_Click);
+            this.Server_SelectLocaleMI.Click += new System.EventHandler(this.Server_SetLocaleMI_ClickAsync);
             // 
             // EventsMI
             // 
@@ -208,7 +208,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.Events_EnableSubscriptionMI.Name = "Events_EnableSubscriptionMI";
             this.Events_EnableSubscriptionMI.Size = new System.Drawing.Size(176, 22);
             this.Events_EnableSubscriptionMI.Text = "Enable Subscription";
-            this.Events_EnableSubscriptionMI.CheckedChanged += new System.EventHandler(this.Events_EnableSubscriptionMI_CheckedChanged);
+            this.Events_EnableSubscriptionMI.CheckedChanged += new System.EventHandler(this.Events_EnableSubscriptionMI_CheckedChangedAsync);
             // 
             // toolStripSeparator1
             // 
@@ -220,21 +220,21 @@ namespace Quickstarts.HistoricalEvents.Client
             this.Events_SelectEventTypeMI.Name = "Events_SelectEventTypeMI";
             this.Events_SelectEventTypeMI.Size = new System.Drawing.Size(176, 22);
             this.Events_SelectEventTypeMI.Text = "Select Event Type...";
-            this.Events_SelectEventTypeMI.Click += new System.EventHandler(this.Events_SelectEventTypeMI_Click);
+            this.Events_SelectEventTypeMI.Click += new System.EventHandler(this.Events_SelectEventTypeMI_ClickAsync);
             // 
             // Events_SelectEventAreaMI
             // 
             this.Events_SelectEventAreaMI.Name = "Events_SelectEventAreaMI";
             this.Events_SelectEventAreaMI.Size = new System.Drawing.Size(176, 22);
             this.Events_SelectEventAreaMI.Text = "Select Event Area...";
-            this.Events_SelectEventAreaMI.Click += new System.EventHandler(this.Events_SelectEventAreaMI_Click);
+            this.Events_SelectEventAreaMI.Click += new System.EventHandler(this.Events_SelectEventAreaMI_ClickAsync);
             // 
             // Events_ModifyEventFilterMI
             // 
             this.Events_ModifyEventFilterMI.Name = "Events_ModifyEventFilterMI";
             this.Events_ModifyEventFilterMI.Size = new System.Drawing.Size(176, 22);
             this.Events_ModifyEventFilterMI.Text = "Modify Event Filter...";
-            this.Events_ModifyEventFilterMI.Click += new System.EventHandler(this.Events_ModifyEventFilterMI_Click);
+            this.Events_ModifyEventFilterMI.Click += new System.EventHandler(this.Events_ModifyEventFilterMI_ClickAsync);
             // 
             // toolStripSeparator2
             // 
@@ -246,7 +246,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.Events_EditEventHistoryMI.Name = "Events_EditEventHistoryMI";
             this.Events_EditEventHistoryMI.Size = new System.Drawing.Size(176, 22);
             this.Events_EditEventHistoryMI.Text = "Edit Event History...";
-            this.Events_EditEventHistoryMI.Click += new System.EventHandler(this.Events_EditEventHistoryMI_Click);
+            this.Events_EditEventHistoryMI.Click += new System.EventHandler(this.Events_EditEventHistoryMI_ClickAsync);
             // 
             // HelpMI
             // 
@@ -278,7 +278,6 @@ namespace Quickstarts.HistoricalEvents.Client
             // EventsLV
             // 
             this.EventsLV.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.EventsLV.IsSubscribed = false;
             this.EventsLV.Location = new System.Drawing.Point(2, 25);
             this.EventsLV.Name = "EventsLV";
             this.EventsLV.Size = new System.Drawing.Size(704, 184);
@@ -301,7 +300,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.ConnectServerCTRL.TabIndex = 3;
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
-            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectComplete);
+            this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
             this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
             // 
             // StatusBar
