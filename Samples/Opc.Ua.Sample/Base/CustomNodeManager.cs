@@ -2205,7 +2205,7 @@ namespace Opc.Ua.Sample
             IList<MonitoringFilterResult> filterErrors,
             IList<IMonitoredItem> monitoredItems,
             bool createDurable,
-            ref long globalIdCounter)
+            MonitoredItemIdFactory globalIdCounter)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
@@ -2263,7 +2263,7 @@ namespace Opc.Ua.Sample
                         context.DiagnosticsMask,
                         timestampsToReturn,
                         itemToCreate,
-                        ref globalIdCounter,
+                        globalIdCounter,
                         out filterError,
                         out monitoredItem);
 
@@ -2309,7 +2309,7 @@ namespace Opc.Ua.Sample
                         context.DiagnosticsMask,
                         timestampsToReturn,
                         itemToCreate,
-                        ref globalIdCounter,
+                        globalIdCounter,
                         out filterError,
                         out monitoredItem);
 
@@ -2421,7 +2421,7 @@ namespace Opc.Ua.Sample
             DiagnosticsMasks diagnosticsMasks,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemCreateRequest itemToCreate,
-            ref long globalIdCounter,
+            MonitoredItemIdFactory globalIdCounter,
             out MonitoringFilterResult filterError,
             out IMonitoredItem monitoredItem)
         {
@@ -2481,7 +2481,7 @@ namespace Opc.Ua.Sample
             }
 
             // create a globally unique identifier.
-            uint monitoredItemId = Utils.IncrementIdentifier(ref globalIdCounter);
+            uint monitoredItemId = globalIdCounter.GetNextId();
 
             // determine the sampling interval.
             double samplingInterval = itemToCreate.RequestedParameters.SamplingInterval;
