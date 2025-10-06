@@ -7,7 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <ProjectGuid>{2E23571F-9987-4EBD-A9FD-5D5DD639E071}</ProjectGuid>
+    <ProjectGuid>{7148B244-B5A3-8F10-C50F-41B165904823}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Opc.Ua.Gds.Server</RootNamespace>
@@ -235,10 +235,10 @@
       <Version>6.5.1</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.5.377.21</Version>
+      <Version>1.5.377.34-preview</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common">
-      <Version>1.5.377.21</Version>
+      <Version>1.5.377.34-preview</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>

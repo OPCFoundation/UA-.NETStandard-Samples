@@ -127,7 +127,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>1.5.377.21</Version>
+      <Version>1.5.377.34-preview</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

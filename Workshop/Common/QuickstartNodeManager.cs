@@ -3096,7 +3096,7 @@ namespace Quickstarts
             IList<MonitoringFilterResult> filterResults,
             IList<IMonitoredItem> monitoredItems,
             bool createDurable,
-            ref long globalIdCounter)
+            MonitoredItemIdFactory globalIdCounter)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
@@ -3171,7 +3171,7 @@ namespace Quickstarts
                         context.DiagnosticsMask,
                         timestampsToReturn,
                         itemToCreate,
-                        ref globalIdCounter,
+                        globalIdCounter,
                         out filterResult,
                         out monitoredItem);
                 }
@@ -3216,7 +3216,7 @@ namespace Quickstarts
             DiagnosticsMasks diagnosticsMasks,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemCreateRequest itemToCreate,
-            ref long globalIdCounter,
+            MonitoredItemIdFactory globalIdCounter,
             out MonitoringFilterResult filterResult,
             out IMonitoredItem monitoredItem)
         {
@@ -3245,7 +3245,7 @@ namespace Quickstarts
             handle.MonitoredNode = monitoredNode;
 
             // create a globally unique identifier.
-            uint monitoredItemId = Utils.IncrementIdentifier(ref globalIdCounter);
+            uint monitoredItemId = globalIdCounter.GetNextId();
 
             // determine the sampling interval.
             double samplingInterval = itemToCreate.RequestedParameters.SamplingInterval;

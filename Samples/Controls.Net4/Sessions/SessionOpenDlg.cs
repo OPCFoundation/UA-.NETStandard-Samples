@@ -53,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Session m_session;
         private const string m_BrowseCertificates = "<Browse...>";
-        private static long m_Counter = 0;
+        private static uint m_Counter = 0;
         private IList<string> m_preferredLocales;
         private bool m_checkDomain = true;
         #endregion

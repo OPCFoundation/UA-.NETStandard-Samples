@@ -473,7 +473,7 @@ namespace Quickstarts.UserAuthenticationClient
                 // want to get error text for this call.
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
-                UserIdentity identity = new UserIdentity(certificate);
+                UserIdentity identity = new UserIdentity(certificate, null);
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(identity, preferredLocales);
 

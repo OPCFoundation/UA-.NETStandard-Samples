@@ -1,0 +1,88 @@
+<Solution>
+  <Folder Name="/AlarmCondition/">
+    <Project Path="Workshop/AlarmCondition/Client/AlarmCondition Client.csproj" Id="a0c0ed57-9fa4-4aca-b29a-d34993f01eed" />
+    <Project Path="Workshop/AlarmCondition/Server/AlarmCondition Server.csproj" Id="a3af1d7e-5cf9-4c1b-85ce-e363edc4b63a" />
+  </Folder>
+  <Folder Name="/Boiler/">
+    <Project Path="Workshop/Boiler/Client/Boiler Client.csproj" Id="1e7cac90-126a-4078-8c49-bf1f2b9c80ae" />
+    <Project Path="Workshop/Boiler/Server/Boiler Server.csproj" Id="0a0b2ed2-9940-44f2-83eb-5dd600cdb57d" />
+  </Folder>
+  <Folder Name="/DataAccess/">
+    <Project Path="Workshop/DataAccess/Client/DataAccess Client.csproj" Id="c715bc40-d0f3-4b55-aa1f-88289f79d02a" />
+    <Project Path="Workshop/DataAccess/Server/DataAccess Server.csproj" Id="82fd7fc9-1912-44a4-bf20-178927a7fcba" />
+  </Folder>
+  <Folder Name="/DataTypes/">
+    <Project Path="Workshop/DataTypes/Client/DataTypes Client.csproj" Id="3e24e128-0d89-4d71-84a5-1013cfbc0b86" />
+    <Project Path="Workshop/DataTypes/Common/DataTypes Library.csproj" Id="a5f4c543-387e-41c6-94a3-b2f1c866d17c" />
+    <Project Path="Workshop/DataTypes/Server/DataTypes Server.csproj" Id="2e23571f-9987-4ebd-a9fd-5d5dd639e071" />
+  </Folder>
+  <Folder Name="/Empty/">
+    <Project Path="Workshop/Empty/Client/Empty Client.csproj" Id="00fe42a0-219c-4fc7-9ec5-b3f8f1fa058f" />
+    <Project Path="Workshop/Empty/Server/Empty Server.csproj" Id="d9682351-440a-46ee-93b7-63fb99c2362b" />
+  </Folder>
+  <Folder Name="/HistoricalAccess/">
+    <Project Path="Workshop/HistoricalAccess/Client/HistoricalAccess Client.csproj" Id="d73b826f-96f6-4be4-a888-0ba3fcb12b52" />
+    <Project Path="Workshop/HistoricalAccess/Server/HistoricalAccess Server.csproj" Id="8ecd2012-f9b3-41d0-ab7c-59eba25fe98e" />
+    <Project Path="Workshop/HistoricalAccess/Tester/Aggregate Tester.csproj" Id="4ceac8d5-55c1-489e-b1ae-37ebe0d56bac" />
+  </Folder>
+  <Folder Name="/HistoricalEvents/">
+    <Project Path="Workshop/HistoricalEvents/Client/HistoricalEvents Client.csproj" Id="848ec159-5473-4a61-bc2f-ac28fef56a51" />
+    <Project Path="Workshop/HistoricalEvents/Server/HistoricalEvents Server.csproj" Id="7c43c547-ea5b-4371-9500-9a008eab244a" />
+  </Folder>
+  <Folder Name="/Methods/">
+    <Project Path="Workshop/Methods/Client/Methods Client.csproj" Id="10173201-4fb3-4250-a26e-aa11c3904c19" />
+    <Project Path="Workshop/Methods/Server/Methods Server.csproj" Id="eab128ce-bb3e-4ae3-8731-30680a928040" />
+  </Folder>
+  <Folder Name="/PerfTest/">
+    <Project Path="Workshop/PerfTest/Client/PerfTest Client.csproj" Id="4566fa73-5d4f-4753-b13d-371a687a8247" />
+    <Project Path="Workshop/PerfTest/Server/PerfTest Server.csproj" Id="a62e8fc4-a946-484e-bce8-5b9fc586f995" />
+  </Folder>
+  <Folder Name="/SimpleEvents/">
+    <Project Path="Workshop/SimpleEvents/Client/SimpleEvents Client.csproj" Id="fa574129-651d-4655-ae44-b61f3e68230b" />
+    <Project Path="Workshop/SimpleEvents/Server/SimpleEvents Server.csproj" Id="6ac7a41d-cc27-4b7f-8570-b99561e2a339" />
+  </Folder>
+  <Folder Name="/UserAuthentication/">
+    <Project Path="Workshop/UserAuthentication/Client/UserAuthentication Client.csproj" Id="2f6c8e81-8e6a-4f49-8096-b35a1cd157bc" />
+    <Project Path="Workshop/UserAuthentication/Server/UserAuthentication Server.csproj" Id="39be8219-83db-4e49-b178-b7f8b0052b7b" />
+  </Folder>
+  <Folder Name="/Views/">
+    <Project Path="Workshop/Views/Client/Views Client.csproj" Id="4c695574-29a0-453d-9ca2-5efd4e8598df" />
+    <Project Path="Workshop/Views/Server/Views Server.csproj" Id="1ab2b16f-8b2e-415b-88d8-d91b23cc90d3" />
+  </Folder>
+  <Folder Name="/Aggregation/">
+    <Project Path="Workshop/Aggregation/Client/Aggregation Client.csproj" Id="f866f577-1ee0-447c-b47f-30180313b4c6" />
+    <Project Path="Workshop/Aggregation/ConsoleAggregationServer/ConsoleAggregationServer.csproj" />
+    <Project Path="Workshop/Aggregation/Server/Aggregation Server.csproj" Id="41a9d2f0-bfe0-4ffb-94f0-57aac2c26899" />
+  </Folder>
+  <Folder Name="/GDS/">
+    <Project Path="Samples/GDS/Client/GlobalDiscoveryClient.csproj" Id="2ada8796-ac1f-4031-9162-d4ed79d828af" />
+    <Project Path="Samples/GDS/ClientControls/GlobalDiscoveryClientControls.csproj" Id="228ec503-2e77-45c9-87ac-3bb312e43196" />
+    <Project Path="Samples/GDS/ConsoleServer/NetCoreGlobalDiscoveryServer.csproj" />
+    <Project Path="Samples/GDS/Server/GlobalDiscoveryServer.csproj" />
+  </Folder>
+  <Folder Name="/Reference/">
+    <Project Path="Samples/ReferenceClient/Reference Client.csproj" Id="9c1e7f15-2ee3-440d-8e17-00c38073822a" />
+    <Project Path="Samples/ReferenceServer/Reference Server.csproj" Id="42ef4f25-29bf-4ab7-b403-8523694a3b36" />
+  </Folder>
+  <Folder Name="/SampleLibraries/">
+    <Project Path="Workshop/Common/Quickstart Library.csproj" Id="d8d0f7bc-bd73-4be4-98e1-7abdecae4c50" />
+    <Project Path="Samples/ClientControls.Net4/UA Client Controls.csproj" Id="a247d2ee-14fc-463d-a9ba-6cff1ef22b7a" />
+    <Project Path="Samples/ServerControls.Net4/UA Server Controls.csproj" Id="80056988-44e7-4ef4-9f59-50bcf215cb03" />
+    <Project Path="Samples/Client.Net4/UA Sample Client.csproj" Id="d7601329-530d-4537-b9b9-d9d53d5f81f6" />
+    <Project Path="Samples/Server.Net4/UA Sample Server.csproj" Id="b109ebae-bb08-40a7-bb9e-7e56b9151b17" />
+    <Project Path="Samples/Controls.Net4/UA Sample Controls.csproj" Id="92ae819b-4938-4502-ac32-67063f9893cd" />
+    <Project Path="Samples/Opc.Ua.Sample/Opc.Ua.Sample.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path=".whitesource" />
+    <File Path="azure-pipelines.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="managed.ruleset" />
+    <File Path="README.md" />
+    <File Path="SECURITY.md" />
+    <File Path="targets.props" />
+  </Folder>
+</Solution>
