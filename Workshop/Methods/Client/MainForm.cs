@@ -169,7 +169,7 @@ namespace Quickstarts.MethodsClient
                 // subscribe to the state if available.
                 if (nodes.Count > 0 && !NodeId.IsNull(nodes[0]))
                 {
-                    m_subscription = new Subscription();
+                    m_subscription = new Subscription(null);
 
                     m_subscription.PublishingEnabled = true;
                     m_subscription.PublishingInterval = 1000;
