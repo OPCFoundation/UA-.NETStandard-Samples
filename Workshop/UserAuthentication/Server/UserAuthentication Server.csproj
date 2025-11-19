@@ -156,7 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>1.5.377.37-preview</Version>
+      <Version>1.5.378.11-preview</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>

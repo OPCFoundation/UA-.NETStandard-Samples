@@ -43,6 +43,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace Quickstarts.UserAuthenticationClient
 {
@@ -439,7 +440,7 @@ namespace Quickstarts.UserAuthenticationClient
                 // want to get error text for this call.
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
-                UserIdentity identity = new UserIdentity(UserNameTB.Text, PasswordTB.Text);
+                UserIdentity identity = new UserIdentity(UserNameTB.Text, Encoding.UTF8.GetBytes(PasswordTB.Text));
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(identity, preferredLocales);
 

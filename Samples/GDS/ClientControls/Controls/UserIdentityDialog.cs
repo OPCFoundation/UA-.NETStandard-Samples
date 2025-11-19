@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Text;
 using System.Windows.Forms;
 
 namespace Opc.Ua.Gds.Client.Controls
@@ -69,7 +70,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 if (token != null)
                 {
                     UserNameTextBox.Text = token.UserName;
-                    PasswordTextBox.Text = token.DecryptedPassword;
+                    PasswordTextBox.Text = Encoding.UTF8.GetString(token.DecryptedPassword);
                 }
             }
 
@@ -78,7 +79,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 return null;
             }
 
-            return new UserIdentity(UserNameTextBox.Text.Trim(), PasswordTextBox.Text.Trim());
+            return new UserIdentity(UserNameTextBox.Text.Trim(), Encoding.UTF8.GetBytes(PasswordTextBox.Text.Trim()));
         }
         #endregion
         

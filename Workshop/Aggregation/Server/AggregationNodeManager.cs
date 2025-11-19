@@ -1487,7 +1487,7 @@ namespace AggregationServer
 
                 // get remote node.
                 NodeId targetId = m_mapper.ToRemoteId(handle.NodeId);
-                ILocalNode node = client.ReadNodeAsync(targetId).GetAwaiter().GetResult();
+                ILocalNode node = Opc.Ua.Client.SessionClientExtensions.ReadNodeAsync(client, targetId).GetAwaiter().GetResult();
 
                 if (node == null)
                 {

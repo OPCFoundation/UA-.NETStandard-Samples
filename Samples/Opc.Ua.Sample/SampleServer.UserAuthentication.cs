@@ -29,6 +29,7 @@
 
 using System;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Opc.Ua.Server;
 
 namespace Opc.Ua.Sample
@@ -78,7 +79,7 @@ namespace Opc.Ua.Sample
 
             if (userNameToken != null)
             {
-                VerifyPassword(userNameToken.UserName, userNameToken.DecryptedPassword);
+                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
                 args.Identity = new UserIdentity(userNameToken);
                 Utils.Trace("UserName Token Accepted: {0}", args.Identity.DisplayName);
                 return;

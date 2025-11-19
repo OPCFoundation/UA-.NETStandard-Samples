@@ -143,11 +143,11 @@ namespace Opc.Ua.Server.Controls
             Close();
         }
 
-        private void ServerForm_FormClosed(object sender, FormClosedEventArgs e)
+        private async void ServerForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             try
             {
-                m_server.Stop();
+                await m_server.StopAsync();
             }
             catch (Exception exception)
             {
