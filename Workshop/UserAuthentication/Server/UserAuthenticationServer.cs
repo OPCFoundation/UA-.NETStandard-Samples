@@ -306,11 +306,11 @@ namespace Quickstarts.UserAuthenticationServer
 
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
-                    e,
                     StatusCodes.BadIdentityTokenRejected,
                     "InvalidCertificate",
                     Namespaces.UserAuthentication,
-                    new LocalizedText(info)));
+                    new LocalizedText(info),
+                    e));
             }
         }
 
@@ -353,11 +353,11 @@ namespace Quickstarts.UserAuthenticationServer
 
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
-                    e,
                     StatusCodes.BadIdentityTokenRejected,
                     "InvalidKerberosToken",
                     Namespaces.UserAuthentication,
-                    new LocalizedText(info)));
+                    new LocalizedText(info),
+                    e));
             }
             finally
             {

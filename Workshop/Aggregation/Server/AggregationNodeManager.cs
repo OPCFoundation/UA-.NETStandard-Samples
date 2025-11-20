@@ -34,6 +34,7 @@ using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace AggregationServer
 {
