@@ -206,7 +206,7 @@ namespace Quickstarts.UserAuthenticationServer
 
             if (userNameToken != null)
             {
-                VerifyPassword(userNameToken.UserName, userNameToken.DecryptedPassword);
+                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
                 args.Identity = new UserIdentity(userNameToken);
                 Utils.Trace("UserName Token Accepted: {0}", args.Identity.DisplayName);
                 return;
@@ -458,9 +458,12 @@ namespace Quickstarts.UserAuthenticationServer
         /// <summary>
         /// This method is called at the being of the thread that processes a request.
         /// </summary>
-        protected override OperationContext ValidateRequest(RequestHeader requestHeader, RequestType requestType)
+        protected override OperationContext ValidateRequest(
+            SecureChannelContext secureChannelContext,
+            RequestHeader requestHeader,
+            RequestType requestType)
         {
-            OperationContext context = base.ValidateRequest(requestHeader, requestType);
+            OperationContext context = base.ValidateRequest(secureChannelContext, requestHeader, requestType);
 
             if (requestType == RequestType.Write)
             {

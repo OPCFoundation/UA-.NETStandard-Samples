@@ -248,7 +248,7 @@ namespace Opc.Ua.Gds.Client
                             //this line fails with a CryptographicException if export of private key is not allowed
                             _ = m_certificate.GetRSAPrivateKey().ExportParameters(true);
                             //proceed with a CSR using the exportable private key
-                            m_certificate = await id.LoadPrivateKeyAsync(m_certificatePassword);
+                            m_certificate = await id.LoadPrivateKeyAsync(m_certificatePassword.ToCharArray());
                         }
                         catch
                         {
@@ -285,7 +285,7 @@ namespace Opc.Ua.Gds.Client
                         Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                         domainNames,
                         "PFX",
-                        m_certificatePassword);
+                        m_certificatePassword?.ToCharArray());
                 }
                 else
                 {
@@ -300,11 +300,11 @@ namespace Opc.Ua.Gds.Client
                         byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
                         if (m_application.GetPrivateKeyFormat(await m_server?.GetSupportedKeyFormatsAsync()) == "PFX")
                         {
-                            csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
+                            csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan());
                         }
                         else
                         {
-                            csrCertificate = CertificateFactory.CreateCertificateWithPEMPrivateKey(m_certificate, pkcsData, m_certificatePassword);
+                            csrCertificate = CertificateFactory.CreateCertificateWithPEMPrivateKey(m_certificate, pkcsData, m_certificatePassword.AsSpan());
                         }
                     }
                     byte[] certificateRequest = CertificateFactory.CreateSigningRequest(csrCertificate, domainNames);
@@ -365,7 +365,7 @@ namespace Opc.Ua.Gds.Client
                                 X509Certificate2 oldCertificate = await cid.FindAsync(true);
                                 if (oldCertificate != null && oldCertificate.HasPrivateKey)
                                 {
-                                    oldCertificate = await cid.LoadPrivateKeyAsync(string.Empty);
+                                    oldCertificate = await cid.LoadPrivateKeyAsync([]);
                                     newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, m_temporaryCertificateCreated ? m_certificate : oldCertificate);
                                     await store.DeleteAsync(oldCertificate.Thumbprint);
                                 }
@@ -441,7 +441,7 @@ namespace Opc.Ua.Gds.Client
                                 if (file.Exists)
                                 {
                                     byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
-                                    X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
+                                    X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan());
                                     newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
                                     pkcsData = newCert.Export(X509ContentType.Pfx, m_certificatePassword);
                                     File.WriteAllBytes(absoluteCertificatePrivateKeyPath, pkcsData);
