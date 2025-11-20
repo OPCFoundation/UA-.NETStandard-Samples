@@ -125,7 +125,7 @@ namespace Boiler
         /// </summary>
         /// <param name="context">The context to use.</param>
         /// <param name="unitNumber">The unit number for the boiler.</param>
-        private void CreateBoiler(SystemContext context, int unitNumber)
+        private void CreateBoiler(ServerSystemContext context, int unitNumber)
         {
             BoilerState boiler = new BoilerState(null);
 

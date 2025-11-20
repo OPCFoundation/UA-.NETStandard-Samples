@@ -561,7 +561,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
         {
             Guid id = GetNodeIdGuid(applicationId);
 
-            if (certificateTypeId.Equals(nameof(Ua.ObjectTypeIds.UserCredentialCertificateType), StringComparison.OrdinalIgnoreCase))
+            if (certificateTypeId.Equals(nameof(Ua.ObjectTypeIds.UserCertificateType), StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -605,7 +605,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
 
             List<byte[]> certificates = new List<byte[]>();
 
-            if (certificateTypeId.Equals(nameof(Ua.ObjectTypeIds.UserCredentialCertificateType), StringComparison.OrdinalIgnoreCase))
+            if (certificateTypeId.Equals(nameof(Ua.ObjectTypeIds.UserCertificateType), StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -754,7 +754,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             string subjectName,
             string[] domainNames,
             string privateKeyFormat,
-            string privateKeyPassword,
+            ReadOnlySpan<char> privateKeyPassword,
             string authorityId)
         {
             Guid id = GetNodeIdGuid(applicationId);
@@ -784,7 +784,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 request.SubjectName = subjectName;
                 request.DomainNames = JsonConvert.SerializeObject(domainNames);
                 request.PrivateKeyFormat = privateKeyFormat;
-                request.PrivateKeyPassword = privateKeyPassword;
+                request.PrivateKeyPassword = privateKeyPassword.ToString();
                 request.CertificateSigningRequest = null;
 
                 if (isNew)
@@ -909,7 +909,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             out string subjectName,
             out string[] domainNames,
             out string privateKeyFormat,
-            out string privateKeyPassword)
+            out ReadOnlySpan<char> privateKeyPassword)
         {
             certificateGroupId = null;
             certificateTypeId = null;
@@ -950,7 +950,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 subjectName = request.SubjectName;
                 domainNames = request.DomainNames != null ? JsonConvert.DeserializeObject<string[]>(request.DomainNames) : null;
                 privateKeyFormat = request.PrivateKeyFormat;
-                privateKeyPassword = request.PrivateKeyPassword;
+                privateKeyPassword = request.PrivateKeyPassword.AsSpan();
 
                 entities.SaveChanges();
                 return CertificateRequestState.Approved;

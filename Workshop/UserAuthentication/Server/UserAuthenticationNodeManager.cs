@@ -147,7 +147,9 @@ namespace Quickstarts.UserAuthenticationServer
 
         public ServiceResult OnWriteValue(ISystemContext context, NodeState node, ref object value)
         {
-            if (context.UserIdentity == null || context.UserIdentity.TokenType == UserTokenType.Anonymous)
+            UserTokenType? tokenType = (context as ISessionSystemContext)?.UserIdentity?.TokenType;
+
+            if (tokenType is null or UserTokenType.Anonymous)
             {
                 TranslationInfo info = new TranslationInfo(
                     "BadUserAccessDenied",
@@ -195,7 +197,9 @@ namespace Quickstarts.UserAuthenticationServer
 
         public ServiceResult OnReadUserAccessLevel(ISystemContext context, NodeState node, ref byte value)
         {
-            if (context.UserIdentity == null || context.UserIdentity.TokenType == UserTokenType.Anonymous)
+            UserTokenType? tokenType = (context as ISessionSystemContext)?.UserIdentity?.TokenType;
+
+            if (tokenType is null or UserTokenType.Anonymous)
             {
                 value = AccessLevels.CurrentRead;
             }

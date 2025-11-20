@@ -155,7 +155,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Creates a new area.
         /// </summary>
-        private BaseObjectState CreateArea(SystemContext context, BaseObjectState platforms, string areaName)
+        private BaseObjectState CreateArea(ServerSystemContext context, BaseObjectState platforms, string areaName)
         {
             FolderState area = new FolderState(null);
 
@@ -176,7 +176,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Creates a new well.
         /// </summary>
-        private void CreateWell(SystemContext context, BaseObjectState area, string wellId, string wellName)
+        private void CreateWell(ServerSystemContext context, BaseObjectState area, string wellId, string wellName)
         {
             WellState well = new WellState(null);
 
