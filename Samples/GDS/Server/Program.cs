@@ -36,6 +36,7 @@ using Opc.Ua.Server.Controls;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Text;
 
 namespace Opc.Ua.Gds.Server
 {
@@ -86,8 +87,7 @@ namespace Opc.Ua.Gds.Server
                     database,
                     new CertificateGroup(),
                     userDatabase,
-                    true,
-                    createStandardUsers);
+                    true);
                 application.StartAsync(server).Wait();
 
                 // run the application interactively.
@@ -122,10 +122,10 @@ namespace Opc.Ua.Gds.Server
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
 
                 //create User, if User exists delete & recreate
-                if (!userDatabase.CreateUser(username, password, new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))
+                if (!userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))
                 {
                     userDatabase.DeleteUser(username);
-                    userDatabase.CreateUser(username, password, new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin });
+                    userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin });
                 }
             }
             return createStandardUsers;

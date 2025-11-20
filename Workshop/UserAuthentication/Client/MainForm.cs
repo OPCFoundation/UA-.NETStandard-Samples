@@ -474,8 +474,8 @@ namespace Quickstarts.UserAuthenticationClient
                 // want to get error text for this call.
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
-                UserIdentity identity = new UserIdentity(certificate, null);
-                string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                UserIdentity identity = new UserIdentity(certificate);
+                string[] preferredLocales = PreferredLocalesTB.Text.Split([','], StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(identity, preferredLocales);
 
                 MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
