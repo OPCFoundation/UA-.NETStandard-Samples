@@ -40,6 +40,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.UserAuthenticationServer
 {
@@ -96,7 +97,7 @@ namespace Quickstarts.UserAuthenticationServer
         /// </remarks>
         protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         {
-            Utils.Trace("Creating the Node Managers.");
+            m_logger.LogInformation("Creating the Node Managers.");
 
             List<INodeManager> nodeManagers = new List<INodeManager>();
 
@@ -169,8 +170,7 @@ namespace Quickstarts.UserAuthenticationServer
 
                     if (trustedIssuers == null)
                     {
-                        Utils.Trace(
-                            (int)Utils.TraceMasks.Error,
+                        m_logger.LogError(
                             "Could not load CertificateTrustList for UserTokenPolicy {0}",
                             policy.PolicyId);
 
@@ -208,7 +208,7 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
                 args.Identity = new UserIdentity(userNameToken);
-                Utils.Trace("UserName Token Accepted: {0}", args.Identity.DisplayName);
+                m_logger.LogInformation("UserName Token Accepted: {0}", args.Identity.DisplayName);
                 return;
             }
 
@@ -219,7 +219,7 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 VerifyCertificate(x509Token.Certificate);
                 args.Identity = new UserIdentity(x509Token);
-                Utils.Trace("X509 Token Accepted: {0}", args.Identity.DisplayName);
+                m_logger.LogInformation("X509 Token Accepted: {0}", args.Identity.DisplayName);
                 return;
             }
         }

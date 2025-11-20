@@ -31,6 +31,7 @@ using Opc.Ua.Security.Certificates;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -254,7 +255,7 @@ namespace Opc.Ua.Gds.Client
                         {
                             //create temporary cert to generate csr from
                             m_certificate = CertificateFactory.CreateCertificate(
-                                X509Utils.GetApplicationUriFromCertificate(m_certificate),
+                                X509Utils.GetApplicationUrisFromCertificate(m_certificate)[0],
                                 m_application.ApplicationName,
                                 Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                                 m_application.GetDomainNames(m_certificate))
