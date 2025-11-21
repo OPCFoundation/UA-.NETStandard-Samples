@@ -27,6 +27,7 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Configuration;
 using Opc.Ua.Server;
@@ -86,11 +87,26 @@ namespace AggregationServer
         }
     }
 
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
+
     public class MyServer
     {
         AggregationServer server;
         Task status;
         DateTime lastEventTime;
+        private readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
 
         public void Start()
         {
@@ -103,7 +119,8 @@ namespace AggregationServer
             }
             catch (Exception ex)
             {
-                Utils.Trace("ServiceResultException:" + ex.Message);
+                m_telemetry.CreateLogger<MyServer>()
+                    .LogError(ex, "ServiceResultException:");
                 Console.WriteLine("Exception: {0}", ex.Message);
             }
 
@@ -140,7 +157,7 @@ namespace AggregationServer
         private async Task ConsoleAggregationServerAsync()
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
 
             application.ApplicationName = "Quickstart Aggregation Server";
             application.ApplicationType = ApplicationType.Server;

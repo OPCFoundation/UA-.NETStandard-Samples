@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Server;
@@ -60,7 +61,7 @@ namespace AggregationServer
         /// </remarks>
         protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         {
-            Utils.Trace("Creating the Node Managers.");
+            m_logger.LogInformation("Creating the Node Managers.");
 
             List<INodeManager> nodeManagers = new List<INodeManager>();
 
@@ -73,7 +74,7 @@ namespace AggregationServer
             {
                 var reverseConnect = configuration.ClientConfiguration.ReverseConnect;
                 // start the reverse connection manager
-                reverseConnectManager = new Opc.Ua.Client.ReverseConnectManager();
+                reverseConnectManager = new Opc.Ua.Client.ReverseConnectManager(server.Telemetry);
                 foreach (var endpoint in reverseConnect.ClientEndpoints)
                 {
                     reverseConnectManager.AddEndpoint(new Uri(endpoint.EndpointUrl));

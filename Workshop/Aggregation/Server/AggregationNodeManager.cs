@@ -648,7 +648,7 @@ namespace AggregationServer
                     }
 
                     // create a request.
-                    Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(monitoredItem.Id);
+                    Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(monitoredItem.Id, Server.Telemetry);
 
                     request.StartNodeId = m_mapper.ToRemoteId(monitoredItem.NodeId);
                     request.MonitoringMode = monitoredItem.MonitoringMode;
@@ -670,7 +670,7 @@ namespace AggregationServer
                     // create subscription.
                     if (client.SubscriptionCount == 0)
                     {
-                        Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription();
+                        Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription(Server.Telemetry);
 
                         subscription.PublishingInterval = 250;
                         subscription.KeepAliveCount = 100;
@@ -1033,7 +1033,7 @@ namespace AggregationServer
                 }
 
                 // create a request.
-                Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(localItem.Id);
+                Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(localItem.Id, Server.Telemetry);
 
                 if (localItem.NodeId == ObjectIds.Server || localItem.NodeId == m_root.NodeId)
                 {
