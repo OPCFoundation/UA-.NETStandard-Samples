@@ -114,10 +114,10 @@ namespace Opc.Ua.Sample
 
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
-                    StatusCodes.BadIdentityTokenRejected,
                     "InvalidPassword",
+                    StatusCodes.BadIdentityTokenRejected,
                     "http://opcfoundation.org/UA/Sample/",
-                    new LocalizedText(info)));
+                    info.ToString()));
             }
         }
 
@@ -164,10 +164,10 @@ namespace Opc.Ua.Sample
 
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
-                    result,
                     info.Key,
+                    result,
                     "http://opcfoundation.org/UA/Sample/",
-                    new LocalizedText(info)));
+                    info.ToString()));
             }
         }
         #endregion
