@@ -787,7 +787,7 @@ namespace Opc.Ua.Sample
                 if (error != null)
                 {
                     error = new ServiceResult(
-                        error.StatusCode.SetSemanticsChanged(true),
+                        error.StatusCode.SetSemanticsChanged(true).Code,
                         error.SymbolicId,
                         error.NamespaceUri,
                         error.LocalizedText,
@@ -809,7 +809,7 @@ namespace Opc.Ua.Sample
                 if (error != null)
                 {
                     error = new ServiceResult(
-                        error.StatusCode.SetStructureChanged(true),
+                        error.StatusCode.SetStructureChanged(true).Code,
                         error.SymbolicId,
                         error.NamespaceUri,
                         error.LocalizedText,

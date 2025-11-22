@@ -374,7 +374,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 HistoryUpdateResult result = results[handle.Index];
 
                 // validate the event filter.
-                FilterContext filterContext = new FilterContext(context.NamespaceUris, context.TypeTable, context);
+                FilterContext filterContext = new FilterContext(context.NamespaceUris, context.TypeTable, context, Server.Telemetry);
                 EventFilter.Result filterResult = nodeToUpdate.Filter.Validate(filterContext);
 
                 if (ServiceResult.IsBad(filterResult.Status))

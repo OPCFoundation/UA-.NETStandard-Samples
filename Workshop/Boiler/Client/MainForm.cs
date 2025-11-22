@@ -68,6 +68,7 @@ namespace Quickstarts.Boiler.Client
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62567/Quickstarts/BoilerServer";
             this.Text = m_configuration.ApplicationName;
+            m_telemetry = telemetry;
         }
         #endregion
 

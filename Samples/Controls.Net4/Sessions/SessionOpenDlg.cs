@@ -155,7 +155,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (!String.IsNullOrEmpty(username) || !String.IsNullOrEmpty(PasswordTB.Text))
                     {
-                        identity = new UserIdentity(username, PasswordTB.Text);
+                        identity = new UserIdentity(username, Encoding.UTF8.GetBytes(PasswordTB.Text));
                     }
                 }
 

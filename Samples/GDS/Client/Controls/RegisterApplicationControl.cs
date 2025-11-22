@@ -898,7 +898,7 @@ namespace Opc.Ua.Gds.Client
 
                     if (String.IsNullOrWhiteSpace(ApplicationUriTextBox.Text))
                     {
-                        ApplicationUriTextBox.Text = X509Utils.GetApplicationUriFromCertificate(certificate);
+                        ApplicationUriTextBox.Text = X509Utils.GetApplicationUrisFromCertificate(certificate)[0];
                     }
                 }
                 catch (Exception)

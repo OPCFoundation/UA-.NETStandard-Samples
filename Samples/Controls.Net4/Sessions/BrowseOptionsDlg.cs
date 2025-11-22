@@ -215,11 +215,11 @@ namespace Opc.Ua.Sample.Controls
                 m_browser.IncludeSubtypes = IncludeSubtypesCK.Checked;
                 m_browser.NodeClassMask = 0;
 
-                int nodeClassMask = 0;
+                uint nodeClassMask = 0;
 
                 foreach (NodeClass nodeClass in NodeClassList.CheckedItems)
                 {
-                    nodeClassMask |= (int)nodeClass;
+                    nodeClassMask |= (uint)nodeClass;
                 }
 
                 m_browser.NodeClassMask = nodeClassMask;
