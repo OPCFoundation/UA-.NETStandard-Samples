@@ -27,6 +27,7 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
 using Opc.Ua.Server;
@@ -54,11 +55,13 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(ApplicationInstance application)
+        public ServerForm(ApplicationInstance application, ITelemetryContext telemetry)
         {
             InitializeComponent();
 
             m_application = application;
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ServerForm>();
 
             if (application.Server is StandardServer)
             {
@@ -77,6 +80,8 @@ namespace Opc.Ua.Sample
 
         #region Private Fields
         private ApplicationInstance m_application;
+        private readonly ITelemetryContext m_telemetry;
+        private readonly ILogger m_logger;
         #endregion
 
         #region Event Handlers
@@ -114,15 +119,15 @@ namespace Opc.Ua.Sample
             Close();
         }
 
-        private void ServerForm_FormClosed(object sender, FormClosedEventArgs e)
+        private async void ServerForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             try
             {
-                m_application.Stop();
+                await m_application.StopAsync();
             }
             catch (Exception exception)
             {
-                Utils.Trace(exception, "Error stopping server.");
+                m_logger.LogTrace(exception, "Error stopping server.");
             }
         }
 
@@ -143,7 +148,7 @@ namespace Opc.Ua.Sample
             }
             catch (Exception exception)
             {
-                Utils.Trace(exception, "Error getting server status.");
+                m_logger.LogTrace(exception, "Error getting server status.");
             }
         }
         #endregion

@@ -54,7 +54,7 @@ namespace Opc.Ua.Sample
                     if (configuration.SecurityConfiguration.TrustedUserCertificates != null &&
                         configuration.SecurityConfiguration.UserIssuerCertificates != null)
                     {
-                        var certificateValidator = new CertificateValidator();
+                        var certificateValidator = new CertificateValidator(ServerInternal.Telemetry);
                         certificateValidator.UpdateAsync(configuration.SecurityConfiguration, configuration.ApplicationUri).Wait();
                         certificateValidator.Update(configuration.SecurityConfiguration.UserIssuerCertificates,
                             configuration.SecurityConfiguration.TrustedUserCertificates,

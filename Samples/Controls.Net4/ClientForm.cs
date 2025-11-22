@@ -55,6 +55,7 @@ namespace Opc.Ua.Sample.Controls
         private ApplicationConfiguration m_configuration;
         private ServiceMessageContext m_context;
         private ClientForm m_masterForm;
+        private readonly ITelemetryContext m_telemetry;
         private List<ClientForm> m_forms;
         #endregion
 
@@ -68,7 +69,8 @@ namespace Opc.Ua.Sample.Controls
             ServiceMessageContext context,
             ApplicationInstance application,
             ClientForm masterForm,
-            ApplicationConfiguration configuration)
+            ApplicationConfiguration configuration,
+            ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -77,6 +79,7 @@ namespace Opc.Ua.Sample.Controls
             m_context = context;
             m_application = application;
             m_server = application.Server as Opc.Ua.Server.StandardServer;
+            m_telemetry = telemetry;
 
             if (m_masterForm == null)
             {
@@ -102,7 +105,7 @@ namespace Opc.Ua.Sample.Controls
         {
             if (m_masterForm == null)
             {
-                ClientForm form = new ClientForm(m_context, m_application, this, m_configuration);
+                ClientForm form = new ClientForm(m_context, m_application, this, m_configuration, m_telemetry);
                 m_forms.Add(form);
                 form.FormClosing += new FormClosingEventHandler(Window_FormClosing);
                 form.Show();
@@ -234,7 +237,7 @@ namespace Opc.Ua.Sample.Controls
                 m_reconnectHandler?.CancelReconnect();
                 Utils.SilentDispose(m_reconnectHandler);
 
-                m_reconnectHandler = new SessionReconnectHandler(true);
+                m_reconnectHandler = new SessionReconnectHandler(m_telemetry, true);
                 session.TransferSubscriptionsOnReconnect = true;
 
                 m_session = session;
@@ -356,7 +359,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_masterForm == null)
                 {
-                    m_application.Stop();
+                    await m_application.StopAsync();
                 }
             }
             catch (Exception exception)
@@ -447,7 +450,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 if (m_server != null)
                 {
-                    System.Threading.ThreadPool.QueueUserWorkItem(OnRegister, null);
+                    _ = OnRegisterAsync();
                 }
             }
             catch (Exception exception)
@@ -456,7 +459,7 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void OnRegister(object sender)
+        private async Task OnRegisterAsync()
         {
             try
             {
@@ -464,7 +467,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (server != null)
                 {
-                    server.RegisterWithDiscoveryServer();
+                    await server.RegisterWithDiscoveryServerAsync();
                 }
             }
             catch (Exception exception)

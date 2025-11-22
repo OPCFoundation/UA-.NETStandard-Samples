@@ -60,7 +60,7 @@ namespace Quickstarts.AlarmConditionClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -74,6 +74,7 @@ namespace Quickstarts.AlarmConditionClient
 
             // the filter to use.
             m_filter = new FilterDefinition();
+            m_telemetry = telemetry;
 
             m_filter.AreaId = ObjectIds.Server;
             m_filter.Severity = EventSeverity.Min;
@@ -108,6 +109,7 @@ namespace Quickstarts.AlarmConditionClient
         private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
         private AuditEventForm m_auditEventForm;
         private bool m_connectedOnce;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -187,7 +189,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // create the default subscription.
-                m_subscription = new Subscription();
+                m_subscription = new Subscription(m_telemetry);
 
                 m_subscription.DisplayName = null;
                 m_subscription.PublishingInterval = 1000;

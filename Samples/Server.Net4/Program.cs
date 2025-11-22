@@ -28,15 +28,31 @@
  * ======================================================================*/
 
 using System;
-using System.Windows.Forms;
-using Opc.Ua.Configuration;
-using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
+using Opc.Ua.Client.Controls;
+using Opc.Ua.Configuration;
 
 namespace Opc.Ua.Sample
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -47,7 +63,7 @@ namespace Opc.Ua.Sample
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationName = "UA Sample Server";
             application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "Opc.Ua.SampleServer";
@@ -67,7 +83,7 @@ namespace Opc.Ua.Sample
                 application.StartAsync(new SampleServer()).Wait();
 
                 // run the application interactively.
-                Application.Run(new ServerForm(application));
+                Application.Run(new ServerForm(application, m_telemetry));
             }
             catch (Exception e)
             {

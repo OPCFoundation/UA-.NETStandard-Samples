@@ -127,7 +127,7 @@ namespace Boiler
         /// <param name="unitNumber">The unit number for the boiler.</param>
         private void CreateBoiler(ServerSystemContext context, int unitNumber)
         {
-            BoilerState boiler = new BoilerState(null);
+            BoilerState boiler = new BoilerState(null, m_logger);
 
             string name = Utils.Format("Boiler #{0}", unitNumber);
 
@@ -229,7 +229,7 @@ namespace Boiler
                         break;
                     }
 
-                    BoilerState activeNode = new BoilerState(passiveNode.Parent);
+                    BoilerState activeNode = new BoilerState(passiveNode.Parent, m_logger);
                     activeNode.Create(context, passiveNode);
 
                     // replace the node in the parent.

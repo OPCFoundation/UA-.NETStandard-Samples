@@ -96,6 +96,7 @@ namespace Opc.Ua.Sample
             bool alwaysReportUpdates)
         {
             m_source = source;
+            m_logger = source.Server.Telemetry.CreateLogger<DataChangeMonitoredItem>();
             m_id = id;
             m_attributeId = attributeId;
             m_indexRange = indexRange;
@@ -845,7 +846,7 @@ namespace Opc.Ua.Sample
             {
                 if ((m_diagnosticsMasks & DiagnosticsMasks.OperationAll) != 0)
                 {
-                    diagnosticInfo = ServerUtils.CreateDiagnosticInfo(m_source.Server, context, m_lastError);
+                    diagnosticInfo = ServerUtils.CreateDiagnosticInfo(m_source.Server, context, m_lastError, m_logger);
                 }
             }
 
@@ -876,6 +877,7 @@ namespace Opc.Ua.Sample
         #region Private Fields
         private object m_lock = new object();
         private MonitoredNode m_source;
+        private readonly ILogger m_logger;
         private ISubscription m_subscription;
         private uint m_id;
         private DataValue m_lastValue;

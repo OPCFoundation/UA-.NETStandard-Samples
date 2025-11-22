@@ -29,14 +29,30 @@
 
 using System;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
 
 namespace Quickstarts.ReferenceClient
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -48,7 +64,7 @@ namespace Quickstarts.ReferenceClient
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationName = "UA Reference Client";
             application.ApplicationType = ApplicationType.Client;
             application.ConfigSectionName = "Quickstarts.ReferenceClient";
@@ -67,7 +83,7 @@ namespace Quickstarts.ReferenceClient
                 }
 
                 // run the application interactively.
-                Application.Run(new MainForm(application.ApplicationConfiguration));
+                Application.Run(new MainForm(application.ApplicationConfiguration, m_telemetry));
             }
             catch (Exception e)
             {

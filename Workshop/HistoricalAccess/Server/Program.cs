@@ -29,22 +29,38 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Security.Cryptography.X509Certificates;
-using System.Reflection;
 using System.Data;
-using System.Text;
-using System.IO;
 using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Opc.Ua.Server;
 using Opc.Ua.Configuration;
+using Opc.Ua.Server;
 using Opc.Ua.Server.Controls;
 
 namespace Quickstarts.HistoricalAccessServer
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -56,7 +72,7 @@ namespace Quickstarts.HistoricalAccessServer
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "HistoricalAccessServer";
 
@@ -65,19 +81,6 @@ namespace Quickstarts.HistoricalAccessServer
                 // DoTests(false, false, "Quickstarts.HistoricalAccessServer.Data.Historian1.txt", "..\\..\\Data\\Historian1ExpectedData.csv");
                 // DoTests(false, true, "Quickstarts.HistoricalAccessServer.Data.Historian2.txt", "..\\..\\Data\\Historian2ExpectedData.csv");
                 // DoTests(true, true, "Quickstarts.HistoricalAccessServer.Data.Historian3.txt", "..\\..\\Data\\Historian3ExpectedData.csv");
-
-                // process and command line arguments.
-                if (application.ProcessCommandLine())
-                {
-                    return;
-                }
-
-                // check if running as a service.
-                if (!Environment.UserInteractive)
-                {
-                    application.StartAsService(new HistoricalAccessServer());
-                    return;
-                }
 
                 // load the application configuration.
                 application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
@@ -89,7 +92,7 @@ namespace Quickstarts.HistoricalAccessServer
                 application.StartAsync(new HistoricalAccessServer()).Wait();
 
                 // run the application interactively.
-                Application.Run(new ServerForm(application));
+                Application.Run(new ServerForm(application, m_telemetry));
             }
             catch (Exception e)
             {
@@ -311,7 +314,8 @@ namespace Quickstarts.HistoricalAccessServer
                 startTime.AddSeconds(100),
                 5000,
                 test.Stepped,
-                configuration);
+                configuration,
+                m_telemetry);
 
             StringBuilder buffer = new StringBuilder();
             List<DataValue> values = new List<DataValue>();

@@ -59,12 +59,13 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(StandardServer server, ApplicationConfiguration configuration, bool showCertificateValidationDialog = true)
+        public ServerForm(StandardServer server, ApplicationConfiguration configuration, ITelemetryContext telemetry, bool showCertificateValidationDialog = true)
         {
             InitializeComponent();
 
             m_server = server;
             m_configuration = configuration;
+            m_telemetry = telemetry;
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
             if (showCertificateValidationDialog &&
@@ -82,12 +83,13 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(ApplicationInstance application, bool showCertificateValidationDialog = false)
+        public ServerForm(ApplicationInstance application, ITelemetryContext telemetry, bool showCertificateValidationDialog = false)
         {
             InitializeComponent();
 
             m_application = application;
             m_server = application.Server as StandardServer;
+            m_telemetry = telemetry;
             m_configuration = application.ApplicationConfiguration;
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
@@ -105,6 +107,7 @@ namespace Opc.Ua.Server.Controls
         #region Private Fields
         private ApplicationInstance m_application;
         private StandardServer m_server;
+        private readonly ITelemetryContext m_telemetry;
         private ApplicationConfiguration m_configuration;
         #endregion
 

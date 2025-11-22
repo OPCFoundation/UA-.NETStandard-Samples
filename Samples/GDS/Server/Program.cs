@@ -40,8 +40,23 @@ using System.Text;
 
 namespace Opc.Ua.Gds.Server
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -53,7 +68,7 @@ namespace Opc.Ua.Gds.Server
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance
+            ApplicationInstance application = new ApplicationInstance(m_telemetry)
             {
                 ApplicationType = ApplicationType.Server,
                 ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer"
@@ -85,13 +100,13 @@ namespace Opc.Ua.Gds.Server
                 var server = new GlobalDiscoverySampleServer(
                     database,
                     database,
-                    new CertificateGroup(),
+                    new CertificateGroup(m_telemetry),
                     userDatabase,
                     true);
                 application.StartAsync(server).Wait();
 
                 // run the application interactively.
-                System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration));
+                System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration, m_telemetry));
             }
             catch (Exception e)
             {

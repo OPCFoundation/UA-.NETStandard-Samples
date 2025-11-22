@@ -60,7 +60,7 @@ namespace Quickstarts.Boiler.Client
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -76,6 +76,7 @@ namespace Quickstarts.Boiler.Client
         private ISession m_session;
         private Subscription m_subscription;
         private bool m_connectedOnce;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -275,7 +276,7 @@ namespace Quickstarts.Boiler.Client
                     return;
                 }
 
-                m_subscription = new Subscription();
+                m_subscription = new Subscription(m_telemetry);
 
                 m_subscription.PublishingEnabled = true;
                 m_subscription.PublishingInterval = 1000;
@@ -319,7 +320,7 @@ namespace Quickstarts.Boiler.Client
 
                     if (nodes[ii] != null)
                     {
-                        MonitoredItem monitoredItem = new MonitoredItem();
+                        MonitoredItem monitoredItem = new MonitoredItem(m_telemetry);
                         monitoredItem.StartNodeId = nodes[ii];
                         monitoredItem.AttributeId = Attributes.Value;
                         monitoredItem.Handle = controls[ii];

@@ -35,6 +35,7 @@ using System.Xml;
 using System.IO;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace TestData
 {
@@ -49,15 +50,19 @@ namespace TestData
 
     public class TestDataSystem
     {
-        public TestDataSystem(ITestDataSystemCallback callback, NamespaceTable namespaceUris, StringTable serverUris)
+        public TestDataSystem(ITestDataSystemCallback callback,
+                              NamespaceTable namespaceUris,
+                              StringTable serverUris,
+                              ITelemetryContext telemetry)
         {
             m_callback = callback;
+            m_logger = telemetry.CreateLogger<TestDataSystem>();
             m_minimumSamplingInterval = Int32.MaxValue;
             m_monitoredNodes = new Dictionary<uint, BaseVariableState>();
-            m_generator = new Opc.Ua.Test.DataGenerator(null);
+            m_generator = new Opc.Ua.Test.DataGenerator(null, telemetry);
             m_generator.NamespaceUris = namespaceUris;
             m_generator.ServerUris = serverUris;
-            m_historyArchive = new HistoryArchive();
+            m_historyArchive = new HistoryArchive(telemetry);
         }
 
         /// <summary>
@@ -767,7 +772,7 @@ namespace TestData
 
         void DoSample(object state)
         {
-            Utils.LogTrace("DoSample HiRes={0:ss.ffff} Now={1:ss.ffff}", HiResClock.UtcNow, DateTime.UtcNow);
+            m_logger.LogTrace("DoSample HiRes={0:ss.ffff} Now={1:ss.ffff}", HiResClock.UtcNow, DateTime.UtcNow);
 
             Queue<Sample> samples = new Queue<Sample>();
 
@@ -832,6 +837,7 @@ namespace TestData
         #region Private Fields
         private object m_lock = new object();
         private ITestDataSystemCallback m_callback;
+        private readonly ILogger m_logger;
         private Opc.Ua.Test.DataGenerator m_generator;
         private int m_minimumSamplingInterval;
         private Dictionary<uint, BaseVariableState> m_monitoredNodes;

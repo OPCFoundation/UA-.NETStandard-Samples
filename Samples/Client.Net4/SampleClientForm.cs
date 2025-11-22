@@ -45,9 +45,10 @@ namespace Opc.Ua.Sample
         public SampleClientForm(
             ApplicationInstance application,
             ClientForm masterForm,
-            ApplicationConfiguration configuration)
+            ApplicationConfiguration configuration,
+            ITelemetryContext telemetry)
         :
-            base(configuration.CreateMessageContext(), application, masterForm, configuration)
+            base(configuration.CreateMessageContext(), application, masterForm, configuration, telemetry)
         {
             InitializeComponent();
 

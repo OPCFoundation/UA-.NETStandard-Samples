@@ -1057,7 +1057,7 @@ namespace AggregationServer
                     // create subscription.
                     if (client.SubscriptionCount == 0)
                     {
-                        Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription();
+                        Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription(Server.Telemetry);
 
                         subscription.PublishingInterval = 250;
                         subscription.KeepAliveCount = 100;
@@ -1667,7 +1667,7 @@ namespace AggregationServer
                         if (clientSession != null && clientSession.ReconnectHandler == null)
                         {
                             m_logger.LogInformation($"--- RECONNECTING --- SessionId: {clientSession.ClientSessionId}");
-                            reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler(true);
+                            reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler(Server.Telemetry, true);
                             reconnectHandler.BeginReconnect(session, m_reverseConnectManager, DefaultReconnectPeriod, Client_ReconnectComplete);
                             clientSession.ReconnectHandler = reconnectHandler;
                             e.CancelKeepAlive = true;

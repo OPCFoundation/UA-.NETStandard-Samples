@@ -43,7 +43,7 @@ namespace Opc.Ua.Gds.Client
 {
     public partial class MainForm : Form
     {
-        public MainForm(ApplicationInstance application)
+        public MainForm(ApplicationInstance application, ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ClientUtils.GetAppIcon();

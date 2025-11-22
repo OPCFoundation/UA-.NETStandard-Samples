@@ -29,16 +29,32 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Security.Cryptography.X509Certificates;
+using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Opc.Ua.Configuration;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Configuration;
 
 namespace Quickstarts.PerfTestClient
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -50,18 +66,12 @@ namespace Quickstarts.PerfTestClient
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationType = ApplicationType.Client;
             application.ConfigSectionName = "PerfTestClient";
 
             try
             {
-                // process and command line arguments.
-                if (application.ProcessCommandLine())
-                {
-                    return;
-                }
-
                 // load the application configuration.
                 application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
@@ -69,7 +79,7 @@ namespace Quickstarts.PerfTestClient
                 application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
 
                 // run the application interactively.
-                Application.Run(new MainForm(application.ApplicationConfiguration));
+                Application.Run(new MainForm(application.ApplicationConfiguration, m_telemetry));
             }
             catch (Exception e)
             {

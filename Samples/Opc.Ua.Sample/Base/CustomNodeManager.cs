@@ -36,6 +36,7 @@ using System.IO;
 using System.Threading;
 using System.Reflection;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Sample
 {
@@ -52,6 +53,7 @@ namespace Opc.Ua.Sample
         {
             // save a reference to the server that owns the node manager.
             m_server = server;
+            m_logger = server.Telemetry.CreateLogger<CustomNodeManager2>();
 
             // create the default context.
             m_systemContext = m_server.DefaultSystemContext.Copy();
@@ -2649,7 +2651,7 @@ namespace Opc.Ua.Sample
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error during diagnostics scan.");
+                m_logger.LogError(e, "Unexpected error during diagnostics scan.");
             }
         }
 
@@ -3097,6 +3099,7 @@ namespace Opc.Ua.Sample
         #region Private Fields
         private object m_lock = new object();
         private IServerInternal m_server;
+        private readonly ILogger m_logger;
         private ServerSystemContext m_systemContext;
         private IList<string> m_namespaceUris;
         private ushort[] m_namespaceIndexes;

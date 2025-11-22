@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 
 namespace Boiler
@@ -279,7 +280,7 @@ namespace Boiler
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Unexpected error during boiler simulation.");
+                m_logger.LogError(e, "Unexpected error during boiler simulation.");
             }
         }
         #endregion
