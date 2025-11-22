@@ -36,6 +36,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
@@ -56,6 +57,7 @@ namespace Opc.Ua.Sample.Controls
         private ServiceMessageContext m_context;
         private ClientForm m_masterForm;
         private readonly ITelemetryContext m_telemetry;
+        private readonly ILogger m_logger;
         private List<ClientForm> m_forms;
         #endregion
 
@@ -80,6 +82,7 @@ namespace Opc.Ua.Sample.Controls
             m_application = application;
             m_server = application.Server as Opc.Ua.Server.StandardServer;
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ClientForm>();
 
             if (m_masterForm == null)
             {
@@ -472,7 +475,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                Utils.Trace(exception, "Could not register with the LDS");
+                m_logger.LogTrace(exception, "Could not register with the LDS");
             }
         }
 

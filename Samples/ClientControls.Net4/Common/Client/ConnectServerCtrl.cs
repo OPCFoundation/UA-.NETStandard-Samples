@@ -626,10 +626,7 @@ namespace Opc.Ua.Client.Controls
                 UpdateStatus(false, e.CurrentTime, "Connected [{0}]", session.Endpoint.EndpointUrl);
 
                 // raise any additional notifications.
-                if (m_KeepAliveComplete != null)
-                {
-                    m_KeepAliveComplete(this, e);
-                }
+                m_KeepAliveComplete?.Invoke(this, e);
             }
             catch (Exception exception)
             {
@@ -713,10 +710,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // raise any additional notifications.
-                if (m_ReconnectComplete != null)
-                {
-                    m_ReconnectComplete(this, e);
-                }
+                m_ReconnectComplete?.Invoke(this, e);
             }
             catch (Exception exception)
             {

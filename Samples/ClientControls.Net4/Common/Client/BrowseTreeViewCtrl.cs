@@ -336,7 +336,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (BrowseTV.SelectedNode == null)
                 {
-                    if (m_AfterSelect != null) m_AfterSelect(this, new EventArgs());
+                    m_AfterSelect?.Invoke(this, new EventArgs());
                     return;
                 }
 

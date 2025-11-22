@@ -39,6 +39,7 @@ using Opc.Ua;
 using Opc.Ua.Configuration;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Server.Controls
 {
@@ -66,6 +67,7 @@ namespace Opc.Ua.Server.Controls
             m_server = server;
             m_configuration = configuration;
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ServerForm>();
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
             if (showCertificateValidationDialog &&
@@ -90,6 +92,7 @@ namespace Opc.Ua.Server.Controls
             m_application = application;
             m_server = application.Server as StandardServer;
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ServerForm>();
             m_configuration = application.ApplicationConfiguration;
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
@@ -108,6 +111,7 @@ namespace Opc.Ua.Server.Controls
         private ApplicationInstance m_application;
         private StandardServer m_server;
         private readonly ITelemetryContext m_telemetry;
+        private readonly ILogger m_logger;
         private ApplicationConfiguration m_configuration;
         #endregion
 
@@ -154,7 +158,7 @@ namespace Opc.Ua.Server.Controls
             }
             catch (Exception exception)
             {
-                Utils.LogError(exception, "Error stopping server.");
+                m_logger.LogError(exception, "Error stopping server.");
             }
         }
 
@@ -170,7 +174,7 @@ namespace Opc.Ua.Server.Controls
             }
             catch (Exception exception)
             {
-                Utils.LogError(exception, "Error getting server status.");
+                m_logger.LogError(exception, "Error getting server status.");
             }
         }
         #endregion
