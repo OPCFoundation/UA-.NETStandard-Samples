@@ -371,7 +371,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (RootFolders.GlobalDiscovery.Equals(e.Node.Tag))
             {
-                var servers = new ViewServersOnNetworkDialog(m_gds).ShowDialog(this, ref m_filters);
+                var servers = new ViewServersOnNetworkDialog(m_gds, m_telemetry).ShowDialog(this, ref m_filters);
 
                 if (servers != null)
                 {
@@ -840,7 +840,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         e.Node.Nodes.Clear();
 
-                        var servers = new ViewServersOnNetworkDialog(m_gds).ShowDialog(this, ref m_filters);
+                        var servers = new ViewServersOnNetworkDialog(m_gds, m_telemetry).ShowDialog(this, ref m_filters);
 
                         if (servers != null)
                         {

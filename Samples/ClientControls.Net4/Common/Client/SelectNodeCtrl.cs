@@ -191,6 +191,7 @@ namespace Opc.Ua.Client.Controls
                 RootId,
                 View,
                 null,
+                m_telemetry,
                 default,
                 ReferenceTypeIds);
 

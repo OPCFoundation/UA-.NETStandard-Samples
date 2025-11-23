@@ -96,7 +96,7 @@ namespace Opc.Ua.Client.Controls
                 CertificateStoreIdentifier store = new CertificateStoreIdentifier();
                 store.StoreType = CertificateStoreCTRL.StoreType;
                 store.StorePath = CertificateStoreCTRL.StorePath;
-                new CertificateListDlg().ShowDialog(store, false);
+                new CertificateListDlg().ShowDialog(store, false, m_telemetry);
             }
             catch (Exception exception)
             {

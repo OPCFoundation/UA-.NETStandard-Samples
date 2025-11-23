@@ -173,7 +173,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", default, null);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", m_telemetry, default, null);
 
                 if (reference != null && reference.NodeId != null)
                 {

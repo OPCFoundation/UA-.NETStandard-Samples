@@ -72,14 +72,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, CancellationToken ct = default)
+        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, ISession session, CancellationToken ct = default)
         {
             if (browser == null) throw new ArgumentNullException(nameof(browser));
 
-            await BrowseCTRL.SetRootAsync(browser, rootId, ct);
+            await BrowseCTRL.SetRootAsync(browser, rootId, session, ct);
 
             NamespaceUriCB.Items.Clear();
-            NamespaceUriCB.Items.AddRange(browser.Session.NamespaceUris.ToArray());
+            NamespaceUriCB.Items.AddRange(session.NamespaceUris.ToArray());
 
             OkBTN.Enabled = false;
 

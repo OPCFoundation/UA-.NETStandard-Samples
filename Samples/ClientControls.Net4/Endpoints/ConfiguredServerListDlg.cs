@@ -71,7 +71,7 @@ namespace Opc.Ua.Client.Controls
             // create a default collection if none provided.
             if (createNew)
             {
-                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration);
+                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration, m_telemetry);
 
                 if (server != null)
                 {

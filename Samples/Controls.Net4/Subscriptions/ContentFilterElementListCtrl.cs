@@ -32,14 +32,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
-
-using Opc.Ua.Client;
-using Opc.Ua.Client.Controls;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using Opc.Ua.Client;
+using Opc.Ua.Client.Controls;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolTip;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -240,7 +240,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType, m_session);
 
                 if (reference != null)
                 {
@@ -254,8 +254,8 @@ namespace Opc.Ua.Sample.Controls
                     ContentFilterElement element = null;
 
                     // build the relative path.
-                    QualifiedNameCollection browsePath = new QualifiedNameCollection();
-                    NodeId typeId = m_session.NodeCache.BuildBrowsePath(node, browsePath);
+                    QualifiedNameCollection browsePath = [node.BrowseName];
+                    NodeId typeId = null;
 
                     switch (node.NodeClass)
                     {

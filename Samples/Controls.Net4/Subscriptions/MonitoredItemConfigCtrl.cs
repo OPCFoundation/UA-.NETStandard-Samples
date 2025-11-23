@@ -618,7 +618,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                     else
                     {
-                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session as Session, monitoredItems[0].Filter as EventFilter, false);
+                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session as Session, m_telemetry, monitoredItems[0].Filter as EventFilter, false);
 
                         if (filter == null)
                         {

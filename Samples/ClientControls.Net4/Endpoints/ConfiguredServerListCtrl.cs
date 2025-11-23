@@ -182,7 +182,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration);
+                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration, m_telemetry);
 
                 if (server == null)
                 {

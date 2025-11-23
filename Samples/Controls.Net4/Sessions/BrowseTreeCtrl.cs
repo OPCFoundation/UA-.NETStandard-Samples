@@ -56,6 +56,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Browser m_browser;
+        private ISession m_session;
         private NodeId m_rootId;
         private AttributeListCtrl m_AttributesCtrl;
         private bool m_allowPick;
@@ -163,7 +164,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public async Task SetRootAsync(Browser browser, NodeId rootId, CancellationToken ct = default)
+        public async Task SetRootAsync(Browser browser, NodeId rootId, ISession session, CancellationToken ct = default)
         {
             Clear();
 
@@ -171,6 +172,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_rootId = rootId;
             m_browser = browser;
+            m_session = session;
 
             if (m_browser != null)
             {
@@ -190,7 +192,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_browser != null)
             {
-                INode node = await m_browser.Session.NodeCache.FindAsync(m_rootId, ct);
+                INode node = await m_session.NodeCache.FindAsync(m_rootId, ct);
 
                 if (node == null)
                 {
@@ -221,7 +223,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public Task SetRootAsync(Session session, NodeId rootId, CancellationToken ct = default)
         {
-            return SetRootAsync(new Browser(session), rootId, ct);
+            return SetRootAsync(new Browser(session), rootId, session, ct);
         }
 
         /// <summary>
@@ -308,7 +310,7 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            return SetRootAsync(browser, rootId, ct);
+            return SetRootAsync(browser, rootId, session, ct);
         }
 
         /// <summary>
@@ -331,7 +333,7 @@ namespace Opc.Ua.Sample.Controls
                 clickedNode.Nodes.Clear();
 
                 // do nothing if an error is detected.
-                if (m_browser.Session.KeepAliveStopped)
+                if (m_session.KeepAliveStopped)
                 {
                     return Task.FromResult(false);
                 }
@@ -357,7 +359,7 @@ namespace Opc.Ua.Sample.Controls
                 if (clickedNode != null)
                 {
                     // do nothing if an error is detected.
-                    if (m_browser.Session.KeepAliveStopped)
+                    if (m_session.KeepAliveStopped)
                     {
                         return;
                     }
@@ -374,7 +376,7 @@ namespace Opc.Ua.Sample.Controls
                         BrowseMI.Enabled = (reference.NodeId != null && !reference.NodeId.IsAbsolute);
                         ViewAttributesMI.Enabled = true;
 
-                        NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_browser.Session.NamespaceUris);
+                        NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_session.NamespaceUris);
 
                         INode node = await m_browser.Session.ReadNodeAsync(nodeId);
 
@@ -481,7 +483,7 @@ namespace Opc.Ua.Sample.Controls
                                 SubscribeMI.DropDown.Items.RemoveAt(SubscribeMI.DropDown.Items.Count - 1);
                             }
 
-                            foreach (Subscription subscription in m_browser.Session.Subscriptions)
+                            foreach (Subscription subscription in m_session.Subscriptions)
                             {
                                 if (subscription.Created)
                                 {
@@ -660,7 +662,7 @@ namespace Opc.Ua.Sample.Controls
                     continue;
                 }
 
-                ReferenceTypeNode typeNode = await m_browser.Session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
+                ReferenceTypeNode typeNode = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
                 if (typeNode == null)
                 {
                     Utils.Trace("Reference {0} has invalid reference type id.", reference.DisplayName);
@@ -760,7 +762,7 @@ namespace Opc.Ua.Sample.Controls
                 return null;
             }
 
-            ReferenceTypeNode typeNode = await m_browser.Session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
+            ReferenceTypeNode typeNode = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
 
             foreach (TreeNode child in parent.Nodes)
             {
@@ -941,7 +943,7 @@ namespace Opc.Ua.Sample.Controls
             m_showReferences = ShowReferencesMI.Checked;
             try
             {
-                await SetRootAsync(m_browser, m_rootId);
+                await SetRootAsync(m_browser, m_rootId, m_session);
             }
             catch (Exception exception)
             {

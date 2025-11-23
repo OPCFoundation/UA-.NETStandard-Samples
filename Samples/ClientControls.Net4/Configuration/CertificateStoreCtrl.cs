@@ -246,7 +246,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (storeType == CertificateStoreType.X509Store)
                 {
-                    CertificateStoreIdentifier store = new CertificateStoreTreeDlg().ShowDialog(null);
+                    CertificateStoreIdentifier store = new CertificateStoreTreeDlg().ShowDialog(null, m_telemetry);
 
                     if (store == null)
                     {

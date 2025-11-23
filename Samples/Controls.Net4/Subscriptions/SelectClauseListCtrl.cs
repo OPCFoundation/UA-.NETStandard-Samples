@@ -122,7 +122,8 @@ namespace Opc.Ua.Sample.Controls
 
             SimpleAttributeOperand clause = new SimpleAttributeOperand();
 
-            clause.TypeDefinitionId = m_session.NodeCache.BuildBrowsePath(node, clause.BrowsePath);
+            clause.BrowsePath.Add(node.BrowseName);
+            clause.TypeDefinitionId = null;
             clause.AttributeId = Attributes.Value;
 
             AddItem(clause, "Property", -1);
