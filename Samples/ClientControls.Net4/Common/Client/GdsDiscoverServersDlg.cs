@@ -436,14 +436,14 @@ namespace Opc.Ua.Client.Controls
                     NodeId[] referenceTypeIds = new NodeId[] { Opc.Ua.ReferenceTypeIds.Organizes, Opc.Ua.ReferenceTypeIds.HasChild };
 
                     await BrowseCTRL.InitializeAsync(session, rootId, m_telemetry, default, referenceTypeIds);
-                    SystemElementBTN.Session = session;
+                    SystemElementBTN.ChangeSession(session, m_telemetry);
                     SystemElementBTN.RootId = rootId;
                     SystemElementBTN.ReferenceTypeIds = referenceTypeIds;
                 }
                 else
                 {
                     await BrowseCTRL.ChangeSessionAsync(session);
-                    SystemElementBTN.Session = session;
+                    SystemElementBTN.ChangeSession(session, m_telemetry);
                 }
             }
             catch (Exception exception)
@@ -458,7 +458,7 @@ namespace Opc.Ua.Client.Controls
             {
                 ISession session = ServerCTRL.Session;
                 await BrowseCTRL.ChangeSessionAsync(session);
-                SystemElementBTN.Session = session;
+                SystemElementBTN.ChangeSession(session, m_telemetry);
             }
             catch (Exception exception)
             {

@@ -57,16 +57,19 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private string m_currentDirectory;
         private CertificateIdentifier m_certificate;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(CertificateIdentifier certificate, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(CertificateIdentifier certificate, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             m_certificate = certificate;
+            m_telemetry = telemetry;
 
+            CertificateStoreCTRL.Telemetry = telemetry;
             CertificateStoreCTRL.StoreType = null;
             CertificateStoreCTRL.StorePath = null;
             CertificateStoreCTRL.ReadOnly = true;
@@ -196,7 +199,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                await new CertificateDlg().ShowDialogAsync(m_certificate);
+                await new CertificateDlg().ShowDialogAsync(m_certificate, m_telemetry);
             }
             catch (Exception exception)
             {

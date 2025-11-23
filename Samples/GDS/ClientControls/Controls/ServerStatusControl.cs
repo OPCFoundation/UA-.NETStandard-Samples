@@ -45,10 +45,10 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private ServerPushConfigurationClient m_server;
 
-        public Task InitializeAsync(ServerPushConfigurationClient server, CancellationToken ct = default)
+        public Task InitializeAsync(ServerPushConfigurationClient server, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             m_server = server;
-            return ServerBrowseControl.InitializeAsync((server != null) ? server.Session as Session : null, Opc.Ua.ObjectIds.ObjectsFolder, ct, ReferenceTypeIds.HierarchicalReferences);
+            return ServerBrowseControl.InitializeAsync((server != null) ? server.Session as Session : null, Opc.Ua.ObjectIds.ObjectsFolder, telemetry, ct, ReferenceTypeIds.HierarchicalReferences);
         }
 
         public void SetServerStatus(ServerStatusDataType status)

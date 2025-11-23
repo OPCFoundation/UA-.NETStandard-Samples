@@ -84,7 +84,7 @@ namespace Opc.Ua.Sample.Controls
             m_running = false;
             m_filePath = @".\perftest.csv";
 
-            EndpointSelectorCTRL.Initialize(m_endpoints, configuration);
+            EndpointSelectorCTRL.Initialize(m_endpoints, configuration, m_telemetry);
 
             lock (m_lock)
             {

@@ -180,10 +180,7 @@ namespace Opc.Ua.Sample
 
                 button.ShowDropDownArrow = (button.DropDownItems.Count == 0);
 
-                if (m_TypeSelected != null)
-                {
-                    m_TypeSelected(this, new TypeNavigatorEventArgs(node));
-                }
+                m_TypeSelected?.Invoke(this, new TypeNavigatorEventArgs(node));
             }
             catch (Exception exception)
             {
@@ -244,10 +241,7 @@ namespace Opc.Ua.Sample
 
                 TypePathCTRL.Items.Add(button);
 
-                if (m_TypeSelected != null)
-                {
-                    m_TypeSelected(this, new TypeNavigatorEventArgs(node));
-                }
+                m_TypeSelected?.Invoke(this, new TypeNavigatorEventArgs(node));
             }
             catch (Exception exception)
             {

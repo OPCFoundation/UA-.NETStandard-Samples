@@ -95,7 +95,7 @@ namespace Opc.Ua.Sample.Controls
             // get list of cached endpoints.
             m_endpoints = m_configuration.LoadCachedEndpoints(true);
             m_endpoints.DiscoveryUrls = configuration.ClientConfiguration.WellKnownDiscoveryUrls;
-            EndpointSelectorCTRL.Initialize(m_endpoints, m_configuration);
+            EndpointSelectorCTRL.Initialize(m_endpoints, m_configuration, telemetry);
 
             // initialize control state.
             DisconnectAsync().GetAwaiter().GetResult();
@@ -245,7 +245,7 @@ namespace Opc.Ua.Sample.Controls
 
                 m_session = session;
                 m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
-                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, ct);
+                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, m_telemetry, ct);
                 StandardClient_KeepAlive(m_session, null);
             }
         }
@@ -342,7 +342,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
+                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, m_telemetry);
 
                 SessionsCTRL.Reload(m_session);
 
@@ -396,7 +396,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true);
+                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true, m_telemetry);
 
                 if (endpoint != null)
                 {
@@ -414,7 +414,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ServerOnNetwork serverOnNetwork = new DiscoveredServerOnNetworkListDlg().ShowDialog(null, m_configuration);
+                ServerOnNetwork serverOnNetwork = new DiscoveredServerOnNetworkListDlg().ShowDialog(null, m_configuration, m_telemetry);
 
                 if (serverOnNetwork != null)
                 {

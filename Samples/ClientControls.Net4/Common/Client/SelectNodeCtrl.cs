@@ -60,6 +60,7 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private event EventHandler m_NodeSelected;
         private ReferenceDescription m_selectedNode;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -100,6 +101,12 @@ namespace Opc.Ua.Client.Controls
                     SetSelectedNodeIdAsync(value).Wait();
                 }
             }
+        }
+
+        public void ChangeSession(ISession session, ITelemetryContext telemetry)
+        {
+            Session = session;
+            m_telemetry = telemetry;
         }
 
         public void ClearSelectedNode()
@@ -199,10 +206,7 @@ namespace Opc.Ua.Client.Controls
             {
                 SelectedReference = reference;
 
-                if (m_NodeSelected != null)
-                {
-                    m_NodeSelected(this, new EventArgs());
-                }
+                m_NodeSelected?.Invoke(this, new EventArgs());
             }
         }
         #endregion

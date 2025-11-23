@@ -54,6 +54,7 @@ namespace Opc.Ua.Sample.Controls
         private Session m_session;
         private IList<ContentFilterElement> m_elements;
         private int m_index;
+        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -78,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, IList<ContentFilterElement> elements, int index)
+        public void Initialize(Session session, IList<ContentFilterElement> elements, int index, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -87,6 +88,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_elements = elements;
             m_index = index;
+            m_telemetry = telemetry;
 
             if (elements == null || index < 0 || index >= elements.Count)
             {
@@ -154,7 +156,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                FilterOperand operand = new FilterOperandEditDlg().ShowDialog(m_session, m_elements, m_index, null);
+                FilterOperand operand = new FilterOperandEditDlg().ShowDialog(m_session, m_elements, m_index, null, m_telemetry);
 
                 if (operand == null)
                 {

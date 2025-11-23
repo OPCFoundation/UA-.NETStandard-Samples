@@ -77,6 +77,11 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
+        /// The telemetry Context
+        /// </summary>
+        public ITelemetryContext Telemetry { get; set; }
+
+        /// <summary>
         /// The browser to used browse for a node id.
         /// </summary>
         [DefaultValue(null)]
@@ -173,17 +178,14 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", m_telemetry, default, null);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", Telemetry, default, null);
 
                 if (reference != null && reference.NodeId != null)
                 {
                     NodeIdTB.Text = Utils.Format("{0}", reference.NodeId);
                     m_reference = reference;
 
-                    if (m_IdentifierChanged != null)
-                    {
-                        m_IdentifierChanged(this, null);
-                    }
+                    m_IdentifierChanged?.Invoke(this, null);
                 }
             }
             catch (Exception exception)
@@ -194,10 +196,7 @@ namespace Opc.Ua.Client.Controls
 
         private void NodeIdTB_TextChanged(object sender, EventArgs e)
         {
-            if (m_IdentifierChanged != null)
-            {
-                m_IdentifierChanged(this, null);
-            }
+            m_IdentifierChanged?.Invoke(this, null);
         }
         #endregion
     }

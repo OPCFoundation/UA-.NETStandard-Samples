@@ -150,10 +150,7 @@ namespace Opc.Ua.Client.Controls
             {
                 if (HostsCB.SelectedIndex != 0)
                 {
-                    if (m_HostSelected != null)
-                    {
-                        m_HostSelected(this, new SelectHostCtrlEventArgs((string)HostsCB.SelectedItem));
-                    }
+                    m_HostSelected?.Invoke(this, new SelectHostCtrlEventArgs((string)HostsCB.SelectedItem));
 
                     m_selectedIndex = HostsCB.SelectedIndex;
                     return;

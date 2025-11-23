@@ -403,13 +403,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a dialog that allows a use to edit a value.
         /// </summary>
-        public static object EditValue(Session session, object value)
+        public static object EditValue(Session session, object value, ITelemetryContext telemetry)
         {
             TypeInfo typeInfo = TypeInfo.Construct(value);
 
             if (typeInfo != null)
             {
-                return EditValue(session, value, (uint)typeInfo.BuiltInType, typeInfo.ValueRank);
+                return EditValue(session, value, (uint)typeInfo.BuiltInType, typeInfo.ValueRank, telemetry);
             }
 
             return null;
@@ -418,7 +418,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a dialog that allows a use to edit a value.
         /// </summary>
-        public static object EditValue(Session session, object value, NodeId datatypeId, int valueRank)
+        public static object EditValue(Session session, object value, NodeId datatypeId, int valueRank, ITelemetryContext telemetry)
         {
             if (value == null)
             {
@@ -467,12 +467,12 @@ namespace Opc.Ua.Client.Controls
 
                 case BuiltInType.NodeId:
                 {
-                    return new NodeIdValueEditDlg().ShowDialog(session, (NodeId)value);
+                    return new NodeIdValueEditDlg().ShowDialog(session, (NodeId)value, telemetry);
                 }
 
                 case BuiltInType.ExpandedNodeId:
                 {
-                    return new NodeIdValueEditDlg().ShowDialog(session, (ExpandedNodeId)value);
+                    return new NodeIdValueEditDlg().ShowDialog(session, (ExpandedNodeId)value, telemetry);
                 }
 
                 case BuiltInType.DateTime:

@@ -104,11 +104,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the monitored item.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(ISession session, MonitoredItem monitoredItem, bool isEvent, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, MonitoredItem monitoredItem, bool isEvent, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (!monitoredItem.Created)
             {
-                NodeBTN.Session = session;
+                NodeBTN.ChangeSession(session, telemetry);
                 await NodeBTN.SetSelectedNodeIdAsync(monitoredItem.StartNodeId, ct);
             }
 

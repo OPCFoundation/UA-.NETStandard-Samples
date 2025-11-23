@@ -52,6 +52,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
+        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -79,13 +80,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, ReadValueIdCollection valueIds)
+        public void Initialize(Session session, ReadValueIdCollection valueIds, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             Clear();
 
             m_session = session;
+            m_telemetry = telemetry;
 
             foreach (ReadValueId valueId in valueIds)
             {
@@ -224,7 +226,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 ReadValueId valueId = new ReadValueId();
 
-                if (await new ReadValueEditDlg().ShowDialogAsync(m_session, valueId))
+                if (await new ReadValueEditDlg().ShowDialogAsync(m_session, valueId, m_telemetry))
                 {
                     AddItem(valueId);
                 }
@@ -248,7 +250,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (await new ReadValueEditDlg().ShowDialogAsync(m_session, valueId))
+                if (await new ReadValueEditDlg().ShowDialogAsync(m_session, valueId, m_telemetry))
                 {
                     await UpdateItemAsync(ItemsLV.SelectedItems[0], valueId);
                 }

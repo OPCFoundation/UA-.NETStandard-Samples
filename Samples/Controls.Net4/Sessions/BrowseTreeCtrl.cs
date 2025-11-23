@@ -57,6 +57,7 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Browser m_browser;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private NodeId m_rootId;
         private AttributeListCtrl m_AttributesCtrl;
         private bool m_allowPick;
@@ -164,7 +165,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public async Task SetRootAsync(Browser browser, NodeId rootId, ISession session, CancellationToken ct = default)
+        public async Task SetRootAsync(Browser browser, NodeId rootId, ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             Clear();
 
@@ -173,6 +174,7 @@ namespace Opc.Ua.Sample.Controls
             m_rootId = rootId;
             m_browser = browser;
             m_session = session;
+            m_telemetry = telemetry;
 
             if (m_browser != null)
             {
@@ -221,15 +223,15 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public Task SetRootAsync(Session session, NodeId rootId, CancellationToken ct = default)
+        public Task SetRootAsync(Session session, NodeId rootId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
-            return SetRootAsync(new Browser(session), rootId, session, ct);
+            return SetRootAsync(new Browser(session), rootId, session, telemetry, ct);
         }
 
         /// <summary>
         /// Sets the view for the control.
         /// </summary>
-        public Task SetViewAsync(Session session, BrowseViewType viewType, NodeId viewId, CancellationToken ct = default)
+        public Task SetViewAsync(Session session, BrowseViewType viewType, NodeId viewId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             Clear();
 
@@ -310,7 +312,7 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            return SetRootAsync(browser, rootId, session, ct);
+            return SetRootAsync(browser, rootId, session, telemetry, ct);
         }
 
         /// <summary>
@@ -524,7 +526,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference != null)
                     {
-                        await m_AttributesCtrl.InitializeAsync(m_browser.Session as Session, reference.NodeId);
+                        await m_AttributesCtrl.InitializeAsync(m_browser.Session as Session, reference.NodeId, m_telemetry);
                     }
                     else
                     {
@@ -836,7 +838,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser))
+                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser, m_session))
                 {
                     if (NodesTV.SelectedNode != null)
                     {
@@ -943,7 +945,7 @@ namespace Opc.Ua.Sample.Controls
             m_showReferences = ShowReferencesMI.Checked;
             try
             {
-                await SetRootAsync(m_browser, m_rootId, m_session);
+                await SetRootAsync(m_browser, m_rootId, m_session, m_telemetry);
             }
             catch (Exception exception)
             {

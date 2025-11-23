@@ -58,6 +58,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
+        private ITelemetryContext m_telemetry;
         private Subscription m_subscription;
         private NotificationEventHandler m_SessionNotification;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
@@ -69,9 +70,11 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a new subscription.
         /// </summary>
-        public async Task<Subscription> NewAsync(Session session, CancellationToken ct = default)
+        public async Task<Subscription> NewAsync(Session session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
+
+            m_telemetry = telemetry;
 
             Subscription subscription = new Subscription(session.DefaultSubscription);
 
@@ -131,7 +134,7 @@ namespace Opc.Ua.Sample.Controls
                 m_subscription.Session.Notification += m_SessionNotification;
             }
 
-            MonitoredItemsCTRL.Initialize(subscription);
+            MonitoredItemsCTRL.Initialize(subscription, m_telemetry);
             EventsCTRL.Initialize(subscription, null);
             DataChangesCTRL.InitializeAsync(subscription, null);
 

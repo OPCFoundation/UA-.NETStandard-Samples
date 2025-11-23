@@ -52,6 +52,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
+        private ITelemetryContext m_telemetry;
         private NodeId m_nodeId;
         private bool m_readOnly;
 
@@ -88,7 +89,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task InitializeAsync(Session session, ExpandedNodeId nodeId, CancellationToken ct = default)
+        public async Task InitializeAsync(Session session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -101,6 +102,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_session = session;
             m_nodeId = (NodeId)nodeId;
+            m_telemetry = telemetry;
 
             INode node = await m_session.NodeCache.FindAsync(m_nodeId, ct);
 
@@ -561,7 +563,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (items != null && items.Length == 1)
                 {
-                    object value = GuiUtils.EditValue(m_session, items[0].Value);
+                    object value = GuiUtils.EditValue(m_session, items[0].Value, m_telemetry);
 
                     if (!m_readOnly)
                     {

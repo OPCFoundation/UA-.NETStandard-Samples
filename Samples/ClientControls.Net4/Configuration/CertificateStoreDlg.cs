@@ -52,11 +52,16 @@ namespace Opc.Ua.Client.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
 
+        private ITelemetryContext m_telemetry;
+
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public CertificateStoreIdentifier ShowDialog(CertificateStoreIdentifier store)
+        public CertificateStoreIdentifier ShowDialog(CertificateStoreIdentifier store, ITelemetryContext telemetry)
         {
+            m_telemetry = telemetry;
+
+            CertificateStoreCTRL.Telemetry = telemetry;
             CertificateStoreCTRL.StoreType = CertificateStoreType.Directory;
             CertificateStoreCTRL.StorePath = null;
 

@@ -852,7 +852,7 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem = new MonitoredItem(monitoredItem);
                 }
 
-                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true, m_telemetry))
                 {
                     m_subscription.AddItem(monitoredItem);
                     DataRow row = m_dataset.Tables[0].NewRow();
@@ -890,7 +890,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true, m_telemetry))
                 {
                     DataRow row = (DataRow)monitoredItem.Handle;
                     await UpdateRowAsync(row, monitoredItem);

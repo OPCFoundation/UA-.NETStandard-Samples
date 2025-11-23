@@ -420,7 +420,7 @@ namespace Opc.Ua.Client.Controls
                         id.StorePath = m_storeId.StorePath;
                     }
 
-                    await new ViewCertificateDlg().ShowDialogAsync(id);
+                    await new ViewCertificateDlg().ShowDialogAsync(id, m_telemetry);
                 }
             }
             catch (Exception exception)

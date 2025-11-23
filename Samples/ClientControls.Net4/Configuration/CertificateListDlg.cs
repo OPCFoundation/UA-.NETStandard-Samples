@@ -61,6 +61,7 @@ namespace Opc.Ua.Client.Controls
         {
             m_telemetry = telemetry;
 
+            CertificateStoreCTRL.Telemetry = telemetry;
             CertificateStoreCTRL.StoreType = CertificateStoreType.Directory;
             CertificateStoreCTRL.StorePath = String.Empty;
             CertificateStoreCTRL.ReadOnly = !allowStoreChange;

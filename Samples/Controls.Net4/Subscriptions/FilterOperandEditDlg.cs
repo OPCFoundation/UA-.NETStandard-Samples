@@ -76,13 +76,16 @@ namespace Opc.Ua.Sample.Controls
             Session session,
             IList<ContentFilterElement> elements,
             int index,
-            FilterOperand operand)
+            FilterOperand operand,
+            ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (elements == null) throw new ArgumentNullException(nameof(elements));
 
             m_session = session;
 
+
+            TypeDefinitionIdCTRL.Telemetry = telemetry;
             TypeDefinitionIdCTRL.Browser = new Browser(session);
             TypeDefinitionIdCTRL.RootId = ObjectTypes.BaseEventType;
 

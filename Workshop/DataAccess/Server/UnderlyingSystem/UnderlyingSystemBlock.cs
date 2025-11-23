@@ -332,10 +332,7 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 // report any tag changes after releasing the lock.
-                if (onTagsChanged != null)
-                {
-                    onTagsChanged(snapshots);
-                }
+                onTagsChanged?.Invoke(snapshots);
             }
             catch (Exception e)
             {

@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -45,9 +45,10 @@ namespace Opc.Ua.Gds.Client.Controls
             ConfiguredEndpointCollection endpoints,
             LocalDiscoveryServerClient lds,
             GlobalDiscoveryServerClient gds,
-            QueryServersFilter filters)
+            QueryServersFilter filters,
+            ITelemetryContext telemetry)
         {
-            this.DiscoveryControl.Initialize(endpoints, lds, gds, filters);
+            this.DiscoveryControl.Initialize(endpoints, lds, gds, filters, telemetry);
 
             if (base.ShowDialog(owner) != System.Windows.Forms.DialogResult.OK)
             {

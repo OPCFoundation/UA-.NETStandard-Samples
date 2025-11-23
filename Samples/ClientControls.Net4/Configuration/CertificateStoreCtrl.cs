@@ -67,6 +67,11 @@ namespace Opc.Ua.Client.Controls
 
         #region Public Interface
         /// <summary>
+        /// The Telemetry Context
+        /// </summary>
+        public ITelemetryContext Telemetry { get; set; }
+
+        /// <summary>
         /// Raised when the certificate store is changed in the control.
         /// </summary>
         public event EventHandler StoreChanged
@@ -246,7 +251,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (storeType == CertificateStoreType.X509Store)
                 {
-                    CertificateStoreIdentifier store = new CertificateStoreTreeDlg().ShowDialog(null, m_telemetry);
+                    CertificateStoreIdentifier store = new CertificateStoreTreeDlg().ShowDialog(null, Telemetry);
 
                     if (store == null)
                     {
@@ -295,10 +300,7 @@ namespace Opc.Ua.Client.Controls
                     StorePathCB.SelectedIndex = 0;
                 }
 
-                if (m_StoreChanged != null)
-                {
-                    m_StoreChanged(null, e);
-                }
+                m_StoreChanged?.Invoke(null, e);
             }
             catch (Exception exception)
             {
@@ -310,10 +312,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                if (m_StoreChanged != null)
-                {
-                    m_StoreChanged(null, e);
-                }
+                m_StoreChanged?.Invoke(null, e);
             }
             catch (Exception exception)
             {

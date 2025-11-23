@@ -78,15 +78,17 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private DataSet m_dataset;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Members
         /// <summary>
         /// Changes the session used for the write request.
         /// </summary>
-        public void ChangeSession(ISession session)
+        public void ChangeSession(ISession session, ITelemetryContext telemetry)
         {
             m_session = session;
+            m_telemetry = telemetry;
         }
 
         /// <summary>
@@ -318,7 +320,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // prompt use to edit new value.
-                WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, nodeToWrite);
+                WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, nodeToWrite, m_telemetry);
 
                 if (result != null)
                 {
@@ -343,7 +345,7 @@ namespace Opc.Ua.Client.Controls
                     DataRowView source = row.DataBoundItem as DataRowView;
                     WriteValue value = (WriteValue)source.Row[0];
 
-                    WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, value);
+                    WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, value, m_telemetry);
 
                     if (result != null)
                     {

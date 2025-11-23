@@ -53,6 +53,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
+        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -82,13 +83,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, WriteValueCollection values)
+        public void Initialize(Session session, WriteValueCollection values, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             Clear();
 
             m_session = session;
+            m_telemetry = telemetry;
 
             if (values != null)
             {
@@ -291,7 +293,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 WriteValue value = new WriteValue();
 
-                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value))
+                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value, m_telemetry))
                 {
                     AddItem(value);
                 }
@@ -315,7 +317,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0]))
+                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0], m_telemetry))
                 {
                     Node node = await m_session.NodeCache.FindAsync(values[0].NodeId) as Node;
 
@@ -393,7 +395,7 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    value = GuiUtils.EditValue(m_session, values[0].Value.Value, datatypeId, valueRank);
+                    value = GuiUtils.EditValue(m_session, values[0].Value.Value, datatypeId, valueRank, m_telemetry);
                 }
 
                 if (value != null)

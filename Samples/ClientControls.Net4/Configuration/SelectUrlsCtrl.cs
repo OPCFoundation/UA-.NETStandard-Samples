@@ -158,10 +158,7 @@ namespace Opc.Ua.Client.Controls
 
             Urls = urls;
 
-            if (m_UrlsChanged != null)
-            {
-                m_UrlsChanged(this, e);
-            }
+            m_UrlsChanged?.Invoke(this, e);
         }
         #endregion
     }

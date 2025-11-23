@@ -661,10 +661,7 @@ namespace Opc.Ua.Client.Controls.Common
         {
             ShowValueNoNotify(parent);
 
-            if (m_ValueChanged != null)
-            {
-                m_ValueChanged(this, null);
-            }
+            m_ValueChanged?.Invoke(this, null);
         }
 
         /// <summary>

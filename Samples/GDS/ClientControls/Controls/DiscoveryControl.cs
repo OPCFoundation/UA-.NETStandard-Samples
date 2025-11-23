@@ -72,6 +72,7 @@ namespace Opc.Ua.Gds.Client.Controls
         private ConfiguredEndpointCollection m_endpoints;
         private QueryServersFilter m_filters;
         private DataSet m_dataset;
+        private ITelemetryContext m_telemetry;
 
         private DataTable ServersTable { get { return m_dataset.Tables[0]; } }
         private DataTable EndpointsTable { get { return m_dataset.Tables[1]; } }
@@ -254,12 +255,14 @@ namespace Opc.Ua.Gds.Client.Controls
             ConfiguredEndpointCollection endpoints, 
             LocalDiscoveryServerClient lds, 
             GlobalDiscoveryServerClient gds, 
-            QueryServersFilter filters)
+            QueryServersFilter filters,
+            ITelemetryContext telemetry)
         {
             m_lds = lds;
             m_gds = gds;
             m_filters = filters;
-            
+            m_telemetry = telemetry;
+
             DiscoveryTreeView.Nodes.Clear();
 
             TreeNode node = new TreeNode("Local Machine");

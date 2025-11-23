@@ -215,10 +215,7 @@ namespace Opc.Ua.Sample.Controls
                 await BrowseAsync(m_stack[m_position].Target.NodeId, ct);
             }
 
-            if (m_PositionChanged != null)
-            {
-                m_PositionChanged(this, null);
-            }
+            m_PositionChanged?.Invoke(this, null);
         }
 
         /// <summary>
@@ -404,10 +401,7 @@ namespace Opc.Ua.Sample.Controls
                 m_position++;
                 m_stack.Add(itemData);
 
-                if (m_PositionAdded != null)
-                {
-                    m_PositionAdded(this, null);
-                }
+                m_PositionAdded?.Invoke(this, null);
 
                 await BrowseAsync(itemData.Target.NodeId);
             }

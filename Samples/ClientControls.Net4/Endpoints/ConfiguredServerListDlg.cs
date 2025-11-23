@@ -63,7 +63,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ConfiguredEndpoint ShowDialog(ApplicationConfiguration configuration, bool createNew)
+        public ConfiguredEndpoint ShowDialog(ApplicationConfiguration configuration, bool createNew, ITelemetryContext telemetry)
         {
             m_configuration = configuration;
             m_endpoint = null;
@@ -71,7 +71,7 @@ namespace Opc.Ua.Client.Controls
             // create a default collection if none provided.
             if (createNew)
             {
-                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration, m_telemetry);
+                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration, telemetry);
 
                 if (server != null)
                 {
@@ -81,7 +81,7 @@ namespace Opc.Ua.Client.Controls
                 return null;
             }
 
-            ServersCTRL.Initialize(null, configuration);
+            ServersCTRL.Initialize(null, configuration, telemetry);
 
             OkBTN.Enabled = false;
 

@@ -60,10 +60,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public NodeId ShowDialog(Session session, NodeId value)
+        public NodeId ShowDialog(Session session, NodeId value, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
+            ValueCTRL.Telemetry = telemetry;
             ValueCTRL.Browser = new Browser(session);
             ValueCTRL.RootId = Objects.RootFolder;
             ValueCTRL.Identifier = value;
@@ -79,10 +80,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ExpandedNodeId ShowDialog(Session session, ExpandedNodeId value)
+        public ExpandedNodeId ShowDialog(Session session, ExpandedNodeId value, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
+            ValueCTRL.Telemetry = telemetry;
             ValueCTRL.Browser = new Browser(session);
             ValueCTRL.RootId = Objects.RootFolder;
             ValueCTRL.Identifier = ExpandedNodeId.ToNodeId(value, session.NamespaceUris);

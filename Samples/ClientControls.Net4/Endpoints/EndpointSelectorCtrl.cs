@@ -62,6 +62,7 @@ namespace Opc.Ua.Client.Controls
         private ConfiguredEndpointCollection m_endpoints;
         private event ConnectEndpointEventHandler m_ConnectEndpoint;
         private event EventHandler m_EndpointsChanged;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -129,10 +130,7 @@ namespace Opc.Ua.Client.Controls
                 m_endpoints.Add(value);
 
                 // raise notification.
-                if (m_EndpointsChanged != null)
-                {
-                    m_EndpointsChanged(this, null);
-                }
+                m_EndpointsChanged?.Invoke(this, null);
 
                 EndpointCB.SelectedIndex = EndpointCB.Items.Add(value);
             }
@@ -141,12 +139,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes the control with a list of endpoints.
         /// </summary>
-        public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration)
+        public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             if (endpoints == null) throw new ArgumentNullException(nameof(endpoints));
 
             m_endpoints = endpoints;
             m_configuration = configuration;
+            m_telemetry = telemetry;
 
             EndpointCB.Items.Clear();
             EndpointCB.SelectedIndex = -1;
@@ -191,7 +190,7 @@ namespace Opc.Ua.Client.Controls
                     if (args.UpdateControl)
                     {
                         // must update the control because the display text may have changed.
-                        Initialize(m_endpoints, m_configuration);
+                        Initialize(m_endpoints, m_configuration, m_telemetry);
                         SelectedEndpoint = endpoint;
                     }
                 }
@@ -213,7 +212,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // modify configuration.
-                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true);
+                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true, m_telemetry);
 
                 if (endpoint == null)
                 {
@@ -224,13 +223,10 @@ namespace Opc.Ua.Client.Controls
                 m_endpoints.Add(endpoint);
 
                 // raise notification.
-                if (m_EndpointsChanged != null)
-                {
-                    m_EndpointsChanged(this, null);
-                }
+                m_EndpointsChanged?.Invoke(this, null);
 
                 // update dropdown.
-                Initialize(m_endpoints, m_configuration);
+                Initialize(m_endpoints, m_configuration, m_telemetry);
 
                 // update selection.
                 for (int ii = 0; ii < m_endpoints.Endpoints.Count; ii++)

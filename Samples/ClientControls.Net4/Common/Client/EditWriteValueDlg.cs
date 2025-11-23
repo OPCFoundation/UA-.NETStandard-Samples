@@ -67,9 +67,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the write request parameters for the set of nodes provided.
         /// </summary>
-        public async Task<WriteValue> ShowDialogAsync(ISession session, WriteValue nodeToWrite, CancellationToken ct = default)
+        public async Task<WriteValue> ShowDialogAsync(ISession session, WriteValue nodeToWrite, ITelemetryContext telemetry, CancellationToken ct = default)
         {
-            NodeBTN.Session = session;
+            NodeBTN.ChangeSession(session, telemetry);
             NodeBTN.SelectedReference = null;
 
             // fill in the control.

@@ -52,6 +52,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
+        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -78,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs, CancellationToken ct = default)
+        public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (methodId == null) throw new ArgumentNullException(nameof(methodId));
@@ -86,6 +87,7 @@ namespace Opc.Ua.Sample.Controls
             Clear();
 
             m_session = session;
+            m_telemetry = telemetry;
 
             // find the method.
             MethodNode method = await session.NodeCache.FindAsync(methodId, ct) as MethodNode;
@@ -266,7 +268,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                object value = GuiUtils.EditValue(m_session, arguments[0].Value, arguments[0].DataType, arguments[0].ValueRank);
+                object value = GuiUtils.EditValue(m_session, arguments[0].Value, arguments[0].DataType, arguments[0].ValueRank, m_telemetry);
 
                 if (value != null)
                 {

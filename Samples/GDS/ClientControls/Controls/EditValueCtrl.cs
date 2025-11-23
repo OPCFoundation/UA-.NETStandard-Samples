@@ -621,10 +621,7 @@ namespace Opc.Ua.Gds.Client.Controls
             ShowValueNoNotify(parent);
             ValuesDV.ClearSelection();
 
-            if (m_ValueChanged != null)
-            {
-                m_ValueChanged(this, null);
-            }
+            m_ValueChanged?.Invoke(this, null);
         }
 
         /// <summary>

@@ -57,8 +57,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(CertificateIdentifier certificateIdentifier, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(CertificateIdentifier certificateIdentifier, ITelemetryContext telemetry, CancellationToken ct = default)
         {
+            CertificateStoreCTRL.Telemetry = telemetry;
             CertificateStoreCTRL.StoreType = null;
             CertificateStoreCTRL.StorePath = null;
             PrivateKeyCB.SelectedIndex = 0;
@@ -94,8 +95,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public bool ShowDialog(X509Certificate2 certificate)
+        public bool ShowDialog(X509Certificate2 certificate, ITelemetryContext telemetry)
         {
+            CertificateStoreCTRL.Telemetry = telemetry;
             CertificateStoreCTRL.StoreType = null;
             CertificateStoreCTRL.StorePath = null;
             PrivateKeyCB.SelectedIndex = 0;

@@ -66,7 +66,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
-            SubscribeRequestCTRL.ChangeSession(session);
+            SubscribeRequestCTRL.ChangeSession(session, telemetry);
             m_session = session;
             return Task.CompletedTask;
         }

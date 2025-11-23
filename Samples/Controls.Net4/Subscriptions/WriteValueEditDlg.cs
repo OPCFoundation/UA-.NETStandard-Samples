@@ -55,12 +55,12 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(Session session, WriteValue value, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(Session session, WriteValue value, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-
+            NodeIdCTRL.Telemetry = telemetry;
             NodeIdCTRL.Browser = new Browser(session);
 
             INode node = await session.NodeCache.FindAsync(value.NodeId, ct);

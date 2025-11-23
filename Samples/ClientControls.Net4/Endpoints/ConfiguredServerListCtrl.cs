@@ -71,15 +71,17 @@ namespace Opc.Ua.Client.Controls
 
         private ApplicationConfiguration m_configuration;
         private ConfiguredEndpointCollection m_endpoints;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays a list of servers in the control.
         /// </summary>
-        public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration)
+        public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             Interlocked.Exchange(ref m_configuration, configuration);
+            m_telemetry = telemetry;
 
             ItemsLV.Items.Clear();
 
