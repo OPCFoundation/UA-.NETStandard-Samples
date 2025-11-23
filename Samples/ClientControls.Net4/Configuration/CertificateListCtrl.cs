@@ -500,7 +500,7 @@ namespace Opc.Ua.Client.Controls
             catch (Exception exception)
             {
                 GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
-                await InitializeAsync(m_storeId, m_thumbprints);
+                await InitializeAsync(m_storeId, m_thumbprints, m_telemetry);
             }
         }
 

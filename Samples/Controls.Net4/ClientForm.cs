@@ -383,7 +383,8 @@ namespace Opc.Ua.Sample.Controls
                 _ = new PerformanceTestDlg().ShowDialog(
                     m_configuration,
                     m_endpoints,
-                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true));
+                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true),
+                    m_telemetry);
             }
             catch (Exception exception)
             {

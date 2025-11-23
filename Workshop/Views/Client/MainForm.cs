@@ -166,7 +166,7 @@ namespace Quickstarts.ViewsClient
                 }
 
                 // browse the instances in the server.
-                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
+                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, m_telemetry, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
             }
             catch (Exception exception)
             {

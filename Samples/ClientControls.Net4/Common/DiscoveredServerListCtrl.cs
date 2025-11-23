@@ -38,6 +38,7 @@ using System.Threading;
 
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {

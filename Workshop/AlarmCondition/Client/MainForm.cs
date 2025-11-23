@@ -312,7 +312,7 @@ namespace Quickstarts.AlarmConditionClient
                 // changing the filter changes the fields requested. this makes it
                 // impossible to process notifications sent before the change.
                 // to avoid this problem we create a new item and remove the old one.
-                MonitoredItem monitoredItem = m_filter.CreateMonitoredItem(m_session);
+                MonitoredItem monitoredItem = m_filter.CreateMonitoredItem(m_session, m_telemetry);
 
                 // set up callback for notifications.
                 monitoredItem.Notification += m_MonitoredItem_Notification;
