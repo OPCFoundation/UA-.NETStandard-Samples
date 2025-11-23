@@ -478,9 +478,9 @@ namespace Quickstarts.UserAuthenticationServer
 
                     // create an exception with a vendor defined sub-code.
                     throw new ServiceResultException(new ServiceResult(
-                        StatusCodes.BadUserAccessDenied,
-                        "NoWriteAllowed",
                         Namespaces.UserAuthentication,
+                        new StatusCode(StatusCodes.BadUserAccessDenied,
+                        "NoWriteAllowed"),
                         new LocalizedText(info)));
                 }
 #if TODO
