@@ -123,7 +123,7 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
@@ -213,7 +213,7 @@ namespace Quickstarts.AlarmConditionClient
                     ObjectTypeIds.NonExclusiveLimitAlarmType);
 
                 // create a monitored item based on the current filter settings.
-                m_monitoredItem = m_filter.CreateMonitoredItem(m_session);
+                m_monitoredItem = m_filter.CreateMonitoredItem(m_session, m_telemetry);
 
                 // set up callback for notifications.
                 m_monitoredItem.Notification += m_MonitoredItem_Notification;

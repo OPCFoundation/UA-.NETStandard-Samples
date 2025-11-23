@@ -63,6 +63,7 @@ namespace Quickstarts.HistoricalEvents.Client
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62553/Quickstarts/HistoricalEventsServer";
@@ -73,6 +74,7 @@ namespace Quickstarts.HistoricalEvents.Client
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
         #endregion
 
@@ -87,7 +89,7 @@ namespace Quickstarts.HistoricalEvents.Client
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {

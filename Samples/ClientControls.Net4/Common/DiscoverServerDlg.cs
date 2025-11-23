@@ -58,6 +58,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -66,9 +67,9 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         /// <param name="configuration">The client applicatio configuration.</param>
         /// <returns>The selected endpoint url</returns>
-        public string ShowDialog(ApplicationConfiguration configuration)
+        public string ShowDialog(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
-            return ShowDialog(configuration, null);
+            return ShowDialog(configuration, null, telemetry);
         }
 
         /// <summary>
@@ -77,9 +78,10 @@ namespace Opc.Ua.Client.Controls
         /// <param name="configuration">The client applicatio configuration.</param>
         /// <param name="hostName">The default host name.</param>
         /// <returns>The selected endpoint url</returns>
-        public string ShowDialog(ApplicationConfiguration configuration, string hostName)
+        public string ShowDialog(ApplicationConfiguration configuration, string hostName, ITelemetryContext telemetry)
         {
             m_configuration = configuration;
+            m_telemetry = telemetry;
 
             if (String.IsNullOrEmpty(hostName))
             {
@@ -118,7 +120,7 @@ namespace Opc.Ua.Client.Controls
                 configuration.OperationTimeout = 20000;
 
                 // Connect to the local discovery server and find the available servers.
-                using (DiscoveryClient client = DiscoveryClient.Create(new Uri(Utils.Format("opc.tcp://{0}:4840", hostName)), configuration))
+                using (DiscoveryClient client = await DiscoveryClient.CreateAsync(new Uri(Utils.Format("opc.tcp://{0}:4840", hostName)), configuration, m_telemetry))
                 {
                     ApplicationDescriptionCollection servers = await client.FindServersAsync(null, ct);
 

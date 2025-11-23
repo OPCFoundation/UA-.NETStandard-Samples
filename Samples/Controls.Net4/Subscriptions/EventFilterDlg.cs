@@ -53,6 +53,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
+        private ITelemetryContext m_telemetry;
         private EventFilter m_filter;
         #endregion
 
@@ -60,12 +61,13 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public EventFilter ShowDialog(Session session, EventFilter filter, bool editWhereClause)
+        public EventFilter ShowDialog(Session session, ITelemetryContext telemetry, EventFilter filter, bool editWhereClause)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (filter == null) throw new ArgumentNullException(nameof(filter));
 
             m_session = session;
+            m_telemetry = telemetry;
             m_filter = filter;
 
             BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, null);
@@ -176,7 +178,7 @@ namespace Opc.Ua.Sample.Controls
                 filter.SelectClauses.AddRange(SelectClauseCTRL.GetSelectClauses());
                 filter.WhereClause = ContentFilterCTRL.GetFilter();
 
-                EventFilter.Result result = filter.Validate(new FilterContext(m_session.NamespaceUris, m_session.TypeTree));
+                EventFilter.Result result = filter.Validate(new FilterContext(m_session.NamespaceUris, m_session.TypeTree, m_telemetry));
 
                 if (ServiceResult.IsBad(result.Status))
                 {

@@ -40,6 +40,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -62,6 +63,8 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
         private NodeId m_rootId;
         private NodeId[] m_referenceTypeIds;
         private NodeId m_selectedNodeId;
@@ -86,6 +89,7 @@ namespace Opc.Ua.Client.Controls
         public async Task InitializeAsync(
             ISession session,
             NodeId rootId,
+            ITelemetryContext telemetry,
             CancellationToken ct,
             params NodeId[] referenceTypeIds)
         {
@@ -103,6 +107,8 @@ namespace Opc.Ua.Client.Controls
 
             m_rootId = rootId;
             m_referenceTypeIds = referenceTypeIds;
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<BrowseTreeViewCtrl>();
 
             // save session.
             await ChangeSessionAsync(session, true);
@@ -447,7 +453,7 @@ namespace Opc.Ua.Client.Controls
                         }
                         catch (Exception exception)
                         {
-                            Utils.LogError(exception, "Error loading image.");
+                            m_logger.LogError(exception, "Error loading image.");
                         }
                     }
 

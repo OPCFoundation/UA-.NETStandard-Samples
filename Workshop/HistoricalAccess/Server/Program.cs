@@ -60,6 +60,7 @@ namespace Quickstarts.HistoricalAccessServer
     static class Program
     {
         private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+        private static ILogger m_logger;
 
         /// <summary>
         /// The main entry point for the application.
@@ -75,6 +76,8 @@ namespace Quickstarts.HistoricalAccessServer
             ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "HistoricalAccessServer";
+
+            m_logger = m_telemetry.CreateLogger(nameof(Program));
 
             try
             {
@@ -326,7 +329,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 if (!calculator.QueueRawValue(rawValue))
                 {
-                    Utils.Trace("Oops!");
+                    m_logger.LogTrace("Oops!");
                     continue;
                 }
 
@@ -347,13 +350,13 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 if (values[ii].SourceTimestamp != expectedValues[ii].SourceTimestamp)
                 {
-                    Utils.Trace("Wrong Status Timestamp");
+                    m_logger.LogTrace("Wrong Status Timestamp");
                     continue;
                 }
 
                 if (values[ii].StatusCode != expectedValues[ii].StatusCode)
                 {
-                    Utils.Trace("Wrong Status Code");
+                    m_logger.LogTrace("Wrong Status Code");
                     continue;
                 }
 
@@ -364,7 +367,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (value1 != value2)
                     {
-                        Utils.Trace("Wrong Value");
+                        m_logger.LogTrace("Wrong Value");
                         continue;
                     }
                 }

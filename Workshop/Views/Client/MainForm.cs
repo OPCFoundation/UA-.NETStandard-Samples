@@ -62,6 +62,7 @@ namespace Quickstarts.ViewsClient
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62561/Quickstarts/ViewsServer";
@@ -72,6 +73,7 @@ namespace Quickstarts.ViewsClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
         #endregion
 
@@ -86,7 +88,7 @@ namespace Quickstarts.ViewsClient
         {
             try
             {
-                ConnectServerCTRL.ConnectAsync().Wait();
+                ConnectServerCTRL.ConnectAsync(m_telemetry).Wait();
             }
             catch (Exception exception)
             {

@@ -74,6 +74,7 @@ namespace Quickstarts.UserAuthenticationClient
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62565/Quickstarts/UserAuthenticationServer";
             this.Text = m_configuration.ApplicationName;
+            m_telemetry = telemetry;
 
             UserNameTB.Text = "Operator";
             PreferredLocalesTB.Text = "de,es,en";
@@ -108,6 +109,7 @@ namespace Quickstarts.UserAuthenticationClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private bool m_connectedOnce;
@@ -127,7 +129,7 @@ namespace Quickstarts.UserAuthenticationClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {

@@ -222,6 +222,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private NodeId m_nodeId;
@@ -448,7 +449,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public async Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
+        public async Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (Object.ReferenceEquals(session, m_session))
             {
@@ -467,6 +468,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             m_session = session;
+            m_telemetry = telemetry;
             m_dataset.Clear();
             LeftPN.Enabled = m_session != null;
 
@@ -1049,7 +1051,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            m_subscription = new Subscription();
+            m_subscription = new Subscription(m_telemetry);
             m_subscription.Handle = this;
             m_subscription.DisplayName = null;
             m_subscription.PublishingInterval = 1000;
@@ -1062,7 +1064,7 @@ namespace Opc.Ua.Client.Controls
             m_session.AddSubscription(m_subscription);
             await m_subscription.CreateAsync(ct);
 
-            m_monitoredItem = new MonitoredItem();
+            m_monitoredItem = new MonitoredItem(m_telemetry);
             m_monitoredItem.StartNodeId = m_nodeId;
             m_monitoredItem.AttributeId = Attributes.Value;
             m_monitoredItem.SamplingInterval = (int)SamplingIntervalNP.Value;

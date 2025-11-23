@@ -118,7 +118,7 @@ namespace Opc.Ua.Sample.Controls
                 configuration.MaxStringLength = (int)MaxStringLengthNC.Value;
                 configuration.MaxByteStringLength = (int)MaxByteStringLengthNC.Value;
 
-                ITransportChannel channel = SessionChannel.Create(
+                ITransportChannel channel = await UaChannelBase.CreateUaBinaryChannelAsync(
                     m_configuration,
                     m_endpoints[EndpointCB.SelectedIndex],
                     configuration,

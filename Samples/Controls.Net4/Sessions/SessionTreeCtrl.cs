@@ -215,7 +215,7 @@ namespace Opc.Ua.Sample.Controls
                 // load certificate chain
                 clientCertificateChain = new X509Certificate2Collection(clientCertificate);
                 List<CertificateIdentifier> issuers = new List<CertificateIdentifier>();
-                await m_configuration.CertificateValidator.GetIssuersAsync(clientCertificate, issuers);
+                await m_configuration.CertificateValidator.GetIssuersAsync(clientCertificate, issuers, ct);
                 for (int i = 0; i < issuers.Count; i++)
                 {
                     clientCertificateChain.Add(issuers[i].Certificate);
@@ -223,13 +223,14 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // create the channel.
-            ITransportChannel channel = SessionChannel.Create(
+            ITransportChannel channel = await UaChannelBase.CreateUaBinaryChannelAsync(
                 m_configuration,
                 endpoint.Description,
                 endpoint.Configuration,
                 clientCertificate,
                 m_configuration.SecurityConfiguration.SendCertificateChain ? clientCertificateChain : null,
-                m_messageContext);
+                m_messageContext,
+                ct);
 
             // create the session.
             return await ConnectAsync(endpoint, channel, availableEndpoints, ct);
@@ -270,7 +271,7 @@ namespace Opc.Ua.Sample.Controls
                 // ensure the channel is closed on error.
                 if (channel != null)
                 {
-                    channel.Close();
+                    await channel.CloseAsync(ct);
                 }
             }
         }

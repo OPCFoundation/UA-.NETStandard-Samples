@@ -70,6 +70,8 @@ namespace Opc.Ua.Client.Controls
         };
 
         private ApplicationConfiguration m_configuration;
+        private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
         private int m_discoveryTimeout;
         private int m_discoverCount;
         private string m_discoveryUrl;
@@ -99,9 +101,12 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a list of servers in the control.
         /// </summary>
-        public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration)
+        public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             Interlocked.Exchange(ref m_configuration, configuration);
+
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<DiscoveredServerListCtrl>();
 
             ItemsLV.Items.Clear();
 
@@ -116,9 +121,12 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a list of servers in the control.
         /// </summary>
-        public void Initialize(string hostname, ApplicationConfiguration configuration)
+        public void Initialize(string hostname, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             Interlocked.Exchange(ref m_configuration, configuration);
+
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<DiscoveredServerListCtrl>();
 
             ItemsLV.Items.Clear();
 
@@ -230,7 +238,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error discovering servers.");
+                m_logger.LogError(e, "Unexpected error discovering servers.");
             }
         }
 
@@ -247,9 +255,12 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                client = DiscoveryClient.Create(
+                client = await DiscoveryClient.CreateAsync(
                     discoveryUrl,
-                    EndpointConfiguration.Create(m_configuration));
+                    EndpointConfiguration.Create(m_configuration),
+                    m_telemetry,
+                    DiagnosticsMasks.None,
+                    ct);
 
                 ApplicationDescriptionCollection servers = await client.FindServersAsync(null, ct);
                 m_discoveryUrl = discoveryUrl.ToString();
@@ -258,7 +269,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.Trace("DISCOVERY ERROR - Could not fetch servers from url: {0}. Error=({2}){1}", discoveryUrl, e.Message, e.GetType());
+                m_logger.LogError("DISCOVERY ERROR - Could not fetch servers from url: {0}. Error=({2}){1}", discoveryUrl, e.Message, e.GetType());
                 return false;
             }
             finally

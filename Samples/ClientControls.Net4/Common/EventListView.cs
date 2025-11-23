@@ -56,6 +56,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Methods
         private Session m_session;
+        private ITelemetryContext m_telemetry;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private FilterDeclaration m_filter;
@@ -127,7 +128,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public async Task ChangeSessionAsync(Session session, bool fetchRecent, CancellationToken ct = default)
+        public async Task ChangeSessionAsync(Session session, bool fetchRecent, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (Object.ReferenceEquals(session, m_session))
             {
@@ -141,6 +142,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             m_session = session;
+            m_telemetry = telemetry;
             EventsLV.Items.Clear();
 
             if (m_session != null && m_isSubscribed)
@@ -327,7 +329,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task CreateSubscriptionAsync(CancellationToken ct = default)
         {
-            m_subscription = new Subscription();
+            m_subscription = new Subscription(m_telemetry);
             m_subscription.Handle = this;
             m_subscription.DisplayName = null;
             m_subscription.PublishingInterval = 1000;
@@ -340,7 +342,7 @@ namespace Opc.Ua.Client.Controls
             m_session.AddSubscription(m_subscription);
             await m_subscription.CreateAsync(ct);
 
-            m_monitoredItem = new MonitoredItem();
+            m_monitoredItem = new MonitoredItem(m_telemetry);
             m_monitoredItem.StartNodeId = m_areaId;
             m_monitoredItem.AttributeId = Attributes.EventNotifier;
             m_monitoredItem.SamplingInterval = 0;

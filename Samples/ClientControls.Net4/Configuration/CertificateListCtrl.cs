@@ -75,6 +75,7 @@ namespace Opc.Ua.Client.Controls
         private CertificateIdentifierCollection m_certificates;
         private IList<string> m_thumbprints;
         private List<ListViewItem> m_items;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -203,11 +204,12 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the applications in the control.
         /// </summary>
-        internal async Task InitializeAsync(CertificateStoreIdentifier id, IList<string> thumbprints, CancellationToken ct = default)
+        internal async Task InitializeAsync(CertificateStoreIdentifier id, IList<string> thumbprints, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             ItemsLV.Items.Clear();
 
             m_storeId = id;
+            m_telemetry = telemetry;
             m_thumbprints = thumbprints;
 
             if (m_storeId == null || String.IsNullOrEmpty(m_storeId.StoreType) || String.IsNullOrEmpty(m_storeId.StorePath))
@@ -220,7 +222,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 // get the store.
-                using (ICertificateStore store = m_storeId.OpenStore())
+                using (ICertificateStore store = m_storeId.OpenStore(telemetry))
                 {
                     // only show certificates with the specified thumbprint.
                     if (thumbprints != null)
@@ -367,7 +369,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 listItem.SubItems[3].Text = buffer.ToString();
-                listItem.SubItems[4].Text = X509Utils.GetApplicationUriFromCertificate(certificate);
+                listItem.SubItems[4].Text = X509Utils.GetApplicationUrisFromCertificate(certificate)[0];
                 listItem.SubItems[5].Text = String.Format("{0:yyyy-MM-dd}", certificate.NotAfter);
             }
 
@@ -451,7 +453,7 @@ namespace Opc.Ua.Client.Controls
                 List<ListViewItem> itemsToDelete = new List<ListViewItem>();
                 bool yesToAll = false;
 
-                using (ICertificateStore store = m_storeId.OpenStore())
+                using (ICertificateStore store = m_storeId.OpenStore(m_telemetry))
                 {
                     for (int ii = 0; ii < ItemsLV.SelectedItems.Count; ii++)
                     {
@@ -558,7 +560,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (id.Certificate != null)
                 {
-                    using (ICertificateStore store = m_storeId.OpenStore())
+                    using (ICertificateStore store = m_storeId.OpenStore(m_telemetry))
                     {
                         store.AddAsync(id.Certificate);
                     }

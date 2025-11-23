@@ -1133,10 +1133,12 @@ namespace Opc.Ua.Client.Controls
             EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             endpointConfiguration.OperationTimeout = m_discoveryTimeout;
 
-            DiscoveryClient client = DiscoveryClient.Create(
+            DiscoveryClient client = await DiscoveryClient.CreateAsync(
                 discoveryUrl,
                 EndpointConfiguration.Create(m_configuration),
-                m_configuration);
+                m_configuration,
+                DiagnosticsMasks.None,
+                ct);
 
             try
             {
@@ -1766,7 +1768,7 @@ namespace Opc.Ua.Client.Controls
                     if ((m_currentDescription.ServerCertificate != null) && (m_currentDescription.ServerCertificate.Length > 0))
                     {
                         X509Certificate2 serverCertificate = new X509Certificate2(m_currentDescription.ServerCertificate);
-                        String certificateApplicationUri = X509Utils.GetApplicationUriFromCertificate(serverCertificate);
+                        String certificateApplicationUri = X509Utils.GetApplicationUrisFromCertificate(serverCertificate)[0];
 
                         if (certificateApplicationUri != m_currentDescription.Server.ApplicationUri)
                         {

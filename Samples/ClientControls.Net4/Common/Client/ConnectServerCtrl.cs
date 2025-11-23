@@ -295,6 +295,7 @@ namespace Opc.Ua.Client.Controls
             ITransportWaitingConnection connection,
             EndpointDescription endpointDescription,
             bool useSecurity,
+            ITelemetryContext telemetry,
             uint sessionTimeout = 0,
             CancellationToken ct = default)
         {
@@ -304,7 +305,7 @@ namespace Opc.Ua.Client.Controls
             // select the best endpoint.
             if (endpointDescription == null)
             {
-                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, DiscoverTimeout, ct);
+                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, DiscoverTimeout, telemetry, ct);
             }
 
             EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
@@ -316,7 +317,7 @@ namespace Opc.Ua.Client.Controls
             m_session.KeepAlive += Session_KeepAlive;
 
             // set up reconnect handler.
-            m_reconnectHandler = new SessionReconnectHandler(true, DefaultReconnectPeriodExponentialBackOff * 1000);
+            m_reconnectHandler = new SessionReconnectHandler(telemetry, true, DefaultReconnectPeriodExponentialBackOff * 1000);
 
             // raise an event.
             DoConnectComplete(null);
@@ -344,6 +345,7 @@ namespace Opc.Ua.Client.Controls
         private async Task<ISession> ConnectInternalAsync(
             string serverUrl,
             bool useSecurity,
+            ITelemetryContext telemetry,
             uint sessionTimeout = 0,
             CancellationToken ct = default)
         {
@@ -351,7 +353,7 @@ namespace Opc.Ua.Client.Controls
             await InternalDisconnectAsync(ct);
 
             // select the best endpoint.
-            var endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, serverUrl, useSecurity, DiscoverTimeout, ct);
+            var endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, serverUrl, useSecurity, DiscoverTimeout, telemetry, ct);
             var endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
@@ -361,7 +363,7 @@ namespace Opc.Ua.Client.Controls
             m_session.KeepAlive += new KeepAliveEventHandler(Session_KeepAlive);
 
             // set up reconnect handler.
-            m_reconnectHandler = new SessionReconnectHandler(true, DefaultReconnectPeriodExponentialBackOff * 1000);
+            m_reconnectHandler = new SessionReconnectHandler(telemetry, true, DefaultReconnectPeriodExponentialBackOff * 1000);
 
             // raise an event.
             DoConnectComplete(null);
@@ -389,6 +391,7 @@ namespace Opc.Ua.Client.Controls
         /// <param name="useSecurity">Whether to use security.</param>
         /// <returns>The new session object.</returns>
         public Task<ISession> ConnectAsync(
+            ITelemetryContext telemetry,
             string serverUrl = null,
             bool useSecurity = false,
             uint sessionTimeout = 0,
@@ -413,7 +416,7 @@ namespace Opc.Ua.Client.Controls
 
             UpdateStatus(false, DateTime.Now, "Connecting [{0}]", serverUrl);
 
-            return ConnectInternalAsync(serverUrl, useSecurity, sessionTimeout, ct);
+            return ConnectInternalAsync(serverUrl, useSecurity, telemetry, sessionTimeout, ct);
         }
 
         /// <summary>
@@ -424,6 +427,7 @@ namespace Opc.Ua.Client.Controls
         public async Task<ISession> ConnectAsync(
             ITransportWaitingConnection connection,
             bool useSecurity,
+            ITelemetryContext telemetry,
             int discoverTimeout = -1,
             uint sessionTimeout = 0,
             CancellationToken ct = default)
@@ -442,12 +446,12 @@ namespace Opc.Ua.Client.Controls
             {
                 // Discovery uses the reverse connection and closes it
                 // return and wait for next reverse hello
-                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, discoverTimeout, ct);
+                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, discoverTimeout, telemetry, ct);
                 m_endpoints[connection.EndpointUrl] = endpointDescription;
                 return null;
             }
 
-            return await ConnectInternalAsync(connection, endpointDescription, UseSecurityCK.Checked, sessionTimeout, ct);
+            return await ConnectInternalAsync(connection, endpointDescription, UseSecurityCK.Checked, telemetry, sessionTimeout, ct);
         }
 
         /// <summary>
@@ -529,7 +533,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Finds the endpoint that best matches the current settings.
         /// </summary>
-        private async Task<EndpointDescription> SelectEndpointAsync(CancellationToken ct = default)
+        private async Task<EndpointDescription> SelectEndpointAsync(ITelemetryContext telemetry, CancellationToken ct = default)
         {
             try
             {
@@ -544,7 +548,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // return the selected endpoint.
-                return await CoreClientUtils.SelectEndpointAsync(m_configuration, discoveryUrl, UseSecurityCK.Checked, DiscoverTimeout, ct);
+                return await CoreClientUtils.SelectEndpointAsync(m_configuration, discoveryUrl, UseSecurityCK.Checked, DiscoverTimeout, telemetry, ct);
             }
             finally
             {

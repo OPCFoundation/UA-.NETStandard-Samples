@@ -63,6 +63,7 @@ namespace Quickstarts.ReferenceClient
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62541/Quickstarts/ReferenceServer";
             this.Text = m_configuration.ApplicationName;
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -70,6 +71,7 @@ namespace Quickstarts.ReferenceClient
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
         private bool m_connectedOnce;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -83,7 +85,7 @@ namespace Quickstarts.ReferenceClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {

@@ -58,6 +58,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private CertificateListCtrl m_certificateListCtrl;
+        private ITelemetryContext m_telemetry;
 
         private enum ContainerInfoType
         {
@@ -141,8 +142,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Provides the configuration to use when displaying the control.
         /// </summary>
-        public void Initialize()
+        public void Initialize(ITelemetryContext telemetry)
         {
+            m_telemetry = telemetry;
             NodesTV.Nodes.Clear();
             TreeNode node = AddNode(null, new ContainerInfo(ContainerInfoType.Root, System.Net.Dns.GetHostName()));
             node.Nodes.Add(new TreeNode());
@@ -160,7 +162,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_certificateListCtrl != null)
             {
-                await m_certificateListCtrl.InitializeAsync(SelectedStore, null);
+                await m_certificateListCtrl.InitializeAsync(SelectedStore, null, m_telemetry);
             }
         }
 
@@ -307,7 +309,7 @@ namespace Opc.Ua.Client.Controls
                         return;
                     }
 
-                    using (ICertificateStore store = id.OpenStore())
+                    using (ICertificateStore store = id.OpenStore(m_telemetry))
                     {
                         for (int ii = 0; ii < certificates.Length; ii++)
                         {
@@ -479,7 +481,7 @@ namespace Opc.Ua.Client.Controls
                     {
                         CertificateStoreIdentifier storeId = info.GetCertificateStore();
 
-                        using (ICertificateStore store = storeId.OpenStore())
+                        using (ICertificateStore store = storeId.OpenStore(m_telemetry))
                         {
                             store.AddAsync(id.Certificate);
                         }

@@ -265,7 +265,7 @@ namespace Quickstarts
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <returns>A list of server urls.</returns>
-        public static async Task<IList<string>> DiscoverServersAsync(ApplicationConfiguration configuration, CancellationToken ct = default)
+        public static async Task<IList<string>> DiscoverServersAsync(ApplicationConfiguration configuration, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             List<string> serverUrls = new List<string>();
 
@@ -274,7 +274,7 @@ namespace Quickstarts
             endpointConfiguration.OperationTimeout = 5000;
 
             // Connect to the local discovery server and find the available servers.
-            using (DiscoveryClient client = DiscoveryClient.Create(new Uri("opc.tcp://localhost:4840"), endpointConfiguration))
+            using (DiscoveryClient client = await DiscoveryClient.CreateAsync(new Uri("opc.tcp://localhost:4840"), endpointConfiguration, telemetry, DiagnosticsMasks.None, ct))
             {
                 ApplicationDescriptionCollection servers = await client.FindServersAsync(null, ct);
 
@@ -316,7 +316,7 @@ namespace Quickstarts
         /// <param name="useSecurity">if set to <c>true</c> select an endpoint that uses security.</param>
         /// <param name="ct">The token to cancel the operation with</param>
         /// <returns>The best available endpoint.</returns>
-        public static async Task<EndpointDescription> SelectEndpointAsync(string discoveryUrl, bool useSecurity, CancellationToken ct = default)
+        public static async Task<EndpointDescription> SelectEndpointAsync(string discoveryUrl, bool useSecurity, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             // needs to add the '/discovery' back onto non-UA TCP URLs.
             if (!discoveryUrl.StartsWith(Utils.UriSchemeOpcTcp))
@@ -337,7 +337,7 @@ namespace Quickstarts
             EndpointDescription selectedEndpoint = null;
 
             // Connect to the server's discovery endpoint and find the available configuration.
-            using (DiscoveryClient client = DiscoveryClient.Create(uri, configuration))
+            using (DiscoveryClient client = await DiscoveryClient.CreateAsync(uri, configuration, telemetry, DiagnosticsMasks.None, ct))
             {
                 EndpointDescriptionCollection endpoints = await client.GetEndpointsAsync(null, ct);
 

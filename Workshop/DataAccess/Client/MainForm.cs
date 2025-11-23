@@ -64,6 +64,7 @@ namespace Quickstarts.DataAccessClient
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62548/Quickstarts/DataAccessServer";
@@ -77,6 +78,7 @@ namespace Quickstarts.DataAccessClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
         private Subscription m_subscription;
         private MonitoredItemNotificationEventHandler m_monitoredItem_Notification;
@@ -93,7 +95,7 @@ namespace Quickstarts.DataAccessClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync().ConfigureAwait(false);
+                await ConnectServerCTRL.ConnectAsync(m_telemetry).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
