@@ -55,9 +55,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public CertificateStoreIdentifier ShowDialog(CertificateStoreIdentifier store)
+        public CertificateStoreIdentifier ShowDialog(CertificateStoreIdentifier stor, ITelemetryContext telemetry)
         {
-            ContainersCTRL.Initialize();
+            ContainersCTRL.Initialize(telemetry);
 
             if (ShowDialog() != DialogResult.OK)
             {

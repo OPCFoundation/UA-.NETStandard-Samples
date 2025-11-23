@@ -43,10 +43,12 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         private GlobalDiscoveryServerClient m_gds;
+        private ITelemetryContext m_telemetry;
 
-        public string ShowDialog(IWin32Window owner, GlobalDiscoveryServerClient gds, IList<string> serverUrls)
+        public string ShowDialog(IWin32Window owner, GlobalDiscoveryServerClient gds, IList<string> serverUrls, ITelemetryContext telemetry)
         {
             m_gds = gds;
+            m_telemetry = telemetry;
 
             ServersListBox.Items.Clear();
 
@@ -92,7 +94,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     Cursor = Cursors.WaitCursor;
 
-                    var endpoint = await CoreClientUtils.SelectEndpointAsync(m_gds.Configuration, url, true, 5000);
+                    var endpoint = await CoreClientUtils.SelectEndpointAsync(m_gds.Configuration, url, true, 5000, m_telemetry);
 
                     if (UserNameCredentialsRB.Checked)
                     {

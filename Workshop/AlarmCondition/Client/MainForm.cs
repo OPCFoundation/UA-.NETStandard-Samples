@@ -1171,7 +1171,7 @@ namespace Quickstarts.AlarmConditionClient
                 if (m_auditEventForm == null)
                 {
                     m_auditEventForm = new AuditEventForm();
-                    await m_auditEventForm.InitializeAsync(m_session, m_subscription);
+                    await m_auditEventForm.InitializeAsync(m_session, m_subscription, m_telemetry);
 
                     m_auditEventForm.FormClosing += new FormClosingEventHandler(AuditEventForm_FormClosing);
                 }

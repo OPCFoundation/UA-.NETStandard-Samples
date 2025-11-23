@@ -55,6 +55,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
+        private ITelemetryContext m_telemetry;
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
         private SessionReconnectHandler m_reconnectHandler;
@@ -299,6 +300,8 @@ namespace Opc.Ua.Client.Controls
             uint sessionTimeout = 0,
             CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
+
             // disconnect from existing session.
             await InternalDisconnectAsync(ct);
 
@@ -349,6 +352,8 @@ namespace Opc.Ua.Client.Controls
             uint sessionTimeout = 0,
             CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
+
             // disconnect from existing session.
             await InternalDisconnectAsync(ct);
 
@@ -503,7 +508,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void Discover(string hostName)
         {
-            string endpointUrl = new DiscoverServerDlg().ShowDialog(m_configuration, hostName);
+            string endpointUrl = new DiscoverServerDlg().ShowDialog(m_configuration, hostName, m_telemetry);
 
             if (endpointUrl != null)
             {
@@ -657,7 +662,7 @@ namespace Opc.Ua.Client.Controls
             Task.Run((Func<Task>)(async () => {
                 try
                 {
-                    await this.ConnectAsync(serverUrl, useSecurity);
+                    await this.ConnectAsync(m_telemetry, serverUrl, useSecurity);
                 }
                 catch (ServiceResultException sre)
                 {

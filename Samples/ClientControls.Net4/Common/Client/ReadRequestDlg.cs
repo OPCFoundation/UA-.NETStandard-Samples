@@ -63,7 +63,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used for the read request.
         /// </summary>
-        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
+        public Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             ReadRequestCTRL.ChangeSession(session);
             return Task.CompletedTask;

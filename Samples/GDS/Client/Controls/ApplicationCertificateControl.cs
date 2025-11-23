@@ -46,6 +46,7 @@ namespace Opc.Ua.Gds.Client
             InitializeComponent();
         }
 
+        private ITelemetryContext m_telemetry;
         private GlobalDiscoveryClientConfiguration m_configuration;
         private GlobalDiscoveryServerClient m_gds;
         private ServerPushConfigurationClient m_server;
@@ -60,8 +61,10 @@ namespace Opc.Ua.Gds.Client
             ServerPushConfigurationClient server,
             RegisteredApplication application,
             bool isHttps,
+            ITelemetryContext telemetry,
             CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
             m_configuration = configuration;
             m_gds = gds;
             m_server = server;
@@ -357,7 +360,7 @@ namespace Opc.Ua.Gds.Client
 
                         // update store
                         var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.CertificateStorePath, false);
-                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
+                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
                         {
                             // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
                             // in this case, privateKey is null
@@ -378,7 +381,6 @@ namespace Opc.Ua.Gds.Client
                             else
                             {
                                 newCert = new X509Certificate2(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
-                                newCert = CertificateFactory.Load(newCert, true);
                             }
                             await store.AddAsync(newCert);
                             if (m_temporaryCertificateCreated)
@@ -464,7 +466,7 @@ namespace Opc.Ua.Gds.Client
                     if (!String.IsNullOrEmpty(m_application.TrustListStorePath))
                     {
                         var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.TrustListStorePath);
-                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
+                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
                         {
                             foreach (byte[] issuerCertificate in issuerCertificates)
                             {

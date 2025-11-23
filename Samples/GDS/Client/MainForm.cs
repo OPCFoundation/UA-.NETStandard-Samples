@@ -49,6 +49,7 @@ namespace Opc.Ua.Gds.Client
             Icon = ClientUtils.GetAppIcon();
 
             m_application = application;
+            m_telemetry = telemetry;
 
             // get the configuration.
             m_configuration = m_application.ApplicationConfiguration.ParseExtension<GlobalDiscoveryClientConfiguration>();
@@ -74,7 +75,7 @@ namespace Opc.Ua.Gds.Client
             m_server.ServerStatusChanged += Server_StatusNotification;
             m_server.ConnectionStatusChanged += Server_ConnectionStatusChangedAsync;
 
-            RegistrationPanel.InitializeAsync(m_gds, m_server, null, m_configuration).GetAwaiter().GetResult();
+            RegistrationPanel.InitializeAsync(m_gds, m_server, null, m_configuration, m_telemetry).GetAwaiter().GetResult();
 
             m_application.ApplicationConfiguration.CertificateValidator.CertificateValidation += CertificateValidator_CertificateValidation;
             UpdateStatus(true, DateTime.MinValue, "---");
@@ -93,6 +94,7 @@ namespace Opc.Ua.Gds.Client
         }
 
         private ApplicationInstance m_application;
+        private ITelemetryContext m_telemetry;
         private ConfiguredEndpointCollection m_endpoints = null;
         private QueryServersFilter m_filters;
         private UserIdentity m_identity;
@@ -235,7 +237,7 @@ namespace Opc.Ua.Gds.Client
                 if (endpoint != null)
                 {
                     SetServer(endpoint);
-                    await RegistrationPanel.InitializeAsync(m_gds, m_server, endpoint, m_configuration);
+                    await RegistrationPanel.InitializeAsync(m_gds, m_server, endpoint, m_configuration, m_telemetry);
                     SelectGdsButton.Visible = true;
                     return;
                 }
@@ -260,7 +262,7 @@ namespace Opc.Ua.Gds.Client
                 await m_server.ConnectAsync(endpoint.Description.EndpointUrl);
 
                 await ServerStatusPanel.InitializeAsync(m_server);
-                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, false);
+                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, false, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -461,7 +463,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (!m_gdsConfigured)
                 {
-                    string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).GetAwaiter().GetResult());
+                    string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).GetAwaiter().GetResult(), m_telemetry);
                     if (uri != null)
                     {
                         m_configuration.GlobalDiscoveryServerUrl = m_gds.EndpointUrl;
@@ -494,7 +496,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, false);
+                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, false, m_telemetry);
                 ShowPanel(Panel.Certificate);
             }
             catch (Exception ex)
@@ -507,7 +509,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, true);
+                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, true, m_telemetry);
                 ShowPanel(Panel.HttpsCertificate);
             }
             catch (Exception ex)
@@ -520,7 +522,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                await TrustListPanel.Initialize(m_gds, m_server, m_registeredApplication, false);
+                await TrustListPanel.Initialize(m_gds, m_server, m_registeredApplication, false, m_telemetry);
                 ShowPanel(Panel.TrustList);
             }
             catch (Exception ex)
@@ -533,7 +535,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                await TrustListPanel.Initialize(m_gds, m_server, m_registeredApplication, true);
+                await TrustListPanel.Initialize(m_gds, m_server, m_registeredApplication, true, m_telemetry);
                 ShowPanel(Panel.HttpsTrustList);
             }
             catch (Exception ex)
@@ -599,8 +601,8 @@ namespace Opc.Ua.Gds.Client
                 HttpsCertificateButton.Visible = (e.Application != null && !String.IsNullOrEmpty(e.Application.GetHttpsDomainName()));
                 HttpsTrustListButton.Visible = (e.Application != null && !String.IsNullOrEmpty(e.Application.HttpsTrustListStorePath));
 #endif
-                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, e.Application, false);
-                await TrustListPanel.Initialize(m_gds, m_server, e.Application, false);
+                await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, e.Application, false, m_telemetry);
+                await TrustListPanel.Initialize(m_gds, m_server, e.Application, false, m_telemetry);
                 UpdateMainFormHeader();
             }
             catch (Exception ex)
@@ -621,7 +623,7 @@ namespace Opc.Ua.Gds.Client
             m_gdsConfigured = false;
             UpdateGdsStatus(true, DateTime.UtcNow, "Disconnected");
 
-            string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).GetAwaiter().GetResult());
+            string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).GetAwaiter().GetResult(), m_telemetry);
             if (uri != null)
             {
                 m_configuration.GlobalDiscoveryServerUrl = m_gds.EndpointUrl;

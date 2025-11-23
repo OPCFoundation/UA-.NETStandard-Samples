@@ -1684,6 +1684,7 @@ namespace Opc.Ua.Client.Controls
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     null,
                     "Select Variable",
+                    m_telemetry,
                     default,
                     Opc.Ua.ReferenceTypeIds.Organizes,
                     Opc.Ua.ReferenceTypeIds.Aggregates);

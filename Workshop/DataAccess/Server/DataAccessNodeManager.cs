@@ -141,7 +141,7 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 // start the simulation.
-                m_system.StartSimulation();
+                m_system.StartSimulation(Server.Telemetry);
             }
         }
 

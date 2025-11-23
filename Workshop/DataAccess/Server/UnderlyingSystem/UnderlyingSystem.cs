@@ -566,7 +566,7 @@ namespace Quickstarts.DataAccessServer
         /// Once an tag is confirmed it go to the inactive state.
         /// If the tag stays active the severity will be gradually increased.
         /// </remarks>
-        public void StartSimulation()
+        public void StartSimulation(ITelemetryContext telemetry)
         {
             lock (m_lock)
             {
@@ -576,7 +576,7 @@ namespace Quickstarts.DataAccessServer
                     m_simulationTimer = null;
                 }
 
-                m_generator = new Opc.Ua.Test.DataGenerator(null);
+                m_generator = new Opc.Ua.Test.DataGenerator(null, telemetry);
                 m_simulationTimer = new Timer(DoSimulation, null, 1000, 1000);
             }
         }

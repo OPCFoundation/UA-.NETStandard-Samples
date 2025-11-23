@@ -60,6 +60,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
         #region Private Fields
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private NodeId m_areaId;
         private FilterDeclaration m_filter;
         private ReadEventDetails m_details;
@@ -70,9 +71,10 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(ISession session, NodeId areaId, FilterDeclaration filter, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, NodeId areaId, FilterDeclaration filter, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             m_session = session;
+            m_telemetry = telemetry;
             m_areaId = areaId;
             m_filter = filter;
 
@@ -81,7 +83,7 @@ namespace Quickstarts.HistoricalEvents.Client
             EventFilterTB.Text = GetFilterFields(m_filter);
 
             await ResultsLV.SetSubscribedAsync(false, ct);
-            await ResultsLV.ChangeSessionAsync(session, false, ct);
+            await ResultsLV.ChangeSessionAsync(session, false, telemetry, ct);
             await ResultsLV.ChangeAreaAsync(areaId, false, ct);
             await ResultsLV.ChangeFilterAsync(filter, false, ct);
 
@@ -422,7 +424,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", default, Opc.Ua.ReferenceTypeIds.HasEventSource);
+                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId == null)
                 {

@@ -138,6 +138,7 @@ namespace Quickstarts.DataTypes
                 // browse the instances in the server.
                 await BrowseCTRL.InitializeAsync(m_session,
                     ObjectIds.RootFolder,
+                    m_telemetry,
                     default,
                     ReferenceTypeIds.Organizes,
                     ReferenceTypeIds.Aggregates,

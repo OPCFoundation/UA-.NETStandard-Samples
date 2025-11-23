@@ -57,8 +57,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public CertificateIdentifier ShowDialog(CertificateStoreIdentifier store, bool allowStoreChange)
+        public CertificateIdentifier ShowDialog(CertificateStoreIdentifier store, bool allowStoreChange, ITelemetryContext telemetry)
         {
+            m_telemetry = telemetry;
+
             CertificateStoreCTRL.StoreType = CertificateStoreType.Directory;
             CertificateStoreCTRL.StorePath = String.Empty;
             CertificateStoreCTRL.ReadOnly = !allowStoreChange;
@@ -159,7 +161,7 @@ namespace Opc.Ua.Client.Controls
                 CertificateStoreIdentifier store = new CertificateStoreIdentifier();
                 store.StoreType = CertificateStoreCTRL.StoreType;
                 store.StorePath = CertificateStoreCTRL.StorePath;
-                await CertificatesCTRL.InitializeAsync(store, null);
+                await CertificatesCTRL.InitializeAsync(store, null, m_telemetry);
 
                 FilterBTN_Click(sender, e);
             }
@@ -168,5 +170,7 @@ namespace Opc.Ua.Client.Controls
                 GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
+
+        private ITelemetryContext m_telemetry;
     }
 }

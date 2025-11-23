@@ -41,9 +41,10 @@ namespace Opc.Ua.Gds.Client.Controls
             Icon = ImageListControl.AppIcon;
         }
 
-        public async Task ShowDialogAsync(ApplicationConfiguration configuration, CancellationToken ct = default)
+        public async Task ShowDialogAsync(ApplicationConfiguration configuration, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             await CertificatesControl.Initialize(
+                telemetry,
                 configuration.SecurityConfiguration.TrustedPeerCertificates.StorePath,
                 configuration.SecurityConfiguration.TrustedIssuerCertificates.StorePath,
                 configuration.SecurityConfiguration.RejectedCertificateStore.StorePath,

@@ -190,6 +190,7 @@ namespace Quickstarts.HistoricalAccess.Client
                     m_session,
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     "Select Variable to Monitor",
+                    m_telemetry,
                     default,
                     ReferenceTypes.Organizes,
                     ReferenceTypes.Aggregates);

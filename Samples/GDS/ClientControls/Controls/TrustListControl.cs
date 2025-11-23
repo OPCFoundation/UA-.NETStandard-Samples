@@ -67,6 +67,7 @@ namespace Opc.Ua.Gds.Client.Controls
             CertificateListGridView.DataSource = m_dataset.Tables[0];
         }
 
+        private ITelemetryContext m_telemetry;
         private DataSet m_dataset;
         private FileInfo m_certificateFile;
         private string m_trustedStorePath;
@@ -85,12 +86,13 @@ namespace Opc.Ua.Gds.Client.Controls
         private ICertificateStore CreateStore(string storePath)
         {
             CertificateStoreIdentifier certificateStoreIdentifier = new CertificateStoreIdentifier(storePath);
-            ICertificateStore store = certificateStoreIdentifier.OpenStore();
-            return store;
+            return certificateStoreIdentifier.OpenStore(m_telemetry);
         }
 
-        public async Task Initialize(string trustedStorePath, string issuerStorePath, string rejectedStorePath, CancellationToken ct = default)
+        public async Task Initialize(ITelemetryContext telemetry, string trustedStorePath, string issuerStorePath, string rejectedStorePath, CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
+
             CertificatesTable.Rows.Clear();
 
             m_trustedStorePath = trustedStorePath;
@@ -538,7 +540,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 m_certificateFile = new FileInfo(dialog.FileName);
 
-                X509Certificate2 certificate = CertificateFactory.Load(new X509Certificate2(File.ReadAllBytes(dialog.FileName)), false);
+                X509Certificate2 certificate = new X509Certificate2(File.ReadAllBytes(dialog.FileName));
 
                 if (certificate != null)
                 {

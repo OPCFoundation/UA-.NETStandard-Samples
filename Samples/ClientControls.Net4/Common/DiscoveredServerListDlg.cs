@@ -58,15 +58,17 @@ namespace Opc.Ua.Client.Controls
         private string m_hostname;
         private ApplicationDescription m_server;
         private ApplicationConfiguration m_configuration;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ApplicationDescription ShowDialog(string hostname, ApplicationConfiguration configuration)
+        public ApplicationDescription ShowDialog(string hostname, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             m_configuration = configuration;
+            m_telemetry = telemetry;
 
             if (String.IsNullOrEmpty(hostname))
             {
@@ -77,7 +79,7 @@ namespace Opc.Ua.Client.Controls
             List<string> hostnames = new List<string>();
 
             HostNameCTRL.Initialize(hostname, hostnames);
-            ServersCTRL.Initialize(hostname, configuration);
+            ServersCTRL.Initialize(hostname, configuration, telemetry);
 
             OkBTN.Enabled = false;
 
@@ -110,7 +112,7 @@ namespace Opc.Ua.Client.Controls
                 if (m_hostname != e.Hostname)
                 {
                     m_hostname = e.Hostname;
-                    ServersCTRL.Initialize(m_hostname, m_configuration);
+                    ServersCTRL.Initialize(m_hostname, m_configuration, m_telemetry);
                     m_server = null;
                     OkBTN.Enabled = false;
                 }
@@ -126,7 +128,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 m_hostname = e.Hostname;
-                ServersCTRL.Initialize(m_hostname, m_configuration);
+                ServersCTRL.Initialize(m_hostname, m_configuration, m_telemetry);
                 m_server = null;
                 OkBTN.Enabled = false;
             }

@@ -509,7 +509,7 @@ namespace Quickstarts.HistoricalEvents.Server
             NodeHandle handle,
             HistoryReadValueId nodeToRead)
         {
-            FilterContext filterContext = new FilterContext(context.NamespaceUris, context.TypeTable, context.PreferredLocales);
+            FilterContext filterContext = new FilterContext(context.NamespaceUris, context.TypeTable, context.PreferredLocales, Server.Telemetry);
             LinkedList<BaseEventState> events = new LinkedList<BaseEventState>();
 
             for (ReportType ii = ReportType.FluidLevelTest; ii <= ReportType.InjectionTest; ii++)

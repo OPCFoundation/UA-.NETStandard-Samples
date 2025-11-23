@@ -151,7 +151,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 await EventsLV.SetSubscribedAsync(Events_EnableSubscriptionMI.Checked);
-                await EventsLV.ChangeSessionAsync(m_session, true);
+                await EventsLV.ChangeSessionAsync(m_session, true, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -238,7 +238,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", default, Opc.Ua.ReferenceTypeIds.HasEventSource);
+                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId == null)
                 {
@@ -274,7 +274,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                await new ReadEventHistoryDlg().ShowDialogAsync(m_session, EventsLV.AreaId, new FilterDeclaration(EventsLV.Filter));
+                await new ReadEventHistoryDlg().ShowDialogAsync(m_session, EventsLV.AreaId, new FilterDeclaration(EventsLV.Filter), m_telemetry);
             }
             catch (Exception exception)
             {

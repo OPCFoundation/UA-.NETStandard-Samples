@@ -64,7 +64,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used for the call request.
         /// </summary>
-        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
+        public Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             m_session = session;
             CallRequestCTRL.ChangeSession(session);
