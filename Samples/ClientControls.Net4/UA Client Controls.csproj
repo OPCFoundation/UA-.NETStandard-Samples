@@ -30,9 +30,12 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <!-- Exclude duplicate files in Common/Client and Endpoints subdirectories -->
+    <!-- Exclude duplicate files in specific subdirectories -->
     <Compile Remove="Common\Client\**;Endpoints\**" />
-    <EmbeddedResource Remove="Common\Client\**;Endpoints\**" />
-    <None Remove="Common\Client\**;Endpoints\**" />
+    <EmbeddedResource Remove="Common\Client\**;Endpoints\**;Configuration\Common (OLD)\ExceptionDlg.resx" />
+    <None Remove="Common\Client\**;Endpoints\**;Configuration\Common (OLD)\**" />
+    <!-- Exclude specific duplicate files from Configuration/Common (OLD) -->
+    <Compile Remove="Configuration\Common (OLD)\ExceptionDlg.cs" />
+    <Compile Remove="Configuration\Common (OLD)\ExceptionDlg.Designer.cs" />
   </ItemGroup>
 </Project>
