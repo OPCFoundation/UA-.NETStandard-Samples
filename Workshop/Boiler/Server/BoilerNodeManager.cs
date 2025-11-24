@@ -37,6 +37,7 @@ using System.Threading;
 using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.Boiler.Server
 {
@@ -261,7 +262,7 @@ namespace Quickstarts.Boiler.Server
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error during simulation.");
+                m_logger.LogError(e, "Unexpected error during simulation.");
             }
         }
         #endregion

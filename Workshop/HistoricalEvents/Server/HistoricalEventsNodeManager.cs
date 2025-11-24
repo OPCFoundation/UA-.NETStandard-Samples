@@ -38,6 +38,7 @@ using System.Reflection;
 using System.Data;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.HistoricalEvents.Server
 {
@@ -63,6 +64,8 @@ namespace Quickstarts.HistoricalEvents.Server
 
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<HistoricalEventsServerConfiguration>();
+
+            m_logger = server.Telemetry.CreateLogger<HistoricalEventsNodeManager>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -439,7 +442,7 @@ namespace Quickstarts.HistoricalEvents.Server
                         {
                             if (StatusCode.IsBad(result.OperationResults[jj]))
                             {
-                                result.DiagnosticInfos.Add(ServerUtils.CreateDiagnosticInfo(Server, context.OperationContext, result.OperationResults[jj]));
+                                result.DiagnosticInfos.Add(ServerUtils.CreateDiagnosticInfo(Server, context.OperationContext, result.OperationResults[jj], m_logger));
                             }
                         }
                     }
@@ -708,13 +711,14 @@ namespace Quickstarts.HistoricalEvents.Server
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error during simulation.");
+                m_logger.LogError(e, "Unexpected error during simulation.");
             }
         }
         #endregion
 
         #region Private Fields
         private HistoricalEventsServerConfiguration m_configuration;
+        private ILogger m_logger;
         private Timer m_simulationTimer;
         private ReportGenerator m_generator;
         #endregion

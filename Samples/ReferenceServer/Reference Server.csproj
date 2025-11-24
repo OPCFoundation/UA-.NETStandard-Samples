@@ -84,7 +84,6 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SerilogTraceLogger.cs" />
     <Compile Include="ReferenceServerUtils.cs" />
     <Content Include="Resources\OPCFoundation.jpg" />
     <EmbeddedResource Include="MonitoredItemEventLogDlg.resx">

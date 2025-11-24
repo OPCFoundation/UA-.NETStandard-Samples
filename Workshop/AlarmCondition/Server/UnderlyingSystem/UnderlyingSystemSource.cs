@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 
 namespace Quickstarts.AlarmConditionServer
@@ -42,10 +43,11 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Initializes a new instance of the <see cref="UnderlyingSystemSource"/> class.
         /// </summary>
-        public UnderlyingSystemSource()
+        public UnderlyingSystemSource(ILogger logger)
         {
             m_alarms = new List<UnderlyingSystemAlarm>();
             m_archive = new Dictionary<uint, UnderlyingSystemAlarm>();
+            m_logger = logger;
         }
         #endregion
 
@@ -402,7 +404,7 @@ namespace Quickstarts.AlarmConditionServer
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error running simulation for source {0}", m_sourcePath);
+                m_logger.LogError(e, "Unexpected error running simulation for source {0}", m_sourcePath);
             }
         }
         #endregion
@@ -460,7 +462,7 @@ namespace Quickstarts.AlarmConditionServer
                 }
                 catch (Exception e)
                 {
-                    Utils.Trace(e, "Unexpected error reporting change to an Alarm for Source {0}.", m_sourcePath);
+                    m_logger.LogError(e, "Unexpected error reporting change to an Alarm for Source {0}.", m_sourcePath);
                 }
             }
         }
@@ -600,6 +602,7 @@ namespace Quickstarts.AlarmConditionServer
         private string m_sourceType;
         private List<UnderlyingSystemAlarm> m_alarms;
         private Dictionary<uint, UnderlyingSystemAlarm> m_archive;
+        private ILogger m_logger;
         private bool m_isOffline;
         private uint m_nextRecordNumber;
         #endregion

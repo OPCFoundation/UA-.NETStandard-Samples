@@ -33,6 +33,7 @@ using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client.ComplexTypes;
 
 namespace Opc.Ua.Client.Controls
@@ -56,6 +57,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
         private SessionReconnectHandler m_reconnectHandler;
@@ -301,6 +303,7 @@ namespace Opc.Ua.Client.Controls
             CancellationToken ct = default)
         {
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ConnectServerCtrl>();
 
             // disconnect from existing session.
             await InternalDisconnectAsync(ct);
@@ -334,7 +337,7 @@ namespace Opc.Ua.Client.Controls
             catch (Exception e)
             {
                 UpdateStatus(true, DateTime.Now, "Connected, failed to load complex type system.");
-                Utils.LogWarning(e, "Failed to load complex type system.");
+                m_logger.LogWarning(e, "Failed to load complex type system.");
             }
 
             // return the new session.
@@ -353,6 +356,7 @@ namespace Opc.Ua.Client.Controls
             CancellationToken ct = default)
         {
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ConnectServerCtrl>();
 
             // disconnect from existing session.
             await InternalDisconnectAsync(ct);
@@ -382,7 +386,7 @@ namespace Opc.Ua.Client.Controls
             catch (Exception e)
             {
                 UpdateStatus(true, DateTime.Now, "Connected, failed to load complex type system.");
-                Utils.LogError(e, "Failed to load complex type system.");
+                m_logger.LogError(e, "Failed to load complex type system.");
             }
 
             // return the new session.

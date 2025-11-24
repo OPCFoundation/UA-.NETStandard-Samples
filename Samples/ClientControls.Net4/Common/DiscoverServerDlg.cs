@@ -120,7 +120,7 @@ namespace Opc.Ua.Client.Controls
                 configuration.OperationTimeout = 20000;
 
                 // Connect to the local discovery server and find the available servers.
-                using (DiscoveryClient client = await DiscoveryClient.CreateAsync(new Uri(Utils.Format("opc.tcp://{0}:4840", hostName)), configuration, m_telemetry))
+                using (DiscoveryClient client = await DiscoveryClient.CreateAsync(new Uri(Utils.Format("opc.tcp://{0}:4840", hostName)), configuration, m_telemetry, DiagnosticsMasks.None, ct))
                 {
                     ApplicationDescriptionCollection servers = await client.FindServersAsync(null, ct);
 

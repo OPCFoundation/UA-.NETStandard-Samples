@@ -40,6 +40,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -58,6 +59,7 @@ namespace Opc.Ua.Sample.Controls
         private Browser m_browser;
         private ISession m_session;
         private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
         private NodeId m_rootId;
         private AttributeListCtrl m_AttributesCtrl;
         private bool m_allowPick;
@@ -175,6 +177,7 @@ namespace Opc.Ua.Sample.Controls
             m_browser = browser;
             m_session = session;
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<BrowseTreeCtrl>();
 
             if (m_browser != null)
             {
@@ -660,39 +663,39 @@ namespace Opc.Ua.Sample.Controls
             {
                 if (reference.ReferenceTypeId.IsNullNodeId)
                 {
-                    Utils.Trace("Reference {0} has null reference type id", reference.DisplayName);
+                    m_logger.LogDebug("Reference {0} has null reference type id", reference.DisplayName);
                     continue;
                 }
 
                 ReferenceTypeNode typeNode = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
                 if (typeNode == null)
                 {
-                    Utils.Trace("Reference {0} has invalid reference type id.", reference.DisplayName);
+                    m_logger.LogDebug("Reference {0} has invalid reference type id.", reference.DisplayName);
                     continue;
                 }
 
                 if (m_browser.BrowseDirection == BrowseDirection.Forward && !reference.IsForward
                     || m_browser.BrowseDirection == BrowseDirection.Inverse && reference.IsForward)
                 {
-                    Utils.Trace("Reference's IsForward value is: {0}, but the browse direction is: {1}; for reference {2}", reference.IsForward, m_browser.BrowseDirection, reference.DisplayName);
+                    m_logger.LogDebug("Reference's IsForward value is: {0}, but the browse direction is: {1}; for reference {2}", reference.IsForward, m_browser.BrowseDirection, reference.DisplayName);
                     continue;
                 }
 
                 if (reference.NodeId == null || reference.NodeId.IsNull)
                 {
-                    Utils.Trace("The node id of the reference {0} is NULL.", reference.DisplayName);
+                    m_logger.LogDebug("The node id of the reference {0} is NULL.", reference.DisplayName);
                     continue;
                 }
 
                 if (reference.BrowseName == null || reference.BrowseName.Name == null)
                 {
-                    Utils.Trace("Browse name is empty for reference {0}", reference.DisplayName);
+                    m_logger.LogDebug("Browse name is empty for reference {0}", reference.DisplayName);
                     continue;
                 }
 
                 if (!Enum.IsDefined(typeof(Opc.Ua.NodeClass), reference.NodeClass) || reference.NodeClass == NodeClass.Unspecified)
                 {
-                    Utils.Trace("Node class is an unknown or unspecified value, for reference {0}", reference.DisplayName);
+                    m_logger.LogDebug("Node class is an unknown or unspecified value, for reference {0}", reference.DisplayName);
                     continue;
                 }
 
@@ -700,7 +703,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference.TypeDefinition == null || reference.TypeDefinition.IsNull)
                     {
-                        Utils.Trace("Type definition is null for reference {0}", reference.DisplayName);
+                        m_logger.LogDebug("Type definition is null for reference {0}", reference.DisplayName);
                         continue;
                     }
                 }
@@ -760,7 +763,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (reference.ReferenceTypeId.IsNullNodeId)
             {
-                Utils.Trace("NULL reference type id, for reference: {0}", reference.DisplayName);
+                m_logger.LogDebug("NULL reference type id, for reference: {0}", reference.DisplayName);
                 return null;
             }
 
@@ -807,7 +810,7 @@ namespace Opc.Ua.Sample.Controls
                 return AddNode(parent, typeNode.NodeId, text, icon);
             }
 
-            Utils.Trace("Reference type id not found for: {0}", reference.ReferenceTypeId);
+            m_logger.LogDebug("Reference type id not found for: {0}", reference.ReferenceTypeId);
 
             return null;
         }

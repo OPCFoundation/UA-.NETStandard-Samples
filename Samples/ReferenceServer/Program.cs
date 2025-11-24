@@ -81,8 +81,7 @@ namespace Quickstarts.ReferenceServer
                 loggerConfiguration.WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning);
 #pragma warning restore CA1305 // Specify IFormatProvider
 #endif
-                SerilogTraceLogger.Create(loggerConfiguration, config);
-
+                
                 // check the application certificate.
                 bool certOk = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Result;
                 if (!certOk)

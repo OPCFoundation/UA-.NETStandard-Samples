@@ -27,6 +27,7 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
 using System;
@@ -363,13 +364,14 @@ namespace Quickstarts.ReferenceServer
             uint code,
             OperationContext context,
             DiagnosticInfoCollection diagnosticInfos,
-            int index)
+            int index,
+            ILogger logger)
         {
             ServiceResult error = new ServiceResult(code);
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos[index] = new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable);
+                diagnosticInfos[index] = new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable, logger);
             }
 
             return error.Code;
@@ -382,14 +384,15 @@ namespace Quickstarts.ReferenceServer
             uint code,
             StatusCodeCollection results,
             DiagnosticInfoCollection diagnosticInfos,
-            OperationContext context)
+            OperationContext context,
+            ILogger logger)
         {
             ServiceResult error = new ServiceResult(code);
             results.Add(error.Code);
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos.Add(new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable));
+                diagnosticInfos.Add(new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable, logger));
                 return true;
             }
 
@@ -404,14 +407,15 @@ namespace Quickstarts.ReferenceServer
             StatusCodeCollection results,
             DiagnosticInfoCollection diagnosticInfos,
             int index,
-            OperationContext context)
+            OperationContext context,
+            ILogger logger)
         {
             ServiceResult error = new ServiceResult(code);
             results[index] = error.Code;
 
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) != 0)
             {
-                diagnosticInfos[index] = new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable);
+                diagnosticInfos[index] = new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable, logger);
                 return true;
             }
 
@@ -439,7 +443,8 @@ namespace Quickstarts.ReferenceServer
         /// </summary>
         public static DiagnosticInfoCollection CreateDiagnosticInfoCollection(
             OperationContext context,
-            IList<ServiceResult> errors)
+            IList<ServiceResult> errors,
+            ILogger logger)
         {
             // all done if no diagnostics requested.
             if ((context.DiagnosticsMask & DiagnosticsMasks.OperationAll) == 0)
@@ -454,7 +459,7 @@ namespace Quickstarts.ReferenceServer
             {
                 if (ServiceResult.IsBad(error))
                 {
-                    results.Add(new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable));
+                    results.Add(new DiagnosticInfo(error, context.DiagnosticsMask, false, context.StringTable, logger));
                 }
                 else
                 {
@@ -471,6 +476,7 @@ namespace Quickstarts.ReferenceServer
         public static StatusCodeCollection CreateStatusCodeCollection(
             OperationContext context,
             IList<ServiceResult> errors,
+            ILogger logger,
             out DiagnosticInfoCollection diagnosticInfos)
         {
             diagnosticInfos = null;
@@ -494,7 +500,7 @@ namespace Quickstarts.ReferenceServer
             // only generate diagnostics if errors exist.
             if (noErrors)
             {
-                diagnosticInfos = CreateDiagnosticInfoCollection(context, errors);
+                diagnosticInfos = CreateDiagnosticInfoCollection(context, errors, logger);
             }
 
             return results;
@@ -510,7 +516,8 @@ namespace Quickstarts.ReferenceServer
         public static DiagnosticInfo CreateDiagnosticInfo(
             IServerInternal server,
             OperationContext context,
-            ServiceResult error)
+            ServiceResult error,
+            ILogger logger)
         {
             if (error == null)
             {
@@ -528,7 +535,8 @@ namespace Quickstarts.ReferenceServer
                 translatedError,
                 context.DiagnosticsMask,
                 false,
-                context.StringTable);
+                context.StringTable,
+                logger);
 
             return diagnosticInfo;
         }

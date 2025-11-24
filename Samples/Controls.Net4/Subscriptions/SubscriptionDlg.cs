@@ -38,6 +38,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -59,6 +60,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
         private Subscription m_subscription;
         private NotificationEventHandler m_SessionNotification;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
@@ -75,6 +77,7 @@ namespace Opc.Ua.Sample.Controls
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<SubscriptionDlg>();
 
             Subscription subscription = new Subscription(session.DefaultSubscription);
 
@@ -89,7 +92,7 @@ namespace Opc.Ua.Sample.Controls
             Subscription duplicateSubscription = session.Subscriptions.FirstOrDefault(s => s.Id != 0 && s.Id.Equals(subscription.Id) && s != subscription);
             if (duplicateSubscription != null)
             {
-                Utils.Trace("Duplicate subscription was created with the id: {0}", duplicateSubscription.Id);
+                m_logger.LogWarning("Duplicate subscription was created with the id: {0}", duplicateSubscription.Id);
 
                 DialogResult result = MessageBox.Show("Duplicate subscription was created with the id: " + duplicateSubscription.Id + ". Do you want to keep it?", "Warning", MessageBoxButtons.YesNo);
                 if (result == System.Windows.Forms.DialogResult.No)

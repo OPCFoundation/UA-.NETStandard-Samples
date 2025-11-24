@@ -55,7 +55,7 @@ namespace Quickstarts.DataAccessServer
         {
             this.AliasRoot = "DA";
 
-            SystemContext.SystemHandle = m_system = new UnderlyingSystem();
+            SystemContext.SystemHandle = m_system = new UnderlyingSystem(server.Telemetry);
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.

@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 
 namespace Quickstarts.AlarmConditionServer
@@ -43,9 +44,10 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Initializes a new instance of the <see cref="UnderlyingSystem"/> class.
         /// </summary>
-        public UnderlyingSystem()
+        public UnderlyingSystem(ITelemetryContext telemetry)
         {
             m_sources = new Dictionary<string, UnderlyingSystemSource>();
+            m_logger = telemetry.CreateLogger<UnderlyingSystem>();
         }
         #endregion
 
@@ -97,7 +99,7 @@ namespace Quickstarts.AlarmConditionServer
             lock (m_lock)
             {
                 // create a new source.
-                source = new UnderlyingSystemSource();
+                source = new UnderlyingSystemSource(m_logger);
 
                 // extract the name from the path.
                 string name = sourcePath;
@@ -219,7 +221,7 @@ namespace Quickstarts.AlarmConditionServer
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error running simulation for system");
+                m_logger.LogError(e, "Unexpected error running simulation for system");
             }
         }
         #endregion
@@ -229,6 +231,7 @@ namespace Quickstarts.AlarmConditionServer
         private Dictionary<string, UnderlyingSystemSource> m_sources;
         private Timer m_simulationTimer;
         private long m_simulationCounter;
+        private ILogger m_logger;
         #endregion
     }
 }

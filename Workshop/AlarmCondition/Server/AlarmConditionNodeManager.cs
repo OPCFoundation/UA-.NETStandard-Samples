@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -55,11 +56,13 @@ namespace Quickstarts.AlarmConditionServer
         :
             base(server, configuration, Namespaces.AlarmCondition)
         {
-            SystemContext.SystemHandle = m_system = new UnderlyingSystem();
+            SystemContext.SystemHandle = m_system = new UnderlyingSystem(server.Telemetry);
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<AlarmConditionServerConfiguration>();
+
+            m_logger = server.Telemetry.CreateLogger<AlarmConditionServerNodeManager>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -189,7 +192,7 @@ namespace Quickstarts.AlarmConditionServer
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error in OnRaiseSystemEvents");
+                m_logger.LogError(e, "Unexpected error in OnRaiseSystemEvents");
             }
         }
 
@@ -428,6 +431,7 @@ namespace Quickstarts.AlarmConditionServer
         #region Private Fields
         private UnderlyingSystem m_system;
         private AlarmConditionServerConfiguration m_configuration;
+        private ILogger m_logger;
         private Dictionary<string, AreaState> m_areas;
         private Dictionary<string, SourceState> m_sources;
         private Timer m_simulationTimer;
