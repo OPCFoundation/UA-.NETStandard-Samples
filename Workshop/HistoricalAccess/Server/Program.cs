@@ -298,7 +298,7 @@ namespace Quickstarts.HistoricalAccessServer
             ArchiveItem item = new ArchiveItem(test.DataPath, Assembly.GetExecutingAssembly(), test.DataPath);
 
             DataFileReader reader = new DataFileReader();
-            reader.LoadConfiguration(null, item);
+            reader.LoadConfiguration(null, item, m_telemetry);
             reader.LoadHistoryData(null, item);
 
             AggregateConfiguration configuration = new AggregateConfiguration();

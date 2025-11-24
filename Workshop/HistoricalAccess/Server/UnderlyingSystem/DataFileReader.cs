@@ -35,6 +35,7 @@ using System.Xml;
 using System.Data;
 using System.Reflection;
 using Opc.Ua;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.HistoricalAccessServer
 {
@@ -89,8 +90,9 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the item configuaration.
         /// </summary>
-        public bool LoadConfiguration(ISystemContext context, ArchiveItem item)
+        public bool LoadConfiguration(ISystemContext context, ArchiveItem item, ITelemetryContext telemetry)
         {
+            m_logger = telemetry.CreateLogger<DataFileReader>();
             using (StreamReader reader = item.OpenArchive())
             {
                 while (!reader.EndOfStream)
@@ -574,7 +576,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -606,7 +608,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -632,7 +634,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -676,12 +678,14 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
                 return false;
             }
 
             return true;
         }
         #endregion
+
+        private ILogger m_logger;
     }
 }

@@ -103,7 +103,7 @@ namespace Quickstarts.PerfTestServer
         {
             lock (Lock)
             {
-                m_system.Initialize();
+                m_system.Initialize(Server.Telemetry);
 
                 IList<MemoryRegister> registers = m_system.GetRegisters();
 

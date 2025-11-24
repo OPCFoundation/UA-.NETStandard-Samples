@@ -74,6 +74,8 @@
     <Project Path="Samples/Opc.Ua.Sample/Opc.Ua.Sample.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
+    <File Path=".azurepipelines/ci.yml" />
+    <File Path=".azurepipelines/sln.yml" />
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".gitignore" />

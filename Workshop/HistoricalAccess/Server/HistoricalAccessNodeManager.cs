@@ -38,6 +38,7 @@ using System.Reflection;
 using System.Data;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.HistoricalAccessServer
 {
@@ -172,7 +173,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 ArchiveItem item = new ArchiveItem(resourcePath, Assembly.GetExecutingAssembly(), resourcePath);
                 ArchiveItemState node = new ArchiveItemState(SystemContext, item, NamespaceIndex);
-                node.ReloadFromSource(SystemContext);
+                node.ReloadFromSource(SystemContext, Server.Telemetry);
 
                 dataFolder.AddReference(ReferenceTypeIds.Organizes, false, node.NodeId);
                 node.AddReference(ReferenceTypeIds.Organizes, true, dataFolder.NodeId);
@@ -284,7 +285,7 @@ namespace Quickstarts.HistoricalAccessServer
                 case NodeTypes.Item:
                 {
                     ArchiveItemState item = m_system.GetItemState(SystemContext, pnd);
-                    item.LoadConfiguration(context);
+                    item.LoadConfiguration(context, Server.Telemetry);
                     target = item;
                     break;
                 }
@@ -353,7 +354,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (item != null && item.ArchiveItem.LastLoadTime.AddMinutes(10) < DateTime.UtcNow)
                     {
-                        item.LoadConfiguration(context);
+                        item.LoadConfiguration(context, Server.Telemetry);
                     }
 
                     ReadValueId nodeToRead = nodesToRead[handle.Index];
@@ -958,7 +959,7 @@ namespace Quickstarts.HistoricalAccessServer
                         continue;
                     }
 
-                    item.ReloadFromSource(context);
+                    item.ReloadFromSource(context, Server.Telemetry);
 
                     // process each item.
                     for (int jj = 0; jj < nodeToUpdate.UpdateValues.Count; jj++)
@@ -1081,7 +1082,7 @@ namespace Quickstarts.HistoricalAccessServer
                         continue;
                     }
 
-                    item.ReloadFromSource(context);
+                    item.ReloadFromSource(context, Server.Telemetry);
 
                     // delete the history.
                     item.DeleteHistory(context, nodeToUpdate.StartTime, nodeToUpdate.EndTime, nodeToUpdate.IsDeleteModified);
@@ -1129,7 +1130,7 @@ namespace Quickstarts.HistoricalAccessServer
                         continue;
                     }
 
-                    item.ReloadFromSource(context);
+                    item.ReloadFromSource(context, Server.Telemetry);
 
                     // process each item.
                     for (int jj = 0; jj < nodeToUpdate.ReqTimes.Count; jj++)
@@ -1167,7 +1168,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (item != null)
             {
-                item.ReloadFromSource(context);
+                item.ReloadFromSource(context, Server.Telemetry);
             }
 
             return item;
@@ -1385,7 +1386,7 @@ namespace Quickstarts.HistoricalAccessServer
                 throw new ServiceResultException(StatusCodes.BadNotSupported);
             }
 
-            item.ReloadFromSource(context);
+            item.ReloadFromSource(context, Server.Telemetry);
 
             LinkedList<DataValue> values = new LinkedList<DataValue>();
 
@@ -1472,7 +1473,7 @@ namespace Quickstarts.HistoricalAccessServer
                 throw new ServiceResultException(StatusCodes.BadNotSupported);
             }
 
-            item.ReloadFromSource(context);
+            item.ReloadFromSource(context, Server.Telemetry);
 
             // find the start and end times.
             DateTime startTime = DateTime.MaxValue;
@@ -1737,7 +1738,7 @@ namespace Quickstarts.HistoricalAccessServer
                     {
                         if (item.ArchiveItem.LastLoadTime.AddSeconds(10) < DateTime.UtcNow)
                         {
-                            item.LoadConfiguration(SystemContext);
+                            item.LoadConfiguration(SystemContext, Server.Telemetry);
                         }
 
                         foreach (DataValue value in item.NewSamples(SystemContext))
@@ -1752,7 +1753,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("Unexpected error during simulation: {0}", e.Message);
+                m_logger.LogError("Unexpected error during simulation: {0}", e.Message);
             }
         }
         #endregion

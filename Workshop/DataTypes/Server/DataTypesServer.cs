@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -61,7 +62,8 @@ namespace Quickstarts.DataTypes
         /// </remarks>
         protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         {
-            Utils.Trace("Creating the Node Managers.");
+            ILogger logger = server.Telemetry.CreateLogger<DataTypesServer>();
+            logger.LogInformation("Creating the Node Managers.");
 
             // add the types defined in the quickstart information model library to the factory.
             server.Factory.AddEncodeableTypes(typeof(Quickstarts.DataTypes.Types.VehicleType).Assembly);

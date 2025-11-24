@@ -86,11 +86,11 @@ namespace Opc.Ua.Gds.Server
                     throw new Exception("Application instance certificate invalid!");
                 }
 
-
+                ILogger logger = m_telemetry.CreateLogger<SqlUsersDatabase>();
                 // load the user database.
                 var userDatabase = new SqlUsersDatabase();
                 //initialize users Database
-                userDatabase.Initialize();
+                userDatabase.Initialize(logger);
 
                 bool createStandardUsers = ConfigureUsers(userDatabase);
 

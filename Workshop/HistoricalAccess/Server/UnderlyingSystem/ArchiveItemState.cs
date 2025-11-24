@@ -107,11 +107,11 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the configuration.
         /// </summary>
-        public void LoadConfiguration(ISystemContext context)
+        public void LoadConfiguration(ISystemContext context, ITelemetryContext telemetry)
         {
             DataFileReader reader = new DataFileReader();
 
-            if (reader.LoadConfiguration(context, m_archiveItem))
+            if (reader.LoadConfiguration(context, m_archiveItem, telemetry))
             {
                 this.DataType = (uint)m_archiveItem.DataType;
                 this.ValueRank = m_archiveItem.ValueRank;
@@ -132,9 +132,9 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the data.
         /// </summary>
-        public void ReloadFromSource(ISystemContext context)
+        public void ReloadFromSource(ISystemContext context, ITelemetryContext telemetry)
         {
-            LoadConfiguration(context);
+            LoadConfiguration(context, telemetry);
 
             if (m_archiveItem.LastLoadTime == DateTime.MinValue || (m_archiveItem.Persistent && m_archiveItem.LastLoadTime.AddSeconds(10) < DateTime.UtcNow))
             {

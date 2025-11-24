@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -59,7 +60,8 @@ namespace Quickstarts.MethodsServer
         /// </remarks>
         protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         {
-            Utils.Trace("Creating the Node Managers.");
+            ILogger logger = server.Telemetry.CreateLogger<MethodsServer>();
+            logger.LogInformation("Creating the Node Managers.");
 
             List<INodeManager> nodeManagers = new List<INodeManager>();
 

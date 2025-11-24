@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Gds.Server.Database.Sql;
 using Opc.Ua.Gds.Server.DB;
 using Opc.Ua.Server;
@@ -17,7 +18,7 @@ namespace Opc.Ua.Gds.Server
     {
 
         #region IUsersDatabase
-        public void Initialize()
+        public void Initialize(ILogger logger)
         {
             using (usersdbEntities entities = new usersdbEntities())
             {
@@ -28,16 +29,16 @@ namespace Opc.Ua.Gds.Server
                 }
                 catch (Exception e)
                 {
-                    Utils.LogError(e, "Could not connect to the Database!");
+                    logger.LogError(e, "Could not connect to the Database!");
 
                     var ie = e.InnerException;
 
                     while (ie != null)
                     {
-                        Utils.LogInfo(ie, "");
+                        logger.LogInformation(ie, "");
                         ie = ie.InnerException;
                     }
-                    Utils.LogInfo("Initialize Database tables!");
+                    logger.LogInformation("Initialize Database tables!");
                     Assembly assembly = typeof(SqlApplicationsDatabase).GetTypeInfo().Assembly;
                     StreamReader istrm = new StreamReader(assembly.GetManifestResourceStream("Opc.Ua.Gds.Server.DB.usersdb.edmx.sql"));
                     string tables = istrm.ReadToEnd();
@@ -47,7 +48,7 @@ namespace Opc.Ua.Gds.Server
                     foreach (var part in parts)
                     { entities.Database.ExecuteSqlCommand(part); }
                     entities.SaveChanges();
-                    Utils.LogInfo("Database Initialized!");
+                    logger.LogInformation("Database Initialized!");
                 }
 
             }
