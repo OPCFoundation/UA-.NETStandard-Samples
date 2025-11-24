@@ -63,18 +63,20 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Browser m_browser;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(Browser browser, ISession session, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(Browser browser, ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (browser == null) throw new ArgumentNullException(nameof(browser));
 
             m_browser = browser;
             m_session = session;
+            m_telemetry = telemetry;
             await ReferenceTypeCTRL.InitializeAsync(m_browser.Session as Session, null, ct);
 
             ViewIdTB.Text = null;
@@ -154,7 +156,7 @@ namespace Opc.Ua.Sample.Controls
                 browser.ReferenceTypeId = ReferenceTypeIds.Organizes;
                 browser.IncludeSubtypes = true;
 
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(browser, Objects.ViewsFolder, m_session);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(browser, Objects.ViewsFolder, m_session, m_telemetry);
 
                 if (reference != null)
                 {

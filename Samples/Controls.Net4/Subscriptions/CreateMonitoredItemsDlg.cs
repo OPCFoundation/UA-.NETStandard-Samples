@@ -61,7 +61,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Subscription subscription, bool useTypeModel)
+        public void Show(Subscription subscription, bool useTypeModel, ITelemetryContext telemetry)
         {
             if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
@@ -85,9 +85,9 @@ namespace Opc.Ua.Sample.Controls
             m_subscription = subscription;
 
             BrowseCTRL.AllowPick = true;
-            BrowseCTRL.SetViewAsync(subscription.Session as Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, null);
+            BrowseCTRL.SetViewAsync(subscription.Session as Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, null, telemetry);
 
-            MonitoredItemsCTRL.Initialize(subscription);
+            MonitoredItemsCTRL.Initialize(subscription, telemetry);
         }
         #endregion
 

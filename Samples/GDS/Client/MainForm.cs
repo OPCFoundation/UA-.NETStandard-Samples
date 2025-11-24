@@ -132,11 +132,11 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (m_server.IsConnected)
                     {
-                        await ServerStatusPanel.InitializeAsync(m_server);
+                        await ServerStatusPanel.InitializeAsync(m_server, m_telemetry);
                     }
                     else
                     {
-                        await ServerStatusPanel.InitializeAsync(null);
+                        await ServerStatusPanel.InitializeAsync(null, m_telemetry);
                     }
                 }
             }
@@ -232,7 +232,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                var endpoint = new SelectServerDialog().ShowDialog(this, m_endpoints, m_lds, m_gds, m_filters);
+                var endpoint = new SelectServerDialog().ShowDialog(this, m_endpoints, m_lds, m_gds, m_filters, m_telemetry);
 
                 if (endpoint != null)
                 {
@@ -261,7 +261,7 @@ namespace Opc.Ua.Gds.Client
 
                 await m_server.ConnectAsync(endpoint.Description.EndpointUrl);
 
-                await ServerStatusPanel.InitializeAsync(m_server);
+                await ServerStatusPanel.InitializeAsync(m_server, m_telemetry);
                 await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, false, m_telemetry);
             }
             catch (Exception exception)
@@ -448,7 +448,7 @@ namespace Opc.Ua.Gds.Client
                 {
                     m_server.DisconnectAsync().GetAwaiter().GetResult();
                     UpdateStatus(true, DateTime.UtcNow, "Disconnected {0}", m_server.Endpoint);
-                    await ServerStatusPanel.InitializeAsync(null);
+                    await ServerStatusPanel.InitializeAsync(null, m_telemetry);
                 }
             }
             catch (Exception exception)
@@ -548,7 +548,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                DiscoveryPanel.Initialize(m_endpoints, m_lds, m_gds, m_filters);
+                DiscoveryPanel.Initialize(m_endpoints, m_lds, m_gds, m_filters, m_telemetry);
                 ShowPanel(Panel.Discovery);
             }
             catch (Exception ex)

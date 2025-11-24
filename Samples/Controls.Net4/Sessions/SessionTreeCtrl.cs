@@ -70,6 +70,7 @@ namespace Opc.Ua.Sample.Controls
         private ServiceMessageContext m_messageContext;
         private ConfiguredEndpoint m_endpoint;
         private string m_filePath;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -170,9 +171,11 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a session with the endpoint.
         /// </summary>
-        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, CancellationToken ct = default)
+        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (endpoint == null) throw new ArgumentNullException(nameof(endpoint));
+
+            m_telemetry = telemetry;
 
             EndpointDescriptionCollection availableEndpoints = null;
 
@@ -233,15 +236,17 @@ namespace Opc.Ua.Sample.Controls
                 ct);
 
             // create the session.
-            return await ConnectAsync(endpoint, channel, availableEndpoints, ct);
+            return await ConnectAsync(endpoint, channel, availableEndpoints, telemetry, ct);
         }
 
         /// <summary>
         /// Opens a new session.
         /// </summary>
-        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, EndpointDescriptionCollection availableEndpoints, CancellationToken ct = default)
+        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, EndpointDescriptionCollection availableEndpoints, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (channel == null) throw new ArgumentNullException(nameof(channel));
+
+            m_telemetry = telemetry;
 
             try
             {
@@ -362,7 +367,7 @@ namespace Opc.Ua.Sample.Controls
             dialog.FormClosing += new FormClosingEventHandler(Subscription_FormClosing);
 
             // create subscription.
-            Subscription subscription = await dialog.NewAsync(session, ct);
+            Subscription subscription = await dialog.NewAsync(session, m_telemetry, ct);
 
             if (subscription != null)
             {
@@ -482,7 +487,7 @@ namespace Opc.Ua.Sample.Controls
             // update address space control.
             if (m_AddressSpaceCtrl != null)
             {
-                m_AddressSpaceCtrl.SetViewAsync(session, BrowseViewType.Objects, null);
+                m_AddressSpaceCtrl.SetViewAsync(session, BrowseViewType.Objects, null, m_telemetry);
             }
 
             // update notification messages control.
@@ -693,7 +698,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new AddressSpaceDlg().Show(session, BrowseViewType.All, null);
+                    new AddressSpaceDlg().Show(session, BrowseViewType.All, null, m_telemetry);
                 }
             }
             catch (Exception exception)
@@ -719,7 +724,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new AddressSpaceDlg().Show(session, BrowseViewType.Objects, null);
+                    new AddressSpaceDlg().Show(session, BrowseViewType.Objects, null, m_telemetry);
                 }
             }
             catch (Exception exception)
@@ -797,7 +802,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new AddressSpaceDlg().Show(session, BrowseViewType.DataTypes, null);
+                    new AddressSpaceDlg().Show(session, BrowseViewType.DataTypes, null, m_telemetry);
                 }
             }
             catch (Exception exception)
@@ -823,7 +828,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    new AddressSpaceDlg().Show(session, BrowseViewType.ReferenceTypes, null);
+                    new AddressSpaceDlg().Show(session, BrowseViewType.ReferenceTypes, null, m_telemetry);
                 }
             }
             catch (Exception exception)
@@ -927,7 +932,8 @@ namespace Opc.Ua.Sample.Controls
                         new AddressSpaceDlg().Show(
                             session,
                             BrowseViewType.ServerDefinedView,
-                            (NodeId)reference.NodeId);
+                            (NodeId)reference.NodeId,
+                            m_telemetry);
                     }
                 }
             }
@@ -982,7 +988,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                await ConnectAsync(m_endpoint);
+                await ConnectAsync(m_endpoint, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -1081,7 +1087,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
-                await new ReadDlg().ShowAsync(session, valueIds);
+                await new ReadDlg().ShowAsync(session, valueIds, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -1150,7 +1156,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
-                await new WriteDlg().ShowAsync(session, values);
+                await new WriteDlg().ShowAsync(session, values, m_telemetry);
             }
             catch (Exception exception)
             {

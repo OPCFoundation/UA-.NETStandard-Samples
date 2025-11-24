@@ -61,14 +61,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Session session, ReadValueIdCollection valueIds)
+        public void Show(Session session, ReadValueIdCollection valueIds, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_session = session;
 
-            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
-            ReadValuesCTRL.Initialize(session, valueIds);
+            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, telemetry);
+            ReadValuesCTRL.Initialize(session, valueIds, telemetry);
 
             MoveBTN_ClickAsync(BackBTN, null);
 

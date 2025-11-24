@@ -70,10 +70,10 @@ namespace Opc.Ua.Sample.Controls
             m_telemetry = telemetry;
             m_filter = filter;
 
-            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, null);
+            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, null, telemetry);
             SelectClauseCTRL.Initialize(session, filter.SelectClauses);
-            ContentFilterCTRL.Initialize(session, filter.WhereClause);
-            FilterOperandsCTRL.Initialize(session, null, -1);
+            ContentFilterCTRL.Initialize(session, filter.WhereClause, telemetry);
+            FilterOperandsCTRL.Initialize(session, null, -1, telemetry);
 
             MoveBTN_Click((editWhereClause) ? NextBTN : BackBTN, null);
 
@@ -119,7 +119,7 @@ namespace Opc.Ua.Sample.Controls
                         {
                             if (Object.ReferenceEquals(elements[ii], item))
                             {
-                                FilterOperandsCTRL.Initialize(m_session, elements, ii);
+                                FilterOperandsCTRL.Initialize(m_session, elements, ii, m_telemetry);
                             }
                         }
 
@@ -128,7 +128,7 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    FilterOperandsCTRL.Initialize(m_session, null, -1);
+                    FilterOperandsCTRL.Initialize(m_session, null, -1, m_telemetry);
                 }
             }
             catch (Exception exception)

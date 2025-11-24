@@ -61,7 +61,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the address space with the specified view
         /// </summary>
-        public void Show(Session session, BrowseViewType viewType, NodeId viewId)
+        public void Show(Session session, BrowseViewType viewType, NodeId viewId, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -73,7 +73,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_session.SessionClosing += m_SessionClosing;
 
-            BrowseCTRL.SetViewAsync(session, viewType, viewId);
+            BrowseCTRL.SetViewAsync(session, viewType, viewId, telemetry);
             Show();
             BringToFront();
         }

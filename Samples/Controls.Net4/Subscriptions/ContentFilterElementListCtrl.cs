@@ -55,6 +55,7 @@ namespace Opc.Ua.Sample.Controls
         private Session m_session;
         private Browser m_browser;
         private ContentFilter m_filter;
+        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -79,7 +80,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, ContentFilter filter)
+        public void Initialize(Session session, ContentFilter filter, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -88,6 +89,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_browser = new Browser(session);
             m_filter = filter;
+            m_telemetry = telemetry;
 
             if (m_filter == null)
             {
@@ -240,7 +242,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType, m_session);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType, m_session, m_telemetry);
 
                 if (reference != null)
                 {

@@ -201,7 +201,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                await ConnectAsync(e.Endpoint);
+                await ConnectAsync(e.Endpoint, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -225,14 +225,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Connects to a server.
         /// </summary>
-        public async Task ConnectAsync(ConfiguredEndpoint endpoint, CancellationToken ct = default)
+        public async Task ConnectAsync(ConfiguredEndpoint endpoint, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (endpoint == null)
             {
                 return;
             }
 
-            Session session = await SessionsCTRL.ConnectAsync(endpoint, ct);
+            Session session = await SessionsCTRL.ConnectAsync(endpoint, telemetry, ct);
 
             if (session != null)
             {
@@ -240,7 +240,7 @@ namespace Opc.Ua.Sample.Controls
                 m_reconnectHandler?.CancelReconnect();
                 Utils.SilentDispose(m_reconnectHandler);
 
-                m_reconnectHandler = new SessionReconnectHandler(m_telemetry, true);
+                m_reconnectHandler = new SessionReconnectHandler(telemetry, true);
                 session.TransferSubscriptionsOnReconnect = true;
 
                 m_session = session;

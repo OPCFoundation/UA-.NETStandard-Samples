@@ -72,11 +72,11 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, ISession session, CancellationToken ct = default)
+        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (browser == null) throw new ArgumentNullException(nameof(browser));
 
-            await BrowseCTRL.SetRootAsync(browser, rootId, session, ct);
+            await BrowseCTRL.SetRootAsync(browser, rootId, session, telemetry, ct);
 
             NamespaceUriCB.Items.Clear();
             NamespaceUriCB.Items.AddRange(session.NamespaceUris.ToArray());

@@ -838,7 +838,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser, m_session))
+                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser, m_session, m_telemetry))
                 {
                     if (NodesTV.SelectedNode != null)
                     {
@@ -969,7 +969,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId);
+                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -1022,7 +1022,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                await new CallMethodDlg().ShowAsync(m_browser.Session as Session, objectId, methodId);
+                await new CallMethodDlg().ShowAsync(m_browser.Session as Session, objectId, methodId, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -1061,7 +1061,7 @@ namespace Opc.Ua.Sample.Controls
                 valueIds.Add(valueId);
 
                 // show form.
-                await new ReadDlg().ShowAsync(session, valueIds);
+                await new ReadDlg().ShowAsync(session, valueIds, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -1100,7 +1100,7 @@ namespace Opc.Ua.Sample.Controls
                 values.Add(value);
 
                 // show form.
-                await new WriteDlg().ShowAsync(session, values);
+                await new WriteDlg().ShowAsync(session, values, m_telemetry);
             }
             catch (Exception exception)
             {

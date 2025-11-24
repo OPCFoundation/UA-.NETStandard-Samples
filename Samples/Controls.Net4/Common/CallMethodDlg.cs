@@ -64,7 +64,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Session session, NodeId objectId, NodeId methodId, CancellationToken ct = default)
+        public async Task ShowAsync(Session session, NodeId objectId, NodeId methodId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (methodId == null) throw new ArgumentNullException(nameof(methodId));
@@ -80,8 +80,8 @@ namespace Opc.Ua.Sample.Controls
             m_objectId = objectId;
             m_methodId = methodId;
 
-            await InputArgumentsCTRL.UpdateAsync(session, methodId, true, ct);
-            await OutputArgumentsCTRL.UpdateAsync(session, methodId, false, ct);
+            await InputArgumentsCTRL.UpdateAsync(session, methodId, true, telemetry, ct);
+            await OutputArgumentsCTRL.UpdateAsync(session, methodId, false, telemetry, ct);
 
             Node target = await session.NodeCache.FindAsync(objectId, ct) as Node;
             Node method = await session.NodeCache.FindAsync(methodId, ct) as Node;
