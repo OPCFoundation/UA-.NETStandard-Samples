@@ -38,6 +38,7 @@ using System.Reflection;
 using System.Data;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.HistoricalEvents.Server
 {
@@ -63,6 +64,8 @@ namespace Quickstarts.HistoricalEvents.Server
 
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<HistoricalEventsServerConfiguration>();
+
+            m_logger = server.Telemetry.CreateLogger<HistoricalEventsNodeManager>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -155,7 +158,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Creates a new area.
         /// </summary>
-        private BaseObjectState CreateArea(SystemContext context, BaseObjectState platforms, string areaName)
+        private BaseObjectState CreateArea(ServerSystemContext context, BaseObjectState platforms, string areaName)
         {
             FolderState area = new FolderState(null);
 
@@ -176,7 +179,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Creates a new well.
         /// </summary>
-        private void CreateWell(SystemContext context, BaseObjectState area, string wellId, string wellName)
+        private void CreateWell(ServerSystemContext context, BaseObjectState area, string wellId, string wellName)
         {
             WellState well = new WellState(null);
 
@@ -374,7 +377,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 HistoryUpdateResult result = results[handle.Index];
 
                 // validate the event filter.
-                FilterContext filterContext = new FilterContext(context.NamespaceUris, context.TypeTable, context);
+                FilterContext filterContext = new FilterContext(context.NamespaceUris, context.TypeTable, context, Server.Telemetry);
                 EventFilter.Result filterResult = nodeToUpdate.Filter.Validate(filterContext);
 
                 if (ServiceResult.IsBad(filterResult.Status))
@@ -439,7 +442,7 @@ namespace Quickstarts.HistoricalEvents.Server
                         {
                             if (StatusCode.IsBad(result.OperationResults[jj]))
                             {
-                                result.DiagnosticInfos.Add(ServerUtils.CreateDiagnosticInfo(Server, context.OperationContext, result.OperationResults[jj]));
+                                result.DiagnosticInfos.Add(ServerUtils.CreateDiagnosticInfo(Server, context.OperationContext, result.OperationResults[jj], m_logger));
                             }
                         }
                     }
@@ -509,7 +512,7 @@ namespace Quickstarts.HistoricalEvents.Server
             NodeHandle handle,
             HistoryReadValueId nodeToRead)
         {
-            FilterContext filterContext = new FilterContext(context.NamespaceUris, context.TypeTable, context.PreferredLocales);
+            FilterContext filterContext = new FilterContext(context.NamespaceUris, context.TypeTable, context.PreferredLocales, Server.Telemetry);
             LinkedList<BaseEventState> events = new LinkedList<BaseEventState>();
 
             for (ReportType ii = ReportType.FluidLevelTest; ii <= ReportType.InjectionTest; ii++)
@@ -708,13 +711,14 @@ namespace Quickstarts.HistoricalEvents.Server
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error during simulation.");
+                m_logger.LogError(e, "Unexpected error during simulation.");
             }
         }
         #endregion
 
         #region Private Fields
         private HistoricalEventsServerConfiguration m_configuration;
+        private ILogger m_logger;
         private Timer m_simulationTimer;
         private ReportGenerator m_generator;
         #endregion

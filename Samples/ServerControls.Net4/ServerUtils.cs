@@ -40,9 +40,9 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Handles an exception.
         /// </summary>
-        public static void HandleException(string caption, Exception e)
+        public static void HandleException(ITelemetryContext telemetry, string caption, Exception e)
         {
-            ExceptionDlg.Show(caption, e);
+            ExceptionDlg.Show(telemetry, caption, e);
         }
 
         /// <summary>

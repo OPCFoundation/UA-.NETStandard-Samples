@@ -43,10 +43,12 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         private ServerPushConfigurationClient m_pushServer;
+        private ITelemetryContext m_telemetry;
 
-        public string ShowDialog(IWin32Window owner, ServerPushConfigurationClient pushServer, IList<string> serverUrls)
+        public string ShowDialog(IWin32Window owner, ServerPushConfigurationClient pushServer, IList<string> serverUrls, ITelemetryContext telemetry)
         {
             m_pushServer = pushServer;
+            m_telemetry = telemetry;
 
             ServersListBox.Items.Clear();
 
@@ -92,7 +94,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     Cursor = Cursors.WaitCursor;
 
-                    var endpoint = await CoreClientUtils.SelectEndpointAsync(m_pushServer.Configuration, url, false, 5000);
+                    var endpoint = await CoreClientUtils.SelectEndpointAsync(m_pushServer.Configuration, url, false, 5000, m_telemetry);
 
                     if (UserNameCredentialsRB.Checked)
                     {
@@ -120,7 +122,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 

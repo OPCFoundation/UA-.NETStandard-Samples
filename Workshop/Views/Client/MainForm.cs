@@ -58,10 +58,11 @@ namespace Quickstarts.ViewsClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62561/Quickstarts/ViewsServer";
@@ -72,6 +73,7 @@ namespace Quickstarts.ViewsClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
         #endregion
 
@@ -86,11 +88,11 @@ namespace Quickstarts.ViewsClient
         {
             try
             {
-                ConnectServerCTRL.ConnectAsync().Wait();
+                ConnectServerCTRL.ConnectAsync(m_telemetry).Wait();
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -105,7 +107,7 @@ namespace Quickstarts.ViewsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -120,7 +122,7 @@ namespace Quickstarts.ViewsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -164,11 +166,11 @@ namespace Quickstarts.ViewsClient
                 }
 
                 // browse the instances in the server.
-                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
+                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, m_telemetry, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -183,7 +185,7 @@ namespace Quickstarts.ViewsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -199,7 +201,7 @@ namespace Quickstarts.ViewsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -233,7 +235,7 @@ namespace Quickstarts.ViewsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
     }

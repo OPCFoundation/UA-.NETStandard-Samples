@@ -82,6 +82,7 @@ namespace Quickstarts.HistoricalAccess.Client
         }
 
         private Session m_session;
+        private ITelemetryContext m_telemetry;
         private NodeId m_nodeId;
         private HistoryReadResult m_result;
         private int m_index;
@@ -92,6 +93,7 @@ namespace Quickstarts.HistoricalAccess.Client
         public async Task<bool> ShowDialogAsync(Session session, NodeId nodeId, CancellationToken ct = default)
         {
             m_session = session;
+            m_telemetry = session?.MessageContext?.Telemetry;
             m_nodeId = nodeId;
 
             // update the title.
@@ -440,7 +442,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_telemetry, "Error Reading History", exception);
             }
         }
 
@@ -452,7 +454,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_telemetry, "Error Reading History", exception);
             }
         }
 
@@ -464,7 +466,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_telemetry, "Error Reading History", exception);
             }
         }
 

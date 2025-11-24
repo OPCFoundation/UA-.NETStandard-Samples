@@ -132,10 +132,7 @@ namespace Opc.Ua.Client.Controls
 
             Profiles = profiles;
 
-            if (m_ProfilesChanged != null)
-            {
-                m_ProfilesChanged(this, e);
-            }
+            m_ProfilesChanged?.Invoke(this, e);
         }
         #endregion
     }

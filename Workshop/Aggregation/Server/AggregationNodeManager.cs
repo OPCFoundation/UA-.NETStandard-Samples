@@ -34,6 +34,7 @@ using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace AggregationServer
 {
@@ -647,7 +648,7 @@ namespace AggregationServer
                     }
 
                     // create a request.
-                    Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(monitoredItem.Id);
+                    Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(monitoredItem.Id, Server.Telemetry);
 
                     request.StartNodeId = m_mapper.ToRemoteId(monitoredItem.NodeId);
                     request.MonitoringMode = monitoredItem.MonitoringMode;
@@ -669,7 +670,7 @@ namespace AggregationServer
                     // create subscription.
                     if (client.SubscriptionCount == 0)
                     {
-                        Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription();
+                        Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription(Server.Telemetry);
 
                         subscription.PublishingInterval = 250;
                         subscription.KeepAliveCount = 100;
@@ -871,7 +872,7 @@ namespace AggregationServer
                 }
                 catch (Exception e)
                 {
-                    Utils.Trace(e, "Could not access external system.");
+                    m_logger.LogError(e, "Could not access external system.");
                 }
             }
         }
@@ -1032,7 +1033,7 @@ namespace AggregationServer
                 }
 
                 // create a request.
-                Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(localItem.Id);
+                Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(localItem.Id, Server.Telemetry);
 
                 if (localItem.NodeId == ObjectIds.Server || localItem.NodeId == m_root.NodeId)
                 {
@@ -1056,7 +1057,7 @@ namespace AggregationServer
                     // create subscription.
                     if (client.SubscriptionCount == 0)
                     {
-                        Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription();
+                        Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription(Server.Telemetry);
 
                         subscription.PublishingInterval = 250;
                         subscription.KeepAliveCount = 100;
@@ -1092,13 +1093,13 @@ namespace AggregationServer
 
                     if (ServiceResult.IsBad(request.Status.Error))
                     {
-                        Utils.Trace((int)Utils.TraceMasks.Error, "Could not create event item. {0}", request.Status.Error.ToLongString());
+                        m_logger.LogError("Could not create event item. {0}", request.Status.Error.ToLongString());
                     }
                 }
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Could not access external system.");
+                m_logger.LogError(e, "Could not access external system.");
             }
 
             return ServiceResult.Good;
@@ -1261,8 +1262,8 @@ namespace AggregationServer
 
             try
             {
-                Utils.Trace($"Create Connect Session: {m_endpoint} for {sessionName}");
-                var session = Opc.Ua.Client.Session.CreateAsync(
+                m_logger.LogInformation($"Create Connect Session: {m_endpoint} for {sessionName}");
+                Opc.Ua.Client.ISession session = new Opc.Ua.Client.DefaultSessionFactory(Server.Telemetry).CreateAsync(
                     m_configuration,
                     m_reverseConnectManager,
                     m_endpoint,
@@ -1298,7 +1299,7 @@ namespace AggregationServer
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Could not connect to server.");
+                m_logger.LogError(e, "Could not connect to server.");
 
                 lock (m_clientsLock)
                 {
@@ -1440,7 +1441,7 @@ namespace AggregationServer
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error updating event type cache.");
+                m_logger.LogError(e, "Unexpected error updating event type cache.");
             }
             finally
             {
@@ -1487,7 +1488,7 @@ namespace AggregationServer
 
                 // get remote node.
                 NodeId targetId = m_mapper.ToRemoteId(handle.NodeId);
-                ILocalNode node = client.ReadNodeAsync(targetId).GetAwaiter().GetResult();
+                ILocalNode node = Opc.Ua.Client.SessionClientExtensions.ReadNodeAsync(client, targetId).GetAwaiter().GetResult();
 
                 if (node == null)
                 {
@@ -1654,7 +1655,7 @@ namespace AggregationServer
         {
             if (e.Status != null && ServiceResult.IsNotGood(e.Status))
             {
-                Utils.Trace("{0} {1}/{2}", e.Status, session.OutstandingRequestCount, session.DefunctRequestCount);
+                m_logger.LogDebug("{ 0} {1}/{2}", e.Status, session.OutstandingRequestCount, session.DefunctRequestCount);
                 var totalBadRequestCount = session.OutstandingRequestCount + session.DefunctRequestCount;
                 Opc.Ua.Client.SessionReconnectHandler reconnectHandler;
                 if (totalBadRequestCount >= 3 &&
@@ -1665,15 +1666,15 @@ namespace AggregationServer
                         AggregationClientSession clientSession = m_clients.Where(c => c.Value?.SessionSessionId == session.SessionId).FirstOrDefault().Value;
                         if (clientSession != null && clientSession.ReconnectHandler == null)
                         {
-                            Utils.Trace($"--- RECONNECTING --- SessionId: {clientSession.ClientSessionId}");
-                            reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler(true);
+                            m_logger.LogInformation($"--- RECONNECTING --- SessionId: {clientSession.ClientSessionId}");
+                            reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler(Server.Telemetry, true);
                             reconnectHandler.BeginReconnect(session, m_reverseConnectManager, DefaultReconnectPeriod, Client_ReconnectComplete);
                             clientSession.ReconnectHandler = reconnectHandler;
                             e.CancelKeepAlive = true;
                         }
                         else if (clientSession == null)
                         {
-                            Utils.Trace($"--- KEEP ALIVE for stale session --- SessionId: {session.SessionId}");
+                            m_logger.LogWarning($"--- KEEP ALIVE for stale session --- SessionId: {session.SessionId}");
                         }
                     }
                 }
@@ -1695,7 +1696,7 @@ namespace AggregationServer
                 AggregationClientSession clientSession = m_clients.Where(c => Object.ReferenceEquals(reconnectHandler, c.Value?.ReconnectHandler)).FirstOrDefault().Value;
                 if (clientSession == null)
                 {
-                    Utils.Trace($"--- RECONNECTED --- SessionId: {clientSession.ClientSessionId} but client session was not found.");
+                    m_logger.LogInformation($"--- RECONNECTED --- SessionId: {clientSession.ClientSessionId} but client session was not found.");
                     return;
                 }
 
@@ -1710,7 +1711,7 @@ namespace AggregationServer
                     Utils.SilentDispose(oldSession);
                 }
                 reconnectHandler.Dispose();
-                Utils.Trace($"--- RECONNECTED --- SessionId: {clientSession.ClientSessionId}");
+                m_logger.LogInformation($"--- RECONNECTED --- SessionId: {clientSession.ClientSessionId}");
             }
         }
 

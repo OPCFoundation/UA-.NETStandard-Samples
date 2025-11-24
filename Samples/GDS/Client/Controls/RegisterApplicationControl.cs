@@ -38,6 +38,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Serialization;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Gds.Client.Controls;
 
 namespace Opc.Ua.Gds.Client
@@ -74,6 +75,8 @@ namespace Opc.Ua.Gds.Client
         private RegisteredApplication m_application;
         private bool m_promptOnRegistrationTypeChange;
         private string m_externalEditor;
+        private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
 
         private const int ClientPullManagement = (int)RegistrationType.ClientPull;
         private const int ServerPullManagement = (int)RegistrationType.ServerPull;
@@ -96,11 +99,14 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        public async Task InitializeAsync(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient pushClient, EndpointDescription endpoint, GlobalDiscoveryClientConfiguration configuration)
+        public async Task InitializeAsync(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient pushClient, EndpointDescription endpoint, GlobalDiscoveryClientConfiguration configuration, ITelemetryContext telemetry)
         {
             m_gds = gds;
             m_pushClient = pushClient;
             m_application.ServerUrl = null;
+
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<RegisterApplicationControl>();
 
             if (configuration != null)
             {
@@ -455,7 +461,7 @@ namespace Opc.Ua.Gds.Client
                 }
                 catch (Exception e)
                 {
-                    Utils.Trace(e, "Unexpected error raising RegisteredApplicationChanged event.");
+                    m_logger.LogError(e, "Unexpected error raising RegisteredApplicationChanged event.");
                 }
             }
         }
@@ -578,7 +584,7 @@ namespace Opc.Ua.Gds.Client
 
             try
             {
-                var configuration = new Opc.Ua.Security.SecurityConfigurationManager().ReadConfiguration(path);
+                var configuration = new Opc.Ua.Security.SecurityConfigurationManager(m_telemetry).ReadConfiguration(path);
 
                 if (configuration.ApplicationType == Security.ApplicationType.Client_1)
                 {
@@ -633,7 +639,7 @@ namespace Opc.Ua.Gds.Client
                 }
                 catch (Exception e)
                 {
-                    Utils.Trace(e, "Unexpected error raising SelectServer event.");
+                    m_logger.LogError(e, "Unexpected error raising SelectServer event.");
                 }
             }
         }
@@ -686,7 +692,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -703,7 +709,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -711,7 +717,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                var discoveryUrls = new DiscoveryUrlsDialog().ShowDialog(Parent, DiscoveryUrlsTextBox.Tag as IList<string>);
+                var discoveryUrls = new DiscoveryUrlsDialog().ShowDialog(m_logger, Parent, DiscoveryUrlsTextBox.Tag as IList<string>);
 
                 if (discoveryUrls != null)
                 {
@@ -733,7 +739,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -777,7 +783,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -803,7 +809,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (String.IsNullOrWhiteSpace(ApplicationUriTextBox.Text))
                 {
-                    ApplicationUriTextBox.Text = X509Utils.GetApplicationUriFromCertificate(certificate);
+                    ApplicationUriTextBox.Text = X509Utils.GetApplicationUrisFromCertificate(certificate)[0];
                 }
 
                 if (String.IsNullOrWhiteSpace(DiscoveryUrlsTextBox.Text) && RegistrationTypeComboBox.SelectedIndex != ClientPullManagement)
@@ -898,7 +904,7 @@ namespace Opc.Ua.Gds.Client
 
                     if (String.IsNullOrWhiteSpace(ApplicationUriTextBox.Text))
                     {
-                        ApplicationUriTextBox.Text = X509Utils.GetApplicationUriFromCertificate(certificate);
+                        ApplicationUriTextBox.Text = X509Utils.GetApplicationUrisFromCertificate(certificate)[0];
                     }
                 }
                 catch (Exception)
@@ -913,7 +919,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -960,7 +966,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1029,7 +1035,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1076,7 +1082,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1126,7 +1132,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1170,7 +1176,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1214,7 +1220,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1258,7 +1264,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1339,7 +1345,7 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (records.Length > 1)
                     {
-                        recordToReplace = new ViewApplicationRecordsDialog(m_gds).ShowDialog(Parent, records, recordToReplace?.ApplicationId);
+                        recordToReplace = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records, recordToReplace?.ApplicationId);
                     }
                     else if (records.Length > 0)
                     {
@@ -1406,7 +1412,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1446,7 +1452,7 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (records.Length > 1)
                     {
-                        existingRecord = new ViewApplicationRecordsDialog(m_gds).ShowDialog(Parent, records, null);
+                        existingRecord = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records, null);
                     }
                     else if (records.Length > 0)
                     {
@@ -1540,7 +1546,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1619,7 +1625,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1717,7 +1723,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1775,7 +1781,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1788,7 +1794,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1841,7 +1847,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1849,7 +1855,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                string uri = new SelectPushServerDialog().ShowDialog(null, m_pushClient, await m_gds.GetDefaultServerUrlsAsync(null));
+                string uri = new SelectPushServerDialog().ShowDialog(null, m_pushClient, await m_gds.GetDefaultServerUrlsAsync(null), m_telemetry);
                 if (uri != null && m_pushClient.IsConnected)
                 {
                     EndpointDescription endpoint = m_pushClient.Endpoint.Description;
@@ -1858,7 +1864,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
     }

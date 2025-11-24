@@ -82,6 +82,7 @@ namespace Opc.Ua.Client.Controls
         private FilterDeclaration m_filter;
         private DisplayState m_state;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private Subscription m_subscription;
         private PublishStateChangedEventHandler m_PublishStatusChanged;
         #endregion
@@ -99,8 +100,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public async Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
+        public async Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
             if (!Object.ReferenceEquals(session, m_session))
             {
                 m_session = session;
@@ -223,7 +225,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_state == DisplayState.SelectEventType)
             {
-                await BrowseCTRL.InitializeAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, ct, Opc.Ua.ReferenceTypeIds.HasSubtype);
+                await BrowseCTRL.InitializeAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, m_telemetry, ct, Opc.Ua.ReferenceTypeIds.HasSubtype);
                 BrowseCTRL.SelectNode((m_filter == null || m_filter.EventTypeId == null) ? Opc.Ua.ObjectTypeIds.BaseEventType : m_filter.EventTypeId);
                 await EventTypeCTRL.ShowTypeAsync(Opc.Ua.ObjectTypeIds.BaseEventType, ct);
                 return;
@@ -677,7 +679,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -703,7 +705,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -715,7 +717,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -727,7 +729,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -739,7 +741,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -768,7 +770,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -788,7 +790,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -800,7 +802,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -819,7 +821,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -850,7 +852,7 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem = new MonitoredItem(monitoredItem);
                 }
 
-                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true, m_telemetry))
                 {
                     m_subscription.AddItem(monitoredItem);
                     DataRow row = m_dataset.Tables[0].NewRow();
@@ -861,7 +863,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -888,7 +890,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, true, m_telemetry))
                 {
                     DataRow row = (DataRow)monitoredItem.Handle;
                     await UpdateRowAsync(row, monitoredItem);
@@ -896,7 +898,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -921,7 +923,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -936,7 +938,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -991,7 +993,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

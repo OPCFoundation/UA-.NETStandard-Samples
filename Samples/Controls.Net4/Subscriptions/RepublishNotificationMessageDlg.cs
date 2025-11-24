@@ -53,6 +53,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Subscription m_subscription;
+        private ITelemetryContext m_telemetry;
         private NotificationMessage m_message;
         #endregion
 
@@ -65,6 +66,7 @@ namespace Opc.Ua.Sample.Controls
             if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
             m_subscription = subscription;
+            m_telemetry = subscription.Session?.MessageContext?.Telemetry;
 
             SequenceNumberNC.Value = 0;
 
@@ -95,7 +97,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

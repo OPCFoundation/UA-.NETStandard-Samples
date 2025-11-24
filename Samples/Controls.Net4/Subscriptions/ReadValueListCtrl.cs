@@ -79,13 +79,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, ReadValueIdCollection valueIds)
+        public void Initialize(Session session, ReadValueIdCollection valueIds, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             Clear();
 
             m_session = session;
+            Telemetry = telemetry;
 
             foreach (ReadValueId valueId in valueIds)
             {
@@ -212,7 +213,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -224,7 +225,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 ReadValueId valueId = new ReadValueId();
 
-                if (await new ReadValueEditDlg().ShowDialogAsync(m_session, valueId))
+                if (await new ReadValueEditDlg().ShowDialogAsync(m_session, valueId, Telemetry))
                 {
                     AddItem(valueId);
                 }
@@ -233,7 +234,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -248,14 +249,14 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (await new ReadValueEditDlg().ShowDialogAsync(m_session, valueId))
+                if (await new ReadValueEditDlg().ShowDialogAsync(m_session, valueId, Telemetry))
                 {
                     await UpdateItemAsync(ItemsLV.SelectedItems[0], valueId);
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -267,7 +268,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

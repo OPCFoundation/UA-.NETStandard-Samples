@@ -107,11 +107,11 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the configuration.
         /// </summary>
-        public void LoadConfiguration(ISystemContext context)
+        public void LoadConfiguration(ISystemContext context, ITelemetryContext telemetry)
         {
             DataFileReader reader = new DataFileReader();
 
-            if (reader.LoadConfiguration(context, m_archiveItem))
+            if (reader.LoadConfiguration(context, m_archiveItem, telemetry))
             {
                 this.DataType = (uint)m_archiveItem.DataType;
                 this.ValueRank = m_archiveItem.ValueRank;
@@ -132,9 +132,9 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the data.
         /// </summary>
-        public void ReloadFromSource(ISystemContext context)
+        public void ReloadFromSource(ISystemContext context, ITelemetryContext telemetry)
         {
-            LoadConfiguration(context);
+            LoadConfiguration(context, telemetry);
 
             if (m_archiveItem.LastLoadTime == DateTime.MinValue || (m_archiveItem.Persistent && m_archiveItem.LastLoadTime.AddSeconds(10) < DateTime.UtcNow))
             {
@@ -205,7 +205,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Updates the history.
         /// </summary>
-        public uint UpdateHistory(SystemContext context, DataValue value, PerformUpdateType performUpdateType)
+        public uint UpdateHistory(ServerSystemContext context, DataValue value, PerformUpdateType performUpdateType)
         {
             bool replaced = false;
 
@@ -327,7 +327,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Updates the history.
         /// </summary>
-        public uint UpdateAnnotations(SystemContext context, Annotation annotation, DataValue value, PerformUpdateType performUpdateType)
+        public uint UpdateAnnotations(ServerSystemContext context, Annotation annotation, DataValue value, PerformUpdateType performUpdateType)
         {
             bool replaced = false;
 
@@ -425,7 +425,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Deletes a value from the history.
         /// </summary>
-        public uint DeleteHistory(SystemContext context, DateTime sourceTimestamp)
+        public uint DeleteHistory(ServerSystemContext context, DateTime sourceTimestamp)
         {
             bool deleted = false;
 
@@ -488,7 +488,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Deletes a value from the history.
         /// </summary>
-        public uint DeleteHistory(SystemContext context, DateTime startTime, DateTime endTime, bool isModified)
+        public uint DeleteHistory(ServerSystemContext context, DateTime startTime, DateTime endTime, bool isModified)
         {
             // ensure time goes up.
             if (endTime < startTime)
@@ -556,16 +556,13 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Creates a modification info record.
         /// </summary>
-        private ModificationInfo GetModificationInfo(SystemContext context, HistoryUpdateType updateType)
+        private ModificationInfo GetModificationInfo(ServerSystemContext context, HistoryUpdateType updateType)
         {
             ModificationInfo info = new ModificationInfo();
             info.UpdateType = updateType;
             info.ModificationTime = DateTime.UtcNow;
 
-            if (context.OperationContext != null && context.OperationContext.UserIdentity != null)
-            {
-                info.UserName = context.OperationContext.UserIdentity.DisplayName;
-            }
+            info.UserName = (context.OperationContext as ISessionOperationContext)?.UserIdentity?.DisplayName;
 
             return info;
         }

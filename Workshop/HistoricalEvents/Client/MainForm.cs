@@ -59,10 +59,11 @@ namespace Quickstarts.HistoricalEvents.Client
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62553/Quickstarts/HistoricalEventsServer";
@@ -73,6 +74,7 @@ namespace Quickstarts.HistoricalEvents.Client
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
         #endregion
 
@@ -87,11 +89,11 @@ namespace Quickstarts.HistoricalEvents.Client
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -106,7 +108,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -121,7 +123,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -149,11 +151,11 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 await EventsLV.SetSubscribedAsync(Events_EnableSubscriptionMI.Checked);
-                await EventsLV.ChangeSessionAsync(m_session, true);
+                await EventsLV.ChangeSessionAsync(m_session, true, m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -169,7 +171,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -201,7 +203,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -214,7 +216,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                if (!new ModifyFilterDlg().ShowDialog(EventsLV.Filter))
+                if (!new ModifyFilterDlg().ShowDialog(EventsLV.Filter, m_telemetry))
                 {
                     return;
                 }
@@ -223,7 +225,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -236,7 +238,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", default, Opc.Ua.ReferenceTypeIds.HasEventSource);
+                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId == null)
                 {
@@ -247,7 +249,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -259,7 +261,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -272,11 +274,11 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                await new ReadEventHistoryDlg().ShowDialogAsync(m_session, EventsLV.AreaId, new FilterDeclaration(EventsLV.Filter));
+                await new ReadEventHistoryDlg().ShowDialogAsync(m_session, EventsLV.AreaId, new FilterDeclaration(EventsLV.Filter), m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -304,7 +306,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

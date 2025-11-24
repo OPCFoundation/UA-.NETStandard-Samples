@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -58,15 +58,17 @@ namespace Opc.Ua.Client.Controls
         private string m_hostname;
         private ApplicationDescription m_server;
         private ApplicationConfiguration m_configuration;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ApplicationDescription ShowDialog(string hostname, ApplicationConfiguration configuration)
+        public ApplicationDescription ShowDialog(string hostname, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             m_configuration = configuration;
+            m_telemetry = telemetry;
 
             if (String.IsNullOrEmpty(hostname))
             {
@@ -76,8 +78,8 @@ namespace Opc.Ua.Client.Controls
             m_hostname = hostname;
             List<string> hostnames = new List<string>();
 
-            HostNameCTRL.Initialize(hostname, hostnames);
-            ServersCTRL.Initialize(hostname, configuration);
+            HostNameCTRL.Initialize(m_telemetry, hostname, hostnames);
+            ServersCTRL.Initialize(hostname, configuration, telemetry);
 
             OkBTN.Enabled = false;
 
@@ -99,7 +101,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -110,14 +112,14 @@ namespace Opc.Ua.Client.Controls
                 if (m_hostname != e.Hostname)
                 {
                     m_hostname = e.Hostname;
-                    ServersCTRL.Initialize(m_hostname, m_configuration);
+                    ServersCTRL.Initialize(m_hostname, m_configuration, m_telemetry);
                     m_server = null;
                     OkBTN.Enabled = false;
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -126,13 +128,13 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 m_hostname = e.Hostname;
-                ServersCTRL.Initialize(m_hostname, m_configuration);
+                ServersCTRL.Initialize(m_hostname, m_configuration, m_telemetry);
                 m_server = null;
                 OkBTN.Enabled = false;
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -152,7 +154,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -175,7 +177,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

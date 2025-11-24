@@ -22,11 +22,11 @@
   </Choose>
 
   <PropertyGroup>
-    <AppTargetFrameworks>$(DotNetTargetFramework)net8.0</AppTargetFrameworks>
-    <AppTargetFramework>net8.0</AppTargetFramework>
-    <TestsTargetFrameworks>$(DotNetTargetFramework);net8.0</TestsTargetFrameworks>
-    <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.0;netstandard2.1;net8.0</LibTargetFrameworks>
-    <LibxTargetFrameworks>$(DotNetTargetFramework)netstandard2.1;net8.0</LibxTargetFrameworks>
+    <AppTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</AppTargetFrameworks>
+    <AppTargetFramework>net10.0</AppTargetFramework>
+    <TestsTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</TestsTargetFrameworks>
+    <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.1;net8.0;net10.0</LibTargetFrameworks>
+    <LibxTargetFrameworks>$(DotNetTargetFramework)netstandard2.1;net8.0;net10.0</LibxTargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>

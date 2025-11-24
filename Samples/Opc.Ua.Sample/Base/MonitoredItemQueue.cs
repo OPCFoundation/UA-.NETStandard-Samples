@@ -381,9 +381,10 @@ namespace Opc.Ua.Sample
 
                 // have to copy before updating because the ServiceResult is invariant.
                 ServiceResult copy = new ServiceResult(
-                    status,
-                    error.SymbolicId,
                     error.NamespaceUri,
+                    new StatusCode(
+                        status.Code,
+                        error.SymbolicId),
                     error.LocalizedText,
                     error.AdditionalInfo,
                     error.InnerResult);

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2022 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,6 +33,7 @@ using System.Threading;
 using System.Reflection;
 using Opc.Ua.Server;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Sample
 {
@@ -49,6 +50,7 @@ namespace Opc.Ua.Sample
         {
             // save a reference to the server that owns the node manager.
             m_server = server;
+            m_logger = server.Telemetry.CreateLogger<SampleNodeManager>();
 
             // create the default context.
             m_systemContext = m_server.DefaultSystemContext.Copy();
@@ -56,7 +58,7 @@ namespace Opc.Ua.Sample
             m_systemContext.SystemHandle = null;
             m_systemContext.NodeIdFactory = this;
 
-            // create the table of nodes. 
+            // create the table of nodes.
             m_predefinedNodes = new NodeIdDictionary<NodeState>();
             m_rootNotifiers = new List<NodeState>();
             m_sampledItems = new List<DataChangeMonitoredItem>();
@@ -340,7 +342,7 @@ namespace Opc.Ua.Sample
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public virtual void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -518,7 +520,7 @@ namespace Opc.Ua.Sample
         /// </summary>
         protected virtual void OnNodeRemoved(NodeState node)
         {
-            // overridden by the sub-class.            
+            // overridden by the sub-class.
         }
 
         /// <summary>
@@ -722,7 +724,7 @@ namespace Opc.Ua.Sample
         }
 
         /// <summary>
-        /// Finds the specified and checks if it is of the expected type. 
+        /// Finds the specified and checks if it is of the expected type.
         /// </summary>
         /// <returns>Returns null if not found or not of the correct type.</returns>
         public NodeState FindPredefinedNode(NodeId nodeId, Type expectedType)
@@ -766,7 +768,7 @@ namespace Opc.Ua.Sample
         /// Returns a unique handle for the node.
         /// </summary>
         /// <remarks>
-        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to 
+        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to
         /// NodeManager it should return a handle that does not require the NodeId to be validated again when
         /// the handle is passed into other methods such as 'Read' or 'Write'.
         /// </remarks>
@@ -782,7 +784,7 @@ namespace Opc.Ua.Sample
         /// Returns a unique handle for the node.
         /// </summary>
         /// <remarks>
-        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to 
+        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to
         /// NodeManager it should return a handle that does not require the NodeId to be validated again when
         /// the handle is passed into other methods such as 'Read' or 'Write'.
         /// </remarks>
@@ -1031,7 +1033,7 @@ namespace Opc.Ua.Sample
                 // apply filters to references.
                 for (IReference reference = browser.Next(); reference != null; reference = browser.Next())
                 {
-                    // create the type definition reference.        
+                    // create the type definition reference.
                     ReferenceDescription description = GetReferenceDescription(context, reference, continuationPoint);
 
                     if (description == null)
@@ -1065,7 +1067,7 @@ namespace Opc.Ua.Sample
             IReference reference,
             ContinuationPoint continuationPoint)
         {
-            // create the type definition reference.        
+            // create the type definition reference.
             ReferenceDescription description = new ReferenceDescription();
 
             description.NodeId = reference.TargetId;
@@ -1147,9 +1149,9 @@ namespace Opc.Ua.Sample
         /// Returns the target of the specified browse path fragment(s).
         /// </summary>
         /// <remarks>
-        /// If reference exists but the node manager does not know the browse name it must 
+        /// If reference exists but the node manager does not know the browse name it must
         /// return the NodeId as an unresolvedTargetIds. The caller will try to check the
-        /// browse name. 
+        /// browse name.
         /// </remarks>
         public virtual void TranslateBrowsePath(
             OperationContext context,
@@ -1946,7 +1948,7 @@ namespace Opc.Ua.Sample
                     if (ServiceResult.IsBad(argumentError))
                     {
                         argumentsValid = false;
-                        result.InputArgumentDiagnosticInfos.Add(new DiagnosticInfo(argumentError, systemContext.OperationContext.DiagnosticsMask, false, systemContext.OperationContext.StringTable));
+                        result.InputArgumentDiagnosticInfos.Add(new DiagnosticInfo(argumentError, systemContext.OperationContext.DiagnosticsMask, false, systemContext.OperationContext.StringTable, Server.Telemetry.CreateLogger<SampleNodeManager>()));
                     }
                     else
                     {
@@ -1975,8 +1977,8 @@ namespace Opc.Ua.Sample
         /// Subscribes or unsubscribes to events produced by the specified source.
         /// </summary>
         /// <remarks>
-        /// This method is called when a event subscription is created or deletes. The node manager 
-        /// must  start/stop reporting events for the specified object and all objects below it in 
+        /// This method is called when a event subscription is created or deletes. The node manager
+        /// must  start/stop reporting events for the specified object and all objects below it in
         /// the notifier hierarchy.
         /// </remarks>
         public virtual ServiceResult SubscribeToEvents(
@@ -2041,7 +2043,7 @@ namespace Opc.Ua.Sample
         /// Subscribes or unsubscribes to events produced by all event sources.
         /// </summary>
         /// <remarks>
-        /// This method is called when a event subscription is created or deleted. The node 
+        /// This method is called when a event subscription is created or deleted. The node
         /// manager must start/stop reporting events for all objects that it manages.
         /// </remarks>
         public virtual ServiceResult SubscribeToAllEvents(
@@ -2208,7 +2210,7 @@ namespace Opc.Ua.Sample
             IList<MonitoringFilterResult> filterErrors,
             IList<IMonitoredItem> monitoredItems,
             bool createDurable,
-            ref long globalIdCounter)
+            MonitoredItemIdFactory globalIdCounter)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
@@ -2266,7 +2268,7 @@ namespace Opc.Ua.Sample
                         context.DiagnosticsMask,
                         timestampsToReturn,
                         itemToCreate,
-                        ref globalIdCounter,
+                        globalIdCounter,
                         out filterError,
                         out monitoredItem);
 
@@ -2312,7 +2314,7 @@ namespace Opc.Ua.Sample
                         context.DiagnosticsMask,
                         timestampsToReturn,
                         itemToCreate,
-                        ref globalIdCounter,
+                        globalIdCounter,
                         out filterError,
                         out monitoredItem);
 
@@ -2459,7 +2461,7 @@ namespace Opc.Ua.Sample
             DiagnosticsMasks diagnosticsMasks,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemCreateRequest itemToCreate,
-            ref long globalIdCounter,
+            MonitoredItemIdFactory globalIdCounter,
             out MonitoringFilterResult filterError,
             out IMonitoredItem monitoredItem)
         {
@@ -2527,7 +2529,7 @@ namespace Opc.Ua.Sample
             }
 
             // create a globally unique identifier.
-            uint monitoredItemId = Utils.IncrementIdentifier(ref globalIdCounter);
+            uint monitoredItemId = globalIdCounter.GetNextId();
 
             // determine the sampling interval.
             double samplingInterval = itemToCreate.RequestedParameters.SamplingInterval;
@@ -2644,7 +2646,7 @@ namespace Opc.Ua.Sample
         }
 
         /// <summary>
-        /// Polls each monitored item which requires sample. 
+        /// Polls each monitored item which requires sample.
         /// </summary>
         private void DoSample(object state)
         {
@@ -2665,7 +2667,7 @@ namespace Opc.Ua.Sample
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Unexpected error during diagnostics scan.");
+                m_logger.LogError(e, "Unexpected error during diagnostics scan.");
             }
         }
 
@@ -3096,6 +3098,7 @@ namespace Opc.Ua.Sample
         #region Private Fields
         private object m_lock = new object();
         private IServerInternal m_server;
+        protected readonly ILogger m_logger;
         private ServerSystemContext m_systemContext;
         private IList<string> m_namespaceUris;
         private ushort[] m_namespaceIndexes;

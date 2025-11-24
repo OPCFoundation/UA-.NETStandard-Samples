@@ -53,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Session m_session;
         private const string m_BrowseCertificates = "<Browse...>";
-        private static long m_Counter = 0;
+        private static uint m_Counter = 0;
         private IList<string> m_preferredLocales;
         private bool m_checkDomain = true;
         #endregion
@@ -133,7 +133,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -155,7 +155,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (!String.IsNullOrEmpty(username) || !String.IsNullOrEmpty(PasswordTB.Text))
                     {
-                        identity = new UserIdentity(username, PasswordTB.Text);
+                        identity = new UserIdentity(username, Encoding.UTF8.GetBytes(PasswordTB.Text));
                     }
                 }
 
@@ -168,7 +168,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -223,7 +223,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (e != null)
                 {
-                    GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), (Exception)e);
+                    GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), (Exception)e);
                 }
 
                 if (m_session.Connected && m_session.SessionTimeout < 1000)

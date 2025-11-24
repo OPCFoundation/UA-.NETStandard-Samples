@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -72,7 +73,8 @@ namespace AggregationServer
             }
             catch (Exception e)
             {
-                Utils.Trace("Could not browse subtypes of {0}. {1}", parentId, e.Message);
+                server.Telemetry.CreateLogger<AggregatedTypeCache>()
+                    .LogError("Could not browse subtypes of {0}. {1}", parentId, e.Message);
                 return;
             }
 

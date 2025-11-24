@@ -57,12 +57,13 @@ namespace Quickstarts.ReferenceClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62541/Quickstarts/ReferenceServer";
             this.Text = m_configuration.ApplicationName;
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -70,6 +71,7 @@ namespace Quickstarts.ReferenceClient
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
         private bool m_connectedOnce;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -83,11 +85,11 @@ namespace Quickstarts.ReferenceClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -102,7 +104,7 @@ namespace Quickstarts.ReferenceClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -117,7 +119,7 @@ namespace Quickstarts.ReferenceClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -137,11 +139,11 @@ namespace Quickstarts.ReferenceClient
                 }
 
                 // browse the instances in the server.
-                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
+                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, m_telemetry, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -156,7 +158,7 @@ namespace Quickstarts.ReferenceClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -172,7 +174,7 @@ namespace Quickstarts.ReferenceClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 

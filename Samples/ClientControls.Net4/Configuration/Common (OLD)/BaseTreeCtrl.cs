@@ -87,11 +87,21 @@ namespace Opc.Ua.Client.Controls
             get { return m_enableDragging; }
             set { m_enableDragging = value; }
         }
+
+        /// <summary>
+        /// Whether the control should allow items to be dragged.
+        /// </summary>
+        public ITelemetryContext Telemetry
+        {
+            get { return m_telemetry; }
+            set { m_telemetry = value; }
+        }
         #endregion
 
         #region Private Fields
         private event TreeNodeActionEventHandler m_NodePicked;
         private event TreeNodeActionEventHandler m_NodeSelected;
+        private ITelemetryContext m_telemetry;
         private bool m_enableDragging;
         #endregion
 
@@ -232,7 +242,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -245,7 +255,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
             finally
             {
@@ -261,7 +271,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -328,7 +338,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 

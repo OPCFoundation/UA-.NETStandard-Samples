@@ -86,6 +86,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_session = session;
             m_selectClauses = selectClauses;
+            Telemetry = m_session?.MessageContext?.Telemetry;
 
             if (selectClauses == null)
             {
@@ -122,7 +123,8 @@ namespace Opc.Ua.Sample.Controls
 
             SimpleAttributeOperand clause = new SimpleAttributeOperand();
 
-            clause.TypeDefinitionId = m_session.NodeCache.BuildBrowsePath(node, clause.BrowsePath);
+            clause.BrowsePath.Add(node.BrowseName);
+            clause.TypeDefinitionId = null;
             clause.AttributeId = Attributes.Value;
 
             AddItem(clause, "Property", -1);
@@ -205,7 +207,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -224,7 +226,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -246,7 +248,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

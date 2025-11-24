@@ -59,12 +59,13 @@ namespace Quickstarts.PerfTestClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62559/Quickstarts/PerfTestServer";
             this.Text = m_configuration.ApplicationName;
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -73,6 +74,7 @@ namespace Quickstarts.PerfTestClient
         private ISession m_session;
         private bool m_connectedOnce;
         private Tester m_tester;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -86,11 +88,11 @@ namespace Quickstarts.PerfTestClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -105,7 +107,7 @@ namespace Quickstarts.PerfTestClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -120,7 +122,7 @@ namespace Quickstarts.PerfTestClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -154,14 +156,14 @@ namespace Quickstarts.PerfTestClient
                 m_tester = new Tester();
                 m_tester.SamplingRate = (int)UpdateRateCTRL.Value;
                 m_tester.ItemCount = (int)ItemCountCTRL.Value;
-                await m_tester.StartAsync(m_session);
+                await m_tester.StartAsync(m_session, m_telemetry);
 
                 UpdateTimer.Enabled = true;
                 StopBTN.Visible = true;
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -176,7 +178,7 @@ namespace Quickstarts.PerfTestClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -191,7 +193,7 @@ namespace Quickstarts.PerfTestClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -280,7 +282,7 @@ namespace Quickstarts.PerfTestClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

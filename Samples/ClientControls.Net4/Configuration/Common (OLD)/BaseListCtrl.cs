@@ -139,6 +139,15 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
+        /// Raised whenever items are removed from the control.
+        /// </summary>
+        public ITelemetryContext Telemetry
+        {
+            get { return m_telemetry; }
+            set { m_telemetry = value; }
+        }
+
+        /// <summary>
         /// Returns the number of items in the control.
         /// </summary>
         public int Count
@@ -193,6 +202,7 @@ namespace Opc.Ua.Client.Controls
         private string m_instructions;
         private Point m_dragPosition;
         private bool m_enableDragging;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Protected Methods
@@ -699,7 +709,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -715,7 +725,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -727,7 +737,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -739,7 +749,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -764,7 +774,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception ex)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), ex);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), ex);
             }
         }
 
@@ -776,7 +786,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception ex)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), ex);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), ex);
             }
         }
 

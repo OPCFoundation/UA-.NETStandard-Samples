@@ -31,14 +31,30 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Configuration;
 using Opc.Ua.Server.Controls;
 
 namespace Quickstarts.AlarmConditionServer
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -50,25 +66,12 @@ namespace Quickstarts.AlarmConditionServer
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "AlarmConditionServer";
 
             try
             {
-                // process and command line arguments.
-                if (application.ProcessCommandLine())
-                {
-                    return;
-                }
-
-                // check if running as a service.
-                if (!Environment.UserInteractive)
-                {
-                    application.StartAsService(new AlarmConditionServer());
-                    return;
-                }
-
                 // load the application configuration.
                 application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
@@ -79,11 +82,11 @@ namespace Quickstarts.AlarmConditionServer
                 application.StartAsync(new AlarmConditionServer()).Wait();
 
                 // run the application interactively.
-                Application.Run(new ServerForm(application));
+                Application.Run(new ServerForm(application, m_telemetry));
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
                 return;
             }
         }

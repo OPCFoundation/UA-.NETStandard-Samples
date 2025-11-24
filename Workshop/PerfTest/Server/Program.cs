@@ -29,17 +29,33 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Security.Cryptography.X509Certificates;
+using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
-using Opc.Ua.Server;
 using Opc.Ua.Configuration;
+using Opc.Ua.Server;
 using Opc.Ua.Server.Controls;
 
 namespace Quickstarts.PerfTestServer
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -47,25 +63,12 @@ namespace Quickstarts.PerfTestServer
         static void Main()
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "PerfTestServer";
 
             try
             {
-                // process and command line arguments.
-                if (application.ProcessCommandLine())
-                {
-                    return;
-                }
-
-                // check if running as a service.
-                if (!Environment.UserInteractive)
-                {
-                    application.StartAsService(new PerfTestServer());
-                    return;
-                }
-
                 // load the application configuration.
                 application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
@@ -76,11 +79,11 @@ namespace Quickstarts.PerfTestServer
                 application.StartAsync(new PerfTestServer()).Wait();
 
                 // run the application interactively.
-                Application.Run(new Opc.Ua.Server.Controls.ServerForm(application));
+                Application.Run(new Opc.Ua.Server.Controls.ServerForm(application, m_telemetry));
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
                 return;
             }
         }

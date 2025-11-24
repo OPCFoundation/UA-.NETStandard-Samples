@@ -48,10 +48,10 @@ jobs:
         # Prefix the list here with "+" to use these queries and those in the config file.
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
-    - name: Setup .NET
+    - name: Set up .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: '6.x' # SDK Version to use;
+        dotnet-version: '10.x'
 
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe

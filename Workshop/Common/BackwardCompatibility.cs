@@ -84,14 +84,14 @@ namespace Quickstarts
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(StandardServer server, ApplicationConfiguration configuration) : base(server, configuration)
+        public ServerForm(StandardServer server, ApplicationConfiguration configuration, ITelemetryContext telemetry) : base(server, configuration, telemetry)
         {
         }
 
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(ApplicationInstance application) : base(application)
+        public ServerForm(ApplicationInstance application, ITelemetryContext telemetry) : base(application, telemetry)
         {
         }
     }

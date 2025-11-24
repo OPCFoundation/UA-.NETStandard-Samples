@@ -78,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs, CancellationToken ct = default)
+        public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (methodId == null) throw new ArgumentNullException(nameof(methodId));
@@ -86,6 +86,7 @@ namespace Opc.Ua.Sample.Controls
             Clear();
 
             m_session = session;
+            Telemetry = telemetry;
 
             // find the method.
             MethodNode method = await session.NodeCache.FindAsync(methodId, ct) as MethodNode;
@@ -250,7 +251,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -266,7 +267,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                object value = GuiUtils.EditValue(m_session, arguments[0].Value, arguments[0].DataType, arguments[0].ValueRank);
+                object value = GuiUtils.EditValue(m_session, arguments[0].Value, arguments[0].DataType, arguments[0].ValueRank, Telemetry);
 
                 if (value != null)
                 {
@@ -277,7 +278,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -298,7 +299,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

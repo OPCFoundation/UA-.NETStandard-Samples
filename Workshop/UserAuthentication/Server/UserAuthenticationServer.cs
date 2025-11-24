@@ -40,6 +40,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.UserAuthenticationServer
 {
@@ -96,7 +97,7 @@ namespace Quickstarts.UserAuthenticationServer
         /// </remarks>
         protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         {
-            Utils.Trace("Creating the Node Managers.");
+            m_logger.LogInformation("Creating the Node Managers.");
 
             List<INodeManager> nodeManagers = new List<INodeManager>();
 
@@ -169,8 +170,7 @@ namespace Quickstarts.UserAuthenticationServer
 
                     if (trustedIssuers == null)
                     {
-                        Utils.Trace(
-                            (int)Utils.TraceMasks.Error,
+                        m_logger.LogError(
                             "Could not load CertificateTrustList for UserTokenPolicy {0}",
                             policy.PolicyId);
 
@@ -206,9 +206,9 @@ namespace Quickstarts.UserAuthenticationServer
 
             if (userNameToken != null)
             {
-                VerifyPassword(userNameToken.UserName, userNameToken.DecryptedPassword);
+                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
                 args.Identity = new UserIdentity(userNameToken);
-                Utils.Trace("UserName Token Accepted: {0}", args.Identity.DisplayName);
+                m_logger.LogInformation("UserName Token Accepted: {0}", args.Identity.DisplayName);
                 return;
             }
 
@@ -219,7 +219,7 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 VerifyCertificate(x509Token.Certificate);
                 args.Identity = new UserIdentity(x509Token);
-                Utils.Trace("X509 Token Accepted: {0}", args.Identity.DisplayName);
+                m_logger.LogInformation("X509 Token Accepted: {0}", args.Identity.DisplayName);
                 return;
             }
         }
@@ -306,11 +306,11 @@ namespace Quickstarts.UserAuthenticationServer
 
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
-                    e,
-                    StatusCodes.BadIdentityTokenRejected,
-                    "InvalidCertificate",
                     Namespaces.UserAuthentication,
-                    new LocalizedText(info)));
+                    new StatusCode(StatusCodes.BadIdentityTokenRejected,
+                    "InvalidCertificate"),
+                    new LocalizedText(info),
+                    e));
             }
         }
 
@@ -353,11 +353,12 @@ namespace Quickstarts.UserAuthenticationServer
 
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
-                    e,
-                    StatusCodes.BadIdentityTokenRejected,
-                    "InvalidKerberosToken",
                     Namespaces.UserAuthentication,
-                    new LocalizedText(info)));
+                    new StatusCode(
+                    StatusCodes.BadIdentityTokenRejected,
+                    "InvalidKerberosToken"),
+                    new LocalizedText(info),
+                    e));
             }
             finally
             {
@@ -458,9 +459,12 @@ namespace Quickstarts.UserAuthenticationServer
         /// <summary>
         /// This method is called at the being of the thread that processes a request.
         /// </summary>
-        protected override OperationContext ValidateRequest(RequestHeader requestHeader, RequestType requestType)
+        protected override OperationContext ValidateRequest(
+            SecureChannelContext secureChannelContext,
+            RequestHeader requestHeader,
+            RequestType requestType)
         {
-            OperationContext context = base.ValidateRequest(requestHeader, requestType);
+            OperationContext context = base.ValidateRequest(secureChannelContext, requestHeader, requestType);
 
             if (requestType == RequestType.Write)
             {
@@ -475,9 +479,9 @@ namespace Quickstarts.UserAuthenticationServer
 
                     // create an exception with a vendor defined sub-code.
                     throw new ServiceResultException(new ServiceResult(
-                        StatusCodes.BadUserAccessDenied,
-                        "NoWriteAllowed",
                         Namespaces.UserAuthentication,
+                        new StatusCode(StatusCodes.BadUserAccessDenied,
+                        "NoWriteAllowed"),
                         new LocalizedText(info)));
                 }
 #if TODO

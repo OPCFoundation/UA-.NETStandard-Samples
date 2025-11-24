@@ -128,10 +128,7 @@ namespace Opc.Ua.Client.Controls
 
             FilePathControl.Text = dialog.FileName;
 
-            if (m_FileSelected != null)
-            {
-                m_FileSelected(this, new EventArgs());
-            }
+            m_FileSelected?.Invoke(this, new EventArgs());
         }
         #endregion
     }

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -37,6 +37,7 @@ using System.Windows.Forms;
 using System.Reflection;
 
 using Opc.Ua.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -59,13 +60,15 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private string m_domain;
         private string m_hostname;
+        private ILogger m_logger = LoggerUtils.Null.Logger;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public string ShowDialog(string domain)
+        public string ShowDialog(ITelemetryContext telemetry, string domain)
         {
             if (String.IsNullOrEmpty(domain))
             {
@@ -73,9 +76,11 @@ namespace Opc.Ua.Client.Controls
             }
 
             m_domain = domain;
+            m_logger = telemetry.CreateLogger<HostListDlg>();
+            m_telemetry = telemetry;
 
-            DomainNameCTRL.Initialize(m_domain, null);
-            HostsCTRL.Initialize(m_domain);
+            DomainNameCTRL.Initialize(telemetry, m_domain, null);
+            HostsCTRL.Initialize(telemetry, m_domain);
             OkBTN.Enabled = false;
 
             if (ShowDialog() != DialogResult.OK)
@@ -96,7 +101,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -107,14 +112,14 @@ namespace Opc.Ua.Client.Controls
                 if (m_domain != e.Hostname)
                 {
                     m_domain = e.Hostname;
-                    HostsCTRL.Initialize(m_domain);
+                    HostsCTRL.Initialize(m_telemetry, m_domain);
                     m_hostname = null;
                     OkBTN.Enabled = false;
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -123,13 +128,13 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 m_domain = e.Hostname;
-                HostsCTRL.Initialize(m_domain);
+                HostsCTRL.Initialize(m_telemetry, m_domain);
                 m_hostname = null;
                 OkBTN.Enabled = false;
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -149,7 +154,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -172,7 +177,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

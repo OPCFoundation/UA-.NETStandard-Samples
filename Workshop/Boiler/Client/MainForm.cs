@@ -60,7 +60,7 @@ namespace Quickstarts.Boiler.Client
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -68,6 +68,7 @@ namespace Quickstarts.Boiler.Client
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62567/Quickstarts/BoilerServer";
             this.Text = m_configuration.ApplicationName;
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -76,6 +77,7 @@ namespace Quickstarts.Boiler.Client
         private ISession m_session;
         private Subscription m_subscription;
         private bool m_connectedOnce;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -89,11 +91,11 @@ namespace Quickstarts.Boiler.Client
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -110,7 +112,7 @@ namespace Quickstarts.Boiler.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -125,7 +127,7 @@ namespace Quickstarts.Boiler.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -158,7 +160,7 @@ namespace Quickstarts.Boiler.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -173,7 +175,7 @@ namespace Quickstarts.Boiler.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -196,7 +198,7 @@ namespace Quickstarts.Boiler.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -275,7 +277,7 @@ namespace Quickstarts.Boiler.Client
                     return;
                 }
 
-                m_subscription = new Subscription();
+                m_subscription = new Subscription(m_telemetry);
 
                 m_subscription.PublishingEnabled = true;
                 m_subscription.PublishingInterval = 1000;
@@ -319,7 +321,7 @@ namespace Quickstarts.Boiler.Client
 
                     if (nodes[ii] != null)
                     {
-                        MonitoredItem monitoredItem = new MonitoredItem();
+                        MonitoredItem monitoredItem = new MonitoredItem(m_telemetry);
                         monitoredItem.StartNodeId = nodes[ii];
                         monitoredItem.AttributeId = Attributes.Value;
                         monitoredItem.Handle = controls[ii];
@@ -332,7 +334,7 @@ namespace Quickstarts.Boiler.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -364,7 +366,7 @@ namespace Quickstarts.Boiler.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

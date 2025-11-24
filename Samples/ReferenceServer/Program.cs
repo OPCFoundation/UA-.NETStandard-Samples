@@ -28,17 +28,33 @@
  * ======================================================================*/
 
 using System;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Configuration;
 using Opc.Ua.Server.Controls;
-using System.Threading.Tasks;
 using Serilog;
 
 namespace Quickstarts.ReferenceServer
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -50,7 +66,7 @@ namespace Quickstarts.ReferenceServer
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationType = ApplicationType.Server;
             application.ConfigSectionName = "Quickstarts.ReferenceServer";
 
@@ -65,7 +81,6 @@ namespace Quickstarts.ReferenceServer
                 loggerConfiguration.WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning);
 #pragma warning restore CA1305 // Specify IFormatProvider
 #endif
-                SerilogTraceLogger.Create(loggerConfiguration, config);
 
                 // check the application certificate.
                 bool certOk = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Result;
@@ -91,11 +106,11 @@ namespace Quickstarts.ReferenceServer
                 }
 
                 // run the application interactively.
-                Application.Run(new ServerForm(application, showCertificateValidationDialog));
+                Application.Run(new ServerForm(application, m_telemetry, showCertificateValidationDialog));
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
             }
         }
     }

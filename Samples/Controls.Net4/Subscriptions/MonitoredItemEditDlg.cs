@@ -67,20 +67,21 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public bool ShowDialog(Session session, MonitoredItem monitoredItem)
+        public bool ShowDialog(Session session, MonitoredItem monitoredItem, ITelemetryContext telemetry)
         {
-            return ShowDialog(session, monitoredItem, false);
+            return ShowDialog(session, monitoredItem, false, telemetry);
         }
 
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public bool ShowDialog(Session session, MonitoredItem monitoredItem, bool editMonitoredItem)
+        public bool ShowDialog(Session session, MonitoredItem monitoredItem, bool editMonitoredItem, ITelemetryContext telemetry)
         {
             if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
             m_session = session;
 
+            NodeIdCTRL.Telemetry = telemetry;
             NodeIdCTRL.Browser = new Browser(session);
 
             if (editMonitoredItem)

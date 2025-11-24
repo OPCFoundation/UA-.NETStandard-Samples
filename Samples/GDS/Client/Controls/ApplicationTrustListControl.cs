@@ -53,19 +53,21 @@ namespace Opc.Ua.Gds.Client
         private RegisteredApplication m_application;
         private string m_trustListStorePath;
         private string m_issuerListStorePath;
+        private ITelemetryContext m_telemetry;
 
-        public async Task Initialize(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient server, RegisteredApplication application, bool isHttps, CancellationToken ct = default)
+        public async Task Initialize(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient server, RegisteredApplication application, bool isHttps, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             m_gds = gds;
             m_server = server;
             m_application = application;
+            m_telemetry = telemetry;
 
             // display local trust list.
             if (application != null)
             {
                 m_trustListStorePath = (isHttps) ? m_application.HttpsTrustListStorePath : m_application.TrustListStorePath;
                 m_issuerListStorePath = (isHttps) ? m_application.HttpsIssuerListStorePath : m_application.IssuerListStorePath;
-                await CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null, ct);
+                await CertificateStoreControl.Initialize(telemetry, m_trustListStorePath, m_issuerListStorePath, null, ct);
                 MergeWithGdsButton.Enabled = !String.IsNullOrEmpty(m_trustListStorePath) || m_application.RegistrationType == RegistrationType.ServerPush;
             }
 
@@ -90,17 +92,17 @@ namespace Opc.Ua.Gds.Client
                     }
                     else
                     {
-                        await CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null);
+                        await CertificateStoreControl.Initialize(m_telemetry, m_trustListStorePath, m_issuerListStorePath, null);
                     }
                 }
                 else
                 {
-                    await CertificateStoreControl.Initialize(null, null, null);
+                    await CertificateStoreControl.Initialize(m_telemetry, null, null, null);
                 }
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -112,7 +114,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -124,7 +126,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -136,7 +138,7 @@ namespace Opc.Ua.Gds.Client
             }
 
             var certificateStoreIdentifier = new CertificateStoreIdentifier(storePath);
-            using (var store = certificateStoreIdentifier.OpenStore())
+            using (var store = certificateStoreIdentifier.OpenStore(m_telemetry))
             {
                 X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
                 foreach (var certificate in certificates)
@@ -190,7 +192,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (trustListId == null)
                 {
-                    await CertificateStoreControl.Initialize(null, null, null, ct);
+                    await CertificateStoreControl.Initialize(m_telemetry, null, null, null, ct);
                     return;
                 }
 
@@ -222,7 +224,7 @@ namespace Opc.Ua.Gds.Client
                 if (!String.IsNullOrEmpty(m_trustListStorePath))
                 {
                     var certificateStoreIdentifier = new CertificateStoreIdentifier(m_trustListStorePath);
-                    using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
+                    using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
                     {
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.TrustedCertificates) != 0)
                         {
@@ -251,7 +253,7 @@ namespace Opc.Ua.Gds.Client
                 if (!String.IsNullOrEmpty(m_application.IssuerListStorePath))
                 {
                     var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.IssuerListStorePath);
-                    using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
+                    using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
                     {
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.IssuerCertificates) != 0)
                         {
@@ -277,7 +279,7 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
-                await CertificateStoreControl.Initialize(m_trustListStorePath, m_issuerListStorePath, null, ct);
+                await CertificateStoreControl.Initialize(m_telemetry, m_trustListStorePath, m_issuerListStorePath, null, ct);
 
                 MessageBox.Show(
                     Parent,
@@ -320,7 +322,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Parent.Text, exception);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Parent.Text, exception);
             }
         }
 
@@ -346,7 +348,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (se == null || se.StatusCode != StatusCodes.BadServerHalted)
                 {
-                    Opc.Ua.Client.Controls.ExceptionDlg.Show(Parent.Text, exception);
+                    Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Parent.Text, exception);
                 }
             }
 

@@ -37,6 +37,7 @@ using System.Threading;
 using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.MethodsServer
 {
@@ -309,7 +310,7 @@ namespace Quickstarts.MethodsServer
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error updating process.");
+                m_logger.LogError(e, "Unexpected error updating process.");
             }
         }
 

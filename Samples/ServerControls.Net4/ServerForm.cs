@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -39,6 +39,7 @@ using Opc.Ua;
 using Opc.Ua.Configuration;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Server.Controls
 {
@@ -59,12 +60,14 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(StandardServer server, ApplicationConfiguration configuration, bool showCertificateValidationDialog = true)
+        public ServerForm(StandardServer server, ApplicationConfiguration configuration, ITelemetryContext telemetry, bool showCertificateValidationDialog = true)
         {
             InitializeComponent();
 
             m_server = server;
             m_configuration = configuration;
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ServerForm>();
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
             if (showCertificateValidationDialog &&
@@ -82,12 +85,14 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Creates a form which displays the status for a UA server.
         /// </summary>
-        public ServerForm(ApplicationInstance application, bool showCertificateValidationDialog = false)
+        public ServerForm(ApplicationInstance application, ITelemetryContext telemetry, bool showCertificateValidationDialog = false)
         {
             InitializeComponent();
 
             m_application = application;
             m_server = application.Server as StandardServer;
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ServerForm>();
             m_configuration = application.ApplicationConfiguration;
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
@@ -105,6 +110,8 @@ namespace Opc.Ua.Server.Controls
         #region Private Fields
         private ApplicationInstance m_application;
         private StandardServer m_server;
+        private readonly ITelemetryContext m_telemetry;
+        private readonly ILogger m_logger;
         private ApplicationConfiguration m_configuration;
         #endregion
 
@@ -120,7 +127,7 @@ namespace Opc.Ua.Server.Controls
             }
             catch (Exception exception)
             {
-                HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -143,15 +150,15 @@ namespace Opc.Ua.Server.Controls
             Close();
         }
 
-        private void ServerForm_FormClosed(object sender, FormClosedEventArgs e)
+        private async void ServerForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             try
             {
-                m_server.Stop();
+                await m_server.StopAsync();
             }
             catch (Exception exception)
             {
-                Utils.LogError(exception, "Error stopping server.");
+                m_logger.LogError(exception, "Error stopping server.");
             }
         }
 
@@ -167,7 +174,7 @@ namespace Opc.Ua.Server.Controls
             }
             catch (Exception exception)
             {
-                Utils.LogError(exception, "Error getting server status.");
+                m_logger.LogError(exception, "Error getting server status.");
             }
         }
         #endregion
@@ -195,13 +202,13 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Displays the details of an exception.
         /// </summary>
-        public static void HandleException(string caption, MethodBase method, Exception e)
+        public static void HandleException(ITelemetryContext telemetry, string caption, MethodBase method, Exception e)
         {
             if (String.IsNullOrEmpty(caption))
             {
                 caption = method.Name;
             }
-            ExceptionDlg.Show(caption, e);
+            ExceptionDlg.Show(telemetry, caption, e);
         }
 
         /// <summary>

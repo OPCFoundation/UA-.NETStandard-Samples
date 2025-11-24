@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -109,7 +109,7 @@ namespace Boiler
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
         public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
@@ -125,9 +125,9 @@ namespace Boiler
         /// </summary>
         /// <param name="context">The context to use.</param>
         /// <param name="unitNumber">The unit number for the boiler.</param>
-        private void CreateBoiler(SystemContext context, int unitNumber)
+        private void CreateBoiler(ServerSystemContext context, int unitNumber)
         {
-            BoilerState boiler = new BoilerState(null);
+            BoilerState boiler = new BoilerState(null, m_logger);
 
             string name = Utils.Format("Boiler #{0}", unitNumber);
 
@@ -229,7 +229,7 @@ namespace Boiler
                         break;
                     }
 
-                    BoilerState activeNode = new BoilerState(passiveNode.Parent);
+                    BoilerState activeNode = new BoilerState(passiveNode.Parent, m_logger);
                     activeNode.Create(context, passiveNode);
 
                     // replace the node in the parent.
@@ -305,7 +305,7 @@ namespace Boiler
         #region Private Fields
         private ushort m_namespaceIndex;
         private ushort m_typeNamespaceIndex;
-        private long m_lastUsedId;
+        private uint m_lastUsedId;
         private List<BoilerState> m_boilers;
         #endregion
     }

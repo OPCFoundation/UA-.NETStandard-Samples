@@ -65,6 +65,7 @@ namespace Opc.Ua.Sample.Controls
         private ServiceMessageContext m_messageContext;
         private X509Certificate2 m_clientCertificate;
         private string m_filePath;
+        private ITelemetryContext m_telemetry;
 
         /// <summary>
         /// Displays the dialog.
@@ -72,16 +73,18 @@ namespace Opc.Ua.Sample.Controls
         public EndpointDescription ShowDialog(
             ApplicationConfiguration configuration,
             ConfiguredEndpointCollection endpoints,
-            X509Certificate2 clientCertificate)
+            X509Certificate2 clientCertificate,
+            ITelemetryContext telemetry)
         {
             m_configuration = configuration;
             m_endpoints = endpoints;
             m_messageContext = configuration.CreateMessageContext();
             m_clientCertificate = clientCertificate;
+            m_telemetry = telemetry;
             m_running = false;
             m_filePath = @".\perftest.csv";
 
-            EndpointSelectorCTRL.Initialize(m_endpoints, configuration);
+            EndpointSelectorCTRL.Initialize(m_endpoints, configuration, m_telemetry);
 
             lock (m_lock)
             {
@@ -187,7 +190,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception e)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
 
@@ -208,7 +211,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception e)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
 
@@ -226,24 +229,24 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 OkBTN.Enabled = m_running = false;
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), (Exception)state);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), (Exception)state);
             }
             catch (Exception e)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
 
         /// <summary>
         /// Runs all tests in a background thread.
         /// </summary>
-        private async Task DoAllTestsAsync(CancellationToken ct = default)
+        private async Task DoAllTestsAsync(ITelemetryContext telemetry, CancellationToken ct = default)
         {
             for (int ii = 0; ii < m_endpoints.Count; ii++)
             {
                 try
                 {
-                    await DoTestAsync(m_endpoints[ii], ct);
+                    await DoTestAsync(m_endpoints[ii], telemetry, ct);
                 }
                 catch
                 {
@@ -257,7 +260,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Runs the test in a background thread.
         /// </summary>
-        private async Task DoTestAsync(ConfiguredEndpoint endpoint, CancellationToken ct = default)
+        private async Task DoTestAsync(ConfiguredEndpoint endpoint, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             PerformanceTestResult result = new PerformanceTestResult(endpoint, 100);
 
@@ -273,19 +276,20 @@ namespace Opc.Ua.Sample.Controls
                 // update the endpoint.
                 if (endpoint.UpdateBeforeConnect)
                 {
-                    await endpoint.UpdateFromServerAsync(ct);
+                    await endpoint.UpdateFromServerAsync(telemetry, ct);
                 }
 
                 SessionClient client = null;
 
                 Uri url = new Uri(endpoint.Description.EndpointUrl);
 
-                ITransportChannel channel = SessionChannel.Create(
+                ITransportChannel channel = await UaChannelBase.CreateUaBinaryChannelAsync(
                     m_configuration,
                     endpoint.Description,
                     endpoint.Configuration,
                     m_clientCertificate,
-                    m_messageContext);
+                    m_messageContext,
+                    ct);
 
                 client = new SessionClient(channel);
 
@@ -389,11 +393,11 @@ namespace Opc.Ua.Sample.Controls
 
                 // start processing.
                 OkBTN.Enabled = m_running = true;
-                Task.Run(() => DoTestAsync(endpoint));
+                Task.Run(() => DoTestAsync(endpoint, m_telemetry));
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
                 e.UpdateControl = false;
             }
         }
@@ -409,7 +413,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -440,7 +444,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -472,7 +476,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -487,11 +491,11 @@ namespace Opc.Ua.Sample.Controls
 
                 ResultsCTRL.Clear();
                 OkBTN.Enabled = m_running = true;
-                Task.Run(() => DoAllTestsAsync());
+                Task.Run(() => DoAllTestsAsync(m_telemetry));
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

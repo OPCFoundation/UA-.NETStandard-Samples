@@ -58,10 +58,11 @@ namespace Quickstarts.EmptyClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62546/Quickstarts/EmptyServer";
@@ -72,6 +73,7 @@ namespace Quickstarts.EmptyClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
         #endregion
 
@@ -86,11 +88,11 @@ namespace Quickstarts.EmptyClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -105,7 +107,7 @@ namespace Quickstarts.EmptyClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -120,7 +122,7 @@ namespace Quickstarts.EmptyClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -140,11 +142,11 @@ namespace Quickstarts.EmptyClient
                 }
 
                 // browse the instances in the server.
-                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
+                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, m_telemetry, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -159,7 +161,7 @@ namespace Quickstarts.EmptyClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -175,7 +177,7 @@ namespace Quickstarts.EmptyClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 

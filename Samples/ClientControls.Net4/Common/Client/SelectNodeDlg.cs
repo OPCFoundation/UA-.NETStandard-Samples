@@ -65,6 +65,7 @@ namespace Opc.Ua.Client.Controls
             ISession session,
             NodeId rootId,
             string caption,
+            ITelemetryContext telemetry,
             CancellationToken ct,
             params NodeId[] referenceTypeIds)
         {
@@ -87,7 +88,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // initialize the control.
-            await BrowseCTRL.InitializeAsync(session, rootId, ct, referenceTypeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, telemetry, ct, referenceTypeIds);
 
             // display the dialog.
             if (ShowDialog() != DialogResult.OK)
@@ -114,6 +115,7 @@ namespace Opc.Ua.Client.Controls
             NodeId rootId,
             ViewDescription view,
             string caption,
+            ITelemetryContext telemetry,
             CancellationToken ct,
             params NodeId[] referenceTypeIds)
         {
@@ -136,7 +138,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // initialize the control.
-            await BrowseCTRL.InitializeAsync(session, rootId, ct, referenceTypeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, telemetry,ct, referenceTypeIds);
             BrowseCTRL.View = view;
 
             // display the dialog.

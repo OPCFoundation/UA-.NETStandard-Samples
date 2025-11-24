@@ -43,6 +43,7 @@ namespace Opc.Ua.Client.Controls
     /// </summary>
     public partial class EditReadValueIdDlg : Form
     {
+        private ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
@@ -89,6 +90,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public async Task<ReadValueId[]> ShowDialogAsync(ISession session, CancellationToken ct, params ReadValueId[] nodesToRead)
         {
+            m_telemetry = session.MessageContext.Telemetry;
             NodeBTN.Session = session;
             NodeBTN.SelectedReference = null;
 
@@ -283,7 +285,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

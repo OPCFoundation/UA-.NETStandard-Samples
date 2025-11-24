@@ -84,7 +84,6 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SerilogTraceLogger.cs" />
     <Compile Include="ReferenceServerUtils.cs" />
     <Content Include="Resources\OPCFoundation.jpg" />
     <EmbeddedResource Include="MonitoredItemEventLogDlg.resx">
@@ -141,13 +140,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
-      <Version>1.5.377.21</Version>
+      <Version>1.5.378.11-preview</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.5.377.21</Version>
+      <Version>1.5.378.11-preview</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Quickstarts.Servers">
-      <Version>1.5.377.21</Version>
+      <Version>1.5.378.2-preview</Version>
     </PackageReference>
     <PackageReference Include="Serilog">
       <Version>4.3.0</Version>

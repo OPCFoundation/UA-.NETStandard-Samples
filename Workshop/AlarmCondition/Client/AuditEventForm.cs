@@ -58,7 +58,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="session">The session.</param>
         /// <param name="subscription">The subscription.</param>
         /// <param name="ct">The cancellation token.</param>
-        public async Task InitializeAsync(ISession session, Subscription subscription, CancellationToken ct = default)
+        public async Task InitializeAsync(ISession session, Subscription subscription, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             InitializeComponent();
 
@@ -83,7 +83,7 @@ namespace Quickstarts.AlarmConditionClient
             m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
 
             // create a monitored item based on the current filter settings.
-            m_monitoredItem = m_filter.CreateMonitoredItem(m_session);
+            m_monitoredItem = m_filter.CreateMonitoredItem(m_session, telemetry);
 
             // set up callback for notifications.
             m_monitoredItem.Notification += m_MonitoredItem_Notification;
@@ -266,7 +266,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
 
@@ -289,7 +289,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
 
@@ -306,7 +306,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
 
@@ -324,7 +324,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
         #endregion

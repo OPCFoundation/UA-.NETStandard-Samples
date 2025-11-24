@@ -60,6 +60,11 @@ namespace Opc.Ua.Client.Controls
 
         #region Public Interface
         /// <summary>
+        /// The Telemetry Context
+        /// </summary>
+        public ITelemetryContext Telemetry { get; set; }
+
+        /// <summary>
         /// Gets or sets the control that is stores with the current certificate store.
         /// </summary>
         public Control CertificateStoreControl { get; set; }
@@ -81,7 +86,7 @@ namespace Opc.Ua.Client.Controls
             store.StoreType = CertificateStoreIdentifier.DetermineStoreType(CertificateStoreControl.Text);
             store.StorePath = CertificateStoreControl.Text;
 
-            store = new CertificateStoreDlg().ShowDialog(store);
+            store = new CertificateStoreDlg().ShowDialog(store, Telemetry);
 
             if (store == null)
             {
@@ -90,10 +95,7 @@ namespace Opc.Ua.Client.Controls
 
             CertificateStoreControl.Text = store.StorePath;
 
-            if (m_CertificateStoreSelected != null)
-            {
-                m_CertificateStoreSelected(this, new EventArgs());
-            }
+            m_CertificateStoreSelected?.Invoke(this, new EventArgs());
         }
         #endregion
     }

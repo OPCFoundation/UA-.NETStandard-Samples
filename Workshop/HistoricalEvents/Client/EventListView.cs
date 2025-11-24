@@ -51,6 +51,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
         #region Private Methods
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private FilterDeclaration m_filter;
@@ -103,8 +104,10 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public async Task ChangeSessionAsync(ISession session, bool fetchRecent, CancellationToken ct = default)
+        public async Task ChangeSessionAsync(ISession session, bool fetchRecent, ITelemetryContext telemetry, CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
+
             if (Object.ReferenceEquals(session, m_session))
             {
                 return;
@@ -276,7 +279,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// </summary>
         private async Task CreateSubscriptionAsync(CancellationToken ct = default)
         {
-            m_subscription = new Subscription();
+            m_subscription = new Subscription(m_telemetry);
             m_subscription.Handle = this;
             m_subscription.DisplayName = null;
             m_subscription.PublishingInterval = 1000;
@@ -289,7 +292,7 @@ namespace Quickstarts.HistoricalEvents.Client
             m_session.AddSubscription(m_subscription);
             await m_subscription.CreateAsync(ct);
 
-            m_monitoredItem = new MonitoredItem();
+            m_monitoredItem = new MonitoredItem(m_telemetry);
             m_monitoredItem.StartNodeId = m_areaId;
             m_monitoredItem.AttributeId = Attributes.EventNotifier;
             m_monitoredItem.SamplingInterval = 0;
@@ -433,7 +436,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -616,7 +619,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -658,7 +661,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

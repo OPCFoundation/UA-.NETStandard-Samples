@@ -34,18 +34,21 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua.Client.Controls;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
     public partial class ViewServersOnNetworkDialog : Form
     {
-        public ViewServersOnNetworkDialog(GlobalDiscoveryServerClient gds)
+        public ViewServersOnNetworkDialog(GlobalDiscoveryServerClient gds, ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ClientUtils.GetAppIcon();
             ServersDataGridView.AutoGenerateColumns = false;
 
             m_gds = gds;
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ViewServersOnNetworkDialog>();
 
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Servers");
@@ -61,7 +64,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private DataTable ServersTable { get { return m_dataset.Tables[0]; } }
         private DataSet m_dataset;
+        private ILogger m_logger;
         private GlobalDiscoveryServerClient m_gds;
+        private ITelemetryContext m_telemetry;
 
         public List<ServerOnNetwork> ShowDialog(IWin32Window owner, ref QueryServersFilter filters)
         {
@@ -99,7 +104,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -111,7 +116,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (!m_gds.IsConnected)
                 {
-                    new SelectGdsDialog().ShowDialog(null, m_gds, await m_gds.GetDefaultGdsUrlsAsync(null));
+                    new SelectGdsDialog().ShowDialog(null, m_gds, await m_gds.GetDefaultGdsUrlsAsync(null), m_telemetry);
                 }
 
                 uint maxNoOfRecords = (uint)NumberOfRecordsUpDown.Value;
@@ -185,7 +190,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -255,7 +260,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -271,7 +276,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -288,7 +293,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -322,7 +327,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 

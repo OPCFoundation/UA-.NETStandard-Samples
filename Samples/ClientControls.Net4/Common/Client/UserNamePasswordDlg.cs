@@ -69,7 +69,7 @@ namespace Opc.Ua.Client.Controls
                 if (token != null)
                 {
                     UserNameTB.Text = token.UserName;
-                    PasswordTB.Text = token.DecryptedPassword;
+                    PasswordTB.Text = Encoding.UTF8.GetString(token.DecryptedPassword);
                 }
             }
 
@@ -78,7 +78,7 @@ namespace Opc.Ua.Client.Controls
                 return null;
             }
 
-            return new UserIdentity(UserNameTB.Text, PasswordTB.Text);
+            return new UserIdentity(UserNameTB.Text, Encoding.UTF8.GetBytes(PasswordTB.Text));
         }
     }
 }

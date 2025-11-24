@@ -8,9 +8,14 @@ jobs:
     vmImage: 'windows-2022'
   steps:
   - task: NuGetAuthenticate@1
+  - task: UseDotNet@2
+    displayName: 'Install .NET 10.0'
+    inputs:
+      packageType: 'sdk'
+      version: '10.0.x'
   - task: NuGetToolInstaller@1
     inputs:
-      versionSpec: '>=5.8.x'
+      versionSpec: '>=7.0.x'
   - task: NuGetCommand@2
     displayName: Restore Release
     inputs:

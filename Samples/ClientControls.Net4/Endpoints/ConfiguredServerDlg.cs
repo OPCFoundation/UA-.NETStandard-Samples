@@ -37,6 +37,7 @@ using System.Threading;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua.Security.Certificates;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -327,6 +328,7 @@ namespace Opc.Ua.Client.Controls
         private Uri m_discoveryUrl;
         private bool m_showAllOptions;
         private StatusObject m_statusObject;
+        private ILogger m_logger = LoggerUtils.Null.Logger;
         #endregion
 
         #region Public Interface
@@ -344,12 +346,15 @@ namespace Opc.Ua.Client.Controls
             get { return m_discoveryTimeout; }
             set { Interlocked.Exchange(ref m_discoveryTimeout, value); }
         }
+
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ConfiguredEndpoint ShowDialog(ApplicationDescription server, ApplicationConfiguration configuration)
+        public ConfiguredEndpoint ShowDialog(ApplicationDescription server, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             if (server == null) throw new ArgumentNullException(nameof(server));
+
+            m_logger = telemetry.CreateLogger<ConfiguredServerDlg>();
 
             m_configuration = configuration;
 
@@ -1133,10 +1138,12 @@ namespace Opc.Ua.Client.Controls
             EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             endpointConfiguration.OperationTimeout = m_discoveryTimeout;
 
-            DiscoveryClient client = DiscoveryClient.Create(
+            DiscoveryClient client = await DiscoveryClient.CreateAsync(
                 discoveryUrl,
                 EndpointConfiguration.Create(m_configuration),
-                m_configuration);
+                m_configuration,
+                DiagnosticsMasks.None,
+                ct);
 
             try
             {
@@ -1146,7 +1153,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.Trace("Could not fetch endpoints from url: {0}. Reason={1}", discoveryUrl, e.Message);
+                m_logger.LogDebug("Could not fetch endpoints from url: {0}. Reason={1}", discoveryUrl, e.Message);
                 return (false, e.Message);
             }
             finally
@@ -1284,7 +1291,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error updating endpoints.");
+                m_logger.LogDebug(e, "Unexpected error updating endpoints.");
             }
         }
 
@@ -1430,7 +1437,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1478,7 +1485,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1531,7 +1538,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1571,7 +1578,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1651,7 +1658,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 catch (Exception exception)
                 {
-                    GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                    GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
                 }
                 finally
                 {
@@ -1711,7 +1718,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1766,7 +1773,7 @@ namespace Opc.Ua.Client.Controls
                     if ((m_currentDescription.ServerCertificate != null) && (m_currentDescription.ServerCertificate.Length > 0))
                     {
                         X509Certificate2 serverCertificate = new X509Certificate2(m_currentDescription.ServerCertificate);
-                        String certificateApplicationUri = X509Utils.GetApplicationUriFromCertificate(serverCertificate);
+                        String certificateApplicationUri = X509Utils.GetApplicationUrisFromCertificate(serverCertificate)[0];
 
                         if (certificateApplicationUri != m_currentDescription.Server.ApplicationUri)
                         {
@@ -1817,7 +1824,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 

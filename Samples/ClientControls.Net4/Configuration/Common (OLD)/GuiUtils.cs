@@ -37,6 +37,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -61,14 +62,27 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the details of an exception.
         /// </summary>
-        public static void HandleException(string caption, MethodBase method, Exception e)
+        public static void HandleException(ITelemetryContext telemetry, string caption, MethodBase method, Exception e)
         {
             if (String.IsNullOrEmpty(caption))
             {
                 caption = method.Name;
             }
 
-            ExceptionDlg.Show(caption, e);
+            ExceptionDlg.Show(telemetry, caption, e);
+        }
+
+        /// <summary>
+        /// Displays the details of an exception.
+        /// </summary>
+        public static void HandleException(ILogger logger, string caption, MethodBase method, Exception e)
+        {
+            if (String.IsNullOrEmpty(caption))
+            {
+                caption = method.Name;
+            }
+
+            ExceptionDlg.Show(logger, caption, e);
         }
 
         /// <summary>
@@ -342,7 +356,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public static object GetDefaultValue(NodeId datatypeId, int valueRank)
         {
-            Type type = TypeInfo.GetSystemType(datatypeId, EncodeableFactory.GlobalFactory);
+            Type type = TypeInfo.GetSystemType(datatypeId, EncodeableFactory.Create());
 
             if (type == null)
             {
@@ -403,13 +417,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a dialog that allows a use to edit a value.
         /// </summary>
-        public static object EditValue(Session session, object value)
+        public static object EditValue(Session session, object value, ITelemetryContext telemetry)
         {
             TypeInfo typeInfo = TypeInfo.Construct(value);
 
             if (typeInfo != null)
             {
-                return EditValue(session, value, (uint)typeInfo.BuiltInType, typeInfo.ValueRank);
+                return EditValue(session, value, (uint)typeInfo.BuiltInType, typeInfo.ValueRank, telemetry);
             }
 
             return null;
@@ -418,7 +432,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a dialog that allows a use to edit a value.
         /// </summary>
-        public static object EditValue(Session session, object value, NodeId datatypeId, int valueRank)
+        public static object EditValue(Session session, object value, NodeId datatypeId, int valueRank, ITelemetryContext telemetry)
         {
             if (value == null)
             {
@@ -427,7 +441,7 @@ namespace Opc.Ua.Client.Controls
 
             if (valueRank >= 0)
             {
-                return new ComplexValueEditDlg().ShowDialog(value);
+                return new ComplexValueEditDlg().ShowDialog(value, telemetry);
             }
 
             BuiltInType builtinType = TypeInfo.GetBuiltInType(datatypeId, session.TypeTree);
@@ -467,12 +481,12 @@ namespace Opc.Ua.Client.Controls
 
                 case BuiltInType.NodeId:
                 {
-                    return new NodeIdValueEditDlg().ShowDialog(session, (NodeId)value);
+                    return new NodeIdValueEditDlg().ShowDialog(session, (NodeId)value, telemetry);
                 }
 
                 case BuiltInType.ExpandedNodeId:
                 {
-                    return new NodeIdValueEditDlg().ShowDialog(session, (ExpandedNodeId)value);
+                    return new NodeIdValueEditDlg().ShowDialog(session, (ExpandedNodeId)value, telemetry);
                 }
 
                 case BuiltInType.DateTime:
@@ -521,7 +535,7 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
-            return new ComplexValueEditDlg().ShowDialog(value);
+            return new ComplexValueEditDlg().ShowDialog(value, telemetry);
         }
 
         /// <summary>

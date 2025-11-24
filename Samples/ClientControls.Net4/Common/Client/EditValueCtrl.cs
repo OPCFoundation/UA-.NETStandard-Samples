@@ -117,10 +117,7 @@ namespace Opc.Ua.Client.Controls
 
             Value = new Variant(value);
 
-            if (m_ValueChanged != null)
-            {
-                m_ValueChanged(this, e);
-            }
+            m_ValueChanged?.Invoke(this, e);
         }
         #endregion
     }

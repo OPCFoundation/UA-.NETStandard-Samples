@@ -45,11 +45,12 @@ namespace Quickstarts
 {
     public partial class MainForm : Form
     {
-        public MainForm()
+        public MainForm(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
+            m_telemetry = telemetry;
             m_dataset = new DataSet();
             m_dataset.Tables.Add("TestData");
 
@@ -126,6 +127,7 @@ namespace Quickstarts
         private ProcessedDataSetType m_currentDataSet;
         private TestData m_testData;
         private bool m_loading;
+        private readonly ITelemetryContext m_telemetry;
 
         /// <summary>
         /// Adds a raw value to the grid.
@@ -449,7 +451,7 @@ namespace Quickstarts
                 }
                 catch (Exception exception)
                 {
-                    ClientUtils.HandleException(this.Text, exception);
+                    ClientUtils.HandleException(m_telemetry, this.Text, exception);
                 }
                 finally
                 {
@@ -460,7 +462,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -712,7 +714,8 @@ namespace Quickstarts
                 startTime.AddSeconds(100),
                 processingInterval,
                 stepped,
-                configuration);
+                configuration,
+                m_telemetry);
 
             SortedDictionary<DateTime, TestData.DataValue> rawValues = m_testData.GetRawValues(historianName);
             List<TestData.DataValue> processedValues = new List<TestData.DataValue>();
@@ -779,7 +782,8 @@ namespace Quickstarts
                 (this.TimeFlowsBackwardsCK.Checked) ? startTime : startTime.AddSeconds(100),
                 (double)ProcessingIntervalNP.Value,
                 SteppedCK.Checked,
-                configuration);
+                configuration,
+                m_telemetry);
 
             SortedDictionary<DateTime, TestData.DataValue> rawValues = m_testData.GetRawValues(HistorianCB.SelectedItem as string);
             List<DataValue> processedValues = new List<DataValue>();
@@ -939,7 +943,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
 
         }
@@ -978,7 +982,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1077,7 +1081,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1118,7 +1122,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1134,7 +1138,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1152,7 +1156,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1170,7 +1174,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1203,7 +1207,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -1220,7 +1224,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1238,7 +1242,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1262,7 +1266,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1368,7 +1372,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1380,7 +1384,7 @@ namespace Quickstarts
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 

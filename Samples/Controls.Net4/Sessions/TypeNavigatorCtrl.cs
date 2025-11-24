@@ -131,7 +131,7 @@ namespace Opc.Ua.Sample
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -180,14 +180,11 @@ namespace Opc.Ua.Sample
 
                 button.ShowDropDownArrow = (button.DropDownItems.Count == 0);
 
-                if (m_TypeSelected != null)
-                {
-                    m_TypeSelected(this, new TypeNavigatorEventArgs(node));
-                }
+                m_TypeSelected?.Invoke(this, new TypeNavigatorEventArgs(node));
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -244,14 +241,11 @@ namespace Opc.Ua.Sample
 
                 TypePathCTRL.Items.Add(button);
 
-                if (m_TypeSelected != null)
-                {
-                    m_TypeSelected(this, new TypeNavigatorEventArgs(node));
-                }
+                m_TypeSelected?.Invoke(this, new TypeNavigatorEventArgs(node));
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

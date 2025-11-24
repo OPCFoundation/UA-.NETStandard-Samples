@@ -107,7 +107,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the items for the specified subscription in the control.
         /// </summary>
-        public void Initialize(Subscription subscription)
+        public void Initialize(Subscription subscription, ITelemetryContext telemetry)
         {
             // do nothing if same subscription provided.
             if (Object.ReferenceEquals(m_subscription, subscription))
@@ -116,6 +116,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             m_subscription = subscription;
+            Telemetry = telemetry;
 
             Clear();
             UpdateItems();
@@ -152,14 +153,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a new group item.
         /// </summary>
-        public MonitoredItem CreateItem(Subscription subscription)
+        public MonitoredItem CreateItem(Subscription subscription, ITelemetryContext telemetry)
         {
             if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
             MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem);
             monitoredItem.QueueSize = 1;
 
-            if (!new MonitoredItemEditDlg().ShowDialog(subscription.Session as Session, monitoredItem))
+            if (!new MonitoredItemEditDlg().ShowDialog(subscription.Session as Session, monitoredItem, telemetry))
             {
                 return null;
             }
@@ -456,7 +457,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -471,12 +472,12 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                CreateItem(m_subscription);
+                CreateItem(m_subscription, Telemetry);
                 await ApplyChangesAsync(false);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -496,7 +497,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session as Session, monitoredItem, true))
+                if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session as Session, monitoredItem, true, Telemetry))
                 {
                     return;
                 }
@@ -505,7 +506,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -551,7 +552,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -592,7 +593,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -618,7 +619,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                     else
                     {
-                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session as Session, monitoredItems[0].Filter as EventFilter, false);
+                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session as Session, Telemetry, monitoredItems[0].Filter as EventFilter, false);
 
                         if (filter == null)
                         {
@@ -634,7 +635,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -666,7 +667,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -685,7 +686,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

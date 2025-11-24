@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -53,6 +53,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
+        private ITelemetryContext m_telemetry;
         private EventFilter m_filter;
         #endregion
 
@@ -60,18 +61,19 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public EventFilter ShowDialog(Session session, EventFilter filter, bool editWhereClause)
+        public EventFilter ShowDialog(Session session, ITelemetryContext telemetry, EventFilter filter, bool editWhereClause)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (filter == null) throw new ArgumentNullException(nameof(filter));
 
             m_session = session;
+            m_telemetry = telemetry;
             m_filter = filter;
 
-            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, null);
+            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, null, telemetry);
             SelectClauseCTRL.Initialize(session, filter.SelectClauses);
-            ContentFilterCTRL.Initialize(session, filter.WhereClause);
-            FilterOperandsCTRL.Initialize(session, null, -1);
+            ContentFilterCTRL.Initialize(session, filter.WhereClause, telemetry);
+            FilterOperandsCTRL.Initialize(session, null, -1, telemetry);
 
             MoveBTN_Click((editWhereClause) ? NextBTN : BackBTN, null);
 
@@ -99,7 +101,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -117,7 +119,7 @@ namespace Opc.Ua.Sample.Controls
                         {
                             if (Object.ReferenceEquals(elements[ii], item))
                             {
-                                FilterOperandsCTRL.Initialize(m_session, elements, ii);
+                                FilterOperandsCTRL.Initialize(m_session, elements, ii, m_telemetry);
                             }
                         }
 
@@ -126,12 +128,12 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    FilterOperandsCTRL.Initialize(m_session, null, -1);
+                    FilterOperandsCTRL.Initialize(m_session, null, -1, m_telemetry);
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -163,7 +165,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -176,7 +178,7 @@ namespace Opc.Ua.Sample.Controls
                 filter.SelectClauses.AddRange(SelectClauseCTRL.GetSelectClauses());
                 filter.WhereClause = ContentFilterCTRL.GetFilter();
 
-                EventFilter.Result result = filter.Validate(new FilterContext(m_session.NamespaceUris, m_session.TypeTree));
+                EventFilter.Result result = filter.Validate(new FilterContext(m_session.NamespaceUris, m_session.TypeTree, m_telemetry));
 
                 if (ServiceResult.IsBad(result.Status))
                 {
@@ -189,7 +191,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
 
         }

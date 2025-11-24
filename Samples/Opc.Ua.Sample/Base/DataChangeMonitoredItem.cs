@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,6 +30,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Opc.Ua.Server;
 
 namespace Opc.Ua.Sample
@@ -94,6 +96,7 @@ namespace Opc.Ua.Sample
             bool alwaysReportUpdates)
         {
             m_source = source;
+            m_logger = source.Server.Telemetry.CreateLogger<DataChangeMonitoredItem>();
             m_id = id;
             m_attributeId = attributeId;
             m_indexRange = indexRange;
@@ -252,7 +255,7 @@ namespace Opc.Ua.Sample
 
                 m_samplingInterval = samplingInterval;
 
-                // calculate the next sampling interval.                
+                // calculate the next sampling interval.
                 long newSamplingInterval = (long)(m_samplingInterval * TimeSpan.TicksPerMillisecond);
 
                 if (m_samplingInterval > 0)
@@ -784,9 +787,9 @@ namespace Opc.Ua.Sample
                 if (error != null)
                 {
                     error = new ServiceResult(
-                        error.StatusCode.SetSemanticsChanged(true),
-                        error.SymbolicId,
                         error.NamespaceUri,
+                        new StatusCode(error.StatusCode.SetSemanticsChanged(true).Code,
+                        error.SymbolicId),
                         error.LocalizedText,
                         error.AdditionalInfo,
                         error.InnerResult);
@@ -806,9 +809,10 @@ namespace Opc.Ua.Sample
                 if (error != null)
                 {
                     error = new ServiceResult(
-                        error.StatusCode.SetStructureChanged(true),
-                        error.SymbolicId,
                         error.NamespaceUri,
+                        new StatusCode(
+                            error.StatusCode.SetStructureChanged(true).Code,
+                            error.SymbolicId),
                         error.LocalizedText,
                         error.AdditionalInfo,
                         error.InnerResult);
@@ -843,14 +847,19 @@ namespace Opc.Ua.Sample
             {
                 if ((m_diagnosticsMasks & DiagnosticsMasks.OperationAll) != 0)
                 {
-                    diagnosticInfo = ServerUtils.CreateDiagnosticInfo(m_source.Server, context, m_lastError);
+                    diagnosticInfo = ServerUtils.CreateDiagnosticInfo(m_source.Server, context, m_lastError, m_logger);
                 }
             }
 
             diagnostics.Enqueue(diagnosticInfo);
         }
 
-        public bool Publish(OperationContext context, Queue<MonitoredItemNotification> notifications, Queue<DiagnosticInfo> diagnostics, uint maxNotificationsPerPublish)
+        public bool Publish(
+            OperationContext context,
+            Queue<MonitoredItemNotification> notifications,
+            Queue<DiagnosticInfo> diagnostics,
+            uint maxNotificationsPerPublish,
+            ILogger logger)
         {
             return Publish(context, notifications, diagnostics);
         }
@@ -869,6 +878,7 @@ namespace Opc.Ua.Sample
         #region Private Fields
         private object m_lock = new object();
         private MonitoredNode m_source;
+        private readonly ILogger m_logger;
         private ISubscription m_subscription;
         private uint m_id;
         private DataValue m_lastValue;

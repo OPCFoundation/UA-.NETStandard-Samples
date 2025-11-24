@@ -29,9 +29,11 @@
 
 #define CUSTOM_NODE_MANAGER
 
-using Opc.Ua.Server;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+using Opc.Ua.Server;
 
 namespace Opc.Ua.Sample
 {
@@ -50,7 +52,7 @@ namespace Opc.Ua.Sample
         /// </remarks>
         protected override void OnServerStarting(ApplicationConfiguration configuration)
         {
-            Utils.Trace("The server is starting.");
+            Debug.WriteLine("The server is starting.");
 
             base.OnServerStarting(configuration);
 
@@ -76,11 +78,11 @@ namespace Opc.Ua.Sample
         /// <remarks>
         /// This method is called before any shutdown processing occurs.
         /// </remarks>
-        protected override void OnServerStopping()
+        protected override async ValueTask OnServerStoppingAsync(CancellationToken cancellationToken = default)
         {
             Debug.WriteLine("The Server is stopping.");
 
-            base.OnServerStopping();
+            await base.OnServerStoppingAsync(cancellationToken);
 
 #if INCLUDE_Sample
             CleanSampleModel();

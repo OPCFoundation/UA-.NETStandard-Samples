@@ -36,11 +36,27 @@ using Opc.Ua.Server.Controls;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Text;
 
 namespace Opc.Ua.Gds.Server
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -52,7 +68,7 @@ namespace Opc.Ua.Gds.Server
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance
+            ApplicationInstance application = new ApplicationInstance(m_telemetry)
             {
                 ApplicationType = ApplicationType.Server,
                 ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer"
@@ -70,11 +86,11 @@ namespace Opc.Ua.Gds.Server
                     throw new Exception("Application instance certificate invalid!");
                 }
 
-
+                ILogger logger = m_telemetry.CreateLogger<SqlUsersDatabase>();
                 // load the user database.
                 var userDatabase = new SqlUsersDatabase();
                 //initialize users Database
-                userDatabase.Initialize();
+                userDatabase.Initialize(logger);
 
                 bool createStandardUsers = ConfigureUsers(userDatabase);
 
@@ -84,18 +100,17 @@ namespace Opc.Ua.Gds.Server
                 var server = new GlobalDiscoverySampleServer(
                     database,
                     database,
-                    new CertificateGroup(),
+                    new CertificateGroup(m_telemetry),
                     userDatabase,
-                    true,
-                    createStandardUsers);
+                    true);
                 application.StartAsync(server).Wait();
 
                 // run the application interactively.
-                System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration));
+                System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration, m_telemetry));
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
             }
         }
 
@@ -122,10 +137,10 @@ namespace Opc.Ua.Gds.Server
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
 
                 //create User, if User exists delete & recreate
-                if (!userDatabase.CreateUser(username, password, new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))
+                if (!userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))
                 {
                     userDatabase.DeleteUser(username);
-                    userDatabase.CreateUser(username, password, new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin });
+                    userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin });
                 }
             }
             return createStandardUsers;

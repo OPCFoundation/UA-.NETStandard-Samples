@@ -67,8 +67,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public bool ShowDialog(ref MessageSecurityMode securityMode, ref string securityPolicyUri, ref bool useNativeStack)
+        public bool ShowDialog(ITelemetryContext telemetry, ref MessageSecurityMode securityMode, ref string securityPolicyUri, ref bool useNativeStack)
         {
+            m_telemetry = telemetry;
             // set security mode.
             SecurityModeCB.SelectedItem = securityMode;
 
@@ -105,8 +106,10 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
+
+        private ITelemetryContext m_telemetry;
     }
 }

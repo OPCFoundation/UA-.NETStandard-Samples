@@ -40,6 +40,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -56,6 +57,8 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Browser m_browser;
+        private ISession m_session;
+        private ILogger m_logger;
         private NodeId m_rootId;
         private AttributeListCtrl m_AttributesCtrl;
         private bool m_allowPick;
@@ -163,7 +166,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public async Task SetRootAsync(Browser browser, NodeId rootId, CancellationToken ct = default)
+        public async Task SetRootAsync(Browser browser, NodeId rootId, ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             Clear();
 
@@ -171,6 +174,9 @@ namespace Opc.Ua.Sample.Controls
 
             m_rootId = rootId;
             m_browser = browser;
+            m_session = session;
+            Telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<BrowseTreeCtrl>();
 
             if (m_browser != null)
             {
@@ -190,7 +196,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_browser != null)
             {
-                INode node = await m_browser.Session.NodeCache.FindAsync(m_rootId, ct);
+                INode node = await m_session.NodeCache.FindAsync(m_rootId, ct);
 
                 if (node == null)
                 {
@@ -219,15 +225,15 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public Task SetRootAsync(Session session, NodeId rootId, CancellationToken ct = default)
+        public Task SetRootAsync(Session session, NodeId rootId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
-            return SetRootAsync(new Browser(session), rootId, ct);
+            return SetRootAsync(new Browser(session), rootId, session, telemetry, ct);
         }
 
         /// <summary>
         /// Sets the view for the control.
         /// </summary>
-        public Task SetViewAsync(Session session, BrowseViewType viewType, NodeId viewId, CancellationToken ct = default)
+        public Task SetViewAsync(Session session, BrowseViewType viewType, NodeId viewId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             Clear();
 
@@ -308,7 +314,7 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
-            return SetRootAsync(browser, rootId, ct);
+            return SetRootAsync(browser, rootId, session, telemetry, ct);
         }
 
         /// <summary>
@@ -331,7 +337,7 @@ namespace Opc.Ua.Sample.Controls
                 clickedNode.Nodes.Clear();
 
                 // do nothing if an error is detected.
-                if (m_browser.Session.KeepAliveStopped)
+                if (m_session.KeepAliveStopped)
                 {
                     return Task.FromResult(false);
                 }
@@ -357,7 +363,7 @@ namespace Opc.Ua.Sample.Controls
                 if (clickedNode != null)
                 {
                     // do nothing if an error is detected.
-                    if (m_browser.Session.KeepAliveStopped)
+                    if (m_session.KeepAliveStopped)
                     {
                         return;
                     }
@@ -374,7 +380,7 @@ namespace Opc.Ua.Sample.Controls
                         BrowseMI.Enabled = (reference.NodeId != null && !reference.NodeId.IsAbsolute);
                         ViewAttributesMI.Enabled = true;
 
-                        NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_browser.Session.NamespaceUris);
+                        NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_session.NamespaceUris);
 
                         INode node = await m_browser.Session.ReadNodeAsync(nodeId);
 
@@ -481,7 +487,7 @@ namespace Opc.Ua.Sample.Controls
                                 SubscribeMI.DropDown.Items.RemoveAt(SubscribeMI.DropDown.Items.Count - 1);
                             }
 
-                            foreach (Subscription subscription in m_browser.Session.Subscriptions)
+                            foreach (Subscription subscription in m_session.Subscriptions)
                             {
                                 if (subscription.Created)
                                 {
@@ -496,7 +502,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -522,7 +528,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference != null)
                     {
-                        await m_AttributesCtrl.InitializeAsync(m_browser.Session as Session, reference.NodeId);
+                        await m_AttributesCtrl.InitializeAsync(m_browser.Session as Session, reference.NodeId, Telemetry);
                     }
                     else
                     {
@@ -557,7 +563,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -656,39 +662,39 @@ namespace Opc.Ua.Sample.Controls
             {
                 if (reference.ReferenceTypeId.IsNullNodeId)
                 {
-                    Utils.Trace("Reference {0} has null reference type id", reference.DisplayName);
+                    m_logger.LogDebug("Reference {0} has null reference type id", reference.DisplayName);
                     continue;
                 }
 
-                ReferenceTypeNode typeNode = await m_browser.Session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
+                ReferenceTypeNode typeNode = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
                 if (typeNode == null)
                 {
-                    Utils.Trace("Reference {0} has invalid reference type id.", reference.DisplayName);
+                    m_logger.LogDebug("Reference {0} has invalid reference type id.", reference.DisplayName);
                     continue;
                 }
 
                 if (m_browser.BrowseDirection == BrowseDirection.Forward && !reference.IsForward
                     || m_browser.BrowseDirection == BrowseDirection.Inverse && reference.IsForward)
                 {
-                    Utils.Trace("Reference's IsForward value is: {0}, but the browse direction is: {1}; for reference {2}", reference.IsForward, m_browser.BrowseDirection, reference.DisplayName);
+                    m_logger.LogDebug("Reference's IsForward value is: {0}, but the browse direction is: {1}; for reference {2}", reference.IsForward, m_browser.BrowseDirection, reference.DisplayName);
                     continue;
                 }
 
                 if (reference.NodeId == null || reference.NodeId.IsNull)
                 {
-                    Utils.Trace("The node id of the reference {0} is NULL.", reference.DisplayName);
+                    m_logger.LogDebug("The node id of the reference {0} is NULL.", reference.DisplayName);
                     continue;
                 }
 
                 if (reference.BrowseName == null || reference.BrowseName.Name == null)
                 {
-                    Utils.Trace("Browse name is empty for reference {0}", reference.DisplayName);
+                    m_logger.LogDebug("Browse name is empty for reference {0}", reference.DisplayName);
                     continue;
                 }
 
                 if (!Enum.IsDefined(typeof(Opc.Ua.NodeClass), reference.NodeClass) || reference.NodeClass == NodeClass.Unspecified)
                 {
-                    Utils.Trace("Node class is an unknown or unspecified value, for reference {0}", reference.DisplayName);
+                    m_logger.LogDebug("Node class is an unknown or unspecified value, for reference {0}", reference.DisplayName);
                     continue;
                 }
 
@@ -696,7 +702,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference.TypeDefinition == null || reference.TypeDefinition.IsNull)
                     {
-                        Utils.Trace("Type definition is null for reference {0}", reference.DisplayName);
+                        m_logger.LogDebug("Type definition is null for reference {0}", reference.DisplayName);
                         continue;
                     }
                 }
@@ -756,11 +762,11 @@ namespace Opc.Ua.Sample.Controls
 
             if (reference.ReferenceTypeId.IsNullNodeId)
             {
-                Utils.Trace("NULL reference type id, for reference: {0}", reference.DisplayName);
+                m_logger.LogDebug("NULL reference type id, for reference: {0}", reference.DisplayName);
                 return null;
             }
 
-            ReferenceTypeNode typeNode = await m_browser.Session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
+            ReferenceTypeNode typeNode = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
 
             foreach (TreeNode child in parent.Nodes)
             {
@@ -803,7 +809,7 @@ namespace Opc.Ua.Sample.Controls
                 return AddNode(parent, typeNode.NodeId, text, icon);
             }
 
-            Utils.Trace("Reference type id not found for: {0}", reference.ReferenceTypeId);
+            m_logger.LogDebug("Reference type id not found for: {0}", reference.ReferenceTypeId);
 
             return null;
         }
@@ -834,7 +840,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser))
+                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser, m_session, Telemetry))
                 {
                     if (NodesTV.SelectedNode != null)
                     {
@@ -845,7 +851,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -861,7 +867,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -879,7 +885,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -899,7 +905,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -932,7 +938,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -941,11 +947,11 @@ namespace Opc.Ua.Sample.Controls
             m_showReferences = ShowReferencesMI.Checked;
             try
             {
-                await SetRootAsync(m_browser, m_rootId);
+                await SetRootAsync(m_browser, m_rootId, m_session, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -965,11 +971,11 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId);
+                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1018,11 +1024,11 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                await new CallMethodDlg().ShowAsync(m_browser.Session as Session, objectId, methodId);
+                await new CallMethodDlg().ShowAsync(m_browser.Session as Session, objectId, methodId, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1057,11 +1063,11 @@ namespace Opc.Ua.Sample.Controls
                 valueIds.Add(valueId);
 
                 // show form.
-                await new ReadDlg().ShowAsync(session, valueIds);
+                await new ReadDlg().ShowAsync(session, valueIds, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1096,11 +1102,11 @@ namespace Opc.Ua.Sample.Controls
                 values.Add(value);
 
                 // show form.
-                await new WriteDlg().ShowAsync(session, values);
+                await new WriteDlg().ShowAsync(session, values, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1132,7 +1138,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1161,7 +1167,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1185,7 +1191,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1209,7 +1215,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

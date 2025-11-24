@@ -33,6 +33,7 @@ using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client.ComplexTypes;
 
 namespace Opc.Ua.Client.Controls
@@ -55,6 +56,8 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
+        private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
         private SessionReconnectHandler m_reconnectHandler;
@@ -295,28 +298,32 @@ namespace Opc.Ua.Client.Controls
             ITransportWaitingConnection connection,
             EndpointDescription endpointDescription,
             bool useSecurity,
+            ITelemetryContext telemetry,
             uint sessionTimeout = 0,
             CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ConnectServerCtrl>();
+
             // disconnect from existing session.
             await InternalDisconnectAsync(ct);
 
             // select the best endpoint.
             if (endpointDescription == null)
             {
-                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, DiscoverTimeout, ct);
+                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, DiscoverTimeout, telemetry, ct);
             }
 
             EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             ConfiguredEndpoint endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            m_session = await DefaultSessionFactory.Instance.CreateAsync(m_configuration, connection, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout, UserIdentity, PreferredLocales, ct);
+            m_session = await new DefaultSessionFactory(telemetry).CreateAsync(m_configuration, connection, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout, UserIdentity, PreferredLocales, ct);
 
             // set up keep alive callback.
             m_session.KeepAlive += Session_KeepAlive;
 
             // set up reconnect handler.
-            m_reconnectHandler = new SessionReconnectHandler(true, DefaultReconnectPeriodExponentialBackOff * 1000);
+            m_reconnectHandler = new SessionReconnectHandler(telemetry, true, DefaultReconnectPeriodExponentialBackOff * 1000);
 
             // raise an event.
             DoConnectComplete(null);
@@ -330,7 +337,7 @@ namespace Opc.Ua.Client.Controls
             catch (Exception e)
             {
                 UpdateStatus(true, DateTime.Now, "Connected, failed to load complex type system.");
-                Utils.LogWarning(e, "Failed to load complex type system.");
+                m_logger.LogWarning(e, "Failed to load complex type system.");
             }
 
             // return the new session.
@@ -344,24 +351,28 @@ namespace Opc.Ua.Client.Controls
         private async Task<ISession> ConnectInternalAsync(
             string serverUrl,
             bool useSecurity,
+            ITelemetryContext telemetry,
             uint sessionTimeout = 0,
             CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ConnectServerCtrl>();
+
             // disconnect from existing session.
             await InternalDisconnectAsync(ct);
 
             // select the best endpoint.
-            var endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, serverUrl, useSecurity, DiscoverTimeout, ct);
+            var endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, serverUrl, useSecurity, DiscoverTimeout, telemetry, ct);
             var endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            m_session = await DefaultSessionFactory.Instance.CreateAsync(m_configuration, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout == 0 ? DefaultSessionTimeout : sessionTimeout, UserIdentity, PreferredLocales, ct);
+            m_session = await new DefaultSessionFactory(telemetry).CreateAsync(m_configuration, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout == 0 ? DefaultSessionTimeout : sessionTimeout, UserIdentity, PreferredLocales, ct);
 
             // set up keep alive callback.
             m_session.KeepAlive += new KeepAliveEventHandler(Session_KeepAlive);
 
             // set up reconnect handler.
-            m_reconnectHandler = new SessionReconnectHandler(true, DefaultReconnectPeriodExponentialBackOff * 1000);
+            m_reconnectHandler = new SessionReconnectHandler(telemetry, true, DefaultReconnectPeriodExponentialBackOff * 1000);
 
             // raise an event.
             DoConnectComplete(null);
@@ -375,7 +386,7 @@ namespace Opc.Ua.Client.Controls
             catch (Exception e)
             {
                 UpdateStatus(true, DateTime.Now, "Connected, failed to load complex type system.");
-                Utils.LogError(e, "Failed to load complex type system.");
+                m_logger.LogError(e, "Failed to load complex type system.");
             }
 
             // return the new session.
@@ -389,6 +400,7 @@ namespace Opc.Ua.Client.Controls
         /// <param name="useSecurity">Whether to use security.</param>
         /// <returns>The new session object.</returns>
         public Task<ISession> ConnectAsync(
+            ITelemetryContext telemetry,
             string serverUrl = null,
             bool useSecurity = false,
             uint sessionTimeout = 0,
@@ -413,7 +425,7 @@ namespace Opc.Ua.Client.Controls
 
             UpdateStatus(false, DateTime.Now, "Connecting [{0}]", serverUrl);
 
-            return ConnectInternalAsync(serverUrl, useSecurity, sessionTimeout, ct);
+            return ConnectInternalAsync(serverUrl, useSecurity, telemetry, sessionTimeout, ct);
         }
 
         /// <summary>
@@ -424,6 +436,7 @@ namespace Opc.Ua.Client.Controls
         public async Task<ISession> ConnectAsync(
             ITransportWaitingConnection connection,
             bool useSecurity,
+            ITelemetryContext telemetry,
             int discoverTimeout = -1,
             uint sessionTimeout = 0,
             CancellationToken ct = default)
@@ -442,12 +455,12 @@ namespace Opc.Ua.Client.Controls
             {
                 // Discovery uses the reverse connection and closes it
                 // return and wait for next reverse hello
-                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, discoverTimeout, ct);
+                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, discoverTimeout, telemetry, ct);
                 m_endpoints[connection.EndpointUrl] = endpointDescription;
                 return null;
             }
 
-            return await ConnectInternalAsync(connection, endpointDescription, UseSecurityCK.Checked, sessionTimeout, ct);
+            return await ConnectInternalAsync(connection, endpointDescription, UseSecurityCK.Checked, telemetry, sessionTimeout, ct);
         }
 
         /// <summary>
@@ -499,7 +512,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void Discover(string hostName)
         {
-            string endpointUrl = new DiscoverServerDlg().ShowDialog(m_configuration, hostName);
+            string endpointUrl = new DiscoverServerDlg().ShowDialog(m_configuration, hostName, m_telemetry);
 
             if (endpointUrl != null)
             {
@@ -529,7 +542,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Finds the endpoint that best matches the current settings.
         /// </summary>
-        private async Task<EndpointDescription> SelectEndpointAsync(CancellationToken ct = default)
+        private async Task<EndpointDescription> SelectEndpointAsync(ITelemetryContext telemetry, CancellationToken ct = default)
         {
             try
             {
@@ -544,7 +557,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // return the selected endpoint.
-                return await CoreClientUtils.SelectEndpointAsync(m_configuration, discoveryUrl, UseSecurityCK.Checked, DiscoverTimeout, ct);
+                return await CoreClientUtils.SelectEndpointAsync(m_configuration, discoveryUrl, UseSecurityCK.Checked, DiscoverTimeout, telemetry, ct);
             }
             finally
             {
@@ -626,14 +639,11 @@ namespace Opc.Ua.Client.Controls
                 UpdateStatus(false, e.CurrentTime, "Connected [{0}]", session.Endpoint.EndpointUrl);
 
                 // raise any additional notifications.
-                if (m_KeepAliveComplete != null)
-                {
-                    m_KeepAliveComplete(this, e);
-                }
+                m_KeepAliveComplete?.Invoke(this, e);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_logger, this.Text, exception);
             }
         }
 
@@ -656,7 +666,7 @@ namespace Opc.Ua.Client.Controls
             Task.Run((Func<Task>)(async () => {
                 try
                 {
-                    await this.ConnectAsync(serverUrl, useSecurity);
+                    await this.ConnectAsync(m_telemetry, serverUrl, useSecurity);
                 }
                 catch (ServiceResultException sre)
                 {
@@ -675,7 +685,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 catch (Exception exception)
                 {
-                    ClientUtils.HandleException(this.Text, exception);
+                    ClientUtils.HandleException(m_logger, this.Text, exception);
                 }
             }));
         }
@@ -713,14 +723,11 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // raise any additional notifications.
-                if (m_ReconnectComplete != null)
-                {
-                    m_ReconnectComplete(this, e);
-                }
+                m_ReconnectComplete?.Invoke(this, e);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_logger, this.Text, exception);
             }
         }
 
@@ -748,7 +755,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_logger, this.Text, exception);
             }
         }
         #endregion

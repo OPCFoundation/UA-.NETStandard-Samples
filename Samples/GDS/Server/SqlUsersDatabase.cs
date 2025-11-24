@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Gds.Server.Database.Sql;
 using Opc.Ua.Gds.Server.DB;
 using Opc.Ua.Server;
@@ -12,52 +14,54 @@ using Opc.Ua.Server.UserDatabase;
 
 namespace Opc.Ua.Gds.Server
 {
-    public class SqlUsersDatabase: IUserDatabase
+    public class SqlUsersDatabase : IUserDatabase
     {
 
         #region IUsersDatabase
-        public void Initialize()
+        public void Initialize(ILogger logger)
         {
             using (usersdbEntities entities = new usersdbEntities())
             {
                 //only run initizailation logic if the database does not work -> throwS an exception
                 try
                 {
-                    CheckCredentials("Test", "Test");
+                    CheckCredentials("Test", Encoding.UTF8.GetBytes("Test"));
                 }
                 catch (Exception e)
                 {
-                    Utils.LogError(e, "Could not connect to the Database!");
+                    logger.LogError(e, "Could not connect to the Database!");
 
                     var ie = e.InnerException;
 
                     while (ie != null)
                     {
-                        Utils.LogInfo(ie, "");
+                        logger.LogInformation(ie, "");
                         ie = ie.InnerException;
                     }
-                    Utils.LogInfo("Initialize Database tables!");
+                    logger.LogInformation("Initialize Database tables!");
                     Assembly assembly = typeof(SqlApplicationsDatabase).GetTypeInfo().Assembly;
                     StreamReader istrm = new StreamReader(assembly.GetManifestResourceStream("Opc.Ua.Gds.Server.DB.usersdb.edmx.sql"));
                     string tables = istrm.ReadToEnd();
                     entities.Database.Initialize(true);
                     entities.Database.CreateIfNotExists();
                     var parts = tables.Split(new string[] { "GO" }, System.StringSplitOptions.None);
-                    foreach (var part in parts) { entities.Database.ExecuteSqlCommand(part); }
+                    foreach (var part in parts)
+                    { entities.Database.ExecuteSqlCommand(part); }
                     entities.SaveChanges();
-                    Utils.LogInfo("Database Initialized!");
+                    logger.LogInformation("Database Initialized!");
                 }
-                
+
             }
         }
 
-        public bool CreateUser(string userName, string password, IEnumerable<Role> roles)
+        public bool CreateUser(string userName, ReadOnlySpan<byte> password, ICollection<Role> roles)
         {
+            string passwordString = password.ToString();
             if (string.IsNullOrEmpty(userName))
             {
                 throw new ArgumentException("UserName cannot be empty.", nameof(userName));
             }
-            if (string.IsNullOrEmpty(password))
+            if (string.IsNullOrEmpty(passwordString))
             {
                 throw new ArgumentException("Password cannot be empty.", nameof(password));
             }
@@ -69,7 +73,7 @@ namespace Opc.Ua.Gds.Server
                     return false;
                 }
 
-                string hash = Hash(password);
+                string hash = Hash(passwordString);
 
                 var sqlRoles = new List<SqlRole>();
                 foreach (var role in roles)
@@ -84,7 +88,7 @@ namespace Opc.Ua.Gds.Server
                 entities.SaveChanges();
 
                 return true;
-            }            
+            }
         }
 
         public bool DeleteUser(string userName)
@@ -107,13 +111,15 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        public bool CheckCredentials(string userName, string password)
+        public bool CheckCredentials(string userName, ReadOnlySpan<byte> password)
         {
+            string passwordString = password.ToString();
+
             if (string.IsNullOrEmpty(userName))
             {
                 throw new ArgumentException("UserName cannot be empty.", nameof(userName));
             }
-            if (string.IsNullOrEmpty(password))
+            if (string.IsNullOrEmpty(passwordString))
             {
                 throw new ArgumentException("Password cannot be empty.", nameof(password));
             }
@@ -126,11 +132,11 @@ namespace Opc.Ua.Gds.Server
                     return false;
                 }
 
-                return Check(user.Hash, password);
+                return Check(user.Hash, passwordString);
             }
         }
 
-        public IEnumerable<Role> GetUserRoles(string userName)
+        public ICollection<Role> GetUserRoles(string userName)
         {
             if (string.IsNullOrEmpty(userName))
             {
@@ -155,17 +161,20 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        public bool ChangePassword(string userName, string oldPassword, string newPassword)
+        public bool ChangePassword(string userName, ReadOnlySpan<byte> oldPassword, ReadOnlySpan<byte> newPassword)
         {
+            string oldPasswordString = oldPassword.ToString();
+            string newPasswordString = newPassword.ToString();
+
             if (string.IsNullOrEmpty(userName))
             {
                 throw new ArgumentException("UserName cannot be empty.", nameof(userName));
             }
-            if (string.IsNullOrEmpty(oldPassword))
+            if (string.IsNullOrEmpty(oldPasswordString))
             {
                 throw new ArgumentException("Current Password cannot be empty.", nameof(oldPassword));
             }
-            if (string.IsNullOrEmpty(newPassword))
+            if (string.IsNullOrEmpty(newPasswordString))
             {
                 throw new ArgumentException("New Password cannot be empty.", nameof(newPassword));
             }
@@ -179,9 +188,9 @@ namespace Opc.Ua.Gds.Server
                     return false;
                 }
 
-                if (Check(user.Hash, oldPassword))
+                if (Check(user.Hash, oldPasswordString))
                 {
-                    var newHash = Hash(newPassword);
+                    var newHash = Hash(newPasswordString);
                     user.Hash = newHash;
                     entities.SaveChanges();
                     return true;
@@ -258,7 +267,7 @@ namespace Opc.Ua.Gds.Server
 
         #endregion
         #region Internal Members
-       
+
         #endregion
 
         #region Internal Fields

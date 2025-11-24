@@ -68,7 +68,7 @@ namespace Opc.Ua.Sample.Controls
 
             try
             {
-                X509Certificate2 certificate = CertificateFactory.Create(endpoint.ServerCertificate, true);
+                X509Certificate2 certificate = CertificateFactory.Create(endpoint.ServerCertificate);
                 ServerCertificateTB.Text = String.Format("{0}", certificate.Subject);
             }
             catch

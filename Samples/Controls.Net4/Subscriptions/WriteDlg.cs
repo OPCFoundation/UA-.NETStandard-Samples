@@ -61,14 +61,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Session session, WriteValueCollection values, CancellationToken ct = default)
+        public async Task ShowAsync(Session session, WriteValueCollection values, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_session = session;
 
-            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, ct);
-            WriteValuesCTRL.Initialize(session, values);
+            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, telemetry, ct);
+            WriteValuesCTRL.Initialize(session, values, telemetry);
 
             MoveBTN_ClickAsync(BackBTN, null);
 
@@ -118,6 +118,7 @@ namespace Opc.Ua.Sample.Controls
             ClientBase.ValidateResponse(results, nodesToWrite);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);
 
+            WriteResultsCTRL.Telemetry = m_session?.MessageContext?.Telemetry;
             await WriteResultsCTRL.ShowValueAsync(results, true, ct);
         }
         #endregion
@@ -137,7 +138,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -173,7 +174,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -185,7 +186,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -197,7 +198,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

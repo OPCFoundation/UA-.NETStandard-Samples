@@ -70,10 +70,11 @@ namespace Opc.Ua.Client.Controls
         public async Task InitializeAsync(
             ISession session,
             NodeId rootId,
+            ITelemetryContext telemetry,
             CancellationToken ct,
             params NodeId[] referenceTypeIds)
         {
-            await BrowseCTRL.InitializeAsync(session, rootId, ct, referenceTypeIds);
+            await BrowseCTRL.InitializeAsync(session, rootId, telemetry, ct, referenceTypeIds);
         }
 
         /// <summary>

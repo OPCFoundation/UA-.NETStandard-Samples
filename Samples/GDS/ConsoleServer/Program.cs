@@ -35,6 +35,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Mono.Options;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Linq;
@@ -137,9 +138,24 @@ namespace Opc.Ua.Gds.Server
         }
     }
 
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
+
     public class NetCoreGlobalDiscoveryServer
     {
         private GlobalDiscoverySampleServer server;
+        private readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
         private Task status;
         private DateTime lastEventTime;
         public static ExitCode exitCode;
@@ -150,17 +166,17 @@ namespace Opc.Ua.Gds.Server
 
         public async Task RunAsync()
         {
-
             try
             {
                 exitCode = ExitCode.ErrorServerNotStarted;
-                await ConsoleGlobalDiscoveryServerAsync().ConfigureAwait(false);
+                await ConsoleGlobalDiscoveryServerAsync(m_telemetry).ConfigureAwait(false);
                 Console.WriteLine("Server started. Press Ctrl-C to exit...");
                 exitCode = ExitCode.ErrorServerRunning;
             }
             catch (Exception ex)
             {
-                Utils.Trace("ServiceResultException:" + ex.Message);
+                m_telemetry.CreateLogger<NetCoreGlobalDiscoveryServer>()
+                    .LogError("ServiceResultException:" + ex.Message);
                 Console.WriteLine("Exception: {0}", ex.Message);
                 exitCode = ExitCode.ErrorServerException;
                 return;
@@ -170,7 +186,8 @@ namespace Opc.Ua.Gds.Server
             {
                 try
                 {
-                    Console.CancelKeyPress += (sender, eArgs) => {
+                    Console.CancelKeyPress += (sender, eArgs) =>
+                    {
                         quitEvent.Set();
                         eArgs.Cancel = true;
                     };
@@ -193,7 +210,7 @@ namespace Opc.Ua.Gds.Server
                     server = null;
                     await status.ConfigureAwait(false);
                     // Stop server and dispose
-                    _server.Stop();
+                    await _server.StopAsync();
                 }
             }
 
@@ -212,10 +229,11 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        private async Task ConsoleGlobalDiscoveryServerAsync()
+        private async Task ConsoleGlobalDiscoveryServerAsync(ITelemetryContext telemetry)
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            var application = new ApplicationInstance {
+            var application = new ApplicationInstance(telemetry)
+            {
                 ApplicationName = "Global Discovery Server",
                 ApplicationType = ApplicationType.Server,
                 ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer"
@@ -242,7 +260,7 @@ namespace Opc.Ua.Gds.Server
             string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
 
             var database = JsonApplicationsDatabase.Load(databaseStorePath);
-            var userDatabase = JsonUserDatabase.Load(userdatabaseStorePath);
+            var userDatabase = JsonUserDatabase.Load(userdatabaseStorePath, telemetry);
 
             bool createStandardUsers = ConfigureUsers(userDatabase);
 
@@ -250,10 +268,9 @@ namespace Opc.Ua.Gds.Server
             server = new GlobalDiscoverySampleServer(
                 database,
                 database,
-                new CertificateGroup(),
+                new CertificateGroup(telemetry),
                 userDatabase,
-                true,
-                createStandardUsers);
+                true);
             await application.StartAsync(server).ConfigureAwait(false);
 
             // print endpoint info
@@ -273,7 +290,7 @@ namespace Opc.Ua.Gds.Server
 
         }
 
-        private bool ConfigureUsers(JsonUserDatabase userDatabase)
+        private bool ConfigureUsers(IUserDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
             bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().GetAwaiter().GetResult();
@@ -299,10 +316,10 @@ namespace Opc.Ua.Gds.Server
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
 
                 //create User, if User exists delete & recreate
-                if (!userDatabase.CreateUser(username, password, new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))
+                if (!userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))
                 {
                     userDatabase.DeleteUser(username);
-                    userDatabase.CreateUser(username, password, new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin });
+                    userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin });
                 }
             }
             return createStandardUsers;

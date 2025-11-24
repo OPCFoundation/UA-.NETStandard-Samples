@@ -58,10 +58,11 @@ namespace Quickstarts.HistoricalAccess.Client
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            m_telemetry = telemetry;
 
             ReadCTRL.Reset();
             ConnectServerCTRL.Configuration = m_configuration = configuration;
@@ -73,6 +74,7 @@ namespace Quickstarts.HistoricalAccess.Client
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
         #endregion
 
@@ -87,11 +89,11 @@ namespace Quickstarts.HistoricalAccess.Client
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -106,7 +108,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -121,7 +123,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -140,11 +142,11 @@ namespace Quickstarts.HistoricalAccess.Client
                     m_connectedOnce = true;
                 }
 
-                await ReadCTRL.ChangeSessionAsync(m_session);
+                await ReadCTRL.ChangeSessionAsync(m_session, m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -160,7 +162,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -188,6 +190,7 @@ namespace Quickstarts.HistoricalAccess.Client
                     m_session,
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     "Select Variable to Monitor",
+                    m_telemetry,
                     default,
                     ReferenceTypes.Organizes,
                     ReferenceTypes.Aggregates);
@@ -199,7 +202,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -216,7 +219,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

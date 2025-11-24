@@ -45,6 +45,7 @@ namespace Opc.Ua.Client.Controls
     /// </summary>
     public partial class WriteRequestDlg : Form, ISessionForm
     {
+        private ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
@@ -63,9 +64,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used for the read request.
         /// </summary>
-        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
+        public Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
-            WriteRequestCTRL.ChangeSession(session);
+            m_telemetry = telemetry;
+            WriteRequestCTRL.ChangeSession(session, telemetry);
             return Task.CompletedTask;
         }
 
@@ -90,7 +92,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -104,7 +106,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -118,7 +120,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -137,7 +139,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

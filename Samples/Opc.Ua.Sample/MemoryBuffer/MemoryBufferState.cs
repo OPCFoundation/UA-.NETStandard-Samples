@@ -36,6 +36,7 @@ using System.Threading;
 using Opc.Ua;
 using Opc.Ua.Server;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace MemoryBuffer
 {
@@ -428,6 +429,7 @@ namespace MemoryBuffer
             lock (m_dataLock)
             {
                 m_server = server;
+                m_logger = server.Telemetry.CreateLogger<MemoryBufferState>();
                 m_nodeManager = nodeManager;
                 m_nonValueMonitoredItems = new Dictionary<uint, MemoryBufferMonitoredItem>();
             }
@@ -556,7 +558,7 @@ namespace MemoryBuffer
 
             if (delta1 > 100)
             {
-                Utils.LogWarning("{0} SAMPLING DELAY ({1}ms)", nameof(MemoryBufferState), delta1);
+                m_logger.LogWarning("{0} SAMPLING DELAY ({1}ms)", nameof(MemoryBufferState), delta1);
             }
         }
 
@@ -660,7 +662,7 @@ namespace MemoryBuffer
             {
                 if (m_itemCount > 0 && m_updateCount < m_itemCount)
                 {
-                    Utils.LogInfo("{0:HH:mm:ss.fff} MEMORYBUFFER Reported  {1}/{2} items ***.", DateTime.Now, m_updateCount, m_itemCount);
+                    m_logger.LogInformation("{0:HH:mm:ss.fff} MEMORYBUFFER Reported  {1}/{2} items ***.", DateTime.Now, m_updateCount, m_itemCount);
                 }
 
                 m_updateCount = 0;
@@ -672,7 +674,7 @@ namespace MemoryBuffer
 
             if (delta1 > 100)
             {
-                Utils.LogInfo("{0} ****** PUBLISH DELAY ({1}ms) ******", nameof(MemoryBufferState), delta1);
+                m_logger.LogInformation("{0} ****** PUBLISH DELAY ({1}ms) ******", nameof(MemoryBufferState), delta1);
             }
         }
         #endregion
@@ -680,6 +682,7 @@ namespace MemoryBuffer
         #region Private Fields
         private object m_dataLock = new object();
         private IServerInternal m_server;
+        private ILogger m_logger;
         private INodeManager m_nodeManager;
         private MemoryBufferMonitoredItem[][] m_monitoringTable;
         private Dictionary<uint, MemoryBufferMonitoredItem> m_nonValueMonitoredItems;

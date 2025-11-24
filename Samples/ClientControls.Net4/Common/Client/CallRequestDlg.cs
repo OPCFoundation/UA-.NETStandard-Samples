@@ -64,7 +64,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used for the call request.
         /// </summary>
-        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
+        public Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             m_session = session;
             CallRequestCTRL.ChangeSession(session);
@@ -101,7 +101,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
 
@@ -115,7 +115,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
 
@@ -134,7 +134,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
         #endregion

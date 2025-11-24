@@ -66,20 +66,22 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private ReferenceDescription m_reference;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, CancellationToken ct = default)
+        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (browser == null) throw new ArgumentNullException(nameof(browser));
 
-            await BrowseCTRL.SetRootAsync(browser, rootId, ct);
+            m_telemetry = telemetry;
+            await BrowseCTRL.SetRootAsync(browser, rootId, session, telemetry, ct);
 
             NamespaceUriCB.Items.Clear();
-            NamespaceUriCB.Items.AddRange(browser.Session.NamespaceUris.ToArray());
+            NamespaceUriCB.Items.AddRange(session.NamespaceUris.ToArray());
 
             OkBTN.Enabled = false;
 
@@ -100,7 +102,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -195,7 +197,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

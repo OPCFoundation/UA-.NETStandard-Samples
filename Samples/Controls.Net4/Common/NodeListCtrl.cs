@@ -80,7 +80,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task InitializeAsync(Session session, NodeIdCollection nodeIds, NodeClass nodeClassMask, CancellationToken ct = default)
+        public async Task InitializeAsync(Session session, NodeIdCollection nodeIds, NodeClass nodeClassMask, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -89,6 +89,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_nodeIds = nodeIds;
             m_nodeClassMask = (nodeClassMask == 0) ? (NodeClass)Byte.MaxValue : nodeClassMask;
+            Telemetry = telemetry;
 
             if (nodeIds == null)
             {
@@ -230,12 +231,12 @@ namespace Opc.Ua.Sample.Controls
 
                 if (nodes == null || nodes.Length == 1)
                 {
-                    await new NodeAttributesDlg().ShowDialogAsync(m_session, nodes[0].NodeId);
+                    await new NodeAttributesDlg().ShowDialogAsync(m_session, nodes[0].NodeId, Telemetry);
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -272,7 +273,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -294,7 +295,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

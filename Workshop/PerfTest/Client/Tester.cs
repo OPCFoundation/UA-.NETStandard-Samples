@@ -144,12 +144,12 @@ namespace Quickstarts.PerfTestClient
         /// Starts the specified session.
         /// </summary>
         /// <param name="session">The session.</param>
-        public async Task StartAsync(ISession session)
+        public async Task StartAsync(ISession session, ITelemetryContext telemetry)
         {
             m_NotificationEventHandler = new NotificationEventHandler(Session_Notification);
             session.Notification += m_NotificationEventHandler;
 
-            Subscription subscription = m_subscription = new Subscription();
+            Subscription subscription = m_subscription = new Subscription(telemetry);
 
             subscription.PublishingInterval = m_samplingRate;
             subscription.KeepAliveCount = 10;
@@ -167,7 +167,7 @@ namespace Quickstarts.PerfTestClient
 
             for (int ii = 0; ii < m_itemCount; ii++)
             {
-                MonitoredItem monitoredItem = new MonitoredItem((uint)ii);
+                MonitoredItem monitoredItem = new MonitoredItem((uint)ii, telemetry);
 
                 monitoredItem.StartNodeId = new NodeId((uint)((1 << 24) + ii), 2);
                 monitoredItem.AttributeId = Attributes.Value;

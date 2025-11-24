@@ -36,6 +36,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
@@ -55,6 +56,8 @@ namespace Opc.Ua.Sample.Controls
         private ApplicationConfiguration m_configuration;
         private ServiceMessageContext m_context;
         private ClientForm m_masterForm;
+        protected readonly ITelemetryContext m_telemetry;
+        private readonly ILogger m_logger;
         private List<ClientForm> m_forms;
         #endregion
 
@@ -68,7 +71,8 @@ namespace Opc.Ua.Sample.Controls
             ServiceMessageContext context,
             ApplicationInstance application,
             ClientForm masterForm,
-            ApplicationConfiguration configuration)
+            ApplicationConfiguration configuration,
+            ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -77,6 +81,8 @@ namespace Opc.Ua.Sample.Controls
             m_context = context;
             m_application = application;
             m_server = application.Server as Opc.Ua.Server.StandardServer;
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ClientForm>();
 
             if (m_masterForm == null)
             {
@@ -89,7 +95,7 @@ namespace Opc.Ua.Sample.Controls
             // get list of cached endpoints.
             m_endpoints = m_configuration.LoadCachedEndpoints(true);
             m_endpoints.DiscoveryUrls = configuration.ClientConfiguration.WellKnownDiscoveryUrls;
-            EndpointSelectorCTRL.Initialize(m_endpoints, m_configuration);
+            EndpointSelectorCTRL.Initialize(m_endpoints, m_configuration, telemetry);
 
             // initialize control state.
             DisconnectAsync().GetAwaiter().GetResult();
@@ -102,7 +108,7 @@ namespace Opc.Ua.Sample.Controls
         {
             if (m_masterForm == null)
             {
-                ClientForm form = new ClientForm(m_context, m_application, this, m_configuration);
+                ClientForm form = new ClientForm(m_context, m_application, this, m_configuration, m_telemetry);
                 m_forms.Add(form);
                 form.FormClosing += new FormClosingEventHandler(Window_FormClosing);
                 form.Show();
@@ -156,7 +162,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -195,11 +201,11 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                await ConnectAsync(e.Endpoint);
+                await ConnectAsync(e.Endpoint, m_telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
                 e.UpdateControl = false;
             }
         }
@@ -212,21 +218,21 @@ namespace Opc.Ua.Sample.Controls
             }
             catch
             {
-                // GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                // GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         /// <summary>
         /// Connects to a server.
         /// </summary>
-        public async Task ConnectAsync(ConfiguredEndpoint endpoint, CancellationToken ct = default)
+        public async Task ConnectAsync(ConfiguredEndpoint endpoint, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (endpoint == null)
             {
                 return;
             }
 
-            Session session = await SessionsCTRL.ConnectAsync(endpoint, ct);
+            Session session = await SessionsCTRL.ConnectAsync(endpoint, telemetry, ct);
 
             if (session != null)
             {
@@ -234,12 +240,12 @@ namespace Opc.Ua.Sample.Controls
                 m_reconnectHandler?.CancelReconnect();
                 Utils.SilentDispose(m_reconnectHandler);
 
-                m_reconnectHandler = new SessionReconnectHandler(true);
+                m_reconnectHandler = new SessionReconnectHandler(telemetry, true);
                 session.TransferSubscriptionsOnReconnect = true;
 
                 m_session = session;
                 m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
-                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, ct);
+                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, m_telemetry, ct);
                 StandardClient_KeepAlive(m_session, null);
             }
         }
@@ -336,7 +342,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null);
+                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, m_telemetry);
 
                 SessionsCTRL.Reload(m_session);
 
@@ -344,7 +350,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -356,12 +362,12 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_masterForm == null)
                 {
-                    m_application.Stop();
+                    await m_application.StopAsync();
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -377,11 +383,12 @@ namespace Opc.Ua.Sample.Controls
                 _ = new PerformanceTestDlg().ShowDialog(
                     m_configuration,
                     m_endpoints,
-                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true));
+                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true),
+                    m_telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -389,7 +396,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true);
+                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true, m_telemetry);
 
                 if (endpoint != null)
                 {
@@ -399,7 +406,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -407,7 +414,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ServerOnNetwork serverOnNetwork = new DiscoveredServerOnNetworkListDlg().ShowDialog(null, m_configuration);
+                ServerOnNetwork serverOnNetwork = new DiscoveredServerOnNetworkListDlg().ShowDialog(null, m_configuration, m_telemetry);
 
                 if (serverOnNetwork != null)
                 {
@@ -424,7 +431,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
 
         }
@@ -437,7 +444,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -447,16 +454,16 @@ namespace Opc.Ua.Sample.Controls
             {
                 if (m_server != null)
                 {
-                    System.Threading.ThreadPool.QueueUserWorkItem(OnRegister, null);
+                    _ = OnRegisterAsync();
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
-        private void OnRegister(object sender)
+        private async Task OnRegisterAsync()
         {
             try
             {
@@ -464,12 +471,12 @@ namespace Opc.Ua.Sample.Controls
 
                 if (server != null)
                 {
-                    server.RegisterWithDiscoveryServer();
+                    await server.RegisterWithDiscoveryServerAsync();
                 }
             }
             catch (Exception exception)
             {
-                Utils.Trace(exception, "Could not register with the LDS");
+                m_logger.LogTrace(exception, "Could not register with the LDS");
             }
         }
 
@@ -481,7 +488,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 

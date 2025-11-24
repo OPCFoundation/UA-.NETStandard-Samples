@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts
 {
@@ -80,6 +81,8 @@ namespace Quickstarts
 
             // save a reference to the UA server instance that owns the node manager.
             m_server = server;
+
+            m_logger = server.Telemetry.CreateLogger<QuickstartNodeManager>();
 
             // all operations require information about the system
             m_systemContext = m_server.DefaultSystemContext.Copy();
@@ -2177,7 +2180,7 @@ namespace Quickstarts
                 }
 
                 // validate the event filter.
-                EventFilter.Result result = readEventDetails.Filter.Validate(new FilterContext(m_server.NamespaceUris, m_server.TypeTree, context));
+                EventFilter.Result result = readEventDetails.Filter.Validate(new FilterContext(m_server.NamespaceUris, m_server.TypeTree, context, Server.Telemetry));
 
                 if (ServiceResult.IsBad(result.Status))
                 {
@@ -2732,7 +2735,7 @@ namespace Quickstarts
                         if (ServiceResult.IsBad(argumentError))
                         {
                             argumentsValid = false;
-                            result.InputArgumentDiagnosticInfos.Add(new DiagnosticInfo(argumentError, systemContext.OperationContext.DiagnosticsMask, false, systemContext.OperationContext.StringTable));
+                            result.InputArgumentDiagnosticInfos.Add(new DiagnosticInfo(argumentError, systemContext.OperationContext.DiagnosticsMask, false, systemContext.OperationContext.StringTable, m_logger));
                         }
                         else
                         {
@@ -3096,7 +3099,7 @@ namespace Quickstarts
             IList<MonitoringFilterResult> filterResults,
             IList<IMonitoredItem> monitoredItems,
             bool createDurable,
-            ref long globalIdCounter)
+            MonitoredItemIdFactory globalIdCounter)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
@@ -3171,7 +3174,7 @@ namespace Quickstarts
                         context.DiagnosticsMask,
                         timestampsToReturn,
                         itemToCreate,
-                        ref globalIdCounter,
+                        globalIdCounter,
                         out filterResult,
                         out monitoredItem);
                 }
@@ -3216,7 +3219,7 @@ namespace Quickstarts
             DiagnosticsMasks diagnosticsMasks,
             TimestampsToReturn timestampsToReturn,
             MonitoredItemCreateRequest itemToCreate,
-            ref long globalIdCounter,
+            MonitoredItemIdFactory globalIdCounter,
             out MonitoringFilterResult filterResult,
             out IMonitoredItem monitoredItem)
         {
@@ -3245,7 +3248,7 @@ namespace Quickstarts
             handle.MonitoredNode = monitoredNode;
 
             // create a globally unique identifier.
-            uint monitoredItemId = Utils.IncrementIdentifier(ref globalIdCounter);
+            uint monitoredItemId = globalIdCounter.GetNextId();
 
             // determine the sampling interval.
             double samplingInterval = itemToCreate.RequestedParameters.SamplingInterval;
@@ -4189,6 +4192,7 @@ namespace Quickstarts
         #region Private Fields
         private object m_lock = new object();
         private IServerInternal m_server;
+        private readonly ILogger m_logger;
         private ServerSystemContext m_systemContext;
         private string[] m_namespaceUris;
         private ushort[] m_namespaceIndexes;

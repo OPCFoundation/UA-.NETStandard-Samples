@@ -50,6 +50,7 @@ namespace Opc.Ua.Sample.Controls
             this.Icon = this.TrayIcon.Icon = ClientUtils.GetAppIcon();
 
             GuiUtils.DisplayUaTcpImplementation(this, configuration);
+            m_telemetry = configuration.CreateMessageContext().Telemetry;
 
             m_server = server;
 
@@ -62,6 +63,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private bool m_exit;
+        private readonly ITelemetryContext m_telemetry;
         private StandardServer m_server;
         #endregion
 
@@ -111,7 +113,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                Opc.Ua.Client.Controls.GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                Opc.Ua.Client.Controls.GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 

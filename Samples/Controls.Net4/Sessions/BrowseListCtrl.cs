@@ -158,6 +158,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_browser = browser;
             m_session = browser.Session as Session;
+            Telemetry = m_session?.MessageContext?.Telemetry;
             m_startId = startId;
             m_position = -1;
 
@@ -215,10 +216,7 @@ namespace Opc.Ua.Sample.Controls
                 await BrowseAsync(m_stack[m_position].Target.NodeId, ct);
             }
 
-            if (m_PositionChanged != null)
-            {
-                m_PositionChanged(this, null);
-            }
+            m_PositionChanged?.Invoke(this, null);
         }
 
         /// <summary>
@@ -404,16 +402,13 @@ namespace Opc.Ua.Sample.Controls
                 m_position++;
                 m_stack.Add(itemData);
 
-                if (m_PositionAdded != null)
-                {
-                    m_PositionAdded(this, null);
-                }
+                m_PositionAdded?.Invoke(this, null);
 
                 await BrowseAsync(itemData.Target.NodeId);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 

@@ -33,6 +33,7 @@ using System.Text;
 using System.Xml;
 using System.Runtime.Serialization;
 using Opc.Ua;
+using Microsoft.Extensions.Logging;
 
 namespace Boiler
 {
@@ -2272,8 +2273,9 @@ namespace Boiler
         /// <summary>
         /// Initializes the type with its default attribute values.
         /// </summary>
-        public BoilerState(NodeState parent) : base(parent)
+        public BoilerState(NodeState parent, ILogger logger) : base(parent)
         {
+            m_logger = logger;
         }
 
         /// <summary>
@@ -2739,6 +2741,7 @@ namespace Boiler
         private LevelControllerState m_levelController;
         private CustomControllerState m_customController;
         private BoilerStateMachineState m_simulation;
+        private readonly ILogger m_logger;
         #endregion
     }
     #endif

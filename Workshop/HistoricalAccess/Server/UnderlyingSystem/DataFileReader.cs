@@ -35,6 +35,7 @@ using System.Xml;
 using System.Data;
 using System.Reflection;
 using Opc.Ua;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.HistoricalAccessServer
 {
@@ -89,8 +90,10 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Loads the item configuaration.
         /// </summary>
-        public bool LoadConfiguration(ISystemContext context, ArchiveItem item)
+        public bool LoadConfiguration(ISystemContext context, ArchiveItem item, ITelemetryContext telemetry)
         {
+            m_logger = telemetry.CreateLogger<DataFileReader>();
+            m_telemetry = telemetry;
             using (StreamReader reader = item.OpenArchive())
             {
                 while (!reader.EndOfStream)
@@ -250,7 +253,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
 
             DateTime currentTime = startTime;
-            Opc.Ua.Test.DataGenerator generator = new Opc.Ua.Test.DataGenerator(null);
+            Opc.Ua.Test.DataGenerator generator = new Opc.Ua.Test.DataGenerator(null, m_telemetry);
 
             while (currentTime < DateTime.UtcNow)
             {
@@ -321,19 +324,13 @@ namespace Quickstarts.HistoricalAccessServer
         {
             DataSet dataset = CreateDataSet();
 
-            ServiceMessageContext messageContext = new ServiceMessageContext();
+            ServiceMessageContext messageContext = new ServiceMessageContext(m_telemetry);
 
             if (context != null)
             {
                 messageContext.NamespaceUris = context.NamespaceUris;
                 messageContext.ServerUris = context.ServerUris;
                 messageContext.Factory = context.EncodeableFactory;
-            }
-            else
-            {
-                messageContext.NamespaceUris = ServiceMessageContext.GlobalContext.NamespaceUris;
-                messageContext.ServerUris = ServiceMessageContext.GlobalContext.ServerUris;
-                messageContext.Factory = ServiceMessageContext.GlobalContext.Factory;
             }
 
             int sourceTimeOffset = 0;
@@ -574,7 +571,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -606,7 +603,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -632,7 +629,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -677,12 +674,15 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
                 return false;
             }
 
             return true;
         }
         #endregion
+
+        private ILogger m_logger;
+        private ITelemetryContext m_telemetry;
     }
 }

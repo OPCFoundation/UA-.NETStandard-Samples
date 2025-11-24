@@ -58,10 +58,11 @@ namespace Quickstarts.MethodsClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62557/Quickstarts/MethodsServer";
@@ -76,6 +77,7 @@ namespace Quickstarts.MethodsClient
         private NodeId m_objectNode;
         private NodeId m_methodNode;
         private bool m_connectedOnce;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -89,11 +91,11 @@ namespace Quickstarts.MethodsClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -108,7 +110,7 @@ namespace Quickstarts.MethodsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -123,7 +125,7 @@ namespace Quickstarts.MethodsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -169,7 +171,7 @@ namespace Quickstarts.MethodsClient
                 // subscribe to the state if available.
                 if (nodes.Count > 0 && !NodeId.IsNull(nodes[0]))
                 {
-                    m_subscription = new Subscription();
+                    m_subscription = new Subscription(m_telemetry);
 
                     m_subscription.PublishingEnabled = true;
                     m_subscription.PublishingInterval = 1000;
@@ -181,7 +183,7 @@ namespace Quickstarts.MethodsClient
                     m_session.AddSubscription(m_subscription);
                     await m_subscription.CreateAsync();
 
-                    MonitoredItem monitoredItem = new MonitoredItem();
+                    MonitoredItem monitoredItem = new MonitoredItem(m_telemetry);
                     monitoredItem.StartNodeId = nodes[0];
                     monitoredItem.AttributeId = Attributes.Value;
                     monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
@@ -203,7 +205,7 @@ namespace Quickstarts.MethodsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -218,7 +220,7 @@ namespace Quickstarts.MethodsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -242,7 +244,7 @@ namespace Quickstarts.MethodsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -286,7 +288,7 @@ namespace Quickstarts.MethodsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -311,7 +313,7 @@ namespace Quickstarts.MethodsClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

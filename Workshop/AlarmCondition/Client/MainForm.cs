@@ -60,7 +60,7 @@ namespace Quickstarts.AlarmConditionClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -74,6 +74,7 @@ namespace Quickstarts.AlarmConditionClient
 
             // the filter to use.
             m_filter = new FilterDefinition();
+            m_telemetry = telemetry;
 
             m_filter.AreaId = ObjectIds.Server;
             m_filter.Severity = EventSeverity.Min;
@@ -108,6 +109,7 @@ namespace Quickstarts.AlarmConditionClient
         private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
         private AuditEventForm m_auditEventForm;
         private bool m_connectedOnce;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -121,11 +123,11 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -140,7 +142,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -155,7 +157,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -187,7 +189,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // create the default subscription.
-                m_subscription = new Subscription();
+                m_subscription = new Subscription(m_telemetry);
 
                 m_subscription.DisplayName = null;
                 m_subscription.PublishingInterval = 1000;
@@ -211,7 +213,7 @@ namespace Quickstarts.AlarmConditionClient
                     ObjectTypeIds.NonExclusiveLimitAlarmType);
 
                 // create a monitored item based on the current filter settings.
-                m_monitoredItem = m_filter.CreateMonitoredItem(m_session);
+                m_monitoredItem = m_filter.CreateMonitoredItem(m_session, m_telemetry);
 
                 // set up callback for notifications.
                 m_monitoredItem.Notification += m_MonitoredItem_Notification;
@@ -227,7 +229,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -243,7 +245,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -286,7 +288,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -310,7 +312,7 @@ namespace Quickstarts.AlarmConditionClient
                 // changing the filter changes the fields requested. this makes it
                 // impossible to process notifications sent before the change.
                 // to avoid this problem we create a new item and remove the old one.
-                MonitoredItem monitoredItem = m_filter.CreateMonitoredItem(m_session);
+                MonitoredItem monitoredItem = m_filter.CreateMonitoredItem(m_session, m_telemetry);
 
                 // set up callback for notifications.
                 monitoredItem.Notification += m_MonitoredItem_Notification;
@@ -786,7 +788,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -826,7 +828,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -843,7 +845,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -860,7 +862,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -908,7 +910,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -925,7 +927,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -942,7 +944,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -959,7 +961,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -976,7 +978,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -993,7 +995,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1010,7 +1012,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1027,7 +1029,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1050,7 +1052,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1074,7 +1076,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1127,7 +1129,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1153,7 +1155,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1169,7 +1171,7 @@ namespace Quickstarts.AlarmConditionClient
                 if (m_auditEventForm == null)
                 {
                     m_auditEventForm = new AuditEventForm();
-                    await m_auditEventForm.InitializeAsync(m_session, m_subscription);
+                    await m_auditEventForm.InitializeAsync(m_session, m_subscription, m_telemetry);
 
                     m_auditEventForm.FormClosing += new FormClosingEventHandler(AuditEventForm_FormClosing);
                 }
@@ -1179,7 +1181,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -1226,7 +1228,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 

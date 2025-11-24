@@ -31,6 +31,7 @@ using Opc.Ua.Security.Certificates;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,6 +46,7 @@ namespace Opc.Ua.Gds.Client
             InitializeComponent();
         }
 
+        private ITelemetryContext m_telemetry;
         private GlobalDiscoveryClientConfiguration m_configuration;
         private GlobalDiscoveryServerClient m_gds;
         private ServerPushConfigurationClient m_server;
@@ -59,8 +61,10 @@ namespace Opc.Ua.Gds.Client
             ServerPushConfigurationClient server,
             RegisteredApplication application,
             bool isHttps,
+            ITelemetryContext telemetry,
             CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
             m_configuration = configuration;
             m_gds = gds;
             m_server = server;
@@ -221,7 +225,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
 
         }
@@ -248,13 +252,13 @@ namespace Opc.Ua.Gds.Client
                             //this line fails with a CryptographicException if export of private key is not allowed
                             _ = m_certificate.GetRSAPrivateKey().ExportParameters(true);
                             //proceed with a CSR using the exportable private key
-                            m_certificate = await id.LoadPrivateKeyAsync(m_certificatePassword);
+                            m_certificate = await id.LoadPrivateKeyAsync(m_certificatePassword.ToCharArray());
                         }
                         catch
                         {
                             //create temporary cert to generate csr from
                             m_certificate = CertificateFactory.CreateCertificate(
-                                X509Utils.GetApplicationUriFromCertificate(m_certificate),
+                                X509Utils.GetApplicationUrisFromCertificate(m_certificate)[0],
                                 m_application.ApplicationName,
                                 Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                                 m_application.GetDomainNames(m_certificate))
@@ -285,7 +289,7 @@ namespace Opc.Ua.Gds.Client
                         Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                         domainNames,
                         "PFX",
-                        m_certificatePassword);
+                        m_certificatePassword?.ToCharArray());
                 }
                 else
                 {
@@ -300,11 +304,11 @@ namespace Opc.Ua.Gds.Client
                         byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
                         if (m_application.GetPrivateKeyFormat(await m_server?.GetSupportedKeyFormatsAsync()) == "PFX")
                         {
-                            csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
+                            csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan());
                         }
                         else
                         {
-                            csrCertificate = CertificateFactory.CreateCertificateWithPEMPrivateKey(m_certificate, pkcsData, m_certificatePassword);
+                            csrCertificate = CertificateFactory.CreateCertificateWithPEMPrivateKey(m_certificate, pkcsData, m_certificatePassword.AsSpan());
                         }
                     }
                     byte[] certificateRequest = CertificateFactory.CreateSigningRequest(csrCertificate, domainNames);
@@ -318,7 +322,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -356,7 +360,7 @@ namespace Opc.Ua.Gds.Client
 
                         // update store
                         var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.CertificateStorePath, false);
-                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
+                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
                         {
                             // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
                             // in this case, privateKey is null
@@ -365,7 +369,7 @@ namespace Opc.Ua.Gds.Client
                                 X509Certificate2 oldCertificate = await cid.FindAsync(true);
                                 if (oldCertificate != null && oldCertificate.HasPrivateKey)
                                 {
-                                    oldCertificate = await cid.LoadPrivateKeyAsync(string.Empty);
+                                    oldCertificate = await cid.LoadPrivateKeyAsync([]);
                                     newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, m_temporaryCertificateCreated ? m_certificate : oldCertificate);
                                     await store.DeleteAsync(oldCertificate.Thumbprint);
                                 }
@@ -377,7 +381,6 @@ namespace Opc.Ua.Gds.Client
                             else
                             {
                                 newCert = new X509Certificate2(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
-                                newCert = CertificateFactory.Load(newCert, true);
                             }
                             await store.AddAsync(newCert);
                             if (m_temporaryCertificateCreated)
@@ -441,7 +444,7 @@ namespace Opc.Ua.Gds.Client
                                 if (file.Exists)
                                 {
                                     byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
-                                    X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword);
+                                    X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan());
                                     newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
                                     pkcsData = newCert.Export(X509ContentType.Pfx, m_certificatePassword);
                                     File.WriteAllBytes(absoluteCertificatePrivateKeyPath, pkcsData);
@@ -463,7 +466,7 @@ namespace Opc.Ua.Gds.Client
                     if (!String.IsNullOrEmpty(m_application.TrustListStorePath))
                     {
                         var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.TrustListStorePath);
-                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore())
+                        using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
                         {
                             foreach (byte[] issuerCertificate in issuerCertificates)
                             {
@@ -521,7 +524,7 @@ namespace Opc.Ua.Gds.Client
 
                 RequestProgressLabel.Visible = false;
                 CertificateRequestTimer.Enabled = false;
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, exception);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, exception);
             }
         }
 
@@ -538,7 +541,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (se == null || se.StatusCode != StatusCodes.BadServerHalted)
                 {
-                    Opc.Ua.Client.Controls.ExceptionDlg.Show(Parent.Text, exception);
+                    Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Parent.Text, exception);
                 }
             }
 

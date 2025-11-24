@@ -82,13 +82,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, WriteValueCollection values)
+        public void Initialize(Session session, WriteValueCollection values, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             Clear();
 
             m_session = session;
+            Telemetry = telemetry;
 
             if (values != null)
             {
@@ -279,7 +280,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -291,7 +292,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 WriteValue value = new WriteValue();
 
-                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value))
+                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value, Telemetry))
                 {
                     AddItem(value);
                 }
@@ -300,7 +301,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -315,7 +316,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0]))
+                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0], Telemetry))
                 {
                     Node node = await m_session.NodeCache.FindAsync(values[0].NodeId) as Node;
 
@@ -336,7 +337,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -382,7 +383,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (useIndexRange)
                 {
-                    value = new ComplexValueEditDlg().ShowDialog(values[0]);
+                    value = new ComplexValueEditDlg().ShowDialog(values[0], Telemetry);
 
                     WriteValue writeValue = value as WriteValue;
 
@@ -393,7 +394,7 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    value = GuiUtils.EditValue(m_session, values[0].Value.Value, datatypeId, valueRank);
+                    value = GuiUtils.EditValue(m_session, values[0].Value.Value, datatypeId, valueRank, Telemetry);
                 }
 
                 if (value != null)
@@ -408,7 +409,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -432,7 +433,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

@@ -100,7 +100,7 @@ namespace AggregationClient
                 if (token != null)
                 {
                     UserNameTB.Text = token.UserName;
-                    PasswordTB.Text = token.DecryptedPassword;
+                    PasswordTB.Text = Encoding.UTF8.GetString(token.DecryptedPassword);
                 }
             }
         }
@@ -171,7 +171,7 @@ namespace AggregationClient
                 // could add check for domain name in user name and use a kerberos token instead.
                 else
                 {
-                    identity = new UserIdentity(UserNameTB.Text, PasswordTB.Text);
+                    identity = new UserIdentity(UserNameTB.Text, Encoding.UTF8.GetBytes(PasswordTB.Text));
                 }
 
                 // can specify multiple locales but just use one here to keep the UI simple.
@@ -197,7 +197,7 @@ namespace AggregationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
         #endregion

@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -38,12 +39,13 @@ namespace Quickstarts.PerfTestServer
 {
     public class UnderlyingSystem
     {
-        public void Initialize()
+        public void Initialize(ITelemetryContext telemetry)
         {
+            m_logger = telemetry.CreateLogger<UnderlyingSystem>();
             m_registers = new List<MemoryRegister>();
             MemoryRegister register1 = new MemoryRegister();
-            register1.Initialize(1, "R1", 50000);
             m_registers.Add(register1);
+            register1.Initialize(1, "R1", 50000, m_logger);
         }
 
         public IList<MemoryRegister> GetRegisters()
@@ -62,6 +64,7 @@ namespace Quickstarts.PerfTestServer
         }
 
         private List<MemoryRegister> m_registers;
+        private ILogger m_logger;
     }
 
     public class MemoryRegister
@@ -81,12 +84,13 @@ namespace Quickstarts.PerfTestServer
             get { return m_values.Length; }
         }
 
-        public void Initialize(int id, string name, int size)
+        public void Initialize(int id, string name, int size, ILogger logger)
         {
             m_id = id;
             m_name = name;
             m_values = new int[size];
             m_monitoredItems = new IDataChangeMonitoredItem2[size][];
+            m_logger = logger;
         }
 
         public int Read(int index)
@@ -210,13 +214,13 @@ namespace Quickstarts.PerfTestServer
 
                     if ((HiResClock.UtcNow - start).TotalMilliseconds > 50)
                     {
-                        Utils.Trace("Update took {0}ms.", (HiResClock.UtcNow - start).TotalMilliseconds);
+                        m_logger.LogWarning("Update took {0}ms.", (HiResClock.UtcNow - start).TotalMilliseconds);
                     }
                 }
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error updating items.");
+                m_logger.LogError(e, "Unexpected error updating items.");
             }
         }
 
@@ -227,5 +231,6 @@ namespace Quickstarts.PerfTestServer
         private int m_start;
         private Timer m_timer;
         private IDataChangeMonitoredItem2[][] m_monitoredItems;
+        private ILogger m_logger;
     }
 }

@@ -141,8 +141,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Provides the configuration to use when displaying the control.
         /// </summary>
-        public void Initialize()
+        public void Initialize(ITelemetryContext telemetry)
         {
+            Telemetry = telemetry;
             NodesTV.Nodes.Clear();
             TreeNode node = AddNode(null, new ContainerInfo(ContainerInfoType.Root, System.Net.Dns.GetHostName()));
             node.Nodes.Add(new TreeNode());
@@ -160,7 +161,7 @@ namespace Opc.Ua.Client.Controls
 
             if (m_certificateListCtrl != null)
             {
-                await m_certificateListCtrl.InitializeAsync(SelectedStore, null);
+                await m_certificateListCtrl.InitializeAsync(SelectedStore, null, Telemetry);
             }
         }
 
@@ -307,7 +308,7 @@ namespace Opc.Ua.Client.Controls
                         return;
                     }
 
-                    using (ICertificateStore store = id.OpenStore())
+                    using (ICertificateStore store = id.OpenStore(Telemetry))
                     {
                         for (int ii = 0; ii < certificates.Length; ii++)
                         {
@@ -326,7 +327,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -446,7 +447,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -479,7 +480,7 @@ namespace Opc.Ua.Client.Controls
                     {
                         CertificateStoreIdentifier storeId = info.GetCertificateStore();
 
-                        using (ICertificateStore store = storeId.OpenStore())
+                        using (ICertificateStore store = storeId.OpenStore(Telemetry))
                         {
                             store.AddAsync(id.Certificate);
                         }
@@ -491,7 +492,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

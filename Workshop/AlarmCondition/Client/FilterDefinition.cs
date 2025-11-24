@@ -72,7 +72,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns>The monitored item.</returns>
-        public MonitoredItem CreateMonitoredItem(ISession session)
+        public MonitoredItem CreateMonitoredItem(ISession session, ITelemetryContext telemetry)
         {
             // choose the server object by default.
             if (AreaId == null)
@@ -81,7 +81,7 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // create the item with the filter.
-            MonitoredItem monitoredItem = new MonitoredItem();
+            MonitoredItem monitoredItem = new MonitoredItem(telemetry);
 
             monitoredItem.DisplayName = null;
             monitoredItem.StartNodeId = AreaId;

@@ -104,6 +104,7 @@ namespace Opc.Ua.Sample.Controls
             Clear();
 
             m_session = session;
+            Telemetry = session?.MessageContext?.Telemetry;
 
             if (valueIds != null)
             {
@@ -234,6 +235,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_DataListCtrl != null)
             {
+                m_DataListCtrl.Telemetry = Telemetry;
                 ValueItem[] values = GetSelectedItems(typeof(ValueItem)) as ValueItem[];
 
                 if (values != null && values.Length > 0)

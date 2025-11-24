@@ -78,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, IList<ContentFilterElement> elements, int index)
+        public void Initialize(Session session, IList<ContentFilterElement> elements, int index, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -87,6 +87,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_elements = elements;
             m_index = index;
+            Telemetry = telemetry;
 
             if (elements == null || index < 0 || index >= elements.Count)
             {
@@ -154,7 +155,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                FilterOperand operand = new FilterOperandEditDlg().ShowDialog(m_session, m_elements, m_index, null);
+                FilterOperand operand = new FilterOperandEditDlg().ShowDialog(m_session, m_elements, m_index, null, Telemetry);
 
                 if (operand == null)
                 {
@@ -184,7 +185,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -195,7 +196,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -206,7 +207,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

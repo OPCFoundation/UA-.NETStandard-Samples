@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -122,7 +122,7 @@ namespace Opc.Ua.Server.Controls
                 }
             }
 
-            // adjust 
+            // adjust
             for (int ii = 0; ii < SessionsLV.Columns.Count; ii++)
             {
                 SessionsLV.Columns[ii].Width = -2;
@@ -185,7 +185,7 @@ namespace Opc.Ua.Server.Controls
             }
             catch (Exception exception)
             {
-                ServerUtils.HandleException(this.Text, exception);
+                ServerUtils.HandleException(m_server.MessageContext.Telemetry, this.Text, exception);
             }
         }
         #endregion

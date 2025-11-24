@@ -77,9 +77,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a list of servers in the control.
         /// </summary>
-        public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration)
+        public void Initialize(ConfiguredEndpointCollection endpoints, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             Interlocked.Exchange(ref m_configuration, configuration);
+            Telemetry = telemetry;
 
             ItemsLV.Items.Clear();
 
@@ -182,14 +183,14 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration);
+                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration, Telemetry);
 
                 if (server == null)
                 {
                     return;
                 }
 
-                ConfiguredEndpoint endpoint = new ConfiguredServerDlg().ShowDialog(server, m_configuration);
+                ConfiguredEndpoint endpoint = new ConfiguredServerDlg().ShowDialog(server, m_configuration, Telemetry);
 
                 if (endpoint == null)
                 {
@@ -201,7 +202,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -228,7 +229,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -248,7 +249,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

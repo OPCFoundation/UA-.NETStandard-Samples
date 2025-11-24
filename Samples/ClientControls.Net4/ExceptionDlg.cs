@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -33,6 +33,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Text;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -44,12 +45,14 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes a new instance of the <see cref="ExceptionDlg"/> class.
         /// </summary>
-        public ExceptionDlg()
+        public ExceptionDlg(ILogger logger)
         {
             InitializeComponent();
+            m_logger = logger;
         }
 
         private Exception m_exception;
+        private readonly ILogger m_logger;
 
         /// <summary>
         /// Replaces all special characters in the message.
@@ -175,16 +178,25 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the exception in a dialog.
         /// </summary>
-        public static void Show(string caption, Exception e)
+        public static void Show(ITelemetryContext telemetry, string caption, Exception e)
+        {
+            // check if running as a service.
+            ILogger logger = telemetry.CreateLogger("ExceptionDlg");
+            Show(logger, caption, e);
+        }
+
+        /// <summary>
+        /// Displays the exception in a dialog.
+        /// </summary>
+        public static void Show(ILogger logger, string caption, Exception e)
         {
             // check if running as a service.
             if (!Environment.UserInteractive)
             {
-                Utils.Trace(e, "Unexpected error in '{0}'.", caption);
+                logger.LogDebug(e, "Unexpected error in '{Caption}'.", caption);
                 return;
             }
-
-            new ExceptionDlg().ShowDialog(caption, e);
+            new ExceptionDlg(logger).ShowDialog(caption, e);
         }
 
         /// <summary>

@@ -29,6 +29,8 @@
 
 using System;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Server;
 
 namespace Opc.Ua.Sample
@@ -52,7 +54,7 @@ namespace Opc.Ua.Sample
                     if (configuration.SecurityConfiguration.TrustedUserCertificates != null &&
                         configuration.SecurityConfiguration.UserIssuerCertificates != null)
                     {
-                        var certificateValidator = new CertificateValidator();
+                        var certificateValidator = new CertificateValidator(ServerInternal.Telemetry);
                         certificateValidator.UpdateAsync(configuration.SecurityConfiguration, configuration.ApplicationUri).Wait();
                         certificateValidator.Update(configuration.SecurityConfiguration.UserIssuerCertificates,
                             configuration.SecurityConfiguration.TrustedUserCertificates,
@@ -78,9 +80,9 @@ namespace Opc.Ua.Sample
 
             if (userNameToken != null)
             {
-                VerifyPassword(userNameToken.UserName, userNameToken.DecryptedPassword);
+                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
                 args.Identity = new UserIdentity(userNameToken);
-                Utils.Trace("UserName Token Accepted: {0}", args.Identity.DisplayName);
+                m_logger.LogInformation("UserName Token Accepted: {0}", args.Identity.DisplayName);
                 return;
             }
 
@@ -91,7 +93,7 @@ namespace Opc.Ua.Sample
             {
                 VerifyCertificate(x509Token.Certificate);
                 args.Identity = new UserIdentity(x509Token);
-                Utils.Trace("X509 Token Accepted: {0}", args.Identity.DisplayName);
+                m_logger.LogInformation("X509 Token Accepted: {0}", args.Identity.DisplayName);
                 return;
             }
         }
@@ -112,9 +114,10 @@ namespace Opc.Ua.Sample
 
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
-                    StatusCodes.BadIdentityTokenRejected,
-                    "InvalidPassword",
                     "http://opcfoundation.org/UA/Sample/",
+                    new StatusCode(
+                    StatusCodes.BadIdentityTokenRejected,
+                    "InvalidPassword"),
                     new LocalizedText(info)));
             }
         }
@@ -128,11 +131,11 @@ namespace Opc.Ua.Sample
             {
                 if (m_certificateValidator != null)
                 {
-                    m_certificateValidator.Validate(certificate);
+                    m_certificateValidator.ValidateAsync(certificate, System.Threading.CancellationToken.None).GetAwaiter().GetResult();
                 }
                 else
                 {
-                    CertificateValidator.Validate(certificate);
+                    CertificateValidator.ValidateAsync(certificate, System.Threading.CancellationToken.None).GetAwaiter().GetResult();
                 }
             }
             catch (Exception e)
@@ -162,9 +165,8 @@ namespace Opc.Ua.Sample
 
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
-                    result,
-                    info.Key,
                     "http://opcfoundation.org/UA/Sample/",
+                    result,
                     new LocalizedText(info)));
             }
         }

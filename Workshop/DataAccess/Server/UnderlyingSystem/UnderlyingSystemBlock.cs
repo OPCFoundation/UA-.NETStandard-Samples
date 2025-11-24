@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 
 namespace Quickstarts.DataAccessServer
@@ -42,9 +43,10 @@ namespace Quickstarts.DataAccessServer
         /// <summary>
         /// Initializes a new instance of the <see cref="UnderlyingSystemBlock"/> class.
         /// </summary>
-        public UnderlyingSystemBlock()
+        public UnderlyingSystemBlock(ILogger logger)
         {
             m_tags = new List<UnderlyingSystemTag>();
+            m_logger = logger;
         }
         #endregion
 
@@ -332,14 +334,11 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 // report any tag changes after releasing the lock.
-                if (onTagsChanged != null)
-                {
-                    onTagsChanged(snapshots);
-                }
+                onTagsChanged?.Invoke(snapshots);
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error running simulation for block {0}", m_name);
+                m_logger.LogError(e, "Unexpected error running simulation for block {0}", m_name);
             }
         }
         #endregion
@@ -558,6 +557,7 @@ namespace Quickstarts.DataAccessServer
         private DateTime m_timestamp;
         private List<UnderlyingSystemTag> m_tags;
         private TagsChangedEventHandler OnTagsChanged;
+        private ILogger m_logger;
         #endregion
     }
 

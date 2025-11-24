@@ -65,7 +65,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
 		/// The columns to display in the control.
 		/// </summary>
-		private readonly object[][] m_ColumnNames = new object[][]
+        private readonly object[][] m_ColumnNames = new object[][]
         {
             new object[] { "Name",  HorizontalAlignment.Left, null },
             new object[] { "Value", HorizontalAlignment.Left, null, 250 },
@@ -1499,7 +1499,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -1525,7 +1525,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1540,7 +1540,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1552,7 +1552,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1583,7 +1583,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
-                    value = new SimpleValueEditDlg().ShowDialog(state.Component, state.Component.GetType());
+                    value = new SimpleValueEditDlg().ShowDialog(state.Component, state.Component.GetType(), Telemetry);
                 }
 
                 if (value == null)
@@ -1641,7 +1641,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1660,7 +1660,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

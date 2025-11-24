@@ -38,6 +38,7 @@ using System.Threading;
 
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -70,6 +71,7 @@ namespace Opc.Ua.Client.Controls
         };
 
         private ApplicationConfiguration m_configuration;
+        private ILogger m_logger;
         private int m_discoveryTimeout;
         private int m_discoverCount;
         private string m_discoveryUrl;
@@ -104,9 +106,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a list of servers in the control.
         /// </summary>
-        public void Initialize(string hostname, NumericUpDown startingRecordId, NumericUpDown maxRecordsToReturn, TextBox capabilityFilterText, ApplicationConfiguration configuration)
+        public void Initialize(string hostname, NumericUpDown startingRecordId, NumericUpDown maxRecordsToReturn, TextBox capabilityFilterText, ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             Interlocked.Exchange(ref m_configuration, configuration);
+
+            Telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<DiscoveredServerOnNetworkListCtrl>();
+
             ItemsLV.Items.Clear();
             m_startingRecordIdUpDown = startingRecordId;
             m_maxRecordsToReturnUpDown = maxRecordsToReturn;
@@ -216,7 +222,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Unexpected error discovering servers.");
+                m_logger.LogError(e, "Unexpected error discovering servers.");
             }
         }
 
@@ -232,9 +238,12 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                client = DiscoveryClient.Create(
+                client = await DiscoveryClient.CreateAsync(
                     discoveryUrl,
-                    EndpointConfiguration.Create(m_configuration));
+                    EndpointConfiguration.Create(m_configuration),
+                    Telemetry,
+                    DiagnosticsMasks.None,
+                    ct);
 
                 uint startingRecordId = (uint)0;
                 uint maxRecordsToReturn = (uint)0;
@@ -253,7 +262,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 catch (Exception e)
                 {
-                    Utils.LogError("Error retrieving FindServersOnNetwork parameters. Error=({0}){1}", e.GetType(), e.Message);
+                    m_logger.LogError("Error retrieving FindServersOnNetwork parameters. Error=({0}){1}", e.GetType(), e.Message);
                     return false;
                 }
 
@@ -265,7 +274,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.LogError("DISCOVERY ERROR - Could not fetch servers from url: {0}. Error=({1}){2}", discoveryUrl, e.GetType(), e.Message);
+                m_logger.LogError("DISCOVERY ERROR - Could not fetch servers from url: {0}. Error=({1}){2}", discoveryUrl, e.GetType(), e.Message);
                 return false;
             }
             finally

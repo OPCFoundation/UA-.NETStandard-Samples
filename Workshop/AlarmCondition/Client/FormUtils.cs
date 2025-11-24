@@ -62,7 +62,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="discoveryUrl">The discovery URL.</param>
         /// <param name="useSecurity">if set to <c>true</c> select an endpoint that uses security.</param>
         /// <returns>The best available endpoint.</returns>
-        public static async Task<EndpointDescription> SelectEndpointAsync(string discoveryUrl, bool useSecurity, CancellationToken ct = default)
+        public static async Task<EndpointDescription> SelectEndpointAsync(string discoveryUrl, bool useSecurity, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             // needs to add the '/discovery' back onto non-UA TCP URLs.
             if (!discoveryUrl.StartsWith(Utils.UriSchemeOpcTcp))
@@ -83,7 +83,7 @@ namespace Quickstarts.AlarmConditionClient
             EndpointDescription selectedEndpoint = null;
 
             // Connect to the server's discovery endpoint and find the available configuration.
-            using (DiscoveryClient client = DiscoveryClient.Create(uri, configuration))
+            using (DiscoveryClient client = await DiscoveryClient.CreateAsync(uri, configuration, telemetry, DiagnosticsMasks.None, ct))
             {
                 EndpointDescriptionCollection endpoints = await client.GetEndpointsAsync(null, ct);
 
@@ -271,13 +271,20 @@ namespace Quickstarts.AlarmConditionClient
 
             switch (id.Value)
             {
-                case ObjectTypes.ConditionType: { e = new ConditionState(null); break; }
-                case ObjectTypes.DialogConditionType: { e = new DialogConditionState(null); break; }
-                case ObjectTypes.AlarmConditionType: { e = new AlarmConditionState(null); break; }
-                case ObjectTypes.ExclusiveLimitAlarmType: { e = new ExclusiveLimitAlarmState(null); break; }
-                case ObjectTypes.NonExclusiveLimitAlarmType: { e = new NonExclusiveLimitAlarmState(null); break; }
-                case ObjectTypes.AuditEventType: { e = new AuditEventState(null); break; }
-                case ObjectTypes.AuditUpdateMethodEventType: { e = new AuditUpdateMethodEventState(null); break; }
+                case ObjectTypes.ConditionType:
+                { e = new ConditionState(null); break; }
+                case ObjectTypes.DialogConditionType:
+                { e = new DialogConditionState(null); break; }
+                case ObjectTypes.AlarmConditionType:
+                { e = new AlarmConditionState(null); break; }
+                case ObjectTypes.ExclusiveLimitAlarmType:
+                { e = new ExclusiveLimitAlarmState(null); break; }
+                case ObjectTypes.NonExclusiveLimitAlarmType:
+                { e = new NonExclusiveLimitAlarmState(null); break; }
+                case ObjectTypes.AuditEventType:
+                { e = new AuditEventState(null); break; }
+                case ObjectTypes.AuditUpdateMethodEventType:
+                { e = new AuditUpdateMethodEventState(null); break; }
 
                 default:
                 {

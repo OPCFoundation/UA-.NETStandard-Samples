@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 
 namespace Quickstarts.DataAccessServer
@@ -43,9 +44,11 @@ namespace Quickstarts.DataAccessServer
         /// <summary>
         /// Initializes a new instance of the <see cref="UnderlyingSystem"/> class.
         /// </summary>
-        public UnderlyingSystem()
+        public UnderlyingSystem(ITelemetryContext telemetry)
         {
             m_blocks = new Dictionary<string, UnderlyingSystemBlock>();
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<UnderlyingSystem>();
         }
         #endregion
 
@@ -445,7 +448,7 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 // create a new block.
-                block = new UnderlyingSystemBlock();
+                block = new UnderlyingSystemBlock(m_logger);
 
                 // create the block.
                 block.Id = blockId;
@@ -566,7 +569,7 @@ namespace Quickstarts.DataAccessServer
         /// Once an tag is confirmed it go to the inactive state.
         /// If the tag stays active the severity will be gradually increased.
         /// </remarks>
-        public void StartSimulation()
+        public void StartSimulation(ITelemetryContext telemetry)
         {
             lock (m_lock)
             {
@@ -576,7 +579,7 @@ namespace Quickstarts.DataAccessServer
                     m_simulationTimer = null;
                 }
 
-                m_generator = new Opc.Ua.Test.DataGenerator(null);
+                m_generator = new Opc.Ua.Test.DataGenerator(null, telemetry);
                 m_simulationTimer = new Timer(DoSimulation, null, 1000, 1000);
             }
         }
@@ -622,7 +625,7 @@ namespace Quickstarts.DataAccessServer
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Unexpected error running simulation for system");
+                m_logger.LogError(e, "Unexpected error running simulation for system");
             }
         }
         #endregion
@@ -630,6 +633,8 @@ namespace Quickstarts.DataAccessServer
         #region Private Fields
         private object m_lock = new object();
         private Dictionary<string, UnderlyingSystemBlock> m_blocks;
+        private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
         private Timer m_simulationTimer;
         private long m_simulationCounter;
         private Opc.Ua.Test.DataGenerator m_generator;

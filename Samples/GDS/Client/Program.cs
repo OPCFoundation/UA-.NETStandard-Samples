@@ -29,13 +29,29 @@
 
 using System;
 using System.Windows.Forms;
-using Opc.Ua.Configuration;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Configuration;
 
 namespace Opc.Ua.Gds.Client
 {
+    public sealed class ConsoleTelemetry : TelemetryContextBase
+    {
+        public ConsoleTelemetry()
+        : base(
+            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddConsole();
+            })
+            )
+        {
+        }
+    }
     static class Program
     {
+        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -47,7 +63,7 @@ namespace Opc.Ua.Gds.Client
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance();
+            ApplicationInstance application = new ApplicationInstance(m_telemetry);
             application.ApplicationType = ApplicationType.Client;
             application.ConfigSectionName = "Opc.Ua.GdsClient";
 
@@ -60,11 +76,11 @@ namespace Opc.Ua.Gds.Client
                 application.CheckApplicationInstanceCertificatesAsync(false).AsTask().GetAwaiter().GetResult();
 
                 // run the application interactively.
-                Application.Run(new MainForm(application));
+                Application.Run(new MainForm(application, m_telemetry));
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
             }
         }
     }

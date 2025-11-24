@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -56,6 +56,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private event EventHandler m_UrlsChanged;
+        private ITelemetryContext m_telemetry;
         private List<Uri> m_urls;
         #endregion
 
@@ -115,6 +116,16 @@ namespace Opc.Ua.Client.Controls
             add { m_UrlsChanged += value; }
             remove { m_UrlsChanged -= value; }
         }
+
+        /// <summary>
+        /// Telemetry context
+        /// </summary>
+        public ITelemetryContext Telemetry
+        {
+            get { return m_telemetry; }
+            set { m_telemetry = value; }
+        }
+
         #endregion
 
         #region Event Handlers
@@ -137,7 +148,7 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
-            strings = new EditArrayDlg().ShowDialog(strings, BuiltInType.String, false, null) as string[];
+            strings = new EditArrayDlg().ShowDialog(m_telemetry, strings, BuiltInType.String, false, null) as string[];
 
             if (strings == null)
             {
@@ -158,10 +169,7 @@ namespace Opc.Ua.Client.Controls
 
             Urls = urls;
 
-            if (m_UrlsChanged != null)
-            {
-                m_UrlsChanged(this, e);
-            }
+            m_UrlsChanged?.Invoke(this, e);
         }
         #endregion
     }

@@ -43,6 +43,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace Quickstarts.UserAuthenticationClient
 {
@@ -65,7 +66,7 @@ namespace Quickstarts.UserAuthenticationClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -73,6 +74,7 @@ namespace Quickstarts.UserAuthenticationClient
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62565/Quickstarts/UserAuthenticationServer";
             this.Text = m_configuration.ApplicationName;
+            m_telemetry = telemetry;
 
             UserNameTB.Text = "Operator";
             PreferredLocalesTB.Text = "de,es,en";
@@ -107,6 +109,7 @@ namespace Quickstarts.UserAuthenticationClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        private ITelemetryContext m_telemetry;
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private bool m_connectedOnce;
@@ -126,11 +129,11 @@ namespace Quickstarts.UserAuthenticationClient
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -145,7 +148,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -160,7 +163,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -192,7 +195,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -206,7 +209,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -233,7 +236,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -439,7 +442,7 @@ namespace Quickstarts.UserAuthenticationClient
                 // want to get error text for this call.
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
-                UserIdentity identity = new UserIdentity(UserNameTB.Text, PasswordTB.Text);
+                UserIdentity identity = new UserIdentity(UserNameTB.Text, Encoding.UTF8.GetBytes(PasswordTB.Text));
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(identity, preferredLocales);
 
@@ -447,7 +450,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -474,14 +477,14 @@ namespace Quickstarts.UserAuthenticationClient
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
                 UserIdentity identity = new UserIdentity(certificate);
-                string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] preferredLocales = PreferredLocalesTB.Text.Split([','], StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(identity, preferredLocales);
 
                 MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -508,7 +511,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -538,7 +541,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -591,7 +594,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -638,7 +641,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {

@@ -98,6 +98,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_monitoredItem = monitoredItem;
             m_subscription = null;
+            Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
 
             Clear();
 

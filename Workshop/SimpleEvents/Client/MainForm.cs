@@ -60,11 +60,12 @@ namespace Quickstarts.SimpleEvents.Client
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
+            m_telemetry = telemetry;
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62563/Quickstarts/SimpleEventsServer";
             this.Text = m_configuration.ApplicationName;
@@ -81,6 +82,7 @@ namespace Quickstarts.SimpleEvents.Client
         private Dictionary<NodeId, NodeId> m_eventTypeMappings;
         private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
         private bool m_connectedOnce;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Methods
@@ -94,11 +96,11 @@ namespace Quickstarts.SimpleEvents.Client
         {
             try
             {
-                await ConnectServerCTRL.ConnectAsync();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -113,7 +115,7 @@ namespace Quickstarts.SimpleEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -128,7 +130,7 @@ namespace Quickstarts.SimpleEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -156,7 +158,7 @@ namespace Quickstarts.SimpleEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -170,7 +172,7 @@ namespace Quickstarts.SimpleEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -197,7 +199,7 @@ namespace Quickstarts.SimpleEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -217,7 +219,7 @@ namespace Quickstarts.SimpleEvents.Client
         private async Task CreateSubscriptionAsync(CancellationToken ct = default)
         {
             // create the default subscription.
-            m_subscription = new Subscription();
+            m_subscription = new Subscription(m_telemetry);
 
             m_subscription.DisplayName = null;
             m_subscription.PublishingInterval = 1000;
@@ -249,7 +251,7 @@ namespace Quickstarts.SimpleEvents.Client
             m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
 
             // create a monitored item based on the current filter settings.
-            m_monitoredItem = new MonitoredItem();
+            m_monitoredItem = new MonitoredItem(m_telemetry);
             m_monitoredItem.StartNodeId = Opc.Ua.ObjectIds.Server;
             m_monitoredItem.AttributeId = Attributes.EventNotifier;
             m_monitoredItem.SamplingInterval = 0;
@@ -406,7 +408,7 @@ namespace Quickstarts.SimpleEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -434,7 +436,7 @@ namespace Quickstarts.SimpleEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

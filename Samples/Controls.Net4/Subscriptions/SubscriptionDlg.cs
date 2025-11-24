@@ -38,6 +38,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
@@ -58,6 +59,8 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
+        private ITelemetryContext m_telemetry;
+        private ILogger m_logger;
         private Subscription m_subscription;
         private NotificationEventHandler m_SessionNotification;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
@@ -69,9 +72,12 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a new subscription.
         /// </summary>
-        public async Task<Subscription> NewAsync(Session session, CancellationToken ct = default)
+        public async Task<Subscription> NewAsync(Session session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
+
+            m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<SubscriptionDlg>();
 
             Subscription subscription = new Subscription(session.DefaultSubscription);
 
@@ -86,7 +92,7 @@ namespace Opc.Ua.Sample.Controls
             Subscription duplicateSubscription = session.Subscriptions.FirstOrDefault(s => s.Id != 0 && s.Id.Equals(subscription.Id) && s != subscription);
             if (duplicateSubscription != null)
             {
-                Utils.Trace("Duplicate subscription was created with the id: {0}", duplicateSubscription.Id);
+                m_logger.LogWarning("Duplicate subscription was created with the id: {0}", duplicateSubscription.Id);
 
                 DialogResult result = MessageBox.Show("Duplicate subscription was created with the id: " + duplicateSubscription.Id + ". Do you want to keep it?", "Warning", MessageBoxButtons.YesNo);
                 if (result == System.Windows.Forms.DialogResult.No)
@@ -131,7 +137,7 @@ namespace Opc.Ua.Sample.Controls
                 m_subscription.Session.Notification += m_SessionNotification;
             }
 
-            MonitoredItemsCTRL.Initialize(subscription);
+            MonitoredItemsCTRL.Initialize(subscription, m_telemetry);
             EventsCTRL.Initialize(subscription, null);
             DataChangesCTRL.InitializeAsync(subscription, null);
 
@@ -243,7 +249,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -280,7 +286,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -312,7 +318,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -324,7 +330,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -364,7 +370,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -376,7 +382,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -393,7 +399,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -410,7 +416,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -424,11 +430,11 @@ namespace Opc.Ua.Sample.Controls
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                m_createDialog.Show(m_subscription, false);
+                m_createDialog.Show(m_subscription, false, m_telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -443,7 +449,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -457,11 +463,11 @@ namespace Opc.Ua.Sample.Controls
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                m_createDialog.Show(m_subscription, true);
+                m_createDialog.Show(m_subscription, true, m_telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -473,7 +479,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

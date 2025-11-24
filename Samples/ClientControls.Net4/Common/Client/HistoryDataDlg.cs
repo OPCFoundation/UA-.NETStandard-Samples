@@ -46,6 +46,7 @@ namespace Opc.Ua.Client.Controls
     /// </summary>
     public partial class HistoryDataDlg : Form, ISessionForm
     {
+        private ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
@@ -64,9 +65,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session used.
         /// </summary>
-        public Task ChangeSessionAsync(ISession session, CancellationToken ct = default)
+        public Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
-            return HistoryDataCTRL.ChangeSessionAsync(session, ct);
+            m_telemetry = telemetry;
+            return HistoryDataCTRL.ChangeSessionAsync(session, telemetry, ct);
         }
 
         /// <summary>
@@ -90,7 +92,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -109,7 +111,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

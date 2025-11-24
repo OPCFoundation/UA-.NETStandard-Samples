@@ -66,14 +66,15 @@ namespace Opc.Ua.Sample.Controls
             BrowseViewType browseView,
             NodeIdCollection nodesIds,
             NodeClass nodeClassMask,
+            ITelemetryContext telemetry,
             CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_session = session;
 
-            await BrowseCTRL.SetViewAsync(session, browseView, null, ct);
-            await NodeListCTRL.InitializeAsync(session, nodesIds, nodeClassMask, ct);
+            await BrowseCTRL.SetViewAsync(session, browseView, null, telemetry, ct);
+            await NodeListCTRL.InitializeAsync(session, nodesIds, nodeClassMask, telemetry, ct);
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -99,7 +100,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

@@ -38,6 +38,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 
 namespace Opc.Ua.Client.Controls
@@ -59,6 +60,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -67,6 +69,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public async Task<IList<ILocalNode>> ShowDialogAsync(ISession session, NodeId rootId, IList<NodeId> nodeIds, CancellationToken ct = default)
         {
+            m_telemetry = session?.MessageContext?.Telemetry;
             await BrowseCTRL.InitializeAsync(session, rootId, null, null, BrowseDirection.Forward, ct);
             await ReferencesCTRL.InitializeAsync(session, rootId, ct);
             await AttributesCTRL.InitializeAsync(session, rootId, ct);
@@ -89,7 +92,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -107,7 +110,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
 
         }

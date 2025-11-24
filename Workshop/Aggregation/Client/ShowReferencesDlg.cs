@@ -243,7 +243,7 @@ namespace AggregationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
         #endregion
