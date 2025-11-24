@@ -75,9 +75,11 @@
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".azurepipelines/ci.yml" />
+    <File Path=".azurepipelines/get-matrix.ps1" />
     <File Path=".azurepipelines/sln.yml" />
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
+    <File Path=".github/workflows/codeql-analysis.yml" />
     <File Path=".gitignore" />
     <File Path=".whitesource" />
     <File Path="azure-pipelines.yml" />
