@@ -39,6 +39,7 @@ using System.Net;
 
 using Opc.Ua.Configuration;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -65,14 +66,17 @@ namespace Opc.Ua.Client.Controls
             new object[] { "Name",        HorizontalAlignment.Left, null },
             new object[] { "Addresses",   HorizontalAlignment.Left, null }
         };
+        private ILogger m_logger = LoggerUtils.Null.Logger;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays a list of servers in the control.
         /// </summary>
-        public void Initialize(string domain)
+        public void Initialize(ITelemetryContext telemetry, string domain)
         {
+            Telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<HostListCtrl>();
             ItemsLV.Items.Clear();
 
             this.Instructions = Utils.Format("Discovering hosts on domain '{0}'.", domain);
@@ -120,7 +124,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Could not get ip addresses for host: {0}", hostname);
+                m_logger.LogError(e, "Could not get ip addresses for host: {HostName}", hostname);
                 ThreadPool.QueueUserWorkItem(new WaitCallback(OnUpdateAddress), new object[] { listItem, e.Message });
             }
         }

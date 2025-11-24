@@ -133,7 +133,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -148,7 +148,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -163,7 +163,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -195,7 +195,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -209,7 +209,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -236,7 +236,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -450,7 +450,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -484,7 +484,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -511,7 +511,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -541,7 +541,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -594,7 +594,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {
@@ -641,7 +641,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
             finally
             {

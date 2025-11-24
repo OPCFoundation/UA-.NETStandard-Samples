@@ -80,7 +80,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
             }
         }
     }

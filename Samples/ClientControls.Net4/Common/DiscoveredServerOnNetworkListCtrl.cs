@@ -71,7 +71,6 @@ namespace Opc.Ua.Client.Controls
         };
 
         private ApplicationConfiguration m_configuration;
-        private ITelemetryContext m_telemetry;
         private ILogger m_logger;
         private int m_discoveryTimeout;
         private int m_discoverCount;
@@ -111,7 +110,7 @@ namespace Opc.Ua.Client.Controls
         {
             Interlocked.Exchange(ref m_configuration, configuration);
 
-            m_telemetry = telemetry;
+            Telemetry = telemetry;
             m_logger = telemetry.CreateLogger<DiscoveredServerOnNetworkListCtrl>();
 
             ItemsLV.Items.Clear();
@@ -242,7 +241,7 @@ namespace Opc.Ua.Client.Controls
                 client = await DiscoveryClient.CreateAsync(
                     discoveryUrl,
                     EndpointConfiguration.Create(m_configuration),
-                    m_telemetry,
+                    Telemetry,
                     DiagnosticsMasks.None,
                     ct);
 

@@ -317,7 +317,7 @@ namespace Opc.Ua.Client.Controls
             EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             ConfiguredEndpoint endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            m_session = await DefaultSessionFactory.Instance.CreateAsync(m_configuration, connection, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout, UserIdentity, PreferredLocales, ct);
+            m_session = await new DefaultSessionFactory(telemetry).CreateAsync(m_configuration, connection, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout, UserIdentity, PreferredLocales, ct);
 
             // set up keep alive callback.
             m_session.KeepAlive += Session_KeepAlive;
@@ -366,7 +366,7 @@ namespace Opc.Ua.Client.Controls
             var endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            m_session = await DefaultSessionFactory.Instance.CreateAsync(m_configuration, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout == 0 ? DefaultSessionTimeout : sessionTimeout, UserIdentity, PreferredLocales, ct);
+            m_session = await new DefaultSessionFactory(telemetry).CreateAsync(m_configuration, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout == 0 ? DefaultSessionTimeout : sessionTimeout, UserIdentity, PreferredLocales, ct);
 
             // set up keep alive callback.
             m_session.KeepAlive += new KeepAliveEventHandler(Session_KeepAlive);
@@ -643,7 +643,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_logger, this.Text, exception);
             }
         }
 
@@ -685,7 +685,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 catch (Exception exception)
                 {
-                    ClientUtils.HandleException(this.Text, exception);
+                    ClientUtils.HandleException(m_logger, this.Text, exception);
                 }
             }));
         }
@@ -727,7 +727,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_logger, this.Text, exception);
             }
         }
 
@@ -755,7 +755,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_logger, this.Text, exception);
             }
         }
         #endregion

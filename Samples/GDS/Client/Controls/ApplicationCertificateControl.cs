@@ -225,7 +225,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
 
         }
@@ -322,7 +322,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -524,7 +524,7 @@ namespace Opc.Ua.Gds.Client
 
                 RequestProgressLabel.Visible = false;
                 CertificateRequestTimer.Enabled = false;
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, exception);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, exception);
             }
         }
 
@@ -541,7 +541,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (se == null || se.StatusCode != StatusCodes.BadServerHalted)
                 {
-                    Opc.Ua.Client.Controls.ExceptionDlg.Show(Parent.Text, exception);
+                    Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Parent.Text, exception);
                 }
             }
 

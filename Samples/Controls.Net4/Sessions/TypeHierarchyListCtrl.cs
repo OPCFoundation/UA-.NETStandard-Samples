@@ -95,6 +95,7 @@ namespace Opc.Ua.Sample
             }
 
             m_session = session;
+            Telemetry = m_session?.MessageContext?.Telemetry;
 
             SortedDictionary<string, InstanceDeclaration> instances = new SortedDictionary<string, InstanceDeclaration>();
 

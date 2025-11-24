@@ -1263,7 +1263,7 @@ namespace AggregationServer
             try
             {
                 m_logger.LogInformation($"Create Connect Session: {m_endpoint} for {sessionName}");
-                var session = Opc.Ua.Client.Session.CreateAsync(
+                Opc.Ua.Client.ISession session = new Opc.Ua.Client.DefaultSessionFactory(Server.Telemetry).CreateAsync(
                     m_configuration,
                     m_reverseConnectManager,
                     m_endpoint,

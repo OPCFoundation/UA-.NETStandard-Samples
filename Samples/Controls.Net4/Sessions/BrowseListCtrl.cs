@@ -158,6 +158,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_browser = browser;
             m_session = browser.Session as Session;
+            Telemetry = m_session?.MessageContext?.Telemetry;
             m_startId = startId;
             m_position = -1;
 
@@ -407,7 +408,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 

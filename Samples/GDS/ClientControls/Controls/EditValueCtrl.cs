@@ -40,6 +40,7 @@ using System.Xml.Serialization;
 using System.Reflection;
 using System.IO;
 using System.Runtime.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -73,6 +74,7 @@ namespace Opc.Ua.Gds.Client.Controls
         #endregion
 
         #region Private Fields
+        private ILogger m_logger = LoggerUtils.Null.Logger;
         private DataSet m_dataset;
         private AccessInfo m_value;
         private bool m_readOnly;
@@ -294,7 +296,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 array = matrix.ToArray();
             }
 
-            SetTypeDlg.SetTypeResult result = new SetTypeDlg().ShowDialog(currentType, dimensions);
+            SetTypeDlg.SetTypeResult result = new SetTypeDlg().ShowDialog(m_logger, currentType, dimensions);
 
             if (result == null)
             {
@@ -1578,7 +1580,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
             }
         }
 
@@ -1596,7 +1598,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
             }
         }
 
@@ -1624,7 +1626,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
                 e.Cancel = true;
             }
         }
@@ -1658,7 +1660,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
             }
         }
 

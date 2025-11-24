@@ -133,7 +133,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -168,7 +168,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -223,7 +223,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (e != null)
                 {
-                    GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), (Exception)e);
+                    GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), (Exception)e);
                 }
 
                 if (m_session.Connected && m_session.SessionTimeout < 1000)

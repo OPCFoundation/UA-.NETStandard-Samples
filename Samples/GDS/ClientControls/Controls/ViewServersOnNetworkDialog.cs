@@ -34,6 +34,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua.Client.Controls;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -47,6 +48,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             m_gds = gds;
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger<ViewServersOnNetworkDialog>();
 
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Servers");
@@ -62,6 +64,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private DataTable ServersTable { get { return m_dataset.Tables[0]; } }
         private DataSet m_dataset;
+        private ILogger m_logger;
         private GlobalDiscoveryServerClient m_gds;
         private ITelemetryContext m_telemetry;
 
@@ -101,7 +104,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -187,7 +190,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -257,7 +260,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -273,7 +276,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -290,7 +293,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -324,7 +327,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 

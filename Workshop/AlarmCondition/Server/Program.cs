@@ -86,7 +86,7 @@ namespace Quickstarts.AlarmConditionServer
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
                 return;
             }
         }

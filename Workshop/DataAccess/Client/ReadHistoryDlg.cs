@@ -434,7 +434,7 @@ namespace Quickstarts.DataAccessClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, "Error Reading History", exception);
             }
         }
 
@@ -446,7 +446,7 @@ namespace Quickstarts.DataAccessClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, "Error Reading History", exception);
             }
         }
 
@@ -458,7 +458,7 @@ namespace Quickstarts.DataAccessClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, "Error Reading History", exception);
             }
         }
 

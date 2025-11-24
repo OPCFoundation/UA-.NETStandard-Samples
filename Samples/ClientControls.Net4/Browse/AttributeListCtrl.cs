@@ -78,6 +78,7 @@ namespace Opc.Ua.Client.Controls
         {
             ItemsLV.Items.Clear();
             m_session = session;
+            Telemetry = session?.MessageContext?.Telemetry;
 
             if (m_session == null)
             {
@@ -414,7 +415,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

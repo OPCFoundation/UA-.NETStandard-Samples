@@ -142,7 +142,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -244,7 +244,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -266,7 +266,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                ExceptionDlg.Show(this.Text, exception);
+                ExceptionDlg.Show(m_telemetry, this.Text, exception);
             }
         }
 
@@ -285,7 +285,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                ExceptionDlg.Show(this.Text, exception);
+                ExceptionDlg.Show(m_telemetry, this.Text, exception);
             }
         }
 
@@ -304,7 +304,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                ExceptionDlg.Show(this.Text, exception);
+                ExceptionDlg.Show(m_telemetry, this.Text, exception);
             }
         }
 
@@ -327,7 +327,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -365,7 +365,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                ExceptionDlg.Show(this.Text, exception);
+                ExceptionDlg.Show(m_telemetry, this.Text, exception);
             }
         }
 
@@ -403,7 +403,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                ExceptionDlg.Show(this.Text, exception);
+                ExceptionDlg.Show(m_telemetry, this.Text, exception);
             }
         }
 
@@ -453,7 +453,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                ExceptionDlg.Show(this.Text, exception);
+                ExceptionDlg.Show(m_telemetry, this.Text, exception);
             }
         }
 
@@ -476,7 +476,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -488,7 +488,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -501,7 +501,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -514,7 +514,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -527,7 +527,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -540,7 +540,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -553,7 +553,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -565,7 +565,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -607,7 +607,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -646,7 +646,7 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception exception)
             {
-                ExceptionDlg.Show(this.Text, exception);
+                ExceptionDlg.Show(m_telemetry, this.Text, exception);
             }
         }
 

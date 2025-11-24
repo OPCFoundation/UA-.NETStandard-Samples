@@ -52,7 +52,6 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
-        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -87,7 +86,7 @@ namespace Opc.Ua.Sample.Controls
             Clear();
 
             m_session = session;
-            m_telemetry = telemetry;
+            Telemetry = telemetry;
 
             // find the method.
             MethodNode method = await session.NodeCache.FindAsync(methodId, ct) as MethodNode;
@@ -252,7 +251,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -268,7 +267,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                object value = GuiUtils.EditValue(m_session, arguments[0].Value, arguments[0].DataType, arguments[0].ValueRank, m_telemetry);
+                object value = GuiUtils.EditValue(m_session, arguments[0].Value, arguments[0].DataType, arguments[0].ValueRank, Telemetry);
 
                 if (value != null)
                 {
@@ -279,7 +278,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -300,7 +299,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

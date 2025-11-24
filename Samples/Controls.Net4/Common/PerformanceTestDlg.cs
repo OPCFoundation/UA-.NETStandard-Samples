@@ -190,7 +190,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception e)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
 
@@ -211,7 +211,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception e)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
 
@@ -229,11 +229,11 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 OkBTN.Enabled = m_running = false;
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), (Exception)state);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), (Exception)state);
             }
             catch (Exception e)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), e);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), e);
             }
         }
 
@@ -397,7 +397,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
                 e.UpdateControl = false;
             }
         }
@@ -413,7 +413,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -444,7 +444,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -476,7 +476,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -495,7 +495,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -127,7 +127,7 @@ namespace Opc.Ua.Server.Controls
             }
             catch (Exception exception)
             {
-                HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -202,13 +202,13 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Displays the details of an exception.
         /// </summary>
-        public static void HandleException(string caption, MethodBase method, Exception e)
+        public static void HandleException(ITelemetryContext telemetry, string caption, MethodBase method, Exception e)
         {
             if (String.IsNullOrEmpty(caption))
             {
                 caption = method.Name;
             }
-            ExceptionDlg.Show(caption, e);
+            ExceptionDlg.Show(telemetry, caption, e);
         }
 
         /// <summary>

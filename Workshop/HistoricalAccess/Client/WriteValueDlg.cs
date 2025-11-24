@@ -58,6 +58,7 @@ namespace Quickstarts.HistoricalAccess.Client
 
         #region Private Fields
         private Session m_session;
+        private ITelemetryContext m_telemetry;
         private NodeId m_nodeId;
         private uint m_attributeId;
         private DataValue m_value;
@@ -75,6 +76,7 @@ namespace Quickstarts.HistoricalAccess.Client
         public async Task<bool> ShowDialogAsync(Session session, NodeId nodeId, uint attributeId, CancellationToken ct = default)
         {
             m_session = session;
+            m_telemetry = session?.MessageContext?.Telemetry;
             m_nodeId = nodeId;
             m_attributeId = attributeId;
 
@@ -242,7 +244,7 @@ namespace Quickstarts.HistoricalAccess.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Writing Value", exception);
+                ClientUtils.HandleException(m_telemetry, "Error Writing Value", exception);
             }
         }
         #endregion

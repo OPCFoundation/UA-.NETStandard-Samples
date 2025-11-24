@@ -43,6 +43,7 @@ namespace Opc.Ua.Client.Controls
     /// </summary>
     public partial class EditWriteValueDlg : Form
     {
+        private ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
@@ -69,6 +70,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public async Task<WriteValue> ShowDialogAsync(ISession session, WriteValue nodeToWrite, ITelemetryContext telemetry, CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
             NodeBTN.ChangeSession(session, telemetry);
             NodeBTN.SelectedReference = null;
 
@@ -174,7 +176,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 

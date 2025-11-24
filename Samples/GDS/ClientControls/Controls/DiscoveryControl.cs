@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -252,9 +252,9 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         public void Initialize(
-            ConfiguredEndpointCollection endpoints, 
-            LocalDiscoveryServerClient lds, 
-            GlobalDiscoveryServerClient gds, 
+            ConfiguredEndpointCollection endpoints,
+            LocalDiscoveryServerClient lds,
+            GlobalDiscoveryServerClient gds,
             QueryServersFilter filters,
             ITelemetryContext telemetry)
         {
@@ -440,7 +440,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -479,10 +479,10 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
-              
+
         private void ShowApplicationDescriptions(TreeNodeCollection nodes)
         {
             ServersTable.Rows.Clear();
@@ -721,7 +721,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -857,7 +857,7 @@ namespace Opc.Ua.Gds.Client.Controls
                             }
                         }
                     }
-                       
+
                     ShowServerOnNetworks(e.Node.Nodes);
 
                     return;
@@ -881,15 +881,15 @@ namespace Opc.Ua.Gds.Client.Controls
                     ApplicationTypeTextBox.Text = application.ApplicationType.ToString();
                     ApplicationUriTextBox.Text = application.ApplicationUri;
                     ProductUriTextBox.Text = application.ProductUri;
-                    
+
                     string discoveryUrl = SelectDiscoveryUrl(application);
-                    
+
                     if (discoveryUrl != null)
                     {
                         await LoadEndpointsAndShowAsync(e.Node, discoveryUrl);
                     }
                 }
-                
+
                 if (e.Node.Tag is ServerOnNetwork)
                 {
                     EndpointsTable.Rows.Clear();
@@ -931,7 +931,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -948,7 +948,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception e)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, e);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, e);
             }
         }
 
@@ -969,7 +969,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -997,7 +997,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -1014,7 +1014,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
     }

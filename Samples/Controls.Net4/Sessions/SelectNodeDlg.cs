@@ -66,6 +66,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private ReferenceDescription m_reference;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -76,6 +77,7 @@ namespace Opc.Ua.Sample.Controls
         {
             if (browser == null) throw new ArgumentNullException(nameof(browser));
 
+            m_telemetry = telemetry;
             await BrowseCTRL.SetRootAsync(browser, rootId, session, telemetry, ct);
 
             NamespaceUriCB.Items.Clear();
@@ -100,7 +102,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -195,7 +197,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

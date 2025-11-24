@@ -294,7 +294,7 @@ namespace Opc.Ua.Client.Controls.Common
                 array = matrix.ToArray();
             }
 
-            SetTypeDlg.SetTypeResult result = new SetTypeDlg().ShowDialog(currentType, dimensions);
+            SetTypeDlg.SetTypeResult result = new SetTypeDlg().ShowDialog(m_session?.MessageContext?.Telemetry, currentType, dimensions);
 
             if (result == null)
             {
@@ -1400,7 +1400,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
 
@@ -1423,7 +1423,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
 
@@ -1444,7 +1444,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
                 e.Cancel = true;
             }
         }
@@ -1468,7 +1468,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
             }
         }
 

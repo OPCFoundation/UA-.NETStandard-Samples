@@ -43,6 +43,7 @@ namespace Opc.Ua.Client.Controls
     /// </summary>
     public partial class EditMonitoredItemDlg : Form
     {
+        private ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
@@ -106,6 +107,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public async Task<bool> ShowDialogAsync(ISession session, MonitoredItem monitoredItem, bool isEvent, ITelemetryContext telemetry, CancellationToken ct = default)
         {
+            m_telemetry = telemetry;
             if (!monitoredItem.Created)
             {
                 NodeBTN.ChangeSession(session, telemetry);
@@ -296,7 +298,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

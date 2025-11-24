@@ -54,7 +54,6 @@ namespace Opc.Ua.Sample.Controls
         private Session m_session;
         private IList<ContentFilterElement> m_elements;
         private int m_index;
-        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -88,7 +87,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_elements = elements;
             m_index = index;
-            m_telemetry = telemetry;
+            Telemetry = telemetry;
 
             if (elements == null || index < 0 || index >= elements.Count)
             {
@@ -156,7 +155,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                FilterOperand operand = new FilterOperandEditDlg().ShowDialog(m_session, m_elements, m_index, null, m_telemetry);
+                FilterOperand operand = new FilterOperandEditDlg().ShowDialog(m_session, m_elements, m_index, null, Telemetry);
 
                 if (operand == null)
                 {
@@ -186,7 +185,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -197,7 +196,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -208,7 +207,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

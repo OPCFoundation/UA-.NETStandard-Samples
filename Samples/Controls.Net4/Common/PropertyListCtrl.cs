@@ -91,6 +91,7 @@ namespace Opc.Ua.Sample.Controls
         public async Task UpdateAsync(Session session, ReferenceDescription reference, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
+            Telemetry = session?.MessageContext?.Telemetry;
 
             Clear();
 
@@ -255,7 +256,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

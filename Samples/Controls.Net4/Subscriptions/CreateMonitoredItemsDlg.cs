@@ -54,6 +54,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Subscription m_subscription;
+        private ITelemetryContext m_telemetry;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
         #endregion
 
@@ -76,6 +77,7 @@ namespace Opc.Ua.Sample.Controls
 
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
+            m_telemetry = telemetry;
 
             if (subscription != null)
             {
@@ -120,7 +122,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -138,7 +140,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -150,7 +152,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -162,7 +164,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

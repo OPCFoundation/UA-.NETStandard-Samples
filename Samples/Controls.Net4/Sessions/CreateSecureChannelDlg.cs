@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -63,6 +63,7 @@ namespace Opc.Ua.Sample.Controls
         private ApplicationConfiguration m_configuration;
         private EndpointDescriptionCollection m_endpoints;
         private ServiceMessageContext m_messageContext;
+        private ITelemetryContext m_telemetry;
 
         /// <summary>
         /// Displays the dialog.
@@ -77,6 +78,7 @@ namespace Opc.Ua.Sample.Controls
             m_endpoints = endpoints;
             m_configuration = configuration;
             m_messageContext = configuration.CreateMessageContext();
+            m_telemetry = m_messageContext.Telemetry;
 
             EndpointCB.Items.Clear();
 
@@ -125,7 +127,7 @@ namespace Opc.Ua.Sample.Controls
                     await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true),
                     m_messageContext);
 
-                // create the channel.                   
+                // create the channel.
 
                 // open the channel.
                 Cursor = Cursors.WaitCursor;
@@ -137,7 +139,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
             finally
             {
@@ -184,7 +186,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -203,7 +205,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

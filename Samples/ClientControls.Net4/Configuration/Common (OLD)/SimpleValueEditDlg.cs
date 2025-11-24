@@ -60,17 +60,19 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private object m_value;
         private Type m_type;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public object ShowDialog(object value, Type type)
+        public object ShowDialog(object value, Type type, ITelemetryContext telemetry)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
 
             m_type = type;
+            m_telemetry = telemetry;
 
             this.Text = Utils.Format("{0} ({1})", this.Text, type.Name);
 
@@ -140,7 +142,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

@@ -37,6 +37,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Security.Certificates;
 
 namespace Opc.Ua.Gds.Client.Controls
@@ -68,6 +69,7 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         private ITelemetryContext m_telemetry;
+        private ILogger m_logger = LoggerUtils.Null.Logger;
         private DataSet m_dataset;
         private FileInfo m_certificateFile;
         private string m_trustedStorePath;
@@ -92,6 +94,7 @@ namespace Opc.Ua.Gds.Client.Controls
         public async Task Initialize(ITelemetryContext telemetry, string trustedStorePath, string issuerStorePath, string rejectedStorePath, CancellationToken ct = default)
         {
             m_telemetry = telemetry;
+            m_logger = telemetry.CreateLogger(nameof(CertificateStoreControl));
 
             CertificatesTable.Rows.Clear();
 
@@ -414,13 +417,13 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         Size = new Size(800, 400)
                     };
-                    dialog.ShowDialog(null, "", new CertificateWrapper() { Certificate = (X509Certificate2)source.Row[7] }, true, this.Text);
+                    dialog.ShowDialog(m_logger, null, "", new CertificateWrapper() { Certificate = (X509Certificate2)source.Row[7] }, true, this.Text);
                     break;
                 }
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -447,7 +450,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -466,7 +469,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -485,7 +488,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -504,7 +507,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -558,7 +561,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -609,7 +612,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 

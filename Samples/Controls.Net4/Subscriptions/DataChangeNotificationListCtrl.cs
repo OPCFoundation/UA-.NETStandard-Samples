@@ -112,6 +112,7 @@ namespace Opc.Ua.Sample.Controls
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
             m_monitoredItem = monitoredItem;
+            Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
 
             // get the events.
             List<MonitoredItemNotification> changes = new List<MonitoredItemNotification>();
@@ -498,11 +499,11 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                new ComplexValueEditDlg().ShowDialog(change);
+                new ComplexValueEditDlg().ShowDialog(change, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

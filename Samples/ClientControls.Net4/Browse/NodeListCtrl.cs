@@ -93,6 +93,7 @@ namespace Opc.Ua.Client.Controls
         {
             ItemsLV.Items.Clear();
             m_session = session;
+            Telemetry = session?.MessageContext?.Telemetry;
 
             if (m_session == null || nodeIds == null || nodeIds.Count == 0)
             {
@@ -173,12 +174,12 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
         /// <see cref="Opc.Ua.Client.Controls.BaseListCtrl.EnableMenuItems" />
-		protected override void EnableMenuItems(ListViewItem clickedItem)
+        protected override void EnableMenuItems(ListViewItem clickedItem)
         {
             DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
         }
@@ -228,7 +229,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -253,7 +254,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

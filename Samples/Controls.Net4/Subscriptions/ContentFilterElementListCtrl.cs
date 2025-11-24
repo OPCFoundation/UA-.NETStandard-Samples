@@ -55,7 +55,6 @@ namespace Opc.Ua.Sample.Controls
         private Session m_session;
         private Browser m_browser;
         private ContentFilter m_filter;
-        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -89,7 +88,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_browser = new Browser(session);
             m_filter = filter;
-            m_telemetry = telemetry;
+            Telemetry = telemetry;
 
             if (m_filter == null)
             {
@@ -221,7 +220,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -234,7 +233,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -242,7 +241,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType, m_session, m_telemetry);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType, m_session, Telemetry);
 
                 if (reference != null)
                 {
@@ -321,7 +320,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -344,7 +343,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -367,7 +366,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -389,7 +388,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -427,7 +426,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // edit the value.
-                object value = new SimpleValueEditDlg().ShowDialog(currentValue, currentValue.GetType());
+                object value = new SimpleValueEditDlg().ShowDialog(currentValue, currentValue.GetType(), Telemetry);
 
                 if (value == null)
                 {
@@ -441,7 +440,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

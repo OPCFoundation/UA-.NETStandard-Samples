@@ -37,6 +37,7 @@ using System.Windows.Forms;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -57,6 +58,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
+        private ILogger m_logger = LoggerUtils.Null.Logger;
         private ISession m_session;
         private NodeId m_baseTypeId;
         private event EventHandler<ReferenceSelectedEventArgs> m_referenceSelectionChanged;
@@ -70,6 +72,7 @@ namespace Opc.Ua.Client.Controls
         {
             m_session = session;
             m_baseTypeId = baseTypeId;
+            m_logger = session?.MessageContext?.Telemetry.CreateLogger<ReferenceTypeCtrl>();
 
             if (NodeId.IsNull(m_baseTypeId))
             {
@@ -244,7 +247,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                Utils.Trace(e, "Ignoring unknown reference type.");
+                m_logger.LogDebug(e, "Ignoring unknown reference type.");
                 return;
             }
         }
@@ -267,7 +270,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_logger, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

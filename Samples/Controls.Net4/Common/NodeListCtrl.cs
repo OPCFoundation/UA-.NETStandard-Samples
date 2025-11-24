@@ -55,7 +55,6 @@ namespace Opc.Ua.Sample.Controls
         private Session m_session;
         private NodeIdCollection m_nodeIds;
         private NodeClass m_nodeClassMask;
-        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -90,7 +89,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_nodeIds = nodeIds;
             m_nodeClassMask = (nodeClassMask == 0) ? (NodeClass)Byte.MaxValue : nodeClassMask;
-            m_telemetry = telemetry;
+            Telemetry = telemetry;
 
             if (nodeIds == null)
             {
@@ -232,12 +231,12 @@ namespace Opc.Ua.Sample.Controls
 
                 if (nodes == null || nodes.Length == 1)
                 {
-                    await new NodeAttributesDlg().ShowDialogAsync(m_session, nodes[0].NodeId, m_telemetry);
+                    await new NodeAttributesDlg().ShowDialogAsync(m_session, nodes[0].NodeId, Telemetry);
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -274,7 +273,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -296,7 +295,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion

@@ -75,7 +75,6 @@ namespace Opc.Ua.Client.Controls
         private CertificateIdentifierCollection m_certificates;
         private IList<string> m_thumbprints;
         private List<ListViewItem> m_items;
-        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -209,7 +208,7 @@ namespace Opc.Ua.Client.Controls
             ItemsLV.Items.Clear();
 
             m_storeId = id;
-            m_telemetry = telemetry;
+            Telemetry = telemetry;
             m_thumbprints = thumbprints;
 
             if (m_storeId == null || String.IsNullOrEmpty(m_storeId.StoreType) || String.IsNullOrEmpty(m_storeId.StorePath))
@@ -420,12 +419,12 @@ namespace Opc.Ua.Client.Controls
                         id.StorePath = m_storeId.StorePath;
                     }
 
-                    await new ViewCertificateDlg().ShowDialogAsync(id, m_telemetry);
+                    await new ViewCertificateDlg().ShowDialogAsync(id, Telemetry);
                 }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -453,7 +452,7 @@ namespace Opc.Ua.Client.Controls
                 List<ListViewItem> itemsToDelete = new List<ListViewItem>();
                 bool yesToAll = false;
 
-                using (ICertificateStore store = m_storeId.OpenStore(m_telemetry))
+                using (ICertificateStore store = m_storeId.OpenStore(Telemetry))
                 {
                     for (int ii = 0; ii < ItemsLV.SelectedItems.Count; ii++)
                     {
@@ -499,8 +498,8 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
-                await InitializeAsync(m_storeId, m_thumbprints, m_telemetry);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+                await InitializeAsync(m_storeId, m_thumbprints, Telemetry);
             }
         }
 
@@ -534,7 +533,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -560,7 +559,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (id.Certificate != null)
                 {
-                    using (ICertificateStore store = m_storeId.OpenStore(m_telemetry))
+                    using (ICertificateStore store = m_storeId.OpenStore(Telemetry))
                     {
                         store.AddAsync(id.Certificate);
                     }
@@ -570,7 +569,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

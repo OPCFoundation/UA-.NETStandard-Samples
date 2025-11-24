@@ -81,7 +81,7 @@ namespace Quickstarts.ReferenceServer
                 loggerConfiguration.WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning);
 #pragma warning restore CA1305 // Specify IFormatProvider
 #endif
-                
+
                 // check the application certificate.
                 bool certOk = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Result;
                 if (!certOk)
@@ -110,7 +110,7 @@ namespace Quickstarts.ReferenceServer
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
             }
         }
     }

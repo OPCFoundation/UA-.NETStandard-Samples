@@ -110,7 +110,7 @@ namespace Opc.Ua.Gds.Server
             }
             catch (Exception e)
             {
-                ExceptionDlg.Show(application.ApplicationName, e);
+                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
             }
         }
 

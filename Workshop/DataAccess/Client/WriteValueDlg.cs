@@ -241,7 +241,7 @@ namespace Quickstarts.DataAccessClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Writing Value", exception);
+                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, "Error Writing Value", exception);
             }
         }
         #endregion

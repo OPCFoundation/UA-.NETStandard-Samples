@@ -58,7 +58,6 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private Browser m_browser;
         private ISession m_session;
-        private ITelemetryContext m_telemetry;
         private ILogger m_logger;
         private NodeId m_rootId;
         private AttributeListCtrl m_AttributesCtrl;
@@ -176,7 +175,7 @@ namespace Opc.Ua.Sample.Controls
             m_rootId = rootId;
             m_browser = browser;
             m_session = session;
-            m_telemetry = telemetry;
+            Telemetry = telemetry;
             m_logger = telemetry.CreateLogger<BrowseTreeCtrl>();
 
             if (m_browser != null)
@@ -503,7 +502,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -529,7 +528,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference != null)
                     {
-                        await m_AttributesCtrl.InitializeAsync(m_browser.Session as Session, reference.NodeId, m_telemetry);
+                        await m_AttributesCtrl.InitializeAsync(m_browser.Session as Session, reference.NodeId, Telemetry);
                     }
                     else
                     {
@@ -564,7 +563,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -841,7 +840,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser, m_session, m_telemetry))
+                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser, m_session, Telemetry))
                 {
                     if (NodesTV.SelectedNode != null)
                     {
@@ -852,7 +851,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -868,7 +867,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -886,7 +885,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -906,7 +905,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -939,7 +938,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -948,11 +947,11 @@ namespace Opc.Ua.Sample.Controls
             m_showReferences = ShowReferencesMI.Checked;
             try
             {
-                await SetRootAsync(m_browser, m_rootId, m_session, m_telemetry);
+                await SetRootAsync(m_browser, m_rootId, m_session, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -972,11 +971,11 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId, m_telemetry);
+                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1025,11 +1024,11 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                await new CallMethodDlg().ShowAsync(m_browser.Session as Session, objectId, methodId, m_telemetry);
+                await new CallMethodDlg().ShowAsync(m_browser.Session as Session, objectId, methodId, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1064,11 +1063,11 @@ namespace Opc.Ua.Sample.Controls
                 valueIds.Add(valueId);
 
                 // show form.
-                await new ReadDlg().ShowAsync(session, valueIds, m_telemetry);
+                await new ReadDlg().ShowAsync(session, valueIds, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1103,11 +1102,11 @@ namespace Opc.Ua.Sample.Controls
                 values.Add(value);
 
                 // show form.
-                await new WriteDlg().ShowAsync(session, values, m_telemetry);
+                await new WriteDlg().ShowAsync(session, values, Telemetry);
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1139,7 +1138,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1168,7 +1167,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1192,7 +1191,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -1216,7 +1215,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
     }

@@ -54,6 +54,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
         #region Private Fields
         private FilterDeclaration m_filter;
+        private ITelemetryContext m_telemetry;
 
         /// <summary>
         /// The supported filter operators.
@@ -95,9 +96,10 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Displays the available areas in a tree view.
         /// </summary>
-        public bool ShowDialog(FilterDeclaration filter)
+        public bool ShowDialog(FilterDeclaration filter, ITelemetryContext telemetry)
         {
             m_filter = filter;
+            m_telemetry = telemetry;
 
             Populate();
 
@@ -239,7 +241,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -265,7 +267,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -287,7 +289,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -330,7 +332,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -364,7 +366,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

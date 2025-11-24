@@ -44,10 +44,12 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         private ServerPushConfigurationClient m_server;
+        private ITelemetryContext m_telemetry;
 
         public Task InitializeAsync(ServerPushConfigurationClient server, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             m_server = server;
+            m_telemetry = telemetry;
             return ServerBrowseControl.InitializeAsync((server != null) ? server.Session as Session : null, Opc.Ua.ObjectIds.ObjectsFolder, telemetry, ct, ReferenceTypeIds.HierarchicalReferences);
         }
 
@@ -102,7 +104,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (se == null || se.StatusCode != StatusCodes.BadServerHalted)
                 {
-                    Opc.Ua.Client.Controls.ExceptionDlg.Show(Parent.Text, exception);
+                    Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Parent.Text, exception);
                 }
             }
 

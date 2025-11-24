@@ -93,7 +93,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -108,7 +108,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -123,7 +123,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -155,7 +155,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -171,7 +171,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -203,7 +203,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -216,7 +216,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                if (!new ModifyFilterDlg().ShowDialog(EventsLV.Filter))
+                if (!new ModifyFilterDlg().ShowDialog(EventsLV.Filter, m_telemetry))
                 {
                     return;
                 }
@@ -225,7 +225,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -249,7 +249,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -261,7 +261,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -278,7 +278,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -306,7 +306,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

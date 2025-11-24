@@ -33,6 +33,7 @@ using System.Drawing;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -44,9 +45,17 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Handles an exception.
         /// </summary>
-        public static void HandleException(string caption, Exception e)
+        public static void HandleException(ITelemetryContext telemetry, string caption, Exception e)
         {
-            ExceptionDlg.Show(caption, e);
+            ExceptionDlg.Show(telemetry, caption, e);
+        }
+
+        /// <summary>
+        /// Handles an exception.
+        /// </summary>
+        public static void HandleException(ILogger logger, string caption, Exception e)
+        {
+            ExceptionDlg.Show(logger, caption, e);
         }
 
         /// <summary>

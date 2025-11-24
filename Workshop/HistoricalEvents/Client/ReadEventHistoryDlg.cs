@@ -357,7 +357,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_telemetry, "Error Reading History", exception);
             }
         }
 
@@ -372,7 +372,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_telemetry, "Error Reading History", exception);
             }
         }
 
@@ -384,7 +384,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException("Error Reading History", exception);
+                ClientUtils.HandleException(m_telemetry, "Error Reading History", exception);
             }
         }
 
@@ -437,7 +437,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -464,7 +464,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -477,7 +477,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                if (!new ModifyFilterDlg().ShowDialog(m_filter))
+                if (!new ModifyFilterDlg().ShowDialog(m_filter, m_telemetry))
                 {
                     return;
                 }
@@ -487,7 +487,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(this.Text, exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
         #endregion

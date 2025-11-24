@@ -53,7 +53,6 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
-        private ITelemetryContext m_telemetry;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -90,7 +89,7 @@ namespace Opc.Ua.Sample.Controls
             Clear();
 
             m_session = session;
-            m_telemetry = telemetry;
+            Telemetry = telemetry;
 
             if (values != null)
             {
@@ -281,7 +280,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
@@ -293,7 +292,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 WriteValue value = new WriteValue();
 
-                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value, m_telemetry))
+                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value, Telemetry))
                 {
                     AddItem(value);
                 }
@@ -302,7 +301,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -317,7 +316,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0], m_telemetry))
+                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0], Telemetry))
                 {
                     Node node = await m_session.NodeCache.FindAsync(values[0].NodeId) as Node;
 
@@ -338,7 +337,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -384,7 +383,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (useIndexRange)
                 {
-                    value = new ComplexValueEditDlg().ShowDialog(values[0]);
+                    value = new ComplexValueEditDlg().ShowDialog(values[0], Telemetry);
 
                     WriteValue writeValue = value as WriteValue;
 
@@ -395,7 +394,7 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    value = GuiUtils.EditValue(m_session, values[0].Value.Value, datatypeId, valueRank, m_telemetry);
+                    value = GuiUtils.EditValue(m_session, values[0].Value.Value, datatypeId, valueRank, Telemetry);
                 }
 
                 if (value != null)
@@ -410,7 +409,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -434,7 +433,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
         #endregion
