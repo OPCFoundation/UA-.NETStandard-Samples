@@ -174,11 +174,11 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Event Handlers
-        private async void BrowseBTN_ClickAsync(object sender, EventArgs e)
+        private void BrowseBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", Telemetry, default, null);
+                ReferenceDescription reference = new SelectNodeDlg().ShowDialog(m_browser.Session as Session, null, RootId, null);
 
                 if (reference != null && reference.NodeId != null)
                 {

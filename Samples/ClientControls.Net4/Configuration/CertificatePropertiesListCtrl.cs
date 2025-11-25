@@ -210,9 +210,9 @@ namespace Opc.Ua.Client.Controls
                     continue;
                 }
 
-                if (extension.Oid.Value == X509AuthorityKeyIdentifierExtension.AuthorityKeyIdentifier2Oid)
+                if (extension.Oid.Value == Opc.Ua.Security.Certificates.X509AuthorityKeyIdentifierExtension.AuthorityKeyIdentifier2Oid)
                 {
-                    X509AuthorityKeyIdentifierExtension keyId = new X509AuthorityKeyIdentifierExtension(extension, extension.Critical);
+                    Opc.Ua.Security.Certificates.X509AuthorityKeyIdentifierExtension keyId = new Opc.Ua.Security.Certificates.X509AuthorityKeyIdentifierExtension(extension, extension.Critical);
                     AddItem(new FieldInfo("AuthorityKeyIdentifier", keyId.Format(false)));
                     continue;
                 }

@@ -59,6 +59,14 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
+        /// Handles an exception (backward-compatible overload).
+        /// </summary>
+        public static void HandleException(string caption, Exception e)
+        {
+            ExceptionDlg.Show(caption, e);
+        }
+
+        /// <summary>
         /// Returns the application icon.
         /// </summary>
         public static System.Drawing.Icon GetAppIcon()

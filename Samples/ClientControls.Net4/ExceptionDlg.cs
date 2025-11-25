@@ -200,6 +200,19 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
+        /// Displays the exception in a dialog (backward-compatible overload without logger).
+        /// </summary>
+        public static void Show(string caption, Exception e)
+        {
+            // check if running as a service.
+            if (!Environment.UserInteractive)
+            {
+                return;
+            }
+            new ExceptionDlg(null).ShowDialog(caption, e);
+        }
+
+        /// <summary>
         /// Display the exception in the dialog.
         /// </summary>
         public void ShowDialog(string caption, Exception e)
