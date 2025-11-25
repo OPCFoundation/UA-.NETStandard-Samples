@@ -20,6 +20,7 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
       <Version>1.5.378.10-preview</Version>
     </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Quickstarts.Servers" Version="1.5.378.2-preview" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
       <Version>1.5.378.10-preview</Version>
     </PackageReference>
