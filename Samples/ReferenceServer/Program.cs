@@ -91,7 +91,6 @@ namespace Quickstarts.ReferenceServer
 
                 // Create server, add additional node managers
                 var server = new ReferenceServer();
-                Quickstarts.Servers.Utils.AddDefaultNodeManagers(server);
 
                 // start the server.
                 application.StartAsync(server).Wait();

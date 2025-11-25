@@ -4,6 +4,11 @@
     <LangVersion>13.0</LangVersion>
   </PropertyGroup>
 
+  <!-- Suppress platform compatibility warnings for Windows-only targets -->
+  <PropertyGroup Condition="'$(TargetFramework)'=='net8.0-windows'">
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
   <Choose>
     <!-- .NET 4.8 is only available on Windows builds,
           however for mono builds on linux it can be enabled.

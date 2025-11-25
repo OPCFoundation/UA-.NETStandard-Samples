@@ -268,7 +268,7 @@ namespace Opc.Ua.Client.Controls
                 (String.IsNullOrEmpty(SessionName))?m_configuration.ApplicationName:SessionName,
                 60000,
                 UserIdentity,
-                PreferredLocales);
+                PreferredLocales).GetAwaiter().GetResult();
 
             // set up keep alive callback.
             m_session.KeepAlive += new KeepAliveEventHandler(Session_KeepAlive);
@@ -323,7 +323,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void Discover(string hostName)
         {
-            string endpointUrl = new DiscoverServerDlg().ShowDialog(m_configuration, hostName);
+            string endpointUrl = new DiscoverServerDlg().ShowDialog(m_configuration, hostName, null);
 
             if (endpointUrl != null)
             {
@@ -403,7 +403,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Handles a keep alive event from a session.
         /// </summary>
-        private void Session_KeepAlive(Session session, KeepAliveEventArgs e)
+        private void Session_KeepAlive(ISession session, KeepAliveEventArgs e)
         {
             if (this.InvokeRequired)
             {
@@ -500,7 +500,7 @@ namespace Opc.Ua.Client.Controls
                     {
                         var session = m_session;
                         session.KeepAlive -= Session_KeepAlive;
-                        m_session = m_reconnectHandler.Session;
+                        m_session = m_reconnectHandler.Session as Session;
                         m_session.KeepAlive += Session_KeepAlive;
                         Utils.SilentDispose(session);
                     }

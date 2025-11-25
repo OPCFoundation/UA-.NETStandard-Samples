@@ -85,6 +85,7 @@
     <File Path="azure-pipelines.yml" />
     <File Path="Directory.Build.props" />
     <File Path="managed.ruleset" />
+    <File Path="Nuget.Config" />
     <File Path="README.md" />
     <File Path="SECURITY.md" />
     <File Path="targets.props" />
