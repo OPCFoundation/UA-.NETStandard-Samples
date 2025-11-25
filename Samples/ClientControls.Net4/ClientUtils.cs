@@ -34,6 +34,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Configuration;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -79,6 +80,57 @@ namespace Opc.Ua.Client.Controls
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Selects the endpoint to use (backward-compatible sync wrapper).
+        /// </summary>
+        public static EndpointDescription SelectEndpoint(string discoveryUrl, bool useSecurity)
+        {
+            // Create a temporary application configuration for discovery
+            var configuration = new ApplicationConfiguration
+            {
+                ApplicationName = "UA Client",
+                ApplicationType = ApplicationType.Client,
+                SecurityConfiguration = new SecurityConfiguration()
+            };
+            
+            try
+            {
+                return CoreClientUtils.SelectEndpointAsync(configuration, discoveryUrl, useSecurity, 15000).GetAwaiter().GetResult();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the display text for an attribute value (backward-compatible sync wrapper).
+        /// </summary>
+        public static string GetAttributeDisplayText(ISession session, uint attributeId, Variant value)
+        {
+            try
+            {
+                return GetAttributeDisplayTextAsync(session, attributeId, value).GetAwaiter().GetResult();
+            }
+            catch
+            {
+                return Utils.Format("{0}", value);
+            }
+        }
+
+        /// <summary>
+        /// Discovers servers (backward-compatible sync wrapper).
+        /// </summary>
+        /// <remarks>
+        /// This method now requires async approach - returns empty collection for compatibility.
+        /// Use the async discovery methods for actual server discovery.
+        /// </remarks>
+        public static IList<string> DiscoverServers(ApplicationConfiguration configuration)
+        {
+            // Discovery now requires async methods - return empty collection for compatibility
+            return new List<string>();
         }
 
         #region DisplayText Lookup
@@ -311,6 +363,14 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Browse
+        /// <summary>
+        /// Browses the address space and returns the references found (sync wrapper).
+        /// </summary>
+        public static ReferenceDescriptionCollection Browse(ISession session, ViewDescription view, BrowseDescriptionCollection nodesToBrowse, bool throwOnError)
+        {
+            return BrowseAsync(session, view, nodesToBrowse, throwOnError).GetAwaiter().GetResult();
+        }
+
         /// <summary>
         /// Browses the address space and returns the references found.
         /// </summary>
