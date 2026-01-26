@@ -196,7 +196,7 @@ namespace Opc.Ua.Gds.Client
                     return;
                 }
 
-                var trustList = await m_gds.ReadTrustListAsync(trustListId, ct);
+                var trustList = await m_gds.ReadTrustListAsync(trustListId, 0, ct);
 
                 if (m_application.RegistrationType == RegistrationType.ServerPush)
                 {
