@@ -75,8 +75,9 @@ namespace Quickstarts.DataTypes
                 // load the application configuration.
                 application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
 
-                // add the encodable types defined in the shared information model library.
-                EncodeableFactory.GlobalFactory.AddEncodeableTypes(typeof(Quickstarts.DataTypes.Types.Namespaces).Assembly);
+#pragma warning disable UA_NETStandard_1 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+                AmbientMessageContext.CurrentContext.Factory.AddEncodeableTypes(typeof(Quickstarts.DataTypes.Types.Namespaces).Assembly);
+#pragma warning restore UA_NETStandard_1 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
                 // check the application certificate.
                 application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();

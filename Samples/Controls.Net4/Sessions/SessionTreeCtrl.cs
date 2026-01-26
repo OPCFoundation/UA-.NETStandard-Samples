@@ -194,8 +194,7 @@ namespace Opc.Ua.Sample.Controls
             m_endpoint = endpoint;
 
             // copy the message context.
-            m_messageContext = m_configuration.CreateMessageContext(true);
-
+            m_messageContext = m_configuration.CreateMessageContext();
 
             X509Certificate2 clientCertificate = null;
             X509Certificate2Collection clientCertificateChain = null;
