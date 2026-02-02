@@ -143,6 +143,38 @@ namespace Opc.Ua.Gds.Server
                     userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin });
                 }
             }
+            else
+            {
+                //delete existing standard users
+                userDatabase.DeleteUser("appadmin");
+                userDatabase.DeleteUser("appuser");
+                userDatabase.DeleteUser("sysadmin");
+                userDatabase.DeleteUser("DiscoveryAdmin");
+                userDatabase.DeleteUser("CertificateAuthorityAdmin");
+
+                //create standard users
+                userDatabase.CreateUser(
+                    "sysadmin",
+                    Encoding.UTF8.GetBytes("demo"),
+                    [GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin, Role.SecurityAdmin, Role
+                    .ConfigureAdmin]);
+                userDatabase.CreateUser(
+                    "appadmin",
+                    Encoding.UTF8.GetBytes("demo"),
+                    [Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole
+                    .DiscoveryAdmin]);
+                userDatabase.CreateUser("appuser", Encoding.UTF8.GetBytes("demo"), [Role.AuthenticatedUser]);
+
+                userDatabase.CreateUser(
+                    "DiscoveryAdmin",
+                    Encoding.UTF8.GetBytes("demo"),
+                    [Role.AuthenticatedUser, GdsRole.DiscoveryAdmin]);
+                userDatabase.CreateUser(
+                    "CertificateAuthorityAdmin",
+                    Encoding.UTF8.GetBytes("demo"),
+                    [Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin]);
+
+            }
             return createStandardUsers;
         }
     }
