@@ -222,10 +222,10 @@
       <Version>10.0.2</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>1.5.378.101-preview</Version>
+      <Version>1.5.378.106</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Client.Common">
-      <Version>1.5.378.101-preview</Version>
+      <Version>1.5.378.106</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

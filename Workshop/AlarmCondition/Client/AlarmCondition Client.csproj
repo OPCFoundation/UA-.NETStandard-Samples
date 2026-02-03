@@ -220,7 +220,7 @@
       <Version>10.0.2</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>1.5.378.101-preview</Version>
+      <Version>1.5.378.106</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

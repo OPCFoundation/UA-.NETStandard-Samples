@@ -143,13 +143,13 @@
       <Version>10.0.2</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
-      <Version>1.5.378.101-preview</Version>
+      <Version>1.5.378.106</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.5.378.101-preview</Version>
+      <Version>1.5.378.106</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Quickstarts.Servers">
-      <Version>1.5.378.101-preview</Version>
+      <Version>1.5.378.106</Version>
     </PackageReference>
     <PackageReference Include="Serilog">
       <Version>4.3.0</Version>
