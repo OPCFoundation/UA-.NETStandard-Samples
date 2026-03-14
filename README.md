@@ -33,6 +33,58 @@ Furthermore, cloud applications and services (such as ASP.Net, DNX, Azure Websit
 8. OPC UA [Quickstart Samples](Workshop).
 9. The Core UA stack and SDK has been tested with Mono 5.4 to add support for the Xamarin Client and the Mono console application samples. (Removed as of 12/2024)
 
+## Sample Projects Overview
+
+Use this table to quickly find the project that suits your needs. If you already have an external OPC UA server (e.g. KepServerEX, Prosys, or another vendor server), you only need to run a **Client** sample and point it at your server's endpoint URL.
+
+### Core Samples (`Samples/`)
+
+| Project | Type | Description |
+|---------|------|-------------|
+| [ReferenceServer](Samples/ReferenceServer) | **Server** | The OPC UA Reference Server. Implements a rich address space designed for OPC UA Compliance Test Tool (UACTT) testing. Use this as a standards-compliant server to test clients against. |
+| [ReferenceClient](Samples/ReferenceClient) | **Client** | A Windows Forms OPC UA client that can connect to any OPC UA server. Use this if you want to browse, read, write, subscribe to nodes, or test client connectivity against an external server such as KepServerEX. |
+| [UA Sample Server (.NET 4.6)](Samples/Server.Net4) | **Server** | A feature-rich OPC UA sample server with Windows Forms UI for .NET Framework 4.6. Demonstrates sessions, subscriptions and a sample address space. |
+| [UA Sample Client (.NET 4.6)](Samples/Client.Net4) | **Client** | A feature-rich OPC UA sample client with Windows Forms UI for .NET Framework 4.6. Can connect to any OPC UA server. Use this to explore and interact with an existing server. |
+| [GlobalDiscoveryServer](Samples/GDS/Server) | **Server** | OPC UA Global Discovery Server (GDS) for .NET 4.6 with SQL Server as database. Manages application registration and certificate issuance across a UA network. |
+| [NetCoreGlobalDiscoveryServer](Samples/GDS/ConsoleServer) | **Server** | Cross-platform console GDS server using a JSON-based database. Use for testing GDS workflows without SQL Server. |
+| [GlobalDiscoveryClient](Samples/GDS/Client) | **Client** | Windows Forms GDS client. Use this to register applications, request CA-signed certificates, and manage trust lists via a running GDS server. |
+
+### Quickstart Workshop Samples (`Workshop/`)
+
+These paired client/server samples each demonstrate a specific OPC UA feature set. If you have an external server that supports the relevant feature, you can run only the **Client** against it.
+
+| Project | Type | Description |
+|---------|------|-------------|
+| [Aggregation Server](Workshop/Aggregation/Server) | **Server** | Aggregates multiple OPC UA servers into a single namespace. Browse aggregated servers via the Aggregation Client or any OPC UA client. |
+| [Aggregation Client](Workshop/Aggregation/Client) | **Client** | Connects to an Aggregation Server and browses its aggregated address space. |
+| [ConsoleAggregationServer](Workshop/Aggregation/ConsoleAggregationServer) | **Server** | Cross-platform console version of the Aggregation Server. |
+| [AlarmCondition Server](Workshop/AlarmCondition/Server) | **Server** | Demonstrates OPC UA Alarms & Conditions (A&C). Generates alarm events of various types. |
+| [AlarmCondition Client](Workshop/AlarmCondition/Client) | **Client** | Subscribes to and displays OPC UA alarm events from an A&C server. |
+| [Boiler Server](Workshop/Boiler/Server) | **Server** | Simulates a boiler process with UA object instances. Demonstrates object types, methods and data variables. |
+| [Boiler Client](Workshop/Boiler/Client) | **Client** | Connects to the Boiler Server to read boiler state and invoke control methods. |
+| [DataAccess Server](Workshop/DataAccess/Server) | **Server** | Demonstrates the OPC UA DataAccess profile with analog items, discrete items and array variables. |
+| [DataAccess Client](Workshop/DataAccess/Client) | **Client** | Reads and writes DataAccess items (analog/discrete) on a DataAccess server. |
+| [DataTypes Server](Workshop/DataTypes/Server) | **Server** | Demonstrates how to define and expose custom structured data types in OPC UA. |
+| [DataTypes Client](Workshop/DataTypes/Client) | **Client** | Reads custom structured data types from a DataTypes server. |
+| [HistoricalAccess Server](Workshop/HistoricalAccess/Server) | **Server** | Stores historical data for variables and supports UA HistoricalAccess services (ReadRaw, ReadProcessed, etc.). |
+| [HistoricalAccess Client](Workshop/HistoricalAccess/Client) | **Client** | Queries and displays historical data from a HistoricalAccess server. |
+| [HistoricalEvents Server](Workshop/HistoricalEvents/Server) | **Server** | Stores historical events and supports UA HistoricalAccess for events. |
+| [HistoricalEvents Client](Workshop/HistoricalEvents/Client) | **Client** | Queries and displays historical events from a HistoricalEvents server. |
+| [Methods Server](Workshop/Methods/Server) | **Server** | Exposes UA methods with various input/output arguments to demonstrate method invocation. |
+| [Methods Client](Workshop/Methods/Client) | **Client** | Discovers and calls UA methods on a Methods server. |
+| [PerfTest Server](Workshop/PerfTest/Server) | **Server** | Performance test server that exposes a large number of monitored variables for throughput benchmarking. |
+| [PerfTest Client](Workshop/PerfTest/Client) | **Client** | Performance test client that subscribes to many variables and measures data-change throughput. |
+| [SimpleEvents Server](Workshop/SimpleEvents/Server) | **Server** | Generates simple OPC UA events to demonstrate event subscriptions. |
+| [SimpleEvents Client](Workshop/SimpleEvents/Client) | **Client** | Subscribes to and displays simple events from an events server. |
+| [UserAuthentication Server](Workshop/UserAuthentication/Server) | **Server** | Demonstrates OPC UA user authentication with username/password and certificate-based identity tokens. |
+| [UserAuthentication Client](Workshop/UserAuthentication/Client) | **Client** | Connects using different user identity tokens (anonymous, username, certificate) to a UserAuthentication server. |
+| [Views Server](Workshop/Views/Server) | **Server** | Demonstrates OPC UA Views — subsets of the address space exposed as named views. |
+| [Views Client](Workshop/Views/Client) | **Client** | Browses and reads nodes through Views defined on a Views server. |
+| [Empty Server](Workshop/Empty/Server) | **Server** | A minimal server template with no custom nodes. Use as a starting point to build your own OPC UA server. |
+| [Empty Client](Workshop/Empty/Client) | **Client** | A minimal client template. Use as a starting point to build your own OPC UA client. |
+
+> **Quick tip:** If you already have an OPC UA server running (e.g. KepServerEX, Prosys OPC UA Server, or another vendor product), you do **not** need to start any server sample. Simply run the **ReferenceClient** or **UA Sample Client** and connect to your server's endpoint URL (e.g. `opc.tcp://myserver:49320`).
+
 ## Project Information
 
 ### General Project Info
