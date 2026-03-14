@@ -13,18 +13,17 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '10.0.x'
-  - task: NuGetToolInstaller@1
-    inputs:
-      versionSpec: '>=7.0.x'
-  - task: NuGetCommand@2
+  - task: MSBuild@1
     displayName: Restore Release
     inputs:
-      command: restore
-      restoreSolution: '**/*.sln'
+      solution: '**/*.sln'
       configuration: 'Release'
-      includeNuGetOrg: true
-      feedsToUse: config
-      configPath: ./Nuget.Config
+      platform: 'Any CPU'
+      # Use MSBuild restore instead of nuget.exe restore so that OS-conditional
+      # MSBuild properties (e.g. $([MSBuild]::IsOsPlatform('Windows')) in targets.props)
+      # are correctly evaluated when determining TargetFrameworks for SDK-style projects.
+      # /p:RestoreForceEvaluate=true ensures fresh evaluation even with cached results.
+      msbuildArguments: /t:Restore /p:RestoreForceEvaluate=true
   - task: MSBuild@1
     displayName: MS Build Release
     inputs:
@@ -32,15 +31,14 @@ jobs:
       configuration: 'Release'
       platform: 'Any CPU'
       msbuildArguments: 
-  - task: NuGetCommand@2
+  - task: MSBuild@1
     displayName: Restore Debug
     inputs:
-      command: restore
-      restoreSolution: '**/*.sln'
+      solution: '**/*.sln'
       configuration: 'Debug'
-      includeNuGetOrg: true
-      feedsToUse: config
-      configPath: ./Nuget.Config
+      platform: 'Any CPU'
+      # Same as Restore Release: use MSBuild restore for correct property evaluation.
+      msbuildArguments: /t:Restore /p:RestoreForceEvaluate=true
   - task: MSBuild@1
     displayName: MS Build Debug
     inputs:
