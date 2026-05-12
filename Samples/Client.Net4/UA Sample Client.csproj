@@ -137,7 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions">
-      <Version>10.0.2</Version>
+      <Version>10.0.8</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
       <Version>10.0.2</Version>
