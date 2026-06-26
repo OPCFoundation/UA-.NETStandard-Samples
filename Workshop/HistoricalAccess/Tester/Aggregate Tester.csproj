@@ -147,10 +147,10 @@
       <Version>10.0.8</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>1.5.378.145</Version>
+      <Version>1.5.378.152</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>1.5.378.145</Version>
+      <Version>1.5.378.152</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
