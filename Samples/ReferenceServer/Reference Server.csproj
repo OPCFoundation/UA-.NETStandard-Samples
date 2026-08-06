@@ -152,7 +152,7 @@
       <Version>1.5.378.156</Version>
     </PackageReference>
     <PackageReference Include="Serilog">
-      <Version>4.3.0</Version>
+      <Version>4.3.1</Version>
     </PackageReference>
     <PackageReference Include="Serilog.Sinks.Debug">
       <Version>3.0.0</Version>
