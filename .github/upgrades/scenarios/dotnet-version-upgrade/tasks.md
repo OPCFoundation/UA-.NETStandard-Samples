@@ -1,4 +1,4 @@
-**Progress**: 5/7 tasks complete <progress value="71" max="100"></progress> 71%
+**Progress**: 8/20 tasks complete <progress value="40" max="100"></progress> 40%
 **Status**: In Progress - Task 05-workshop-applications
 
 ## Tasks
@@ -11,7 +11,7 @@
    - ✅ 04.03-gds-apps: Retarget GDS Client & GDS Server ([Content](tasks/04.03-gds-apps/task.md), [Progress](tasks/04.03-gds-apps/progress-details.md))
    - ✅ 05.02-dataaccess: Retarget DataAccess Client & Server ([Content](tasks/05.02-dataaccess/task.md), [Progress](tasks/05.02-dataaccess/progress-details.md))
    - 🔄 05.02-dataaccess: Retarget DataAccess Client & Server ([Content](tasks/05.02-dataaccess/task.md))
-   - 🔲 05.02-dataaccess: Retarget DataAccess Client & Server ([Content](tasks/05.02-dataaccess/task.md))
+   - ✅ 05.03-alarmcondition: Retarget AlarmCondition Client & Server ([Content](tasks/05.03-alarmcondition/task.md), [Progress](tasks/05.03-alarmcondition/progress-details.md))
    - 🔲 05.03-alarmcondition: Retarget AlarmCondition Client & Server ([Content](tasks/05.03-alarmcondition/task.md))
    - 🔲 05.04-views: Retarget Views Client & Server ([Content](tasks/05.04-views/task.md))
    - 🔲 05.05-perftest: Retarget PerfTest Client & Server ([Content](tasks/05.05-perftest/task.md))
