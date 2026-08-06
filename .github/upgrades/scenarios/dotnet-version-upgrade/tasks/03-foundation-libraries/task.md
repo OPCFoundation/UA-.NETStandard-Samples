@@ -1,0 +1,5 @@
+# 03-foundation-libraries: Retarget shared libraries to net10.0-windows
+
+Upgrade the leaf-tier shared libraries that the applications depend on: `UA Client Controls`, `UA Server Controls`, `UA Sample Controls`, `GlobalDiscoveryClientControls`, `Quickstart Library`, `DataTypes Library`, and `Opc.Ua.Sample`. Retarget each to `net10.0-windows`, add `<UseWindowsForms>true</UseWindowsForms>` for the WinForms control libraries, remove obsolete `<Reference>` framework assemblies and binding redirects, update NuGet packages to target-compatible versions (per `NuGet.0002`), add `Microsoft.Windows.Compatibility` where non-desktop Windows APIs (Registry/WMI/P-Invoke) are used, and fix flagged API breaking changes (`Api.0001/0002/0003`) inline. Research starting points: inventory `System.Windows.Forms`/`System.Drawing` usage and any Registry/P-Invoke in these libraries.
+
+**Done when**: All foundation libraries build on `net10.0-windows`; their tests pass; the still-Framework application projects continue to build against the upgraded libraries (or are ready to move in the next tier).
