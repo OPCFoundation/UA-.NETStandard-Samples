@@ -2,14 +2,12 @@
 
 ## Overview
 
-Upgrading the UA Samples WinForms projects and their shared libraries from .NET Framework 4.8 to `net10.0-windows`, using a Bottom-Up (dependency-first) strategy: foundation libraries first, then the sample and workshop applications, with per-tier validation.
-**Progress**: 0/7 tasks complete <progress value="0" max="100"></progress> 0%
-**Progress**: 0/7 tasks complete <progress value="0" max="100"></progress> 0%
+**Progress**: 1/7 tasks complete <progress value="14" max="100"></progress> 14%
 
 ## Tasks
-- 🔄 01-prerequisites: Verify toolchain and target framework readiness ([Content](tasks/01-prerequisites/task.md))
-- 🔲 01-prerequisites: Verify toolchain and target framework readiness
-- 🔲 02-sdk-style-conversion: Convert legacy csproj files to SDK-style (on net48)
+
+- ✅ 01-prerequisites: Verify toolchain and target framework readiness ([Content](tasks/01-prerequisites/task.md), [Progress](tasks/01-prerequisites/progress-details.md))
+- 🔲 02-sdk-style-conversion
 - 🔲 03-foundation-libraries: Retarget shared libraries to net10.0-windows
 - 🔲 04-sample-applications: Retarget Samples WinForms apps to net10.0-windows
 - 🔲 05-workshop-applications: Retarget Workshop WinForms apps to net10.0-windows
