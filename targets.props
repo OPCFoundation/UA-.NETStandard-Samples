@@ -38,7 +38,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="$(NO_RCS) == ''">
-    <PackageReference Include="Roslynator.Analyzers" Version="4.14.0" PrivateAssets="All" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.15.0" PrivateAssets="All" />
     <PackageReference Include="Roslynator.Formatting.Analyzers" Version="4.14.0" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
