@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Opc.Ua.Gds.Client</RootNamespace>
     <AssemblyName>Opc.Ua.Gds.Client</AssemblyName>
@@ -24,12 +24,6 @@
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.IdentityModel" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Xml.Serialization" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Update="Controls\ApplicationCertificateControl.cs">
       <SubType>UserControl</SubType>

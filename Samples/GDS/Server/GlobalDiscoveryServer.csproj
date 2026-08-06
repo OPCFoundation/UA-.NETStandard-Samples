@@ -1,107 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Opc.Ua.Gds.Server</RootNamespace>
     <AssemblyName>Opc.Ua.Gds.Server</AssemblyName>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
-    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-    <Reference Update="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Data.Entity" />
-    <Reference Include="System.IdentityModel">
-      <RequiredTargetFramework>3.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Security" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Update="DB\Application.cs">
-      <DependentUpon>gdsdb.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\ApplicationName.cs">
-      <DependentUpon>gdsdb.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\SqlRole.cs">
-      <DependentUpon>usersdb.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\User.cs">
-      <DependentUpon>usersdb.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\usersdb.Context.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>usersdb.Context.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\usersdb.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>usersdb.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\CertificateRequest.cs">
-      <DependentUpon>gdsdb.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\CertificateStore.cs">
-      <DependentUpon>gdsdb.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\gdsdb.Context.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>gdsdb.Context.tt</DependentUpon>
-    </Compile>
-    <Compile Update="DB\gdsdb.cs">
-      <DependentUpon>gdsdb.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="DB\ServerEndpoint.cs">
-      <DependentUpon>gdsdb.tt</DependentUpon>
-    </Compile>
-    <Content Include="DB\usersdb.Context.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>usersdb.Context.cs</LastGenOutput>
-      <DependentUpon>usersdb.edmx</DependentUpon>
-    </Content>
     <EmbeddedResource Include="DB\usersdb.edmx.sql" />
-    <Content Include="DB\usersdb.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>usersdb.cs</LastGenOutput>
-      <DependentUpon>usersdb.edmx</DependentUpon>
-    </Content>
+    <EmbeddedResource Include="DB\gdsdb.edmx.sql" />
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <Content Include="DB\gdsdb.Context.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>gdsdb.Context.cs</LastGenOutput>
-    </Content>
-    <EmbeddedResource Include="DB\gdsdb.edmx.sql" />
-    <Content Include="DB\gdsdb.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>gdsdb.cs</LastGenOutput>
-    </Content>
     <Content Include="Opc.Ua.GlobalDiscoveryServer.Config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
@@ -109,47 +22,19 @@
     <None Update="app.manifest">
       <SubType>Designer</SubType>
     </None>
-    <EntityDeploy Include="DB\gdsdb.edmx">
-      <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>gdsdb.Designer.cs</LastGenOutput>
-    </EntityDeploy>
-    <EntityDeploy Include="DB\usersdb.edmx">
-      <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>usersdb.Designer.cs</LastGenOutput>
-    </EntityDeploy>
-    <None Update="DB\usersdb.edmx.diagram">
-      <DependentUpon>usersdb.edmx</DependentUpon>
-    </None>
-    <None Update="DB\gdsdb.edmx.diagram">
-      <DependentUpon>gdsdb.edmx</DependentUpon>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ServerControls.Net4\UA Server Controls.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
-      <Visible>False</Visible>
-      <ProductName>Windows Installer 3.1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="EntityFramework">
-      <Version>6.5.1</Version>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer">
+      <Version>10.0.10</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <Version>10.0.10</Version>
+    </PackageReference>
+    <PackageReference Include="System.Configuration.ConfigurationManager">
+      <Version>10.0.10</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
       <Version>10.0.8</Version>
@@ -161,9 +46,5 @@
       <Version>1.5.378.156</Version>
     </PackageReference>
   </ItemGroup>
-  <PropertyGroup>
-    <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
-    <BaseNuGetRuntimeIdentifier>win7-x64</BaseNuGetRuntimeIdentifier>
-  </PropertyGroup>
   <PropertyGroup />
 </Project>

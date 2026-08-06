@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Gds.Server.Database.Sql;
 using Opc.Ua.Gds.Server.DB;
@@ -42,11 +43,12 @@ namespace Opc.Ua.Gds.Server
                     Assembly assembly = typeof(SqlApplicationsDatabase).GetTypeInfo().Assembly;
                     StreamReader istrm = new StreamReader(assembly.GetManifestResourceStream("Opc.Ua.Gds.Server.DB.usersdb.edmx.sql"));
                     string tables = istrm.ReadToEnd();
-                    entities.Database.Initialize(true);
-                    entities.Database.CreateIfNotExists();
+                    entities.Database.EnsureCreated();
                     var parts = tables.Split(new string[] { "GO" }, System.StringSplitOptions.None);
                     foreach (var part in parts)
-                    { entities.Database.ExecuteSqlCommand(part); }
+                    {
+                        if (!string.IsNullOrWhiteSpace(part)) { entities.Database.ExecuteSqlRaw(part); }
+                    }
                     entities.SaveChanges();
                     logger.LogInformation("Database Initialized!");
                 }

@@ -35,7 +35,6 @@ using Opc.Ua.Server;
 using Opc.Ua.Server.Controls;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Text;
 
 namespace Opc.Ua.Gds.Server
