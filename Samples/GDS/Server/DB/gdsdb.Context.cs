@@ -28,6 +28,13 @@ namespace Opc.Ua.Gds.Server.DB
             if (!optionsBuilder.IsConfigured)
             {
                 string connectionString = ConfigurationManager.ConnectionStrings["gdsdbEntities"]?.ConnectionString;
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new System.InvalidOperationException(
+                        "Missing connection string 'gdsdbEntities' in App.config.");
+                }
+
                 optionsBuilder.UseSqlServer(connectionString);
             }
         }
