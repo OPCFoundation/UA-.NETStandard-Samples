@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Opc.Ua.Sample</RootNamespace>
     <AssemblyName>Opc.Ua.SampleClient</AssemblyName>
@@ -11,19 +11,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Configuration.Install" />
-    <Reference Update="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.IdentityModel">
-      <RequiredTargetFramework>3.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.ServiceModel" />
-  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -58,9 +46,5 @@
       <Version>4.3.4</Version>
     </PackageReference>
   </ItemGroup>
-  <PropertyGroup>
-    <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
-    <BaseNuGetRuntimeIdentifier>win7-x64</BaseNuGetRuntimeIdentifier>
-  </PropertyGroup>
   <PropertyGroup />
 </Project>

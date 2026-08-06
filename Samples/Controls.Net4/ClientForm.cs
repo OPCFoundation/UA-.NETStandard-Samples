@@ -40,7 +40,6 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Opc.Ua.Sample.Controls
 {
