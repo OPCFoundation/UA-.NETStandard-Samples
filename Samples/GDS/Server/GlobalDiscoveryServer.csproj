@@ -27,12 +27,12 @@
     <ProjectReference Include="..\..\ServerControls.Net4\UA Server Controls.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer">
-      <Version>10.0.10</Version>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
-      <Version>10.0.10</Version>
-    </PackageReference>
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
       <Version>10.0.8</Version>
     </PackageReference>
