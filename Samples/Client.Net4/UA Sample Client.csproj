@@ -42,9 +42,6 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
       <Version>1.5.378.156</Version>
     </PackageReference>
-    <PackageReference Include="System.Net.Http">
-      <Version>4.3.4</Version>
-    </PackageReference>
-  </ItemGroup>
+    </ItemGroup>
   <PropertyGroup />
 </Project>

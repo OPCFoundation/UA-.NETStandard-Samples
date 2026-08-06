@@ -33,9 +33,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <Version>10.0.10</Version>
     </PackageReference>
-    <PackageReference Include="System.Configuration.ConfigurationManager">
-      <Version>10.0.10</Version>
-    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
       <Version>10.0.8</Version>
     </PackageReference>
