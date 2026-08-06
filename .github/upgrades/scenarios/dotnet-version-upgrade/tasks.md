@@ -1,4 +1,4 @@
-**Progress**: 14/20 tasks complete <progress value="70" max="100"></progress> 70%
+**Progress**: 15/20 tasks complete <progress value="75" max="100"></progress> 75%
 **Status**: In Progress - Task 05-workshop-applications
 
 ## Tasks
@@ -19,7 +19,7 @@
    - ✅ 05.07-historicalaccess: Retarget HistoricalAccess Client/Server/Tester ([Content](tasks/05.07-historicalaccess/task.md), [Progress](tasks/05.07-historicalaccess/progress-details.md))
    - ✅ 05.08-historicalevents: Retarget HistoricalEvents Client & Server ([Content](tasks/05.08-historicalevents/task.md), [Progress](tasks/05.08-historicalevents/progress-details.md))
    - ✅ 05.09-methods: Retarget Methods Client & Server ([Content](tasks/05.09-methods/task.md), [Progress](tasks/05.09-methods/progress-details.md))
-   - 🔲 05.10-simpleevents: Retarget SimpleEvents Client & Server ([Content](tasks/05.10-simpleevents/task.md))
+   - ✅ 05.10-simpleevents: Retarget SimpleEvents Client & Server ([Content](tasks/05.10-simpleevents/task.md), [Progress](tasks/05.10-simpleevents/progress-details.md))
    - 🔲 05.11-empty: Retarget Empty Client & Server ([Content](tasks/05.11-empty/task.md))
    - 🔲 05.12-userauthentication: Retarget UserAuthentication Client & Server ([Content](tasks/05.12-userauthentication/task.md))
    - 🔲 05.13-datatypes-apps: Retarget DataTypes Client & Server ([Content](tasks/05.13-datatypes-apps/task.md))
