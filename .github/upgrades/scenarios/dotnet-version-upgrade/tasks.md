@@ -1,4 +1,4 @@
-**Progress**: 9/20 tasks complete <progress value="45" max="100"></progress> 45%
+**Progress**: 10/20 tasks complete <progress value="50" max="100"></progress> 50%
 **Status**: In Progress - Task 05-workshop-applications
 
 ## Tasks
@@ -14,7 +14,7 @@
    - ✅ 05.03-alarmcondition: Retarget AlarmCondition Client & Server ([Content](tasks/05.03-alarmcondition/task.md), [Progress](tasks/05.03-alarmcondition/progress-details.md))
    - 🔲 05.03-alarmcondition: Retarget AlarmCondition Client & Server ([Content](tasks/05.03-alarmcondition/task.md))
    - ✅ 05.04-views: Retarget Views Client & Server ([Content](tasks/05.04-views/task.md), [Progress](tasks/05.04-views/progress-details.md))
-   - 🔲 05.05-perftest: Retarget PerfTest Client & Server ([Content](tasks/05.05-perftest/task.md))
+   - ✅ 05.05-perftest: Retarget PerfTest Client & Server ([Content](tasks/05.05-perftest/task.md), [Progress](tasks/05.05-perftest/progress-details.md))
    - 🔲 05.06-aggregation: Retarget Aggregation Client & Server (exclude Console) ([Content](tasks/05.06-aggregation/task.md))
    - 🔲 05.07-historicalaccess: Retarget HistoricalAccess Client/Server/Tester ([Content](tasks/05.07-historicalaccess/task.md))
    - 🔲 05.08-historicalevents: Retarget HistoricalEvents Client & Server ([Content](tasks/05.08-historicalevents/task.md))
