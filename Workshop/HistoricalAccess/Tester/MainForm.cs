@@ -1305,7 +1305,7 @@ namespace Quickstarts
             buffer2.Append("\r\n");
             buffer2.Append(DocType);
             buffer2.Append(HTMLIntro);
-            buffer2.Append(buffer.ToString());
+            buffer2.Append(buffer);
             buffer2.Append(HTMLExtro);
 
             Clipboard.SetText(buffer2.ToString(), TextDataFormat.Html);
