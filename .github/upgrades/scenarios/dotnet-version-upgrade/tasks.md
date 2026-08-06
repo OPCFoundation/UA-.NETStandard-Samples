@@ -1,4 +1,4 @@
-**Progress**: 12/20 tasks complete <progress value="60" max="100"></progress> 60%
+**Progress**: 13/20 tasks complete <progress value="65" max="100"></progress> 65%
 **Status**: In Progress - Task 05-workshop-applications
 
 ## Tasks
@@ -17,7 +17,7 @@
    - ✅ 05.05-perftest: Retarget PerfTest Client & Server ([Content](tasks/05.05-perftest/task.md), [Progress](tasks/05.05-perftest/progress-details.md))
    - ✅ 05.06-aggregation: Retarget Aggregation Client & Server (exclude Console) ([Content](tasks/05.06-aggregation/task.md), [Progress](tasks/05.06-aggregation/progress-details.md))
    - ✅ 05.07-historicalaccess: Retarget HistoricalAccess Client/Server/Tester ([Content](tasks/05.07-historicalaccess/task.md), [Progress](tasks/05.07-historicalaccess/progress-details.md))
-   - 🔲 05.08-historicalevents: Retarget HistoricalEvents Client & Server ([Content](tasks/05.08-historicalevents/task.md))
+   - ✅ 05.08-historicalevents: Retarget HistoricalEvents Client & Server ([Content](tasks/05.08-historicalevents/task.md), [Progress](tasks/05.08-historicalevents/progress-details.md))
    - 🔲 05.09-methods: Retarget Methods Client & Server ([Content](tasks/05.09-methods/task.md))
    - 🔲 05.10-simpleevents: Retarget SimpleEvents Client & Server ([Content](tasks/05.10-simpleevents/task.md))
    - 🔲 05.11-empty: Retarget Empty Client & Server ([Content](tasks/05.11-empty/task.md))
