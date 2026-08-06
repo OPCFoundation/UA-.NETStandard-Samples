@@ -28,6 +28,13 @@ namespace Opc.Ua.Gds.Server.DB
             if (!optionsBuilder.IsConfigured)
             {
                 string connectionString = ConfigurationManager.ConnectionStrings["usersdbEntities"]?.ConnectionString;
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new System.InvalidOperationException(
+                        "Missing connection string 'usersdbEntities' in App.config.");
+                }
+
                 optionsBuilder.UseSqlServer(connectionString);
             }
         }
