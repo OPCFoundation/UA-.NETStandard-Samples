@@ -32,10 +32,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.IdentityModel.Tokens;
-using System.IdentityModel.Claims;
-using System.IdentityModel;
-using System.IdentityModel.Selectors;
 using System.Windows.Forms;
 using System.IO;
 using Opc.Ua;
@@ -253,107 +249,22 @@ namespace Quickstarts.UserAuthenticationClient
         /// <summary>
         /// Creates a SAML token for the specified email address.
         /// </summary>
-        public static async Task<UserIdentity> CreateSAMLTokenAsync(string emailAddress, CancellationToken ct = default)
+        /// <remarks>
+        /// SAML token creation relied on System.IdentityModel (WIF), which is not available on
+        /// modern .NET. This path is stubbed out under the .NET 10 upgrade (Option C).
+        /// </remarks>
+        public static Task<UserIdentity> CreateSAMLTokenAsync(string emailAddress, CancellationToken ct = default)
         {
-            // Normally this would be done by a server that is capable of verifying that
-            // the user is a legimate holder of email address. Using a local certficate to
-            // signed the SAML token is a short cut that would never be done in a real system.
-            CertificateIdentifier userid = new CertificateIdentifier();
-
-            userid.StoreType = CertificateStoreType.X509Store;
-            userid.StorePath = "LocalMachine\\My";
-            userid.SubjectName = "UA Sample Client";
-
-            X509Certificate2 certificate = await userid.FindAsync(ct: ct);
-            X509SecurityToken signingToken = new X509SecurityToken(certificate);
-
-            // Create list of confirmation strings
-            List<string> confirmations = new List<string>();
-
-            // Add holder-of-key string to list of confirmation strings
-            confirmations.Add("urn:oasis:names:tc:SAML:1.0:cm:bearer");
-
-            // Create SAML subject statement based on issuer member variable, confirmation string collection
-            // local variable and proof key identifier parameter
-            SamlSubject subject = new SamlSubject("urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress", null, emailAddress);
-
-            // Create a list of SAML attributes
-            List<SamlAttribute> attributes = new List<SamlAttribute>();
-            Claim claim = Claim.CreateNameClaim(emailAddress);
-            attributes.Add(new SamlAttribute(claim));
-
-            // Create list of SAML statements
-            List<SamlStatement> statements = new List<SamlStatement>();
-
-            // Add a SAML attribute statement to the list of statements. Attribute statement is based on
-            // subject statement and SAML attributes resulting from claims
-            statements.Add(new SamlAttributeStatement(subject, attributes));
-
-            // Create a valid from/until condition
-            DateTime validFrom = DateTime.UtcNow;
-            DateTime validTo = DateTime.UtcNow.AddHours(12);
-
-            SamlConditions conditions = new SamlConditions(validFrom, validTo);
-
-            // Create the SAML assertion
-            SamlAssertion assertion = new SamlAssertion(
-                "_" + Guid.NewGuid().ToString(),
-                signingToken.Certificate.Subject,
-                validFrom,
-                conditions,
-                null,
-                statements);
-
-            SecurityKey signingKey = new System.IdentityModel.Tokens.RsaSecurityKey((RSA)signingToken.Certificate.PrivateKey);
-
-            // Set the signing credentials for the SAML assertion
-            assertion.SigningCredentials = new SigningCredentials(
-                signingKey,
-                System.IdentityModel.Tokens.SecurityAlgorithms.RsaSha1Signature,
-                System.IdentityModel.Tokens.SecurityAlgorithms.Sha1Digest,
-                new SecurityKeyIdentifier(signingToken.CreateKeyIdentifierClause<X509ThumbprintKeyIdentifierClause>()));
-            // TODO
-            // return new UserIdentity(new SamlSecurityToken(assertion));
-            throw new NotImplementedException();
+            throw new NotSupportedException(
+                "SAML tokens (System.IdentityModel / WIF) are not supported on this platform.");
         }
 
         private IUserIdentity GetKerberosToken()
         {
-            // need to get the service principal name from the user token policy.
-            UserTokenPolicy policy = (UserTokenPolicy)KerberosTAB.Tag;
-
-            if (policy == null)
-            {
-                return null;
-            }
-
-            // The ServicePrincipalName (SPN) for the UA Server must be specified as the IssuerEndpointUrl
-
-            // The ServicePrincipalName (SPN) must be registered with the Kerberos Ticket Granting Server (e.g. Windows Domain Controller).
-            // The SPN identifies the host that UA server is running on and the name of the application.
-            // A domain admin must grant delegate permission to the domain account that the UA server runs under.
-            // That can be done with the setspn.exe utility:
-
-            // setspn -U -S <hostname>/<exename> <domain accountname>
-            // setspn -C -S <hostname>/<exename> <hostname>
-
-            // The latter form is used if the UA server runs a Windows Service using the builtin Windows Service account.
-
-            // NOTE: Using the KerberosSecurityTokenProvider without the NetworkCredential parameter will use the
-            // the credentials of the client process,
-
-            // create the token provider.
-            KerberosSecurityTokenProvider provider = new KerberosSecurityTokenProvider(
-                policy.IssuerEndpointUrl,
-                System.Security.Principal.TokenImpersonationLevel.Impersonation,
-                new System.Net.NetworkCredential(KerberosUserNameTB.Text, KerberosPasswordTB.Text, KerberosDomainTB.Text));
-
-            // create the token (1 minute timeout looking for the server).
-            KerberosRequestorSecurityToken token = (KerberosRequestorSecurityToken)provider.GetToken(new TimeSpan(0, 1, 0));
-
-            // TODO
-            // return new UserIdentity(token);
-            throw new NotImplementedException();
+            // Kerberos WS-Security token providers (System.IdentityModel.Selectors) are not
+            // available on modern .NET. This path is stubbed out under the .NET 10 upgrade (Option C).
+            throw new NotSupportedException(
+                "Kerberos issued tokens (System.IdentityModel) are not supported on this platform.");
         }
 
         /// <summary>

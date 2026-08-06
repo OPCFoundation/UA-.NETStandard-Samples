@@ -44,6 +44,7 @@
 - Large tier tasks (04, 05) may be broken into per-app/per-feature subtasks at execution time.
 
 ## Key Decisions Log
+- **UserAuthentication WIF/WCF security stub-out** (task 05.12): UserAuthentication Client & Server depend on `System.IdentityModel` WCF/WIF security token types (WSSecurityTokenSerializer, Kerberos*SecurityToken, SecurityTokenResolver, UserNameSecurityToken, X509CertificateValidator) and `WindowsImpersonationContext`, none of which have a .NET 10 port or Windows Compatibility Pack equivalent. User chose **Option C**: keep projects on `net10.0-windows`, conditional-compile/stub the unsupported Kerberos/WS-Security/impersonation paths so they compile (throw `NotSupportedException` / `PlatformNotSupportedException`), keeping username/password + certificate auth functional. Approved by user.
 - **GDS Server EF6 EDMX → EF Core** (task 04.03): GlobalDiscoveryServer.csproj uses EF6 EDMX Model-First (gdsdb.edmx, usersdb.edmx, System.Data.Entity). EDMX is unsupported on .NET 10. User chose to **migrate to EF Core** (option A) rather than EF6 code-first or defer. Convert both EDMX models to EF Core DbContext + entity classes.
 - **WFO1000 WinForms analyzer** (2025 retarget): Set severity to warning at `targets.props` level (option c) rather than per-property `[DesignerSerializationVisibility]` attributes or per-project NoWarn. Approved by user.
 - **NU1201 bottom-up breakage**: Validate tier-3 libraries individually (not full-solution) until consumer apps are retargeted in tiers 04/05. Expected/normal for bottom-up ordering.
