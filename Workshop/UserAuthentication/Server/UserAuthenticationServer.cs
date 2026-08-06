@@ -283,18 +283,27 @@ namespace Quickstarts.UserAuthenticationServer
                     throw new InvalidOperationException("No certificate validator configured.");
                 }
 
-                // System.IdentityModel.Selectors.X509CertificateValidator.PeerTrust is not
-                // available on modern .NET. Use standard X509 chain validation instead.
-                using (var chain = new X509Chain())
+                // Mimic X509CertificateValidator.PeerTrust by requiring the user certificate to
+                // exist in the Windows TrustedPeople store (CurrentUser or LocalMachine).
+                bool trusted = false;
+
+                foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
                 {
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    using var store = new X509Store(StoreName.TrustedPeople, location);
+                    store.Open(OpenFlags.ReadOnly);
 
-                    if (!chain.Build(certificate))
+                    if (store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, validOnly: false).Count > 0)
                     {
-                        throw new CryptographicException(
-                            "The user certificate could not be validated against a trusted chain.");
+                        trusted = true;
+                        break;
                     }
                 }
+
+                if (!trusted)
+                {
+                    throw new CryptographicException(
+                        "The user certificate is not present in the TrustedPeople store.");
+                }
             }
             catch (Exception e)
             {
