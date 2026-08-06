@@ -534,7 +534,7 @@ namespace AggregationServer
                             // check for loose coupling.
                             if (source.ReferenceExists(ReferenceTypeIds.HasComponent, false, methodToCall.MethodId))
                             {
-                                method = (MethodState)FindPredefinedNode(methodToCall.MethodId, typeof(MethodState));
+                                method = FindPredefinedNode<MethodState>(methodToCall.MethodId);
                             }
 
                             if (method == null)
