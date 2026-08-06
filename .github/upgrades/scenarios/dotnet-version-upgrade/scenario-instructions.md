@@ -42,3 +42,7 @@
 - Package versions stay per-project during migration; add CPM only in final cleanup (07-final-validation).
 - Fix API breaking changes inline; defer only the flagged incompatible package (ConsoleAggregationServer) to task 06.
 - Large tier tasks (04, 05) may be broken into per-app/per-feature subtasks at execution time.
+
+## Key Decisions Log
+- **WFO1000 WinForms analyzer** (2025 retarget): Set severity to warning at `targets.props` level (option c) rather than per-property `[DesignerSerializationVisibility]` attributes or per-project NoWarn. Approved by user.
+- **NU1201 bottom-up breakage**: Validate tier-3 libraries individually (not full-solution) until consumer apps are retargeted in tiers 04/05. Expected/normal for bottom-up ordering.

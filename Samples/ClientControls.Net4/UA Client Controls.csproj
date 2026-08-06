@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>Opc.Ua.Client.Controls</RootNamespace>
     <AssemblyName>Opc.Ua.ClientControls</AssemblyName>
@@ -25,12 +25,6 @@
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Update="System.Runtime.Serialization">
-      <RequiredTargetFramework>3.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.ServiceProcess" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Update="Browse\AttributeListCtrl.cs">
       <SubType>UserControl</SubType>

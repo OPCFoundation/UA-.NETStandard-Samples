@@ -581,6 +581,13 @@ dotnet_diagnostic.CA1861.severity = silent
 # CA1848: Use the LoggerMessage delegates
 dotnet_diagnostic.CA1848.severity = suggestion
 
+# WFO1000: WinForms designer code serialization on public control properties.
+# Downgraded from error to warning solution-wide during the net10.0-windows
+# retarget (see scenario Key Decisions Log, option c). Existing WinForms control
+# libraries expose many public properties without DesignerSerializationVisibility;
+# these are not designer-editable at runtime and do not affect behavior.
+dotnet_diagnostic.WFO1000.severity = warning
+
 [**/Generated/*.cs]
 generated_code = true
 dotnet_diagnostic.severity = none

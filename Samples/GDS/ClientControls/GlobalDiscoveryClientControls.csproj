@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>Opc.Ua.Gds.Client.Controls</RootNamespace>
     <AssemblyName>Opc.Ua.Gds.Client.Controls</AssemblyName>
@@ -9,12 +9,6 @@
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Xml.Serialization" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Update="Controls\DiscoveryControl.cs">
       <SubType>UserControl</SubType>
