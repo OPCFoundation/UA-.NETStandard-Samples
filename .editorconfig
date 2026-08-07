@@ -588,6 +588,24 @@ dotnet_diagnostic.CA1848.severity = suggestion
 # these are not designer-editable at runtime and do not affect behavior.
 dotnet_diagnostic.WFO1000.severity = warning
 
+# CA1416: Validate platform compatibility
+dotnet_diagnostic.CA1416.severity = silent
+
+# CA1031: Do not catch general exception types
+dotnet_diagnostic.CA1031.severity = suggestion
+
+# CA1031: Do not catch general exception types
+dotnet_diagnostic.CA1031.severity = suggestion
+
+# CA1303: Do not pass literals as localized parameters
+dotnet_diagnostic.CA1303.severity = suggestion
+
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = suggestion
+
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = suggestion
+
 [**/Generated/*.cs]
 generated_code = true
 dotnet_diagnostic.severity = none
