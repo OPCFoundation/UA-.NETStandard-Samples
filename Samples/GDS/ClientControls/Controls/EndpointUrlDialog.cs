@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -40,7 +40,9 @@ namespace Opc.Ua.Gds.Client.Controls
             Icon = ImageListControl.AppIcon;
         }
 
+        #pragma warning disable CA1054 // Justification: Public sample API compatibility is preserved.
         public string ShowDialog(string url)
+        #pragma warning restore CA1054
         {
             if (url != null)
             {

@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -89,6 +89,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The view to use.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ViewDescription View
         {
             get { return BrowseCTRL.View; }
@@ -98,6 +99,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the default position of the splitter
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int SplitterDistance
         {
             get { return MainPN.SplitterDistance; }
@@ -107,6 +109,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets a flag that indicates whether the attributes should be displayed.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool AttributesListCollapsed
         {
             get { return MainPN.Panel2Collapsed; }
@@ -116,6 +119,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the context menu for the browse tree.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ContextMenuStrip BrowseMenuStrip
         {
             get { return BrowseCTRL.BrowseMenuStrip; }
@@ -125,6 +129,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the context menu for the attributes list.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ContextMenuStrip AttributesMenuStrip
         {
             get { return AttributesCTRL.AttributesMenuStrip; }
@@ -180,7 +185,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Raised after a node is selected in the control.
         /// </summary>
+        #pragma warning disable CA1713 // Justification: sample public API shape is preserved by design.
         public event EventHandler AfterSelect
+        #pragma warning restore CA1713
         {
             add { BrowseCTRL.AfterSelect += value; }
             remove { BrowseCTRL.AfterSelect -= value; }

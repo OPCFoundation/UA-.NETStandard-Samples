@@ -76,6 +76,8 @@ namespace Quickstarts.EmptyServer
             {
                 // TBD
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -102,7 +104,9 @@ namespace Quickstarts.EmptyServer
         {
             lock (Lock)
             {
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 BaseObjectState trigger = new BaseObjectState(null);
+#pragma warning restore CA2000
 
                 trigger.NodeId = new NodeId(1, NamespaceIndex);
                 trigger.BrowseName = new QualifiedName("Trigger", NamespaceIndex);
@@ -120,7 +124,9 @@ namespace Quickstarts.EmptyServer
                 trigger.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
                 references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, trigger.NodeId));
 
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 PropertyState property = new PropertyState(trigger);
+#pragma warning restore CA2000
 
                 property.NodeId = new NodeId(2, NamespaceIndex);
                 property.BrowseName = new QualifiedName("Matrix", NamespaceIndex);
@@ -136,7 +142,9 @@ namespace Quickstarts.EmptyServer
                 // save in dictionary. 
                 AddPredefinedNode(SystemContext, trigger);
 
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 ReferenceTypeState referenceType = new ReferenceTypeState();
+#pragma warning restore CA2000
 
                 referenceType.NodeId = new NodeId(3, NamespaceIndex);
                 referenceType.BrowseName = new QualifiedName("IsTriggerSource", NamespaceIndex);

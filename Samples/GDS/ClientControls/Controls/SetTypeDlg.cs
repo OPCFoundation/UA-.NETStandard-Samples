@@ -63,7 +63,9 @@ namespace Opc.Ua.Gds.Client.Controls
         /// <summary>
         /// The values updated by the dialog.
         /// </summary>
+        #pragma warning disable CA1034 // Justification: Public sample API compatibility is preserved.
         public class SetTypeResult
+        #pragma warning restore CA1034
         {
             /// <summary>
             /// The new type info.
@@ -167,7 +169,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         }
 
                         dimension *= 10;
-                        dimension += digits.IndexOf(text[ii]);
+                        dimension += digits.IndexOf(text[ii], StringComparison.Ordinal);
                     }
 
                     dimensions.Add(dimension);

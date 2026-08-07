@@ -76,6 +76,8 @@ namespace Quickstarts.ViewsServer
             {
                 // TBD
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -133,7 +135,9 @@ namespace Quickstarts.ViewsServer
 
                 NodeState root = FindPredefinedNode<NodeState>(new NodeId(Quickstarts.Views.Objects.Plant, NamespaceIndex));
 
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 Quickstarts.Views.BoilerState boiler1 = new Quickstarts.Views.BoilerState(null);
+#pragma warning restore CA2000
                 ParsedNodeId pnd1 = new ParsedNodeId() { NamespaceIndex = NamespaceIndex, RootId = "Boiler #1" };
 
                 boiler1.Create(
@@ -148,7 +152,9 @@ namespace Quickstarts.ViewsServer
 
                 AddPredefinedNode(SystemContext, boiler1);
 
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 Quickstarts.Views.BoilerState boiler2 = new Quickstarts.Views.BoilerState(null);
+#pragma warning restore CA2000
                 ParsedNodeId pnd2 = new ParsedNodeId() { NamespaceIndex = NamespaceIndex, RootId = "Boiler #2" };
 
                 boiler2.Create(

@@ -47,6 +47,7 @@ namespace Quickstarts.HistoricalAccessServer
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the HistoricalAccessServerNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample server type intentionally matches namespace naming.")]
     public partial class HistoricalAccessServer : StandardServer
     {
         #region Public Interface

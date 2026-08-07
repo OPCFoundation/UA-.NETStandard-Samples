@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -43,12 +43,18 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The node if for the type.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public NodeId NodeId;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The fully inhierited list of instance declarations for the type.
         /// </summary>
+        #pragma warning disable CA1002 // Justification: sample public API shape is preserved by design.
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public List<InstanceDeclaration> Declarations;
+        #pragma warning restore CA1002
+        #pragma warning restore CA1051
     }
 
     /// <summary>
@@ -59,77 +65,107 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The type that the declaration belongs to.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public NodeId RootTypeId;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The browse path to the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public QualifiedNameCollection BrowsePath;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The browse path to the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public string BrowsePathDisplayText;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// A localized path to the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public string DisplayPath;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The node id for the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public NodeId NodeId;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The node class of the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public NodeClass NodeClass;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The browse name for the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public QualifiedName BrowseName;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The display name for the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public string DisplayName;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The description for the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public string Description;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The modelling rule for the instance declaration (i.e. Mandatory or Optional).
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public NodeId ModellingRule;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The data type for the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public NodeId DataType;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The value rank for the instance declaration.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public int ValueRank;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The built-in type parent for the data type.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public BuiltInType BuiltInType;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// A localized name for the data type.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public string DataTypeDisplayText;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// An instance declaration that has been overridden by the current instance.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public InstanceDeclaration OverriddenDeclaration;
+        #pragma warning restore CA1051
     }
 
     /// <summary>
@@ -179,32 +215,44 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Whether the field is returned as part of the event notification.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public bool Selected;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// Whether the field is displayed in the list view.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public bool DisplayInList;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// Whether the filter is enabled.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public bool FilterEnabled;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The filter operator to use in the where clause.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public FilterOperator FilterOperator;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The filter value to use in the where clause.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public Variant FilterValue;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The instance declaration associated with the field.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public InstanceDeclaration InstanceDeclaration;
+        #pragma warning restore CA1051
     }
 
     /// <summary>
@@ -466,11 +514,17 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The type of event.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public NodeId EventTypeId;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The list of declarations for the fields.
         /// </summary>
+        #pragma warning disable CA1002 // Justification: sample public API shape is preserved by design.
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
         public List<FilterDeclarationField> Fields;
+        #pragma warning restore CA1002
+        #pragma warning restore CA1051
     }
 }

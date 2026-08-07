@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -97,7 +97,10 @@ namespace Opc.Ua.Client.Controls
         /// Gets or sets the discovery URL used to find the servers displayed in the control.
         /// </summary>
         /// <value>The discovery URL.</value>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        #pragma warning disable CA1056 // Justification: sample public API shape is preserved by design.
         public string DiscoveryUrl
+        #pragma warning restore CA1056
         {
             get { return m_discoveryUrl; }
             set { m_discoveryUrl = value; }

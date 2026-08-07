@@ -115,6 +115,7 @@ namespace Opc.Ua.Sample
         /// <param name="context">The context.</param>
         /// <param name="node">The node.</param>
         /// <returns>The new NodeId.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1716:Identifiers should not match keywords", Justification = "Sample code preserves existing public API and behavior.")]
         public virtual NodeId New(ISystemContext context, NodeState node)
         {
             return node.NodeId;
@@ -159,6 +160,7 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// The root notifiers for the node manager.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         protected List<NodeState> RootNotifiers
         {
             get { return m_rootNotifiers; }
@@ -453,6 +455,7 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// Recursively indexes the node and its children.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         protected virtual void RemovePredefinedNode(
             ISystemContext context,
             NodeState node,
@@ -841,6 +844,7 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// This method is used to delete bi-directional references to nodes from other node managers.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1725:Parameter names should match base declaration", Justification = "Sample code preserves existing public API and behavior.")]
         public virtual ServiceResult DeleteReference(
             object sourceHandle,
             NodeId referenceTypeId,
@@ -1771,6 +1775,7 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// Calls a method on the specified nodes.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1716:Identifiers should not match keywords", Justification = "Sample code preserves existing public API and behavior.")]
         public virtual void Call(
             OperationContext context,
             IList<CallMethodRequest> methodsToCall,
@@ -1893,6 +1898,7 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// Calls a method on an object.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1716:Identifiers should not match keywords", Justification = "Sample code preserves existing public API and behavior.")]
         protected virtual ServiceResult Call(
             ISystemContext context,
             CallMethodRequest methodToCall,
@@ -2197,6 +2203,7 @@ namespace Opc.Ua.Sample
         /// <remarks>
         /// This method only handles data change subscriptions. Event subscriptions are created by the SDK.
         /// </remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1725:Parameter names should match base declaration", Justification = "Sample code preserves existing public API and behavior.")]
         public virtual void CreateMonitoredItems(
             OperationContext context,
             uint subscriptionId,
@@ -2267,7 +2274,9 @@ namespace Opc.Ua.Sample
                         itemToCreate,
                         globalIdCounter,
                         out filterError,
+                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         out monitoredItem);
+                        #pragma warning restore CA2000
 
                     // save any filter error details.
                     filterErrors[ii] = filterError;
@@ -2313,7 +2322,9 @@ namespace Opc.Ua.Sample
                         itemToCreate,
                         globalIdCounter,
                         out filterError,
+                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         out monitoredItem);
+                        #pragma warning restore CA2000
 
                     // save any filter error details.
                     filterErrors[operation.Index] = filterError;
@@ -3106,6 +3117,7 @@ namespace Opc.Ua.Sample
         private NodeIdDictionary<NodeState> m_predefinedNodes;
         private List<NodeState> m_rootNotifiers;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample code preserves existing public API and behavior.")]
         private Timer m_samplingTimer;
         private List<DataChangeMonitoredItem> m_sampledItems;
         private double m_minimumSamplingInterval;

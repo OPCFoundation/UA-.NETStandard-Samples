@@ -377,6 +377,7 @@ namespace Quickstarts
     /// </summary>
     public class TypeDeclaration
     {
+#pragma warning disable CA1051, CA1002 // Justification: sample data transfer types intentionally expose mutable fields.
         /// <summary>
         /// The node if for the type.
         /// </summary>
@@ -386,6 +387,7 @@ namespace Quickstarts
         /// The fully inhierited list of instance declarations for the type.
         /// </summary>
         public List<InstanceDeclaration> Declarations;
+#pragma warning restore CA1051, CA1002
     }
 
     /// <summary>
@@ -393,6 +395,7 @@ namespace Quickstarts
     /// </summary>
     public class InstanceDeclaration
     {
+#pragma warning disable CA1051 // Justification: sample data transfer type intentionally exposes mutable fields.
         /// <summary>
         /// The type that the declaration belongs to.
         /// </summary>
@@ -467,6 +470,7 @@ namespace Quickstarts
         /// An instance declaration that has been overridden by the current instance.
         /// </summary>
         public InstanceDeclaration OverriddenDeclaration;
+#pragma warning restore CA1051
     }
 
     /// <summary>
@@ -510,6 +514,7 @@ namespace Quickstarts
             InstanceDeclaration = field.InstanceDeclaration;
         }
 
+        #pragma warning disable CA1051 // Justification: sample data transfer type intentionally exposes mutable fields.
         /// <summary>
         /// Whether the field is displayed in the list view.
         /// </summary>
@@ -534,6 +539,7 @@ namespace Quickstarts
         /// The instance declaration associated with the field.
         /// </summary>
         public InstanceDeclaration InstanceDeclaration;
+        #pragma warning restore CA1051
     }
 
     /// <summary>
@@ -750,7 +756,9 @@ namespace Quickstarts
             return defaultValue;
         }
 
+        #pragma warning disable CA1051, CA1002 // Justification: sample data transfer type intentionally exposes mutable fields.
         public NodeId EventTypeId;
         public List<FilterDeclarationField> Fields;
+        #pragma warning restore CA1051, CA1002
     }
 }

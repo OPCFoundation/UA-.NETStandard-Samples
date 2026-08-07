@@ -48,6 +48,7 @@ namespace AggregationServer
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the AggregationNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample public API name matches the workshop namespace.")]
     public partial class AggregationServer : ReverseConnectServer
     {
         #region Overridden Methods
@@ -74,7 +75,9 @@ namespace AggregationServer
             {
                 var reverseConnect = configuration.ClientConfiguration.ReverseConnect;
                 // start the reverse connection manager
+#pragma warning disable CA2000 // Justification: ReverseConnectManager ownership is transferred to node managers.
                 reverseConnectManager = new Opc.Ua.Client.ReverseConnectManager(server.Telemetry);
+#pragma warning restore CA2000
                 foreach (var endpoint in reverseConnect.ClientEndpoints)
                 {
                     reverseConnectManager.AddEndpoint(new Uri(endpoint.EndpointUrl));

@@ -77,7 +77,7 @@ namespace TestData
             // update the namespaces.
             NamespaceUris = namespaceUris;
 
-            Server.Factory.AddEncodeableTypes(typeof(TestDataNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(TestDataNodeManager).Namespace)));
+            Server.Factory.AddEncodeableTypes(typeof(TestDataNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(TestDataNodeManager).Namespace, StringComparison.Ordinal)));
 
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<TestDataNodeManagerConfiguration>();
@@ -162,9 +162,8 @@ namespace TestData
                 }
 #endif
                 // link all conditions to the conditions folder.
-                NodeState conditionsFolder = (NodeState)FindPredefinedNode(
-                    new NodeId(Objects.Data_Conditions, m_typeNamespaceIndex),
-                    typeof(NodeState));
+                NodeState conditionsFolder = FindPredefinedNode<NodeState>(
+                    new NodeId(Objects.Data_Conditions, m_typeNamespaceIndex));
 
                 foreach (NodeState node in PredefinedNodes.Values)
                 {
@@ -177,9 +176,8 @@ namespace TestData
                 }
 
                 // enable history for all numeric scalar values.
-                ScalarValueObjectState scalarValues = (ScalarValueObjectState)FindPredefinedNode(
-                    new NodeId(Objects.Data_Dynamic_Scalar, m_typeNamespaceIndex),
-                    typeof(ScalarValueObjectState));
+                ScalarValueObjectState scalarValues = FindPredefinedNode<ScalarValueObjectState>(
+                    new NodeId(Objects.Data_Dynamic_Scalar, m_typeNamespaceIndex));
 
                 scalarValues.Int32Value.Historizing = true;
                 scalarValues.Int32Value.AccessLevel = (byte)(scalarValues.Int32Value.AccessLevel | AccessLevels.HistoryRead);
@@ -471,7 +469,9 @@ namespace TestData
                 }
 
                 // create a reader.
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 reader = new HistoryDataReader(nodeToRead.NodeId, datasource);
+                #pragma warning restore CA2000
 
                 // start reading.
                 reader.BeginReadRaw(

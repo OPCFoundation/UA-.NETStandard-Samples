@@ -41,7 +41,9 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// The condition state is unknown.
         /// </summary>
+#pragma warning disable CA1008 // Justification: Sample enum preserves existing public member name.
         Undefined = 0x0,
+#pragma warning restore CA1008
 
         /// <summary>
         /// The condition is enabled and will produce events.

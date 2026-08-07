@@ -292,7 +292,7 @@ namespace Quickstarts
 
                         // Many servers will use the '/discovery' suffix for the discovery endpoint.
                         // The URL without this prefix should be the base URL for the server.
-                        if (discoveryUrl.EndsWith("/discovery"))
+                        if (discoveryUrl.EndsWith("/discovery", StringComparison.Ordinal))
                         {
                             discoveryUrl = discoveryUrl.Substring(0, discoveryUrl.Length - "/discovery".Length);
                         }
@@ -316,12 +316,14 @@ namespace Quickstarts
         /// <param name="useSecurity">if set to <c>true</c> select an endpoint that uses security.</param>
         /// <param name="ct">The token to cancel the operation with</param>
         /// <returns>The best available endpoint.</returns>
+#pragma warning disable CA1054 // Justification: public sample API uses string URLs to match existing callers.
         public static async Task<EndpointDescription> SelectEndpointAsync(string discoveryUrl, bool useSecurity, ITelemetryContext telemetry, CancellationToken ct = default)
+#pragma warning restore CA1054
         {
             // needs to add the '/discovery' back onto non-UA TCP URLs.
-            if (!discoveryUrl.StartsWith(Utils.UriSchemeOpcTcp))
+            if (!discoveryUrl.StartsWith(Utils.UriSchemeOpcTcp, StringComparison.Ordinal))
             {
-                if (!discoveryUrl.EndsWith("/discovery"))
+                if (!discoveryUrl.EndsWith("/discovery", StringComparison.Ordinal))
                 {
                     discoveryUrl += "/discovery";
                 }
@@ -347,7 +349,7 @@ namespace Quickstarts
                     EndpointDescription endpoint = endpoints[ii];
 
                     // check for a match on the URL scheme.
-                    if (endpoint.EndpointUrl.StartsWith(uri.Scheme))
+                    if (endpoint.EndpointUrl.StartsWith(uri.Scheme, StringComparison.Ordinal))
                     {
                         // check if security was requested.
                         if (useSecurity)
@@ -908,6 +910,7 @@ namespace Quickstarts
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
         /// <param name="ct">The cancellation token to cancel the operation with</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Public sample API preserves existing List<T> parameter.")]
         public static async Task CollectFieldsForTypeAsync(Session session, NodeId typeId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             // get the supertypes.
@@ -939,6 +942,7 @@ namespace Quickstarts
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
         /// <param name="ct">The cancellation token to cancel the operation with</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Public sample API preserves existing List<T> parameter.")]
         public static async Task CollectFieldsForInstanceAsync(Session session, NodeId instanceId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();

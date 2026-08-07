@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -35,6 +35,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1016:Mark assemblies with assembly version", Justification = "Sample project keeps existing assembly version metadata.")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1824:Mark assemblies with NeutralResourcesLanguageAttribute", Justification = "Sample project keeps existing resource metadata.")]
+[assembly: System.Resources.NeutralResourcesLanguage("en", System.Resources.UltimateResourceFallbackLocation.MainAssembly)]
+
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
@@ -61,7 +65,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the application icon.
         /// </summary>
+        #pragma warning disable CA1024 // Justification: sample public API shape is preserved by design.
         public static System.Drawing.Icon GetAppIcon()
+        #pragma warning restore CA1024
         {
             try
             {

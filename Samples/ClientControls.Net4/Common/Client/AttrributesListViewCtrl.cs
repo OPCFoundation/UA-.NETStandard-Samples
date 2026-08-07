@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -53,7 +53,9 @@ namespace Opc.Ua.Client.Controls
         public AttributesListViewCtrl()
         {
             InitializeComponent();
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             AttributesLV.SmallImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
         }
         #endregion
 
@@ -65,6 +67,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The view to use.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ViewDescription View { get; set; }
 
         /// <summary>
@@ -79,6 +82,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the context menu for the attributes list.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ContextMenuStrip AttributesMenuStrip
         {
             get { return AttributesLV.ContextMenuStrip; }
@@ -317,7 +321,9 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 await new EditComplexValueDlg().ShowDialogAsync(
+                #pragma warning restore CA2000
                     m_session,
                     info.NodeToRead.NodeId,
                     info.NodeToRead.AttributeId,

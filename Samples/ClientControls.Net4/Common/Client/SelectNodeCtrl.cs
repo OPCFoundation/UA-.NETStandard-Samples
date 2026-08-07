@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -67,27 +67,33 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the current session.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ISession Session { get; set; }
 
         /// <summary>
         /// Gets or sets starting node.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public NodeId RootId { get; set; }
 
         /// <summary>
         /// Gets or sets the view to use.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ViewDescription View { get; set; }
 
         /// <summary>
         /// Gets or sets the reference types to follow.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public NodeId[] ReferenceTypeIds { get; set; }
 
         /// <summary>
         /// Gets or sets the currently selected node.
         /// </summary>
+        #pragma warning disable WFO1000 // Justification: sample public API shape is preserved by design.
         public NodeId SelectedNode
+        #pragma warning restore WFO1000
         {
             get => m_selectedNode != null ? (NodeId)m_selectedNode.NodeId : null;
             set
@@ -146,6 +152,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the currently selected reference.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ReferenceDescription SelectedReference
         {
             get
@@ -178,6 +185,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the control that is stores with the current node.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public Control NodeControl { get; set; }
 
         /// <summary>
@@ -193,7 +201,9 @@ namespace Opc.Ua.Client.Controls
         #region Event Handlers
         private async void BrowseBTN_ClickAsync(object sender, EventArgs e)
         {
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
+            #pragma warning restore CA2000
                 Session,
                 RootId,
                 View,

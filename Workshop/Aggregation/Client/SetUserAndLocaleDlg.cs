@@ -165,13 +165,17 @@ namespace AggregationClient
                 // use the anonymous identity of the user name is not provided.
                 if (String.IsNullOrEmpty(UserNameTB.Text))
                 {
+#pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to UpdateSessionAsync.
                     identity = new UserIdentity();
+#pragma warning restore CA2000
                 }
 
                 // could add check for domain name in user name and use a kerberos token instead.
                 else
                 {
+#pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to UpdateSessionAsync.
                     identity = new UserIdentity(UserNameTB.Text, Encoding.UTF8.GetBytes(PasswordTB.Text));
+#pragma warning restore CA2000
                 }
 
                 // can specify multiple locales but just use one here to keep the UI simple.

@@ -80,7 +80,9 @@ namespace Quickstarts.DataAccessClient
         private ISession m_session;
         private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
+#pragma warning disable CA2213 // Justification: Subscription lifetime is managed by session disconnect logic.
         private Subscription m_subscription;
+#pragma warning restore CA2213
         private MonitoredItemNotificationEventHandler m_monitoredItem_Notification;
         #endregion
 
@@ -155,7 +157,9 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 // set a suitable initial state.
+#pragma warning disable CA1508 // Justification: Analyzer does not account for session state changes in UI callbacks.
                 if (m_session != null && !m_connectedOnce)
+#pragma warning restore CA1508
                 {
                     m_connectedOnce = true;
                 }
@@ -694,7 +698,10 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                await new WriteValueDlg().ShowDialogAsync(m_session, (NodeId)reference.NodeId, Attributes.Value);
+                using (var dialog = new WriteValueDlg())
+                {
+                    await dialog.ShowDialogAsync(m_session, (NodeId)reference.NodeId, Attributes.Value);
+                }
             }
             catch (Exception exception)
             {
@@ -725,7 +732,10 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                await new ReadHistoryDlg().ShowDialogAsync(m_session, (NodeId)reference.NodeId);
+                using (var dialog = new ReadHistoryDlg())
+                {
+                    await dialog.ShowDialogAsync(m_session, (NodeId)reference.NodeId);
+                }
             }
             catch (Exception exception)
             {
@@ -1107,7 +1117,10 @@ namespace Quickstarts.DataAccessClient
 
                 if (monitoredItem != null)
                 {
-                    await new WriteValueDlg().ShowDialogAsync(m_session, (NodeId)monitoredItem.ResolvedNodeId, Attributes.Value);
+                    using (var dialog = new WriteValueDlg())
+                    {
+                        await dialog.ShowDialogAsync(m_session, (NodeId)monitoredItem.ResolvedNodeId, Attributes.Value);
+                    }
                 }
             }
             catch (Exception exception)
@@ -1157,7 +1170,11 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                string locale = await new SelectLocaleDlg().ShowDialogAsync(m_session);
+                string locale;
+                using (var dialog = new SelectLocaleDlg())
+                {
+                    locale = await dialog.ShowDialogAsync(m_session);
+                }
 
                 if (locale == null)
                 {

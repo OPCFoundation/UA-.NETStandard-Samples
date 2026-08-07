@@ -114,7 +114,7 @@ namespace Quickstarts.AlarmConditionServer
                 // extract the type from the path.
                 string type = sourcePath;
 
-                index = type.IndexOf('/');
+                index = type.IndexOf('/', StringComparison.Ordinal);
 
                 if (index != -1)
                 {

@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -55,7 +55,9 @@ namespace Opc.Ua.Client.Controls
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ServersLV.SmallImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
 
             List<object> items = new List<object>();
 
@@ -110,7 +112,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The identifier for the ApplicationElementType ObjectType.
         /// </summary>
+        #pragma warning disable CA1707 // Justification: sample public API shape is preserved by design.
         public const uint GdsId_ApplicationElementType = 572;
+        #pragma warning restore CA1707
         #endregion
 
         #region Public Interface
@@ -273,7 +277,7 @@ namespace Opc.Ua.Client.Controls
 
             if (match == Match.Contains || match == Match.StartsWith)
             {
-                if (!text.EndsWith("%"))
+                if (!text.EndsWith('%'))
                 {
                     text = text + "%";
                 }
@@ -281,7 +285,7 @@ namespace Opc.Ua.Client.Controls
 
             if (match == Match.Contains || match == Match.EndsWith)
             {
-                if (!text.StartsWith("%"))
+                if (!text.StartsWith('%'))
                 {
                     text = "%" + text;
                 }

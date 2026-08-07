@@ -44,6 +44,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// The known event types which can be constructed by ConstructEvent()
         /// </summary>
+#pragma warning disable CA2211 // Justification: Sample code exposes the reusable event type list by design.
         public static NodeId[] KnownEventTypes = new NodeId[]
         {
             ObjectTypeIds.BaseEventType,
@@ -55,6 +56,7 @@ namespace Quickstarts.AlarmConditionClient
             ObjectTypeIds.AuditEventType,
             ObjectTypeIds.AuditUpdateMethodEventType
         };
+#pragma warning restore CA2211
 
         /// <summary>
         /// Finds the endpoint that best matches the current settings.
@@ -62,12 +64,13 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="discoveryUrl">The discovery URL.</param>
         /// <param name="useSecurity">if set to <c>true</c> select an endpoint that uses security.</param>
         /// <returns>The best available endpoint.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Sample public API preserves string discovery URL signature.")]
         public static async Task<EndpointDescription> SelectEndpointAsync(string discoveryUrl, bool useSecurity, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             // needs to add the '/discovery' back onto non-UA TCP URLs.
-            if (!discoveryUrl.StartsWith(Utils.UriSchemeOpcTcp))
+            if (!discoveryUrl.StartsWith(Utils.UriSchemeOpcTcp, StringComparison.Ordinal))
             {
-                if (!discoveryUrl.EndsWith("/discovery"))
+                if (!discoveryUrl.EndsWith("/discovery", StringComparison.Ordinal))
                 {
                     discoveryUrl += "/discovery";
                 }
@@ -93,7 +96,7 @@ namespace Quickstarts.AlarmConditionClient
                     EndpointDescription endpoint = endpoints[ii];
 
                     // check for a match on the URL scheme.
-                    if (endpoint.EndpointUrl.StartsWith(uri.Scheme))
+                    if (endpoint.EndpointUrl.StartsWith(uri.Scheme, StringComparison.Ordinal))
                     {
                         // pick the first available endpoint by default.
                         if (selectedEndpoint == null)

@@ -148,7 +148,9 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// The data type for the item.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample data container intentionally exposes this field.
         public BuiltInType DataType;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// The value rank for the item.

@@ -48,6 +48,7 @@ namespace Quickstarts.PerfTestServer
             register1.Initialize(1, "R1", 50000, m_logger);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1024:Use properties where appropriate", Justification = "Sample API intentionally exposes a method.")]
         public IList<MemoryRegister> GetRegisters()
         {
             return m_registers;
@@ -67,6 +68,7 @@ namespace Quickstarts.PerfTestServer
         private ILogger m_logger;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Timer lifetime is managed by the hosting sample server.")]
     public class MemoryRegister
     {
         public int Id

@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -44,6 +44,7 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
     public partial class HistoryDataListView : UserControl
     {
         #region Constructors
@@ -179,7 +180,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// A session available in the conntrol.
         /// </summary>
+        #pragma warning disable CA1812 // Justification: sample type is retained for designer/reflection use.
         private sealed class AvailableSession
+        #pragma warning restore CA1812
         {
             public Session Session { get; set; }
 
@@ -223,10 +226,13 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private ISession m_session;
         private ITelemetryContext m_telemetry;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private NodeId m_nodeId;
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private int m_nextId;
         private bool m_isSubscribed;
         private HistoryReadDetails m_details;
@@ -276,6 +282,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public HistoryReadType ReadType
         {
             get { return (HistoryReadType)ReadTypeCB.SelectedItem; }
@@ -287,6 +294,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public DateTime StartTime
         {
             get
@@ -322,6 +330,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public DateTime EndTime
         {
             get
@@ -357,6 +366,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public uint MaxReturnValues
         {
             get
@@ -381,6 +391,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool ReturnBounds
         {
             get
@@ -399,6 +410,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public NodeId Aggregate
         {
             get
@@ -440,6 +452,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public double ProcessingInterval
         {
             get { return (double)ProcessingIntervalNP.Value; }
@@ -449,6 +462,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code", Justification = "Sample control flow is intentional and analyzer reports a false positive.")]
         public async Task ChangeSessionAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (Object.ReferenceEquals(session, m_session))
@@ -470,9 +484,11 @@ namespace Opc.Ua.Client.Controls
             m_session = session;
             m_telemetry = telemetry;
             m_dataset.Clear();
-            LeftPN.Enabled = m_session != null;
+            LeftPN.Enabled = true;
 
+            #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
             if (m_session != null)
+            #pragma warning restore CA1508
             {
                 AggregateCB.Items.Clear();
 
@@ -661,7 +677,9 @@ namespace Opc.Ua.Client.Controls
             {
                 if (m_configuration != null)
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     await new ViewNodeStateDlg().ShowDialogAsync(m_session, m_configuration, null, ct);
+                    #pragma warning restore CA2000
                 }
             }
         }
@@ -1679,7 +1697,9 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
+                #pragma warning restore CA2000
                     m_session,
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     null,
@@ -2278,7 +2298,9 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 Annotation annotation = new EditAnnotationDlg().ShowDialog(m_session, null, null);
+                #pragma warning restore CA2000
 
                 if (annotation != null)
                 {
@@ -2325,7 +2347,9 @@ namespace Opc.Ua.Client.Controls
                     DataRowView source = row.DataBoundItem as DataRowView;
                     DataValue value = (DataValue)source.Row[9];
 
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     DataValue newValue = new EditDataValueDlg().ShowDialog(value, null, null);
+                    #pragma warning restore CA2000
 
                     if (newValue == null)
                     {

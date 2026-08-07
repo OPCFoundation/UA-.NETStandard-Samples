@@ -87,7 +87,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException("The URL is not valid: " + url, "ServerUrl");
+                    #pragma warning restore CA2208
                 }
 
                 try
@@ -103,7 +105,9 @@ namespace Opc.Ua.Gds.Client.Controls
                             throw new ArgumentException("Server does not support username/password user identity tokens.");
                         }
 
+                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                         var identity = new Opc.Ua.Client.Controls.UserNamePasswordDlg().ShowDialog(m_pushServer.AdminCredentials, "Provide PushServer Administrator Credentials");
+                        #pragma warning restore CA2000
 
                         if (identity != null)
                         {

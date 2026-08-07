@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -87,6 +87,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The endpoint currently displayed in the control.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ConfiguredEndpoint SelectedEndpoint
         {
             get
@@ -151,7 +152,9 @@ namespace Opc.Ua.Client.Controls
             EndpointCB.SelectedIndex = -1;
             EndpointCB.Items.Add("<New...>");
 
+            #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
             if (endpoints != null)
+            #pragma warning restore CA1508
             {
                 foreach (ConfiguredEndpoint endpoint in m_endpoints.Endpoints)
                 {
@@ -212,7 +215,9 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // modify configuration.
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true, m_telemetry);
+                #pragma warning restore CA2000
 
                 if (endpoint == null)
                 {
@@ -287,6 +292,8 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// The delegate used to receive connect endpoint notifications.
     /// </summary>
+    #pragma warning disable CA1003 // Justification: sample public API shape is preserved by design.
     public delegate void ConnectEndpointEventHandler(object sender, ConnectEndpointEventArgs e);
+    #pragma warning restore CA1003
     #endregion
 }

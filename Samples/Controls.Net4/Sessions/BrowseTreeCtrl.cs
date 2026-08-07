@@ -76,6 +76,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The control used to display the address space for a session.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public SessionTreeCtrl SessionTreeCtrl
         {
             get { return m_SessionTreeCtrl; }
@@ -105,6 +106,8 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Whether references should be displayed in the control.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2227:Collection properties should be read only", Justification = "Sample code preserves existing public API and behavior.")]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ReferenceDescriptionCollection SelectedReferences
         {
             get
@@ -126,6 +129,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The control used to display the attributes for the currently selected node.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public AttributeListCtrl AttributesCtrl
         {
             get { return m_AttributesCtrl; }
@@ -194,7 +198,9 @@ namespace Opc.Ua.Sample.Controls
                 m_rootId = Objects.RootFolder;
             }
 
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (m_browser != null)
+            #pragma warning restore CA1508
             {
                 INode node = await m_session.NodeCache.FindAsync(m_rootId, ct);
 
@@ -638,7 +644,9 @@ namespace Opc.Ua.Sample.Controls
             // fetch references.
             ReferenceDescriptionCollection references = null;
 
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (reference != null)
+            #pragma warning restore CA1508
             {
                 references = await m_browser.BrowseAsync((NodeId)reference.NodeId, ct);
             }
@@ -1298,6 +1306,7 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// The delegate used to receive notifications when nodes are picked in the dialog.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1003:Use generic event handler instances", Justification = "Sample code preserves existing public API and behavior.")]
     public delegate void NodesSelectedEventHandler(object sender, NodesSelectedEventArgs e);
     #endregion
 
@@ -1414,6 +1423,7 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// The delegate used to receive notifications when nodes are picked in the dialog.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1003:Use generic event handler instances", Justification = "Sample code preserves existing public API and behavior.")]
     public delegate void MethodCalledEventHandler(object sender, MethodCalledEventArgs e);
     #endregion
 }

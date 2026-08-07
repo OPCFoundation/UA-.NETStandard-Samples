@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -56,7 +56,9 @@ namespace Opc.Ua.Client.Controls
         public BrowseTreeViewCtrl()
         {
             InitializeComponent();
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             BrowseTV.ImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
             m_typeImageMapping = new Dictionary<NodeId, int>();
         }
         #endregion
@@ -77,6 +79,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The view to use.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public AttributesListViewCtrl AttributesControl { get; set; }
 
         /// <summary>
@@ -139,6 +142,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The view to use.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ViewDescription View
         {
             get
@@ -160,6 +164,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the context menu for the browse tree.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ContextMenuStrip BrowseMenuStrip
         {
             get { return BrowseTV.ContextMenuStrip; }
@@ -240,7 +245,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Raised after a node is selected in the control.
         /// </summary>
+        #pragma warning disable CA1713 // Justification: sample public API shape is preserved by design.
         public event EventHandler AfterSelect { add { m_AfterSelect += value; } remove { m_AfterSelect -= value; } }
+        #pragma warning restore CA1713
         #endregion
 
         #region Private Methods

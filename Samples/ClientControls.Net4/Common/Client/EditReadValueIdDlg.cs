@@ -196,7 +196,7 @@ namespace Opc.Ua.Client.Controls
 
             if (!editNode && !editAttribute && !editIndexRange && !editDataEncoding)
             {
-                throw new ArgumentException("nodesToRead", "It is not possible to edit the current selection as a group.");
+                throw new ArgumentException("It is not possible to edit the current selection as a group.", nameof(nodesToRead));
             }
 
             if (base.ShowDialog() != DialogResult.OK)

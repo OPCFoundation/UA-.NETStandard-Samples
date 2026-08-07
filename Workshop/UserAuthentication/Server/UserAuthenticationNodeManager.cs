@@ -76,6 +76,8 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 // TBD
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -103,7 +105,9 @@ namespace Quickstarts.UserAuthenticationServer
             lock (Lock)
             {
                 // create a object to represent the process being controlled.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 BaseObjectState process = new BaseObjectState(null);
+#pragma warning restore CA2000
 
                 process.NodeId = new NodeId(1, NamespaceIndex);
                 process.BrowseName = new QualifiedName("My Process", NamespaceIndex);
@@ -122,7 +126,9 @@ namespace Quickstarts.UserAuthenticationServer
                 references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, process.NodeId));
 
                 // a property to report the process state.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 PropertyState<string> state = new PropertyState<string>(process);
+#pragma warning restore CA2000
 
                 state.NodeId = new NodeId(2, NamespaceIndex);
                 state.BrowseName = new QualifiedName("LogFilePath", NamespaceIndex);

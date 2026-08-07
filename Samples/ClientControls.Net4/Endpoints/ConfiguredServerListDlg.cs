@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -73,7 +73,9 @@ namespace Opc.Ua.Client.Controls
             // create a default collection if none provided.
             if (createNew)
             {
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration, telemetry);
+                #pragma warning restore CA2000
 
                 if (server != null)
                 {

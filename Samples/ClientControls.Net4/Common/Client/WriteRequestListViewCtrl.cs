@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -54,7 +54,9 @@ namespace Opc.Ua.Client.Controls
         {
             InitializeComponent();
             ResultsDV.AutoGenerateColumns = false;
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
 
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Requests");
@@ -76,7 +78,9 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private ISession m_session;
         private ITelemetryContext m_telemetry;
         #endregion
@@ -320,7 +324,9 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // prompt use to edit new value.
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, nodeToWrite, m_telemetry);
+                #pragma warning restore CA2000
 
                 if (result != null)
                 {
@@ -345,7 +351,9 @@ namespace Opc.Ua.Client.Controls
                     DataRowView source = row.DataBoundItem as DataRowView;
                     WriteValue value = (WriteValue)source.Row[0];
 
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, value, m_telemetry);
+                    #pragma warning restore CA2000
 
                     if (result != null)
                     {
@@ -378,7 +386,9 @@ namespace Opc.Ua.Client.Controls
                 if (nodeToWrite != null)
                 {
                     // prompt use to edit value.
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     object value = new EditComplexValueDlg().ShowDialogAsync(
+                    #pragma warning restore CA2000
                         m_session,
                         nodeToWrite.NodeId,
                         nodeToWrite.AttributeId,

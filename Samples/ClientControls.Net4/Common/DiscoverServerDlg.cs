@@ -139,7 +139,7 @@ namespace Opc.Ua.Client.Controls
 
                             // Many servers will use the '/discovery' suffix for the discovery endpoint.
                             // The URL without this prefix should be the base URL for the server.
-                            if (discoveryUrl.EndsWith("/discovery"))
+                            if (discoveryUrl.EndsWith("/discovery", StringComparison.Ordinal))
                             {
                                 discoveryUrl = discoveryUrl.Substring(0, discoveryUrl.Length - "/discovery".Length);
                             }

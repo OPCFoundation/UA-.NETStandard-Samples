@@ -57,12 +57,12 @@ namespace Opc.Ua.Server.Controls
         /// </summary>
         private string ReplaceSpecialCharacters(string message)
         {
-            message = message.Replace("&", "&#38;");
-            message = message.Replace("<", "&lt;");
-            message = message.Replace(">", "&gt;");
-            message = message.Replace("\"", "&#34;");
-            message = message.Replace("'", "&#39;");
-            message = message.Replace("\r\n", "<br/>");
+            message = message.Replace("&", "&#38;", StringComparison.Ordinal);
+            message = message.Replace("<", "&lt;", StringComparison.Ordinal);
+            message = message.Replace(">", "&gt;", StringComparison.Ordinal);
+            message = message.Replace("\"", "&#34;", StringComparison.Ordinal);
+            message = message.Replace("'", "&#39;", StringComparison.Ordinal);
+            message = message.Replace("\r\n", "<br/>", StringComparison.Ordinal);
 
             return message;
         }
@@ -195,7 +195,9 @@ namespace Opc.Ua.Server.Controls
                 return;
             }
 
+            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             new ExceptionDlg().ShowDialog(caption, e);
+            #pragma warning restore CA2000
         }
 
         /// <summary>

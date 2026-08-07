@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -300,18 +300,20 @@ namespace Opc.Ua.Client.Controls
             listItem.SubItems[4].Text = null;
             listItem.SubItems[5].Text = null;
 
+            #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
             if (certificate != null)
+            #pragma warning restore CA1508
             {
                 List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
 
                 for (int ii = 0; ii < fields.Count; ii++)
                 {
-                    if (fields[ii].StartsWith("CN="))
+                    if (fields[ii].StartsWith("CN=", StringComparison.Ordinal))
                     {
                         listItem.SubItems[0].Text = fields[ii].Substring(3);
                     }
 
-                    if (fields[ii].StartsWith("DC="))
+                    if (fields[ii].StartsWith("DC=", StringComparison.Ordinal))
                     {
                         listItem.SubItems[1].Text = fields[ii].Substring(3);
                     }
@@ -419,7 +421,9 @@ namespace Opc.Ua.Client.Controls
                         id.StorePath = m_storeId.StorePath;
                     }
 
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     await new ViewCertificateDlg().ShowDialogAsync(id, Telemetry);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -472,7 +476,9 @@ namespace Opc.Ua.Client.Controls
                             buffer.Append("\r\n");
                             buffer.Append("Are you sure you wish to continue?.");
 
+                            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                             DialogResult yesno = new YesNoDlg().ShowDialog(buffer.ToString(), "Delete Private Key", true);
+                            #pragma warning restore CA2000
 
                             if (yesno == DialogResult.No)
                             {

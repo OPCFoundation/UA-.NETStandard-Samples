@@ -77,6 +77,7 @@ namespace Quickstarts
         /// <summary>
         /// Gets the current list of data change MonitoredItems.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample API exposes mutable monitored item lists by design.")]
         public List<MonitoredItem> DataChangeMonitoredItems
         {
             get { return m_dataChangeMonitoredItems; }
@@ -86,6 +87,7 @@ namespace Quickstarts
         /// <summary>
         /// Gets the current list of event MonitoredItems.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample API exposes mutable monitored item lists by design.")]
         public List<IEventMonitoredItem> EventMonitoredItems
         {
             get { return m_eventMonitoredItems; }

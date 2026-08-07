@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -57,7 +57,9 @@ namespace Opc.Ua.Client.Controls
         #region Private Methods
         private Session m_session;
         private ITelemetryContext m_telemetry;
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private Subscription m_subscription;
+        #pragma warning restore CA2213
         private MonitoredItem m_monitoredItem;
         private FilterDeclaration m_filter;
         private NodeId m_areaId;
@@ -94,6 +96,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Whether to display the events as conditions.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool DisplayConditions
         {
             get { return m_displayConditions; }
@@ -439,7 +442,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     DateTime datetime = (DateTime)value.Value;
 
-                    if (m_filter.Fields[ii].InstanceDeclaration.DisplayName.Contains("Time"))
+                    if (m_filter.Fields[ii].InstanceDeclaration.DisplayName.Contains("Time", StringComparison.Ordinal))
                     {
                         text = datetime.ToLocalTime().ToString("HH:mm:ss.fff");
                     }

@@ -37,13 +37,17 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+[assembly: System.Resources.NeutralResourcesLanguage("en-US")]
+
 namespace Opc.Ua.Gds.Server
 {
     public sealed class ConsoleTelemetry : TelemetryContextBase
     {
         public ConsoleTelemetry()
         : base(
+            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            #pragma warning restore CA2000
             {
                 builder.SetMinimumLevel(LogLevel.Information);
                 builder.AddConsole();
@@ -82,7 +86,9 @@ namespace Opc.Ua.Gds.Server
                 bool haveAppCertificate = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().GetAwaiter().GetResult();
                 if (!haveAppCertificate)
                 {
+                    #pragma warning disable CA2201 // Justification: Public sample API compatibility is preserved.
                     throw new Exception("Application instance certificate invalid!");
+                    #pragma warning restore CA2201
                 }
 
                 ILogger logger = m_telemetry.CreateLogger<SqlUsersDatabase>();
@@ -96,7 +102,9 @@ namespace Opc.Ua.Gds.Server
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 var server = new GlobalDiscoverySampleServer(
+                #pragma warning restore CA2000
                     database,
                     database,
                     new CertificateGroup(m_telemetry),
@@ -105,7 +113,9 @@ namespace Opc.Ua.Gds.Server
                 application.StartAsync(server).Wait();
 
                 // run the application interactively.
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration, m_telemetry));
+                #pragma warning restore CA2000
             }
             catch (Exception e)
             {
@@ -128,12 +138,16 @@ namespace Opc.Ua.Gds.Server
 
                 //Create new admin user
                 string username = InputDlg.Show("Please specify user name of the application admin user:", false);
+                #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                 _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
+                #pragma warning restore CA2208
 
                 Console.Write($"Please specify the password of {username}:");
 
                 string password = InputDlg.Show($"Please specify the password of {username}:", true);
+                #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
+                #pragma warning restore CA2208
 
                 //create User, if User exists delete & recreate
                 if (!userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))

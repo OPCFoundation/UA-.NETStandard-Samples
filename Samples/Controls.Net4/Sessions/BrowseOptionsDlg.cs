@@ -156,7 +156,9 @@ namespace Opc.Ua.Sample.Controls
                 browser.ReferenceTypeId = ReferenceTypeIds.Organizes;
                 browser.IncludeSubtypes = true;
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(browser, Objects.ViewsFolder, m_session, m_telemetry);
+                #pragma warning restore CA2000
 
                 if (reference != null)
                 {

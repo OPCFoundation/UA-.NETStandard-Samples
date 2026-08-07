@@ -47,6 +47,7 @@ namespace Quickstarts.EmptyServer
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the EmptyNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample server type name intentionally mirrors the namespace.")]
     public partial class EmptyServer : StandardServer
     {
         #region Overridden Methods

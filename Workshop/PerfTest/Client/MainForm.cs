@@ -146,7 +146,7 @@ namespace Quickstarts.PerfTestClient
                 }
 
                 // set a suitable initial state.
-                if (m_session != null && !m_connectedOnce)
+                if (!m_connectedOnce)
                 {
                     m_connectedOnce = true;
                 }

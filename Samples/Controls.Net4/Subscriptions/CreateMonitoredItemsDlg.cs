@@ -79,7 +79,9 @@ namespace Opc.Ua.Sample.Controls
             m_subscription = subscription;
             m_telemetry = telemetry;
 
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (subscription != null)
+            #pragma warning restore CA1508
             {
                 m_subscription.StateChanged += m_SubscriptionStateChanged;
             }

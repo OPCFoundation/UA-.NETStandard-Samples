@@ -128,7 +128,9 @@ namespace MemoryBuffer
                         MemoryBufferInstance instance = m_configuration.Buffers[ii];
 
                         // create a new buffer.
+                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         MemoryBufferState bufferNode = new MemoryBufferState(SystemContext, instance);
+                        #pragma warning restore CA2000
 
                         // assign node ids.
                         bufferNode.Create(
@@ -207,7 +209,7 @@ namespace MemoryBuffer
                         return null;
                     }
 
-                    int index = id.IndexOf('[');
+                    int index = id.IndexOf('[', StringComparison.Ordinal);
 
                     if (index == -1)
                     {
@@ -521,7 +523,9 @@ namespace MemoryBuffer
                 initialValue.SourceTimestamp = DateTime.MinValue;
                 initialValue.StatusCode = StatusCodes.Good;
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 MemoryTagState tag = new MemoryTagState(buffer, datachangeItem.Offset);
+                #pragma warning restore CA2000
 
                 ServiceResult error = tag.ReadAttribute(
                     context,

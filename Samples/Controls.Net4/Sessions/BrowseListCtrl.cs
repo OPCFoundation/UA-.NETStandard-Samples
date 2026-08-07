@@ -356,7 +356,7 @@ namespace Opc.Ua.Sample.Controls
                     return 0;
                 }
 
-                return this.SortKey.CompareTo(target.SortKey);
+                return string.Compare(this.SortKey, target.SortKey, StringComparison.Ordinal);
             }
             #endregion
         }

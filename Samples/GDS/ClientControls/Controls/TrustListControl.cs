@@ -48,7 +48,9 @@ namespace Opc.Ua.Gds.Client.Controls
         {
             InitializeComponent();
             CertificateListGridView.AutoGenerateColumns = false;
+            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
             ImageList = new ImageListControl().ImageList;
+            #pragma warning restore CA2000
 
             m_dataset = new DataSet();
 
@@ -70,7 +72,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private ITelemetryContext m_telemetry;
         private ILogger m_logger = LoggerUtils.Null.Logger;
+        #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private FileInfo m_certificateFile;
         private string m_trustedStorePath;
         private string m_issuerStorePath;
@@ -127,7 +131,7 @@ namespace Opc.Ua.Gds.Client.Controls
             string path1 = Utils.GetAbsoluteDirectoryPath(trustedStorePath, true, false, false);
             string path2 = Utils.GetAbsoluteDirectoryPath(issuerStorePath, true, false, false);
 
-            if (String.Compare(path1, path2, StringComparison.OrdinalIgnoreCase) != 0)
+            if (!String.Equals(path1, path2, StringComparison.OrdinalIgnoreCase))
             {
                 if (!String.IsNullOrEmpty(issuerStorePath))
                 {
@@ -181,7 +185,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     foreach (var certificateBytes in trustList.TrustedCertificates)
                     {
-                        var certificate = new X509Certificate2(certificateBytes);
+                        var certificate = GdsCertificateLoader.LoadCertificate(certificateBytes);
 
                         List<X509CRL> crls = new List<X509CRL>();
 
@@ -207,7 +211,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     foreach (var certificateBytes in trustList.IssuerCertificates)
                     {
-                        var certificate = new X509Certificate2(certificateBytes);
+                        var certificate = GdsCertificateLoader.LoadCertificate(certificateBytes);
 
                         List<X509CRL> crls = new List<X509CRL>();
 
@@ -392,7 +396,9 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     using (ICertificateStore store = CreateStore(targetStorePath))
                     {
+                        #pragma warning disable CA2025 // Justification: Public sample API compatibility is preserved.
                         store.AddAsync(certificate);
+                        #pragma warning restore CA2025
                     }
                 }
 
@@ -413,7 +419,9 @@ namespace Opc.Ua.Gds.Client.Controls
                 foreach (DataGridViewCell cell in CertificateListGridView.SelectedCells)
                 {
                     DataRowView source = CertificateListGridView.Rows[cell.RowIndex].DataBoundItem as DataRowView;
+                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                     EditValueDlg dialog = new EditValueDlg
+                    #pragma warning restore CA2000
                     {
                         Size = new Size(800, 400)
                     };
@@ -522,7 +530,9 @@ namespace Opc.Ua.Gds.Client.Controls
                     directory = m_certificateFile.DirectoryName;
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 OpenFileDialog dialog = new OpenFileDialog
+                #pragma warning restore CA2000
                 {
                     CheckFileExists = true,
                     CheckPathExists = true,
@@ -543,7 +553,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 m_certificateFile = new FileInfo(dialog.FileName);
 
-                X509Certificate2 certificate = new X509Certificate2(File.ReadAllBytes(dialog.FileName));
+                X509Certificate2 certificate = GdsCertificateLoader.LoadCertificate(File.ReadAllBytes(dialog.FileName));
 
                 if (certificate != null)
                 {
@@ -551,7 +561,9 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         using (ICertificateStore store = CreateStore(m_trustedStorePath))
                         {
+                            #pragma warning disable CA2025 // Justification: Public sample API compatibility is preserved.
                             store.AddAsync(certificate);
+                            #pragma warning restore CA2025
                         }
                     }
                 }
@@ -590,7 +602,9 @@ namespace Opc.Ua.Gds.Client.Controls
                     directory = m_certificateFile.DirectoryName;
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 SaveFileDialog dialog = new SaveFileDialog
+                #pragma warning restore CA2000
                 {
                     CheckFileExists = false,
                     CheckPathExists = true,
@@ -681,3 +695,4 @@ namespace Opc.Ua.Gds.Client.Controls
         }
     }
 }
+

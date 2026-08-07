@@ -55,7 +55,9 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Used to receive events when the state of an alarm changed.
         /// </summary>
+#pragma warning disable CA1051 // Justification: Sample code exposes callback field by design.
         public AlarmChangedEventHandler OnAlarmChanged;
+#pragma warning restore CA1051
 
         /// <summary>
         /// Gets or sets the name of the source.

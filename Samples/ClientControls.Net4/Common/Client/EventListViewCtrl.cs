@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -54,12 +54,16 @@ namespace Opc.Ua.Client.Controls
         {
             InitializeComponent();
             EventsDV.AutoGenerateColumns = true;
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
         }
         #endregion
 
         #region Private Fields
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private ISession m_session;
         private FilterDeclaration m_filter;
         #endregion
@@ -304,7 +308,9 @@ namespace Opc.Ua.Client.Controls
                 {
                     DataRowView source = row.DataBoundItem as DataRowView;
                     EventFieldList e2 = (EventFieldList)source.Row[0];
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     new ViewEventDetailsDlg().ShowDialog(m_filter, e2.EventFields);
+                    #pragma warning restore CA2000
                     break;
                 }
 

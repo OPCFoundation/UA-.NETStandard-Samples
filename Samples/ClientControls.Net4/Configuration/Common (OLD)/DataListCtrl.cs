@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -75,7 +75,9 @@ namespace Opc.Ua.Client.Controls
         private bool m_latestValue = true;
         private bool m_expanding;
         private int m_depth;
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private Font m_defaultFont;
+        #pragma warning restore CA2213
         private MonitoredItem m_monitoredItem;
         private const string ExpandIcon = "ExpandPlus";
         private const string CollapseIcon = "ExpandMinus";
@@ -85,6 +87,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Whether to update the control when the value changes.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool AutoUpdate
         {
             get { return UpdatesMI.Checked; }
@@ -94,6 +97,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Whether to only display the latest value for a monitored item.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool LatestValue
         {
             get { return m_latestValue; }
@@ -103,6 +107,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The monitored item associated with the value.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public MonitoredItem MonitoredItem
         {
             get { return m_monitoredItem; }
@@ -471,7 +476,7 @@ namespace Opc.Ua.Client.Controls
                 // show only the start tag.
                 string text = xml.OuterXml;
 
-                int index = text.IndexOf('>');
+                int index = text.IndexOf('>', StringComparison.Ordinal);
 
                 if (index != -1)
                 {
@@ -510,7 +515,7 @@ namespace Opc.Ua.Client.Controls
             {
                 string type = value.GetType().Name;
 
-                if (type.EndsWith("Collection"))
+                if (type.EndsWith("Collection", StringComparison.Ordinal))
                 {
                     type = type.Substring(0, type.Length - "Collection".Length);
                 }
@@ -566,7 +571,9 @@ namespace Opc.Ua.Client.Controls
 
                 DateTime now = DateTime.UtcNow;
 
+                #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
                 if ((dataValue != null) &&
+                #pragma warning restore CA1508
                     ((dataValue.ServerTimestamp > now) || (dataValue.SourceTimestamp > now)))
                 {
                     if (formattedValue.ToString().Length > 0)
@@ -1222,7 +1229,9 @@ namespace Opc.Ua.Client.Controls
             object componentValue = value;
 
             // don't display empty components.
+            #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
             if (name == null)
+            #pragma warning restore CA1508
             {
                 return Task.FromResult((index, overwrite));
             }
@@ -1572,7 +1581,9 @@ namespace Opc.Ua.Client.Controls
                 object value = null;
                 if (state.Component is LocalizedText)
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     value = new StringValueEditDlg().ShowDialog(state.Component.ToString());
+                    #pragma warning restore CA2000
                     if (value != null)
                     {
                         value = new LocalizedText(((LocalizedText)state.Component).Key, ((LocalizedText)state.Component).Locale, value.ToString());
@@ -1580,7 +1591,9 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     value = new SimpleValueEditDlg().ShowDialog(state.Component, state.Component.GetType(), Telemetry);
+                    #pragma warning restore CA2000
                 }
 
                 if (value == null)

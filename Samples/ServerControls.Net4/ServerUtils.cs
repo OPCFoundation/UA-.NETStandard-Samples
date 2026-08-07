@@ -35,6 +35,7 @@ namespace Opc.Ua.Server.Controls
     /// <summary>
     /// Defines numerous re-useable utility functions.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1052:Static holder types should be Static or NotInheritable", Justification = "Sample code preserves existing public API and behavior.")]
     public partial class ServerUtils
     {
         /// <summary>
@@ -48,6 +49,7 @@ namespace Opc.Ua.Server.Controls
         /// <summary>
         /// Returns the application icon.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1024:Use properties where appropriate", Justification = "Sample code preserves existing public API and behavior.")]
         public static System.Drawing.Icon GetAppIcon()
         {
             try

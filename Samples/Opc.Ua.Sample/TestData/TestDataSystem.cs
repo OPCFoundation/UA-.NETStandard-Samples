@@ -48,6 +48,7 @@ namespace TestData
             DateTime timestamp);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Sample code preserves existing public API and behavior.")]
     public class TestDataSystem
     {
         public TestDataSystem(ITestDataSystemCallback callback,

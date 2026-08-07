@@ -180,7 +180,9 @@ namespace TestData
 
             if (AreEventsMonitored)
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 GenerateValuesEventState e = new GenerateValuesEventState(null);
+                #pragma warning restore CA2000
 
                 TranslationInfo message = new TranslationInfo(
                     "GenerateValuesEventType",

@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -55,7 +55,9 @@ namespace Opc.Ua.Client.Controls
             BrowseDirection = BrowseDirection.Both;
             ReferencesDV.AutoGenerateColumns = false;
             ReferencesDV.Columns[3].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
 
             m_dataset = new DataSet();
 
@@ -74,7 +76,9 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private ISession m_session;
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         #endregion
 
         #region Public Interface
@@ -101,6 +105,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the context menu for references list.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ContextMenuStrip ReferencesMenuStrip
         {
             get { return ReferencesDV.ContextMenuStrip; }

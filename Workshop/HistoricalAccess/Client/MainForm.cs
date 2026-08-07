@@ -186,7 +186,8 @@ namespace Quickstarts.HistoricalAccess.Client
                     return;
                 }
 
-                NodeId nodeId = await new Opc.Ua.Client.Controls.SelectNodeDlg().ShowDialogAsync(
+                using Opc.Ua.Client.Controls.SelectNodeDlg dialog = new Opc.Ua.Client.Controls.SelectNodeDlg();
+                NodeId nodeId = await dialog.ShowDialogAsync(
                     m_session,
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     "Select Variable to Monitor",

@@ -98,7 +98,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (String.IsNullOrEmpty(username))
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException("UserName must not be empty.", "UserName");
+                    #pragma warning restore CA2208
                 }
 
                 DialogResult = DialogResult.OK;

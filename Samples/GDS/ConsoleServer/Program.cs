@@ -142,7 +142,9 @@ namespace Opc.Ua.Gds.Server
     {
         public ConsoleTelemetry()
         : base(
+            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            #pragma warning restore CA2000
             {
                 builder.SetMinimumLevel(LogLevel.Information);
                 builder.AddConsole();
@@ -152,13 +154,17 @@ namespace Opc.Ua.Gds.Server
         }
     }
 
+    #pragma warning disable CA1001, CA1708 // Justification: Public sample API compatibility is preserved.
     public class NetCoreGlobalDiscoveryServer
+    #pragma warning restore CA1001, CA1708
     {
         private GlobalDiscoverySampleServer server;
         private readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
         private Task status;
         private DateTime lastEventTime;
+        #pragma warning disable CA2211 // Justification: Public sample API compatibility is preserved.
         public static ExitCode exitCode;
+        #pragma warning restore CA2211
 
         public NetCoreGlobalDiscoveryServer()
         {
@@ -176,7 +182,9 @@ namespace Opc.Ua.Gds.Server
             catch (Exception ex)
             {
                 m_telemetry.CreateLogger<NetCoreGlobalDiscoveryServer>()
+                    #pragma warning disable CA2254 // Justification: Public sample API compatibility is preserved.
                     .LogError("ServiceResultException:" + ex.Message);
+                    #pragma warning restore CA2254
                 Console.WriteLine("Exception: {0}", ex.Message);
                 exitCode = ExitCode.ErrorServerException;
                 return;
@@ -246,7 +254,9 @@ namespace Opc.Ua.Gds.Server
             bool haveAppCertificate = await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
+                #pragma warning disable CA2201 // Justification: Public sample API compatibility is preserved.
                 throw new Exception("Application instance certificate invalid!");
+                #pragma warning restore CA2201
             }
 
             if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
@@ -307,13 +317,17 @@ namespace Opc.Ua.Gds.Server
                 //Create new admin user
                 Console.Write("Please specify user name of the application admin user:");
                 string username = Console.ReadLine();
+                #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                 _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
+                #pragma warning restore CA2208
 
                 Console.Write($"Please specify the password of {username}:");
 
                 //string password = Console.ReadLine();
                 string password = GetPassword();
+                #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
+                #pragma warning restore CA2208
 
                 //create User, if User exists delete & recreate
                 if (!userDatabase.CreateUser(username, Encoding.UTF8.GetBytes(password), new List<Role>() { Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin }))

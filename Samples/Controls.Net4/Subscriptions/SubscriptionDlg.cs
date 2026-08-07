@@ -64,6 +64,7 @@ namespace Opc.Ua.Sample.Controls
         private Subscription m_subscription;
         private NotificationEventHandler m_SessionNotification;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample code preserves existing public API and behavior.")]
         private CreateMonitoredItemsDlg m_createDialog;
         private PublishStateChangedEventHandler m_PublishStatusChanged;
         #endregion
@@ -79,9 +80,13 @@ namespace Opc.Ua.Sample.Controls
             m_telemetry = telemetry;
             m_logger = telemetry.CreateLogger<SubscriptionDlg>();
 
+            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Subscription subscription = new Subscription(session.DefaultSubscription);
+            #pragma warning restore CA2000
 
+            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (!await new SubscriptionEditDlg().ShowDialogAsync(subscription, ct))
+            #pragma warning restore CA2000
             {
                 return null;
             }
@@ -104,7 +109,9 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
+            #pragma warning disable CA1849 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Show(subscription);
+            #pragma warning restore CA1849
 
             return subscription;
         }
@@ -130,7 +137,9 @@ namespace Opc.Ua.Sample.Controls
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
 
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (subscription != null)
+            #pragma warning restore CA1508
             {
                 m_subscription.StateChanged += m_SubscriptionStateChanged;
                 m_subscription.PublishStatusChanged += m_PublishStatusChanged;
@@ -407,7 +416,9 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!await new SubscriptionEditDlg().ShowDialogAsync(m_subscription))
+                #pragma warning restore CA2000
                 {
                     return;
                 }

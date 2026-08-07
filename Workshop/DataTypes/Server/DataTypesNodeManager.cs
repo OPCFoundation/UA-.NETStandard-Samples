@@ -81,6 +81,8 @@ namespace Quickstarts.DataTypes
             {
                 // TBD
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 

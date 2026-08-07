@@ -29,6 +29,7 @@
 
 namespace Quickstarts
 {
+#pragma warning disable CA1051 // Justification: generated sample XML data containers intentionally expose fields.
     using System.Xml.Serialization;
 
 
@@ -41,6 +42,7 @@ namespace Quickstarts
     public partial class TestData
     {
 
+        #pragma warning disable CA1051 // Justification: generated sample XML data containers intentionally expose fields.
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("DataSet", IsNullable = false)]
         public RawDataSetType[] RawDataSets;
@@ -48,6 +50,8 @@ namespace Quickstarts
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("DataSet", IsNullable = false)]
         public ProcessedDataSetType[] ProcessedDataSets;
+        #pragma warning restore CA1051
+    #pragma warning restore CA1051
     }
 
     /// <remarks/>
@@ -58,12 +62,14 @@ namespace Quickstarts
     public partial class RawDataSetType
     {
 
+        #pragma warning disable CA1051 // Justification: generated sample XML data containers intentionally expose fields.
         /// <remarks/>
         public string Name;
 
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("Value", IsNullable = false)]
         public ValueType[] Values;
+        #pragma warning restore CA1051
     }
 
     /// <remarks/>
@@ -74,6 +80,7 @@ namespace Quickstarts
     public partial class ValueType
     {
 
+        #pragma warning disable CA1051 // Justification: generated sample XML data containers intentionally expose fields.
         /// <remarks/>
         public string Timestamp;
 
@@ -85,6 +92,7 @@ namespace Quickstarts
 
         /// <remarks/>
         public string Comment;
+        #pragma warning restore CA1051
     }
 
     /// <remarks/>
@@ -96,6 +104,7 @@ namespace Quickstarts
     public partial class ProcessedDataSetType
     {
 
+        #pragma warning disable CA1051 // Justification: generated sample XML data containers intentionally expose fields.
         /// <remarks/>
         public string DataSetName;
 
@@ -123,5 +132,6 @@ namespace Quickstarts
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("Value", IsNullable = false)]
         public ValueType[] Values;
+        #pragma warning restore CA1051
     }
 }

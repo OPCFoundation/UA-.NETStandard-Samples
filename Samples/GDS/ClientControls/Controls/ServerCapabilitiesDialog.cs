@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -43,7 +43,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private ServerCapabilities m_capabilities;
 
+        #pragma warning disable CA1002 // Justification: Public sample API compatibility is preserved.
         public List<string> ShowDialog(IWin32Window owner, IList<string> serverCapabilities)
+        #pragma warning restore CA1002
         {
             CapabilitiesListBox.Items.Clear();
 

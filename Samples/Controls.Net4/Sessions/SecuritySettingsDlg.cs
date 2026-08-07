@@ -63,6 +63,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Sample code preserves existing public API and behavior.")]
         public bool ShowDialog(ITelemetryContext telemetry, ref MessageSecurityMode securityMode, ref string securityPolicyUri, ref bool useNativeStack)
         {
             m_telemetry = telemetry;

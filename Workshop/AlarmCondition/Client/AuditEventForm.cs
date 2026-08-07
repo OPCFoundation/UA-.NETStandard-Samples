@@ -285,7 +285,10 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 AuditUpdateMethodEventState audit = (AuditUpdateMethodEventState)EventsLV.SelectedItems[0].Tag;
-                new ViewEventDetailsDlg().ShowDialog(m_monitoredItem, audit.Handle as EventFieldList);
+                using (var dialog = new ViewEventDetailsDlg())
+                {
+                    dialog.ShowDialog(m_monitoredItem, audit.Handle as EventFieldList);
+                }
             }
             catch (Exception exception)
             {

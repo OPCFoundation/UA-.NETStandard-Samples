@@ -83,10 +83,17 @@ namespace Quickstarts.Boiler.Server
             {
                 if (m_simulationTimer != null)
                 {
-                    Utils.SilentDispose(m_simulationTimer);
+                    m_simulationTimer.Dispose();
                     m_simulationTimer = null;
                 }
+
+                m_boiler1?.Dispose();
+                m_boiler1 = null;
+                m_boiler2?.Dispose();
+                m_boiler2 = null;
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -132,7 +139,7 @@ namespace Quickstarts.Boiler.Server
                 LoadPredefinedNodes(SystemContext, externalReferences);
 
                 // find the untyped Boiler1 node that was created when the model was loaded.
-                BaseObjectState passiveNode = (BaseObjectState)FindPredefinedNode(new NodeId(Objects.Boiler1, NamespaceIndexes[0]), typeof(BaseObjectState));
+                BaseObjectState passiveNode = (BaseObjectState)FindPredefinedNode<BaseObjectState>(new NodeId(Objects.Boiler1, NamespaceIndexes[0]));
 
                 // convert the untyped node to a typed node that can be manipulated within the server.
                 m_boiler1 = new BoilerState(null);

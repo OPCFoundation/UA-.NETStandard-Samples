@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -54,14 +54,20 @@ namespace Opc.Ua.Client.Controls
         {
             InitializeComponent();
 
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ItemsLV.SmallImageList = new GuiUtils().ImageList;
+            #pragma warning restore CA2000
             ItemsLV.ListViewItemSorter = new BaseListCtrlSorter(this);
         }
 
         /// <summary>
         /// The ListView contained in the control.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         protected System.Windows.Forms.ListView ItemsLV;
+        #pragma warning restore CA1051
+        #pragma warning restore CA2213
 
         #region Public Interface
         /// <summary>
@@ -77,6 +83,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The instructions to display when no items are in the list.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string Instructions
         {
             get { return m_instructions; }
@@ -141,6 +148,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Raised whenever items are removed from the control.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ITelemetryContext Telemetry
         {
             get { return m_telemetry; }
@@ -905,6 +913,8 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// The delegate used to receive item action events.
     /// </summary>
+    #pragma warning disable CA1003 // Justification: sample public API shape is preserved by design.
     public delegate void ListItemActionEventHandler(object sender, ListItemActionEventArgs e);
+    #pragma warning restore CA1003
     #endregion
 }

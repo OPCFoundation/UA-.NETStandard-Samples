@@ -53,6 +53,7 @@ namespace Quickstarts.UserAuthenticationServer
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the UserAuthenticationNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample server type name intentionally mirrors the namespace.")]
     public partial class UserAuthenticationServer : StandardServer
     {
         #region Overridden UserAuthentication
@@ -347,6 +348,7 @@ namespace Quickstarts.UserAuthenticationServer
 
         private static class NativeMethods
         {
+#pragma warning disable CA5392 // Justification: Sample code uses a platform P/Invoke declaration.
             [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
             public static extern bool LogonUser(
                 string lpszUsername,
@@ -355,11 +357,15 @@ namespace Quickstarts.UserAuthenticationServer
                 int dwLogonType,
                 int dwLogonProvider,
                 ref IntPtr phToken);
+#pragma warning restore CA5392
 
+#pragma warning disable CA5392 // Justification: Sample code uses a platform P/Invoke declaration.
             [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
             public extern static bool CloseHandle(IntPtr handle);
+#pragma warning restore CA5392
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Kept for Windows impersonation sample paths.")]
         private sealed class ImpersonationContext : IDisposable
         {
             // WindowsImpersonationContext is not available on modern .NET.

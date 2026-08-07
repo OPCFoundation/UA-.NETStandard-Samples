@@ -75,8 +75,13 @@ namespace Quickstarts.MethodsServer
         {
             if (disposing)
             {
-                // TBD
+                m_processTimer?.Dispose();
+                m_processTimer = null;
+                m_stateNode?.Dispose();
+                m_stateNode = null;
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -104,7 +109,9 @@ namespace Quickstarts.MethodsServer
             lock (Lock)
             {
                 // create a object to represent the process being controlled.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 BaseObjectState process = new BaseObjectState(null);
+#pragma warning restore CA2000
 
                 process.NodeId = new NodeId(1, NamespaceIndex);
                 process.BrowseName = new QualifiedName("My Process", NamespaceIndex);
@@ -136,7 +143,9 @@ namespace Quickstarts.MethodsServer
                 process.AddChild(state);
 
                 // a method to start the process.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                 MethodState start = new MethodState(process);
+#pragma warning restore CA2000
 
                 start.NodeId = new NodeId(3, NamespaceIndex);
                 start.BrowseName = new QualifiedName("Start", NamespaceIndex);

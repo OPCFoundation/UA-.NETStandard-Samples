@@ -75,7 +75,9 @@ namespace Quickstarts.DataAccessServer
 
                 for (int ii = 0; ii < tags.Count; ii++)
                 {
+#pragma warning disable CA2000 // Justification: Variable ownership is transferred to AddChild.
                     BaseVariableState variable = CreateVariable(nodeManager.SystemContext, tags[ii]);
+#pragma warning restore CA2000
                     AddChild(variable);
                     variable.OnSimpleWriteValue = OnWriteTagValue;
                 }

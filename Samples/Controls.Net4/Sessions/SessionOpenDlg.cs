@@ -62,6 +62,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool ShowDialog(Session session, IList<string> preferredLocales)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
@@ -155,7 +156,9 @@ namespace Opc.Ua.Sample.Controls
 
                     if (!String.IsNullOrEmpty(username) || !String.IsNullOrEmpty(PasswordTB.Text))
                     {
+                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         identity = new UserIdentity(username, Encoding.UTF8.GetBytes(PasswordTB.Text));
+                        #pragma warning restore CA2000
                     }
                 }
 

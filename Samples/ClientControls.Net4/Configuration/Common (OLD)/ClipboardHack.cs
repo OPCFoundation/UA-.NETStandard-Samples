@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -63,7 +63,9 @@ namespace Opc.Ua.Client.Controls
                 thread.Start();
                 thread.Join();
 
+                #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
                 if (m_error != null)
+                #pragma warning restore CA1508
                 {
                     throw new ServiceResultException(m_error, StatusCodes.BadUnexpectedError);
                 }
@@ -90,7 +92,9 @@ namespace Opc.Ua.Client.Controls
                 thread.Start();
                 thread.Join();
 
+                #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
                 if (m_error != null)
+                #pragma warning restore CA1508
                 {
                     throw new ServiceResultException(m_error, StatusCodes.BadUnexpectedError);
                 }
@@ -114,7 +118,9 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
+                #pragma warning disable WFDEV005 // Justification: sample preserves compatibility with the existing API usage.
                 m_data = Clipboard.GetData(m_format);
+                #pragma warning restore WFDEV005
             }
             catch (Exception e)
             {

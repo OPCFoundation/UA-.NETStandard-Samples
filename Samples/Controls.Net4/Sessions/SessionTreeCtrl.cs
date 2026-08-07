@@ -76,6 +76,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The configuration to use when creating sessions.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ApplicationConfiguration Configuration
         {
             get { return m_configuration; }
@@ -85,6 +86,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The message context to use with the sessions.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ServiceMessageContext MessageContext
         {
             get { return m_messageContext; }
@@ -94,6 +96,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The locales to use when creating the session.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string[] PreferredLocales { get; set; }
 
         /// <summary>
@@ -143,6 +146,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The control used to display the address space for a session.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public BrowseTreeCtrl AddressSpaceCtrl
         {
             get { return m_AddressSpaceCtrl; }
@@ -152,6 +156,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The control used to display the notification messages returned for a session..
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public NotificationMessageListCtrl NotificationMessagesCtrl
         {
             get { return m_NotificationMessagesCtrl; }
@@ -161,6 +166,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The control use to display the selected server's status.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ToolStripStatusLabel ServerStatusCtrl
         {
             get { return m_ServerStatusCtrl; }
@@ -181,8 +187,12 @@ namespace Opc.Ua.Sample.Controls
             // check if the endpoint needs to be updated.
             if (endpoint.UpdateBeforeConnect)
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ConfiguredServerDlg configurationDialog = new ConfiguredServerDlg();
+                #pragma warning restore CA2000
+                #pragma warning disable CA1849 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 endpoint = configurationDialog.ShowDialog(endpoint, m_configuration);
+                #pragma warning restore CA1849
 
                 if (endpoint == null)
                 {
@@ -249,10 +259,14 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // create the session.
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 Session session = new Session(channel, m_configuration, endpoint, null);
+                #pragma warning restore CA2000
                 session.ReturnDiagnostics = DiagnosticsMasks.All;
 
+                #pragma warning disable CA1849, CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!new SessionOpenDlg().ShowDialog(session, PreferredLocales))
+                #pragma warning restore CA1849, CA2000
                 {
                     return null;
                 }
@@ -290,7 +304,9 @@ namespace Opc.Ua.Sample.Controls
 
             if (node != null)
             {
+                #pragma warning disable CA1849 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 Clear(node.Nodes);
+                #pragma warning restore CA1849
                 node.Remove();
             }
 
@@ -327,7 +343,9 @@ namespace Opc.Ua.Sample.Controls
 
             if (node != null)
             {
+                #pragma warning disable CA1849 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 Clear(node.Nodes);
+                #pragma warning restore CA1849
                 node.Remove();
             }
 
@@ -345,7 +363,9 @@ namespace Opc.Ua.Sample.Controls
 
             if (node != null)
             {
+                #pragma warning disable CA1849 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 Clear(node.Nodes);
+                #pragma warning restore CA1849
                 node.Remove();
             }
 
@@ -361,7 +381,9 @@ namespace Opc.Ua.Sample.Controls
         public async Task<Subscription> CreateSubscriptionAsync(Session session, CancellationToken ct = default)
         {
             // create form.
+            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             SubscriptionDlg dialog = new SubscriptionDlg();
+            #pragma warning restore CA2000
             dialog.FormClosing += new FormClosingEventHandler(Subscription_FormClosing);
 
             // create subscription.
@@ -696,7 +718,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     new AddressSpaceDlg().Show(session, BrowseViewType.All, null, Telemetry);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -722,7 +746,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     new AddressSpaceDlg().Show(session, BrowseViewType.Objects, null, Telemetry);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -748,7 +774,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     await new BrowseTypesDlg().ShowAsync(session, ObjectTypeIds.BaseObjectType);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -774,7 +802,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     await new BrowseTypesDlg().ShowAsync(session, VariableTypeIds.BaseDataVariableType);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -800,7 +830,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     new AddressSpaceDlg().Show(session, BrowseViewType.DataTypes, null, Telemetry);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -826,7 +858,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     new AddressSpaceDlg().Show(session, BrowseViewType.ReferenceTypes, null, Telemetry);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -852,7 +886,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     await new BrowseTypesDlg().ShowAsync(session, ObjectTypeIds.BaseEventType);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -927,7 +963,9 @@ namespace Opc.Ua.Sample.Controls
                     {
                         ReferenceDescription reference = menuitem.Tag as ReferenceDescription;
 
+                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         new AddressSpaceDlg().Show(
+                        #pragma warning restore CA2000
                             session,
                             BrowseViewType.ServerDefinedView,
                             (NodeId)reference.NodeId,
@@ -1085,7 +1123,9 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 await new ReadDlg().ShowAsync(session, valueIds, Telemetry);
+                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {
@@ -1154,7 +1194,9 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 await new WriteDlg().ShowAsync(session, values, Telemetry);
+                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {
@@ -1245,7 +1287,9 @@ namespace Opc.Ua.Sample.Controls
                 // prompt user to select file.
                 FileInfo fileInfo = new FileInfo(m_filePath);
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 SaveFileDialog dialog = new SaveFileDialog();
+                #pragma warning restore CA2000
 
                 dialog.CheckFileExists = false;
                 dialog.CheckPathExists = true;
@@ -1299,7 +1343,9 @@ namespace Opc.Ua.Sample.Controls
 
                 FileInfo fileInfo = new FileInfo(m_filePath);
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 OpenFileDialog dialog = new OpenFileDialog();
+                #pragma warning restore CA2000
 
                 dialog.CheckFileExists = true;
                 dialog.CheckPathExists = true;
@@ -1367,7 +1413,9 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 string locale = await new SelectLocaleDlg().ShowDialogAsync(session);
+                #pragma warning restore CA2000
 
                 if (locale == null)
                 {

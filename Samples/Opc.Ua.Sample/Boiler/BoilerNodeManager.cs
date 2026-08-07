@@ -27,6 +27,7 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using System;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Sample;
@@ -182,7 +183,7 @@ namespace Boiler
 
                 if (text != null)
                 {
-                    text = text.Replace("X0", unitLabel);
+                    text = text.Replace("X0", unitLabel, StringComparison.Ordinal);
                 }
 
                 displayName = new LocalizedText(displayName.Locale, text);

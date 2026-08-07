@@ -126,6 +126,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the list of elements in the control.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         public List<ContentFilterElement> GetElements()
         {
             List<ContentFilterElement> elements = new List<ContentFilterElement>();
@@ -209,7 +210,9 @@ namespace Opc.Ua.Sample.Controls
 
                 FilterOperator op = element.FilterOperator;
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!new FilterOperatorEditDlg().ShowDialog(ref op))
+                #pragma warning restore CA2000
                 {
                     return;
                 }
@@ -241,7 +244,9 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType, m_session, Telemetry);
+                #pragma warning restore CA2000
 
                 if (reference != null)
                 {
@@ -426,7 +431,9 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // edit the value.
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 object value = new SimpleValueEditDlg().ShowDialog(currentValue, currentValue.GetType(), Telemetry);
+                #pragma warning restore CA2000
 
                 if (value == null)
                 {

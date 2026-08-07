@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -57,12 +57,15 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The data type of the value to edit.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public TypeInfo TargetType { get; set; }
 
         /// <summary>
         /// The value being edited in the control.
         /// </summary>
+        #pragma warning disable WFO1000 // Justification: sample public API shape is preserved by design.
         public Variant Value
+        #pragma warning restore WFO1000
         {
             get
             {

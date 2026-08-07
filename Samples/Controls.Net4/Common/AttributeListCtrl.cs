@@ -70,6 +70,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         ///
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool ReadOnly
         {
             get { return m_readOnly; }

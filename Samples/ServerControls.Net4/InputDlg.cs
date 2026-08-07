@@ -21,7 +21,9 @@ namespace Opc.Ua.Server.Controls
 
         public static string Show(string text, bool hideInput)
         {
+            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             var inputDlg = new InputDlg();
+            #pragma warning restore CA2000
             if (hideInput)
                 inputDlg.textBoxInput.PasswordChar = '*';
             inputDlg.labelText.Text = text;

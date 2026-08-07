@@ -160,7 +160,9 @@ namespace Opc.Ua.Sample.Controls
             MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem);
             monitoredItem.QueueSize = 1;
 
+            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (!new MonitoredItemEditDlg().ShowDialog(subscription.Session as Session, monitoredItem, telemetry))
+            #pragma warning restore CA2000
             {
                 return null;
             }
@@ -243,7 +245,7 @@ namespace Opc.Ua.Sample.Controls
             Node parent = null;
 
             // if the NodeId is of type string and contains '.' do not use relative paths
-            if (node.NodeId.IdType != IdType.String || (node.NodeId.Identifier.ToString().IndexOf('.') == -1 && node.NodeId.Identifier.ToString().IndexOf('/') == -1))
+            if (node.NodeId.IdType != IdType.String || (!node.NodeId.Identifier.ToString().Contains('.', StringComparison.Ordinal) && !node.NodeId.Identifier.ToString().Contains('/', StringComparison.Ordinal)))
             {
                 parent = await FindParentAsync(node, ct);
             }
@@ -497,7 +499,9 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session as Session, monitoredItem, true, Telemetry))
+                #pragma warning restore CA2000
                 {
                     return;
                 }
@@ -547,7 +551,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (!String.IsNullOrEmpty(errorString))
                 {
+                    #pragma warning disable CA2201 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     throw new Exception(String.Format("DeleteMonitoredItems error: {0}", errorString));
+                    #pragma warning restore CA2201
                 }
             }
             catch (Exception exception)
@@ -571,7 +577,9 @@ namespace Opc.Ua.Sample.Controls
                 {
                     MonitoringMode monitoringMode = monitoredItems[0].MonitoringMode;
 
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     if (!new SetMonitoringModeDlg().ShowDialog(ref monitoringMode))
+                    #pragma warning restore CA2000
                     {
                         return;
                     }
@@ -587,7 +595,9 @@ namespace Opc.Ua.Sample.Controls
                             errorString += System.Environment.NewLine + result;
                         }
 
+                        #pragma warning disable CA2201 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         throw new Exception(String.Format("SetMonitoringMode error: {0}", errorString));
+                        #pragma warning restore CA2201
                     }
                 }
             }
@@ -612,14 +622,18 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (monitoredItems[0].NodeClass == NodeClass.Variable || monitoredItems[0].NodeClass == NodeClass.VariableType)
                     {
+                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         if (!new DataChangeFilterEditDlg().ShowDialog(m_subscription.Session as Session, monitoredItems[0]))
+                        #pragma warning restore CA2000
                         {
                             return;
                         }
                     }
                     else
                     {
+                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session as Session, Telemetry, monitoredItems[0].Filter as EventFilter, false);
+                        #pragma warning restore CA2000
 
                         if (filter == null)
                         {

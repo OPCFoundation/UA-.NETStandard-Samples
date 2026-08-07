@@ -39,6 +39,7 @@ namespace Opc.Ua.Sample
     /// <summary>
     /// Provides a basic monitored item implementation which does not support queuing.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1063:Implement IDisposable correctly", Justification = "Sample code preserves existing public API and behavior.")]
     public class DataChangeMonitoredItem : IDataChangeMonitoredItem2
     {
         #region Constructors
@@ -685,6 +686,7 @@ namespace Opc.Ua.Sample
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "Sample code preserves existing public API and behavior.")]
         public bool IsDurable => throw new NotImplementedException();
 
         /// <summary>
@@ -864,11 +866,13 @@ namespace Opc.Ua.Sample
             return Publish(context, notifications, diagnostics);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1063:Implement IDisposable correctly", Justification = "Sample code preserves existing public API and behavior.")]
         public IStoredMonitoredItem ToStorableMonitoredItem()
         {
             throw new NotImplementedException();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "Sample code preserves existing public API and behavior.")]
         public void Dispose()
         {
             GC.SuppressFinalize(this);

@@ -37,6 +37,7 @@ using Opc.Ua.Client;
 
 namespace Quickstarts.PerfTestClient
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Subscription lifetime is managed by StartAsync and StopAsync in this sample.")]
     internal sealed class Tester
     {
         // gets or sets the update rate.

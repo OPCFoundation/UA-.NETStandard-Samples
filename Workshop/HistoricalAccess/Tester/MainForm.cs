@@ -123,7 +123,9 @@ namespace Quickstarts
             Failed,
         }
 
+        #pragma warning disable CA2213 // Justification: WinForms designer owns Dispose; dataset lifetime matches form lifetime in sample.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private ProcessedDataSetType m_currentDataSet;
         private TestData m_testData;
         private bool m_loading;
@@ -333,7 +335,7 @@ namespace Quickstarts
             ResetRowState();
 
             List<TestData.DataValue> values = new List<TestData.DataValue>();
-            DataView view = new DataView(m_dataset.Tables[0], "RowState = 'OK'", "Timestamp", DataViewRowState.CurrentRows);
+            using DataView view = new DataView(m_dataset.Tables[0], "RowState = 'OK'", "Timestamp", DataViewRowState.CurrentRows);
 
             foreach (DataRowView row in view)
             {
@@ -410,7 +412,7 @@ namespace Quickstarts
         private DataRowView FindRowByTimestamp(DateTime timestamp)
         {
             string filter = String.Format("Timestamp = '{0}'", TestData.FormatTimestamp(timestamp));
-            DataView view = new DataView(m_dataset.Tables[0], filter, null, DataViewRowState.CurrentRows);
+            using DataView view = new DataView(m_dataset.Tables[0], filter, null, DataViewRowState.CurrentRows);
 
             if (view.Count > 0)
             {
@@ -422,7 +424,7 @@ namespace Quickstarts
 
         private void ResetRowState()
         {
-            DataView view = new DataView(m_dataset.Tables[0], "RowState = 'Success' OR RowState = 'Failed'", "Timestamp", DataViewRowState.CurrentRows);
+            using DataView view = new DataView(m_dataset.Tables[0], "RowState = 'Success' OR RowState = 'Failed'", "Timestamp", DataViewRowState.CurrentRows);
 
             foreach (DataRowView row in view)
             {
@@ -827,7 +829,7 @@ namespace Quickstarts
                 sort += " DESC";
             }
 
-            DataView view = new DataView(m_dataset.Tables[0], "RowState = 'OK'", sort, DataViewRowState.CurrentRows);
+            using DataView view = new DataView(m_dataset.Tables[0], "RowState = 'OK'", sort, DataViewRowState.CurrentRows);
 
             int index = 0;
 
@@ -1252,7 +1254,7 @@ namespace Quickstarts
             {
                 m_dataset.AcceptChanges();
 
-                DataView view = new DataView(m_dataset.Tables[0], "RowState = 'Success' OR RowState = 'Failed'", "Timestamp", DataViewRowState.CurrentRows);
+                using DataView view = new DataView(m_dataset.Tables[0], "RowState = 'Success' OR RowState = 'Failed'", "Timestamp", DataViewRowState.CurrentRows);
 
                 foreach (DataRowView row in view)
                 {
@@ -1326,7 +1328,7 @@ namespace Quickstarts
                 m_dataset.AcceptChanges();
                 ResetRowState();
 
-                DataView view = new DataView(m_dataset.Tables[0], "RowState = 'OK'", "Timestamp", DataViewRowState.CurrentRows);
+                using DataView view = new DataView(m_dataset.Tables[0], "RowState = 'OK'", "Timestamp", DataViewRowState.CurrentRows);
 
                 foreach (DataRowView row in view)
                 {

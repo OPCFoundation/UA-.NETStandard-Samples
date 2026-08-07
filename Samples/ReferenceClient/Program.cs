@@ -40,7 +40,9 @@ namespace Quickstarts.ReferenceClient
     {
         public ConsoleTelemetry()
         : base(
+            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            #pragma warning restore CA2000
             {
                 builder.SetMinimumLevel(LogLevel.Information);
                 builder.AddConsole();
@@ -79,11 +81,15 @@ namespace Quickstarts.ReferenceClient
                 var certOK = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Result;
                 if (!certOK)
                 {
+                    #pragma warning disable CA2201 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     throw new Exception("Application instance certificate invalid!");
+                    #pragma warning restore CA2201
                 }
 
                 // run the application interactively.
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 Application.Run(new MainForm(application.ApplicationConfiguration, m_telemetry));
+                #pragma warning restore CA2000
             }
             catch (Exception e)
             {

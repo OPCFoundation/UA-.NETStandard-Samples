@@ -63,12 +63,16 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         private DataTable ServersTable { get { return m_dataset.Tables[0]; } }
+        #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private ILogger m_logger;
         private GlobalDiscoveryServerClient m_gds;
         private ITelemetryContext m_telemetry;
 
+        #pragma warning disable CA1002 // Justification: Public sample API compatibility is preserved.
         public List<ServerOnNetwork> ShowDialog(IWin32Window owner, ref QueryServersFilter filters)
+        #pragma warning restore CA1002
         {
             ServersTable.Rows.Clear();
 
@@ -116,7 +120,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (!m_gds.IsConnected)
                 {
+                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                     new SelectGdsDialog().ShowDialog(null, m_gds, await m_gds.GetDefaultGdsUrlsAsync(null), m_telemetry);
+                    #pragma warning restore CA2000
                 }
 
                 uint maxNoOfRecords = (uint)NumberOfRecordsUpDown.Value;
@@ -302,7 +308,9 @@ namespace Opc.Ua.Gds.Client.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 var capabilities = new ServerCapabilitiesDialog().ShowDialog(this, ServerCapabilitiesTextBox.Tag as IList<string>);
+                #pragma warning restore CA2000
 
                 if (capabilities == null)
                 {
@@ -349,9 +357,17 @@ namespace Opc.Ua.Gds.Client.Controls
 
     public class QueryServersFilter
     {
+        #pragma warning disable CA1051 // Justification: Public sample API compatibility is preserved.
         public string ApplicationUri;
+        #pragma warning restore CA1051
+        #pragma warning disable CA1051 // Justification: Public sample API compatibility is preserved.
         public string ApplicationName;
+        #pragma warning restore CA1051
+        #pragma warning disable CA1051 // Justification: Public sample API compatibility is preserved.
         public string ProductUri;
+        #pragma warning restore CA1051
+        #pragma warning disable CA1051 // Justification: Public sample API compatibility is preserved.
         public string[] ServerCapabilities;
+        #pragma warning restore CA1051
     }
 }

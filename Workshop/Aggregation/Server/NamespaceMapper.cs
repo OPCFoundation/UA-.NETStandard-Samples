@@ -56,6 +56,7 @@ namespace AggregationServer
         /// </summary>
         /// <param name="localNamespaceUris"></param>
         /// <param name="remoteNamespaceUris"></param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Sample public API preserves string application URI signature.")]
         public void Initialize(StringTable localNamespaceUris, StringTable remoteNamespaceUris, string applicationUri)
         {
             m_localNamespaceIndexes = new int[remoteNamespaceUris.Count];

@@ -412,7 +412,7 @@ namespace Opc.Ua.Gds.Client
                 return null;
             }
 
-            return value.Replace("localhost", Utils.GetHostName());
+            return value.Replace("localhost", Utils.GetHostName(), StringComparison.Ordinal);
         }
 
         private string HostnameToLocalhost(string value)
@@ -422,7 +422,7 @@ namespace Opc.Ua.Gds.Client
                 return null;
             }
 
-            return value.Replace(Utils.GetHostName(), "localhost");
+            return value.Replace(Utils.GetHostName(), "localhost", StringComparison.Ordinal);
         }
 
         private void ClearFields()
@@ -657,7 +657,9 @@ namespace Opc.Ua.Gds.Client
                     directory = new FileInfo(configurationFile).Directory;
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 OpenFileDialog dialog = new OpenFileDialog {
+                #pragma warning restore CA2000
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".xml",
@@ -700,7 +702,9 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 var capabilities = new ServerCapabilitiesDialog().ShowDialog(Parent, ServerCapabilitiesTextBox.Tag as IList<string>);
+                #pragma warning restore CA2000
 
                 if (capabilities != null)
                 {
@@ -717,7 +721,9 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 var discoveryUrls = new DiscoveryUrlsDialog().ShowDialog(m_logger, Parent, DiscoveryUrlsTextBox.Tag as IList<string>);
+                #pragma warning restore CA2000
 
                 if (discoveryUrls != null)
                 {
@@ -756,7 +762,9 @@ namespace Opc.Ua.Gds.Client
                     directory = new DirectoryInfo(storePath);
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 FolderBrowserDialog dialog = new FolderBrowserDialog {
+                #pragma warning restore CA2000
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -791,7 +799,7 @@ namespace Opc.Ua.Gds.Client
         {
             CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(path);
 
-            X509Certificate2 certificate = new X509Certificate2(RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
+            X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
 
             try
             {
@@ -865,7 +873,9 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 OpenFileDialog dialog = new OpenFileDialog {
+                #pragma warning restore CA2000
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".der",
@@ -886,7 +896,7 @@ namespace Opc.Ua.Gds.Client
 
                 CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(dialog.FileName);
 
-                X509Certificate2 certificate = new X509Certificate2(RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
+                X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
 
                 try
                 {
@@ -943,7 +953,9 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 OpenFileDialog dialog = new OpenFileDialog {
+                #pragma warning restore CA2000
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".pfx",
@@ -990,7 +1002,9 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 OpenFileDialog dialog = new OpenFileDialog {
+                #pragma warning restore CA2000
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".der",
@@ -1011,7 +1025,7 @@ namespace Opc.Ua.Gds.Client
 
                 CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(dialog.FileName);
 
-                X509Certificate2 certificate = new X509Certificate2(RemoveSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text));
+                X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RemoveSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text));
 
                 try
                 {
@@ -1059,7 +1073,9 @@ namespace Opc.Ua.Gds.Client
                     }
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 OpenFileDialog dialog = new OpenFileDialog {
+                #pragma warning restore CA2000
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".pfx",
@@ -1105,7 +1121,9 @@ namespace Opc.Ua.Gds.Client
                 }
 
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 FolderBrowserDialog dialog = new FolderBrowserDialog {
+                #pragma warning restore CA2000
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -1149,7 +1167,9 @@ namespace Opc.Ua.Gds.Client
                     directory = new DirectoryInfo(storePath);
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 FolderBrowserDialog dialog = new FolderBrowserDialog {
+                #pragma warning restore CA2000
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -1193,7 +1213,9 @@ namespace Opc.Ua.Gds.Client
                     directory = new DirectoryInfo(storePath);
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 FolderBrowserDialog dialog = new FolderBrowserDialog {
+                #pragma warning restore CA2000
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -1237,7 +1259,9 @@ namespace Opc.Ua.Gds.Client
                     directory = new DirectoryInfo(storePath);
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 FolderBrowserDialog dialog = new FolderBrowserDialog {
+                #pragma warning restore CA2000
                     RootFolder = Environment.SpecialFolder.MyComputer,
                     SelectedPath = directory.FullName,
                     ShowNewFolderButton = true,
@@ -1276,7 +1300,9 @@ namespace Opc.Ua.Gds.Client
 
                 if (String.IsNullOrEmpty(applicationName))
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException("The Application Name must specified.", "ApplicationName");
+                    #pragma warning restore CA2208
                 }
 
                 applicationName = ReplaceLocalhost(applicationName);
@@ -1285,12 +1311,16 @@ namespace Opc.Ua.Gds.Client
 
                 if (String.IsNullOrEmpty(applicationUri))
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException("The Application URI must specified.", "ApplicationUri");
+                    #pragma warning restore CA2208
                 }
 
                 if (!Uri.IsWellFormedUriString(applicationUri, UriKind.Absolute))
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException(applicationUri + "is not a valid URI.", "ApplicationUri");
+                    #pragma warning restore CA2208
                 }
 
                 applicationUri = ReplaceLocalhost(applicationUri);
@@ -1299,12 +1329,16 @@ namespace Opc.Ua.Gds.Client
 
                 if (String.IsNullOrEmpty(productUri))
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException("The Product URI must specified.", "ProductUri");
+                    #pragma warning restore CA2208
                 }
 
                 if (!Uri.IsWellFormedUriString(productUri, UriKind.Absolute))
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException(productUri + "is not a valid URI.", "ProductUri");
+                    #pragma warning restore CA2208
                 }
 
                 productUri = ReplaceLocalhost(productUri);
@@ -1323,7 +1357,9 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (discoveryUrls == null || discoveryUrls.Count == 0)
                     {
+                        #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                         throw new ArgumentException("At least one Discovery URL must specified.", "DiscoveryUrls");
+                        #pragma warning restore CA2208
                     }
                 }
 
@@ -1333,7 +1369,9 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (capabilities == null || capabilities.Count == 0)
                     {
+                        #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                         throw new ArgumentException("At least one Server Capability must specified.", "ServerCapabilities");
+                        #pragma warning restore CA2208
                     }
                 }
 
@@ -1345,7 +1383,9 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (records.Length > 1)
                     {
+                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                         recordToReplace = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records, recordToReplace?.ApplicationId);
+                        #pragma warning restore CA2000
                     }
                     else if (records.Length > 0)
                     {
@@ -1424,7 +1464,9 @@ namespace Opc.Ua.Gds.Client
             {
                 if (!silent)
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException("The Application URI must specified.", "ApplicationUri");
+                    #pragma warning restore CA2208
                 }
 
                 return;
@@ -1434,7 +1476,9 @@ namespace Opc.Ua.Gds.Client
             {
                 if (!silent)
                 {
+                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                     throw new ArgumentException(applicationUri + "is not a valid URI.", "ApplicationUri");
+                    #pragma warning restore CA2208
                 }
 
                 return;
@@ -1452,7 +1496,9 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (records.Length > 1)
                     {
+                        #pragma warning disable CA1849, CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                         existingRecord = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records, null);
+                        #pragma warning restore CA1849, CA2000
                     }
                     else if (records.Length > 0)
                     {
@@ -1647,7 +1693,7 @@ namespace Opc.Ua.Gds.Client
 
                     foreach (char ch in name)
                     {
-                        if (Char.IsLetterOrDigit(ch) || ".-_".Contains(ch))
+                        if (Char.IsLetterOrDigit(ch) || ".-_".Contains(ch, StringComparison.Ordinal))
                         {
                             buffer.Append(ch);
                             continue;
@@ -1657,7 +1703,9 @@ namespace Opc.Ua.Gds.Client
                     name = buffer.ToString();
                 }
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 SaveFileDialog dialog = new SaveFileDialog {
+                #pragma warning restore CA2000
                     OverwritePrompt = true,
                     CheckFileExists = false,
                     CheckPathExists = true,
@@ -1745,7 +1793,9 @@ namespace Opc.Ua.Gds.Client
 
                 DirectoryInfo directory = new DirectoryInfo(path);
 
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 OpenFileDialog dialog = new OpenFileDialog {
+                #pragma warning restore CA2000
                     CheckFileExists = true,
                     CheckPathExists = true,
                     DefaultExt = ".xml",
@@ -1855,7 +1905,9 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 string uri = new SelectPushServerDialog().ShowDialog(null, m_pushClient, await m_gds.GetDefaultServerUrlsAsync(null), m_telemetry);
+                #pragma warning restore CA2000
                 if (uri != null && m_pushClient.IsConnected)
                 {
                     EndpointDescription endpoint = m_pushClient.Endpoint.Description;
