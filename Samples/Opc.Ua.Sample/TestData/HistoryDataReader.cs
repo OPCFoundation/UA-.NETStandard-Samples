@@ -65,6 +65,7 @@ namespace TestData
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -186,7 +187,9 @@ namespace TestData
                 // add value.
                 AddValue(timestampsToReturn, indexRange, dataEncoding, values, value);
             }
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             while (value != null);
+            #pragma warning restore CA1508
 
             return true;
         }

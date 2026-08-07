@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -57,7 +57,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The list of icon images.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         public System.Windows.Forms.ImageList ImageList;
+        #pragma warning restore CA1051
+        #pragma warning restore CA2213
 
         /// <summary>
         /// Displays the details of an exception.
@@ -88,7 +92,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Defines names for the available 16x16 icons.
         /// </summary>
+        #pragma warning disable CA1034 // Justification: sample public API shape is preserved by design.
         public static class Icons
+        #pragma warning restore CA1034
         {
             /// <summary>
             /// An attribute
@@ -108,7 +114,9 @@ namespace Opc.Ua.Client.Controls
             /// <summary>
             /// An object
             /// </summary>
+            #pragma warning disable CA1720 // Justification: sample public API shape is preserved by design.
             public const string Object = "Object";
+            #pragma warning restore CA1720
 
             /// <summary>
             /// A method
@@ -250,7 +258,7 @@ namespace Opc.Ua.Client.Controls
             {
                 string text = form.Text;
 
-                int index = text.LastIndexOf("(UA TCP - ");
+                int index = text.LastIndexOf("(UA TCP - ", StringComparison.Ordinal);
 
                 if (index >= 0)
                 {
@@ -441,7 +449,9 @@ namespace Opc.Ua.Client.Controls
 
             if (valueRank >= 0)
             {
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 return new ComplexValueEditDlg().ShowDialog(value, telemetry);
+                #pragma warning restore CA2000
             }
 
             BuiltInType builtinType = TypeInfo.GetBuiltInType(datatypeId, session.TypeTree);
@@ -461,39 +471,53 @@ namespace Opc.Ua.Client.Controls
                 case BuiltInType.Double:
                 case BuiltInType.Enumeration:
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(builtinType, valueRank));
+                    #pragma warning restore CA2000
                 }
 
                 case BuiltInType.Number:
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Double, valueRank));
+                    #pragma warning restore CA2000
                 }
 
                 case BuiltInType.Integer:
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Int64, valueRank));
+                    #pragma warning restore CA2000
                 }
 
                 case BuiltInType.UInteger:
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.UInt64, valueRank));
+                    #pragma warning restore CA2000
                 }
 
                 case BuiltInType.NodeId:
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     return new NodeIdValueEditDlg().ShowDialog(session, (NodeId)value, telemetry);
+                    #pragma warning restore CA2000
                 }
 
                 case BuiltInType.ExpandedNodeId:
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     return new NodeIdValueEditDlg().ShowDialog(session, (ExpandedNodeId)value, telemetry);
+                    #pragma warning restore CA2000
                 }
 
                 case BuiltInType.DateTime:
                 {
                     DateTime datetime = (DateTime)value;
 
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     if (new DateTimeValueEditDlg().ShowDialog(ref datetime))
+                    #pragma warning restore CA2000
                     {
                         return datetime;
                     }
@@ -505,7 +529,9 @@ namespace Opc.Ua.Client.Controls
                 {
                     QualifiedName qname = (QualifiedName)value;
 
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     string name = new StringValueEditDlg().ShowDialog(qname.Name);
+                    #pragma warning restore CA2000
 
                     if (name != null)
                     {
@@ -517,14 +543,18 @@ namespace Opc.Ua.Client.Controls
 
                 case BuiltInType.String:
                 {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     return new StringValueEditDlg().ShowDialog((string)value);
+                    #pragma warning restore CA2000
                 }
 
                 case BuiltInType.LocalizedText:
                 {
                     LocalizedText ltext = (LocalizedText)value;
 
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     string text = new StringValueEditDlg().ShowDialog(ltext.Text);
+                    #pragma warning restore CA2000
 
                     if (text != null)
                     {
@@ -535,7 +565,9 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             return new ComplexValueEditDlg().ShowDialog(value, telemetry);
+            #pragma warning restore CA2000
         }
 
         /// <summary>

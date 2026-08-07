@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -62,11 +62,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The Telemetry Context
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ITelemetryContext Telemetry { get; set; }
 
         /// <summary>
         /// Gets or sets the control that is stores with the current certificate store.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public Control CertificateStoreControl { get; set; }
 
         /// <summary>
@@ -86,7 +88,9 @@ namespace Opc.Ua.Client.Controls
             store.StoreType = CertificateStoreIdentifier.DetermineStoreType(CertificateStoreControl.Text);
             store.StorePath = CertificateStoreControl.Text;
 
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             store = new CertificateStoreDlg().ShowDialog(store, Telemetry);
+            #pragma warning restore CA2000
 
             if (store == null)
             {

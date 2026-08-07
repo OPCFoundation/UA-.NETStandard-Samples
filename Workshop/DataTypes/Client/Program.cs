@@ -36,10 +36,13 @@ using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
 
+[assembly: System.Resources.NeutralResourcesLanguage("en-US")]
+
 namespace Quickstarts.DataTypes
 {
     public sealed class ConsoleTelemetry : TelemetryContextBase
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Logger factory ownership is transferred to TelemetryContextBase.")]
         public ConsoleTelemetry()
         : base(
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
@@ -83,7 +86,10 @@ namespace Quickstarts.DataTypes
                 application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
 
                 // run the application interactively.
-                Application.Run(new MainForm(application.ApplicationConfiguration, m_telemetry));
+                using (MainForm mainForm = new MainForm(application.ApplicationConfiguration, m_telemetry))
+                {
+                    Application.Run(mainForm);
+                }
             }
             catch (Exception e)
             {

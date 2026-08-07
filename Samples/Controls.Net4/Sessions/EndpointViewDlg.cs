@@ -64,7 +64,9 @@ namespace Opc.Ua.Sample.Controls
 
             try
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 X509Certificate2 certificate = CertificateFactory.Create(endpoint.ServerCertificate);
+                #pragma warning restore CA2000
                 ServerCertificateTB.Text = String.Format("{0}", certificate.Subject);
             }
             catch

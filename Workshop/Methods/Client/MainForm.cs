@@ -73,6 +73,7 @@ namespace Quickstarts.MethodsClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Subscription ownership is managed by the OPC UA session in this sample.")]
         private Subscription m_subscription;
         private NodeId m_objectNode;
         private NodeId m_methodNode;
@@ -145,7 +146,7 @@ namespace Quickstarts.MethodsClient
                 }
 
                 // set a suitable initial state.
-                if (m_session != null && !m_connectedOnce)
+                if (!m_connectedOnce)
                 {
                     m_connectedOnce = true;
                 }

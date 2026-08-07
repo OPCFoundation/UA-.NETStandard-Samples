@@ -47,6 +47,7 @@ namespace Opc.Ua.Sample.Controls
     {
         #region Private Fields
         private Session m_session;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample code preserves existing public API and behavior.")]
         private SessionReconnectHandler m_reconnectHandler;
         private int m_reconnectPeriod = 10;
         private ApplicationInstance m_application;
@@ -55,6 +56,7 @@ namespace Opc.Ua.Sample.Controls
         private ApplicationConfiguration m_configuration;
         private ServiceMessageContext m_context;
         private ClientForm m_masterForm;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Sample code preserves existing public API and behavior.")]
         protected readonly ITelemetryContext m_telemetry;
         private readonly ILogger m_logger;
         private List<ClientForm> m_forms;
@@ -138,7 +140,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Disconnect from the server if ths form is closing.
         /// </summary>
+        #pragma warning disable CS0672 // Justification: Sample code retains existing ownership/lifetime and behavior.
         protected override async void OnClosing(CancelEventArgs e)
+        #pragma warning restore CS0672
         {
             if (m_masterForm == null && m_forms.Count > 0)
             {
@@ -379,7 +383,9 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 _ = new PerformanceTestDlg().ShowDialog(
+                #pragma warning restore CA2000
                     m_configuration,
                     m_endpoints,
                     await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true),
@@ -395,7 +401,9 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true, m_telemetry);
+                #pragma warning restore CA2000
 
                 if (endpoint != null)
                 {
@@ -413,7 +421,9 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ServerOnNetwork serverOnNetwork = new DiscoveredServerOnNetworkListDlg().ShowDialog(null, m_configuration, m_telemetry);
+                #pragma warning restore CA2000
 
                 if (serverOnNetwork != null)
                 {

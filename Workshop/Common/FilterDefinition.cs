@@ -42,6 +42,7 @@ namespace Quickstarts
     public class FilterDefinition
     {
         #region Public Interface
+        #pragma warning disable CA1051 // Justification: sample API intentionally exposes fields for simple filter definitions.
         /// <summary>
         /// The NodeId for the Area that is subscribed to (the entire Server if not specified).
         /// </summary>
@@ -61,6 +62,7 @@ namespace Quickstarts
         /// The select clauses to use with the filter.
         /// </summary>
         public SimpleAttributeOperandCollection SelectClauses;
+        #pragma warning restore CA1051
 
         /// <summary>
         /// Creates the monitored item based on the current definition.

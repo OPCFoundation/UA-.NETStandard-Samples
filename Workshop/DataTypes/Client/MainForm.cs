@@ -203,7 +203,10 @@ namespace Quickstarts.DataTypes
 
                 if (reference != null)
                 {
-                    await new EditComplexValue2Dlg().ShowDialogAsync(m_session, (NodeId)reference.NodeId, Variant.Null, "Read/Write Value");
+                    using (EditComplexValue2Dlg dialog = new EditComplexValue2Dlg())
+                    {
+                        await dialog.ShowDialogAsync(m_session, (NodeId)reference.NodeId, Variant.Null, "Read/Write Value");
+                    }
                 }
             }
             catch (Exception exception)

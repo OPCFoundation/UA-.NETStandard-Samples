@@ -278,5 +278,6 @@ namespace Opc.Ua.Sample
     /// <summary>
     /// Uses to receive notifications when the control raises events.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1003:Use generic event handler instances", Justification = "Sample code preserves existing public API and behavior.")]
     public delegate void TypeNavigatorEventHandler(object sender, TypeNavigatorEventArgs e);
 }

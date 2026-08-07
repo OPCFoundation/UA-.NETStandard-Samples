@@ -87,7 +87,9 @@ namespace Opc.Ua.Sample.Controls
             m_monitoredItem = monitoredItem;
             m_subscription = null;
 
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (m_monitoredItem != null)
+            #pragma warning restore CA1508
             {
                 m_subscription = monitoredItem.Subscription;
                 m_monitoredItem.Subscription.StateChanged += m_SubscriptionStateChanged;

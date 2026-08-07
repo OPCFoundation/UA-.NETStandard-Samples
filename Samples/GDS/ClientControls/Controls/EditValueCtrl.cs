@@ -58,7 +58,9 @@ namespace Opc.Ua.Gds.Client.Controls
             InitializeComponent();
             MaxDisplayTextLength = 100;
             ValuesDV.AutoGenerateColumns = false;
+            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
             ImageList = new ImageListControl().ImageList;
+            #pragma warning restore CA2000
 
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Values");
@@ -75,7 +77,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
         #region Private Fields
         private ILogger m_logger = LoggerUtils.Null.Logger;
+        #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private AccessInfo m_value;
         private bool m_readOnly;
         private int m_maxDisplayTextLength;
@@ -296,7 +300,9 @@ namespace Opc.Ua.Gds.Client.Controls
                 array = matrix.ToArray();
             }
 
+            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
             SetTypeDlg.SetTypeResult result = new SetTypeDlg().ShowDialog(m_logger, currentType, dimensions);
+            #pragma warning restore CA2000
 
             if (result == null)
             {
@@ -572,7 +578,9 @@ namespace Opc.Ua.Gds.Client.Controls
         /// <summary>
         /// Returns the edited value.
         /// </summary>
+        #pragma warning disable CA1024 // Justification: Public sample API compatibility is preserved.
         public object GetValue()
+        #pragma warning restore CA1024
         {
             return m_value.Value;
         }
@@ -1165,7 +1173,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (info.TypeInfo.BuiltInType == BuiltInType.ExtensionObject && info.TypeInfo.ValueRank == ValueRanks.Scalar)
             {
-                if (info.Name != null && info.Name.Contains("Certificate"))
+                if (info.Name != null && info.Name.Contains("Certificate", StringComparison.Ordinal))
                 {
                     info.WrappedValue = info.Value;
                 }
@@ -1352,7 +1360,9 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         string text = "<double click to see structure>";
 
+                        #pragma warning disable CA1508 // Justification: Public sample API compatibility is preserved.
                         if (text != null && text.Length > MaxDisplayTextLength)
+                        #pragma warning restore CA1508
                         {
                             return string.Concat(text.AsSpan(0, MaxDisplayTextLength), "...");
                         }
@@ -1543,7 +1553,9 @@ namespace Opc.Ua.Gds.Client.Controls
                 }
             }
 
+            #pragma warning disable CA1508 // Justification: Public sample API compatibility is preserved.
             if (info.Parent != null)
+            #pragma warning restore CA1508
             {
                 UpdateParent(info.Parent);
             }

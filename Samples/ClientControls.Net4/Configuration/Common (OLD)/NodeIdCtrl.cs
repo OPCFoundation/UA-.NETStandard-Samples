@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -79,6 +79,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The telemetry Context
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ITelemetryContext Telemetry { get; set; }
 
         /// <summary>
@@ -178,7 +179,9 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", Telemetry, default, null);
+                #pragma warning restore CA2000
 
                 if (reference != null && reference.NodeId != null)
                 {

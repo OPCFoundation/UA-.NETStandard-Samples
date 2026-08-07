@@ -736,7 +736,9 @@ namespace Quickstarts.AlarmConditionServer
         private Dictionary<string, AlarmConditionState> m_alarms;
         private Dictionary<string, AlarmConditionState> m_events;
         private Dictionary<NodeId, AlarmConditionState> m_branches;
+#pragma warning disable CA2213 // Justification: Dialog condition state is part of the source node model lifetime.
         private DialogConditionState m_dialog;
+#pragma warning restore CA2213
         #endregion
     }
 }

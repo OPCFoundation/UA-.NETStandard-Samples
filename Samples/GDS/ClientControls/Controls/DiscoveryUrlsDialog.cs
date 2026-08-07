@@ -46,7 +46,9 @@ namespace Opc.Ua.Gds.Client.Controls
         private List<string> m_discoveryUrls;
         private ILogger m_logger = LoggerUtils.Null.Logger;
 
+        #pragma warning disable CA1002 // Justification: Public sample API compatibility is preserved.
         public List<string> ShowDialog(ILogger logger, IWin32Window owner, IList<string> discoveryUrls)
+        #pragma warning restore CA1002
         {
             m_logger = logger;
             StringBuilder builder = new StringBuilder();
@@ -93,7 +95,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
                         if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
                         {
+                            #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                             throw new ArgumentException("'" + discoveryUrl + "' is not a valid URL.", "discoveryUrls");
+                            #pragma warning restore CA2208
                         }
 
                         validatedUrls.Add(url);

@@ -89,10 +89,15 @@ namespace Quickstarts.HistoricalEvents.Server
             {
                 if (m_simulationTimer != null)
                 {
-                    Utils.SilentDispose(m_simulationTimer);
+                    m_simulationTimer.Dispose();
                     m_simulationTimer = null;
                 }
+
+                m_generator?.Dispose();
+                m_generator = null;
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -142,7 +147,9 @@ namespace Quickstarts.HistoricalEvents.Server
 
                 foreach (string areaName in m_generator.GetAreas())
                 {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the predefined node collection.
                     BaseObjectState area = CreateArea(SystemContext, platforms, areaName);
+#pragma warning restore CA2000
 
                     foreach (ReportGenerator.WellInfo well in m_generator.GetWells(areaName))
                     {
@@ -181,7 +188,9 @@ namespace Quickstarts.HistoricalEvents.Server
         /// </summary>
         private void CreateWell(ServerSystemContext context, BaseObjectState area, string wellId, string wellName)
         {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the predefined node collection.
             WellState well = new WellState(null);
+#pragma warning restore CA2000
 
             well.NodeId = new NodeId(wellId, NamespaceIndex);
             well.BrowseName = new QualifiedName(wellName, NamespaceIndex);
@@ -517,24 +526,17 @@ namespace Quickstarts.HistoricalEvents.Server
 
             for (ReportType ii = ReportType.FluidLevelTest; ii <= ReportType.InjectionTest; ii++)
             {
-                DataView view = null;
-
-                if (handle.Node is WellState)
-                {
-                    view = m_generator.ReadHistoryForWellId(
+                using DataView view = handle.Node is WellState
+                    ? m_generator.ReadHistoryForWellId(
                         ii,
                         (string)handle.Node.NodeId.Identifier,
                         details.StartTime,
-                        details.EndTime);
-                }
-                else
-                {
-                    view = m_generator.ReadHistoryForArea(
+                        details.EndTime)
+                    : m_generator.ReadHistoryForArea(
                         ii,
                         handle.Node.NodeId.Identifier as string,
                         details.StartTime,
                         details.EndTime);
-                }
 
                 LinkedListNode<BaseEventState> pos = events.First;
                 bool sizeLimited = (details.StartTime == DateTime.MinValue || details.EndTime == DateTime.MinValue);
@@ -550,7 +552,9 @@ namespace Quickstarts.HistoricalEvents.Server
                         }
                     }
 
+#pragma warning disable CA2000 // Justification: ownership is transferred to the event results collection.
                     BaseEventState e = m_generator.GetReport(context, NamespaceIndex, ii, row.Row);
+#pragma warning restore CA2000
 
                     if (details.Filter.WhereClause != null && details.Filter.WhereClause.Elements.Count > 0)
                     {
@@ -693,7 +697,9 @@ namespace Quickstarts.HistoricalEvents.Server
 
                     if (well != null && well.AreEventsMonitored)
                     {
+#pragma warning disable CA2000 // Justification: ownership is transferred to ReportEvent.
                         BaseEventState e = m_generator.GetFluidLevelTestReport(SystemContext, NamespaceIndex, row);
+#pragma warning restore CA2000
                         well.ReportEvent(SystemContext, e);
                     }
                 }
@@ -704,7 +710,9 @@ namespace Quickstarts.HistoricalEvents.Server
 
                     if (well != null && well.AreEventsMonitored)
                     {
+#pragma warning disable CA2000 // Justification: ownership is transferred to ReportEvent.
                         BaseEventState e = m_generator.GetInjectionTestReport(SystemContext, NamespaceIndex, row);
+#pragma warning restore CA2000
                         well.ReportEvent(SystemContext, e);
                     }
                 }

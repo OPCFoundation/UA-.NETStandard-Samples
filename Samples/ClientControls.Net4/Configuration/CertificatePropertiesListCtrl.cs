@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -116,8 +116,13 @@ namespace Opc.Ua.Client.Controls
             AddItem(new FieldInfo("SerialNumber", certificate.SerialNumber));
             AddItem(new FieldInfo("NotBefore", Utils.Format("{0:yyyy-MM-dd}", certificate.NotBefore)));
             AddItem(new FieldInfo("NotAfter", Utils.Format("{0:yyyy-MM-dd}", certificate.NotAfter)));
-            AddItem(new FieldInfo("KeySize", certificate.PublicKey.Key.KeySize));
-            AddItem(new FieldInfo("KeyExchangeAlgorithm", certificate.PublicKey.Key.KeyExchangeAlgorithm));
+            using (AsymmetricAlgorithm publicKey = certificate.GetRSAPublicKey() as AsymmetricAlgorithm ??
+                certificate.GetDSAPublicKey() as AsymmetricAlgorithm ??
+                certificate.GetECDsaPublicKey() as AsymmetricAlgorithm)
+            {
+                AddItem(new FieldInfo("KeySize", publicKey?.KeySize));
+                AddItem(new FieldInfo("KeyExchangeAlgorithm", publicKey?.KeyExchangeAlgorithm));
+            }
             AddItem(new FieldInfo("SignatureAlgorithm", certificate.SignatureAlgorithm.FriendlyName));
 
             foreach (X509Extension extension in certificate.Extensions)

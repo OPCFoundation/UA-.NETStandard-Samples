@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -70,10 +70,14 @@ namespace Opc.Ua.Gds.Client.Controls
         private static class Win32
         {
             [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+            #pragma warning disable CA5392 // Justification: Sample PInvoke compatibility is preserved.
             static extern internal IntPtr LoadIcon(IntPtr hInstance, string lpIconName);
+            #pragma warning restore CA5392
 
             [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+            #pragma warning disable CA5392 // Justification: Sample PInvoke compatibility is preserved.
             static extern internal IntPtr LoadLibrary(string lpFileName);
+            #pragma warning restore CA5392
         }
 
         public static ImageList GlobalImageList
@@ -82,7 +86,9 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 if (s_GlobalImageList == null)
                 {
+                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                     var control = new ImageListControl();
+                    #pragma warning restore CA2000
 
                     if (!control.DesignMode)
                     {
@@ -111,7 +117,9 @@ namespace Opc.Ua.Gds.Client.Controls
         public const int Package = 8;
         public const int Secure = 9;
         public const int InSecure = 10;
+        #pragma warning disable CA1720 // Justification: Public sample API compatibility is preserved.
         public const int Object = 11;
+        #pragma warning restore CA1720
         public const int Variable = 12;
         public const int Property = 13;
         public const int Method = 14;

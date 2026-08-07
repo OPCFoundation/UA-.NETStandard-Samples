@@ -90,6 +90,9 @@ namespace Quickstarts.AlarmConditionServer
                 {
                     m_system.Dispose();
                 }
+
+                m_simulationTimer?.Dispose();
+                m_simulationTimer = null;
             }
 
             base.Dispose(disposing);
@@ -162,7 +165,9 @@ namespace Quickstarts.AlarmConditionServer
         {
             try
             {
+#pragma warning disable CA2000 // Justification: Event state ownership is transferred to Server.ReportEvent.
                 SystemEventState e = new SystemEventState(null);
+#pragma warning restore CA2000
 
                 e.Initialize(
                     SystemContext,
@@ -175,7 +180,9 @@ namespace Quickstarts.AlarmConditionServer
 
                 Server.ReportEvent(e);
 
+#pragma warning disable CA2000 // Justification: Event state ownership is transferred to Server.ReportEvent.
                 AuditEventState ae = new AuditEventState(null);
+#pragma warning restore CA2000
 
                 ae.Initialize(
                     SystemContext,

@@ -172,6 +172,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Creates a new sample.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Public sample API preserves existing return type.")]
         public List<DataValue> NewSamples(ISystemContext context)
         {
             List<DataValue> newSamples = new List<DataValue>();
@@ -231,7 +232,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             string filter = String.Format(System.Globalization.CultureInfo.InvariantCulture, "SourceTimestamp = #{0}#", value.SourceTimestamp);
 
-            DataView view = new DataView(
+            using DataView view = new DataView(
                 m_archiveItem.DataSet.Tables[0],
                 filter,
                 null,
@@ -333,7 +334,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             string filter = String.Format(System.Globalization.CultureInfo.InvariantCulture, "SourceTimestamp = #{0}#", value.SourceTimestamp);
 
-            DataView view = new DataView(
+            using DataView view = new DataView(
                 m_archiveItem.DataSet.Tables[2],
                 filter,
                 null,
@@ -431,7 +432,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             string filter = String.Format(System.Globalization.CultureInfo.InvariantCulture, "SourceTimestamp = #{0}#", sourceTimestamp);
 
-            DataView view = new DataView(
+            using DataView view = new DataView(
                 m_archiveItem.DataSet.Tables[0],
                 filter,
                 null,
@@ -466,7 +467,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             string filter = String.Format(System.Globalization.CultureInfo.InvariantCulture, "SourceTimestamp = #{0}#", sourceTimestamp);
 
-            DataView view = new DataView(
+            using DataView view = new DataView(
                 SelectTable(propertyName),
                 filter,
                 null,
@@ -513,7 +514,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
 
             // delete the values.
-            DataView view = new DataView(
+            using DataView view = new DataView(
                 table,
                 filter,
                 null,
@@ -761,6 +762,19 @@ namespace Quickstarts.HistoricalAccessServer
         {
             get { return m_subscribeCount; }
             set { m_subscribeCount = value; }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_configuration?.Dispose();
+                m_annotations?.Dispose();
+                m_configuration = null;
+                m_annotations = null;
+            }
+
+            base.Dispose(disposing);
         }
 
         private ArchiveItem m_archiveItem;

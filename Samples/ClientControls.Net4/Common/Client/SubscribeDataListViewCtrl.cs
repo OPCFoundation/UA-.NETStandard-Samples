@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -55,7 +55,9 @@ namespace Opc.Ua.Client.Controls
             InitializeComponent();
             m_PublishStatusChanged = new PublishStateChangedEventHandler(OnPublishStatusChanged);
             ResultsDV.AutoGenerateColumns = false;
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
 
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Requests");
@@ -83,12 +85,16 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private ISession m_session;
         private ITelemetryContext m_telemetry;
         private Subscription m_subscription;
         private DisplayState m_state;
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private EditComplexValueDlg m_EditComplexValueDlg;
+        #pragma warning restore CA2213
         private PublishStateChangedEventHandler m_PublishStatusChanged;
         #endregion
 
@@ -566,7 +572,9 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem = new MonitoredItem(monitoredItem);
                 }
 
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, false, m_telemetry))
+                #pragma warning restore CA2000
                 {
                     m_subscription.AddItem(monitoredItem);
                     DataRow row = m_dataset.Tables[0].NewRow();
@@ -599,7 +607,9 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, monitoredItem, false, m_telemetry))
+                #pragma warning restore CA2000
                 {
                     DataRow row = (DataRow)monitoredItem.Handle;
                     await UpdateRowAsync(row, monitoredItem);
@@ -708,7 +718,9 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 MonitoringMode oldMonitoringMode = monitoredItems[0].MonitoringMode;
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 MonitoringMode newMonitoringMode = new EditMonitoredItemDlg().ShowDialog(oldMonitoringMode);
+                #pragma warning restore CA2000
 
                 if (oldMonitoringMode != newMonitoringMode)
                 {
@@ -744,7 +756,9 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (new EditSubscriptionDlg().ShowDialog(m_subscription))
+                #pragma warning restore CA2000
                 {
                     await m_subscription.ModifyAsync();
 

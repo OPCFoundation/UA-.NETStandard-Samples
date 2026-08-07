@@ -62,7 +62,9 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         private DataTable ApplicationsTable { get { return m_dataset.Tables[0]; } }
+        #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private ILogger m_logger = LoggerUtils.Null.Logger;
         private GlobalDiscoveryServerClient m_gds;
 

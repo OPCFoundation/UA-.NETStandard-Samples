@@ -230,6 +230,7 @@ namespace Quickstarts
             return new SortedDictionary<DateTime, DataValue>();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Nested sample helper type is part of existing API.")]
         public class DataValue
         {
             public DataValue() { m_value = new Opc.Ua.DataValue(); }
@@ -240,6 +241,7 @@ namespace Quickstarts
             public DateTime SourceTimestamp { get { return m_value.SourceTimestamp; } set { m_value.SourceTimestamp = value; } }
             public StatusCode StatusCode { get { return m_value.StatusCode; } set { m_value.StatusCode = value; } }
 
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Existing sample API exposes explicit conversion only.")]
             public static explicit operator Opc.Ua.DataValue(DataValue value) { return value.m_value; }
 
             private Opc.Ua.DataValue m_value;
@@ -426,12 +428,12 @@ namespace Quickstarts
                 return Variant.Null;
             }
 
-            if (String.Compare(value, "true", StringComparison.InvariantCultureIgnoreCase) == 0)
+            if (String.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
             {
                 return new Variant(true, TypeInfo.Scalars.Boolean);
             }
 
-            if (String.Compare(value, "false", StringComparison.InvariantCultureIgnoreCase) == 0)
+            if (String.Equals(value, "false", StringComparison.OrdinalIgnoreCase))
             {
                 return new Variant(false, TypeInfo.Scalars.Boolean);
             }

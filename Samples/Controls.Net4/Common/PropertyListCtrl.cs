@@ -70,6 +70,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Whether the values should be displayed.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool ShowValues
         {
             get { return m_showValues; }
@@ -91,7 +92,9 @@ namespace Opc.Ua.Sample.Controls
         public async Task UpdateAsync(Session session, ReferenceDescription reference, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Telemetry = session?.MessageContext?.Telemetry;
+            #pragma warning restore CA1508
 
             Clear();
 

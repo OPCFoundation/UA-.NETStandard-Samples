@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -51,7 +51,9 @@ namespace Opc.Ua.Client.Controls
         public BaseTreeCtrl()
         {
             InitializeComponent();
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             NodesTV.ImageList = new GuiUtils().ImageList;
+            #pragma warning restore CA2000
             NodesTV.ItemHeight = 18;
         }
 
@@ -59,7 +61,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The TreeView contained in the Control.
         /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         protected System.Windows.Forms.TreeView NodesTV;
+        #pragma warning restore CA1051
+        #pragma warning restore CA2213
 
         /// <summary>
         /// Raised whenever a node is 'picked' in the control.
@@ -82,6 +88,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Whether the control should allow items to be dragged.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool EnableDragging
         {
             get { return m_enableDragging; }
@@ -91,6 +98,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Whether the control should allow items to be dragged.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ITelemetryContext Telemetry
         {
             get { return m_telemetry; }
@@ -347,7 +355,9 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.Windows.Forms.DragEventArgs"/> instance containing the event data.</param>
+        #pragma warning disable CA1707 // Justification: sample public API shape is preserved by design.
         protected virtual void NodesTV_DragEnter(object sender, DragEventArgs e)
+        #pragma warning restore CA1707
         {
             if (m_enableDragging)
             {
@@ -364,7 +374,9 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.Windows.Forms.DragEventArgs"/> instance containing the event data.</param>
+        #pragma warning disable CA1707 // Justification: sample public API shape is preserved by design.
         protected virtual void NodesTV_DragDrop(object sender, DragEventArgs e)
+        #pragma warning restore CA1707
         {
             // overridden by sub-class.
         }
@@ -374,7 +386,9 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.Windows.Forms.GiveFeedbackEventArgs"/> instance containing the event data.</param>
+        #pragma warning disable CA1707 // Justification: sample public API shape is preserved by design.
         protected virtual void NodesTV_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+        #pragma warning restore CA1707
         {
             // overridden by sub-class.
         }
@@ -384,7 +398,9 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="System.Windows.Forms.DragEventArgs"/> instance containing the event data.</param>
+        #pragma warning disable CA1707 // Justification: sample public API shape is preserved by design.
         protected virtual void NodesTV_DragOver(object sender, DragEventArgs e)
+        #pragma warning restore CA1707
         {
             // overridden by sub-class.
         }
@@ -463,6 +479,8 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// The delegate used to receive node action events.
     /// </summary>
+    #pragma warning disable CA1003 // Justification: sample public API shape is preserved by design.
     public delegate void TreeNodeActionEventHandler(object sender, TreeNodeActionEventArgs e);
+    #pragma warning restore CA1003
     #endregion
 }

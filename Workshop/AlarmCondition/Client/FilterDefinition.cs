@@ -45,27 +45,37 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// The NodeId for the Area that is subscribed to (the entire Server if not specified).
         /// </summary>
+#pragma warning disable CA1051 // Justification: Sample code exposes fields by design.
         public NodeId AreaId;
+#pragma warning restore CA1051
 
         /// <summary>
         /// The minimum severity for the events of interest.
         /// </summary>
+#pragma warning disable CA1051 // Justification: Sample code exposes fields by design.
         public EventSeverity Severity;
+#pragma warning restore CA1051
 
         /// <summary>
         /// The types for the events of interest.
         /// </summary>
+#pragma warning disable CA1051 // Justification: Sample code exposes fields by design.
         public IList<NodeId> EventTypes;
+#pragma warning restore CA1051
 
         /// <summary>
         /// Whether suppressed or shelved condition events are of interest.
         /// </summary>
+#pragma warning disable CA1051 // Justification: Sample code exposes fields by design.
         public bool IgnoreSuppressedOrShelved;
+#pragma warning restore CA1051
 
         /// <summary>
         /// The select clauses to use with the filter.
         /// </summary>
+#pragma warning disable CA1051 // Justification: Sample code exposes fields by design.
         public SimpleAttributeOperandCollection SelectClauses;
+#pragma warning restore CA1051
 
         /// <summary>
         /// Creates the monitored item based on the current definition.

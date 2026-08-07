@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -113,6 +113,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public HistoryOperation Operation
         {
             get { return (HistoryOperation)ReadTypeCB.SelectedItem; }
@@ -124,6 +125,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public DateTime StartTime
         {
             get
@@ -159,6 +161,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public DateTime EndTime
         {
             get
@@ -298,7 +301,9 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
+                #pragma warning restore CA2000
                     m_session,
                     Opc.Ua.ObjectIds.Server,
                     null,

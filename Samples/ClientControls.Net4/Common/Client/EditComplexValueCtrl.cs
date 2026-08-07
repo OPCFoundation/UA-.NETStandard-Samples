@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -56,7 +56,9 @@ namespace Opc.Ua.Client.Controls.Common
             InitializeComponent();
             MaxDisplayTextLength = 100;
             ValuesDV.AutoGenerateColumns = false;
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
 
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Values");
@@ -71,7 +73,9 @@ namespace Opc.Ua.Client.Controls.Common
         }
 
         #region Private Fields
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private ISession m_session;
         private AccessInfo m_value;
         private bool m_readOnly;
@@ -294,7 +298,9 @@ namespace Opc.Ua.Client.Controls.Common
                 array = matrix.ToArray();
             }
 
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             SetTypeDlg.SetTypeResult result = new SetTypeDlg().ShowDialog(m_session?.MessageContext?.Telemetry, currentType, dimensions);
+            #pragma warning restore CA2000
 
             if (result == null)
             {
@@ -487,7 +493,9 @@ namespace Opc.Ua.Client.Controls.Common
 
                 if (variable != null)
                 {
+                    #pragma warning disable CA1849 // Justification: sample keeps the existing synchronous call pattern.
                     BuiltInType builtInType = TypeInfo.GetBuiltInType(variable.DataType, m_session.TypeTree);
+                    #pragma warning restore CA1849
                     int valueRank = variable.ValueRank;
                     type = TypeInfo.GetSystemType(builtInType, valueRank);
 
@@ -627,7 +635,9 @@ namespace Opc.Ua.Client.Controls.Common
         /// <summary>
         /// Returns the edited value.
         /// </summary>
+        #pragma warning disable CA1024 // Justification: sample public API shape is preserved by design.
         public object GetValue()
+        #pragma warning restore CA1024
         {
             return m_value.Value;
         }
@@ -1549,7 +1559,9 @@ namespace Opc.Ua.Client.Controls.Common
                 }
             }
 
+            #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
             if (info.Parent != null)
+            #pragma warning restore CA1508
             {
                 UpdateParent(info.Parent);
             }

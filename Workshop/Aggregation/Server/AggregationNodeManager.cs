@@ -119,8 +119,15 @@ namespace AggregationServer
         {
             if (disposing)
             {
-                // TBD
+                Utils.SilentDispose(m_metadataUpdateTimer);
+                m_metadataUpdateTimer = null;
+                Utils.SilentDispose(m_root);
+                m_root = null;
+                Utils.SilentDispose(m_status);
+                m_status = null;
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -670,7 +677,9 @@ namespace AggregationServer
                     // create subscription.
                     if (client.SubscriptionCount == 0)
                     {
+#pragma warning disable CA2000 // Justification: Subscription ownership is transferred to the client session.
                         Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription(Server.Telemetry);
+#pragma warning restore CA2000
 
                         subscription.PublishingInterval = 250;
                         subscription.KeepAliveCount = 100;
@@ -1057,7 +1066,9 @@ namespace AggregationServer
                     // create subscription.
                     if (client.SubscriptionCount == 0)
                     {
+#pragma warning disable CA2000 // Justification: Subscription ownership is transferred to the client session.
                         Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription(Server.Telemetry);
+#pragma warning restore CA2000
 
                         subscription.PublishingInterval = 250;
                         subscription.KeepAliveCount = 100;
@@ -1503,7 +1514,9 @@ namespace AggregationServer
                 {
                     case NodeClass.ObjectType:
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         BaseObjectTypeState value = new BaseObjectTypeState();
+#pragma warning restore CA2000
                         value.IsAbstract = ((IObjectType)node).IsAbstract;
                         target = value;
                         break;
@@ -1511,7 +1524,9 @@ namespace AggregationServer
 
                     case NodeClass.VariableType:
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         BaseVariableTypeState value = new BaseDataVariableTypeState();
+#pragma warning restore CA2000
                         value.IsAbstract = ((IVariableType)node).IsAbstract;
                         value.Value = m_mapper.ToLocalValue(((IVariableType)node).Value);
                         value.DataType = m_mapper.ToLocalId(((IVariableType)node).DataType);
@@ -1523,7 +1538,9 @@ namespace AggregationServer
 
                     case NodeClass.DataType:
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         DataTypeState value = new DataTypeState();
+#pragma warning restore CA2000
                         value.IsAbstract = ((IDataType)node).IsAbstract;
                         target = value;
                         break;
@@ -1531,7 +1548,9 @@ namespace AggregationServer
 
                     case NodeClass.ReferenceType:
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         ReferenceTypeState value = new ReferenceTypeState();
+#pragma warning restore CA2000
                         value.IsAbstract = ((IReferenceType)node).IsAbstract;
                         value.InverseName = ((IReferenceType)node).InverseName;
                         value.Symmetric = ((IReferenceType)node).Symmetric;
@@ -1541,7 +1560,9 @@ namespace AggregationServer
 
                     case NodeClass.Object:
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         BaseObjectState value = new BaseObjectState(null);
+#pragma warning restore CA2000
                         value.EventNotifier = ((IObject)node).EventNotifier;
                         target = value;
                         break;
@@ -1549,7 +1570,9 @@ namespace AggregationServer
 
                     case NodeClass.Variable:
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         BaseDataVariableState value = new BaseDataVariableState(null);
+#pragma warning restore CA2000
                         value.Value = m_mapper.ToLocalValue(((IVariable)node).Value);
                         value.DataType = m_mapper.ToLocalId(((IVariable)node).DataType);
                         value.ValueRank = ((IVariable)node).ValueRank;
@@ -1564,7 +1587,9 @@ namespace AggregationServer
 
                     case NodeClass.Method:
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         MethodState value = new MethodState(null);
+#pragma warning restore CA2000
                         value.Executable = ((IMethod)node).Executable;
                         value.UserExecutable = ((IMethod)node).UserExecutable;
                         target = value;
@@ -1573,7 +1598,9 @@ namespace AggregationServer
 
                     case NodeClass.View:
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         ViewState value = new ViewState();
+#pragma warning restore CA2000
                         value.ContainsNoLoops = ((IView)node).ContainsNoLoops;
                         target = value;
                         break;
@@ -1672,7 +1699,9 @@ namespace AggregationServer
                         AggregationClientSession clientSession = m_clients.Where(c => c.Value?.SessionSessionId == session.SessionId).FirstOrDefault().Value;
                         if (clientSession != null && clientSession.ReconnectHandler == null)
                         {
+#pragma warning disable CA1873 // Justification: Sample logging keeps existing message formatting.
                             m_logger.LogInformation("--- RECONNECTING --- SessionId: {SessionId}", clientSession.ClientSessionId);
+#pragma warning restore CA1873
                             reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler(Server.Telemetry, true);
                             reconnectHandler.BeginReconnect(session, m_reverseConnectManager, DefaultReconnectPeriod, Client_ReconnectComplete);
                             clientSession.ReconnectHandler = reconnectHandler;
@@ -1702,7 +1731,9 @@ namespace AggregationServer
                 AggregationClientSession clientSession = m_clients.Where(c => Object.ReferenceEquals(reconnectHandler, c.Value?.ReconnectHandler)).FirstOrDefault().Value;
                 if (clientSession == null)
                 {
+#pragma warning disable CA1873 // Justification: Sample logging keeps existing message formatting.
                     m_logger.LogInformation("--- RECONNECTED --- SessionId: {SessionId} but client session was not found.", clientSession.ClientSessionId);
+#pragma warning restore CA1873
                     return;
                 }
 
@@ -1717,7 +1748,9 @@ namespace AggregationServer
                     Utils.SilentDispose(oldSession);
                 }
                 reconnectHandler.Dispose();
+#pragma warning disable CA1873 // Justification: Sample logging keeps existing message formatting.
                 m_logger.LogInformation("--- RECONNECTED --- SessionId: {SessionId}", clientSession.ClientSessionId);
+#pragma warning restore CA1873
             }
         }
 
@@ -1739,6 +1772,8 @@ namespace AggregationServer
         private object m_clientsLock;
         private AggregatedTypeCache m_typeCache;
         private bool m_typeCacheInitialized;
+        // Justification: disposed via Utils.SilentDispose in Dispose(bool); analyzer does not recognize the helper.
+#pragma warning disable CA2213
         private Timer m_metadataUpdateTimer;
         private int m_timerPeriod;
         private int m_initialDelay;
@@ -1747,6 +1782,7 @@ namespace AggregationServer
         private NamespaceMapper m_mapper;
         private FolderState m_root;
         private AggregationModel.AggregatedServerStatusState m_status;
+#pragma warning restore CA2213
         #endregion
     }
 }

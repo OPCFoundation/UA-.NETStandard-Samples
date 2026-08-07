@@ -155,7 +155,7 @@ namespace MemoryBuffer
 
                 for (int ii = 0; ii < name.Length; ii++)
                 {
-                    if ("0123456789ABCDEF".IndexOf(name[ii]) == -1)
+                    if (!"0123456789ABCDEF".Contains(name[ii], StringComparison.Ordinal))
                     {
                         return null;
                     }
@@ -169,7 +169,9 @@ namespace MemoryBuffer
                     return null;
                 }
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 tag = new MemoryTagState(m_buffer, m_position);
+                #pragma warning restore CA2000
                 m_position = UInt32.MaxValue;
             }
 
@@ -181,7 +183,9 @@ namespace MemoryBuffer
                     return null;
                 }
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 tag = new MemoryTagState(m_buffer, m_position);
+                #pragma warning restore CA2000
                 m_position += m_buffer.ElementSize;
 
                 // check for memory overflow.

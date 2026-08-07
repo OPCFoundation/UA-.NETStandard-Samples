@@ -178,7 +178,7 @@ namespace Quickstarts.UserAuthenticationClient
                 }
 
                 // set a suitable initial state.
-                if (m_session != null && !m_connectedOnce)
+                if (!m_connectedOnce)
                 {
                     m_connectedOnce = true;
                 }
@@ -353,7 +353,9 @@ namespace Quickstarts.UserAuthenticationClient
                 // want to get error text for this call.
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
+#pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the active session.
                 UserIdentity identity = new UserIdentity(UserNameTB.Text, Encoding.UTF8.GetBytes(PasswordTB.Text));
+#pragma warning restore CA2000
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(identity, preferredLocales);
 
@@ -379,15 +381,19 @@ namespace Quickstarts.UserAuthenticationClient
             try
             {
                 // load the certficate.
+#pragma warning disable CA2000, SYSLIB0057 // Justification: Certificate ownership is transferred to UserIdentity; sample targets frameworks without a common loader API.
                 X509Certificate2 certificate = new X509Certificate2(
                     CertificateTB.Text,
                     CertificatePasswordTB.Text,
                     X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
+#pragma warning restore CA2000, SYSLIB0057
 
                 // want to get error text for this call.
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
+#pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the active session.
                 UserIdentity identity = new UserIdentity(certificate);
+#pragma warning restore CA2000
                 string[] preferredLocales = PreferredLocalesTB.Text.Split([','], StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(identity, preferredLocales);
 
@@ -416,7 +422,9 @@ namespace Quickstarts.UserAuthenticationClient
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+#pragma warning disable CA2000 // Justification: UserIdentity and token ownership is transferred to the active session.
                 m_session.UpdateSession(new UserIdentity(new AnonymousIdentityToken()), preferredLocales);
+#pragma warning restore CA2000
 
                 MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

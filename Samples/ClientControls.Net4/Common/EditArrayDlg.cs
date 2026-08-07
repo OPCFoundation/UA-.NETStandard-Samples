@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -66,7 +66,9 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private BuiltInType m_dataType;
         private ITelemetryContext m_telemetry;
         #endregion

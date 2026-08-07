@@ -82,10 +82,12 @@ namespace Quickstarts.SimpleEvents.Server
             {
                 if (m_simulationTimer != null)
                 {
-                    Utils.SilentDispose(m_simulationTimer);
+                    m_simulationTimer.Dispose();
                     m_simulationTimer = null;
                 }
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -224,7 +226,9 @@ namespace Quickstarts.SimpleEvents.Server
                         ++m_cycleId);
 
                     // construct the event.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
                     SystemCycleStartedEventState e = new SystemCycleStartedEventState(null);
+#pragma warning restore CA2000
 
                     e.Initialize(
                         SystemContext,

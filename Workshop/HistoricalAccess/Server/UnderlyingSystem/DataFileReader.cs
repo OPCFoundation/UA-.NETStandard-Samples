@@ -115,7 +115,7 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     // ignore commented out lines.
-                    if (line.StartsWith("//"))
+                    if (line.StartsWith("//", StringComparison.Ordinal))
                     {
                         continue;
                     }
@@ -366,7 +366,7 @@ namespace Quickstarts.HistoricalAccessServer
                 }
 
                 // ignore commented out lines.
-                if (line.StartsWith("//"))
+                if (line.StartsWith("//", StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -517,7 +517,7 @@ namespace Quickstarts.HistoricalAccessServer
         private string ExtractField(ref string line)
         {
             string field = line;
-            int index = field.IndexOf(',');
+            int index = field.IndexOf(',', StringComparison.Ordinal);
 
             if (index >= 0)
             {
@@ -591,7 +591,7 @@ namespace Quickstarts.HistoricalAccessServer
                 return true;
             }
 
-            if (field.StartsWith("0x"))
+            if (field.StartsWith("0x", StringComparison.Ordinal))
             {
                 field = field.Substring(2);
             }
@@ -669,7 +669,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             try
             {
-                XmlDecoder decoder = new XmlDecoder(document.DocumentElement, context);
+                using XmlDecoder decoder = new XmlDecoder(document.DocumentElement, context);
                 value = decoder.ReadVariant(null);
             }
             catch (Exception e)

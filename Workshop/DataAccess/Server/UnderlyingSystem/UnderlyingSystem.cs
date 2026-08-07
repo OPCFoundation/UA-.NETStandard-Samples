@@ -201,7 +201,7 @@ namespace Quickstarts.DataAccessServer
                     }
 
                     // segment found - return the info.
-                    if (blockPath.StartsWith(segmentPath))
+                    if (blockPath.StartsWith(segmentPath, StringComparison.Ordinal))
                     {
                         UnderlyingSystemSegment segment = new UnderlyingSystemSegment();
 
@@ -249,7 +249,7 @@ namespace Quickstarts.DataAccessServer
                             continue;
                         }
 
-                        if (!blockPath.StartsWith(segmentPath))
+                        if (!blockPath.StartsWith(segmentPath, StringComparison.Ordinal))
                         {
                             continue;
                         }
@@ -258,7 +258,7 @@ namespace Quickstarts.DataAccessServer
                     }
 
                     // extract segment name.
-                    int index = blockPath.IndexOf('/');
+                    int index = blockPath.IndexOf('/', StringComparison.Ordinal);
 
                     if (index != -1)
                     {
@@ -323,7 +323,7 @@ namespace Quickstarts.DataAccessServer
                             continue;
                         }
 
-                        if (!blockPath.StartsWith(segmentPath))
+                        if (!blockPath.StartsWith(segmentPath, StringComparison.Ordinal))
                         {
                             continue;
                         }
@@ -332,7 +332,7 @@ namespace Quickstarts.DataAccessServer
                     }
 
                     // check if there are no more segments in the path.
-                    int index = blockPath.IndexOf('/');
+                    int index = blockPath.IndexOf('/', StringComparison.Ordinal);
 
                     if (index == -1)
                     {
@@ -432,7 +432,7 @@ namespace Quickstarts.DataAccessServer
                         continue;
                     }
 
-                    if (blockType.StartsWith(blockId))
+                    if (blockType.StartsWith(blockId, StringComparison.Ordinal))
                     {
                         blockType = blockType.Substring(length + 1);
                         break;
@@ -529,7 +529,7 @@ namespace Quickstarts.DataAccessServer
                         continue;
                     }
 
-                    if (!blockPath.EndsWith(blockId))
+                    if (!blockPath.EndsWith(blockId, StringComparison.Ordinal))
                     {
                         continue;
                     }

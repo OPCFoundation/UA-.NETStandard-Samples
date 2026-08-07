@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -121,7 +121,9 @@ namespace Opc.Ua.Client.Controls
             // display value as text.
             StringBuilder buffer = new StringBuilder();
             XmlWriter writer = XmlWriter.Create(buffer, new XmlWriterSettings() { Indent = true, OmitXmlDeclaration = true });
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             XmlEncoder encoder = new XmlEncoder(new XmlQualifiedName("Value", Namespaces.OpcUaXsd), writer, m_session.MessageContext);
+            #pragma warning restore CA2000
             encoder.WriteVariantContents(m_value.Value, m_value.TypeInfo);
             writer.Close();
 
@@ -252,7 +254,9 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             XmlDecoder decoder = new XmlDecoder(element, m_session.MessageContext);
+            #pragma warning restore CA2000
 
             decoder.PushNamespace(Namespaces.OpcUaXsd);
             TypeInfo typeInfo = null;

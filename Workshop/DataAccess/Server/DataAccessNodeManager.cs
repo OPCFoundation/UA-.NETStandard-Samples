@@ -82,6 +82,8 @@ namespace Quickstarts.DataAccessServer
             {
                 m_system.Dispose();
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -284,7 +286,9 @@ namespace Quickstarts.DataAccessServer
                     NodeId rootId = ModelUtils.ConstructIdForSegment(segment.Id, NamespaceIndex);
 
                     // create a temporary object to use for the operation.
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node handle/cache.
                     root = new SegmentState(context, rootId, segment);
+#pragma warning restore CA2000
                 }
 
                 // validate segment.
@@ -312,7 +316,9 @@ namespace Quickstarts.DataAccessServer
                     // create a temporary object to use for the operation.
                     else
                     {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node handle/cache.
                         root = new BlockState(this, rootId, block);
+#pragma warning restore CA2000
                     }
                 }
 

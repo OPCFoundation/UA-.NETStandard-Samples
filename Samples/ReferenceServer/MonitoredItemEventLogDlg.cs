@@ -46,6 +46,7 @@ namespace Quickstarts.ReferenceServer
             DataGridCTRL.AutoGenerateColumns = false;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample code preserves existing public API and behavior.")]
         public void Display()
         {
             ServerUtils.EventsEnabled = true;
@@ -53,6 +54,7 @@ namespace Quickstarts.ReferenceServer
             Show();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample dialog preserves existing component lifetime.")]
         DataSet m_dataset;
 
         private void RefreshTimer_Tick(object sender, EventArgs e)

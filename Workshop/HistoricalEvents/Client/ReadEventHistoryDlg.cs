@@ -424,7 +424,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                NodeId areaId = await new SelectNodeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
+                using SelectNodeDlg dialog = new SelectNodeDlg();
+                NodeId areaId = await dialog.ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId == null)
                 {
@@ -450,7 +451,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                TypeDeclaration type = await new SelectTypeDlg().ShowDialogAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, "Select Event Type");
+                using SelectTypeDlg dialog = new SelectTypeDlg();
+                TypeDeclaration type = await dialog.ShowDialogAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, "Select Event Type");
 
                 if (type == null)
                 {
@@ -477,7 +479,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                if (!new ModifyFilterDlg().ShowDialog(m_filter, m_telemetry))
+                using ModifyFilterDlg dialog = new ModifyFilterDlg();
+                if (!dialog.ShowDialog(m_filter, m_telemetry))
                 {
                     return;
                 }

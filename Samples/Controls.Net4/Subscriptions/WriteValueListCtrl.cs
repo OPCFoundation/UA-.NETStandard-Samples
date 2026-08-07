@@ -292,7 +292,9 @@ namespace Opc.Ua.Sample.Controls
             {
                 WriteValue value = new WriteValue();
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value, Telemetry))
+                #pragma warning restore CA2000
                 {
                     AddItem(value);
                 }
@@ -316,7 +318,9 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0], Telemetry))
+                #pragma warning restore CA2000
                 {
                     Node node = await m_session.NodeCache.FindAsync(values[0].NodeId) as Node;
 
@@ -383,7 +387,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (useIndexRange)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     value = new ComplexValueEditDlg().ShowDialog(values[0], Telemetry);
+                    #pragma warning restore CA2000
 
                     WriteValue writeValue = value as WriteValue;
 

@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -41,6 +41,7 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// A tool bar used to connect to a server.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
     public partial class ConnectServerCtrl : UserControl
     {
         #region Constructors
@@ -60,15 +61,20 @@ namespace Opc.Ua.Client.Controls
         private ILogger m_logger;
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private SessionReconnectHandler m_reconnectHandler;
+        #pragma warning restore CA2213
         private CertificateValidationEventHandler m_CertificateValidation;
         private EventHandler m_ReconnectComplete;
         private EventHandler m_ReconnectStarting;
         private EventHandler m_KeepAliveComplete;
         private EventHandler m_ConnectComplete;
         private StatusStrip m_StatusStrip;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
         private ToolStripItem m_ServerStatusLB;
+#pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private ToolStripItem m_StatusUpateTimeLB;
+#pragma warning restore CA2213
         private Dictionary<Uri, EndpointDescription> m_endpoints;
         #endregion
 
@@ -84,6 +90,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// A strip used to display session status information.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public StatusStrip StatusStrip
         {
             get => m_StatusStrip;
@@ -108,21 +115,25 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// A control that contains the last time a keep alive was returned from the server.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ToolStripItem ServerStatusControl { get => m_ServerStatusLB; set => m_ServerStatusLB = value; }
 
         /// <summary>
         /// A control that contains the last time a keep alive was returned from the server.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ToolStripItem StatusUpateTimeControl { get => m_StatusUpateTimeLB; set => m_StatusUpateTimeLB = value; }
 
         /// <summary>
         /// The name of the session to create.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string SessionName { get; set; }
 
         /// <summary>
         /// Gets or sets a flag indicating that the domain checks should be ignored when connecting.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool DisableDomainCheck { get; set; }
 
         /// <summary>
@@ -141,7 +152,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The URL displayed in the control.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        #pragma warning disable CA1056 // Justification: sample public API shape is preserved by design.
         public string ServerUrl
+        #pragma warning restore CA1056
         {
             get
             {
@@ -163,6 +177,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Whether to use security when connecting.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool UseSecurity
         {
             get => UseSecurityCK.Checked;
@@ -172,17 +187,21 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The locales to use when creating the session.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string[] PreferredLocales { get; set; }
 
         /// <summary>
         /// The user identity to use when creating the session.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public IUserIdentity UserIdentity { get; set; }
 
         /// <summary>
         /// The client application configuration.
         /// </summary>
+        #pragma warning disable WFO1000 // Justification: sample public API shape is preserved by design.
         public ApplicationConfiguration Configuration
+        #pragma warning restore WFO1000
         {
             get => m_configuration;
 
@@ -213,16 +232,19 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The number of seconds between reconnect attempts (0 means reconnect is disabled).
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int ReconnectPeriod { get; set; } = DefaultReconnectPeriod;
 
         /// <summary>
         /// The discover timeout in ms.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int DiscoverTimeout { get; set; } = DefaultDiscoverTimeout;
 
         /// <summary>
         /// The session timeout in ms.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public uint SessionTimeout { get; set; } = DefaultSessionTimeout;
 
         /// <summary>
@@ -401,7 +423,9 @@ namespace Opc.Ua.Client.Controls
         /// <returns>The new session object.</returns>
         public Task<ISession> ConnectAsync(
             ITelemetryContext telemetry,
+            #pragma warning disable CA1054 // Justification: sample public API shape is preserved by design.
             string serverUrl = null,
+            #pragma warning restore CA1054
             bool useSecurity = false,
             uint sessionTimeout = 0,
             CancellationToken ct = default)
@@ -512,7 +536,9 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void Discover(string hostName)
         {
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             string endpointUrl = new DiscoverServerDlg().ShowDialog(m_configuration, hostName, m_telemetry);
+            #pragma warning restore CA2000
 
             if (endpointUrl != null)
             {

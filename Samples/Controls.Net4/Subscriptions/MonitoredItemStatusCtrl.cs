@@ -98,7 +98,9 @@ namespace Opc.Ua.Sample.Controls
 
             m_monitoredItem = monitoredItem;
             m_subscription = null;
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
+            #pragma warning restore CA1508
 
             Clear();
 

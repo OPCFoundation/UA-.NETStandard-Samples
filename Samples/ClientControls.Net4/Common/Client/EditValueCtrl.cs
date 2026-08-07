@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -63,6 +63,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The value in the control.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public Variant Value
         {
             get
@@ -84,6 +85,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the control that shows the current value.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public Control CurrentValueControl { get; set; }
 
         /// <summary>
@@ -104,7 +106,9 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             object value = new EditComplexValueDlg().ShowDialog(
+            #pragma warning restore CA2000
                 m_value.TypeInfo,
                 null,
                 m_value.Value,

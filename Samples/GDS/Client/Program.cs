@@ -33,13 +33,17 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
 
+[assembly: System.Resources.NeutralResourcesLanguage("en-US")]
+
 namespace Opc.Ua.Gds.Client
 {
     public sealed class ConsoleTelemetry : TelemetryContextBase
     {
         public ConsoleTelemetry()
         : base(
+            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            #pragma warning restore CA2000
             {
                 builder.SetMinimumLevel(LogLevel.Information);
                 builder.AddConsole();
@@ -76,7 +80,9 @@ namespace Opc.Ua.Gds.Client
                 application.CheckApplicationInstanceCertificatesAsync(false).AsTask().GetAwaiter().GetResult();
 
                 // run the application interactively.
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 Application.Run(new MainForm(application, m_telemetry));
+                #pragma warning restore CA2000
             }
             catch (Exception e)
             {

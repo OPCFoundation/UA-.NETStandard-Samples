@@ -697,6 +697,7 @@ namespace MemoryBuffer
         private DateTime m_lastScanTime;
         private int m_maximumScanRate;
         private byte[] m_buffer;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample code preserves existing public API and behavior.")]
         private Timer m_scanTimer;
         private int m_updateCount;
         private int m_itemCount;

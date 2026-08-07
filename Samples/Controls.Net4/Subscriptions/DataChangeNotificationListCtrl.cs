@@ -112,7 +112,9 @@ namespace Opc.Ua.Sample.Controls
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
             m_monitoredItem = monitoredItem;
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
+            #pragma warning restore CA1508
 
             // get the events.
             List<MonitoredItemNotification> changes = new List<MonitoredItemNotification>();
@@ -462,7 +464,9 @@ namespace Opc.Ua.Sample.Controls
 
             DateTime time = change.Value.SourceTimestamp;
 
+            #pragma warning disable CS8073 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (time != null && time != DateTime.MinValue)
+            #pragma warning restore CS8073
             {
                 listItem.SubItems[4].Text = String.Format("{0:HH:mm:ss.fff}", time.ToLocalTime());
             }
@@ -473,7 +477,9 @@ namespace Opc.Ua.Sample.Controls
 
             time = change.Value.ServerTimestamp;
 
+            #pragma warning disable CS8073 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (time != null && time != DateTime.MinValue)
+            #pragma warning restore CS8073
             {
                 listItem.SubItems[5].Text = String.Format("{0:HH:mm:ss.fff}", time.ToLocalTime());
             }
@@ -499,7 +505,9 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 new ComplexValueEditDlg().ShowDialog(change, Telemetry);
+                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {

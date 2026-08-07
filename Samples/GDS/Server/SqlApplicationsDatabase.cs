@@ -46,7 +46,9 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             using (gdsdbEntities entities = new gdsdbEntities())
             {
                 Assembly assembly = typeof(SqlApplicationsDatabase).GetTypeInfo().Assembly;
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 StreamReader istrm = new StreamReader(assembly.GetManifestResourceStream("Opc.Ua.Gds.Server.DB.gdsdb.edmx.sql"));
+                #pragma warning restore CA2000
                 string tables = istrm.ReadToEnd();
                 entities.Database.EnsureCreated();
                 var parts = tables.Split(new string[] { "GO" }, System.StringSplitOptions.None);
@@ -989,3 +991,4 @@ namespace Opc.Ua.Gds.Server.Database.Sql
         #endregion
     }
 }
+

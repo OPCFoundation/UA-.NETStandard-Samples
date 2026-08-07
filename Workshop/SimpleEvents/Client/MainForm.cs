@@ -75,6 +75,7 @@ namespace Quickstarts.SimpleEvents.Client
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Subscription ownership is managed by the OPC UA session in this sample.")]
         private Subscription m_subscription;
         private MonitoredItem m_monitoredItem;
         private Opc.Ua.Client.Controls.FilterDeclaration m_filter;
@@ -149,7 +150,7 @@ namespace Quickstarts.SimpleEvents.Client
                 }
 
                 // set a suitable initial state.
-                if (m_session != null && !m_connectedOnce)
+                if (!m_connectedOnce)
                 {
                     m_connectedOnce = true;
                 }
@@ -424,7 +425,11 @@ namespace Quickstarts.SimpleEvents.Client
                     return;
                 }
 
-                string locale = await new SelectLocaleDlg().ShowDialogAsync(m_session);
+                string locale;
+                using (SelectLocaleDlg dialog = new SelectLocaleDlg())
+                {
+                    locale = await dialog.ShowDialogAsync(m_session);
+                }
 
                 if (locale == null)
                 {

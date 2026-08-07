@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -69,7 +69,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The values updated by the dialog.
         /// </summary>
+        #pragma warning disable CA1034 // Justification: sample public API shape is preserved by design.
         public class SetTypeResult
+        #pragma warning restore CA1034
         {
             /// <summary>
             /// The new type info.
@@ -175,7 +177,7 @@ namespace Opc.Ua.Client.Controls
                         }
 
                         dimension *= 10;
-                        dimension += digits.IndexOf(text[ii]);
+                        dimension += digits.IndexOf(text[ii], StringComparison.Ordinal);
                     }
 
                     dimensions.Add(dimension);

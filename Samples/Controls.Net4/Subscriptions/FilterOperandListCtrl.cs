@@ -105,6 +105,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the list of operands in the control.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         public List<FilterOperand> GetOperands()
         {
             List<FilterOperand> operands = new List<FilterOperand>();
@@ -155,7 +156,9 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 FilterOperand operand = new FilterOperandEditDlg().ShowDialog(m_session, m_elements, m_index, null, Telemetry);
+                #pragma warning restore CA2000
 
                 if (operand == null)
                 {

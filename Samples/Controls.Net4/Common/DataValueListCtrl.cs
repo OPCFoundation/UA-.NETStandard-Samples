@@ -74,6 +74,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The control used to display the details of a value.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public DataListCtrl DataListCtrl
         {
             get { return m_DataListCtrl; }
@@ -92,6 +93,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         public async Task InitializeAsync(
             Session session,
             ReadValueIdCollection valueIds,
@@ -104,7 +106,9 @@ namespace Opc.Ua.Sample.Controls
             Clear();
 
             m_session = session;
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Telemetry = session?.MessageContext?.Telemetry;
+            #pragma warning restore CA1508
 
             if (valueIds != null)
             {
@@ -135,6 +139,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         public async Task InitializeAsync(
             Session session,
             WriteValueCollection values,

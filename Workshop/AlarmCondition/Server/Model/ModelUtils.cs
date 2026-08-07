@@ -117,7 +117,7 @@ namespace Quickstarts.AlarmConditionServer
             buffer.Append(parentId);
 
             // check if the parent is another component.
-            int index = parentId.IndexOf('?');
+            int index = parentId.IndexOf('?', StringComparison.Ordinal);
 
             if (index < 0)
             {

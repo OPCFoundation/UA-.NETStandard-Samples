@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -59,12 +59,14 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private string ReplaceSpecialCharacters(string message)
         {
-            message = message.Replace("&", "&#38;");
-            message = message.Replace("<", "&lt;");
-            message = message.Replace(">", "&gt;");
+            message = message.Replace("&", "&#38;", StringComparison.Ordinal);
+            message = message.Replace("<", "&lt;", StringComparison.Ordinal);
+            message = message.Replace(">", "&gt;", StringComparison.Ordinal);
+            #pragma warning disable CA1307 // Justification: sample public API shape is preserved by design.
             message = message.Replace("\"", "&#34;");
-            message = message.Replace("'", "&#39;");
-            message = message.Replace("\r\n", "<br/>");
+            #pragma warning restore CA1307
+            message = message.Replace("'", "&#39;", StringComparison.Ordinal);
+            message = message.Replace("\r\n", "<br/>", StringComparison.Ordinal);
 
             return message;
         }
@@ -193,10 +195,14 @@ namespace Opc.Ua.Client.Controls
             // check if running as a service.
             if (!Environment.UserInteractive)
             {
+                #pragma warning disable CA1873 // Justification: sample public API shape is preserved by design.
                 logger.LogDebug(e, "Unexpected error in '{Caption}'.", caption);
+                #pragma warning restore CA1873
                 return;
             }
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             new ExceptionDlg(logger).ShowDialog(caption, e);
+            #pragma warning restore CA2000
         }
 
         /// <summary>

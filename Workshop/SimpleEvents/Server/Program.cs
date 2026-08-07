@@ -37,10 +37,13 @@ using Opc.Ua.Configuration;
 using Opc.Ua.Server;
 using Opc.Ua.Server.Controls;
 
+[assembly: System.Resources.NeutralResourcesLanguage("en-US")]
+
 namespace Quickstarts.SimpleEvents.Server
 {
     public sealed class ConsoleTelemetry : TelemetryContextBase
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Logger factory ownership is transferred to TelemetryContextBase.")]
         public ConsoleTelemetry()
         : base(
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
@@ -80,10 +83,17 @@ namespace Quickstarts.SimpleEvents.Server
                 application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
 
                 // start the server.
+                #pragma warning disable CA2000 // Justification: Server ownership is transferred to ApplicationInstance.
+
                 application.StartAsync(new SimpleEventsServer()).Wait();
 
+                #pragma warning restore CA2000
+
                 // run the application interactively.
-                Application.Run(new Opc.Ua.Server.Controls.ServerForm(application, m_telemetry));
+                using (Opc.Ua.Server.Controls.ServerForm serverForm = new Opc.Ua.Server.Controls.ServerForm(application, m_telemetry))
+                {
+                    Application.Run(serverForm);
+                }
             }
             catch (Exception e)
             {

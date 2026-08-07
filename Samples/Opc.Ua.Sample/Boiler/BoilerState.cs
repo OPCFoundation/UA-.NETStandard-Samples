@@ -57,13 +57,20 @@ namespace Boiler
         /// </summary>
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            try
             {
-                if (m_simulationTimer != null)
+                if (disposing)
                 {
-                    m_simulationTimer.Dispose();
-                    m_simulationTimer = null;
+                    if (m_simulationTimer != null)
+                    {
+                        m_simulationTimer.Dispose();
+                        m_simulationTimer = null;
+                    }
                 }
+            }
+            finally
+            {
+                base.Dispose(disposing);
             }
         }
         #endregion
@@ -156,7 +163,9 @@ namespace Boiler
             double perturbedValue = Math.Round(value * Math.Pow(10.0, offsetToApply));
 
             // apply the perturbation.
+            #pragma warning disable CA5394 // Justification: Sample code retains existing ownership/lifetime and behavior.
             perturbedValue += (m_random.NextDouble() - 0.5) * 5;
+            #pragma warning restore CA5394
 
             // restore original exponent.
             perturbedValue = Math.Round(perturbedValue) * Math.Pow(10.0, -offsetToApply);

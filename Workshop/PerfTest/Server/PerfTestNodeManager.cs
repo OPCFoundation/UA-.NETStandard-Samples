@@ -77,6 +77,8 @@ namespace Quickstarts.PerfTestServer
             {
                 // TBD
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 

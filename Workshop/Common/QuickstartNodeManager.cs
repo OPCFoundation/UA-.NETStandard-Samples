@@ -122,6 +122,7 @@ namespace Quickstarts
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -154,6 +155,7 @@ namespace Quickstarts
         /// <param name="context">The context.</param>
         /// <param name="node">The node.</param>
         /// <returns>The new NodeId.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Public sample API follows OPC UA interface naming.")]
         public virtual NodeId New(ISystemContext context, NodeState node)
         {
             return node.NodeId;
@@ -234,6 +236,7 @@ namespace Quickstarts
         /// <summary>
         /// The root notifiers for the node manager.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point exposes mutable list by design.")]
         protected List<NodeState> RootNotifiers
         {
             get { return m_rootNotifiers; }
@@ -586,6 +589,7 @@ namespace Quickstarts
         /// <summary>
         /// Recursively indexes the node and its children.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void RemovePredefinedNode(
             ISystemContext context,
             NodeState node,
@@ -949,6 +953,7 @@ namespace Quickstarts
         /// <summary>
         /// This method is used to delete bi-directional references to nodes from other node managers.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Public sample API preserves existing parameter name.")]
         public virtual ServiceResult DeleteReference(
             object sourceHandle,
             NodeId referenceTypeId,
@@ -1624,6 +1629,7 @@ namespace Quickstarts
         /// <param name="errors">The errors.</param>
         /// <param name="nodesToValidate">The nodes to validate.</param>
         /// <param name="cache">The cache.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void Read(
             ServerSystemContext context,
             IList<ReadValueId> nodesToRead,
@@ -1756,6 +1762,7 @@ namespace Quickstarts
         /// <param name="errors">The errors.</param>
         /// <param name="nodesToValidate">The nodes to validate.</param>
         /// <param name="cache">The cache.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void Write(
             ServerSystemContext context,
             IList<WriteValue> nodesToWrite,
@@ -1905,6 +1912,7 @@ namespace Quickstarts
         /// <summary>
         /// Releases the continuation points.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryReleaseContinuationPoints(
             ServerSystemContext context,
             IList<HistoryReadValueId> nodesToRead,
@@ -1931,6 +1939,7 @@ namespace Quickstarts
         /// <summary>
         /// Reads raw history data.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryReadRawModified(
             ServerSystemContext context,
             ReadRawModifiedDetails details,
@@ -1960,6 +1969,7 @@ namespace Quickstarts
         /// <summary>
         /// Reads processed history data.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryReadProcessed(
             ServerSystemContext context,
             ReadProcessedDetails details,
@@ -1989,6 +1999,7 @@ namespace Quickstarts
         /// <summary>
         /// Reads history data at specified times.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryReadAtTime(
             ServerSystemContext context,
             ReadAtTimeDetails details,
@@ -2018,6 +2029,7 @@ namespace Quickstarts
         /// <summary>
         /// Reads history events.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryReadEvents(
             ServerSystemContext context,
             ReadEventDetails details,
@@ -2047,6 +2059,7 @@ namespace Quickstarts
         /// <summary>
         /// Validates the nodes and reads the values from the underlying source.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryRead(
             ServerSystemContext context,
             HistoryReadDetails details,
@@ -2306,6 +2319,7 @@ namespace Quickstarts
         /// <summary>
         /// Validates the nodes and updates the history.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryUpdate(
             ServerSystemContext context,
             Type detailsType,
@@ -2445,6 +2459,7 @@ namespace Quickstarts
         /// <summary>
         /// Updates the data history for one or more nodes.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryUpdateData(
             ServerSystemContext context,
             IList<UpdateDataDetails> nodesToUpdate,
@@ -2472,6 +2487,7 @@ namespace Quickstarts
         /// <summary>
         /// Updates the structured data history for one or more nodes.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryUpdateStructureData(
             ServerSystemContext context,
             IList<UpdateStructureDataDetails> nodesToUpdate,
@@ -2499,6 +2515,7 @@ namespace Quickstarts
         /// <summary>
         /// Updates the event history for one or more nodes.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryUpdateEvents(
             ServerSystemContext context,
             IList<UpdateEventDetails> nodesToUpdate,
@@ -2526,6 +2543,7 @@ namespace Quickstarts
         /// <summary>
         /// Deletes the data history for one or more nodes.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryDeleteRawModified(
             ServerSystemContext context,
             IList<DeleteRawModifiedDetails> nodesToUpdate,
@@ -2553,6 +2571,7 @@ namespace Quickstarts
         /// <summary>
         /// Deletes the data history for one or more nodes.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryDeleteAtTime(
             ServerSystemContext context,
             IList<DeleteAtTimeDetails> nodesToUpdate,
@@ -2580,6 +2599,7 @@ namespace Quickstarts
         /// <summary>
         /// Deletes the event history for one or more nodes.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryDeleteEvents(
             ServerSystemContext context,
             IList<DeleteEventDetails> nodesToUpdate,
@@ -2608,6 +2628,7 @@ namespace Quickstarts
         /// <summary>
         /// Calls a method on the specified nodes.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Public sample API follows OPC UA service naming.")]
         public virtual void Call(
             OperationContext context,
             IList<CallMethodRequest> methodsToCall,
@@ -2684,6 +2705,7 @@ namespace Quickstarts
         /// <summary>
         /// Calls a method on an object.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Protected sample API follows OPC UA service naming.")]
         protected virtual ServiceResult Call(
             ISystemContext context,
             CallMethodRequest methodToCall,
@@ -3089,6 +3111,7 @@ namespace Quickstarts
         /// <remarks>
         /// This method only handles data change subscriptions. Event subscriptions are created by the SDK.
         /// </remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Public sample API preserves existing parameter names.")]
         public virtual void CreateMonitoredItems(
             OperationContext context,
             uint subscriptionId,
@@ -3166,6 +3189,7 @@ namespace Quickstarts
                     MonitoredItemCreateRequest itemToCreate = itemsToCreate[handle.Index];
 
                     // create monitored item.
+#pragma warning disable CA2000 // Justification: ownership is transferred to monitoredItems/createdItems collections on success.
                     errors[handle.Index] = CreateMonitoredItem(
                         systemContext,
                         handle,
@@ -3177,6 +3201,7 @@ namespace Quickstarts
                         globalIdCounter,
                         out filterResult,
                         out monitoredItem);
+#pragma warning restore CA2000
                 }
 
                 // save any filter error details.
@@ -3552,6 +3577,7 @@ namespace Quickstarts
         /// <summary>
         /// Modifies the parameters for a set of monitored items.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Public sample API preserves existing parameter names.")]
         public virtual void ModifyMonitoredItems(
             OperationContext context,
             TimestampsToReturn timestampsToReturn,

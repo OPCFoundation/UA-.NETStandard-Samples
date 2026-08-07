@@ -132,6 +132,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// A control that can be used to display the contents of a certificate store.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public CertificateListCtrl CertificateListCtrl
         {
             get { return m_certificateListCtrl; }
@@ -316,7 +317,9 @@ namespace Opc.Ua.Client.Controls
 
                             if (certificate != null)
                             {
+#pragma warning disable CA2025 // Justification: Existing drag/drop sample intentionally starts the add operation without changing event handler behavior.
                                 store.AddAsync(certificate);
+#pragma warning restore CA2025
                             }
                         }
                     }

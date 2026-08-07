@@ -354,7 +354,8 @@ namespace Quickstarts.HistoricalEvents.Client
 
                 if (field.Declaration.InstanceDeclaration.ValueRank == ValueRanks.Scalar)
                 {
-                    Variant? value = new SetValueDlg().ShowDialog(field.FilterValue, field.Declaration.InstanceDeclaration.BuiltInType);
+                    using SetValueDlg dialog = new SetValueDlg();
+                    Variant? value = dialog.ShowDialog(field.FilterValue, field.Declaration.InstanceDeclaration.BuiltInType);
 
                     if (value != null)
                     {

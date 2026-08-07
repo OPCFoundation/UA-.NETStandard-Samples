@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -64,7 +64,12 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The list of urls.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        #pragma warning disable CA1002 // Justification: sample public API shape is preserved by design.
+        #pragma warning disable CA2227 // Justification: sample public API shape is preserved by design.
         public List<Uri> Urls
+        #pragma warning restore CA1002
+        #pragma warning restore CA2227
         {
             get
             {
@@ -106,6 +111,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the control that is stores with the current file path.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public Control CurrentUrlsControl { get; set; }
 
         /// <summary>
@@ -120,6 +126,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Telemetry context
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public ITelemetryContext Telemetry
         {
             get { return m_telemetry; }
@@ -148,7 +155,9 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             strings = new EditArrayDlg().ShowDialog(m_telemetry, strings, BuiltInType.String, false, null) as string[];
+            #pragma warning restore CA2000
 
             if (strings == null)
             {

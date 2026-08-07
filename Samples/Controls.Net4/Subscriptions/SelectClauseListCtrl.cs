@@ -86,7 +86,9 @@ namespace Opc.Ua.Sample.Controls
 
             m_session = session;
             m_selectClauses = selectClauses;
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Telemetry = m_session?.MessageContext?.Telemetry;
+            #pragma warning restore CA1508
 
             if (selectClauses == null)
             {

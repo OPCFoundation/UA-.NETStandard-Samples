@@ -231,7 +231,9 @@ namespace Opc.Ua.Sample.Controls
 
                 if (nodes == null || nodes.Length == 1)
                 {
+                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     await new NodeAttributesDlg().ShowDialogAsync(m_session, nodes[0].NodeId, Telemetry);
+                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)

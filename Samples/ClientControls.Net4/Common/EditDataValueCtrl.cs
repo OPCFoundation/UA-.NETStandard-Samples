@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -158,6 +158,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The value displayed in the control.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public Variant Value
         {
             get
@@ -174,6 +175,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The data type of the value displayed in the control.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public BuiltInType DataType
         {
             get
@@ -190,6 +192,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The value rank of the value displayed in the control.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int ValueRank
         {
             get
@@ -206,6 +209,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The status code associated with the value.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public StatusCode StatusCode
         {
             get
@@ -227,6 +231,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The source timestamp associated with the value.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public DateTime SourceTimestamp
         {
             get
@@ -254,6 +259,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The server timestamp associated with the value.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public DateTime ServerTimestamp
         {
             get
@@ -281,6 +287,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// If true the status code, server timestamp and source timestamp fields are displayed.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool ShowStatusTimestamp
         {
             get

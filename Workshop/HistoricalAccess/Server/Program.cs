@@ -46,6 +46,7 @@ namespace Quickstarts.HistoricalAccessServer
 {
     public sealed class ConsoleTelemetry : TelemetryContextBase
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "LoggerFactory ownership is transferred to telemetry context.")]
         public ConsoleTelemetry()
         : base(
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
@@ -92,10 +93,14 @@ namespace Quickstarts.HistoricalAccessServer
                 application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
 
                 // start the server.
+#pragma warning disable CA2000 // Justification: ownership is transferred to the application instance.
                 application.StartAsync(new HistoricalAccessServer()).Wait();
+#pragma warning restore CA2000
 
                 // run the application interactively.
+#pragma warning disable CA2000 // Justification: ownership is transferred to Application.Run for form lifetime.
                 Application.Run(new ServerForm(application, m_telemetry));
+#pragma warning restore CA2000
             }
             catch (Exception e)
             {

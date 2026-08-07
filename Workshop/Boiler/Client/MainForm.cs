@@ -75,6 +75,7 @@ namespace Quickstarts.Boiler.Client
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Subscription ownership is managed by the OPC UA session in this sample.")]
         private Subscription m_subscription;
         private bool m_connectedOnce;
         private readonly ITelemetryContext m_telemetry;
@@ -148,7 +149,7 @@ namespace Quickstarts.Boiler.Client
                 }
 
                 // set a suitable initial state.
-                if (m_session != null && !m_connectedOnce)
+                if (!m_connectedOnce)
                 {
                     m_connectedOnce = true;
                 }

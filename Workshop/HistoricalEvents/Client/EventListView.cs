@@ -52,7 +52,9 @@ namespace Quickstarts.HistoricalEvents.Client
         #region Private Methods
         private ISession m_session;
         private ITelemetryContext m_telemetry;
+        #pragma warning disable CA2213 // Justification: subscription lifetime is managed by the OPC UA session/sample control.
         private Subscription m_subscription;
+        #pragma warning restore CA2213
         private MonitoredItem m_monitoredItem;
         private FilterDeclaration m_filter;
         private NodeId m_areaId;
@@ -360,7 +362,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 {
                     DateTime value = (DateTime)fieldValues[ii].Value;
 
-                    if (m_filter.Fields[ii - 1].InstanceDeclaration.DisplayName.Contains("Time"))
+                    if (m_filter.Fields[ii - 1].InstanceDeclaration.DisplayName.Contains("Time", StringComparison.Ordinal))
                     {
                         text = value.ToLocalTime().ToString("HH:mm:ss.fff");
                     }
@@ -614,7 +616,8 @@ namespace Quickstarts.HistoricalEvents.Client
 
                 if (fields != null)
                 {
-                    new ViewEventDetailsDlg().ShowDialog(m_filter, fields);
+                    using ViewEventDetailsDlg dialog = new ViewEventDetailsDlg();
+                    dialog.ShowDialog(m_filter, fields);
                 }
             }
             catch (Exception exception)

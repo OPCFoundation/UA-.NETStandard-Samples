@@ -60,6 +60,8 @@ namespace Quickstarts.DataAccessServer
         /// <summary>
         /// A string value.
         /// </summary>
+#pragma warning disable CA1720 // Justification: Sample enum preserves existing public data type name.
         String = 4
+#pragma warning restore CA1720
     }
 }

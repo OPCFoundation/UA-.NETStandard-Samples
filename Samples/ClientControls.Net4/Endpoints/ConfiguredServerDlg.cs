@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -1153,7 +1153,9 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
+                #pragma warning disable CA1873 // Justification: sample public API shape is preserved by design.
                 m_logger.LogDebug("Could not fetch endpoints from url: {DiscoveryUrl}. Reason={Message}", discoveryUrl, e.Message);
+                #pragma warning restore CA1873
                 return (false, e.Message);
             }
             finally
@@ -1516,7 +1518,7 @@ namespace Opc.Ua.Client.Controls
                 if (SecurityModeCB.SelectedItem != null)
                 {
                     if ((((MessageSecurityMode)SecurityModeCB.SelectedItem) == MessageSecurityMode.None) &&
-                        (ProtocolCB.SelectedItem != null) && (!((Protocol)ProtocolCB.SelectedItem).ToString().StartsWith("https")))
+                        (ProtocolCB.SelectedItem != null) && (!((Protocol)ProtocolCB.SelectedItem).ToString().StartsWith("https", StringComparison.Ordinal)))
                     {
                         m_statusObject.SetStatus(StatusChannel.SelectedSecurityMode, "Warning: Selected Endpoint has no security.", StatusType.Warning);
                     }
@@ -1772,7 +1774,7 @@ namespace Opc.Ua.Client.Controls
 
                     if ((m_currentDescription.ServerCertificate != null) && (m_currentDescription.ServerCertificate.Length > 0))
                     {
-                        X509Certificate2 serverCertificate = new X509Certificate2(m_currentDescription.ServerCertificate);
+                        X509Certificate2 serverCertificate = X509CertificateLoader.LoadCertificate(m_currentDescription.ServerCertificate);
                         String certificateApplicationUri = X509Utils.GetApplicationUrisFromCertificate(serverCertificate)[0];
 
                         if (certificateApplicationUri != m_currentDescription.Server.ApplicationUri)

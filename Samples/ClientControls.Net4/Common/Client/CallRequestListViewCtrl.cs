@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -54,7 +54,9 @@ namespace Opc.Ua.Client.Controls
         {
             InitializeComponent();
             ResultsDV.AutoGenerateColumns = false;
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ImageList = new ClientUtils().ImageList;
+            #pragma warning restore CA2000
 
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Arguments");
@@ -71,7 +73,9 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
+        #pragma warning restore CA2213
         private ISession m_session;
         private NodeId m_objectId;
         private NodeId m_methodId;
@@ -367,7 +371,9 @@ namespace Opc.Ua.Client.Controls
 
                     BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
 
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     object result = new EditComplexValueDlg().ShowDialog(
+                    #pragma warning restore CA2000
                         new TypeInfo(builtInType, argument.ValueRank),
                         argument.Name,
                         argument.Value,

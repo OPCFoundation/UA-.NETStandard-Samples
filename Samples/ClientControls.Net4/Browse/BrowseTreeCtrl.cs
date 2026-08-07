@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -70,6 +70,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The control that displays the non-hierarchial references for the selected node.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public BrowseListCtrl ReferencesCTRL
         {
             get { return m_referencesCTRL; }
@@ -79,6 +80,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The control that displays the attributes/properties for the selected node.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public AttributeListCtrl AttributesCTRL
         {
             get { return m_attributesCTRL; }
@@ -98,7 +100,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Specifies the nodes that where selected in the control.
         /// </summary>
+        #pragma warning disable CA1034 // Justification: sample public API shape is preserved by design.
         public class NodesSelectedEventArgs : EventArgs
+        #pragma warning restore CA1034
         {
             /// <summary>
             /// Constructs a new object.

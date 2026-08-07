@@ -51,7 +51,9 @@ namespace Opc.Ua.Gds.Client
         private GlobalDiscoveryServerClient m_gds;
         private ServerPushConfigurationClient m_server;
         private RegisteredApplication m_application;
+        #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private X509Certificate2 m_certificate;
+        #pragma warning restore CA2213
         private bool m_temporaryCertificateCreated;
         private string m_certificatePassword;
 
@@ -85,7 +87,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (server.Endpoint != null && server.Endpoint.Description.ServerCertificate != null)
                 {
-                    certificate = new X509Certificate2(server.Endpoint.Description.ServerCertificate);
+                    certificate = GdsCertificateLoader.LoadCertificate(server.Endpoint.Description.ServerCertificate);
                 }
                 else if (application != null)
                 {
@@ -95,7 +97,7 @@ namespace Opc.Ua.Gds.Client
 
                         if (file != null)
                         {
-                            certificate = new X509Certificate2(file);
+                            certificate = GdsCertificateLoader.LoadCertificateFromFile(file);
                         }
                     }
                     else if (!String.IsNullOrEmpty(application.CertificateStorePath))
@@ -104,7 +106,7 @@ namespace Opc.Ua.Gds.Client
                             StorePath = application.CertificateStorePath
                         };
                         id.StoreType = CertificateStoreIdentifier.DetermineStoreType(id.StorePath);
-                        id.SubjectName = application.CertificateSubjectName.Replace("localhost", Utils.GetHostName());
+                        id.SubjectName = application.CertificateSubjectName.Replace("localhost", Utils.GetHostName(), StringComparison.Ordinal);
 
                         certificate = await id.FindAsync(true, ct: ct);
                     }
@@ -120,7 +122,7 @@ namespace Opc.Ua.Gds.Client
 
                         if (file != null)
                         {
-                            certificate = new X509Certificate2(file);
+                            certificate = GdsCertificateLoader.LoadCertificateFromFile(file);
                         }
                     }
                     else
@@ -225,7 +227,9 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
+                #pragma warning disable CA1849 // Justification: Synchronous WinForms sample handler preserves existing behavior.
                 Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
+                #pragma warning restore CA1849
             }
 
         }
@@ -301,14 +305,20 @@ namespace Opc.Ua.Gds.Client
                     else
                     {
                         string absoluteCertificatePrivateKeyPath = Utils.GetAbsoluteFilePath(m_application.CertificatePrivateKeyPath, true, false, false);
+                        #pragma warning disable CA1849 // Justification: Synchronous WinForms sample handler preserves existing behavior.
                         byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
+                        #pragma warning restore CA1849
                         if (m_application.GetPrivateKeyFormat(await m_server?.GetSupportedKeyFormatsAsync()) == "PFX")
                         {
+                            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                             csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan());
+                            #pragma warning restore CA2000
                         }
                         else
                         {
+                            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                             csrCertificate = CertificateFactory.CreateCertificateWithPEMPrivateKey(m_certificate, pkcsData, m_certificatePassword.AsSpan());
+                            #pragma warning restore CA2000
                         }
                     }
                     byte[] certificateRequest = CertificateFactory.CreateSigningRequest(csrCertificate, domainNames);
@@ -322,7 +332,9 @@ namespace Opc.Ua.Gds.Client
             }
             catch (Exception ex)
             {
+                #pragma warning disable CA1849 // Justification: Synchronous WinForms sample handler preserves existing behavior.
                 Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
+                #pragma warning restore CA1849
             }
         }
 
@@ -348,7 +360,7 @@ namespace Opc.Ua.Gds.Client
                 if (m_application.RegistrationType != RegistrationType.ServerPush)
                 {
 
-                    X509Certificate2 newCert = new X509Certificate2(certificate);
+                    X509Certificate2 newCert = GdsCertificateLoader.LoadCertificate(certificate);
 
                     if (!String.IsNullOrEmpty(m_application.CertificateStorePath) && !String.IsNullOrEmpty(m_application.CertificateSubjectName))
                     {
@@ -380,7 +392,7 @@ namespace Opc.Ua.Gds.Client
                             }
                             else
                             {
-                                newCert = new X509Certificate2(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
+                                newCert = GdsCertificateLoader.LoadPkcs12(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
                             }
                             await store.AddAsync(newCert);
                             if (m_temporaryCertificateCreated)
@@ -411,7 +423,7 @@ namespace Opc.Ua.Gds.Client
                         if (result == DialogResult.Yes)
                         {
                             byte[] exportedCert;
-                            if (string.Compare(file.Extension, ".PEM", true) == 0)
+                            if (string.Equals(file.Extension, ".PEM", StringComparison.OrdinalIgnoreCase))
                             {
                                 exportedCert = PEMWriter.ExportCertificateAsPEM(newCert);
                             }
@@ -444,8 +456,12 @@ namespace Opc.Ua.Gds.Client
                                 if (file.Exists)
                                 {
                                     byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
+                                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                                     X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan());
+                                    #pragma warning restore CA2000
+                                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                                     newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
+                                    #pragma warning restore CA2000
                                     pkcsData = newCert.Export(X509ContentType.Pfx, m_certificatePassword);
                                     File.WriteAllBytes(absoluteCertificatePrivateKeyPath, pkcsData);
 
@@ -470,11 +486,11 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (byte[] issuerCertificate in issuerCertificates)
                             {
-                                X509Certificate2 x509 = new X509Certificate2(issuerCertificate);
+                                X509Certificate2 x509 = GdsCertificateLoader.LoadCertificate(issuerCertificate);
                                 X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint);
                                 if (certs.Count == 0)
                                 {
-                                    await store.AddAsync(new X509Certificate2(issuerCertificate));
+                                    await store.AddAsync(GdsCertificateLoader.LoadCertificate(issuerCertificate));
                                 }
                             }
                         }
@@ -487,7 +503,7 @@ namespace Opc.Ua.Gds.Client
                 {
                     if (privateKeyPFX != null && privateKeyPFX.Length > 0)
                     {
-                        var x509 = new X509Certificate2(privateKeyPFX, m_certificatePassword, X509KeyStorageFlags.Exportable);
+                        var x509 = GdsCertificateLoader.LoadPkcs12(privateKeyPFX, m_certificatePassword, X509KeyStorageFlags.Exportable);
                         privateKeyPFX = x509.Export(X509ContentType.Pfx);
                     }
 
@@ -567,3 +583,4 @@ namespace Opc.Ua.Gds.Client
 
     }
 }
+

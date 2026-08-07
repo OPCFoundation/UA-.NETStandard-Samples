@@ -46,6 +46,7 @@ namespace Quickstarts.AlarmConditionServer
     /// This sub-class specifies non-configurable metadata such as Product Name and initializes
     /// the AlarmConditionServerNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample public API name matches the workshop namespace.")]
     public partial class AlarmConditionServer : StandardServer
     {
         #region Public Interface

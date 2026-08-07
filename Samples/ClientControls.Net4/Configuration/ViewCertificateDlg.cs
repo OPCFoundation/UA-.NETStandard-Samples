@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -99,12 +99,12 @@ namespace Opc.Ua.Client.Controls
 
                     foreach (string element in X509Utils.ParseDistinguishedName(data.Subject))
                     {
-                        if (element.StartsWith("CN="))
+                        if (element.StartsWith("CN=", StringComparison.Ordinal))
                         {
                             ApplicationNameTB.Text = element.Substring(3);
                         }
 
-                        if (element.StartsWith("O="))
+                        if (element.StartsWith("O=", StringComparison.Ordinal))
                         {
 
                             OrganizationTB.Text = element.Substring(2);
@@ -199,7 +199,9 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 await new CertificateDlg().ShowDialogAsync(m_certificate, m_telemetry);
+                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {
@@ -235,7 +237,7 @@ namespace Opc.Ua.Client.Controls
 
                 foreach (string element in X509Utils.ParseDistinguishedName(certificate.Subject))
                 {
-                    if (element.StartsWith("CN="))
+                    if (element.StartsWith("CN=", StringComparison.Ordinal))
                     {
                         displayName = element.Substring(3);
                         break;
@@ -254,7 +256,9 @@ namespace Opc.Ua.Client.Controls
                 filePath.Append(certificate.Thumbprint);
                 filePath.Append("].der");
 
+                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 SaveFileDialog dialog = new SaveFileDialog();
+                #pragma warning restore CA2000
 
                 dialog.CheckFileExists = false;
                 dialog.CheckPathExists = true;

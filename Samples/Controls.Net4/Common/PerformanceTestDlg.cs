@@ -291,7 +291,9 @@ namespace Opc.Ua.Sample.Controls
                     m_messageContext,
                     ct);
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 client = new SessionClient(channel);
+                #pragma warning restore CA2000
 
                 List<int> requestSizes = new List<int>(result.Results.Keys);
 
@@ -423,7 +425,9 @@ namespace Opc.Ua.Sample.Controls
             {
                 FileInfo fileInfo = new FileInfo(m_filePath);
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 SaveFileDialog dialog = new SaveFileDialog();
+                #pragma warning restore CA2000
 
                 dialog.CheckFileExists = false;
                 dialog.CheckPathExists = true;
@@ -454,7 +458,9 @@ namespace Opc.Ua.Sample.Controls
             {
                 FileInfo fileInfo = new FileInfo(m_filePath);
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 OpenFileDialog dialog = new OpenFileDialog();
+                #pragma warning restore CA2000
 
                 dialog.CheckFileExists = true;
                 dialog.CheckPathExists = true;

@@ -91,16 +91,19 @@ namespace AggregationServer
     {
         public ConsoleTelemetry()
         : base(
+#pragma warning disable CA2000 // Justification: LoggerFactory ownership is transferred to TelemetryContextBase.
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Information);
                 builder.AddConsole();
             })
+#pragma warning restore CA2000
             )
         {
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Sample server disposes the field during shutdown.")]
     public class MyServer
     {
         AggregationServer server;
@@ -170,7 +173,7 @@ namespace AggregationServer
             bool haveAppCertificate = await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
-                throw new Exception("Application instance certificate invalid!");
+                throw new InvalidOperationException("Application instance certificate invalid!");
             }
 
             if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
@@ -179,7 +182,9 @@ namespace AggregationServer
             }
 
             // start the server.
+#pragma warning disable CA2000 // Justification: Server is stored in a field and disposed during shutdown.
             server = new AggregationServer();
+#pragma warning restore CA2000
             await application.StartAsync(server).ConfigureAwait(false);
 
             // print reverse connect info

@@ -40,11 +40,13 @@ namespace AggregationClient
     {
         public ConsoleTelemetry()
         : base(
+#pragma warning disable CA2000 // Justification: LoggerFactory ownership is transferred to TelemetryContextBase.
             Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Information);
                 builder.AddConsole();
             })
+#pragma warning restore CA2000
             )
         {
         }
@@ -77,7 +79,9 @@ namespace AggregationClient
                 application.CheckApplicationInstanceCertificatesAsync(false).AsTask().GetAwaiter().GetResult();
 
                 // run the application interactively.
+#pragma warning disable CA2000 // Justification: Form ownership is transferred to Application.Run.
                 Application.Run(new MainForm(application.ApplicationConfiguration, m_telemetry));
+#pragma warning restore CA2000
             }
             catch (Exception e)
             {

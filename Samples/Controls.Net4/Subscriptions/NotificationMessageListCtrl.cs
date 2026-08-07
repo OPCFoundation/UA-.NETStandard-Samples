@@ -84,6 +84,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The maximum number of messages displayed in the control.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int MaxMessageCount
         {
             get { return m_maxMessageCount; }
@@ -168,9 +169,12 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Stores the data associated with a list view item.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Sample code preserves existing public API and behavior.")]
         public class ItemData
         {
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Sample code preserves existing public API and behavior.")]
             public Subscription Subscription;
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Sample code preserves existing public API and behavior.")]
             public NotificationMessage NotificationMessage;
 
             public ItemData(
@@ -359,7 +363,9 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 NotificationMessage message = new RepublishNotificationMessageDlg().ShowDialog(m_subscription);
+                #pragma warning restore CA2000
 
                 if (message != null)
                 {

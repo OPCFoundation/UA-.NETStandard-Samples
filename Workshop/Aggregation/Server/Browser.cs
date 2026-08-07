@@ -301,14 +301,30 @@ namespace AggregationServer
 
             switch (reference.NodeClass)
             {
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.DataType: { target = new DataTypeState(); break; }
+#pragma warning restore CA2000
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.Method: { target = new MethodState(null); break; }
+#pragma warning restore CA2000
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.Object: { target = new BaseObjectState(null); break; }
+#pragma warning restore CA2000
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.ObjectType: { target = new BaseObjectTypeState(); break; }
+#pragma warning restore CA2000
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.ReferenceType: { target = new ReferenceTypeState(); break; }
+#pragma warning restore CA2000
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.Variable: { target = new BaseDataVariableState(null); break; }
+#pragma warning restore CA2000
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.VariableType: { target = new BaseDataVariableTypeState(); break; }
+#pragma warning restore CA2000
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.View: { target = new ViewState(); break; }
+#pragma warning restore CA2000
             }
 
             target.NodeId = m_mapper.ToLocalId((NodeId)reference.NodeId);

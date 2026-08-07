@@ -102,12 +102,16 @@ namespace Quickstarts.AlarmConditionClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+#pragma warning disable CA2213 // Justification: Subscription lifetime is managed by session disconnect logic.
         private Subscription m_subscription;
+#pragma warning restore CA2213
         private MonitoredItem m_monitoredItem;
         private FilterDefinition m_filter;
         private Dictionary<NodeId, NodeId> m_eventTypeMappings;
         private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
+#pragma warning disable CA2213 // Justification: Audit event form is closed by existing UI disconnect logic.
         private AuditEventForm m_auditEventForm;
+#pragma warning restore CA2213
         private bool m_connectedOnce;
         private readonly ITelemetryContext m_telemetry;
         #endregion
@@ -183,7 +187,9 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // set a suitable initial state.
+#pragma warning disable CA1508 // Justification: Analyzer does not account for session state changes in UI callbacks.
                 if (m_session != null && !m_connectedOnce)
+#pragma warning restore CA1508
                 {
                     m_connectedOnce = true;
                 }
@@ -351,14 +357,19 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         private async Task AddCommentAsync(CancellationToken ct = default)
         {
-            string comment = new AddCommentDlg().ShowDialog(String.Empty);
-
-            if (comment == null)
+            using (var dialog = new AddCommentDlg())
             {
-                return;
-            }
+#pragma warning disable CA1849 // Justification: Sample dialog API is synchronous and preserves current WinForms flow.
+                string comment = dialog.ShowDialog(String.Empty);
+#pragma warning restore CA1849
 
-            await CallMethodAsync(MethodIds.ConditionType_AddComment, comment, ct);
+                if (comment == null)
+                {
+                    return;
+                }
+
+                await CallMethodAsync(MethodIds.ConditionType_AddComment, comment, ct);
+            }
         }
 
         /// <summary>
@@ -366,14 +377,19 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         private async Task AcknowledgeAsync(CancellationToken ct = default)
         {
-            string comment = new AddCommentDlg().ShowDialog(String.Empty);
-
-            if (comment == null)
+            using (var dialog = new AddCommentDlg())
             {
-                return;
-            }
+#pragma warning disable CA1849 // Justification: Sample dialog API is synchronous and preserves current WinForms flow.
+                string comment = dialog.ShowDialog(String.Empty);
+#pragma warning restore CA1849
 
-            await CallMethodAsync(MethodIds.AcknowledgeableConditionType_Acknowledge, comment, ct);
+                if (comment == null)
+                {
+                    return;
+                }
+
+                await CallMethodAsync(MethodIds.AcknowledgeableConditionType_Acknowledge, comment, ct);
+            }
         }
 
         /// <summary>
@@ -381,14 +397,19 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         private async Task ConfirmAsync(CancellationToken ct = default)
         {
-            string comment = new AddCommentDlg().ShowDialog(String.Empty);
-
-            if (comment == null)
+            using (var dialog = new AddCommentDlg())
             {
-                return;
-            }
+#pragma warning disable CA1849 // Justification: Sample dialog API is synchronous and preserves current WinForms flow.
+                string comment = dialog.ShowDialog(String.Empty);
+#pragma warning restore CA1849
 
-            await CallMethodAsync(MethodIds.AcknowledgeableConditionType_Confirm, comment, ct);
+                if (comment == null)
+                {
+                    return;
+                }
+
+                await CallMethodAsync(MethodIds.AcknowledgeableConditionType_Confirm, comment, ct);
+            }
         }
 
         /// <summary>
@@ -1048,7 +1069,10 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 ConditionState condition = (ConditionState)ConditionsLV.SelectedItems[0].Tag;
-                new ViewEventDetailsDlg().ShowDialog(m_monitoredItem, condition.Handle as EventFieldList);
+                using (var dialog = new ViewEventDetailsDlg())
+                {
+                    dialog.ShowDialog(m_monitoredItem, condition.Handle as EventFieldList);
+                }
             }
             catch (Exception exception)
             {
@@ -1142,7 +1166,11 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                NodeId areaId = new SetAreaFilterDlg().ShowDialog(m_session);
+                NodeId areaId;
+                using (var dialog = new SetAreaFilterDlg())
+                {
+                    areaId = dialog.ShowDialog(m_session);
+                }
 
                 if (areaId == null)
                 {
@@ -1219,7 +1247,11 @@ namespace Quickstarts.AlarmConditionClient
                     return;
                 }
 
-                int selectedResponse = new DialogResponseDlg().ShowDialog(dialog);
+                int selectedResponse;
+                using (var responseDialog = new DialogResponseDlg())
+                {
+                    selectedResponse = responseDialog.ShowDialog(dialog);
+                }
 
                 if (selectedResponse != -1)
                 {

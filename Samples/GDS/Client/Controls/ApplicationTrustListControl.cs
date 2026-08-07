@@ -162,7 +162,7 @@ namespace Opc.Ua.Gds.Client
 
                         if (path != null)
                         {
-                            if (String.Compare(path, ds.GetPublicKeyFilePath(certificate.Thumbprint), StringComparison.OrdinalIgnoreCase) == 0)
+                            if (String.Equals(path, ds.GetPublicKeyFilePath(certificate.Thumbprint), StringComparison.OrdinalIgnoreCase))
                             {
                                 continue;
                             }
@@ -172,7 +172,7 @@ namespace Opc.Ua.Gds.Client
 
                         if (path != null)
                         {
-                            if (String.Compare(path, ds.GetPrivateKeyFilePath(certificate.Thumbprint), StringComparison.OrdinalIgnoreCase) == 0)
+                            if (String.Equals(path, ds.GetPrivateKeyFilePath(certificate.Thumbprint), StringComparison.OrdinalIgnoreCase))
                             {
                                 continue;
                             }
@@ -230,7 +230,7 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (var certificate in trustList.TrustedCertificates)
                             {
-                                var x509 = new X509Certificate2(certificate);
+                                var x509 = GdsCertificateLoader.LoadCertificate(certificate);
 
                                 X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
                                 if (certs.Count == 0)
@@ -259,7 +259,7 @@ namespace Opc.Ua.Gds.Client
                         {
                             foreach (var certificate in trustList.IssuerCertificates)
                             {
-                                var x509 = new X509Certificate2(certificate);
+                                var x509 = GdsCertificateLoader.LoadCertificate(certificate);
 
                                 X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
                                 if (certs.Count == 0)
@@ -363,3 +363,4 @@ namespace Opc.Ua.Gds.Client
         }
     }
 }
+

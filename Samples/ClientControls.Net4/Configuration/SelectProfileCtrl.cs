@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -63,7 +63,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The list of available security profiles.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        #pragma warning disable CA2227 // Justification: sample public API shape is preserved by design.
         public Opc.Ua.Security.ListOfSecurityProfiles Profiles
+        #pragma warning restore CA2227
         {
             get
             {
@@ -103,6 +106,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets or sets the control that is stores with the current file path.
         /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public Control CurrentProfilesControl { get; set; }
 
         /// <summary>
@@ -123,7 +127,9 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
+            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             Opc.Ua.Security.ListOfSecurityProfiles profiles = new SelectProfileDlg().ShowDialog(Profiles, null);
+            #pragma warning restore CA2000
 
             if (profiles == null)
             {

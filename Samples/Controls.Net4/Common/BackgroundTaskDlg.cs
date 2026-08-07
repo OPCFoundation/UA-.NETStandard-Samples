@@ -46,6 +46,7 @@ namespace Opc.Ua.Sample.Controls
             OkBTN.Enabled = false;
         }
 
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int Progress
         {
             get { return ProgressCTRL.Value; }

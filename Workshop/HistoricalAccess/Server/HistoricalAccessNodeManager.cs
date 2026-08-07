@@ -79,8 +79,11 @@ namespace Quickstarts.HistoricalAccessServer
         {
             if (disposing)
             {
-                // TBD
+                m_simulationTimer?.Dispose();
+                m_simulationTimer = null;
             }
+
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -138,7 +141,9 @@ namespace Quickstarts.HistoricalAccessServer
                     externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
                 }
 
+#pragma warning disable CA2000 // Justification: ownership is transferred to the address space/predefined node collection.
                 ArchiveFolderState root = m_system.GetFolderState(SystemContext, String.Empty);
+#pragma warning restore CA2000
                 references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, root.NodeId));
                 root.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
 
@@ -152,7 +157,9 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         private void CreateFolderFromResources(NodeState root, string folderName)
         {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the address space/predefined node collection.
             FolderState dataFolder = new FolderState(root);
+#pragma warning restore CA2000
             dataFolder.ReferenceTypeId = ReferenceTypeIds.Organizes;
             dataFolder.TypeDefinitionId = ObjectTypeIds.FolderType;
             dataFolder.NodeId = new NodeId(folderName, NamespaceIndex);
@@ -166,13 +173,15 @@ namespace Quickstarts.HistoricalAccessServer
 
             foreach (string resourcePath in Assembly.GetExecutingAssembly().GetManifestResourceNames())
             {
-                if (!resourcePath.StartsWith("Quickstarts.HistoricalAccessServer.Data." + folderName))
+                if (!resourcePath.StartsWith("Quickstarts.HistoricalAccessServer.Data." + folderName, StringComparison.Ordinal))
                 {
                     continue;
                 }
 
                 ArchiveItem item = new ArchiveItem(resourcePath, Assembly.GetExecutingAssembly(), resourcePath);
+#pragma warning disable CA2000 // Justification: ownership is transferred to the address space/predefined node collection.
                 ArchiveItemState node = new ArchiveItemState(SystemContext, item, NamespaceIndex);
+#pragma warning restore CA2000
                 node.ReloadFromSource(SystemContext, Server.Telemetry);
 
                 dataFolder.AddReference(ReferenceTypeIds.Organizes, false, node.NodeId);
@@ -256,6 +265,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Verifies that the specified node exists.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the node cache/handle for the operation.")]
         protected override NodeState ValidateNode(
             ServerSystemContext context,
             NodeHandle handle,
@@ -377,6 +387,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <param name="context">The context.</param>
         /// <param name="handle">The item handle.</param>
         /// <param name="dataChangeMonitoredItem">The monitored item.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Override preserves existing sample parameter name.")]
         protected override ServiceResult ReadInitialValue(
             ISystemContext context,
             NodeHandle handle,

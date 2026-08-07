@@ -35,8 +35,23 @@ using Opc.Ua;
 
 namespace Quickstarts.HistoricalEvents.Server
 {
-    public class ReportGenerator
+    public class ReportGenerator : IDisposable
     {
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_dataset?.Dispose();
+                m_dataset = null;
+            }
+        }
+
         public void Initialize()
         {
             m_dataset = new DataSet();
@@ -66,7 +81,7 @@ namespace Quickstarts.HistoricalEvents.Server
             m_random = new Random();
 
             // look up the local timezone.
-            TimeZone timeZone = TimeZone.CurrentTimeZone;
+            TimeZoneInfo timeZone = TimeZoneInfo.Local;
             m_timeZone = new TimeZoneDataType();
             m_timeZone.Offset = (short)timeZone.GetUtcOffset(DateTime.Now).TotalMinutes;
             m_timeZone.DaylightSavingInOffset = timeZone.IsDaylightSavingTime(DateTime.Now);
@@ -142,7 +157,9 @@ namespace Quickstarts.HistoricalEvents.Server
 
         private int GetRandom(int min, int max)
         {
+#pragma warning disable CA5394 // Justification: sample data generation does not use randomness for security.
             return (int)(Math.Truncate(m_random.NextDouble() * (max - min + 1) + min));
+#pragma warning restore CA5394
         }
 
         private string GetRandom(string[] values)
@@ -200,10 +217,13 @@ namespace Quickstarts.HistoricalEvents.Server
             return wells.ToArray();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Nested sample helper type is part of existing API.")]
         public class WellInfo
         {
+            #pragma warning disable CA1051 // Justification: sample helper data container intentionally exposes fields.
             public string Id;
             public string Name;
+            #pragma warning restore CA1051
         }
 
         public DataRow GenerateFluidLevelTestReport()
@@ -246,7 +266,7 @@ namespace Quickstarts.HistoricalEvents.Server
 
             for (int ii = 0; ii < m_dataset.Tables.Count; ii++)
             {
-                DataView view = new DataView(m_dataset.Tables[ii], filter.ToString(), null, DataViewRowState.CurrentRows);
+                using DataView view = new DataView(m_dataset.Tables[ii], filter.ToString(), null, DataViewRowState.CurrentRows);
 
                 if (view.Count > 0)
                 {
@@ -345,11 +365,13 @@ namespace Quickstarts.HistoricalEvents.Server
                 filter.Append(')');
             }
 
+#pragma warning disable CA2000 // Justification: ownership is transferred to the caller.
             DataView view = new DataView(
                 m_dataset.Tables[(int)reportType],
                 filter.ToString(),
                 Opc.Ua.BrowseNames.Time,
                 DataViewRowState.CurrentRows);
+#pragma warning restore CA2000
 
             return view;
         }

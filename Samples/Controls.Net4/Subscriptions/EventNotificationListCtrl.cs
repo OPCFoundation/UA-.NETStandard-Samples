@@ -101,7 +101,9 @@ namespace Opc.Ua.Sample.Controls
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
             m_monitoredItem = monitoredItem;
+            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
+            #pragma warning restore CA1508
 
             // get the events.
             List<EventFieldList> events = new List<EventFieldList>();
@@ -433,7 +435,9 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 new ComplexValueEditDlg().ShowDialog(fieldList, m_subscription.FindItemByClientHandle(fieldList.ClientHandle), Telemetry);
+                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {
