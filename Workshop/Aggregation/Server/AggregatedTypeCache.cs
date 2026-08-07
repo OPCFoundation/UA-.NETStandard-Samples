@@ -74,7 +74,7 @@ namespace AggregationServer
             catch (Exception e)
             {
                 server.Telemetry.CreateLogger<AggregatedTypeCache>()
-                    .LogError("Could not browse subtypes of {0}. {1}", parentId, e.Message);
+                    .LogError("Could not browse subtypes of {ParentId}. {Message}", parentId, e.Message);
                 return;
             }
 

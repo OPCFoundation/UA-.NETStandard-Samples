@@ -131,7 +131,7 @@ namespace Quickstarts.ViewsServer
             {
                 base.CreateAddressSpace(externalReferences);
 
-                NodeState root = FindPredefinedNode(new NodeId(Quickstarts.Views.Objects.Plant, NamespaceIndex), typeof(NodeState));
+                NodeState root = FindPredefinedNode<NodeState>(new NodeId(Quickstarts.Views.Objects.Plant, NamespaceIndex));
 
                 Quickstarts.Views.BoilerState boiler1 = new Quickstarts.Views.BoilerState(null);
                 ParsedNodeId pnd1 = new ParsedNodeId() { NamespaceIndex = NamespaceIndex, RootId = "Boiler #1" };
@@ -208,7 +208,7 @@ namespace Quickstarts.ViewsServer
                 }
 
                 // find the node.
-                NodeState node = FindPredefinedNode((NodeId)reference.TargetId, typeof(NodeState));
+                NodeState node = FindPredefinedNode<NodeState>((NodeId)reference.TargetId);
 
                 if (node != null)
                 {

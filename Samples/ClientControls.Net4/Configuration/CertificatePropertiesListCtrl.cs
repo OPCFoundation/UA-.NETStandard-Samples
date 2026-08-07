@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Configuration;
 using Opc.Ua.Security.Certificates;
+using X509AuthorityKeyIdentifierExtension = Opc.Ua.Security.Certificates.X509AuthorityKeyIdentifierExtension;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -151,7 +152,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     StringBuilder buffer = new StringBuilder();
 
-                    foreach (X509KeyUsageFlags usageFlag in Enum.GetValues(typeof(X509KeyUsageFlags)))
+                    foreach (X509KeyUsageFlags usageFlag in Enum.GetValues<X509KeyUsageFlags>())
                     {
                         if ((keyUsage.KeyUsages & usageFlag) != 0)
                         {

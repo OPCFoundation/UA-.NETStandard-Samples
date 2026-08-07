@@ -48,14 +48,14 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            Array values = Enum.GetValues(typeof(DataChangeTrigger));
+            Array values = Enum.GetValues<DataChangeTrigger>();
 
             foreach (object value in values)
             {
                 TriggerCB.Items.Add(value);
             }
 
-            values = Enum.GetValues(typeof(DeadbandType));
+            values = Enum.GetValues<DeadbandType>();
 
             foreach (object value in values)
             {

@@ -44,7 +44,7 @@ namespace Opc.Ua.Gds.Client
         public ApplicationTrustListControl()
         {
             InitializeComponent();
-            TrustListMasksComboBox.DataSource = Enum.GetValues(typeof(TrustListMasks));
+            TrustListMasksComboBox.DataSource = Enum.GetValues<TrustListMasks>();
             TrustListMasksComboBox.SelectedItem = TrustListMasks.All;
         }
 

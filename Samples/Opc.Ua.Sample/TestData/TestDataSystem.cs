@@ -772,7 +772,10 @@ namespace TestData
 
         void DoSample(object state)
         {
-            m_logger.LogTrace("DoSample HiRes={0:ss.ffff} Now={1:ss.ffff}", HiResClock.UtcNow, DateTime.UtcNow);
+            if (m_logger.IsEnabled(LogLevel.Trace))
+            {
+                m_logger.LogTrace("DoSample HiRes={HiResNow:ss.ffff} Now={Now:ss.ffff}", HiResClock.UtcNow, DateTime.UtcNow);
+            }
 
             Queue<Sample> samples = new Queue<Sample>();
 

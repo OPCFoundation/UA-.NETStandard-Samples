@@ -502,7 +502,7 @@ namespace Quickstarts.DataAccessClient
             try
             {
                 // check if node has already been expanded once.
-                if (e.Node.Nodes.Count != 1 || e.Node.Nodes[0].Text != String.Empty)
+                if (e.Node.Nodes.Count != 1 || !string.IsNullOrEmpty(e.Node.Nodes[0].Text))
                 {
                     return;
                 }

@@ -208,7 +208,7 @@ namespace Opc.Ua.Client.Controls
                 return null;
             }
 
-            if (BrowseTV.SelectedNode.Nodes.Count == 1 && BrowseTV.SelectedNode.Nodes[0].Text == String.Empty)
+            if (BrowseTV.SelectedNode.Nodes.Count == 1 && string.IsNullOrEmpty(BrowseTV.SelectedNode.Nodes[0].Text))
             {
                 BrowseTV.SelectedNode.Expand();
             }

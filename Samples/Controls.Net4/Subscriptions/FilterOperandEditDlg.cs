@@ -55,7 +55,7 @@ namespace Opc.Ua.Sample.Controls
             OperandTypeCB.Items.Add(typeof(AttributeOperand).Name);
             OperandTypeCB.Items.Add(typeof(ElementOperand).Name);
 
-            foreach (BuiltInType datatype in Enum.GetValues(typeof(BuiltInType)))
+            foreach (BuiltInType datatype in Enum.GetValues<BuiltInType>())
             {
                 DataTypeCB.Items.Add(datatype);
             }

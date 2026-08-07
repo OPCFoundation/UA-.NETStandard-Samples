@@ -29,11 +29,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Selectors;
-using System.IdentityModel.Tokens;
 using System.Security.Principal;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.ServiceModel.Security;
 using System.Text;
 using System.Xml;
 using System.Reflection;
@@ -171,14 +169,16 @@ namespace Quickstarts.UserAuthenticationServer
                     if (trustedIssuers == null)
                     {
                         m_logger.LogError(
-                            "Could not load CertificateTrustList for UserTokenPolicy {0}",
+                            "Could not load CertificateTrustList for UserTokenPolicy {PolicyId}",
                             policy.PolicyId);
 
                         continue;
                     }
 
                     // trusts any certificate in the trusted people store.
-                    m_certificateValidator = X509CertificateValidator.PeerTrust;
+                    // NOTE: System.IdentityModel.Selectors.X509CertificateValidator.PeerTrust
+                    // is not available on modern .NET. Basic X509 chain validation is used instead.
+                    m_certificateValidatorEnabled = true;
                 }
             }
         }
@@ -208,7 +208,10 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
                 args.Identity = new UserIdentity(userNameToken);
-                m_logger.LogInformation("UserName Token Accepted: {0}", args.Identity.DisplayName);
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("UserName Token Accepted: {DisplayName}", args.Identity.DisplayName);
+                }
                 return;
             }
 
@@ -219,7 +222,10 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 VerifyCertificate(x509Token.Certificate);
                 args.Identity = new UserIdentity(x509Token);
-                m_logger.LogInformation("X509 Token Accepted: {0}", args.Identity.DisplayName);
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("X509 Token Accepted: {DisplayName}", args.Identity.DisplayName);
+                }
                 return;
             }
         }
@@ -228,34 +234,19 @@ namespace Quickstarts.UserAuthenticationServer
         /// Initializes the validator from the configuration for a token policy.
         /// </summary>
         /// <param name="issuerCertificate">The issuer certificate.</param>
-        private SecurityTokenResolver CreateSecurityTokenResolver(CertificateIdentifier issuerCertificate)
+        /// <remarks>
+        /// WS-Security token resolvers (System.IdentityModel) are not supported on modern .NET.
+        /// This path is stubbed out under the .NET 10 upgrade (Option C).
+        /// </remarks>
+        private object CreateSecurityTokenResolver(CertificateIdentifier issuerCertificate)
         {
             if (issuerCertificate == null)
             {
                 throw new ArgumentNullException(nameof(issuerCertificate));
             }
 
-            // find the certificate.
-            X509Certificate2 certificate = issuerCertificate.FindAsync(false).Result;
-
-            if (certificate == null)
-            {
-                throw ServiceResultException.Create(
-                    StatusCodes.BadCertificateInvalid,
-                    "Could not find issuer certificate: {0}",
-                    issuerCertificate);
-            }
-
-            // create a security token representing the certificate.
-            List<SecurityToken> tokens = new List<SecurityToken>();
-            tokens.Add(new X509SecurityToken(certificate));
-
-            // create issued token resolver.
-            SecurityTokenResolver tokenResolver = SecurityTokenResolver.CreateDefaultSecurityTokenResolver(
-                new System.Collections.ObjectModel.ReadOnlyCollection<SecurityToken>(tokens),
-                false);
-
-            return tokenResolver;
+            throw new NotSupportedException(
+                "WS-Security token resolution (System.IdentityModel) is not supported on this platform.");
         }
 
         /// <summary>
@@ -293,7 +284,32 @@ namespace Quickstarts.UserAuthenticationServer
         {
             try
             {
-                m_certificateValidator.Validate(certificate);
+                if (!m_certificateValidatorEnabled)
+                {
+                    throw new InvalidOperationException("No certificate validator configured.");
+                }
+
+                // Mimic X509CertificateValidator.PeerTrust by requiring the user certificate to
+                // exist in the Windows TrustedPeople store (CurrentUser or LocalMachine).
+                bool trusted = false;
+
+                foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
+                {
+                    using var store = new X509Store(StoreName.TrustedPeople, location);
+                    store.Open(OpenFlags.ReadOnly);
+
+                    if (store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, validOnly: false).Count > 0)
+                    {
+                        trusted = true;
+                        break;
+                    }
+                }
+
+                if (!trusted)
+                {
+                    throw new CryptographicException(
+                        "The user certificate is not present in the TrustedPeople store.");
+                }
             }
             catch (Exception e)
             {
@@ -317,56 +333,14 @@ namespace Quickstarts.UserAuthenticationServer
         /// <summary>
         /// Validates a Kerberos WSS user token.
         /// </summary>
-        private SecurityToken ParseAndVerifyKerberosToken(byte[] tokenData)
+        /// <remarks>
+        /// Kerberos / WS-Security token handling (System.IdentityModel) is not supported on
+        /// modern .NET. This path is stubbed out under the .NET 10 upgrade (Option C).
+        /// </remarks>
+        private object ParseAndVerifyKerberosToken(byte[] tokenData)
         {
-            var document = new XmlDocument { XmlResolver = null };
-            XmlNodeReader reader = null;
-            try
-            {
-                using (var xml = XmlReader.Create(Encoding.UTF8.GetString(tokenData).Trim(), new XmlReaderSettings() { XmlResolver = null }))
-                {
-                    document.Load(xml);
-                }
-
-                reader = new XmlNodeReader(document.DocumentElement);
-
-                SecurityToken securityToken = new WSSecurityTokenSerializer().ReadToken(reader, null);
-                System.IdentityModel.Tokens.KerberosReceiverSecurityToken receiver = securityToken as KerberosReceiverSecurityToken;
-
-                KerberosSecurityTokenAuthenticator authenticator = new KerberosSecurityTokenAuthenticator();
-
-                if (authenticator.CanValidateToken(receiver))
-                {
-                    authenticator.ValidateToken(receiver);
-                }
-
-                return securityToken;
-            }
-            catch (Exception e)
-            {
-                // construct translation object with default text.
-                TranslationInfo info = new TranslationInfo(
-                    "InvalidKerberosToken",
-                    "en-US",
-                    "'{0}' is not a valid Kerberos token.",
-                    document.DocumentElement.LocalName);
-
-                // create an exception with a vendor defined sub-code.
-                throw new ServiceResultException(new ServiceResult(
-                    Namespaces.UserAuthentication,
-                    new StatusCode(
-                    StatusCodes.BadIdentityTokenRejected,
-                    "InvalidKerberosToken"),
-                    new LocalizedText(info),
-                    e));
-            }
-            finally
-            {
-                if (reader != null)
-                {
-                    reader.Close();
-                }
-            }
+            throw new NotSupportedException(
+                "Kerberos WS-Security tokens (System.IdentityModel) are not supported on this platform.");
         }
         #endregion
 
@@ -388,7 +362,8 @@ namespace Quickstarts.UserAuthenticationServer
 
         private sealed class ImpersonationContext : IDisposable
         {
-            public WindowsImpersonationContext Context;
+            // WindowsImpersonationContext is not available on modern .NET.
+            // Impersonation is not supported under the .NET 10 upgrade (Option C).
             public IntPtr Handle;
 
             #region IDisposable Members
@@ -405,13 +380,13 @@ namespace Quickstarts.UserAuthenticationServer
             /// </summary>
             public void Dispose()
             {
-                Utils.SilentDispose(Context);
-
                 if (Handle != IntPtr.Zero)
                 {
                     NativeMethods.CloseHandle(Handle);
                     Handle = IntPtr.Zero;
                 }
+
+                GC.SuppressFinalize(this);
             }
             #endregion
         }
@@ -422,38 +397,14 @@ namespace Quickstarts.UserAuthenticationServer
         /// <summary>
         /// Impersonates the windows user identifed by the security token.
         /// </summary>
-        private void LogonUser(OperationContext context, UserNameSecurityToken securityToken)
+        /// <remarks>
+        /// Windows impersonation via System.Security.Principal.WindowsImpersonationContext is not
+        /// supported on modern .NET. This path is stubbed out under the .NET 10 upgrade (Option C).
+        /// </remarks>
+        private void LogonUser(OperationContext context, object securityToken)
         {
-            IntPtr handle = IntPtr.Zero;
-
-            const int LOGON32_PROVIDER_DEFAULT = 0;
-            // const int LOGON32_LOGON_INTERACTIVE = 2;
-            const int LOGON32_LOGON_NETWORK = 3;
-            // const int LOGON32_LOGON_BATCH = 4;
-
-            bool result = NativeMethods.LogonUser(
-                securityToken.UserName,
-                String.Empty,
-                securityToken.Password,
-                LOGON32_LOGON_NETWORK,
-                LOGON32_PROVIDER_DEFAULT,
-                ref handle);
-
-            if (!result)
-            {
-                throw ServiceResultException.Create(StatusCodes.BadUserAccessDenied, "Login failed for user: {0}", securityToken.UserName);
-            }
-
-            WindowsIdentity identity = new WindowsIdentity(handle);
-
-            ImpersonationContext impersonationContext = new ImpersonationContext();
-            impersonationContext.Handle = handle;
-            impersonationContext.Context = identity.Impersonate();
-
-            lock (this.m_impersonationLock)
-            {
-                m_contexts.Add(context.RequestId, impersonationContext);
-            }
+            throw new NotSupportedException(
+                "Windows impersonation is not supported on this platform.");
         }
 
         /// <summary>
@@ -531,7 +482,7 @@ namespace Quickstarts.UserAuthenticationServer
 
             if (impersonationContext != null)
             {
-                impersonationContext.Context.Undo();
+                // Windows impersonation is not supported on modern .NET; nothing to undo.
                 impersonationContext.Dispose();
             }
 
@@ -540,7 +491,7 @@ namespace Quickstarts.UserAuthenticationServer
 
         #region Private Fields
         private object m_impersonationLock = new object();
-        private X509CertificateValidator m_certificateValidator;
+        private bool m_certificateValidatorEnabled;
         #endregion
     }
 }

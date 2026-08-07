@@ -33,11 +33,8 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
-using System.ServiceModel;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using System.ServiceModel.Security;
-using System.ServiceModel.Channels;
 
 using Opc.Ua;
 using Opc.Ua.Client;

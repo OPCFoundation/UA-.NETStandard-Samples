@@ -55,7 +55,6 @@ namespace Opc.Ua.Client.Controls
         private const int ClosedFolder = 6;
         private const int ObjectType = 7;
         private const int View = 8;
-        private const int Reference = 9;
         private const int NumberValue = 10;
         private const int StringValue = 11;
         private const int ByteStringValue = 12;

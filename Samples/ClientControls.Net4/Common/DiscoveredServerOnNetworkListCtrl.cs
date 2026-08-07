@@ -262,7 +262,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 catch (Exception e)
                 {
-                    m_logger.LogError("Error retrieving FindServersOnNetwork parameters. Error=({0}){1}", e.GetType(), e.Message);
+                    m_logger.LogError("Error retrieving FindServersOnNetwork parameters. Error=({ExceptionType}){Message}", e.GetType(), e.Message);
                     return false;
                 }
 
@@ -274,7 +274,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                m_logger.LogError("DISCOVERY ERROR - Could not fetch servers from url: {0}. Error=({1}){2}", discoveryUrl, e.GetType(), e.Message);
+                m_logger.LogError("DISCOVERY ERROR - Could not fetch servers from url: {DiscoveryUrl}. Error=({ExceptionType}){Message}", discoveryUrl, e.GetType(), e.Message);
                 return false;
             }
             finally

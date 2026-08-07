@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Opc.Ua.Gds.Server.DB;
 
@@ -47,10 +48,12 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 Assembly assembly = typeof(SqlApplicationsDatabase).GetTypeInfo().Assembly;
                 StreamReader istrm = new StreamReader(assembly.GetManifestResourceStream("Opc.Ua.Gds.Server.DB.gdsdb.edmx.sql"));
                 string tables = istrm.ReadToEnd();
-                entities.Database.Initialize(true);
-                entities.Database.CreateIfNotExists();
+                entities.Database.EnsureCreated();
                 var parts = tables.Split(new string[] { "GO" }, System.StringSplitOptions.None);
-                foreach (var part in parts) { entities.Database.ExecuteSqlCommand(part); }
+                foreach (var part in parts)
+                {
+                    if (!string.IsNullOrWhiteSpace(part)) { entities.Database.ExecuteSqlRaw(part); }
+                }
                 entities.SaveChanges();
             }
         }

@@ -871,6 +871,7 @@ namespace Opc.Ua.Sample
 
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
             throw new NotImplementedException();
         }
         #endregion

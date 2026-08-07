@@ -34,12 +34,8 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
-using System.ServiceModel;
 using System.Reflection;
-using System.IdentityModel.Claims;
 using System.Security.Cryptography.X509Certificates;
-using System.ServiceModel.Security;
-using System.ServiceModel.Channels;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;

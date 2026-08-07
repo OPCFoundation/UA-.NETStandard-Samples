@@ -1340,7 +1340,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                     if (text != null && text.Length > MaxDisplayTextLength)
                     {
-                        return text.Substring(0, MaxDisplayTextLength) + "...";
+                        return string.Concat(text.AsSpan(0, MaxDisplayTextLength), "...");
                     }
 
                     return text;
@@ -1354,7 +1354,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                         if (text != null && text.Length > MaxDisplayTextLength)
                         {
-                            return text.Substring(0, MaxDisplayTextLength) + "...";
+                            return string.Concat(text.AsSpan(0, MaxDisplayTextLength), "...");
                         }
 
                         return text;

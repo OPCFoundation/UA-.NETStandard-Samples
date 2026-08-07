@@ -377,7 +377,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // update subitem text.
-                if (item.Text == String.Empty)
+                if (string.IsNullOrEmpty(item.Text))
                 {
                     item.Text = text;
                     item.SubItems[0].Text = text;

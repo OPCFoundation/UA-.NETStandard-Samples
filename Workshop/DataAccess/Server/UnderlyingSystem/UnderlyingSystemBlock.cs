@@ -338,7 +338,7 @@ namespace Quickstarts.DataAccessServer
             }
             catch (Exception e)
             {
-                m_logger.LogError(e, "Unexpected error running simulation for block {0}", m_name);
+                m_logger.LogError(e, "Unexpected error running simulation for block {BlockName}", m_name);
             }
         }
         #endregion
@@ -547,10 +547,9 @@ namespace Quickstarts.DataAccessServer
 
             return true;
         }
-        #endregion
 
+        #endregion
         #region Private Fields
-        private object m_lock = new object();
         private string m_id;
         private string m_name;
         private string m_blockType;

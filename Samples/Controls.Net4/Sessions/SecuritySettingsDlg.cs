@@ -34,12 +34,8 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
-using System.ServiceModel;
 using System.Reflection;
-using System.IdentityModel.Claims;
 using System.Security.Cryptography.X509Certificates;
-using System.ServiceModel.Security;
-using System.ServiceModel.Channels;
 
 using Opc.Ua.Bindings;
 using Opc.Ua.Client.Controls;
@@ -56,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            foreach (MessageSecurityMode value in Enum.GetValues(typeof(MessageSecurityMode)))
+            foreach (MessageSecurityMode value in Enum.GetValues<MessageSecurityMode>())
             {
                 SecurityModeCB.Items.Add(value);
             }
