@@ -82,7 +82,10 @@ namespace Opc.Ua.Sample
             {
                 VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
                 args.Identity = new UserIdentity(userNameToken);
-                m_logger.LogInformation("UserName Token Accepted: {0}", args.Identity.DisplayName);
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("UserName Token Accepted: {DisplayName}", args.Identity.DisplayName);
+                }
                 return;
             }
 
@@ -93,7 +96,10 @@ namespace Opc.Ua.Sample
             {
                 VerifyCertificate(x509Token.Certificate);
                 args.Identity = new UserIdentity(x509Token);
-                m_logger.LogInformation("X509 Token Accepted: {0}", args.Identity.DisplayName);
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("X509 Token Accepted: {DisplayName}", args.Identity.DisplayName);
+                }
                 return;
             }
         }

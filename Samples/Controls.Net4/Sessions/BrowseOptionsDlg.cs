@@ -51,7 +51,7 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            foreach (object value in Enum.GetValues(typeof(BrowseDirection)))
+            foreach (object value in Enum.GetValues<BrowseDirection>())
             {
                 BrowseDirectionCB.Items.Add(value);
             }
@@ -104,7 +104,7 @@ namespace Opc.Ua.Sample.Controls
 
             NodeClassList.Items.Clear();
 
-            foreach (NodeClass value in Enum.GetValues(typeof(NodeClass)))
+            foreach (NodeClass value in Enum.GetValues<NodeClass>())
             {
                 if (value == NodeClass.Unspecified)
                 {

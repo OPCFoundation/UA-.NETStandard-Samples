@@ -1153,7 +1153,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                m_logger.LogDebug("Could not fetch endpoints from url: {0}. Reason={1}", discoveryUrl, e.Message);
+                m_logger.LogDebug("Could not fetch endpoints from url: {DiscoveryUrl}. Reason={Message}", discoveryUrl, e.Message);
                 return (false, e.Message);
             }
             finally

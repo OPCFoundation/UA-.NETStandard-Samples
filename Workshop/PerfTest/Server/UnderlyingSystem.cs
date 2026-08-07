@@ -214,7 +214,7 @@ namespace Quickstarts.PerfTestServer
 
                     if ((HiResClock.UtcNow - start).TotalMilliseconds > 50)
                     {
-                        m_logger.LogWarning("Update took {0}ms.", (HiResClock.UtcNow - start).TotalMilliseconds);
+                        m_logger.LogWarning("Update took {ElapsedMs}ms.", (HiResClock.UtcNow - start).TotalMilliseconds);
                     }
                 }
             }

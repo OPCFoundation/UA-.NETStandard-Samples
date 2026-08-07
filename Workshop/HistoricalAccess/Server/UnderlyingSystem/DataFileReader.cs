@@ -571,7 +571,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{LineCount}] - '{Field}': {Message}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -603,7 +603,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{LineCount}] - '{Field}': {Message}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -625,11 +625,11 @@ namespace Quickstarts.HistoricalAccessServer
 
             try
             {
-                value = (BuiltInType)Enum.Parse(typeof(BuiltInType), field);
+                value = Enum.Parse<BuiltInType>(field);
             }
             catch (Exception e)
             {
-                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{LineCount}] - '{Field}': {Message}", lineCount, field, e.Message);
                 return false;
             }
 
@@ -674,7 +674,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                m_logger.LogError("PARSE ERROR [Line:{0}] - '{1}': {2}", lineCount, field, e.Message);
+                m_logger.LogError("PARSE ERROR [Line:{LineCount}] - '{Field}': {Message}", lineCount, field, e.Message);
                 return false;
             }
 

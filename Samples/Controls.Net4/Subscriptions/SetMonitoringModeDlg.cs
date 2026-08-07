@@ -43,7 +43,7 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
 
-            foreach (MonitoringMode value in Enum.GetValues(typeof(MonitoringMode)))
+            foreach (MonitoringMode value in Enum.GetValues<MonitoringMode>())
             {
                 MonitoringModeCB.Items.Add(value);
             }

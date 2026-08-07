@@ -1015,9 +1015,8 @@ namespace Quickstarts
                 NodeId targetId = (NodeId)child.NodeId;
 
                 // need to guard against loops.
-                if (!foundNodes.ContainsKey(targetId))
+                if (foundNodes.TryAdd(targetId, browsePath))
                 {
-                    foundNodes.Add(targetId, browsePath);
                     await CollectFieldsAsync(session, (NodeId)child.NodeId, browsePath, fields, fieldNodeIds, foundNodes, ct);
                 }
             }

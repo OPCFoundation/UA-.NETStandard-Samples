@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            foreach (MessageSecurityMode value in Enum.GetValues(typeof(MessageSecurityMode)))
+            foreach (MessageSecurityMode value in Enum.GetValues<MessageSecurityMode>())
             {
                 SecurityModeCB.Items.Add(value);
             }

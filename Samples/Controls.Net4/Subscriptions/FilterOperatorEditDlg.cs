@@ -47,7 +47,7 @@ namespace Opc.Ua.Sample.Controls
 
             OperatorCB.Items.Clear();
 
-            foreach (FilterOperator op in Enum.GetValues(typeof(FilterOperator)))
+            foreach (FilterOperator op in Enum.GetValues<FilterOperator>())
             {
                 OperatorCB.Items.Add(op);
             }

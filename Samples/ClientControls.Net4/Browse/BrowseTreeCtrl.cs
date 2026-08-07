@@ -52,7 +52,7 @@ namespace Opc.Ua.Client.Controls
         {
             InitializeComponent();
 
-            foreach (BrowseDirection value in Enum.GetValues(typeof(BrowseDirection)))
+            foreach (BrowseDirection value in Enum.GetValues<BrowseDirection>())
             {
                 BrowseDirectionCTRL.Items.Add(value);
             }
@@ -333,7 +333,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 // check if a placeholder child is present.
-                if (clickedNode.Nodes.Count == 1 && clickedNode.Nodes[0].Text == String.Empty)
+                if (clickedNode.Nodes.Count == 1 && string.IsNullOrEmpty(clickedNode.Nodes[0].Text))
                 {
                     // browse.
                     return !await BrowseChildrenAsync(clickedNode, ct);
@@ -359,7 +359,7 @@ namespace Opc.Ua.Client.Controls
 
             SelectMI.Enabled = true;
 
-            if (NodesTV.SelectedNode.Nodes.Count > 0 && NodesTV.SelectedNode.Nodes[0].Text != String.Empty)
+            if (NodesTV.SelectedNode.Nodes.Count > 0 && !string.IsNullOrEmpty(NodesTV.SelectedNode.Nodes[0].Text))
             {
                 SelectChildrenMI.Enabled = true;
             }

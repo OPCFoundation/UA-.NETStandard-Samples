@@ -77,9 +77,6 @@ namespace Opc.Ua.Client.Controls
         private int m_depth;
         private Font m_defaultFont;
         private MonitoredItem m_monitoredItem;
-
-        private const string UnknownType = "(unknown)";
-        private const string NullValue = "(null)";
         private const string ExpandIcon = "ExpandPlus";
         private const string CollapseIcon = "ExpandMinus";
         #endregion

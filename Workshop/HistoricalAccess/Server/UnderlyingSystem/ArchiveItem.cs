@@ -230,6 +230,5 @@ namespace Quickstarts.HistoricalAccessServer
     /// </summary>
     public static class SimulationTypes
     {
-        const int Random = 0;
     }
 }

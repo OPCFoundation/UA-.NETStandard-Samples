@@ -312,42 +312,42 @@ namespace Opc.Ua.Gds.Client
 
             if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                return "%" + Environment.SpecialFolder.ProgramFiles.ToString() + "%" + filePath.Substring(prefix.Length);
+                return string.Concat("%", Environment.SpecialFolder.ProgramFiles.ToString(), "%", filePath.AsSpan(prefix.Length));
             }
 
             prefix = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
 
             if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                return "%" + Environment.SpecialFolder.CommonApplicationData.ToString() + "%" + filePath.Substring(prefix.Length);
+                return string.Concat("%", Environment.SpecialFolder.CommonApplicationData.ToString(), "%", filePath.AsSpan(prefix.Length));
             }
 
             prefix = Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles);
 
             if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                return "%" + Environment.SpecialFolder.CommonProgramFiles.ToString() + "%" + filePath.Substring(prefix.Length);
+                return string.Concat("%", Environment.SpecialFolder.CommonProgramFiles.ToString(), "%", filePath.AsSpan(prefix.Length));
             }
 
             prefix = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
             if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                return "%" + Environment.SpecialFolder.LocalApplicationData.ToString() + "%" + filePath.Substring(prefix.Length);
+                return string.Concat("%", Environment.SpecialFolder.LocalApplicationData.ToString(), "%", filePath.AsSpan(prefix.Length));
             }
 
             prefix = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
             if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                return "%" + Environment.SpecialFolder.ApplicationData.ToString() + "%" + filePath.Substring(prefix.Length);
+                return string.Concat("%", Environment.SpecialFolder.ApplicationData.ToString(), "%", filePath.AsSpan(prefix.Length));
             }
 
             prefix = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
             if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                return "%" + Environment.SpecialFolder.MyDocuments.ToString() + "%" + filePath.Substring(prefix.Length);
+                return string.Concat("%", Environment.SpecialFolder.MyDocuments.ToString(), "%", filePath.AsSpan(prefix.Length));
             }
 
             return filePath;
@@ -1096,7 +1096,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (!String.IsNullOrEmpty(storePath))
                 {
-                    while (storePath.EndsWith("\\", StringComparison.Ordinal))
+                    while (storePath.EndsWith('\\'))
                     {
                         storePath = storePath.Substring(0, storePath.Length - 1);
                     }

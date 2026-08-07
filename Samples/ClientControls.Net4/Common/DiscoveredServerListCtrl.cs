@@ -269,7 +269,7 @@ namespace Opc.Ua.Client.Controls
             }
             catch (Exception e)
             {
-                m_logger.LogError("DISCOVERY ERROR - Could not fetch servers from url: {0}. Error=({2}){1}", discoveryUrl, e.Message, e.GetType());
+                m_logger.LogError("DISCOVERY ERROR - Could not fetch servers from url: {DiscoveryUrl}. Error=({ExceptionType}){Message}", discoveryUrl, e.GetType(), e.Message);
                 return false;
             }
             finally

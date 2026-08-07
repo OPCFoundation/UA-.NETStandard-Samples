@@ -51,12 +51,12 @@ namespace Opc.Ua.Sample.Controls
 
             AttributeIdCB.Items.AddRange(Attributes.BrowseNames.ToArray());
 
-            foreach (MonitoringMode value in Enum.GetValues(typeof(MonitoringMode)))
+            foreach (MonitoringMode value in Enum.GetValues<MonitoringMode>())
             {
                 MonitoringModeCB.Items.Add(value);
             }
 
-            foreach (NodeClass value in Enum.GetValues(typeof(NodeClass)))
+            foreach (NodeClass value in Enum.GetValues<NodeClass>())
             {
                 NodeClassCB.Items.Add(value);
             }

@@ -331,7 +331,7 @@ namespace Opc.Ua.Sample.Controls
         protected override Task<bool> BeforeExpandAsync(TreeNode clickedNode, CancellationToken ct = default)
         {
             // check if a placeholder child is present.
-            if (clickedNode.Nodes.Count == 1 && clickedNode.Nodes[0].Text == String.Empty)
+            if (clickedNode.Nodes.Count == 1 && string.IsNullOrEmpty(clickedNode.Nodes[0].Text))
             {
                 // clear dummy children.
                 clickedNode.Nodes.Clear();
@@ -662,39 +662,57 @@ namespace Opc.Ua.Sample.Controls
             {
                 if (reference.ReferenceTypeId.IsNullNodeId)
                 {
-                    m_logger.LogDebug("Reference {0} has null reference type id", reference.DisplayName);
+                    if (m_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        m_logger.LogDebug("Reference {DisplayName} has null reference type id", reference.DisplayName);
+                    }
                     continue;
                 }
 
                 ReferenceTypeNode typeNode = await m_session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as ReferenceTypeNode;
                 if (typeNode == null)
                 {
-                    m_logger.LogDebug("Reference {0} has invalid reference type id.", reference.DisplayName);
+                    if (m_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        m_logger.LogDebug("Reference {DisplayName} has invalid reference type id.", reference.DisplayName);
+                    }
                     continue;
                 }
 
                 if (m_browser.BrowseDirection == BrowseDirection.Forward && !reference.IsForward
                     || m_browser.BrowseDirection == BrowseDirection.Inverse && reference.IsForward)
                 {
-                    m_logger.LogDebug("Reference's IsForward value is: {0}, but the browse direction is: {1}; for reference {2}", reference.IsForward, m_browser.BrowseDirection, reference.DisplayName);
+                    if (m_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        m_logger.LogDebug("Reference's IsForward value is: {IsForward}, but the browse direction is: {BrowseDirection}; for reference {DisplayName}", reference.IsForward, m_browser.BrowseDirection, reference.DisplayName);
+                    }
                     continue;
                 }
 
                 if (reference.NodeId == null || reference.NodeId.IsNull)
                 {
-                    m_logger.LogDebug("The node id of the reference {0} is NULL.", reference.DisplayName);
+                    if (m_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        m_logger.LogDebug("The node id of the reference {DisplayName} is NULL.", reference.DisplayName);
+                    }
                     continue;
                 }
 
                 if (reference.BrowseName == null || reference.BrowseName.Name == null)
                 {
-                    m_logger.LogDebug("Browse name is empty for reference {0}", reference.DisplayName);
+                    if (m_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        m_logger.LogDebug("Browse name is empty for reference {DisplayName}", reference.DisplayName);
+                    }
                     continue;
                 }
 
-                if (!Enum.IsDefined(typeof(Opc.Ua.NodeClass), reference.NodeClass) || reference.NodeClass == NodeClass.Unspecified)
+                if (!Enum.IsDefined(reference.NodeClass) || reference.NodeClass == NodeClass.Unspecified)
                 {
-                    m_logger.LogDebug("Node class is an unknown or unspecified value, for reference {0}", reference.DisplayName);
+                    if (m_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        m_logger.LogDebug("Node class is an unknown or unspecified value, for reference {DisplayName}", reference.DisplayName);
+                    }
                     continue;
                 }
 
@@ -702,7 +720,10 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference.TypeDefinition == null || reference.TypeDefinition.IsNull)
                     {
-                        m_logger.LogDebug("Type definition is null for reference {0}", reference.DisplayName);
+                        if (m_logger.IsEnabled(LogLevel.Debug))
+                        {
+                            m_logger.LogDebug("Type definition is null for reference {DisplayName}", reference.DisplayName);
+                        }
                         continue;
                     }
                 }
@@ -762,7 +783,10 @@ namespace Opc.Ua.Sample.Controls
 
             if (reference.ReferenceTypeId.IsNullNodeId)
             {
-                m_logger.LogDebug("NULL reference type id, for reference: {0}", reference.DisplayName);
+                if (m_logger.IsEnabled(LogLevel.Debug))
+                {
+                    m_logger.LogDebug("NULL reference type id, for reference: {DisplayName}", reference.DisplayName);
+                }
                 return null;
             }
 
@@ -809,7 +833,10 @@ namespace Opc.Ua.Sample.Controls
                 return AddNode(parent, typeNode.NodeId, text, icon);
             }
 
-            m_logger.LogDebug("Reference type id not found for: {0}", reference.ReferenceTypeId);
+            if (m_logger.IsEnabled(LogLevel.Debug))
+            {
+                m_logger.LogDebug("Reference type id not found for: {ReferenceTypeId}", reference.ReferenceTypeId);
+            }
 
             return null;
         }
@@ -840,7 +867,8 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                if (await new BrowseOptionsDlg().ShowDialogAsync(m_browser, m_session, Telemetry))
+                using var dialog = new BrowseOptionsDlg();
+                if (await dialog.ShowDialogAsync(m_browser, m_session, Telemetry))
                 {
                     if (NodesTV.SelectedNode != null)
                     {
@@ -971,7 +999,8 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                await new NodeAttributesDlg().ShowDialogAsync(m_browser.Session as Session, reference.NodeId, Telemetry);
+                using var dialog = new NodeAttributesDlg();
+                await dialog.ShowDialogAsync(m_browser.Session as Session, reference.NodeId, Telemetry);
             }
             catch (Exception exception)
             {
@@ -1024,7 +1053,8 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                await new CallMethodDlg().ShowAsync(m_browser.Session as Session, objectId, methodId, Telemetry);
+                using var dialog = new CallMethodDlg();
+                await dialog.ShowAsync(m_browser.Session as Session, objectId, methodId, Telemetry);
             }
             catch (Exception exception)
             {
@@ -1063,7 +1093,8 @@ namespace Opc.Ua.Sample.Controls
                 valueIds.Add(valueId);
 
                 // show form.
-                await new ReadDlg().ShowAsync(session, valueIds, Telemetry);
+                using var dialog = new ReadDlg();
+                await dialog.ShowAsync(session, valueIds, Telemetry);
             }
             catch (Exception exception)
             {
@@ -1102,7 +1133,8 @@ namespace Opc.Ua.Sample.Controls
                 values.Add(value);
 
                 // show form.
-                await new WriteDlg().ShowAsync(session, values, Telemetry);
+                using var dialog = new WriteDlg();
+                await dialog.ShowAsync(session, values, Telemetry);
             }
             catch (Exception exception)
             {
@@ -1187,7 +1219,8 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                await new ReadHistoryDlg().ShowDialogAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
+                using var dialog = new ReadHistoryDlg();
+                await dialog.ShowDialogAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -1211,7 +1244,8 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                await new BrowseDlg().ShowAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
+                using var dialog = new BrowseDlg();
+                await dialog.ShowAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {

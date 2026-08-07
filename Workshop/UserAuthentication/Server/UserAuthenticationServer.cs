@@ -169,7 +169,7 @@ namespace Quickstarts.UserAuthenticationServer
                     if (trustedIssuers == null)
                     {
                         m_logger.LogError(
-                            "Could not load CertificateTrustList for UserTokenPolicy {0}",
+                            "Could not load CertificateTrustList for UserTokenPolicy {PolicyId}",
                             policy.PolicyId);
 
                         continue;
@@ -208,7 +208,10 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
                 args.Identity = new UserIdentity(userNameToken);
-                m_logger.LogInformation("UserName Token Accepted: {0}", args.Identity.DisplayName);
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("UserName Token Accepted: {DisplayName}", args.Identity.DisplayName);
+                }
                 return;
             }
 
@@ -219,7 +222,10 @@ namespace Quickstarts.UserAuthenticationServer
             {
                 VerifyCertificate(x509Token.Certificate);
                 args.Identity = new UserIdentity(x509Token);
-                m_logger.LogInformation("X509 Token Accepted: {0}", args.Identity.DisplayName);
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("X509 Token Accepted: {DisplayName}", args.Identity.DisplayName);
+                }
                 return;
             }
         }
@@ -379,6 +385,8 @@ namespace Quickstarts.UserAuthenticationServer
                     NativeMethods.CloseHandle(Handle);
                     Handle = IntPtr.Zero;
                 }
+
+                GC.SuppressFinalize(this);
             }
             #endregion
         }

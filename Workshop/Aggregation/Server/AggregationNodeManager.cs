@@ -1093,7 +1093,7 @@ namespace AggregationServer
 
                     if (ServiceResult.IsBad(request.Status.Error))
                     {
-                        m_logger.LogError("Could not create event item. {0}", request.Status.Error.ToLongString());
+                        m_logger.LogError("Could not create event item. {Error}", request.Status.Error.ToLongString());
                     }
                 }
             }
@@ -1262,7 +1262,10 @@ namespace AggregationServer
 
             try
             {
-                m_logger.LogInformation($"Create Connect Session: {m_endpoint} for {sessionName}");
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("Create Connect Session: {Endpoint} for {SessionName}", m_endpoint, sessionName);
+                }
                 Opc.Ua.Client.ISession session = new Opc.Ua.Client.DefaultSessionFactory(Server.Telemetry).CreateAsync(
                     m_configuration,
                     m_reverseConnectManager,
@@ -1655,7 +1658,10 @@ namespace AggregationServer
         {
             if (e.Status != null && ServiceResult.IsNotGood(e.Status))
             {
-                m_logger.LogDebug("{ 0} {1}/{2}", e.Status, session.OutstandingRequestCount, session.DefunctRequestCount);
+                if (m_logger.IsEnabled(LogLevel.Debug))
+                {
+                    m_logger.LogDebug("{Status} {OutstandingRequestCount}/{DefunctRequestCount}", e.Status, session.OutstandingRequestCount, session.DefunctRequestCount);
+                }
                 var totalBadRequestCount = session.OutstandingRequestCount + session.DefunctRequestCount;
                 Opc.Ua.Client.SessionReconnectHandler reconnectHandler;
                 if (totalBadRequestCount >= 3 &&
@@ -1666,7 +1672,7 @@ namespace AggregationServer
                         AggregationClientSession clientSession = m_clients.Where(c => c.Value?.SessionSessionId == session.SessionId).FirstOrDefault().Value;
                         if (clientSession != null && clientSession.ReconnectHandler == null)
                         {
-                            m_logger.LogInformation($"--- RECONNECTING --- SessionId: {clientSession.ClientSessionId}");
+                            m_logger.LogInformation("--- RECONNECTING --- SessionId: {SessionId}", clientSession.ClientSessionId);
                             reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler(Server.Telemetry, true);
                             reconnectHandler.BeginReconnect(session, m_reverseConnectManager, DefaultReconnectPeriod, Client_ReconnectComplete);
                             clientSession.ReconnectHandler = reconnectHandler;
@@ -1674,7 +1680,7 @@ namespace AggregationServer
                         }
                         else if (clientSession == null)
                         {
-                            m_logger.LogWarning($"--- KEEP ALIVE for stale session --- SessionId: {session.SessionId}");
+                            m_logger.LogWarning("--- KEEP ALIVE for stale session --- SessionId: {SessionId}", session.SessionId);
                         }
                     }
                 }
@@ -1696,7 +1702,7 @@ namespace AggregationServer
                 AggregationClientSession clientSession = m_clients.Where(c => Object.ReferenceEquals(reconnectHandler, c.Value?.ReconnectHandler)).FirstOrDefault().Value;
                 if (clientSession == null)
                 {
-                    m_logger.LogInformation($"--- RECONNECTED --- SessionId: {clientSession.ClientSessionId} but client session was not found.");
+                    m_logger.LogInformation("--- RECONNECTED --- SessionId: {SessionId} but client session was not found.", clientSession.ClientSessionId);
                     return;
                 }
 
@@ -1711,7 +1717,7 @@ namespace AggregationServer
                     Utils.SilentDispose(oldSession);
                 }
                 reconnectHandler.Dispose();
-                m_logger.LogInformation($"--- RECONNECTED --- SessionId: {clientSession.ClientSessionId}");
+                m_logger.LogInformation("--- RECONNECTED --- SessionId: {SessionId}", clientSession.ClientSessionId);
             }
         }
 

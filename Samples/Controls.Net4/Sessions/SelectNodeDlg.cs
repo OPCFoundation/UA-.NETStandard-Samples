@@ -52,12 +52,12 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            foreach (IdType idType in Enum.GetValues(typeof(IdType)))
+            foreach (IdType idType in Enum.GetValues<IdType>())
             {
                 IdentifierTypeCB.Items.Add(idType);
             }
 
-            foreach (NodeClass nodeClass in Enum.GetValues(typeof(NodeClass)))
+            foreach (NodeClass nodeClass in Enum.GetValues<NodeClass>())
             {
                 NodeClassCB.Items.Add(nodeClass);
             }

@@ -59,7 +59,7 @@ namespace Opc.Ua.Client.Controls
 
             List<object> items = new List<object>();
 
-            foreach (object value in Enum.GetValues(typeof(Match)))
+            foreach (object value in Enum.GetValues<Match>())
             {
                 items.Add(value);
             }

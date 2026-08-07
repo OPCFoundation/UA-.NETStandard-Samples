@@ -404,7 +404,7 @@ namespace Quickstarts.AlarmConditionServer
             }
             catch (Exception e)
             {
-                m_logger.LogError(e, "Unexpected error running simulation for source {0}", m_sourcePath);
+                m_logger.LogError(e, "Unexpected error running simulation for source {SourcePath}", m_sourcePath);
             }
         }
         #endregion
@@ -462,7 +462,7 @@ namespace Quickstarts.AlarmConditionServer
                 }
                 catch (Exception e)
                 {
-                    m_logger.LogError(e, "Unexpected error reporting change to an Alarm for Source {0}.", m_sourcePath);
+                    m_logger.LogError(e, "Unexpected error reporting change to an Alarm for Source {SourcePath}.", m_sourcePath);
                 }
             }
         }
@@ -518,7 +518,7 @@ namespace Quickstarts.AlarmConditionServer
                     {
                         reason = "The alarm severity has increased.";
 
-                        Array values = Enum.GetValues(typeof(EventSeverity));
+                        Array values = Enum.GetValues<EventSeverity>();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -593,10 +593,9 @@ namespace Quickstarts.AlarmConditionServer
 
             // no change so nothing to report.
         }
-        #endregion
 
+        #endregion
         #region Private Fields
-        private object m_lock = new object();
         private string m_name;
         private string m_sourcePath;
         private string m_sourceType;

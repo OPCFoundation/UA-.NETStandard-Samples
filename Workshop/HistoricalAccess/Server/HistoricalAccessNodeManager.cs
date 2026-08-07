@@ -458,11 +458,7 @@ namespace Quickstarts.HistoricalAccessServer
                             m_monitoredItems = new Dictionary<string, ArchiveItemState>();
                         }
 
-                        if (!m_monitoredItems.ContainsKey(item.ArchiveItem.UniquePath))
-                        {
-                            m_monitoredItems.Add(item.ArchiveItem.UniquePath, item);
-                        }
-
+                        m_monitoredItems.TryAdd(item.ArchiveItem.UniquePath, item);
                         item.SubscribeCount++;
 
                         if (m_simulationTimer == null)
@@ -1753,7 +1749,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
             catch (Exception e)
             {
-                m_logger.LogError("Unexpected error during simulation: {0}", e.Message);
+                m_logger.LogError("Unexpected error during simulation: {Message}", e.Message);
             }
         }
         #endregion

@@ -558,7 +558,7 @@ namespace MemoryBuffer
 
             if (delta1 > 100)
             {
-                m_logger.LogWarning("{0} SAMPLING DELAY ({1}ms)", nameof(MemoryBufferState), delta1);
+                m_logger.LogWarning("{Name} SAMPLING DELAY ({Delay}ms)", nameof(MemoryBufferState), delta1);
             }
         }
 
@@ -662,7 +662,10 @@ namespace MemoryBuffer
             {
                 if (m_itemCount > 0 && m_updateCount < m_itemCount)
                 {
-                    m_logger.LogInformation("{0:HH:mm:ss.fff} MEMORYBUFFER Reported  {1}/{2} items ***.", DateTime.Now, m_updateCount, m_itemCount);
+                    if (m_logger.IsEnabled(LogLevel.Information))
+                    {
+                        m_logger.LogInformation("{Timestamp:HH:mm:ss.fff} MEMORYBUFFER Reported  {UpdateCount}/{ItemCount} items ***.", DateTime.Now, m_updateCount, m_itemCount);
+                    }
                 }
 
                 m_updateCount = 0;
@@ -674,7 +677,10 @@ namespace MemoryBuffer
 
             if (delta1 > 100)
             {
-                m_logger.LogInformation("{0} ****** PUBLISH DELAY ({1}ms) ******", nameof(MemoryBufferState), delta1);
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("{Name} ****** PUBLISH DELAY ({Delay}ms) ******", nameof(MemoryBufferState), delta1);
+                }
             }
         }
         #endregion
