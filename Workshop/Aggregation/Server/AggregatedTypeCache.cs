@@ -136,12 +136,12 @@ namespace AggregationServer
                 ct);
 
             ResponseHeader responseHeader = response.ResponseHeader;
-            BrowseResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            ArrayOf<BrowseResult> results = response.Results;
+            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             // these do sanity checks on the result - make sure response matched the request.
-            ClientBase.ValidateResponse(results, nodesToBrowse);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
+            ClientBase.ValidateResponse<BrowseDescription, BrowseResult>((IReadOnlyList<BrowseResult>)results.ToArray(), (IReadOnlyList<BrowseDescription>)nodesToBrowse.ToArray());
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), nodesToBrowse);
 
             // check status.
             if (StatusCode.IsBad(results[0].StatusCode))
@@ -170,8 +170,8 @@ namespace AggregationServer
                 results = response2.Results;
                 diagnosticInfos = response2.DiagnosticInfos;
 
-                ClientBase.ValidateResponse(results, continuationPoints);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
+                ClientBase.ValidateResponse<ByteString, BrowseResult>((IReadOnlyList<BrowseResult>)results.ToArray(), continuationPoints);
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), continuationPoints);
 
                 // check status.
                 if (StatusCode.IsBad(results[0].StatusCode))

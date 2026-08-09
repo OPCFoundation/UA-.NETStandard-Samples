@@ -15,11 +15,16 @@
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileRunArguments>-p 62530:62530</DockerfileRunArguments>
+    <ModelSourceGeneratorUseAllowSubtypes>true</ModelSourceGeneratorUseAllowSubtypes>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\Server\AggregationNodeManager.cs;..\Server\AggregationServer.cs;..\Server\AggregationServerConfiguration.cs;..\Server\AggregatedTypeCache.cs;..\Server\NamespaceMapper.cs;..\Server\Browser.cs;" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
-    <Compile Include="..\Server\Model\AggregationModel.Classes.cs;..\Server\Model\AggregationModel.Constants.cs;..\Server\Model\AggregationModel.DataTypes.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="..\Server\Model\ModelDesign.xml" Link="Model\ModelDesign.xml" />
+    <AdditionalFiles Include="..\Server\Model\ModelDesign.csv" Link="Model\ModelDesign.csv" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,6 +49,7 @@
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="2.0.158.59919-preview" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="2.0.158.59919-preview" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="2.0.158.59919-preview" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration" Version="2.0.158.59919-preview" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
       </ItemGroup>
     </When>
     <Otherwise>
@@ -51,6 +57,7 @@
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="2.0.158.59919-preview" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.Debug" Version="2.0.158.59919-preview" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="2.0.158.59919-preview" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration" Version="2.0.158.59919-preview" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
       </ItemGroup>
     </Otherwise>
   </Choose>

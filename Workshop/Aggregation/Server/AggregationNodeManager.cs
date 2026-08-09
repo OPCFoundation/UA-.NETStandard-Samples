@@ -119,11 +119,9 @@ namespace AggregationServer
         {
             if (disposing)
             {
-                Utils.SilentDispose(m_metadataUpdateTimer);
+                m_metadataUpdateTimer?.Dispose();
                 m_metadataUpdateTimer = null;
-                Utils.SilentDispose(m_root);
                 m_root = null;
-                Utils.SilentDispose(m_status);
                 m_status = null;
             }
 
@@ -179,7 +177,7 @@ namespace AggregationServer
                 FolderState root = m_root = new FolderState(null);
                 root.NodeId = GenerateNodeId();
                 root.BrowseName = new QualifiedName(rootName, NamespaceIndex);
-                root.DisplayName = root.BrowseName.Name;
+                root.DisplayName = new LocalizedText(root.BrowseName.Name);
                 root.TypeDefinitionId = Opc.Ua.ObjectTypeIds.FolderType;
                 root.EventNotifier = EventNotifiers.SubscribeToEvents;
                 root.OnCreateBrowser = OnCreateBrowser;
@@ -213,7 +211,7 @@ namespace AggregationServer
                     SystemContext,
                     GenerateNodeId(),
                     new QualifiedName("Status", NamespaceIndex),
-                    null,
+                    LocalizedText.Null,
                     true);
 
                 status.EndpointUrl.Value = m_endpoint.EndpointUrl.ToString();
@@ -296,7 +294,7 @@ namespace AggregationServer
         /// </summary>
         protected override void Read(
             ServerSystemContext context,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToValidate,
@@ -324,12 +322,15 @@ namespace AggregationServer
                     // determine if a local node.
                     if (PredefinedNodes.ContainsKey(source.NodeId))
                     {
+                        NumericRange indexRange = nodeToRead.ParsedIndexRange;
+                        DataValue localValue = value;
                         errors[handle.Index] = source.ReadAttribute(
                             context,
                             nodeToRead.AttributeId,
-                            nodeToRead.ParsedIndexRange,
+                            indexRange,
                             nodeToRead.DataEncoding,
-                            value);
+                            ref localValue);
+                        values[handle.Index] = localValue;
 
                         continue;
                     }
@@ -355,18 +356,24 @@ namespace AggregationServer
                     default).Result;
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                List<DataValue> results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                ArrayOf<DataValue> results = response.Results;
+                ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
-                ClientBase.ValidateResponse(results, requests);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);
+                ClientBase.ValidateResponse<ReadValueId, DataValue>((IReadOnlyList<DataValue>)results.ToArray(), (IReadOnlyList<ReadValueId>)requests.ToArray());
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), requests);
 
                 // set results.
                 for (int ii = 0; ii < requests.Count; ii++)
                 {
-                    values[indexes[ii]] = results[ii];
-                    values[indexes[ii]].WrappedValue = m_mapper.ToLocalVariant(results[ii].WrappedValue);
+                    DataValue result = results[ii];
+                    values[indexes[ii]] = new DataValue(
+                        m_mapper.ToLocalVariant(result.WrappedValue),
+                        result.StatusCode,
+                        result.SourceTimestamp,
+                        result.ServerTimestamp,
+                        result.SourcePicoseconds,
+                        result.ServerPicoseconds);
 
                     errors[indexes[ii]] = ServiceResult.Good;
 
@@ -393,7 +400,7 @@ namespace AggregationServer
         /// </summary>
         protected override void Write(
             ServerSystemContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToValidate,
             IDictionary<NodeId, NodeState> cache)
@@ -433,7 +440,13 @@ namespace AggregationServer
 
                     WriteValue request = (WriteValue)nodeToWrite.MemberwiseClone();
                     request.NodeId = m_mapper.ToRemoteId(nodeToWrite.NodeId);
-                    request.Value.WrappedValue = m_mapper.ToRemoteVariant(nodeToWrite.Value.WrappedValue);
+                    request.Value = new DataValue(
+                        m_mapper.ToRemoteVariant(nodeToWrite.Value.WrappedValue),
+                        nodeToWrite.Value.StatusCode,
+                        nodeToWrite.Value.SourceTimestamp,
+                        nodeToWrite.Value.ServerTimestamp,
+                        nodeToWrite.Value.SourcePicoseconds,
+                        nodeToWrite.Value.ServerPicoseconds);
                     requests.Add(request);
                     indexes.Add(ii);
                 }
@@ -450,12 +463,12 @@ namespace AggregationServer
                     default).Result;
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                List<StatusCode> results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                ArrayOf<StatusCode> results = response.Results;
+                ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
-                ClientBase.ValidateResponse(results, requests);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);
+                ClientBase.ValidateResponse<WriteValue, StatusCode>((IReadOnlyList<StatusCode>)results.ToArray(), (IReadOnlyList<WriteValue>)requests.ToArray());
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), requests);
 
                 // set results.
                 for (int ii = 0; ii < requests.Count; ii++)
@@ -485,7 +498,7 @@ namespace AggregationServer
         /// </summary>
         public override void Call(
             OperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors)
         {
@@ -571,10 +584,12 @@ namespace AggregationServer
                 request.ObjectId = m_mapper.ToRemoteId(methodToCall.ObjectId);
                 request.MethodId = m_mapper.ToRemoteId(methodToCall.MethodId);
 
+                List<Variant> inputArguments = new List<Variant>();
                 for (int jj = 0; jj < request.InputArguments.Count; jj++)
                 {
-                    request.InputArguments[jj] = m_mapper.ToRemoteVariant(methodToCall.InputArguments[jj]);
+                    inputArguments.Add(m_mapper.ToRemoteVariant(methodToCall.InputArguments[jj]));
                 }
+                request.InputArguments = inputArguments.ToArrayOf();
 
                 requests.Add(request);
                 indexes.Add(ii);
@@ -591,12 +606,12 @@ namespace AggregationServer
                     default).Result;
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                CallMethodResultCollection results2 = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                ArrayOf<CallMethodResult> results2 = response.Results;
+                ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
-                ClientBase.ValidateResponse(results2, requests);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, requests);
+                ClientBase.ValidateResponse<CallMethodRequest, CallMethodResult>((IReadOnlyList<CallMethodResult>)results2.ToArray(), (IReadOnlyList<CallMethodRequest>)requests.ToArray());
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), requests);
 
                 // set results.
                 for (int ii = 0; ii < requests.Count; ii++)
@@ -610,10 +625,12 @@ namespace AggregationServer
                     }
                     else
                     {
+                        List<Variant> outputArguments = new List<Variant>();
                         for (int jj = 0; jj < results2[ii].OutputArguments.Count; jj++)
                         {
-                            results2[ii].OutputArguments[jj] = m_mapper.ToLocalVariant(results2[ii].OutputArguments[jj]);
+                            outputArguments.Add(m_mapper.ToLocalVariant(results2[ii].OutputArguments[jj]));
                         }
+                        results2[ii].OutputArguments = outputArguments.ToArrayOf();
                     }
                 }
             }
@@ -719,7 +736,7 @@ namespace AggregationServer
                     {
                         if (ServiceResult.IsBad(monitoredItem.Status.Error))
                         {
-                            ((MonitoredItem)monitoredItems[indexes[index++]]).QueueValue(null, monitoredItem.Status.Error);
+                            ((MonitoredItem)monitoredItems[indexes[index++]]).QueueValue(DataValue.Null, monitoredItem.Status.Error);
                         }
                     }
                 }
@@ -731,7 +748,7 @@ namespace AggregationServer
 
                 for (int ii = 0; ii < requests.Count; ii++)
                 {
-                    ((MonitoredItem)monitoredItems[indexes[ii]]).QueueValue(null, error);
+                    ((MonitoredItem)monitoredItems[indexes[ii]]).QueueValue(DataValue.Null, error);
                 }
             }
         }
@@ -801,7 +818,7 @@ namespace AggregationServer
                     {
                         if (ServiceResult.IsBad(monitoredItem.Status.Error))
                         {
-                            ((MonitoredItem)monitoredItem.Handle).QueueValue(null, monitoredItem.Status.Error);
+                            ((MonitoredItem)monitoredItem.Handle).QueueValue(DataValue.Null, monitoredItem.Status.Error);
                         }
                     }
                 }
@@ -812,7 +829,7 @@ namespace AggregationServer
 
                     foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
                     {
-                        ((MonitoredItem)monitoredItem.Handle).QueueValue(null, error);
+                        ((MonitoredItem)monitoredItem.Handle).QueueValue(DataValue.Null, error);
                     }
                 }
             }
@@ -949,7 +966,7 @@ namespace AggregationServer
                     {
                         if (ServiceResult.IsBad(monitoredItem.Status.Error))
                         {
-                            ((MonitoredItem)monitoredItem.Handle).QueueValue(null, monitoredItem.Status.Error);
+                            ((MonitoredItem)monitoredItem.Handle).QueueValue(DataValue.Null, monitoredItem.Status.Error);
                         }
                     }
                 }
@@ -960,7 +977,7 @@ namespace AggregationServer
 
                     foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
                     {
-                        ((MonitoredItem)monitoredItem.Handle).QueueValue(null, error);
+                        ((MonitoredItem)monitoredItem.Handle).QueueValue(DataValue.Null, error);
                     }
                 }
             }
@@ -1119,12 +1136,12 @@ namespace AggregationServer
         /// <summary>
         /// The delegate used to receive data change notifications via a direct function call instead of a .NET Event.
         /// </summary>
-        public void OnDataChangeNotification(Opc.Ua.Client.Subscription subscription, DataChangeNotification notification, IList<string> stringTable)
+        public void OnDataChangeNotification(Opc.Ua.Client.Subscription subscription, DataChangeNotification notification, ArrayOf<string> stringTable)
         {
             for (int ii = 0; ii < notification.MonitoredItems.Count; ii++)
             {
                 MonitoredItem localItem = null;
-                DataValue value = null;
+                DataValue value = DataValue.Null;
                 ServiceResult error = null;
 
                 lock (subscription.Session)
@@ -1140,9 +1157,13 @@ namespace AggregationServer
                             error = new ServiceResult(value2.Value.StatusCode, value2.DiagnosticInfo, stringTable);
                         }
 
-                        value = value2.Value;
-                        value.WrappedValue = m_mapper.ToLocalVariant(value2.Value.WrappedValue);
-                        value.ServerTimestamp = DateTime.UtcNow;
+                        value = new DataValue(
+                            m_mapper.ToLocalVariant(value2.Value.WrappedValue),
+                            value2.Value.StatusCode,
+                            value2.Value.SourceTimestamp,
+                            DateTime.UtcNow,
+                            value2.Value.SourcePicoseconds,
+                            value2.Value.ServerPicoseconds);
 
                         localItem = (MonitoredItem)monitoredItem.Handle;
                     }
@@ -1155,7 +1176,7 @@ namespace AggregationServer
         /// <summary>
         /// The delegate used to receive event notifications via a direct function call instead of a .NET Event.
         /// </summary>
-        public void OnEventNotification(Opc.Ua.Client.Subscription subscription, EventNotificationList notification, IList<string> stringTable)
+        public void OnEventNotification(Opc.Ua.Client.Subscription subscription, EventNotificationList notification, ArrayOf<string> stringTable)
         {
             for (int ii = 0; ii < notification.Events.Count; ii++)
             {
@@ -1171,10 +1192,12 @@ namespace AggregationServer
                     {
                         e = notification.Events[ii];
 
+                        List<Variant> eventFields = new List<Variant>();
                         for (int jj = 0; jj < e.EventFields.Count; jj++)
                         {
-                            e.EventFields[jj] = m_mapper.ToLocalVariant(e.EventFields[jj]);
+                            eventFields.Add(m_mapper.ToLocalVariant(e.EventFields[jj]));
                         }
+                        e.EventFields = eventFields.ToArrayOf();
 
                         localItem = (MonitoredItem)monitoredItem.Handle;
                         e.ClientHandle = localItem.ClientHandle;
@@ -1193,12 +1216,12 @@ namespace AggregationServer
             NodeId sessionId;
             string sessionName;
             IUserIdentity userIdentity = null;
-            IList<string> preferredLocales = null;
+            ArrayOf<string> preferredLocales = ArrayOf<string>.Empty;
             AggregationClientSession clientSession = null;
 
             if (context != null)
             {
-                sessionId = context.SessionId;
+                sessionId = context.SessionId ?? NodeId.Null;
                 sessionName = context.OperationContext.Session.SessionDiagnostics.SessionName;
                 userIdentity = context.UserIdentity;
                 preferredLocales = context.PreferredLocales;
@@ -1300,7 +1323,7 @@ namespace AggregationServer
                     lock (Lock)
                     {
                         m_root.BrowseName = new QualifiedName(m_endpoint.Description.Server.ApplicationName.Text, NamespaceIndex);
-                        m_root.DisplayName = m_root.BrowseName.Name;
+                        m_root.DisplayName = new LocalizedText(m_root.BrowseName.Name);
                         m_root.ClearChangeMasks(SystemContext, false);
 
                         m_status.EndpointUrl.Value = m_endpoint.EndpointUrl.ToString();
@@ -1331,7 +1354,7 @@ namespace AggregationServer
                         {
                             trimmedMessage += "...";
                         }
-                        m_root.DisplayName = m_endpoint.EndpointUrl.ToString() + $" Status: ({trimmedMessage})";
+                        m_root.DisplayName = new LocalizedText(m_endpoint.EndpointUrl.ToString() + $" Status: ({trimmedMessage})");
                         m_root.ClearChangeMasks(SystemContext, false);
 
                         m_status.EndpointUrl.Value = m_endpoint.EndpointUrl.ToString();
@@ -1528,10 +1551,10 @@ namespace AggregationServer
                         BaseVariableTypeState value = new BaseDataVariableTypeState();
 #pragma warning restore CA2000
                         value.IsAbstract = ((IVariableType)node).IsAbstract;
-                        value.Value = m_mapper.ToLocalValue(((IVariableType)node).Value);
+                        value.Value = new Variant(m_mapper.ToLocalValue(((IVariableType)node).Value));
                         value.DataType = m_mapper.ToLocalId(((IVariableType)node).DataType);
                         value.ValueRank = ((IVariableType)node).ValueRank;
-                        value.ArrayDimensions = new ReadOnlyList<uint>(((IVariableType)node).ArrayDimensions);
+                        value.ArrayDimensions = ((IVariableType)node).ArrayDimensions;
                         target = value;
                         break;
                     }
@@ -1573,10 +1596,10 @@ namespace AggregationServer
 #pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         BaseDataVariableState value = new BaseDataVariableState(null);
 #pragma warning restore CA2000
-                        value.Value = m_mapper.ToLocalValue(((IVariable)node).Value);
+                        value.Value = new Variant(m_mapper.ToLocalValue(((IVariable)node).Value));
                         value.DataType = m_mapper.ToLocalId(((IVariable)node).DataType);
                         value.ValueRank = ((IVariable)node).ValueRank;
-                        value.ArrayDimensions = new ReadOnlyList<uint>(((IVariable)node).ArrayDimensions);
+                        value.ArrayDimensions = ((IVariable)node).ArrayDimensions;
                         value.AccessLevel = ((IVariable)node).AccessLevel;
                         value.UserAccessLevel = ((IVariable)node).UserAccessLevel;
                         value.Historizing = ((IVariable)node).Historizing;
@@ -1745,7 +1768,7 @@ namespace AggregationServer
                     oldSession.KeepAlive -= Client_KeepAlive;
                     newSession.KeepAlive += Client_KeepAlive;
                     clientSession.Session = newSession;
-                    Utils.SilentDispose(oldSession);
+                    oldSession?.Dispose();
                 }
                 reconnectHandler.Dispose();
 #pragma warning disable CA1873 // Justification: Sample logging keeps existing message formatting.

@@ -148,13 +148,14 @@ namespace AggregationServer
             }
         }
 
-        private static void CertificateValidator_CertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)
+        private static bool CertificateManager_AcceptError(Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
         {
-            if (e.Error.StatusCode == StatusCodes.BadCertificateUntrusted)
+            if (error.StatusCode == StatusCodes.BadCertificateUntrusted)
             {
-                e.Accept = false;
-                Console.WriteLine("Rejected Certificate: {0}", e.Certificate.Subject);
+                Console.WriteLine("Rejected Certificate: {0}", certificate.Subject);
             }
+
+            return false;
         }
 
         private async Task ConsoleAggregationServerAsync()
@@ -178,12 +179,12 @@ namespace AggregationServer
 
             if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                config.CertificateManager.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                config.CertificateManager.AcceptError = CertificateManager_AcceptError;
             }
 
             // start the server.
 #pragma warning disable CA2000 // Justification: Server is stored in a field and disposed during shutdown.
-            server = new AggregationServer();
+            server = new AggregationServer(m_telemetry);
 #pragma warning restore CA2000
             await application.StartAsync(server).ConfigureAwait(false);
 
@@ -197,7 +198,11 @@ namespace AggregationServer
 
             // print endpoint info
             Console.WriteLine("Server Endpoints:");
-            var endpoints = server.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
+            HashSet<string> endpoints = new HashSet<string>();
+            foreach (EndpointDescription endpointDescription in server.GetEndpoints())
+            {
+                endpoints.Add(endpointDescription.EndpointUrl);
+            }
             foreach (var endpoint in endpoints)
             {
                 Console.WriteLine(endpoint);

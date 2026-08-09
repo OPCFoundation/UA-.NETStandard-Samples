@@ -51,6 +51,11 @@ namespace AggregationServer
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample public API name matches the workshop namespace.")]
     public partial class AggregationServer : ReverseConnectServer
     {
+        public AggregationServer(ITelemetryContext telemetry)
+            : base(telemetry)
+        {
+        }
+
         #region Overridden Methods
         /// <summary>
         /// Creates the node managers for the server.

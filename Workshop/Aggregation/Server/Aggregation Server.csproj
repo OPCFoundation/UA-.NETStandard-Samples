@@ -9,6 +9,9 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
+  <PropertyGroup>
+    <ModelSourceGeneratorUseAllowSubtypes>true</ModelSourceGeneratorUseAllowSubtypes>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>..\..\..\bin\Debug\</OutputPath>
   </PropertyGroup>
@@ -25,6 +28,13 @@
     </Content>
     <EmbeddedResource Include="Model\AggregationModel.PredefinedNodes.uanodes" />
     <Content Include="Model\ModelDesign.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="Model\ModelDesign.xml" />
+    <AdditionalFiles Include="Model\ModelDesign.csv" />
+    <Compile Remove="Model\AggregationModel.Classes.cs" />
+    <Compile Remove="Model\AggregationModel.Constants.cs" />
+    <Compile Remove="Model\AggregationModel.DataTypes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
@@ -45,5 +55,6 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
       <Version>2.0.158.59919-preview</Version>
     </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration" Version="2.0.158.59919-preview" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

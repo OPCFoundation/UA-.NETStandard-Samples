@@ -85,7 +85,7 @@ namespace AggregationServer
 
                 // start the server.
 #pragma warning disable CA2000 // Justification: Server ownership is transferred to ApplicationInstance.
-                await application.StartAsync(new AggregationServer());
+                await application.StartAsync(new AggregationServer(m_telemetry));
 #pragma warning restore CA2000
 
                 // run the application interactively.

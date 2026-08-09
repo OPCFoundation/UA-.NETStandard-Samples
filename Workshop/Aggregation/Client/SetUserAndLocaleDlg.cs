@@ -95,7 +95,7 @@ namespace AggregationClient
 
             if (identity != null && identity.TokenType == UserTokenType.UserName)
             {
-                UserNameIdentityToken token = identity.GetIdentityToken() as UserNameIdentityToken;
+                UserNameIdentityTokenHandler token = identity.TokenHandler as UserNameIdentityTokenHandler;
 
                 if (token != null)
                 {
