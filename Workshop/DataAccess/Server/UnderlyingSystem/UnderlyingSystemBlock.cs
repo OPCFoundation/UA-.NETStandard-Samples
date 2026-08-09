@@ -207,7 +207,7 @@ namespace Quickstarts.DataAccessServer
         /// <param name="tagName">Name of the tag.</param>
         /// <param name="value">The value.</param>
         /// <returns>The status code for the operation.</returns>
-        public uint WriteTagValue(string tagName, object value)
+        public StatusCode WriteTagValue(string tagName, object value)
         {
             UnderlyingSystemTag tag = null;
             TagsChangedEventHandler onTagsChanged = null;
@@ -317,12 +317,6 @@ namespace Quickstarts.DataAccessServer
                     {
                         UnderlyingSystemTag tag = m_tags[ii];
                         UpdateTagValue(tag, generator);
-
-                        DataValue value = new DataValue();
-
-                        value.Value = tag.Value;
-                        value.StatusCode = StatusCodes.Good;
-                        value.SourceTimestamp = tag.Timestamp;
 
                         if (counter % (8 + (index % 4)) == 0)
                         {

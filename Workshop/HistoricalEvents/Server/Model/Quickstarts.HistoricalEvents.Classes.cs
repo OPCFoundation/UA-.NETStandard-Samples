@@ -153,7 +153,7 @@ namespace Quickstarts.HistoricalEvents
         }
 
         /// <remarks />
-        public PropertyState<DateTime> TestDate
+        public PropertyState<DateTimeUtc> TestDate
         {
             get
             {
@@ -250,7 +250,7 @@ namespace Quickstarts.HistoricalEvents
                         {
                             if (replacement == null)
                             {
-                                NameWell = new PropertyState<string>(this);
+                                NameWell = PropertyState<string>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -271,7 +271,7 @@ namespace Quickstarts.HistoricalEvents
                         {
                             if (replacement == null)
                             {
-                                UidWell = new PropertyState<string>(this);
+                                UidWell = PropertyState<string>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -292,11 +292,11 @@ namespace Quickstarts.HistoricalEvents
                         {
                             if (replacement == null)
                             {
-                                TestDate = new PropertyState<DateTime>(this);
+                                TestDate = PropertyState<DateTimeUtc>.With<VariantBuilder>(this);
                             }
                             else
                             {
-                                TestDate = (PropertyState<DateTime>)replacement;
+                                TestDate = (PropertyState<DateTimeUtc>)replacement;
                             }
                         }
                     }
@@ -313,7 +313,7 @@ namespace Quickstarts.HistoricalEvents
                         {
                             if (replacement == null)
                             {
-                                TestReason = new PropertyState<string>(this);
+                                TestReason = PropertyState<string>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -339,7 +339,7 @@ namespace Quickstarts.HistoricalEvents
         #region Private Fields
         private PropertyState<string> m_nameWell;
         private PropertyState<string> m_uidWell;
-        private PropertyState<DateTime> m_testDate;
+        private PropertyState<DateTimeUtc> m_testDate;
         private PropertyState<string> m_testReason;
         #endregion
     }
@@ -519,7 +519,7 @@ namespace Quickstarts.HistoricalEvents
                         {
                             if (replacement == null)
                             {
-                                FluidLevel = new AnalogItemState<double>(this);
+                                FluidLevel = AnalogItemState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -540,7 +540,7 @@ namespace Quickstarts.HistoricalEvents
                         {
                             if (replacement == null)
                             {
-                                TestedBy = new PropertyState<string>(this);
+                                TestedBy = PropertyState<string>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -742,7 +742,7 @@ namespace Quickstarts.HistoricalEvents
                         {
                             if (replacement == null)
                             {
-                                TestDuration = new AnalogItemState<double>(this);
+                                TestDuration = AnalogItemState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -763,7 +763,7 @@ namespace Quickstarts.HistoricalEvents
                         {
                             if (replacement == null)
                             {
-                                InjectedFluid = new PropertyState<string>(this);
+                                InjectedFluid = PropertyState<string>.With<VariantBuilder>(this);
                             }
                             else
                             {

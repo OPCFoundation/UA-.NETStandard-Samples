@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
@@ -88,7 +89,7 @@ namespace Quickstarts.AlarmConditionClient
             // Connect to the server's discovery endpoint and find the available configuration.
             using (DiscoveryClient client = await DiscoveryClient.CreateAsync(uri, configuration, telemetry, DiagnosticsMasks.None, ct))
             {
-                EndpointDescriptionCollection endpoints = await client.GetEndpointsAsync(null, ct);
+                List<EndpointDescription> endpoints = (await client.GetEndpointsAsync(ArrayOf<string>.Empty, ct)).ToList();
 
                 // select the best endpoint to use based on the selected URL and the UseSecurity checkbox.
                 for (int ii = 0; ii < endpoints.Count; ii++)
@@ -174,12 +175,12 @@ namespace Quickstarts.AlarmConditionClient
 
                     if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == BrowseNames.EventType)
                     {
-                        return notification.EventFields[ii].Value as NodeId;
+                        return notification.EventFields[ii].Value is NodeId nodeId ? nodeId : NodeId.Null;
                     }
                 }
             }
 
-            return null;
+            return NodeId.Null;
         }
 
         /// <summary>
@@ -209,7 +210,7 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // look up the known event type.
-            NodeId knownTypeId = null;
+            NodeId knownTypeId = NodeId.Null;
 
             if (!eventTypeMappings.TryGetValue(eventTypeId, out knownTypeId))
             {
@@ -227,7 +228,7 @@ namespace Quickstarts.AlarmConditionClient
                 // browse for the supertypes of the event type.
                 if (knownTypeId.IsNull)
                 {
-                    ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
+                    List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
 
                     // can't do anything with unknown types.
                     if (supertypes == null)
@@ -317,14 +318,14 @@ namespace Quickstarts.AlarmConditionClient
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static async Task<ReferenceDescriptionCollection> BrowseAsync(ISession session, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
+        public static async Task<List<ReferenceDescription>> BrowseAsync(ISession session, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
-                ReferenceDescriptionCollection references = new ReferenceDescriptionCollection();
+                List<ReferenceDescription> references = new List<ReferenceDescription>();
 
                 // construct browse request.
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
                 nodesToBrowse.Add(nodeToBrowse);
 
                 // start the browse operation.
@@ -335,8 +336,8 @@ namespace Quickstarts.AlarmConditionClient
                     nodesToBrowse,
                     ct);
 
-                BrowseResultCollection results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                List<BrowseResult> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -371,8 +372,8 @@ namespace Quickstarts.AlarmConditionClient
                         continuationPoints,
                         ct);
 
-                    results = response2.Results;
-                    diagnosticInfos = response2.DiagnosticInfos;
+                    results = response2.Results.ToList();
+                    diagnosticInfos = response2.DiagnosticInfos.ToList();
 
                     ClientBase.ValidateResponse(results, continuationPoints);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
@@ -402,9 +403,9 @@ namespace Quickstarts.AlarmConditionClient
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static async Task<ReferenceDescriptionCollection> BrowseSuperTypesAsync(ISession session, NodeId typeId, bool throwOnError, CancellationToken ct = default)
+        public static async Task<List<ReferenceDescription>> BrowseSuperTypesAsync(ISession session, NodeId typeId, bool throwOnError, CancellationToken ct = default)
         {
-            ReferenceDescriptionCollection supertypes = new ReferenceDescriptionCollection();
+            List<ReferenceDescription> supertypes = new List<ReferenceDescription>();
 
             try
             {
@@ -418,7 +419,7 @@ namespace Quickstarts.AlarmConditionClient
                 nodeToBrowse.NodeClassMask = 0; // the HasSubtype reference already restricts the targets to Types.
                 nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-                ReferenceDescriptionCollection references = await BrowseAsync(session, nodeToBrowse, throwOnError, ct);
+                List<ReferenceDescription> references = await BrowseAsync(session, nodeToBrowse, throwOnError, ct);
 
                 while (references != null && references.Count > 0)
                 {

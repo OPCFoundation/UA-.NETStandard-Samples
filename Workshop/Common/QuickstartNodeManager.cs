@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -30,6 +30,7 @@
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
@@ -136,11 +137,6 @@ namespace Quickstarts
                 {
                     if (m_predefinedNodes != null)
                     {
-                        foreach (NodeState node in m_predefinedNodes.Values)
-                        {
-                            Utils.SilentDispose(node);
-                        }
-
                         m_predefinedNodes.Clear();
                     }
                 }
@@ -402,7 +398,7 @@ namespace Quickstarts
                     parent.AddChild(instance);
                 }
 
-                instance.Create(contextToUse, null, browseName, null, true);
+                instance.Create(contextToUse, NodeId.Null, browseName, LocalizedText.Null, true);
                 AddPredefinedNode(contextToUse, instance);
 
                 return instance.NodeId;
@@ -684,7 +680,7 @@ namespace Quickstarts
 
                 if (variable != null && variable.Value.IsNull)
                 {
-                    variable.Value = Opc.Ua.TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree);
+                    variable.Value = new Variant(Opc.Ua.TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree));
                 }
 
                 IList<IReference> references = new List<IReference>();
@@ -862,11 +858,6 @@ namespace Quickstarts
             {
                 if (m_predefinedNodes != null)
                 {
-                    foreach (NodeState node in m_predefinedNodes.Values)
-                    {
-                        Utils.SilentDispose(node);
-                    }
-
                     m_predefinedNodes.Clear();
                 }
             }
@@ -1030,7 +1021,7 @@ namespace Quickstarts
                 }
 
                 // read the attributes.
-                List<object> values = target.ReadAttributes(
+                List<Variant> values = target.ReadAttributes(
                     systemContext,
                     Attributes.WriteMask,
                     Attributes.UserWriteMask,
@@ -1041,7 +1032,7 @@ namespace Quickstarts
                     Attributes.UserAccessLevel,
                     Attributes.EventNotifier,
                     Attributes.Executable,
-                    Attributes.UserExecutable);
+                    Attributes.UserExecutable).ToList();
 
                 // construct the metadata object.
                 NodeMetadata metadata = new NodeMetadata(target, target.NodeId);
@@ -1050,33 +1041,33 @@ namespace Quickstarts
                 metadata.BrowseName = target.BrowseName;
                 metadata.DisplayName = target.DisplayName;
 
-                if (values[0] != null && values[1] != null)
+                if (values[0].Value != null && values[1].Value != null)
                 {
-                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0]) & ((uint)values[1]));
+                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0].Value) & ((uint)values[1].Value));
                 }
 
-                metadata.DataType = (NodeId)values[2];
+                metadata.DataType = (NodeId)values[2].Value;
 
-                if (values[3] != null)
+                if (values[3].Value != null)
                 {
-                    metadata.ValueRank = (int)values[3];
+                    metadata.ValueRank = (int)values[3].Value;
                 }
 
-                metadata.ArrayDimensions = (IList<uint>)values[4];
+                metadata.ArrayDimensions = values[4].Value is IList<uint> dims ? dims.ToArrayOf() : ArrayOf<uint>.Empty;
 
-                if (values[5] != null && values[6] != null)
+                if (values[5].Value != null && values[6].Value != null)
                 {
-                    metadata.AccessLevel = (byte)(((byte)values[5]) & ((byte)values[6]));
+                    metadata.AccessLevel = (byte)(((byte)values[5].Value) & ((byte)values[6].Value));
                 }
 
-                if (values[7] != null)
+                if (values[7].Value != null)
                 {
-                    metadata.EventNotifier = (byte)values[7];
+                    metadata.EventNotifier = (byte)values[7].Value;
                 }
 
-                if (values[8] != null && values[9] != null)
+                if (values[8].Value != null && values[9].Value != null)
                 {
-                    metadata.Executable = (((bool)values[8]) && ((bool)values[9]));
+                    metadata.Executable = (((bool)values[8].Value) && ((bool)values[9].Value));
                 }
 
                 // get instance references.
@@ -1152,7 +1143,7 @@ namespace Quickstarts
                         continuationPoint.ReferenceTypeId,
                         continuationPoint.IncludeSubtypes,
                         continuationPoint.BrowseDirection,
-                        null,
+                        QualifiedName.Null,
                         null,
                         false);
                 }
@@ -1296,7 +1287,7 @@ namespace Quickstarts
             }
 
             // look up the type definition.
-            NodeId typeDefinition = null;
+            NodeId typeDefinition = NodeId.Null;
 
             BaseInstanceState instance = target as BaseInstanceState;
 
@@ -1436,7 +1427,7 @@ namespace Quickstarts
         public virtual void Read(
             OperationContext context,
             double maxAge,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors)
         {
@@ -1468,12 +1459,8 @@ namespace Quickstarts
                     nodeToRead.Processed = true;
 
                     // create an initial value.
-                    DataValue value = values[ii] = new DataValue();
-
-                    value.Value = null;
-                    value.ServerTimestamp = DateTime.UtcNow;
-                    value.SourceTimestamp = DateTime.MinValue;
-                    value.StatusCode = StatusCodes.Good;
+                    DataValue value = new DataValue(Variant.Null, StatusCodes.Good, DateTime.MinValue, DateTime.UtcNow);
+                    values[ii] = value;
 
                     // check if the node is a area in memory.
                     if (handle.Node == null)
@@ -1488,12 +1475,14 @@ namespace Quickstarts
                     }
 
                     // read the attribute value.
+                    NumericRange indexRange = nodeToRead.ParsedIndexRange;
                     errors[ii] = handle.Node.ReadAttribute(
                         systemContext,
                         nodeToRead.AttributeId,
-                        nodeToRead.ParsedIndexRange,
+                        indexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
+                    values[ii] = value;
                 }
 
                 // check for nothing to do.
@@ -1541,7 +1530,7 @@ namespace Quickstarts
             }
 
             // construct id for root node.
-            NodeId rootId = handle.RootId;
+            NodeId rootId = handle.RootNodeId;
 
             if (cache != null)
             {
@@ -1632,7 +1621,7 @@ namespace Quickstarts
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void Read(
             ServerSystemContext context,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToValidate,
@@ -1656,12 +1645,14 @@ namespace Quickstarts
                     DataValue value = values[handle.Index];
 
                     // update the attribute value.
+                    NumericRange indexRange = nodeToRead.ParsedIndexRange;
                     errors[handle.Index] = source.ReadAttribute(
                         context,
                         nodeToRead.AttributeId,
-                        nodeToRead.ParsedIndexRange,
+                        indexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
+                    values[handle.Index] = value;
                 }
             }
         }
@@ -1672,7 +1663,7 @@ namespace Quickstarts
         /// </summary>
         public virtual void Write(
             OperationContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors)
         {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
@@ -1765,7 +1756,7 @@ namespace Quickstarts
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void Write(
             ServerSystemContext context,
-            IList<WriteValue> nodesToWrite,
+            ArrayOf<WriteValue> nodesToWrite,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToValidate,
             IDictionary<NodeId, NodeState> cache)
@@ -1809,7 +1800,7 @@ namespace Quickstarts
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors)
         {
@@ -1843,8 +1834,8 @@ namespace Quickstarts
                     // create an initial result.
                     HistoryReadResult result = results[ii] = new HistoryReadResult();
 
-                    result.HistoryData = null;
-                    result.ContinuationPoint = null;
+                    result.HistoryData = ExtensionObject.Null;
+                    result.ContinuationPoint = default;
                     result.StatusCode = StatusCodes.Good;
 
                     // check if the node is a area in memory.
@@ -1915,7 +1906,7 @@ namespace Quickstarts
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Protected sample extension point preserves existing API shape.")]
         protected virtual void HistoryReleaseContinuationPoints(
             ServerSystemContext context,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
             IDictionary<NodeId, NodeState> cache)
@@ -1944,7 +1935,7 @@ namespace Quickstarts
             ServerSystemContext context,
             ReadRawModifiedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -1974,7 +1965,7 @@ namespace Quickstarts
             ServerSystemContext context,
             ReadProcessedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -2004,7 +1995,7 @@ namespace Quickstarts
             ServerSystemContext context,
             ReadAtTimeDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -2034,7 +2025,7 @@ namespace Quickstarts
             ServerSystemContext context,
             ReadEventDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -2065,7 +2056,7 @@ namespace Quickstarts
             HistoryReadDetails details,
             TimestampsToReturn timestampsToReturn,
             bool releaseContinuationPoints,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -2222,7 +2213,7 @@ namespace Quickstarts
         public virtual void HistoryUpdate(
             OperationContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors)
         {
@@ -2323,7 +2314,7 @@ namespace Quickstarts
         protected virtual void HistoryUpdate(
             ServerSystemContext context,
             Type detailsType,
-            IList<HistoryUpdateDetails> nodesToUpdate,
+            ArrayOf<HistoryUpdateDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -2631,7 +2622,7 @@ namespace Quickstarts
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Public sample API follows OPC UA service naming.")]
         public virtual void Call(
             OperationContext context,
-            IList<CallMethodRequest> methodsToCall,
+            ArrayOf<CallMethodRequest> methodsToCall,
             IList<CallMethodResult> results,
             IList<ServiceResult> errors)
         {
@@ -2715,6 +2706,8 @@ namespace Quickstarts
             ServerSystemContext systemContext = context as ServerSystemContext;
             List<ServiceResult> argumentErrors = new List<ServiceResult>();
             List<Variant> outputArguments = new List<Variant>();
+            List<StatusCode> inputArgumentResults = new List<StatusCode>();
+            List<DiagnosticInfo> inputArgumentDiagnosticInfos = new List<DiagnosticInfo>();
 
             ServiceResult error = method.Call(
                 context,
@@ -2737,7 +2730,7 @@ namespace Quickstarts
 
                 if (argumentError != null)
                 {
-                    result.InputArgumentResults.Add(argumentError.StatusCode);
+                    inputArgumentResults.Add(argumentError.StatusCode);
 
                     if (ServiceResult.IsBad(argumentError))
                     {
@@ -2746,7 +2739,7 @@ namespace Quickstarts
                 }
                 else
                 {
-                    result.InputArgumentResults.Add(StatusCodes.Good);
+                    inputArgumentResults.Add(StatusCodes.Good);
                 }
 
                 // only fill in diagnostic info if it is requested.
@@ -2757,11 +2750,11 @@ namespace Quickstarts
                         if (ServiceResult.IsBad(argumentError))
                         {
                             argumentsValid = false;
-                            result.InputArgumentDiagnosticInfos.Add(new DiagnosticInfo(argumentError, systemContext.OperationContext.DiagnosticsMask, false, systemContext.OperationContext.StringTable, m_logger));
+                            inputArgumentDiagnosticInfos.Add(new DiagnosticInfo(argumentError, systemContext.OperationContext.DiagnosticsMask, false, systemContext.OperationContext.StringTable, m_logger));
                         }
                         else
                         {
-                            result.InputArgumentDiagnosticInfos.Add(null);
+                            inputArgumentDiagnosticInfos.Add(null);
                         }
                     }
                 }
@@ -2775,7 +2768,8 @@ namespace Quickstarts
             }
 
             // do not return diagnostics if there are no errors.
-            result.InputArgumentDiagnosticInfos.Clear();
+            result.InputArgumentResults = inputArgumentResults.ToArrayOf();
+            result.InputArgumentDiagnosticInfos = inputArgumentDiagnosticInfos.Count == 0 ? ArrayOf<DiagnosticInfo>.Empty : inputArgumentDiagnosticInfos.ToArrayOf();
 
             // return output arguments.
             result.OutputArguments = outputArguments;
@@ -3117,7 +3111,7 @@ namespace Quickstarts
             uint subscriptionId,
             double publishingInterval,
             TimestampsToReturn timestampsToReturn,
-            IList<MonitoredItemCreateRequest> itemsToCreate,
+            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults,
             IList<IMonitoredItem> monitoredItems,
@@ -3375,19 +3369,15 @@ namespace Quickstarts
             NodeHandle handle,
             IDataChangeMonitoredItem2 monitoredItem)
         {
-            DataValue initialValue = new DataValue();
+            DataValue initialValue = new DataValue(Variant.Null, StatusCodes.BadWaitingForInitialData, DateTime.MinValue, DateTime.UtcNow);
 
-            initialValue.Value = null;
-            initialValue.ServerTimestamp = DateTime.UtcNow;
-            initialValue.SourceTimestamp = DateTime.MinValue;
-            initialValue.StatusCode = StatusCodes.BadWaitingForInitialData;
-
+            NumericRange indexRange = monitoredItem.IndexRange;
             ServiceResult error = handle.Node.ReadAttribute(
                 context,
                 monitoredItem.AttributeId,
-                monitoredItem.IndexRange,
+                indexRange,
                 monitoredItem.DataEncoding,
-                initialValue);
+                ref initialValue);
 
             monitoredItem.QueueValue(initialValue, error, true);
 
@@ -3509,14 +3499,14 @@ namespace Quickstarts
             // need to look up the EU range if a percent filter is requested.
             if (deadbandFilter.DeadbandType == (uint)DeadbandType.Percent)
             {
-                PropertyState property = handle.Node.FindChild(context, Opc.Ua.BrowseNames.EURange) as PropertyState;
+                PropertyState property = handle.Node.FindChild(context, new QualifiedName(Opc.Ua.BrowseNames.EURange)) as PropertyState;
 
                 if (property == null)
                 {
                     return StatusCodes.BadFilterNotAllowed;
                 }
 
-                range = property.Value as Opc.Ua.Range;
+                range = property.Value.Value as Opc.Ua.Range;
 
                 if (range == null)
                 {
@@ -3567,7 +3557,7 @@ namespace Quickstarts
 
             if (filterToUse.AggregateConfiguration.UseServerCapabilitiesDefaults)
             {
-                filterToUse.AggregateConfiguration = Server.AggregateManager.GetDefaultConfiguration(null);
+                filterToUse.AggregateConfiguration = Server.AggregateManager.GetDefaultConfiguration(NodeId.Null);
             }
 
             return StatusCodes.Good;
@@ -3582,7 +3572,7 @@ namespace Quickstarts
             OperationContext context,
             TimestampsToReturn timestampsToReturn,
             IList<IMonitoredItem> monitoredItems,
-            IList<MonitoredItemModifyRequest> itemsToModify,
+            ArrayOf<MonitoredItemModifyRequest> itemsToModify,
             IList<ServiceResult> errors,
             IList<MonitoringFilterResult> filterResults)
         {

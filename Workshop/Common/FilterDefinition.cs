@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -61,7 +61,7 @@ namespace Quickstarts
         /// <summary>
         /// The select clauses to use with the filter.
         /// </summary>
-        public SimpleAttributeOperandCollection SelectClauses;
+        public List<SimpleAttributeOperand> SelectClauses;
         #pragma warning restore CA1051
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace Quickstarts
             monitoredItem.NodeClass = NodeClass.Object;
             monitoredItem.AttributeId = Attributes.EventNotifier;
             monitoredItem.IndexRange = null;
-            monitoredItem.Encoding = null;
+            monitoredItem.Encoding = QualifiedName.Null;
             monitoredItem.MonitoringMode = MonitoringMode.Reporting;
             monitoredItem.SamplingInterval = 0;
             monitoredItem.QueueSize = UInt32.MaxValue;
@@ -113,13 +113,13 @@ namespace Quickstarts
         /// support all of the optional fields.
         /// This method browses the type model and
         /// </remarks>
-        public async Task<SimpleAttributeOperandCollection> ConstructSelectClausesAsync(
+        public async Task<List<SimpleAttributeOperand>> ConstructSelectClausesAsync(
             Session session,
             CancellationToken ct,
             params NodeId[] eventTypeIds)
         {
             // browse the type model in the server address space to find the fields available for the event type.
-            SimpleAttributeOperandCollection selectClauses = new SimpleAttributeOperandCollection();
+            List<SimpleAttributeOperand> selectClauses = new List<SimpleAttributeOperand>();
 
             // must always request the NodeId for the condition instances.
             // this can be done by specifying an operand with an empty browse path.
@@ -177,7 +177,7 @@ namespace Quickstarts
                 // select the Severity property of the event.
                 SimpleAttributeOperand operand1 = new SimpleAttributeOperand();
                 operand1.TypeDefinitionId = ObjectTypeIds.BaseEventType;
-                operand1.BrowsePath.Add(BrowseNames.Severity);
+                operand1.BrowsePath = new List<QualifiedName> { new QualifiedName(BrowseNames.Severity) }.ToArrayOf();
                 operand1.AttributeId = Attributes.Value;
 
                 // specify the value to compare the Severity property with.
@@ -185,7 +185,7 @@ namespace Quickstarts
                 operand2.Value = new Variant((ushort)Severity);
 
                 // specify that the Severity property must be GreaterThanOrEqual the value specified.
-                element1 = whereClause.Push(FilterOperator.GreaterThanOrEqual, operand1, operand2);
+                element1 = whereClause.Push(FilterOperator.GreaterThanOrEqual, new Variant(operand1), new Variant(operand2));
             }
 
             // add the event types.
@@ -199,12 +199,12 @@ namespace Quickstarts
                     // for this example uses the 'OfType' operator to limit events to thoses with specified event type.
                     LiteralOperand operand1 = new LiteralOperand();
                     operand1.Value = new Variant(EventTypes[ii]);
-                    ContentFilterElement element3 = whereClause.Push(FilterOperator.OfType, operand1);
+                    ContentFilterElement element3 = whereClause.Push(FilterOperator.OfType, new Variant(operand1));
 
                     // need to chain multiple types together with an OR clause.
                     if (element2 != null)
                     {
-                        element2 = whereClause.Push(FilterOperator.Or, element2, element3);
+                        element2 = whereClause.Push(FilterOperator.Or, new Variant(element2), new Variant(element3));
                     }
                     else
                     {
@@ -215,7 +215,7 @@ namespace Quickstarts
                 // need to link the set of event types with the previous filters.
                 if (element1 != null)
                 {
-                    whereClause.Push(FilterOperator.And, element1, element2);
+                    whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
                 }
             }
 
@@ -234,10 +234,10 @@ namespace Quickstarts
         /// <param name="eventTypeId">The event type id.</param>
         /// <param name="eventFields">The event fields.</param>
         /// <param name="ct">A token to cancel the operation with</param>
-        private async Task CollectFieldsAsync(Session session, NodeId eventTypeId, SimpleAttributeOperandCollection eventFields, CancellationToken ct = default)
+        private async Task CollectFieldsAsync(Session session, NodeId eventTypeId, List<SimpleAttributeOperand> eventFields, CancellationToken ct = default)
         {
             // get the supertypes.
-            ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
+            List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
 
             if (supertypes == null)
             {
@@ -270,7 +270,7 @@ namespace Quickstarts
             Session session,
             NodeId nodeId,
             List<QualifiedName> parentPath,
-            SimpleAttributeOperandCollection eventFields,
+            List<SimpleAttributeOperand> eventFields,
             Dictionary<NodeId, List<QualifiedName>> foundNodes,
             CancellationToken ct = default)
         {
@@ -284,7 +284,7 @@ namespace Quickstarts
             nodeToBrowse.NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable);
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-            ReferenceDescriptionCollection children = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
+            List<ReferenceDescription> children = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
 
             if (children == null)
             {
@@ -336,7 +336,7 @@ namespace Quickstarts
         /// <returns>
         /// 	<c>true</c> if the specified select clause contains path; otherwise, <c>false</c>.
         /// </returns>
-        private bool ContainsPath(SimpleAttributeOperandCollection selectClause, List<QualifiedName> browsePath)
+        private bool ContainsPath(List<SimpleAttributeOperand> selectClause, List<QualifiedName> browsePath)
         {
             for (int ii = 0; ii < selectClause.Count; ii++)
             {

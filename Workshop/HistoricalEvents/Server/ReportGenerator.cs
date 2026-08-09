@@ -413,7 +413,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 new LocalizedText(info));
 
             // override event id and time.                
-            e.EventId.Value = new Guid((string)row[Opc.Ua.BrowseNames.EventId]).ToByteArray();
+            e.EventId.Value = new Guid((string)row[Opc.Ua.BrowseNames.EventId]).ToByteArray().ToByteString();
             e.Time.Value = (DateTime)row[Opc.Ua.BrowseNames.Time];
 
 
@@ -426,10 +426,10 @@ namespace Quickstarts.HistoricalEvents.Server
 
             e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.NameWell, namespaceIndex), nameWell, false);
             e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.UidWell, namespaceIndex), uidWell, false);
-            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestDate, namespaceIndex), row[BrowseNames.TestDate], false);
-            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestReason, namespaceIndex), row[BrowseNames.TestReason], false);
-            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestedBy, namespaceIndex), row[BrowseNames.TestedBy], false);
-            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.FluidLevel, namespaceIndex), row[BrowseNames.FluidLevel], false);
+            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestDate, namespaceIndex), new DateTimeUtc((DateTime)row[BrowseNames.TestDate]), false);
+            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestReason, namespaceIndex), (string)row[BrowseNames.TestReason], false);
+            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestedBy, namespaceIndex), (string)row[BrowseNames.TestedBy], false);
+            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.FluidLevel, namespaceIndex), (double)row[BrowseNames.FluidLevel], false);
             e.FluidLevel.SetChildValue(SystemContext, Opc.Ua.BrowseNames.EngineeringUnits, new EUInformation((string)row[Opc.Ua.BrowseNames.EngineeringUnits], Namespaces.HistoricalEvents), false);
 
             return e;
@@ -481,7 +481,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 new LocalizedText(info));
 
             // override event id and time.                
-            e.EventId.Value = new Guid((string)row[Opc.Ua.BrowseNames.EventId]).ToByteArray();
+            e.EventId.Value = new Guid((string)row[Opc.Ua.BrowseNames.EventId]).ToByteArray().ToByteString();
             e.Time.Value = (DateTime)row[Opc.Ua.BrowseNames.Time];
 
             string nameWell = (string)row[BrowseNames.NameWell];
@@ -493,10 +493,10 @@ namespace Quickstarts.HistoricalEvents.Server
 
             e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.NameWell, namespaceIndex), nameWell, false);
             e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.UidWell, namespaceIndex), uidWell, false);
-            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestDate, namespaceIndex), row[BrowseNames.TestDate], false);
-            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestReason, namespaceIndex), row[BrowseNames.TestReason], false);
-            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.InjectedFluid, namespaceIndex), row[BrowseNames.InjectedFluid], false);
-            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestDuration, namespaceIndex), row[BrowseNames.TestDuration], false);
+            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestDate, namespaceIndex), new DateTimeUtc((DateTime)row[BrowseNames.TestDate]), false);
+            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestReason, namespaceIndex), (string)row[BrowseNames.TestReason], false);
+            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.InjectedFluid, namespaceIndex), (string)row[BrowseNames.InjectedFluid], false);
+            e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.TestDuration, namespaceIndex), (double)row[BrowseNames.TestDuration], false);
             e.TestDuration.SetChildValue(SystemContext, Opc.Ua.BrowseNames.EngineeringUnits, new EUInformation((string)row[Opc.Ua.BrowseNames.EngineeringUnits], Namespaces.HistoricalEvents), false);
 
             return e;

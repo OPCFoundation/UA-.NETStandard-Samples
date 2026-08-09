@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -56,12 +56,12 @@ namespace Quickstarts.AlarmConditionClient
         public int ShowDialog(DialogConditionState dialog)
         {
             // set the prompt.
-            PromptLB.Text = Utils.Format("{0}", BaseVariableState.GetValue(dialog.Prompt));
+            PromptLB.Text = Utils.Format("{0}", dialog.Prompt.Value);
 
             Dictionary<DialogResult, int> resultMapping = new Dictionary<DialogResult, int>();
 
             // configure the buttons.
-            LocalizedText[] options = BaseVariableState.GetValue(dialog.ResponseOptionSet);
+            LocalizedText[] options = dialog.ResponseOptionSet.Value.ToArray();
 
             switch (options.Length)
             {

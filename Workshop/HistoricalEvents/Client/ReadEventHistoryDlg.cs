@@ -36,6 +36,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -160,8 +161,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     nodesToRead,
                     ct);
 
-                HistoryReadResultCollection results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -185,7 +186,7 @@ namespace Quickstarts.HistoricalEvents.Client
             details.EndTime = DateTime.MinValue;
             details.NumValuesPerNode = 1;
             details.Filter = new EventFilter();
-            details.Filter.AddSelectClause(Opc.Ua.ObjectTypeIds.BaseEventType, Opc.Ua.BrowseNames.Time);
+            details.Filter.AddSelectClause(Opc.Ua.ObjectTypeIds.BaseEventType, new QualifiedName(Opc.Ua.BrowseNames.Time));
 
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_areaId;
@@ -201,8 +202,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -228,8 +229,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = response.Results.ToList();
+                diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -306,8 +307,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 ct);
 
             ResponseHeader responseHeader = response.ResponseHeader;
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

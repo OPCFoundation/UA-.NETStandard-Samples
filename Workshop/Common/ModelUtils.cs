@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -29,6 +29,7 @@
 
 using System;
 using System.Text;
+using System.Linq;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -52,7 +53,7 @@ namespace Quickstarts
             Dictionary<string, InstanceDeclaration> map = new Dictionary<string, InstanceDeclaration>();
 
             // get the supertypes.
-            ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
+            List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
 
             if (supertypes != null)
             {
@@ -99,7 +100,7 @@ namespace Quickstarts
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
             // ignore any browsing errors.
-            ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
+            List<ReferenceDescription> references = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
 
             if (references == null)
             {
@@ -233,8 +234,8 @@ namespace Quickstarts
                     nodesToBrowse,
                     ct);
 
-                BrowseResultCollection results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                List<BrowseResult> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -244,7 +245,7 @@ namespace Quickstarts
 
                 for (int ii = 0; ii < nodeIds.Count; ii++)
                 {
-                    targetIds.Add(null);
+                    targetIds.Add(NodeId.Null);
 
                     // check for error.
                     if (StatusCode.IsBad(results[ii].StatusCode))
@@ -279,8 +280,8 @@ namespace Quickstarts
                         continuationPoints,
                         ct);
 
-                    results = response2.Results;
-                    diagnosticInfos = response2.DiagnosticInfos;
+                    results = response2.Results.ToList();
+                    diagnosticInfos = response2.DiagnosticInfos.ToList();
 
                     ClientBase.ValidateResponse(results, nodesToBrowse);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -335,8 +336,8 @@ namespace Quickstarts
                     nodesToRead,
                     ct);
 
-                List<DataValue> results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -352,7 +353,7 @@ namespace Quickstarts
 
                     if (!NodeId.IsNull(instance.DataType))
                     {
-                        instance.BuiltInType = DataTypes.GetBuiltInType(instance.DataType);
+                        instance.BuiltInType = TypeInfo.GetBuiltInType(instance.DataType, session.TypeTree);
                         instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType, ct);
 
                         if (instance.ValueRank >= 0)
@@ -654,7 +655,7 @@ namespace Quickstarts
             field.InstanceDeclaration.BrowsePathDisplayText = browseName.Name;
 
             field.InstanceDeclaration.BuiltInType = dataType;
-            field.InstanceDeclaration.DataType = (uint)dataType;
+            field.InstanceDeclaration.DataType = (NodeId)(uint)dataType;
             field.InstanceDeclaration.ValueRank = valueRank;
             field.InstanceDeclaration.DataTypeDisplayText = dataType.ToString();
 
@@ -672,9 +673,9 @@ namespace Quickstarts
         /// <summary>
         /// Returns the select clause defined by the filter declaration.
         /// </summary>
-        public SimpleAttributeOperandCollection GetSelectClause()
+        public List<SimpleAttributeOperand> GetSelectClause()
         {
-            SimpleAttributeOperandCollection selectClause = new SimpleAttributeOperandCollection();
+            List<SimpleAttributeOperand> selectClause = new List<SimpleAttributeOperand>();
 
             SimpleAttributeOperand operand = new SimpleAttributeOperand();
             operand.TypeDefinitionId = Opc.Ua.ObjectTypeIds.BaseEventType;
@@ -699,7 +700,7 @@ namespace Quickstarts
         public ContentFilter GetWhereClause()
         {
             ContentFilter whereClause = new ContentFilter();
-            ContentFilterElement element1 = whereClause.Push(FilterOperator.OfType, EventTypeId);
+            ContentFilterElement element1 = whereClause.Push(FilterOperator.OfType, new Variant(new LiteralOperand { Value = new Variant(EventTypeId) }));
 
             EventFilter filter = new EventFilter();
 
@@ -715,8 +716,8 @@ namespace Quickstarts
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
 
-                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, operand1, operand2);
-                    element1 = whereClause.Push(FilterOperator.And, element1, element2);
+                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(operand1), new Variant(operand2));
+                    element1 = whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
                 }
             }
 

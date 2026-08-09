@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -83,7 +83,7 @@ namespace Quickstarts.DataAccessServer
 
                 // start the server.
 #pragma warning disable CA2000 // Justification: Server ownership is transferred to ApplicationInstance.
-                application.StartAsync(new DataAccessServer()).Wait();
+                application.StartAsync(new DataAccessServer(m_telemetry)).Wait();
 #pragma warning restore CA2000
 
                 // run the application interactively.

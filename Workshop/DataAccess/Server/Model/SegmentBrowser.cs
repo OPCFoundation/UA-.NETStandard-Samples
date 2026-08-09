@@ -166,7 +166,7 @@ namespace Quickstarts.DataAccessServer
         {
             UnderlyingSystem system = (UnderlyingSystem)this.SystemContext.SystemHandle;
 
-            NodeId targetId = null;
+            NodeId targetId = NodeId.Null;
 
             // check if a specific browse name is requested.
             if (!QualifiedName.IsNull(base.BrowseName))

@@ -257,20 +257,22 @@ namespace Quickstarts.HistoricalAccessServer
 
             while (currentTime < DateTime.UtcNow)
             {
-                DataValue dataValue = new DataValue();
-                dataValue.SourceTimestamp = currentTime;
-                dataValue.ServerTimestamp = currentTime.AddSeconds(generator.GetRandomByte());
-                dataValue.StatusCode = StatusCodes.Good;
-
                 // generate random value.
+                Variant value;
                 if (item.ValueRank < 0)
                 {
-                    dataValue.Value = generator.GetRandom(item.DataType);
+                    value = generator.GetRandom(Opc.Ua.TypeInfo.GetDataTypeId(new Opc.Ua.TypeInfo(item.DataType, ValueRanks.Scalar)), ValueRanks.Scalar, null, null);
                 }
                 else
                 {
-                    dataValue.Value = generator.GetRandomArray(item.DataType, false, 10, false);
+                    value = generator.GetRandom(Opc.Ua.TypeInfo.GetDataTypeId(new Opc.Ua.TypeInfo(item.DataType, item.ValueRank)), item.ValueRank, new uint[] { 10 }, null);
                 }
+
+                DataValue dataValue = new DataValue(
+                    value,
+                    StatusCodes.Good,
+                    currentTime,
+                    currentTime.AddSeconds(generator.GetRandomByte(false)));
 
                 // add record to table.
                 DataRow row = dataset.Tables[0].NewRow();
@@ -330,7 +332,6 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 messageContext.NamespaceUris = context.NamespaceUris;
                 messageContext.ServerUris = context.ServerUris;
-                messageContext.Factory = context.EncodeableFactory;
             }
 
             int sourceTimeOffset = 0;
@@ -443,11 +444,11 @@ namespace Quickstarts.HistoricalAccessServer
                 }
 
                 // add values to data table.
-                DataValue dataValue = new DataValue();
-                dataValue.WrappedValue = value;
-                dataValue.SourceTimestamp = baseline.AddMilliseconds(sourceTimeOffset);
-                dataValue.ServerTimestamp = baseline.AddMilliseconds(serverTimeOffset);
-                dataValue.StatusCode = status;
+                DataValue dataValue = new DataValue(
+                    value,
+                    status,
+                    baseline.AddMilliseconds(sourceTimeOffset),
+                    baseline.AddMilliseconds(serverTimeOffset));
 
                 DataRow row = null;
 
@@ -492,7 +493,11 @@ namespace Quickstarts.HistoricalAccessServer
                     annotation.AnnotationTime = baseline.AddMilliseconds(annotationTimeOffet);
                     annotation.UserName = annotationUser;
                     annotation.Message = annotationMessage;
-                    dataValue.WrappedValue = new ExtensionObject(annotation);
+                    dataValue = new DataValue(
+                        new ExtensionObject(annotation),
+                        dataValue.StatusCode,
+                        dataValue.SourceTimestamp,
+                        dataValue.ServerTimestamp);
 
                     row[0] = dataValue.SourceTimestamp;
                     row[1] = dataValue.ServerTimestamp;

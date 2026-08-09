@@ -60,7 +60,7 @@ namespace Quickstarts.HistoricalAccessServer
         {
             if (component == null)
             {
-                return null;
+                return NodeId.Null;
             }
 
             // components must be instances with a parent.
@@ -76,7 +76,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (parentId == null)
             {
-                return null;
+                return NodeId.Null;
             }
 
             StringBuilder buffer = new StringBuilder();

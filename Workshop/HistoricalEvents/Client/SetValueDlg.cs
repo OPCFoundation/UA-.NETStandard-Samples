@@ -74,7 +74,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 return Variant.Null;
             }
 
-            return new Variant(TypeInfo.Cast(ValueTB.Text, builtInType));
+            return new Variant(ValueTB.Text, new TypeInfo(builtInType, ValueRanks.Scalar));
         }
         #endregion
 

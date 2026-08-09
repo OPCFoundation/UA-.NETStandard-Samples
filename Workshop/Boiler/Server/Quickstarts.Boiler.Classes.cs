@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -213,7 +213,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                Measurement = new PropertyState<double>(this);
+                                Measurement = PropertyState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -234,7 +234,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                SetPoint = new PropertyState<double>(this);
+                                SetPoint = PropertyState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -255,7 +255,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                ControlOut = new PropertyState<double>(this);
+                                ControlOut = PropertyState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -415,7 +415,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                Output = new AnalogItemState<double>(this);
+                                Output = AnalogItemState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -573,7 +573,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                Input = new AnalogItemState<double>(this);
+                                Input = AnalogItemState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -805,7 +805,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                Input1 = new PropertyState<double>(this);
+                                Input1 = PropertyState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -826,7 +826,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                Input2 = new PropertyState<double>(this);
+                                Input2 = PropertyState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -847,7 +847,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                Input3 = new PropertyState<double>(this);
+                                Input3 = PropertyState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -868,7 +868,7 @@ namespace Quickstarts.Boiler
                         {
                             if (replacement == null)
                             {
-                                ControlOut = new PropertyState<double>(this);
+                                ControlOut = PropertyState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {

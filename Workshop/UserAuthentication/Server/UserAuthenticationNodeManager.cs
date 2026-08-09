@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -56,7 +56,7 @@ namespace Quickstarts.UserAuthenticationServer
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<UserAuthenticationServerConfiguration>();
+            m_configuration = null;
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -111,7 +111,7 @@ namespace Quickstarts.UserAuthenticationServer
 
                 process.NodeId = new NodeId(1, NamespaceIndex);
                 process.BrowseName = new QualifiedName("My Process", NamespaceIndex);
-                process.DisplayName = process.BrowseName.Name;
+                process.DisplayName = new LocalizedText(process.BrowseName.Name);
                 process.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
 
                 // ensure the process object can be found via the server object. 
@@ -127,12 +127,12 @@ namespace Quickstarts.UserAuthenticationServer
 
                 // a property to report the process state.
 #pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
-                PropertyState<string> state = new PropertyState<string>(process);
+                PropertyState<string> state = PropertyState<string>.With<VariantBuilder>(process);
 #pragma warning restore CA2000
 
                 state.NodeId = new NodeId(2, NamespaceIndex);
                 state.BrowseName = new QualifiedName("LogFilePath", NamespaceIndex);
-                state.DisplayName = state.BrowseName.Name;
+                state.DisplayName = new LocalizedText(state.BrowseName.Name);
                 state.TypeDefinitionId = VariableTypeIds.PropertyType;
                 state.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                 state.DataType = DataTypeIds.String;
@@ -151,7 +151,7 @@ namespace Quickstarts.UserAuthenticationServer
             }
         }
 
-        public ServiceResult OnWriteValue(ISystemContext context, NodeState node, ref object value)
+        public ServiceResult OnWriteValue(ISystemContext context, NodeState node, ref Variant value)
         {
             UserTokenType? tokenType = (context as ISessionSystemContext)?.UserIdentity?.TokenType;
 
@@ -168,7 +168,7 @@ namespace Quickstarts.UserAuthenticationServer
             // attempt to update file system.
             try
             {
-                string filePath = value as string;
+                string filePath = value.Value as string;
                 PropertyState<string> variable = node as PropertyState<string>;
 
                 if (!String.IsNullOrEmpty(variable.Value))
@@ -191,7 +191,7 @@ namespace Quickstarts.UserAuthenticationServer
                     }
                 }
 
-                value = filePath;
+                value = new Variant(filePath);
             }
             catch (Exception e)
             {

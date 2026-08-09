@@ -229,7 +229,7 @@ namespace Quickstarts.Boiler.Client
             nodeToBrowse.NodeClassMask = (uint)(NodeClass.Object);
             nodeToBrowse.ResultMask = (uint)(BrowseResultMask.All);
 
-            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(
+            List<ReferenceDescription> references = await ClientUtils.BrowseAsync(
                 m_session,
                 nodeToBrowse,
                 false,

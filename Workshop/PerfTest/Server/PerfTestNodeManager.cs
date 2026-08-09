@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -57,7 +57,7 @@ namespace Quickstarts.PerfTestServer
             SystemContext.SystemHandle = m_system = new UnderlyingSystem();
 
             // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<PerfTestServerConfiguration>();
+            m_configuration = null;
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)

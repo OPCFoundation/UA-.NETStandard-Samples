@@ -35,6 +35,7 @@ using System.Drawing;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -263,7 +264,7 @@ namespace Quickstarts.HistoricalEvents.Client
         {
             for (int ii = 0; ii < events.Events.Count; ii++)
             {
-                ListViewItem item = await CreateListItemAsync(m_filter, events.Events[ii].EventFields, ct);
+                ListViewItem item = await CreateListItemAsync(m_filter, events.Events[ii].EventFields.ToList(), ct);
                 EventsLV.Items.Add(item);
             }
 
@@ -427,7 +428,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // create an item and add to top of list.
-                ListViewItem item = await CreateListItemAsync(m_filter, notification.EventFields);
+                ListViewItem item = await CreateListItemAsync(m_filter, notification.EventFields.ToList());
                 EventsLV.Items.Insert(0, item);
 
                 // adjust the width of the columns.
@@ -458,7 +459,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     // get the last hour or 10 events.
                     ReadEventDetails details = new ReadEventDetails();
                     details.StartTime = DateTime.UtcNow.AddSeconds(30);
-                    details.EndTime = details.StartTime.AddHours(-1);
+                    details.EndTime = ((DateTime)details.StartTime).AddHours(-1);
                     details.NumValuesPerNode = 10;
                     details.Filter = m_filter.GetFilter();
 
@@ -486,8 +487,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -513,8 +514,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = response.Results.ToList();
+                diagnosticInfos = response.DiagnosticInfos.ToList();
             }
         }
 
@@ -555,7 +556,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     eventId = e[index].Value as byte[];
                 }
 
-                details.EventIds.Add(eventId);
+                details.EventIds = details.EventIds.AddItem(eventId.ToByteString());
             }
 
             // delete the events.
@@ -567,8 +568,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 nodesToUpdate,
                 ct);
 
-            HistoryUpdateResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);

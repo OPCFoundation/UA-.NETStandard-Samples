@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -41,6 +41,29 @@ using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.MethodsServer
 {
+    internal struct ArgumentArrayBuilder : IVariantBuilder<ArrayOf<Argument>>
+    {
+        public ArrayOf<Argument> GetValue(Variant value)
+        {
+            if (value.Value is Argument[] arguments)
+            {
+                return arguments.ToArrayOf();
+            }
+
+            if (value.Value is ArrayOf<Argument> arrayOfArguments)
+            {
+                return arrayOfArguments;
+            }
+
+            return ArrayOf<Argument>.Empty;
+        }
+
+        public Variant WithValue(ArrayOf<Argument> value)
+        {
+            return new Variant(value.ToArray());
+        }
+    }
+
     /// <summary>
     /// A node manager for a server that exposes several variables.
     /// </summary>
@@ -57,7 +80,7 @@ namespace Quickstarts.MethodsServer
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<MethodsServerConfiguration>();
+            m_configuration = null;
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -77,7 +100,6 @@ namespace Quickstarts.MethodsServer
             {
                 m_processTimer?.Dispose();
                 m_processTimer = null;
-                m_stateNode?.Dispose();
                 m_stateNode = null;
             }
 
@@ -115,7 +137,7 @@ namespace Quickstarts.MethodsServer
 
                 process.NodeId = new NodeId(1, NamespaceIndex);
                 process.BrowseName = new QualifiedName("My Process", NamespaceIndex);
-                process.DisplayName = process.BrowseName.Name;
+                process.DisplayName = new LocalizedText(process.BrowseName.Name);
                 process.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
 
                 // ensure the process object can be found via the server object. 
@@ -130,11 +152,11 @@ namespace Quickstarts.MethodsServer
                 references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, process.NodeId));
 
                 // a property to report the process state.
-                PropertyState<uint> state = m_stateNode = new PropertyState<uint>(process);
+                PropertyState<uint> state = m_stateNode = PropertyState<uint>.With<VariantBuilder>(process);
 
                 state.NodeId = new NodeId(2, NamespaceIndex);
                 state.BrowseName = new QualifiedName("State", NamespaceIndex);
-                state.DisplayName = state.BrowseName.Name;
+                state.DisplayName = new LocalizedText(state.BrowseName.Name);
                 state.TypeDefinitionId = VariableTypeIds.PropertyType;
                 state.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                 state.DataType = DataTypeIds.UInt32;
@@ -149,16 +171,16 @@ namespace Quickstarts.MethodsServer
 
                 start.NodeId = new NodeId(3, NamespaceIndex);
                 start.BrowseName = new QualifiedName("Start", NamespaceIndex);
-                start.DisplayName = start.BrowseName.Name;
+                start.DisplayName = new LocalizedText(start.BrowseName.Name);
                 start.ReferenceTypeId = ReferenceTypeIds.HasComponent;
                 start.UserExecutable = true;
                 start.Executable = true;
 
                 // add input arguments.
-                start.InputArguments = new PropertyState<Argument[]>(start);
+                start.InputArguments = PropertyState<ArrayOf<Argument>>.With<ArgumentArrayBuilder>(start);
                 start.InputArguments.NodeId = new NodeId(4, NamespaceIndex);
-                start.InputArguments.BrowseName = BrowseNames.InputArguments;
-                start.InputArguments.DisplayName = start.InputArguments.BrowseName.Name;
+                start.InputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
+                start.InputArguments.DisplayName = new LocalizedText(start.InputArguments.BrowseName.Name);
                 start.InputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                 start.InputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                 start.InputArguments.DataType = DataTypeIds.Argument;
@@ -167,23 +189,23 @@ namespace Quickstarts.MethodsServer
                 Argument[] args = new Argument[2];
                 args[0] = new Argument();
                 args[0].Name = "Initial State";
-                args[0].Description = "The initialize state for the process.";
+                args[0].Description = new LocalizedText("The initialize state for the process.");
                 args[0].DataType = DataTypeIds.UInt32;
                 args[0].ValueRank = ValueRanks.Scalar;
 
                 args[1] = new Argument();
                 args[1].Name = "Final State";
-                args[1].Description = "The final state for the process.";
+                args[1].Description = new LocalizedText("The final state for the process.");
                 args[1].DataType = DataTypeIds.UInt32;
                 args[1].ValueRank = ValueRanks.Scalar;
 
-                start.InputArguments.Value = args;
+                start.InputArguments.Value = args.ToArrayOf();
 
                 // add output arguments.
-                start.OutputArguments = new PropertyState<Argument[]>(start);
+                start.OutputArguments = PropertyState<ArrayOf<Argument>>.With<ArgumentArrayBuilder>(start);
                 start.OutputArguments.NodeId = new NodeId(5, NamespaceIndex);
-                start.OutputArguments.BrowseName = BrowseNames.OutputArguments;
-                start.OutputArguments.DisplayName = start.OutputArguments.BrowseName.Name;
+                start.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
+                start.OutputArguments.DisplayName = new LocalizedText(start.OutputArguments.BrowseName.Name);
                 start.OutputArguments.TypeDefinitionId = VariableTypeIds.PropertyType;
                 start.OutputArguments.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                 start.OutputArguments.DataType = DataTypeIds.Argument;
@@ -192,17 +214,17 @@ namespace Quickstarts.MethodsServer
                 args = new Argument[2];
                 args[0] = new Argument();
                 args[0].Name = "Revised Initial State";
-                args[0].Description = "The revised initialize state for the process.";
+                args[0].Description = new LocalizedText("The revised initialize state for the process.");
                 args[0].DataType = DataTypeIds.UInt32;
                 args[0].ValueRank = ValueRanks.Scalar;
 
                 args[1] = new Argument();
                 args[1].Name = "Revised Final State";
-                args[1].Description = "The revised final state for the process.";
+                args[1].Description = new LocalizedText("The revised final state for the process.");
                 args[1].DataType = DataTypeIds.UInt32;
                 args[1].ValueRank = ValueRanks.Scalar;
 
-                start.OutputArguments.Value = args;
+                start.OutputArguments.Value = args.ToArrayOf();
 
                 process.AddChild(start);
 
@@ -231,8 +253,8 @@ namespace Quickstarts.MethodsServer
         public ServiceResult OnStart(
             ISystemContext context,
             MethodState method,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             // all arguments must be provided.
             if (inputArguments.Count < 2)
@@ -241,8 +263,8 @@ namespace Quickstarts.MethodsServer
             }
 
             // check the data type of the input arguments.
-            uint? initialState = inputArguments[0] as uint?;
-            uint? finalState = inputArguments[1] as uint?;
+            uint? initialState = inputArguments[0].Value as uint?;
+            uint? finalState = inputArguments[1].Value as uint?;
 
             if (initialState == null || finalState == null)
             {
@@ -265,8 +287,8 @@ namespace Quickstarts.MethodsServer
 
                 // the calling function sets default values for all output arguments.
                 // only need to update them here.
-                outputArguments[0] = m_state;
-                outputArguments[1] = m_finalState;
+                outputArguments[0] = Variant.From(m_state);
+                outputArguments[1] = Variant.From(m_finalState);
             }
 
             // signal update to state node.

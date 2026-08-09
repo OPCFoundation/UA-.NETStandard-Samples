@@ -186,7 +186,7 @@ namespace Quickstarts.DataTypes.Types
                         {
                             if (replacement == null)
                             {
-                                PrimaryVehicle = new PropertyState<VehicleType>(this);
+                                PrimaryVehicle = PropertyState<VehicleType>.With<StructureBuilder<VehicleType>>(this);
                             }
                             else
                             {
@@ -207,7 +207,7 @@ namespace Quickstarts.DataTypes.Types
                         {
                             if (replacement == null)
                             {
-                                OwnedVehicles = new PropertyState<VehicleType[]>(this);
+                                OwnedVehicles = PropertyState<VehicleType[]>.With<VehicleTypeArrayBuilder>(this);
                             }
                             else
                             {
@@ -229,6 +229,19 @@ namespace Quickstarts.DataTypes.Types
             return base.FindChild(context, browseName, createOrReplace, replacement);
         }
         #endregion
+
+        internal struct VehicleTypeArrayBuilder : IVariantBuilder<VehicleType[]>
+        {
+            public VehicleType[] GetValue(Variant value)
+            {
+                return value.Value as VehicleType[];
+            }
+
+            public Variant WithValue(VehicleType[] value)
+            {
+                return new Variant(value);
+            }
+        }
 
         #region Private Fields
         private PropertyState<VehicleType> m_primaryVehicle;

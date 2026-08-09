@@ -55,7 +55,7 @@ namespace Quickstarts.HistoricalAccessServer
             this.NodeId = ConstructId(folder.UniquePath, namespaceIndex);
             this.BrowseName = new QualifiedName(folder.Name, namespaceIndex);
             this.DisplayName = new LocalizedText(this.BrowseName.Name);
-            this.Description = null;
+            this.Description = LocalizedText.Null;
             this.WriteMask = 0;
             this.UserWriteMask = 0;
             this.EventNotifier = EventNotifiers.None;

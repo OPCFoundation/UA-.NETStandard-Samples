@@ -73,13 +73,13 @@ namespace Quickstarts.AlarmConditionClient
             // display the dialog.
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return NodeId.Null;
             }
 
             // ensure selection is valid.
             if (BrowseTV.SelectedNode == null)
             {
-                return null;
+                return NodeId.Null;
             }
 
             // get the selection.
@@ -183,7 +183,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // add the childen to the control.
-                ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(m_session, nodeToBrowse, false);
+                List<ReferenceDescription> references = await FormUtils.BrowseAsync(m_session, nodeToBrowse, false);
 
                 for (int ii = 0; ii < references.Count; ii++)
                 {

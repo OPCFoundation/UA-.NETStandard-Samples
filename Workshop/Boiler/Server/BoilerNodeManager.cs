@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -63,7 +63,7 @@ namespace Quickstarts.Boiler.Server
             SetNamespaces(namespaceUrls);
 
             // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<BoilerServerConfiguration>();
+            m_configuration = null;
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -87,9 +87,7 @@ namespace Quickstarts.Boiler.Server
                     m_simulationTimer = null;
                 }
 
-                m_boiler1?.Dispose();
                 m_boiler1 = null;
-                m_boiler2?.Dispose();
                 m_boiler2 = null;
             }
 
@@ -154,9 +152,9 @@ namespace Quickstarts.Boiler.Server
                 // initialize it from the type model and assign unique node ids.
                 m_boiler2.Create(
                     SystemContext,
-                    null,
+                    NodeId.Null,
                     new QualifiedName("Boiler #2", NamespaceIndexes[1]),
-                    null,
+                    LocalizedText.Null,
                     true);
 
                 // link root to objects folder.

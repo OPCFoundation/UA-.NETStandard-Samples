@@ -58,7 +58,7 @@ namespace Quickstarts.HistoricalAccessServer
             this.AliasRoot = "HDA";
 
             // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<HistoricalAccessServerConfiguration>();
+            m_configuration = null;
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -122,7 +122,7 @@ namespace Quickstarts.HistoricalAccessServer
         {
             lock (Server.DiagnosticsLock)
             {
-                HistoryServerCapabilitiesState capabilities = Server.DiagnosticsNodeManager.GetDefaultHistoryCapabilities();
+                HistoryServerCapabilitiesState capabilities = Server.DiagnosticsNodeManager.GetDefaultHistoryCapabilitiesAsync(System.Threading.CancellationToken.None).GetAwaiter().GetResult();
                 capabilities.AccessHistoryDataCapability.Value = true;
                 capabilities.InsertDataCapability.Value = true;
                 capabilities.ReplaceDataCapability.Value = true;
@@ -164,7 +164,7 @@ namespace Quickstarts.HistoricalAccessServer
             dataFolder.TypeDefinitionId = ObjectTypeIds.FolderType;
             dataFolder.NodeId = new NodeId(folderName, NamespaceIndex);
             dataFolder.BrowseName = new QualifiedName(folderName, NamespaceIndex);
-            dataFolder.DisplayName = dataFolder.BrowseName.Name;
+            dataFolder.DisplayName = new LocalizedText(dataFolder.BrowseName.Name);
             dataFolder.WriteMask = AttributeWriteMask.None;
             dataFolder.UserWriteMask = AttributeWriteMask.None;
             dataFolder.EventNotifier = EventNotifiers.None;
@@ -339,7 +339,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         protected override void Read(
             ServerSystemContext context,
-            IList<ReadValueId> nodesToRead,
+            ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToValidate,
@@ -376,7 +376,9 @@ namespace Quickstarts.HistoricalAccessServer
                         nodeToRead.AttributeId,
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
-                        value);
+                        ref value);
+
+                    values[handle.Index] = value;
                 }
             }
         }
@@ -419,7 +421,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = handle.NodeId;
-            nodeToRead.ParsedIndexRange = NumericRange.Empty;
+            nodeToRead.ParsedIndexRange = NumericRange.Null;
 
             try
             {
@@ -438,13 +440,13 @@ namespace Quickstarts.HistoricalAccessServer
 
                     DataValue value = request.Values.First.Value;
                     request.Values.RemoveFirst();
-                    monitoredItem.QueueValue(value, null);
+                    monitoredItem.QueueValue(value, ServiceResult.Good);
                 }
             }
             catch (Exception e)
             {
                 error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error fetching initial values.");
-                monitoredItem.QueueValue(null, error);
+                monitoredItem.QueueValue(DataValue.Null, error);
             }
             return error;
         }
@@ -563,7 +565,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 if (configuration == null || configuration.UseServerCapabilitiesDefaults)
                 {
-                    configuration = Server.AggregateManager.GetDefaultConfiguration(null);
+                    configuration = Server.AggregateManager.GetDefaultConfiguration(NodeId.Null);
                 }
 
                 configurationToUse.UseSlopedExtrapolation = configuration.UseSlopedExtrapolation;
@@ -630,7 +632,7 @@ namespace Quickstarts.HistoricalAccessServer
             ServerSystemContext context,
             ReadRawModifiedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -689,7 +691,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                         DataValue value = request.Values.First.Value;
                         request.Values.RemoveFirst();
-                        data.DataValues.Add(value);
+                        data.DataValues = data.DataValues.AddItem(value);
 
                         if (modifiedData != null)
                         {
@@ -701,7 +703,7 @@ namespace Quickstarts.HistoricalAccessServer
                                 request.ModificationInfos.RemoveFirst();
                             }
 
-                            modifiedData.ModificationInfos.Add(modificationInfo);
+                            modifiedData.ModificationInfos = modifiedData.ModificationInfos.AddItem(modificationInfo);
                         }
                     }
 
@@ -740,7 +742,7 @@ namespace Quickstarts.HistoricalAccessServer
             ServerSystemContext context,
             ReadProcessedDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -806,7 +808,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                         DataValue value = request.Values.First.Value;
                         request.Values.RemoveFirst();
-                        data.DataValues.Add(value);
+                        data.DataValues = data.DataValues.AddItem(value);
                     }
 
                     errors[handle.Index] = ServiceResult.Good;
@@ -840,7 +842,7 @@ namespace Quickstarts.HistoricalAccessServer
             ServerSystemContext context,
             ReadAtTimeDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -898,7 +900,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                         DataValue value = request.Values.First.Value;
                         request.Values.RemoveFirst();
-                        data.DataValues.Add(value);
+                        data.DataValues = data.DataValues.AddItem(value);
                     }
 
                     errors[handle.Index] = ServiceResult.Good;
@@ -930,7 +932,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         protected override void HistoryUpdateData(
             ServerSystemContext context,
-            IList<UpdateDataDetails> nodesToUpdate,
+            ArrayOf<UpdateDataDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -972,7 +974,7 @@ namespace Quickstarts.HistoricalAccessServer
                     for (int jj = 0; jj < nodeToUpdate.UpdateValues.Count; jj++)
                     {
                         StatusCode error = item.UpdateHistory(context, nodeToUpdate.UpdateValues[jj], nodeToUpdate.PerformInsertReplace);
-                        result.OperationResults.Add(error);
+                        result.OperationResults = result.OperationResults.AddItem(error);
                     }
 
                     errors[handle.Index] = ServiceResult.Good;
@@ -989,7 +991,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         protected override void HistoryUpdateStructureData(
             ServerSystemContext context,
-            IList<UpdateStructureDataDetails> nodesToUpdate,
+            ArrayOf<UpdateStructureDataDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -1028,11 +1030,11 @@ namespace Quickstarts.HistoricalAccessServer
                     // process each item.
                     for (int jj = 0; jj < nodeToUpdate.UpdateValues.Count; jj++)
                     {
-                        Annotation annotation = ExtensionObject.ToEncodeable(nodeToUpdate.UpdateValues[jj].Value as ExtensionObject) as Annotation;
+                        Annotation annotation = ExtensionObject.ToEncodeable((ExtensionObject)nodeToUpdate.UpdateValues[jj].Value) as Annotation;
 
                         if (annotation == null)
                         {
-                            result.OperationResults.Add(StatusCodes.BadTypeMismatch);
+                            result.OperationResults = result.OperationResults.AddItem(StatusCodes.BadTypeMismatch);
                             continue;
                         }
 
@@ -1042,7 +1044,7 @@ namespace Quickstarts.HistoricalAccessServer
                             nodeToUpdate.UpdateValues[jj],
                             nodeToUpdate.PerformInsertReplace);
 
-                        result.OperationResults.Add(error);
+                        result.OperationResults = result.OperationResults.AddItem(error);
                     }
 
                     errors[handle.Index] = ServiceResult.Good;
@@ -1059,7 +1061,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         protected override void HistoryDeleteRawModified(
             ServerSystemContext context,
-            IList<DeleteRawModifiedDetails> nodesToUpdate,
+            ArrayOf<DeleteRawModifiedDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -1092,7 +1094,7 @@ namespace Quickstarts.HistoricalAccessServer
                     item.ReloadFromSource(context, Server.Telemetry);
 
                     // delete the history.
-                    item.DeleteHistory(context, nodeToUpdate.StartTime, nodeToUpdate.EndTime, nodeToUpdate.IsDeleteModified);
+                    item.DeleteHistory(context, (DateTime)nodeToUpdate.StartTime, (DateTime)nodeToUpdate.EndTime, nodeToUpdate.IsDeleteModified);
                     errors[handle.Index] = ServiceResult.Good;
                 }
                 catch (Exception e)
@@ -1107,7 +1109,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         protected override void HistoryDeleteAtTime(
             ServerSystemContext context,
-            IList<DeleteAtTimeDetails> nodesToUpdate,
+            ArrayOf<DeleteAtTimeDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -1142,8 +1144,8 @@ namespace Quickstarts.HistoricalAccessServer
                     // process each item.
                     for (int jj = 0; jj < nodeToUpdate.ReqTimes.Count; jj++)
                     {
-                        StatusCode error = item.DeleteHistory(context, nodeToUpdate.ReqTimes[jj]);
-                        result.OperationResults.Add(error);
+                        StatusCode error = item.DeleteHistory(context, (DateTime)nodeToUpdate.ReqTimes[jj]);
+                        result.OperationResults = result.OperationResults.AddItem(error);
                     }
 
                     errors[handle.Index] = ServiceResult.Good;
@@ -1191,7 +1193,7 @@ namespace Quickstarts.HistoricalAccessServer
             HistoryReadValueId nodeToRead)
         {
             bool sizeLimited = (details.StartTime == DateTime.MinValue || details.EndTime == DateTime.MinValue);
-            bool applyIndexRangeOrEncoding = (nodeToRead.ParsedIndexRange != NumericRange.Empty || !QualifiedName.IsNull(nodeToRead.DataEncoding));
+            bool applyIndexRangeOrEncoding = (!nodeToRead.ParsedIndexRange.IsNull || !QualifiedName.IsNull(nodeToRead.DataEncoding));
             bool returnBounds = !details.IsReadModified && details.ReturnBounds;
             bool timeFlowsBackward = (details.StartTime == DateTime.MinValue) || (details.EndTime != DateTime.MinValue && details.EndTime < details.StartTime);
 
@@ -1212,7 +1214,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
 
             // read history.
-            DataView view = item.ReadHistory(details.StartTime, details.EndTime, details.IsReadModified, handle.Node.BrowseName);
+            DataView view = item.ReadHistory((DateTime)details.StartTime, (DateTime)details.EndTime, details.IsReadModified, handle.Node.BrowseName);
 
             int startBound = -1;
             int endBound = -1;
@@ -1383,7 +1385,7 @@ namespace Quickstarts.HistoricalAccessServer
             HistoryReadValueId nodeToRead,
             NodeId aggregateId)
         {
-            bool applyIndexRangeOrEncoding = (nodeToRead.ParsedIndexRange != NumericRange.Empty || !QualifiedName.IsNull(nodeToRead.DataEncoding));
+            bool applyIndexRangeOrEncoding = (nodeToRead.ParsedIndexRange != NumericRange.Null || !QualifiedName.IsNull(nodeToRead.DataEncoding));
             bool timeFlowsBackward = (details.EndTime < details.StartTime);
 
             ArchiveItemState item = handle.Node as ArchiveItemState;
@@ -1398,7 +1400,7 @@ namespace Quickstarts.HistoricalAccessServer
             LinkedList<DataValue> values = new LinkedList<DataValue>();
 
             // read history.
-            DataView view = item.ReadHistory(details.StartTime, details.EndTime, false);
+            DataView view = item.ReadHistory((DateTime)details.StartTime, (DateTime)details.EndTime, false);
 
             int ii = (timeFlowsBackward) ? view.Count - 1 : 0;
 
@@ -1422,7 +1424,6 @@ namespace Quickstarts.HistoricalAccessServer
                     DataValue value = (DataValue)view[ii].Row[2];
                     calculator.QueueRawValue(value);
 
-                    // queue any processed values.
                     QueueProcessedValues(
                         context,
                         calculator,
@@ -1471,7 +1472,7 @@ namespace Quickstarts.HistoricalAccessServer
             NodeHandle handle,
             HistoryReadValueId nodeToRead)
         {
-            bool applyIndexRangeOrEncoding = (nodeToRead.ParsedIndexRange != NumericRange.Empty || !QualifiedName.IsNull(nodeToRead.DataEncoding));
+            bool applyIndexRangeOrEncoding = (!nodeToRead.ParsedIndexRange.IsNull || !QualifiedName.IsNull(nodeToRead.DataEncoding));
 
             ArchiveItemState item = handle.Node as ArchiveItemState;
 
@@ -1490,12 +1491,12 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 if (startTime > details.ReqTimes[ii])
                 {
-                    startTime = details.ReqTimes[ii];
+                    startTime = (DateTime)details.ReqTimes[ii];
                 }
 
                 if (endTime < details.ReqTimes[ii])
                 {
-                    endTime = details.ReqTimes[ii];
+                    endTime = (DateTime)details.ReqTimes[ii];
                 }
             }
 
@@ -1509,7 +1510,7 @@ namespace Quickstarts.HistoricalAccessServer
                 bool dataAfterIgnored = false;
 
                 // find the value at the time.
-                int index = item.FindValueAtOrBefore(view, details.ReqTimes[ii], !details.UseSimpleBounds, out dataBeforeIgnored);
+                int index = item.FindValueAtOrBefore(view, (DateTime)details.ReqTimes[ii], !details.UseSimpleBounds, out dataBeforeIgnored);
 
                 if (index < 0)
                 {
@@ -1537,7 +1538,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (StatusCode.IsNotBad(value.StatusCode) && dataBeforeIgnored)
                     {
-                        value.StatusCode = value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        value = new DataValue(value.WrappedValue, value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
                     }
 
                     values.AddLast(value);
@@ -1551,7 +1552,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (StatusCode.IsNotBad(value.StatusCode) && dataBeforeIgnored)
                     {
-                        value.StatusCode = value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        value = new DataValue(value.WrappedValue, value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
                     }
                 }
                 else
@@ -1560,7 +1561,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (StatusCode.IsNotBad(value.StatusCode) && (dataBeforeIgnored || dataAfterIgnored))
                     {
-                        value.StatusCode = value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal);
+                        value = new DataValue(value.WrappedValue, value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
                     }
                 }
 
@@ -1586,30 +1587,26 @@ namespace Quickstarts.HistoricalAccessServer
             bool returnPartial,
             LinkedList<DataValue> values)
         {
-            DataValue proccessedValue = calculator.GetProcessedValue(returnPartial);
-
-            while (proccessedValue != null)
+            while (calculator.TryGetProcessedValue(returnPartial, out DataValue proccessedValue))
             {
                 // apply any index range or encoding.
                 if (applyIndexRangeOrEncoding)
                 {
-                    object rawValue = proccessedValue.Value;
+                    Variant rawValue = proccessedValue.WrappedValue;
                     ServiceResult result = BaseVariableState.ApplyIndexRangeAndDataEncoding(context, indexRange, dataEncoding, ref rawValue);
 
-                    if (ServiceResult.IsBad(result))
+                    if (ServiceResult.IsGood(result))
                     {
-                        proccessedValue.Value = rawValue;
+                        proccessedValue = new DataValue(rawValue, proccessedValue.StatusCode, proccessedValue.SourceTimestamp, proccessedValue.ServerTimestamp, proccessedValue.SourcePicoseconds, proccessedValue.ServerPicoseconds);
                     }
                     else
                     {
-                        proccessedValue.Value = null;
-                        proccessedValue.StatusCode = result.StatusCode;
+                        proccessedValue = new DataValue(Variant.Null, result.StatusCode, proccessedValue.SourceTimestamp, proccessedValue.ServerTimestamp, proccessedValue.SourcePicoseconds, proccessedValue.ServerPicoseconds);
                     }
                 }
 
                 // queue the result.
                 values.AddLast(proccessedValue);
-                proccessedValue = calculator.GetProcessedValue(returnPartial);
             }
         }
 
@@ -1627,17 +1624,16 @@ namespace Quickstarts.HistoricalAccessServer
             // apply any index range or encoding.
             if (applyIndexRangeOrEncoding)
             {
-                object rawValue = value.Value;
+                Variant rawValue = value.WrappedValue;
                 ServiceResult result = BaseVariableState.ApplyIndexRangeAndDataEncoding(context, nodeToRead.ParsedIndexRange, nodeToRead.DataEncoding, ref rawValue);
 
-                if (ServiceResult.IsBad(result))
+                if (ServiceResult.IsGood(result))
                 {
-                    value.Value = rawValue;
+                    value = new DataValue(rawValue, value.StatusCode, value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
                 }
                 else
                 {
-                    value.Value = null;
-                    value.StatusCode = result.StatusCode;
+                    value = new DataValue(Variant.Null, result.StatusCode, value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
                 }
             }
 
@@ -1649,7 +1645,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         private sealed class HistoryReadRequest
         {
-            public byte[] ContinuationPoint;
+            public ByteString ContinuationPoint;
             public LinkedList<DataValue> Values;
             public LinkedList<ModificationInfo> ModificationInfos;
             public uint NumValuesPerNode;
@@ -1661,7 +1657,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         protected override void HistoryReleaseContinuationPoints(
             ServerSystemContext context,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
             IDictionary<NodeId, NodeState> cache)
@@ -1690,7 +1686,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         private HistoryReadRequest LoadContinuationPoint(
             ServerSystemContext context,
-            byte[] continuationPoint)
+            ByteString continuationPoint)
         {
             ISession session = context.OperationContext.Session;
 
@@ -1699,7 +1695,7 @@ namespace Quickstarts.HistoricalAccessServer
                 return null;
             }
 
-            HistoryReadRequest request = session.RestoreHistoryContinuationPoint(continuationPoint.ToByteString()) as HistoryReadRequest;
+            HistoryReadRequest request = session.RestoreHistoryContinuationPoint(continuationPoint) as HistoryReadRequest;
 
             if (request == null)
             {
@@ -1712,7 +1708,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Saves a history continuation point.
         /// </summary>
-        private byte[] SaveContinuationPoint(
+        private ByteString SaveContinuationPoint(
             ServerSystemContext context,
             HistoryReadRequest request)
         {
@@ -1720,12 +1716,12 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (session == null)
             {
-                return null;
+                return default;
             }
 
             Guid id = Guid.NewGuid();
             session.SaveHistoryContinuationPoint(id, request);
-            request.ContinuationPoint = id.ToByteArray();
+            request.ContinuationPoint = id.ToByteArray().ToByteString();
             return request.ContinuationPoint;
         }
         #endregion

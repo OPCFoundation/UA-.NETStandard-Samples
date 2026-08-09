@@ -122,7 +122,7 @@ namespace Quickstarts.DataTypes.Types
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((EngineType)Utils.Clone(this[ii]));
+                clone.Add(this[ii]);
             }
 
             return clone;
@@ -138,7 +138,7 @@ namespace Quickstarts.DataTypes.Types
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
     [DataContract(Namespace = Quickstarts.DataTypes.Types.Namespaces.DataTypes)]
-    public partial class VehicleType : IEncodeable, IJsonEncodeable
+    public partial class VehicleType : IEncodeable
     {
         #region Constructors
         /// <remarks />
@@ -219,7 +219,7 @@ namespace Quickstarts.DataTypes.Types
 
             Make = decoder.ReadString("Make");
             Model = decoder.ReadString("Model");
-            Engine = (EngineType)decoder.ReadEnumerated("Engine", typeof(EngineType));
+            Engine = decoder.ReadEnumerated<EngineType>("Engine");
 
             decoder.PopNamespace();
         }
@@ -257,9 +257,9 @@ namespace Quickstarts.DataTypes.Types
         {
             VehicleType clone = (VehicleType)base.MemberwiseClone();
 
-            clone.m_make = (string)Utils.Clone(this.m_make);
-            clone.m_model = (string)Utils.Clone(this.m_model);
-            clone.m_engine = (EngineType)Utils.Clone(this.m_engine);
+            clone.m_make = this.m_make;
+            clone.m_model = this.m_model;
+            clone.m_engine = this.m_engine;
 
             return clone;
         }
@@ -329,7 +329,7 @@ namespace Quickstarts.DataTypes.Types
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((VehicleType)Utils.Clone(this[ii]));
+                clone.Add((VehicleType)this[ii]?.MemberwiseClone());
             }
 
             return clone;
@@ -444,7 +444,7 @@ namespace Quickstarts.DataTypes.Types
         {
             CarType clone = (CarType)base.MemberwiseClone();
 
-            clone.m_noOfPassengers = (uint)Utils.Clone(this.m_noOfPassengers);
+            clone.m_noOfPassengers = this.m_noOfPassengers;
 
             return clone;
         }
@@ -512,7 +512,7 @@ namespace Quickstarts.DataTypes.Types
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((CarType)Utils.Clone(this[ii]));
+                clone.Add((CarType)this[ii]?.MemberwiseClone());
             }
 
             return clone;
@@ -627,7 +627,7 @@ namespace Quickstarts.DataTypes.Types
         {
             TruckType clone = (TruckType)base.MemberwiseClone();
 
-            clone.m_cargoCapacity = (uint)Utils.Clone(this.m_cargoCapacity);
+            clone.m_cargoCapacity = this.m_cargoCapacity;
 
             return clone;
         }
@@ -695,7 +695,7 @@ namespace Quickstarts.DataTypes.Types
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((TruckType)Utils.Clone(this[ii]));
+                clone.Add((TruckType)this[ii]?.MemberwiseClone());
             }
 
             return clone;

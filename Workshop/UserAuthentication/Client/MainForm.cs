@@ -392,7 +392,7 @@ namespace Quickstarts.UserAuthenticationClient
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
 #pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the active session.
-                UserIdentity identity = new UserIdentity(certificate);
+                UserIdentity identity = new UserIdentity(new X509IdentityToken { CertificateData = certificate.RawData.ToByteString() });
 #pragma warning restore CA2000
                 string[] preferredLocales = PreferredLocalesTB.Text.Split([','], StringSplitOptions.RemoveEmptyEntries);
                 m_session.UpdateSession(identity, preferredLocales);
@@ -498,8 +498,8 @@ namespace Quickstarts.UserAuthenticationClient
                     ct);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                List<DataValue> results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, valuesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
@@ -536,7 +536,7 @@ namespace Quickstarts.UserAuthenticationClient
                 WriteValue value = new WriteValue();
                 value.NodeId = m_logFileNodeId;
                 value.AttributeId = Attributes.Value;
-                value.Value.Value = LogFilePathTB.Text;
+                value.Value = new DataValue(new Variant(LogFilePathTB.Text));
 
                 WriteValueCollection valuesToWrite = new WriteValueCollection();
                 valuesToWrite.Add(value);
@@ -547,8 +547,8 @@ namespace Quickstarts.UserAuthenticationClient
                     default);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                List<StatusCode> results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                List<StatusCode> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, valuesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);

@@ -61,11 +61,11 @@ namespace Quickstarts.PerfTestServer
                 return null;
             }
 
-            BaseDataVariableState<int> variable = new BaseDataVariableState<int>(null);
+            BaseDataVariableState<int> variable = BaseDataVariableState<int>.With<VariantBuilder>(null);
 
             variable.NodeId = GetRegisterVariableId(register, index, namespaceIndex);
             variable.BrowseName = new QualifiedName(Utils.Format("{0:000000}", index), namespaceIndex);
-            variable.DisplayName = variable.BrowseName.Name;
+            variable.DisplayName = new LocalizedText(variable.BrowseName.Name);
             variable.Value = register.Read(index);
             variable.DataType = DataTypeIds.Int32;
             variable.ValueRank = ValueRanks.Scalar;
@@ -87,7 +87,7 @@ namespace Quickstarts.PerfTestServer
 
             this.NodeId = new NodeId((uint)register.Id, namespaceIndex);
             this.BrowseName = new QualifiedName(register.Name, namespaceIndex);
-            this.DisplayName = this.BrowseName.Name;
+            this.DisplayName = new LocalizedText(this.BrowseName.Name);
 
             this.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
         }
@@ -221,7 +221,7 @@ namespace Quickstarts.PerfTestServer
         {
             UnderlyingSystem system = (UnderlyingSystem)this.SystemContext.SystemHandle;
 
-            NodeId targetId = null;
+            NodeId targetId = NodeId.Null;
 
             // check if a specific browse name is requested.
             if (!QualifiedName.IsNull(base.BrowseName))

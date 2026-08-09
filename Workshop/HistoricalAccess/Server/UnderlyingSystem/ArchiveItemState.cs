@@ -56,7 +56,7 @@ namespace Quickstarts.HistoricalAccessServer
             this.NodeId = ConstructId(m_archiveItem.UniquePath, namespaceIndex);
             this.BrowseName = new QualifiedName(m_archiveItem.Name, namespaceIndex);
             this.DisplayName = new LocalizedText(this.BrowseName.Name);
-            this.Description = null;
+            this.Description = LocalizedText.Null;
             this.WriteMask = 0;
             this.UserWriteMask = 0;
             this.DataType = DataTypeIds.BaseDataType;
@@ -66,13 +66,13 @@ namespace Quickstarts.HistoricalAccessServer
             this.MinimumSamplingInterval = MinimumSamplingIntervals.Indeterminate;
             this.Historizing = true;
 
-            m_annotations = new PropertyState<Annotation>(this);
+            m_annotations = PropertyState<Annotation>.With<StructureBuilder<Annotation>>(this);
             m_annotations.ReferenceTypeId = ReferenceTypeIds.HasProperty;
             m_annotations.TypeDefinitionId = VariableTypeIds.PropertyType;
             m_annotations.SymbolicName = Opc.Ua.BrowseNames.Annotations;
-            m_annotations.BrowseName = Opc.Ua.BrowseNames.Annotations;
+            m_annotations.BrowseName = new QualifiedName(Opc.Ua.BrowseNames.Annotations);
             m_annotations.DisplayName = new LocalizedText(m_annotations.BrowseName.Name);
-            m_annotations.Description = null;
+            m_annotations.Description = LocalizedText.Null;
             m_annotations.WriteMask = 0;
             m_annotations.UserWriteMask = 0;
             m_annotations.DataType = DataTypeIds.Annotation;
@@ -86,16 +86,16 @@ namespace Quickstarts.HistoricalAccessServer
             m_annotations.NodeId = NodeTypes.ConstructIdForComponent(m_annotations, namespaceIndex);
 
             m_configuration = new HistoricalDataConfigurationState(this);
-            m_configuration.MaxTimeInterval = new PropertyState<double>(m_configuration);
-            m_configuration.MinTimeInterval = new PropertyState<double>(m_configuration); ;
-            m_configuration.StartOfArchive = new PropertyState<DateTime>(m_configuration);
-            m_configuration.StartOfOnlineArchive = new PropertyState<DateTime>(m_configuration);
+            m_configuration.MaxTimeInterval = PropertyState<double>.With<VariantBuilder>(m_configuration);
+            m_configuration.MinTimeInterval = PropertyState<double>.With<VariantBuilder>(m_configuration);
+            m_configuration.StartOfArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(m_configuration);
+            m_configuration.StartOfOnlineArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(m_configuration);
 
             m_configuration.Create(
                 context,
-                null,
-                Opc.Ua.BrowseNames.HAConfiguration,
-                null,
+                NodeId.Null,
+                new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration),
+                LocalizedText.Null,
                 true);
 
             m_configuration.SymbolicName = Opc.Ua.BrowseNames.HAConfiguration;
@@ -113,7 +113,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (reader.LoadConfiguration(context, m_archiveItem, telemetry))
             {
-                this.DataType = (uint)m_archiveItem.DataType;
+                this.DataType = TypeInfo.GetDataTypeId(new TypeInfo(m_archiveItem.DataType, ValueRanks.Scalar));
                 this.ValueRank = m_archiveItem.ValueRank;
                 this.Historizing = m_archiveItem.Archiving;
 
@@ -157,7 +157,7 @@ namespace Quickstarts.HistoricalAccessServer
                     {
                         DataValue value = (DataValue)row.Row[2];
                         m_pattern.Add(value);
-                        m_nextSampleTime = value.SourceTimestamp.AddMilliseconds(m_archiveItem.SamplingInterval);
+                        m_nextSampleTime = ((DateTime)value.SourceTimestamp).AddMilliseconds(m_archiveItem.SamplingInterval);
                     }
 
                     // fill in data until the present time.
@@ -179,12 +179,12 @@ namespace Quickstarts.HistoricalAccessServer
 
             while (m_pattern != null && m_nextSampleTime < DateTime.UtcNow)
             {
-                DataValue value = new DataValue();
-                value.WrappedValue = m_pattern[m_patternIndex].WrappedValue;
-                value.ServerTimestamp = m_nextSampleTime;
-                value.SourceTimestamp = m_nextSampleTime;
-                value.StatusCode = m_pattern[m_patternIndex].StatusCode;
-                m_nextSampleTime = value.SourceTimestamp.AddMilliseconds(m_archiveItem.SamplingInterval);
+                DataValue value = new DataValue(
+                    m_pattern[m_patternIndex].WrappedValue,
+                    m_pattern[m_patternIndex].StatusCode,
+                    m_nextSampleTime,
+                    m_nextSampleTime);
+                m_nextSampleTime = ((DateTime)value.SourceTimestamp).AddMilliseconds(m_archiveItem.SamplingInterval);
                 newSamples.Add(value);
 
                 DataRow row = m_archiveItem.DataSet.Tables[0].NewRow();
@@ -212,7 +212,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (performUpdateType == PerformUpdateType.Remove)
             {
-                return StatusCodes.BadNotSupported;
+                return StatusCodes.BadNotSupported.Code;
             }
 
             if (StatusCode.IsNotBad(value.StatusCode))
@@ -226,7 +226,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 if (typeInfo == null || typeInfo.BuiltInType != m_archiveItem.DataType || typeInfo.ValueRank != ValueRanks.Scalar)
                 {
-                    return StatusCodes.BadTypeMismatch;
+                    return StatusCodes.BadTypeMismatch.Code;
                 }
             }
 
@@ -244,7 +244,7 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 if (performUpdateType == PerformUpdateType.Insert)
                 {
-                    return StatusCodes.BadEntryExists;
+                    return StatusCodes.BadEntryExists.Code;
                 }
 
                 // add record indicating it was replaced.
@@ -270,7 +270,7 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 if (performUpdateType == PerformUpdateType.Replace)
                 {
-                    return StatusCodes.BadNoEntryExists;
+                    return StatusCodes.BadNoEntryExists.Code;
                 }
 
                 DataRow modifiedRow = m_archiveItem.DataSet.Tables[1].NewRow();
@@ -322,7 +322,7 @@ namespace Quickstarts.HistoricalAccessServer
             // accept all changes.
             m_archiveItem.DataSet.AcceptChanges();
 
-            return StatusCodes.Good;
+            return StatusCodes.Good.Code;
         }
 
         /// <summary>
@@ -352,7 +352,7 @@ namespace Quickstarts.HistoricalAccessServer
                 {
                     if (replaced)
                     {
-                        return StatusCodes.BadEntryExists;
+                        return StatusCodes.BadEntryExists.Code;
                     }
                 }
 
@@ -368,7 +368,7 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 if (performUpdateType == PerformUpdateType.Replace || performUpdateType == PerformUpdateType.Remove)
                 {
-                    return StatusCodes.BadNoEntryExists;
+                    return StatusCodes.BadNoEntryExists.Code;
                 }
 
                 row = m_archiveItem.DataSet.Tables[2].NewRow();
@@ -399,7 +399,7 @@ namespace Quickstarts.HistoricalAccessServer
             // accept all changes.
             m_archiveItem.DataSet.AcceptChanges();
 
-            return StatusCodes.Good;
+            return StatusCodes.Good.Code;
         }
 
         /// <summary>
@@ -452,10 +452,10 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (!deleted)
             {
-                return StatusCodes.BadNoEntryExists;
+                return StatusCodes.BadNoEntryExists.Code;
             }
 
-            return StatusCodes.Good;
+            return StatusCodes.Good.Code;
         }
 
         /// <summary>
@@ -480,10 +480,10 @@ namespace Quickstarts.HistoricalAccessServer
 
             if (!deleted)
             {
-                return StatusCodes.BadNoEntryExists;
+                return StatusCodes.BadNoEntryExists.Code;
             }
 
-            return StatusCodes.Good;
+            return StatusCodes.Good.Code;
         }
 
         /// <summary>
@@ -551,7 +551,7 @@ namespace Quickstarts.HistoricalAccessServer
             // commit all changes.
             m_archiveItem.DataSet.AcceptChanges();
 
-            return StatusCodes.Good;
+            return StatusCodes.Good.Code;
         }
 
         /// <summary>
@@ -573,7 +573,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         public DataView ReadHistory(DateTime startTime, DateTime endTime, bool isModified)
         {
-            return ReadHistory(startTime, endTime, isModified, null);
+            return ReadHistory(startTime, endTime, isModified, QualifiedName.Null);
         }
 
         /// <summary>
@@ -763,21 +763,7 @@ namespace Quickstarts.HistoricalAccessServer
             get { return m_subscribeCount; }
             set { m_subscribeCount = value; }
         }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                m_configuration?.Dispose();
-                m_annotations?.Dispose();
-                m_configuration = null;
-                m_annotations = null;
-            }
-
-            base.Dispose(disposing);
-        }
-
-        private ArchiveItem m_archiveItem;
+private ArchiveItem m_archiveItem;
         private HistoricalDataConfigurationState m_configuration;
         private PropertyState<Annotation> m_annotations;
         private int m_subscribeCount;

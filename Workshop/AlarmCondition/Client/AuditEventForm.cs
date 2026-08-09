@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -203,7 +203,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // look up the method metadata in the local cache.
-                INode method = await m_session.NodeCache.FindAsync(BaseVariableState.GetValue(audit.MethodId));
+                INode method = await m_session.NodeCache.FindAsync(audit.MethodId.Value);
 
                 // Method
                 if (method != null)
