@@ -29,6 +29,7 @@
 
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
+using Opc.Ua.Security.Certificates;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -42,7 +43,8 @@ namespace Opc.Ua.Gds.Client.Controls
 
         public DialogResult ShowDialog(IWin32Window owner, X509Certificate2 certificate)
         {
-            CertificateValueControl.ShowValue(null, null, new CertificateWrapper() { Certificate = certificate }, true);
+            var wrapper = new CertificateWrapper() { Certificate = Certificate.From(certificate) };
+            CertificateValueControl.ShowValue(TypeInfo.Construct(wrapper), null, wrapper, true);
  
             if (base.ShowDialog(owner) != DialogResult.OK)
             {

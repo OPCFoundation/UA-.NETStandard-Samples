@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -52,7 +53,7 @@ namespace Opc.Ua.Gds.Client
             m_telemetry = telemetry;
 
             // get the configuration.
-            m_configuration = m_application.ApplicationConfiguration.ParseExtension<GlobalDiscoveryClientConfiguration>();
+            m_configuration = null;
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -77,7 +78,34 @@ namespace Opc.Ua.Gds.Client
 
             RegistrationPanel.InitializeAsync(m_gds, m_server, null, m_configuration, m_telemetry).GetAwaiter().GetResult();
 
-            m_application.ApplicationConfiguration.CertificateManager.CertificateValidation += CertificateValidator_CertificateValidation;
+            m_application.ApplicationConfiguration.CertificateManager.AcceptError = (certificate, error) =>
+            {
+                bool accept = false;
+                void ShowDialog()
+                {
+                    try
+                    {
+                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
+                        accept = new UntrustedCertificateDialog().ShowDialog(this, certificate.AsX509Certificate2()) == DialogResult.OK;
+                        #pragma warning restore CA2000
+                    }
+                    catch (Exception ex)
+                    {
+                        Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
+                    }
+                }
+
+                if (InvokeRequired)
+                {
+                    Invoke((Action)ShowDialog);
+                }
+                else
+                {
+                    ShowDialog();
+                }
+
+                return accept;
+            };
             UpdateStatus(true, DateTime.MinValue, "---");
             UpdateGdsStatus(true, DateTime.MinValue, "---");
             UpdateMainFormHeader();
@@ -313,31 +341,6 @@ namespace Opc.Ua.Gds.Client
             catch (Exception exception)
             {
                 ExceptionDlg.Show(m_telemetry, this.Text, exception);
-            }
-        }
-
-        private void CertificateValidator_CertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new CertificateValidationEventHandler(CertificateValidator_CertificateValidation), sender, e);
-                return;
-            }
-
-            try
-            {
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                var result = new UntrustedCertificateDialog().ShowDialog(this, e.Certificate);
-                #pragma warning restore CA2000
-
-                if (result == DialogResult.OK)
-                {
-                    e.Accept = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
         }
 
@@ -600,8 +603,8 @@ namespace Opc.Ua.Gds.Client
                         endpoint.Server.ApplicationType = ApplicationType.Server;
                         endpoint.Server.ApplicationUri = app.ApplicationUri;
                         endpoint.Server.ProductUri = app.ProductUri;
-                        endpoint.Server.ApplicationName = app.ApplicationName;
-                        endpoint.Server.DiscoveryUrls = (app.DiscoveryUrl != null) ? new List<string>(app.DiscoveryUrl) : null;
+                        endpoint.Server.ApplicationName = new LocalizedText(app.ApplicationName);
+                        endpoint.Server.DiscoveryUrls = (app.DiscoveryUrl != null) ? new List<string>(app.DiscoveryUrl) : ArrayOf<string>.Empty;
 
                         SetServer(endpoint);
                     }
@@ -689,4 +692,3 @@ namespace Opc.Ua.Gds.Client
 
     }
 }
-

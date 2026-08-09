@@ -87,7 +87,12 @@ namespace Opc.Ua.Gds.Client
                         if (!Enum.TryParse(TrustListMasksComboBox.SelectedItem.ToString(), out masks))
                             masks = TrustListMasks.All;
                         var trustList = await m_server.ReadTrustListAsync(masks);
-                        var rejectedList = await m_server.GetRejectedListAsync();
+                        var rejectedCertificates = await m_server.GetRejectedListAsync();
+                        var rejectedList = new X509Certificate2Collection();
+                        foreach (var certificate in rejectedCertificates)
+                        {
+                            rejectedList.Add(certificate.AsX509Certificate2());
+                        }
                         CertificateStoreControl.Initialize(trustList, rejectedList, true);
                     }
                     else
@@ -140,9 +145,10 @@ namespace Opc.Ua.Gds.Client
             var certificateStoreIdentifier = new CertificateStoreIdentifier(storePath);
             using (var store = certificateStoreIdentifier.OpenStore(m_telemetry))
             {
-                X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
-                foreach (var certificate in certificates)
+                CertificateCollection certificates = await store.EnumerateAsync(ct);
+                foreach (var certificateWrapper in certificates)
                 {
+                    var certificate = certificateWrapper.AsX509Certificate2();
                     List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
 
                     if (fields.Contains("CN=UA Local Discovery Server"))
@@ -188,7 +194,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                NodeId trustListId = await m_gds.GetTrustListAsync(m_application.ApplicationId, NodeId.Null, ct);
+                NodeId trustListId = await m_gds.GetTrustListAsync(NodeId.Parse(m_application.ApplicationId), NodeId.Null, ct);
 
                 if (trustListId.IsNull)
                 {
@@ -228,23 +234,23 @@ namespace Opc.Ua.Gds.Client
                     {
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.TrustedCertificates) != 0)
                         {
-                            foreach (var certificate in trustList.TrustedCertificates)
+                            foreach (var certificate in trustList.TrustedCertificates.ToArray())
                             {
-                                var x509 = GdsCertificateLoader.LoadCertificate(certificate);
+                                var x509 = GdsCertificateLoader.LoadCertificate(certificate.ToArray());
 
-                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
+                                CertificateCollection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
                                 if (certs.Count == 0)
                                 {
-                                    await store.AddAsync(x509, ct: ct);
+                                    await store.AddAsync(Certificate.From(x509), ct: ct);
                                 }
                             }
                         }
 
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.TrustedCrls) != 0)
                         {
-                            foreach (var crl in trustList.TrustedCrls)
+                            foreach (var crl in trustList.TrustedCrls.ToArray())
                             {
-                                await store.AddCRLAsync(new X509CRL(crl), ct);
+                                await store.AddCRLAsync(new X509CRL(crl.ToArray()), ct);
                             }
                         }
                     }
@@ -257,23 +263,23 @@ namespace Opc.Ua.Gds.Client
                     {
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.IssuerCertificates) != 0)
                         {
-                            foreach (var certificate in trustList.IssuerCertificates)
+                            foreach (var certificate in trustList.IssuerCertificates.ToArray())
                             {
-                                var x509 = GdsCertificateLoader.LoadCertificate(certificate);
+                                var x509 = GdsCertificateLoader.LoadCertificate(certificate.ToArray());
 
-                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
+                                CertificateCollection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
                                 if (certs.Count == 0)
                                 {
-                                    await store.AddAsync(x509, ct: ct);
+                                    await store.AddAsync(Certificate.From(x509), ct: ct);
                                 }
                             }
                         }
 
                         if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.IssuerCrls) != 0)
                         {
-                            foreach (var crl in trustList.IssuerCrls)
+                            foreach (var crl in trustList.IssuerCrls.ToArray())
                             {
-                                await store.AddCRLAsync(new X509CRL(crl), ct);
+                                await store.AddCRLAsync(new X509CRL(crl.ToArray()), ct);
                             }
                         }
                     }
@@ -363,4 +369,3 @@ namespace Opc.Ua.Gds.Client
         }
     }
 }
-

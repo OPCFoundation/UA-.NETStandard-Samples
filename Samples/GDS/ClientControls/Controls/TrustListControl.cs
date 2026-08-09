@@ -110,14 +110,15 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 using (ICertificateStore store = CreateStore(trustedStorePath))
                 {
-                    X509CertificateCollection certificates = await store.EnumerateAsync(ct);
-                    foreach (X509Certificate2 certificate in certificates)
+                    CertificateCollection certificates = await store.EnumerateAsync(ct);
+                    foreach (Certificate certificateWrapper in certificates)
                     {
+                        X509Certificate2 certificate = certificateWrapper.AsX509Certificate2();
                         var crls = new X509CRLCollection();
 
                         if (store.SupportsCRLs)
                         {
-                            foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificate, ct: ct))
+                            foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificateWrapper, ct: ct))
                             {
                                 crls.Add(crl);
                             }
@@ -137,14 +138,15 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     using (ICertificateStore store = CreateStore(issuerStorePath))
                     {
-                        X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
-                        foreach (X509Certificate2 certificate in certificates)
+                        CertificateCollection certificates = await store.EnumerateAsync(ct);
+                        foreach (Certificate certificateWrapper in certificates)
                         {
+                            X509Certificate2 certificate = certificateWrapper.AsX509Certificate2();
                             var crls = new X509CRLCollection();
 
                             if (store.SupportsCRLs)
                             {
-                                foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificate, ct: ct))
+                                foreach (X509CRL crl in await store.EnumerateCRLsAsync(certificateWrapper, ct: ct))
                                 {
                                     crls.Add(crl);
                                 }
@@ -160,9 +162,10 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 using (ICertificateStore store = CreateStore(rejectedStorePath))
                 {
-                    X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
-                    foreach (X509Certificate2 certificate in certificates)
+                    CertificateCollection certificates = await store.EnumerateAsync(ct);
+                    foreach (Certificate certificateWrapper in certificates)
                     {
+                        X509Certificate2 certificate = certificateWrapper.AsX509Certificate2();
                         AddCertificate(certificate, Status.Rejected, null);
                     }
                 }
@@ -185,7 +188,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     foreach (var certificateBytes in trustList.TrustedCertificates)
                     {
-                        var certificate = GdsCertificateLoader.LoadCertificate(certificateBytes);
+                        var certificate = GdsCertificateLoader.LoadCertificate(certificateBytes.ToArray());
 
                         List<X509CRL> crls = new List<X509CRL>();
 
@@ -193,10 +196,10 @@ namespace Opc.Ua.Gds.Client.Controls
                         {
                             foreach (var crlBytes in trustList.TrustedCrls)
                             {
-                                X509CRL crl = new X509CRL(crlBytes);
+                                X509CRL crl = new X509CRL(crlBytes.ToArray());
 
                                 if (X509Utils.CompareDistinguishedName(crl.Issuer, certificate.Subject) &&
-                                    crl.VerifySignature(certificate, false))
+                                    crl.VerifySignature(Certificate.From(certificate), false))
                                 {
                                     crls.Add(crl);
                                 }
@@ -211,7 +214,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     foreach (var certificateBytes in trustList.IssuerCertificates)
                     {
-                        var certificate = GdsCertificateLoader.LoadCertificate(certificateBytes);
+                        var certificate = GdsCertificateLoader.LoadCertificate(certificateBytes.ToArray());
 
                         List<X509CRL> crls = new List<X509CRL>();
 
@@ -219,10 +222,10 @@ namespace Opc.Ua.Gds.Client.Controls
                         {
                             foreach (var crlBytes in trustList.IssuerCrls)
                             {
-                                X509CRL crl = new X509CRL(crlBytes);
+                                X509CRL crl = new X509CRL(crlBytes.ToArray());
 
                                 if (X509Utils.CompareDistinguishedName(crl.Issuer, certificate.Subject) &&
-                                    crl.VerifySignature(certificate, false))
+                                    crl.VerifySignature(Certificate.From(certificate), false))
                                 {
                                     crls.Add(crl);
                                 }
@@ -397,7 +400,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     using (ICertificateStore store = CreateStore(targetStorePath))
                     {
                         #pragma warning disable CA2025 // Justification: Public sample API compatibility is preserved.
-                        store.AddAsync(certificate);
+                        store.AddAsync(Certificate.From(certificate));
                         #pragma warning restore CA2025
                     }
                 }
@@ -425,7 +428,8 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         Size = new Size(800, 400)
                     };
-                    dialog.ShowDialog(m_logger, null, "", new CertificateWrapper() { Certificate = (X509Certificate2)source.Row[7] }, true, this.Text);
+                    var wrapper = new CertificateWrapper() { Certificate = Certificate.From((X509Certificate2)source.Row[7]) };
+                    dialog.ShowDialog(m_logger, TypeInfo.Construct(wrapper), "", wrapper, true, this.Text);
                     break;
                 }
             }
@@ -562,7 +566,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         using (ICertificateStore store = CreateStore(m_trustedStorePath))
                         {
                             #pragma warning disable CA2025 // Justification: Public sample API compatibility is preserved.
-                            store.AddAsync(certificate);
+                            store.AddAsync(Certificate.From(certificate));
                             #pragma warning restore CA2025
                         }
                     }
@@ -695,4 +699,3 @@ namespace Opc.Ua.Gds.Client.Controls
         }
     }
 }
-

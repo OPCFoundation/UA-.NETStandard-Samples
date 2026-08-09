@@ -227,16 +227,6 @@ namespace Opc.Ua.Gds.Server
 
         public static ExitCode ExitCode => exitCode;
 
-        private static void CertificateValidator_CertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)
-        {
-            if (e.Error.StatusCode == StatusCodes.BadCertificateUntrusted)
-            {
-                // GDS accepts any client certificate
-                e.Accept = true;
-                Console.WriteLine("Accepted Certificate: {0}", e.Certificate.Subject);
-            }
-        }
-
         private async Task ConsoleGlobalDiscoveryServerAsync(ITelemetryContext telemetry)
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
@@ -261,7 +251,15 @@ namespace Opc.Ua.Gds.Server
 
             if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                config.CertificateManager.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                config.CertificateManager.AcceptError = (certificate, error) =>
+                {
+                    bool accept = error.StatusCode == StatusCodes.BadCertificateUntrusted;
+                    if (accept)
+                    {
+                        Console.WriteLine("Accepted Certificate: {0}", certificate.AsX509Certificate2().Subject);
+                    }
+                    return accept;
+                };
             }
 
             // get the DatabaseStorePath configuration parameter.
@@ -284,7 +282,7 @@ namespace Opc.Ua.Gds.Server
             await application.StartAsync(server).ConfigureAwait(false);
 
             // print endpoint info
-            IEnumerable<string> endpoints = application.Server.GetEndpoints().Select(e => e.EndpointUrl).Distinct();
+            IEnumerable<string> endpoints = application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
             foreach (string endpoint in endpoints)
             {
                 Console.WriteLine(endpoint);

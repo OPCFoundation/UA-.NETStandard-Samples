@@ -87,7 +87,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (server.Endpoint != null && !server.Endpoint.Description.ServerCertificate.IsNull)
                 {
-                    certificate = GdsCertificateLoader.LoadCertificate(server.Endpoint.Description.ServerCertificate);
+                    certificate = GdsCertificateLoader.LoadCertificate(server.Endpoint.Description.ServerCertificate.ToArray());
                 }
                 else if (application != null)
                 {
@@ -108,7 +108,7 @@ namespace Opc.Ua.Gds.Client
                         id.StoreType = CertificateStoreIdentifier.DetermineStoreType(id.StorePath);
                         id.SubjectName = application.CertificateSubjectName.Replace("localhost", Utils.GetHostName(), StringComparison.Ordinal);
 
-                        certificate = await id.FindAsync(true, ct: ct);
+                        certificate = await FindCertificateAsync(id, ct);
                     }
                 }
             }
@@ -139,7 +139,7 @@ namespace Opc.Ua.Gds.Client
                                     SubjectName = "CN=" + url.DnsSafeHost
                                 };
 
-                                certificate = await id.FindAsync(ct: ct);
+                                certificate = await FindCertificateAsync(id, ct);
                             }
                         }
                     }
@@ -170,7 +170,8 @@ namespace Opc.Ua.Gds.Client
             if (certificate != null)
             {
                 m_certificate = certificate;
-                CertificateControl.ShowValue(null, "Application Certificate", new CertificateWrapper() { Certificate = certificate }, true);
+                var wrapper = new CertificateWrapper() { Certificate = Certificate.From(certificate) };
+                CertificateControl.ShowValue(TypeInfo.Construct(wrapper), "Application Certificate", wrapper, true);
             }
         }
 
@@ -190,23 +191,23 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                NodeId trustListId = await m_gds.GetTrustListAsync(m_application.ApplicationId, NodeId.Null);
+                NodeId trustListId = await m_gds.GetTrustListAsync(NodeId.Parse(m_application.ApplicationId), NodeId.Null);
                 var trustList = await m_gds.ReadTrustListAsync(trustListId);
                 bool applyChanges = await m_server.UpdateTrustListAsync(trustList);
 
                 byte[] unusedNonce = Array.Empty<byte>();
-                byte[] certificateRequest = await m_server.CreateSigningRequestAsync(
+                ByteString certificateRequest = await m_server.CreateSigningRequestAsync(
                     NodeId.Null,
                     m_server.ApplicationCertificateType,
                     string.Empty,
                     false,
 unusedNonce.ToByteString());
-                var domainNames = m_application.GetDomainNames(m_certificate);
+                var domainNames = m_application.GetDomainNames(Certificate.From(m_certificate));
                 NodeId requestId = await m_gds.StartSigningRequestAsync(
-                    m_application.ApplicationId,
+                    NodeId.Parse(m_application.ApplicationId),
                     NodeId.Null,
                     NodeId.Null,
-certificateRequest.ToByteString());
+certificateRequest);
 
                 if (applyChanges)
                 {
@@ -231,14 +232,44 @@ certificateRequest.ToByteString());
                 Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
                 #pragma warning restore CA1849
             }
+        }
 
+        private async Task<X509Certificate2> FindCertificateAsync(CertificateIdentifier id, CancellationToken ct = default)
+        {
+            var storeIdentifier = new CertificateStoreIdentifier(id.StorePath, false);
+            using (ICertificateStore store = storeIdentifier.OpenStore(m_telemetry))
+            {
+                CertificateCollection certificates = await store.EnumerateAsync(ct);
+                foreach (Certificate certificate in certificates)
+                {
+                    X509Certificate2 x509 = certificate.AsX509Certificate2();
+                    if (!String.IsNullOrEmpty(id.Thumbprint) &&
+                        String.Equals(x509.Thumbprint, id.Thumbprint, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return x509;
+                    }
+
+                    if (!String.IsNullOrEmpty(id.SubjectName) &&
+                        x509.Subject.IndexOf(id.SubjectName, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return x509;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private Task<X509Certificate2> LoadPrivateKeyAsync(CertificateIdentifier id, X509Certificate2 certificate, char[] password)
+        {
+            return Task.FromResult(certificate);
         }
         private async Task RequestNewCertificatePullModeAsync(object sender, EventArgs e)
         {
             try
             {
                 // check if we already have a private key
-                NodeId requestId = null;
+                NodeId requestId = NodeId.Null;
                 if (!string.IsNullOrEmpty(m_application.CertificateStorePath))
                 {
                     CertificateIdentifier id = new CertificateIdentifier {
@@ -246,7 +277,7 @@ certificateRequest.ToByteString());
                         StorePath = m_application.CertificateStorePath,
                         SubjectName = Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName)
                     };
-                    m_certificate = await id.FindAsync(true);
+                    m_certificate = await FindCertificateAsync(id);
                     //test if private key is available & exportable, else create new temporary certificate for csr
                     if (m_certificate != null &&
                         m_certificate.HasPrivateKey)
@@ -256,20 +287,18 @@ certificateRequest.ToByteString());
                             //this line fails with a CryptographicException if export of private key is not allowed
                             _ = m_certificate.GetRSAPrivateKey().ExportParameters(true);
                             //proceed with a CSR using the exportable private key
-                            m_certificate = await id.LoadPrivateKeyAsync(m_certificatePassword.ToCharArray());
+                            m_certificate = await LoadPrivateKeyAsync(id, m_certificate, m_certificatePassword?.ToCharArray());
                         }
                         catch
                         {
                             //create temporary cert to generate csr from
                             m_certificate = DefaultCertificateFactory.Instance.CreateCertificate(
-                                X509Utils.GetApplicationUrisFromCertificate(m_certificate)[0],
-                                m_application.ApplicationName,
-                                Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
-                                m_application.GetDomainNames(m_certificate))
+                                Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName))
                                 .SetNotBefore(DateTime.Today.AddDays(-1))
                                 .SetNotAfter(DateTime.Today.AddDays(14))
                                 .SetRSAKeySize((ushort)(m_certificate.GetRSAPublicKey()?.KeySize ?? 0))
-                                .CreateForRSA();
+                                .CreateForRSA()
+                                .AsX509Certificate2();
                             m_temporaryCertificateCreated = true;
                         }
                     }
@@ -282,18 +311,18 @@ certificateRequest.ToByteString());
                     hasPrivateKeyFile = file.Exists;
                 }
 
-                var domainNames = m_application.GetDomainNames(m_certificate);
+                var domainNames = m_application.GetDomainNames(m_certificate != null ? Certificate.From(m_certificate) : null);
                 if (m_certificate == null)
                 {
                     // no private key
                     requestId = await m_gds.StartNewKeyPairRequestAsync(
-                        m_application.ApplicationId,
+                        NodeId.Parse(m_application.ApplicationId),
                         NodeId.Null,
                         NodeId.Null,
                         Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
                         domainNames,
                         "PFX",
-                        m_certificatePassword?.ToCharArray());
+                        m_certificatePassword?.ToCharArray() ?? Array.Empty<char>());
                 }
                 else
                 {
@@ -308,21 +337,21 @@ certificateRequest.ToByteString());
                         #pragma warning disable CA1849 // Justification: Synchronous WinForms sample handler preserves existing behavior.
                         byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
                         #pragma warning restore CA1849
-                        if (m_application.GetPrivateKeyFormat(await m_server?.GetSupportedKeyFormatsAsync()) == "PFX")
+                        if (m_application.GetPrivateKeyFormat((m_server != null ? await m_server.GetSupportedKeyFormatsAsync() : ArrayOf<string>.Empty).ToArray()) == "PFX")
                         {
                             #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                            csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan());
+                            csrCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan()).AsX509Certificate2();
                             #pragma warning restore CA2000
                         }
                         else
                         {
                             #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                            csrCertificate = CertificateFactory.CreateCertificateWithPEMPrivateKey(m_certificate, pkcsData, m_certificatePassword.AsSpan());
+                            csrCertificate = CertificateFactory.CreateCertificateWithPEMPrivateKey(Certificate.From(m_certificate), pkcsData, m_certificatePassword.AsSpan()).AsX509Certificate2();
                             #pragma warning restore CA2000
                         }
                     }
-                    byte[] certificateRequest = CertificateFactory.CreateSigningRequest(csrCertificate, domainNames);
-                    requestId = await m_gds.StartSigningRequestAsync(m_application.ApplicationId, NodeId.Null, NodeId.Null, certificateRequest.ToByteString());
+                    byte[] certificateRequest = CertificateFactory.CreateSigningRequest(Certificate.From(csrCertificate), domainNames);
+                    requestId = await m_gds.StartSigningRequestAsync(NodeId.Parse(m_application.ApplicationId), NodeId.Null, NodeId.Null, certificateRequest.ToByteString());
                 }
 
                 m_application.CertificateRequestId = requestId.ToString();
@@ -344,11 +373,11 @@ certificateRequest.ToByteString());
             {
                 NodeId requestId = NodeId.Parse(m_application.CertificateRequestId);
 
-                (byte[] certificate, byte[] privateKeyPFX, byte[][] issuerCertificates) = await m_gds.FinishRequestAsync(
-                    m_application.ApplicationId,
+                (ByteString certificate, ByteString privateKeyPFX, ArrayOf<ByteString> issuerCertificates) = await m_gds.FinishRequestAsync(
+                    NodeId.Parse(m_application.ApplicationId),
                     requestId);
 
-                if (certificate == null)
+                if (certificate.IsNull)
                 {
                     // request not done yet, try again in a few seconds
                     return;
@@ -360,7 +389,7 @@ certificateRequest.ToByteString());
                 if (m_application.RegistrationType != RegistrationType.ServerPush)
                 {
 
-                    X509Certificate2 newCert = GdsCertificateLoader.LoadCertificate(certificate);
+                    X509Certificate2 newCert = GdsCertificateLoader.LoadCertificate(certificate.ToArray());
 
                     if (!String.IsNullOrEmpty(m_application.CertificateStorePath) && !String.IsNullOrEmpty(m_application.CertificateSubjectName))
                     {
@@ -376,13 +405,13 @@ certificateRequest.ToByteString());
                         {
                             // if we used a CSR, we already have a private key and therefore didn't request one from the GDS
                             // in this case, privateKey is null
-                            if (privateKeyPFX == null)
+                            if (privateKeyPFX.IsNull)
                             {
-                                X509Certificate2 oldCertificate = await cid.FindAsync(true);
+                                X509Certificate2 oldCertificate = await FindCertificateAsync(cid);
                                 if (oldCertificate != null && oldCertificate.HasPrivateKey)
                                 {
-                                    oldCertificate = await cid.LoadPrivateKeyAsync([]);
-                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, m_temporaryCertificateCreated ? m_certificate : oldCertificate);
+                                    oldCertificate = await LoadPrivateKeyAsync(cid, oldCertificate, []);
+                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(Certificate.From(newCert), Certificate.From(m_temporaryCertificateCreated ? m_certificate : oldCertificate)).AsX509Certificate2();
                                     await store.DeleteAsync(oldCertificate.Thumbprint);
                                 }
                                 else
@@ -392,9 +421,9 @@ certificateRequest.ToByteString());
                             }
                             else
                             {
-                                newCert = GdsCertificateLoader.LoadPkcs12(privateKeyPFX, string.Empty, X509KeyStorageFlags.Exportable);
+                                newCert = GdsCertificateLoader.LoadPkcs12(privateKeyPFX.ToArray(), string.Empty, X509KeyStorageFlags.Exportable);
                             }
-                            await store.AddAsync(newCert);
+                            await store.AddAsync(Certificate.From(newCert));
                             if (m_temporaryCertificateCreated)
                             {
                                 m_certificate.Dispose();
@@ -425,7 +454,7 @@ certificateRequest.ToByteString());
                             byte[] exportedCert;
                             if (string.Equals(file.Extension, ".PEM", StringComparison.OrdinalIgnoreCase))
                             {
-                                exportedCert = PEMWriter.ExportCertificateAsPEM(newCert);
+                                exportedCert = PEMWriter.ExportCertificateAsPEM(Certificate.From(newCert));
                             }
                             else
                             {
@@ -435,7 +464,7 @@ certificateRequest.ToByteString());
                         }
 
                         // if we provided a PFX or P12 with the private key, we need to merge the new cert with the private key
-                        if (m_application.GetPrivateKeyFormat(await m_server?.GetSupportedKeyFormatsAsync()) == "PFX")
+                        if (m_application.GetPrivateKeyFormat((m_server != null ? await m_server.GetSupportedKeyFormatsAsync() : ArrayOf<string>.Empty).ToArray()) == "PFX")
                         {
                             string absoluteCertificatePrivateKeyPath = Utils.GetAbsoluteFilePath(m_application.CertificatePrivateKeyPath, true, false, false) ?? m_application.CertificatePrivateKeyPath;
                             file = new FileInfo(absoluteCertificatePrivateKeyPath);
@@ -457,22 +486,22 @@ certificateRequest.ToByteString());
                                 {
                                     byte[] pkcsData = File.ReadAllBytes(absoluteCertificatePrivateKeyPath);
                                     #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                                    X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan());
+                                    X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan()).AsX509Certificate2();
                                     #pragma warning restore CA2000
                                     #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(newCert, oldCertificate);
+                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(Certificate.From(newCert), Certificate.From(oldCertificate)).AsX509Certificate2();
                                     #pragma warning restore CA2000
                                     pkcsData = newCert.Export(X509ContentType.Pfx, m_certificatePassword);
                                     File.WriteAllBytes(absoluteCertificatePrivateKeyPath, pkcsData);
 
-                                    if (privateKeyPFX != null)
+                                    if (!privateKeyPFX.IsNull)
                                     {
                                         throw new ServiceResultException("Did not expect a private key for this operation.");
                                     }
                                 }
                                 else
                                 {
-                                    File.WriteAllBytes(absoluteCertificatePrivateKeyPath, privateKeyPFX);
+                                    File.WriteAllBytes(absoluteCertificatePrivateKeyPath, privateKeyPFX.ToArray());
                                 }
                             }
                         }
@@ -484,13 +513,13 @@ certificateRequest.ToByteString());
                         var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.TrustListStorePath);
                         using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
                         {
-                            foreach (byte[] issuerCertificate in issuerCertificates)
+                            foreach (ByteString issuerCertificate in issuerCertificates.ToArray())
                             {
-                                X509Certificate2 x509 = GdsCertificateLoader.LoadCertificate(issuerCertificate);
-                                X509Certificate2Collection certs = await store.FindByThumbprintAsync(x509.Thumbprint);
+                                X509Certificate2 x509 = GdsCertificateLoader.LoadCertificate(issuerCertificate.ToArray());
+                                CertificateCollection certs = await store.FindByThumbprintAsync(x509.Thumbprint);
                                 if (certs.Count == 0)
                                 {
-                                    await store.AddAsync(GdsCertificateLoader.LoadCertificate(issuerCertificate));
+                                    await store.AddAsync(Certificate.From(GdsCertificateLoader.LoadCertificate(issuerCertificate.ToArray())));
                                 }
                             }
                         }
@@ -501,19 +530,19 @@ certificateRequest.ToByteString());
                 }
                 else
                 {
-                    if (privateKeyPFX != null && privateKeyPFX.Length > 0)
+                    if (!privateKeyPFX.IsNull && privateKeyPFX.Length > 0)
                     {
-                        var x509 = GdsCertificateLoader.LoadPkcs12(privateKeyPFX, m_certificatePassword, X509KeyStorageFlags.Exportable);
-                        privateKeyPFX = x509.Export(X509ContentType.Pfx);
+                        var x509 = GdsCertificateLoader.LoadPkcs12(privateKeyPFX.ToArray(), m_certificatePassword, X509KeyStorageFlags.Exportable);
+                        privateKeyPFX = x509.Export(X509ContentType.Pfx).ToByteString();
                     }
 
-                    byte[] unusedPrivateKey = Array.Empty<byte>();
+                    ByteString unusedPrivateKey = Array.Empty<byte>().ToByteString();
                     bool applyChanges = await m_server.UpdateCertificateAsync(
                         NodeId.Null,
                         m_server.ApplicationCertificateType,
-certificate.ToByteString(),
-                        (privateKeyPFX != null) ? "pfx" : String.Empty,
-(privateKeyPFX != null) ? privateKeyPFX : unusedPrivateKey.ToByteString(),
+certificate,
+                        (!privateKeyPFX.IsNull) ? "pfx" : String.Empty,
+(!privateKeyPFX.IsNull) ? privateKeyPFX : unusedPrivateKey,
                         issuerCertificates);
                     if (applyChanges)
                     {
@@ -528,7 +557,8 @@ certificate.ToByteString(),
                     }
                 }
 
-                CertificateControl.ShowValue(null, "Application Certificate", new CertificateWrapper() { Certificate = m_certificate }, true);
+                var updatedWrapper = new CertificateWrapper() { Certificate = Certificate.From(m_certificate) };
+                CertificateControl.ShowValue(TypeInfo.Construct(updatedWrapper), "Application Certificate", updatedWrapper, true);
             }
             catch (Exception exception)
             {
@@ -583,4 +613,3 @@ certificate.ToByteString(),
 
     }
 }
-

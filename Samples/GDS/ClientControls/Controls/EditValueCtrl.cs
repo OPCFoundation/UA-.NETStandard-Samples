@@ -446,7 +446,7 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 try
                 {
-                    newValue = TypeInfo.Cast(oldValue, oldType, newType.BuiltInType);
+                    newValue = CastValue(oldValue, newType.BuiltInType);
                 }
                 catch (Exception e)
                 {
@@ -460,6 +460,47 @@ namespace Opc.Ua.Gds.Client.Controls
             }
 
             return newValue;
+        }
+
+        private object CastValue(object value, BuiltInType targetType)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            if (value is string text)
+            {
+                switch (targetType)
+                {
+                    case BuiltInType.Boolean: return Boolean.Parse(text);
+                    case BuiltInType.SByte: return SByte.Parse(text);
+                    case BuiltInType.Byte: return Byte.Parse(text);
+                    case BuiltInType.Int16: return Int16.Parse(text);
+                    case BuiltInType.UInt16: return UInt16.Parse(text);
+                    case BuiltInType.Int32: return Int32.Parse(text);
+                    case BuiltInType.UInt32: return UInt32.Parse(text);
+                    case BuiltInType.Int64: return Int64.Parse(text);
+                    case BuiltInType.UInt64: return UInt64.Parse(text);
+                    case BuiltInType.Float: return Single.Parse(text);
+                    case BuiltInType.Double: return Double.Parse(text);
+                    case BuiltInType.DateTime: return DateTime.Parse(text);
+                    case BuiltInType.Guid: return new Uuid(Guid.Parse(text));
+                    case BuiltInType.NodeId: return NodeId.Parse(text);
+                    case BuiltInType.ExpandedNodeId: return ExpandedNodeId.Parse(text);
+                    case BuiltInType.QualifiedName: return QualifiedName.Parse(text);
+                    case BuiltInType.LocalizedText: return new LocalizedText(text);
+                    case BuiltInType.StatusCode: return new StatusCode(UInt32.Parse(text));
+                    case BuiltInType.String: return text;
+                }
+            }
+
+            if (targetType == BuiltInType.String)
+            {
+                return System.Convert.ToString(value);
+            }
+
+            return value;
         }
 
         private object Clone(object value)
@@ -498,7 +539,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 }
             }
 
-            return Utils.Clone(value);
+            return value;
         }
 
         public void ShowValue(
@@ -537,9 +578,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     name = value.GetType().Name;
 
-                    ExtensionObject extension = value as ExtensionObject;
-
-                    if (extension != null && extension.Body != null)
+                    if (value is ExtensionObject extension && extension.Body != null)
                     {
                         name = extension.Body.GetType().Name;
                     }
@@ -556,7 +595,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
 
             // ensure value is the target type.
-            info.Value = TypeInfo.Cast(info.Value, expectedType.BuiltInType);
+            info.Value = CastValue(info.Value, expectedType.BuiltInType);
 
             info.Name = name;
             SetWrappedValue(info);
@@ -611,7 +650,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
             else
             {
-                newValue = TypeInfo.Cast(TextValueTB.Text, info.TypeInfo.BuiltInType);
+                newValue = CastValue(TextValueTB.Text, info.TypeInfo.BuiltInType);
             }
 
             info.Value = newValue;
@@ -795,9 +834,7 @@ namespace Opc.Ua.Gds.Client.Controls
             object structure = value;
 
             // check for extension object.
-            ExtensionObject extension = structure as ExtensionObject;
-
-            if (extension != null)
+            if (structure is ExtensionObject extension)
             {
                 structure = extension.Body;
 
@@ -808,9 +845,9 @@ namespace Opc.Ua.Gds.Client.Controls
             }
 
             // check for XmlElements.
-            if (structure is XmlElement)
+            if (structure is System.Xml.XmlElement)
             {
-                ShowTextValue((XmlElement)structure);
+                ShowTextValue((System.Xml.XmlElement)structure);
                 return;
             }
 
@@ -1143,7 +1180,8 @@ namespace Opc.Ua.Gds.Client.Controls
                 }
             }
 
-            return TypeInfo.GetSystemType(accessInfo.TypeInfo.BuiltInType, accessInfo.TypeInfo.ValueRank);
+            object defaultValue = TypeInfo.GetDefaultValue(accessInfo.TypeInfo.BuiltInType, accessInfo.TypeInfo.ValueRank);
+            return defaultValue?.GetType() ?? typeof(object);
         }
 
         /// <summary>
@@ -1211,7 +1249,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 case BuiltInType.XmlElement:
                 {
-                    ShowTextValue((XmlElement)value);
+                    ShowTextValue((System.Xml.XmlElement)value);
                     break;
                 }
 
@@ -1280,7 +1318,7 @@ namespace Opc.Ua.Gds.Client.Controls
         /// <summary>
         /// Displays a complete XML element in the control.
         /// </summary>
-        private void ShowTextValue(XmlElement value)
+        private void ShowTextValue(System.Xml.XmlElement value)
         {
             ValuesDV.Visible = false;
             TextValueTB.Visible = true;
@@ -1399,7 +1437,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 }
             }
 
-            return (string)TypeInfo.Cast(value, BuiltInType.String);
+            return (string)CastValue(value, BuiltInType.String);
         }
 
         /// <summary>
@@ -1492,9 +1530,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     parentValue = variant.Value.Value;
                 }
 
-                ExtensionObject extension = parentValue as ExtensionObject;
-
-                if (extension != null)
+                if (parentValue is ExtensionObject extension)
                 {
                     parentValue = extension.Body;
                 }
@@ -1531,7 +1567,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        array.SetValue(new Variant(info.Value, null), indexes);
+                        array.SetValue(new Variant(info.Value), indexes);
                     }
                     else
                     {
@@ -1544,7 +1580,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        list[indexes[0]] = new Variant(info.Value, null);
+                        list[indexes[0]] = new Variant(info.Value);
                     }
                     else
                     {
@@ -1631,7 +1667,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         }
                         else
                         {
-                            TypeInfo.Cast(e.FormattedValue, info.TypeInfo.BuiltInType);
+                            CastValue(e.FormattedValue, info.TypeInfo.BuiltInType);
                         }
                     }
                 }
@@ -1662,7 +1698,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         }
                         else
                         {
-                            newValue = TypeInfo.Cast((string)source.Row[3], info.TypeInfo.BuiltInType);
+                            newValue = CastValue((string)source.Row[3], info.TypeInfo.BuiltInType);
                         }
 
                         info.Value = newValue;

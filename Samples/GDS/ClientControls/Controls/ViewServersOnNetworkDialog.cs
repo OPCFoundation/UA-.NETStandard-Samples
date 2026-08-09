@@ -132,7 +132,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     ApplicationNameTextBox.Text.Trim(),
                     ApplicationUriTextBox.Text.Trim(),
                     ProductUriTextBox.Text.Trim(),
-                    ServerCapabilitiesTextBox.Tag as IList<string>);
+                    (ServerCapabilitiesTextBox.Tag as IList<string>)?.ToArrayOf() ?? ArrayOf<string>.Empty);
 
                 bool found = false;
 
@@ -145,7 +145,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         SearchButton.Visible = false;
                         NextButton.Visible = true;
                         StopButton.Visible = true;
-                        var nextServers = servers.Where(x => x.RecordId > server.RecordId);
+                        var nextServers = servers.ToArray().Where(x => x.RecordId > server.RecordId);
                         StopButton.Tag = nextServers;
                         break;
                     }

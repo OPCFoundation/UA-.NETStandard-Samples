@@ -233,11 +233,11 @@ namespace Opc.Ua.Gds.Client.Controls
                 fallback = new ApplicationDescription()
                 {
                     ApplicationType = ApplicationType.Server,
-                    ApplicationName = server.ServerName,
+                    ApplicationName = new LocalizedText(server.ServerName),
                     ApplicationUri = server.DiscoveryUrl
                 };
 
-                fallback.DiscoveryUrls.Add(server.DiscoveryUrl);
+                fallback.DiscoveryUrls = new List<string> { server.DiscoveryUrl };
             }
 
             return fallback;
@@ -418,7 +418,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     null,
                     startingRecordId,
                     maxRecordsToReturn,
-                    null,
+                    ArrayOf<string>.Empty,
                     CancellationToken.None);
 
                 foreach (ServerOnNetwork server in servers)
@@ -712,7 +712,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     ConfiguredEndpoint ce = m_endpoints.Add(new EndpointDescription(url));
                     ce.Description.Server.ApplicationUri = null;
-                    ce.Description.Server.ApplicationName = null;
+                    ce.Description.Server.ApplicationName = LocalizedText.Null;
 
                     TreeNode node = new TreeNode(Utils.Format("{0}", ce.ToString()));
                     node.SelectedImageIndex = node.ImageIndex = ImageIndex.InSecure;
@@ -957,7 +957,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (DiscoveryTreeView.SelectedNode == parent)
                 {
-                    ShowEndpointDescriptions(endpoints);
+                    ShowEndpointDescriptions(endpoints.ToList());
                 }
             }
             catch (Exception e)
@@ -1039,4 +1039,3 @@ namespace Opc.Ua.Gds.Client.Controls
         }
     }
 }
-
