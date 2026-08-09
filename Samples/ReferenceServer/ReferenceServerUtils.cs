@@ -182,7 +182,7 @@ namespace Quickstarts.ReferenceServer
 
                 if (StatusCode.IsBad(error))
                 {
-                    e.Value = new DataValue { WrappedValue = value.WrappedValue, StatusCode = error };
+                    e.Value = new DataValue(value.WrappedValue, error);
                 }
 
                 m_events.Enqueue(e);
