@@ -94,7 +94,7 @@ namespace Opc.Ua.Client.Controls
         public NodeId SelectedNode
         #pragma warning restore WFO1000
         {
-            get => m_selectedNode != null ? (NodeId)m_selectedNode.NodeId : null;
+            get => m_selectedNode != null ? (NodeId)m_selectedNode.NodeId : NodeId.Null;
             set
             {
                 if (value.IsNull)

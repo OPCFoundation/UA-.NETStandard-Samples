@@ -93,7 +93,7 @@ namespace Opc.Ua.Client.Controls
             // display the dialog.
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return NodeId.Null;
             }
 
             // convert to a node id.
@@ -104,7 +104,7 @@ namespace Opc.Ua.Client.Controls
                 return (NodeId)reference.NodeId;
             }
 
-            return null;
+            return NodeId.Null;
         }
 
         /// <summary>

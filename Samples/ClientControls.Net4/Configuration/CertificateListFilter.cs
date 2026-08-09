@@ -125,7 +125,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (!String.IsNullOrEmpty(m_domain))
                 {
-                    IList<string> domains = X509Utils.GetDomainsFromCertificate(certificate);
+                    IList<string> domains = X509Utils.GetDomainsFromCertificate(Certificate.From(certificate)).ToList();
 
                     bool found = false;
 
@@ -156,7 +156,7 @@ namespace Opc.Ua.Client.Controls
                 if (m_certificateTypes != null)
                 {
                     // determine if a CA certificate.
-                    bool isCA = X509Utils.IsCertificateAuthority(certificate);
+                    bool isCA = X509Utils.IsCertificateAuthority(Certificate.From(certificate));
 
                     // determine if self-signed.
                     bool isSelfSigned = X509Utils.CompareDistinguishedName(certificate.Subject, certificate.Issuer);

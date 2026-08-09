@@ -234,7 +234,7 @@ namespace Opc.Ua.Client.Controls
                 if (!monitoredItem.Created)
                 {
                     monitoredItem.IndexRange = null;
-                    monitoredItem.Encoding = null;
+                    monitoredItem.Encoding = QualifiedName.Null;
                 }
 
                 monitoredItem.QueueSize = 0;

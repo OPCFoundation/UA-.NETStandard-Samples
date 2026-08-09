@@ -658,7 +658,7 @@ namespace Opc.Ua.Client.Controls
             ReadType = HistoryReadType.Raw;
             StartTime = DateTime.MinValue;
             EndTime = DateTime.MinValue;
-            Aggregate = null;
+            Aggregate = NodeId.Null;
 
             StartTimeCK.Checked = true;
             EndTimeCK.Checked = false;
@@ -808,15 +808,15 @@ namespace Opc.Ua.Client.Controls
             configuration.MaxTimeInterval = PropertyState<double>.With<VariantBuilder>(configuration);
             configuration.MinTimeInterval = PropertyState<double>.With<VariantBuilder>(configuration);
             configuration.ExceptionDeviation = PropertyState<double>.With<VariantBuilder>(configuration);
-            configuration.ExceptionDeviationFormat = PropertyState<ExceptionDeviationFormat>.With<EnumBuilder<ExceptionDeviationFormat>>(configuration);
-            configuration.StartOfArchive = PropertyState<DateTime>.With<VariantBuilder>(configuration);
-            configuration.StartOfOnlineArchive = PropertyState<DateTime>.With<VariantBuilder>(configuration);
+            configuration.ExceptionDeviationFormat = PropertyState<ExceptionDeviationFormat>.With<EnumerationBuilder<ExceptionDeviationFormat>>(configuration);
+            configuration.StartOfArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(configuration);
+            configuration.StartOfOnlineArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(configuration);
 
             configuration.Create(
                 m_session.SystemContext,
-                null,
-                Opc.Ua.BrowseNames.HAConfiguration,
-                null,
+                NodeId.Null,
+                new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration),
+                LocalizedText.Null,
                 false);
 
             // get the browse paths to query.
@@ -824,7 +824,7 @@ namespace Opc.Ua.Client.Controls
             element.ReferenceTypeId = Opc.Ua.ReferenceTypeIds.HasHistoricalConfiguration;
             element.IsInverse = false;
             element.IncludeSubtypes = false;
-            element.TargetName = Opc.Ua.BrowseNames.HAConfiguration;
+            element.TargetName = new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration);
 
             RelativePath relativePath = new RelativePath();
             relativePath.Elements = new List<RelativePathElement> { element };
@@ -1623,11 +1623,15 @@ namespace Opc.Ua.Client.Controls
             DeleteAtTimeDetails details = new DeleteAtTimeDetails();
             details.NodeId = m_nodeId;
 
+            List<DateTimeUtc> reqTimes = new List<DateTimeUtc>();
+
             foreach (DataRowView row in m_dataset.Tables[0].DefaultView)
             {
                 DateTime value = (DateTime)row.Row[1];
-                details.ReqTimes.Add(value);
+                reqTimes.Add(value);
             }
+
+            details.ReqTimes = reqTimes;
 
             ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
             nodesToUpdate.Add(new ExtensionObject(details));
@@ -2358,15 +2362,15 @@ namespace Opc.Ua.Client.Controls
                     DataValue value = (DataValue)source.Row[9];
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    DataValue newValue = new EditDataValueDlg().ShowDialog(value, null, null);
+                    Variant newValue = new EditDataValueDlg().ShowDialog(value.WrappedValue, null, null);
                     #pragma warning restore CA2000
 
-                    if (newValue == null)
+                    if (newValue.IsNull)
                     {
                         return;
                     }
 
-                    UpdateRow(source.Row, newValue, null);
+                    UpdateRow(source.Row, new DataValue(newValue), null);
                     m_dataset.AcceptChanges();
                     break;
                 }

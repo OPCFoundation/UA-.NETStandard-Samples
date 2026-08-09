@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -290,7 +290,7 @@ namespace Opc.Ua.Client.Controls
         {
             for (int ii = 0; ii < events.Events.Count; ii++)
             {
-                ListViewItem item = await CreateListItemAsync(m_filter, events.Events[ii].EventFields, ct);
+                ListViewItem item = await CreateListItemAsync(m_filter, new List<Variant>(events.Events[ii].EventFields.ToArray()), ct);
                 EventsLV.Items.Add(item);
             }
 
@@ -383,7 +383,12 @@ namespace Opc.Ua.Client.Controls
 
             if (m_displayConditions)
             {
-                NodeId conditionId = fieldValues[0].Value as NodeId;
+                NodeId conditionId = NodeId.Null;
+
+                if (fieldValues[0].Value is NodeId nodeId)
+                {
+                    conditionId = nodeId;
+                }
 
                 if (!conditionId.IsNull)
                 {
@@ -515,7 +520,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (m_displayConditions)
                 {
-                    NodeId eventTypeId = m_filter.GetValue<NodeId>(Opc.Ua.BrowseNames.EventType, notification.EventFields, null);
+                    NodeId eventTypeId = m_filter.GetValue<NodeId>(new QualifiedName(Opc.Ua.BrowseNames.EventType), new List<Variant>(notification.EventFields.ToArray()), NodeId.Null);
 
                     if (eventTypeId == Opc.Ua.ObjectTypeIds.RefreshStartEventType)
                     {
@@ -529,7 +534,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // create an item and add to top of list.
-                ListViewItem item = await CreateListItemAsync(m_filter, notification.EventFields);
+                ListViewItem item = await CreateListItemAsync(m_filter, new List<Variant>(notification.EventFields.ToArray()));
 
                 if (item.ListView == null)
                 {
@@ -564,7 +569,7 @@ namespace Opc.Ua.Client.Controls
                     // get the last hour or 10 events.
                     ReadEventDetails details = new ReadEventDetails();
                     details.StartTime = DateTime.UtcNow.AddSeconds(30);
-                    details.EndTime = details.StartTime.AddHours(-1);
+                    details.EndTime = ((DateTime)details.StartTime).AddHours(-1);
                     details.NumValuesPerNode = 10;
                     details.Filter = m_filter.GetFilter();
 
@@ -592,8 +597,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = new List<HistoryReadResult>(response.Results.ToArray());
+            List<DiagnosticInfo> diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -619,8 +624,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = new List<HistoryReadResult>(response.Results.ToArray());
+                diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
             }
         }
 
@@ -654,14 +659,21 @@ namespace Opc.Ua.Client.Controls
 
             foreach (List<Variant> e in events)
             {
-                byte[] eventId = null;
+                ByteString eventId = default;
 
                 if (e.Count > index)
                 {
-                    eventId = e[index].Value as byte[];
+                    if (e[index].Value is ByteString byteString)
+                    {
+                        eventId = byteString;
+                    }
+                    else if (e[index].Value is byte[] bytes)
+                    {
+                        eventId = bytes.ToByteString();
+                    }
                 }
 
-                details.EventIds.Add(eventId);
+                details.EventIds = details.EventIds.AddItem(eventId);
             }
 
             // delete the events.
@@ -673,8 +685,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToUpdate,
                 ct);
 
-            HistoryUpdateResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryUpdateResult> results = new List<HistoryUpdateResult>(response.Results.ToArray());
+            List<DiagnosticInfo> diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);

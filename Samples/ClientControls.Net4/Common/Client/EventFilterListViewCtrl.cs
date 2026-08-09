@@ -194,7 +194,7 @@ namespace Opc.Ua.Client.Controls
                         source.Row[5] = field.FilterEnabled;
                         source.Row[6] = field.FilterOperator;
 
-                        field.FilterValue = Variant.From(result);
+                        field.FilterValue = new Variant(result);
                         source.Row[7] = field.FilterValue;
                     }
 

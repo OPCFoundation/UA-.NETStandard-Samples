@@ -244,7 +244,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     results[ii].ParsedIndexRange = NumericRange.Parse(IndexRangeTB.Text);
 
-                    if (NumericRange.Empty != results[ii].ParsedIndexRange)
+                    if (default(NumericRange) != results[ii].ParsedIndexRange)
                     {
                         results[ii].IndexRange = results[ii].ParsedIndexRange.ToString();
                     }
@@ -256,7 +256,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (editDataEncoding)
                 {
-                    results[ii].DataEncoding = null;
+                    results[ii].DataEncoding = QualifiedName.Null;
 
                     EncodingInfo encoding = DataEncodingCB.SelectedItem as EncodingInfo;
 

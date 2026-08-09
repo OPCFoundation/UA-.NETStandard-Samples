@@ -287,7 +287,7 @@ namespace Opc.Ua.Client.Controls
                 buffer.AppendFormat("Valid From: {0}\r\n", certificate.NotBefore);
                 buffer.AppendFormat("Valid To: {0}\r\n", certificate.NotAfter);
                 buffer.AppendFormat("Thumbprint: {0}\r\n\r\n", certificate.Thumbprint);
-                var domains = X509Utils.GetDomainsFromCertificate(certificate);
+                var domains = X509Utils.GetDomainsFromCertificate(Opc.Ua.Security.Certificates.Certificate.From(certificate));
                 if (domains.Count > 0)
                 {
                     bool comma = false;
@@ -363,7 +363,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public static object GetDefaultValue(NodeId datatypeId, int valueRank)
         {
-            Type type = TypeInfo.GetSystemType(datatypeId, EncodeableFactory.Create());
+            Type type = TypeInfo.GetSystemType(datatypeId, EncodeableFactory.Create())?.Type;
 
             if (type == null)
             {
@@ -430,7 +430,7 @@ namespace Opc.Ua.Client.Controls
 
             if (typeInfo != null)
             {
-                return EditValue(session, value, (uint)typeInfo.BuiltInType, typeInfo.ValueRank, telemetry);
+                return EditValue(session, value, new NodeId((uint)typeInfo.BuiltInType), typeInfo.ValueRank, telemetry);
             }
 
             return null;
@@ -471,28 +471,28 @@ namespace Opc.Ua.Client.Controls
                 case BuiltInType.Enumeration:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(builtinType, valueRank));
+                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(builtinType).Type);
                     #pragma warning restore CA2000
                 }
 
                 case BuiltInType.Number:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Double, valueRank));
+                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Double).Type);
                     #pragma warning restore CA2000
                 }
 
                 case BuiltInType.Integer:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Int64, valueRank));
+                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Int64).Type);
                     #pragma warning restore CA2000
                 }
 
                 case BuiltInType.UInteger:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.UInt64, valueRank));
+                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.UInt64).Type);
                     #pragma warning restore CA2000
                 }
 

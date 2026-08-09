@@ -70,12 +70,12 @@ namespace Opc.Ua.Client.Controls
 
             SetShowStatusTimestamp(false);
 
-            StatusCodeCB.Items.Add(new StatusCode(StatusCodes.Good));
-            StatusCodeCB.Items.Add(new StatusCode(StatusCodes.GoodLocalOverride));
-            StatusCodeCB.Items.Add(new StatusCode(StatusCodes.Uncertain));
-            StatusCodeCB.Items.Add(new StatusCode(StatusCodes.UncertainInitialValue));
-            StatusCodeCB.Items.Add(new StatusCode(StatusCodes.Bad));
-            StatusCodeCB.Items.Add(new StatusCode(StatusCodes.BadDeviceFailure));
+            StatusCodeCB.Items.Add(StatusCodes.Good);
+            StatusCodeCB.Items.Add(StatusCodes.GoodLocalOverride);
+            StatusCodeCB.Items.Add(StatusCodes.Uncertain);
+            StatusCodeCB.Items.Add(StatusCodes.UncertainInitialValue);
+            StatusCodeCB.Items.Add(StatusCodes.Bad);
+            StatusCodeCB.Items.Add(StatusCodes.BadDeviceFailure);
 
             StatusCodeCB.SelectedIndex = 0;
 
@@ -104,14 +104,13 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public DataValue GetDataValue()
         {
-            DataValue value = new DataValue();
-            value.WrappedValue = GetValue();
+            DataValue value = new DataValue(GetValue());
 
             if (ShowStatusTimestamp)
             {
-                value.StatusCode = StatusCode;
-                value.SourceTimestamp = SourceTimestamp;
-                value.ServerTimestamp = ServerTimestamp;
+                value = value.WithStatus(StatusCode)
+                    .WithSourceTimestamp(SourceTimestamp)
+                    .WithServerTimestamp(ServerTimestamp);
             }
 
             return value;
@@ -129,13 +128,13 @@ namespace Opc.Ua.Client.Controls
             SourceTimestamp = DateTime.MinValue;
             ServerTimestamp = DateTime.MinValue;
 
-            if (value != null)
+            if (value != DataValue.Null)
             {
                 SetValue(value.WrappedValue);
 
                 StatusCode = value.StatusCode;
-                SourceTimestamp = value.SourceTimestamp;
-                ServerTimestamp = value.ServerTimestamp;
+                SourceTimestamp = (DateTime)value.SourceTimestamp;
+                ServerTimestamp = (DateTime)value.ServerTimestamp;
 
                 StatusCodeCK.Checked = true;
                 SourceTimestampCK.Checked = true;
@@ -318,7 +317,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // cast the value to the requested data type.
-            object value = TypeInfo.Cast(ValueTB.Text, TypeInfo.Scalars.String, targetType);
+            object value = new Variant(ValueTB.Text, TypeInfo.Scalars.String).ConvertTo(targetType).Value;
 
             return new Variant(value, new TypeInfo(targetType, valueRank));
         }
@@ -355,7 +354,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // cast the value to the requested data type.
-            ValueTB.Text = (string)TypeInfo.Cast(value.Value, value.TypeInfo, BuiltInType.String);
+            ValueTB.Text = (string)new Variant(value.Value, value.TypeInfo).ConvertTo(BuiltInType.String).Value;
             ValueTB.ReadOnly = false;
         }
 

@@ -687,7 +687,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void OnEvent(Subscription subscription, EventNotificationList notification, IList<string> stringTable)
+        private void OnEvent(Subscription subscription, EventNotificationList notification, ArrayOf<string> stringTable)
         {
             if (!Object.ReferenceEquals(subscription, m_subscription))
             {

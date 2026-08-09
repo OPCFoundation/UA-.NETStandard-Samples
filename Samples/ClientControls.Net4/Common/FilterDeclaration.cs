@@ -401,7 +401,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             field.InstanceDeclaration.BuiltInType = dataType;
-            field.InstanceDeclaration.DataType = (uint)dataType;
+            field.InstanceDeclaration.DataType = new NodeId((uint)dataType);
             field.InstanceDeclaration.ValueRank = valueRank;
             field.InstanceDeclaration.DataTypeDisplayText = dataType.ToString();
 
@@ -465,8 +465,8 @@ namespace Opc.Ua.Client.Controls
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
 
-                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, operand1, operand2);
-                    element1 = whereClause.Push(FilterOperator.And, element1, element2);
+                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(operand1), new Variant(operand2));
+                    element1 = whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
                 }
             }
 

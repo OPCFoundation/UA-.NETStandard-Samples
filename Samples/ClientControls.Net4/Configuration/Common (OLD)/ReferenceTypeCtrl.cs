@@ -100,7 +100,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (choice == null)
                 {
-                    return null;
+                    return NodeId.Null;
                 }
 
                 return choice.ReferenceType.NodeId;
@@ -241,9 +241,9 @@ namespace Opc.Ua.Client.Controls
                 ReferenceTypesCB.Items.Add(choice);
 
                 // recursively add subtypes.
-                IList<INode> subtypes = await m_session.NodeCache.FindReferencesAsync(node.NodeId, ReferenceTypeIds.HasSubtype, false, true, ct);
+                var subtypes = await m_session.NodeCache.FindReferencesAsync(node.NodeId, ReferenceTypeIds.HasSubtype, false, true, ct);
 
-                foreach (INode subtype in subtypes)
+                foreach (INode subtype in subtypes.ToArray())
                 {
                     await AddReferenceTypesAsync(subtype.NodeId, choice, ct);
                 }

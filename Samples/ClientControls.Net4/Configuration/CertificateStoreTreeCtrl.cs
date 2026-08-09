@@ -38,6 +38,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
+using Opc.Ua.Security.Certificates;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -318,7 +319,7 @@ namespace Opc.Ua.Client.Controls
                             if (certificate != null)
                             {
 #pragma warning disable CA2025 // Justification: Existing drag/drop sample intentionally starts the add operation without changing event handler behavior.
-                                store.AddAsync(certificate);
+                                store.AddAsync(Certificate.From(certificate));
 #pragma warning restore CA2025
                             }
                         }
@@ -485,7 +486,7 @@ namespace Opc.Ua.Client.Controls
 
                         using (ICertificateStore store = storeId.OpenStore(Telemetry))
                         {
-                            store.AddAsync(id.Certificate);
+                            store.AddAsync(Certificate.From(id.Certificate));
                         }
                     }
 

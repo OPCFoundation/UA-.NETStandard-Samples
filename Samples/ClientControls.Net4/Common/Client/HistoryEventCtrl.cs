@@ -104,7 +104,7 @@ namespace Opc.Ua.Client.Controls
 
         public void ClearNodeId()
         {
-            m_nodeId = null;
+            m_nodeId = NodeId.Null;
             NodeIdTB.Text = String.Empty;
         }
 
@@ -270,9 +270,11 @@ namespace Opc.Ua.Client.Controls
                 browsePath.StartingNode = rootId;
                 browsePath.Handle = child;
 
+                List<RelativePathElement> elements = new List<RelativePathElement>();
+
                 if (parentPath != null)
                 {
-                    browsePath.RelativePath.Elements.AddRange(parentPath.Elements);
+                    elements.AddRange(parentPath.Elements);
                 }
 
                 RelativePathElement element = new RelativePathElement();
@@ -281,7 +283,8 @@ namespace Opc.Ua.Client.Controls
                 element.IncludeSubtypes = false;
                 element.TargetName = child.BrowseName;
 
-                browsePath.RelativePath.Elements.Add(element);
+                elements.Add(element);
+                browsePath.RelativePath.Elements = elements;
 
                 if (child.NodeClass == NodeClass.Variable)
                 {

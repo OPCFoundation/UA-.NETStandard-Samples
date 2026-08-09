@@ -124,18 +124,19 @@ namespace Opc.Ua.Client.Controls
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             XmlEncoder encoder = new XmlEncoder(new XmlQualifiedName("Value", Namespaces.OpcUaXsd), writer, m_session.MessageContext);
             #pragma warning restore CA2000
-            encoder.WriteVariantContents(m_value.Value, m_value.TypeInfo);
+            Variant valueToEncode = m_value;
+            encoder.WriteVariant("Value", ref valueToEncode);
             writer.Close();
 
             ValueTB.Text = buffer.ToString();
 
             // extract the encoding id from the value.
-            ExpandedNodeId encodingId = null;
+            ExpandedNodeId encodingId = ExpandedNodeId.Null;
             ExtensionObjectEncoding encoding = ExtensionObjectEncoding.None;
 
             if (sourceType.BuiltInType == BuiltInType.ExtensionObject)
             {
-                ExtensionObject extension = null;
+                ExtensionObject extension = ExtensionObject.Null;
 
                 if (sourceType.ValueRank == ValueRanks.Scalar)
                 {
@@ -209,7 +210,7 @@ namespace Opc.Ua.Client.Controls
             // update encoding drop down.
             EncodingCB.DropDownItems.Clear();
 
-            foreach (INode node in await m_session.NodeCache.FindAsync(dataTypeNode.NodeId, Opc.Ua.ReferenceTypeIds.HasEncoding, false, false, ct))
+            foreach (INode node in (await m_session.NodeCache.FindAsync(dataTypeNode.NodeId, Opc.Ua.ReferenceTypeIds.HasEncoding, false, false, ct)).ToArray())
             {
                 IObject encodingNode2 = node as IObject;
 
@@ -241,28 +242,12 @@ namespace Opc.Ua.Client.Controls
                 document.Load(reader);
             }
 
-            // find the first element.
-            XmlElement element = null;
-
-            for (XmlNode node = document.DocumentElement.FirstChild; node != null; node = node.NextSibling)
-            {
-                element = node as XmlElement;
-
-                if (element != null)
-                {
-                    break;
-                }
-            }
-
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            XmlDecoder decoder = new XmlDecoder(element, m_session.MessageContext);
+            XmlDecoder decoder = new XmlDecoder(document.DocumentElement, m_session.MessageContext);
             #pragma warning restore CA2000
 
             decoder.PushNamespace(Namespaces.OpcUaXsd);
-            TypeInfo typeInfo = null;
-            object value = decoder.ReadVariantContents(out typeInfo);
-
-            return new Variant(value, typeInfo);
+            return decoder.ReadVariant("Value");
         }
 
         #region Event Handlers
@@ -320,8 +305,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     default);
 
-                List<DataValue> results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -350,8 +335,7 @@ namespace Opc.Ua.Client.Controls
                 WriteValue nodeToWrite = new WriteValue();
                 nodeToWrite.NodeId = m_variableId;
                 nodeToWrite.AttributeId = Attributes.Value;
-                nodeToWrite.Value = new DataValue();
-                nodeToWrite.Value.WrappedValue = GetValue();
+                nodeToWrite.Value = new DataValue(GetValue());
 
                 WriteValueCollection nodesToWrite = new WriteValueCollection();
                 nodesToWrite.Add(nodeToWrite);
@@ -363,8 +347,8 @@ namespace Opc.Ua.Client.Controls
                     default);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                List<StatusCode> results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);

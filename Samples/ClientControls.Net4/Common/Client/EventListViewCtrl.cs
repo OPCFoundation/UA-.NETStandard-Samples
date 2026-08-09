@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -163,8 +163,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            HistoryReadResultCollection results = new HistoryReadResultCollection(response.Results.ToArray());
+            List<DiagnosticInfo> diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -178,7 +178,7 @@ namespace Opc.Ua.Client.Controls
 
             foreach (HistoryEventFieldList e in events.Events)
             {
-                DisplayEvent(e.EventFields);
+                DisplayEvent(new List<Variant>(e.EventFields.ToArray()));
             }
 
             // release continuation points.
@@ -194,8 +194,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = new HistoryReadResultCollection(response.Results.ToArray());
+                diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
             }
         }
 
@@ -227,6 +227,8 @@ namespace Opc.Ua.Client.Controls
             DeleteEventDetails details = new DeleteEventDetails();
             details.NodeId = areaId;
 
+            List<ByteString> eventIds = new List<ByteString>();
+
             foreach (List<Variant> e in events)
             {
                 byte[] eventId = null;
@@ -236,8 +238,10 @@ namespace Opc.Ua.Client.Controls
                     eventId = e[index].Value as byte[];
                 }
 
-                details.EventIds.Add(eventId);
+                eventIds.Add(eventId.ToByteString());
             }
+
+            details.EventIds = eventIds;
 
             // delete the events.
             List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
@@ -249,8 +253,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToUpdate,
                 ct);
 
-            HistoryUpdateResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            HistoryUpdateResultCollection results = new HistoryUpdateResultCollection(response.Results.ToArray());
+            List<DiagnosticInfo> diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -309,7 +313,7 @@ namespace Opc.Ua.Client.Controls
                     DataRowView source = row.DataBoundItem as DataRowView;
                     EventFieldList e2 = (EventFieldList)source.Row[0];
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    new ViewEventDetailsDlg().ShowDialog(m_filter, e2.EventFields);
+                    new ViewEventDetailsDlg().ShowDialog(m_filter, new List<Variant>(e2.EventFields.ToArray()));
                     #pragma warning restore CA2000
                     break;
                 }

@@ -119,7 +119,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            Value = Variant.From(value);
+            Value = new Variant(value);
 
             m_ValueChanged?.Invoke(this, e);
         }

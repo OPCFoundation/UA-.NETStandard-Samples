@@ -440,7 +440,7 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 try
                 {
-                    newValue = TypeInfo.Cast(oldValue, oldType, newType.BuiltInType);
+                    newValue = new Variant(oldValue, oldType).ConvertTo(newType.BuiltInType).Value;
                 }
                 catch (Exception e)
                 {
@@ -454,6 +454,31 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             return newValue;
+        }
+
+        private static Type GetSystemType(BuiltInType builtInType, int valueRank, IEncodeableTypeLookup factory)
+        {
+            NodeId dataTypeId = TypeInfo.GetDataTypeId(new TypeInfo(builtInType, ValueRanks.Scalar));
+            return GetSystemType(new ExpandedNodeId(dataTypeId), factory, valueRank);
+        }
+
+        private static Type GetSystemType(ExpandedNodeId dataTypeId, IEncodeableTypeLookup factory, int valueRank)
+        {
+#pragma warning disable UA_NETStandard_1 // Experimental IType/GetSystemType API required in 2.0 to resolve a CLR type.
+            IType uaType = TypeInfo.GetSystemType(dataTypeId, factory);
+            return GetValueRankType(uaType?.Type, valueRank);
+#pragma warning restore UA_NETStandard_1
+        }
+
+        private static Type GetValueRankType(Type type, int valueRank)
+        {
+            if (type == null || valueRank < 0)
+            {
+                return type;
+            }
+
+            int rank = valueRank <= 1 ? 1 : valueRank;
+            return type.MakeArrayType(rank);
         }
 
         /// <summary>
@@ -483,7 +508,7 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 BuiltInType builtInType = TypeInfo.GetBuiltInType(Attributes.GetDataTypeId(attributeId));
                 int valueRank = Attributes.GetValueRank(attributeId);
-                type = TypeInfo.GetSystemType(builtInType, valueRank);
+                type = GetSystemType(builtInType, valueRank, m_session.Factory);
             }
 
             // determine the expected data type for value attributes.
@@ -497,11 +522,11 @@ namespace Opc.Ua.Client.Controls.Common
                     BuiltInType builtInType = TypeInfo.GetBuiltInType(variable.DataType, m_session.TypeTree);
                     #pragma warning restore CA1849
                     int valueRank = variable.ValueRank;
-                    type = TypeInfo.GetSystemType(builtInType, valueRank);
+                    type = GetSystemType(builtInType, valueRank, m_session.Factory);
 
                     if (builtInType == BuiltInType.ExtensionObject && valueRank < 0)
                     {
-                        type = TypeInfo.GetSystemType(variable.DataType, m_session.Factory);
+                        type = GetSystemType(variable.DataType, m_session.Factory, valueRank);
                     }
                 }
             }
@@ -532,7 +557,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             AccessInfo info = new AccessInfo();
-            info.Value = Utils.Clone(value);
+            info.Value = value is ICloneable clonable ? clonable.Clone() : value;
             info.TypeInfo = TypeInfo.Construct(type);
 
             if (value == null && info.TypeInfo.ValueRank < 0)
@@ -581,7 +606,7 @@ namespace Opc.Ua.Client.Controls.Common
                 }
             }
 
-            ShowValue(null, name, value);
+            ShowValue(default, name, value);
         }
 
         /// <summary>
@@ -615,7 +640,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             AccessInfo info = new AccessInfo();
-            info.Value = Utils.Clone(value);
+            info.Value = value is ICloneable clonable ? clonable.Clone() : value;
             info.TypeInfo = expectedType;
 
             if (value == null && info.TypeInfo.ValueRank < 0)
@@ -624,7 +649,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             // ensure value is the target type.
-            info.Value = TypeInfo.Cast(info.Value, expectedType.BuiltInType);
+            info.Value = new Variant(info.Value).ConvertTo(expectedType.BuiltInType).Value;
 
             info.Name = name;
             m_value = info;
@@ -659,7 +684,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             AccessInfo info = NavigationMENU.Items[NavigationMENU.Items.Count - 1].Tag as AccessInfo;
-            object newValue = TypeInfo.Cast(TextValueTB.Text, info.TypeInfo.BuiltInType);
+            object newValue = new Variant(TextValueTB.Text).ConvertTo(info.TypeInfo.BuiltInType).Value;
             info.Value = newValue;
             UpdateParent(info);
         }
@@ -799,9 +824,7 @@ namespace Opc.Ua.Client.Controls.Common
             object structure = value;
 
             // check for extension object.
-            ExtensionObject extension = structure as ExtensionObject;
-
-            if (extension != null)
+            if (structure is ExtensionObject extension)
             {
                 structure = extension.Body;
             }
@@ -1032,7 +1055,7 @@ namespace Opc.Ua.Client.Controls.Common
                 }
             }
 
-            return TypeInfo.GetSystemType(accessInfo.TypeInfo.BuiltInType, accessInfo.TypeInfo.ValueRank);
+            return GetSystemType(accessInfo.TypeInfo.BuiltInType, accessInfo.TypeInfo.ValueRank, m_session.Factory);
         }
 
         /// <summary>
@@ -1157,7 +1180,7 @@ namespace Opc.Ua.Client.Controls.Common
 
             StringBuilder buffer = new StringBuilder();
 
-            if (value != null)
+            if (!value.IsNull)
             {
                 XmlWriterSettings settings = new XmlWriterSettings();
                 settings.Indent = true;
@@ -1168,7 +1191,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                 using (XmlWriter writer = XmlWriter.Create(buffer, settings))
                 {
-                    using (XmlNodeReader reader = new XmlNodeReader(value))
+                    using (XmlNodeReader reader = new XmlNodeReader((System.Xml.XmlElement)value))
                     {
                         writer.WriteNode(reader, false);
                     }
@@ -1280,9 +1303,7 @@ namespace Opc.Ua.Client.Controls.Common
                 {
                     string text = null;
 
-                    ExtensionObject extension = value as ExtensionObject;
-
-                    if (extension != null)
+                    if (value is ExtensionObject extension)
                     {
                         if (extension.Body is byte[])
                         {
@@ -1306,7 +1327,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                         if (encodeable != null)
                         {
-                            text = Variant.From(encodeable).ToString();
+                            text = new Variant(encodeable).ToString();
                         }
                     }
 
@@ -1319,7 +1340,7 @@ namespace Opc.Ua.Client.Controls.Common
                 }
             }
 
-            return (string)TypeInfo.Cast(value, BuiltInType.String);
+            return (string)new Variant(value).ConvertTo(BuiltInType.String).Value;
         }
 
         /// <summary>
@@ -1448,7 +1469,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (IsSimpleValue(info))
                     {
-                        TypeInfo.Cast(e.FormattedValue, info.TypeInfo.BuiltInType);
+                        new Variant(e.FormattedValue).ConvertTo(info.TypeInfo.BuiltInType);
                     }
                 }
             }
@@ -1470,7 +1491,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (IsSimpleValue(info))
                     {
-                        object newValue = TypeInfo.Cast((string)source.Row[3], info.TypeInfo.BuiltInType);
+                        object newValue = new Variant((string)source.Row[3]).ConvertTo(info.TypeInfo.BuiltInType).Value;
                         info.Value = newValue;
                         UpdateParent(info);
                     }
@@ -1501,9 +1522,7 @@ namespace Opc.Ua.Client.Controls.Common
 
             if (info.PropertyInfo != null && info.Parent.TypeInfo.ValueRank < 0)
             {
-                ExtensionObject extension = parentValue as ExtensionObject;
-
-                if (extension != null)
+                if (parentValue is ExtensionObject extension)
                 {
                     parentValue = extension.Body;
                 }
@@ -1537,7 +1556,7 @@ namespace Opc.Ua.Client.Controls.Common
                 {
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        array.SetValue(Variant.From(info.Value), indexes);
+                        array.SetValue(new Variant(info.Value), indexes);
                     }
                     else
                     {
@@ -1550,7 +1569,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        list[indexes[0]] = Variant.From(info.Value);
+                        list[indexes[0]] = new Variant(info.Value);
                     }
                     else
                     {

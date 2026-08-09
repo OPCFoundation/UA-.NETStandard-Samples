@@ -90,7 +90,7 @@ namespace Opc.Ua.Client.Controls
                 SubjectNameTB.Text = certificate.SubjectName;
                 ThumbprintTB.Text = certificate.Thumbprint;
 
-                X509Certificate2 data = await certificate.FindAsync(ct: ct);
+                X509Certificate2 data = await FindCertificateAsync(certificate, ct);
 
                 if (data != null)
                 {
@@ -142,7 +142,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     // fill in application uri.
-                    string applicationUri = X509Utils.GetApplicationUrisFromCertificate(data)[0];
+                    string applicationUri = X509Utils.GetApplicationUrisFromCertificate(Certificate.From(data))[0];
 
                     if (!String.IsNullOrEmpty(applicationUri))
                     {
@@ -152,7 +152,7 @@ namespace Opc.Ua.Client.Controls
                     // fill in domains.
                     buffer = new StringBuilder();
 
-                    foreach (string domain in X509Utils.GetDomainsFromCertificate(data))
+                    foreach (string domain in X509Utils.GetDomainsFromCertificate(Certificate.From(data)))
                     {
                         if (buffer.Length > 0)
                         {
@@ -179,6 +179,29 @@ namespace Opc.Ua.Client.Controls
             }
 
             return true;
+        }
+        #endregion
+
+        #region Private Methods
+        private async Task<X509Certificate2> FindCertificateAsync(CertificateIdentifier certificate, CancellationToken ct = default)
+        {
+            if (certificate?.Certificate != null)
+            {
+                return certificate.Certificate;
+            }
+
+            if (certificate == null || String.IsNullOrEmpty(certificate.StoreType) || String.IsNullOrEmpty(certificate.StorePath) || String.IsNullOrEmpty(certificate.Thumbprint))
+            {
+                return null;
+            }
+
+            CertificateStoreIdentifier storeId = new CertificateStoreIdentifier { StoreType = certificate.StoreType, StorePath = certificate.StorePath };
+
+            using (ICertificateStore store = storeId.OpenStore(m_telemetry))
+            {
+                var certificates = await store.FindByThumbprintAsync(certificate.Thumbprint, ct);
+                return certificates.Count > 0 ? certificates[0].AsX509Certificate2() : null;
+            }
         }
         #endregion
 
@@ -225,7 +248,7 @@ namespace Opc.Ua.Client.Controls
                     m_currentDirectory = Environment.CurrentDirectory;
                 }
 
-                X509Certificate2 certificate = await m_certificate.FindAsync();
+                X509Certificate2 certificate = await FindCertificateAsync(m_certificate);
 
                 if (certificate == null)
                 {

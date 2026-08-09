@@ -80,9 +80,12 @@ namespace Opc.Ua.Client.Controls
             }
 
             CertificateIdentifier id = new CertificateIdentifier();
+            if (CertificatesCTRL.SelectedCertificate != null)
+            {
+                id.RawData = CertificatesCTRL.SelectedCertificate.RawData;
+            }
             id.StoreType = CertificateStoreCTRL.StoreType;
             id.StorePath = CertificateStoreCTRL.StorePath;
-            id.Certificate = CertificatesCTRL.SelectedCertificate;
             return id;
         }
 

@@ -379,7 +379,7 @@ namespace Opc.Ua.Client.Controls
             this.SystemElementBTN.Name = "SystemElementBTN";
             this.SystemElementBTN.NodeControl = this.SystemElementTB;
             this.SystemElementBTN.ReferenceTypeIds = null;
-            this.SystemElementBTN.RootId = null;
+            this.SystemElementBTN.RootId = Opc.Ua.NodeId.Null;
             this.SystemElementBTN.ClearSelectedNode();
             this.SystemElementBTN.SelectedReference = null;
             this.SystemElementBTN.Session = null;

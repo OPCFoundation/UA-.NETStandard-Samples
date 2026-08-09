@@ -202,7 +202,7 @@ namespace Opc.Ua.Client.Controls
             this.StructureTypeBTN.Name = "StructureTypeBTN";
             this.StructureTypeBTN.NodeControl = this.StructureTypeTB;
             this.StructureTypeBTN.ReferenceTypeIds = null;
-            this.StructureTypeBTN.RootId = null;
+            this.StructureTypeBTN.RootId = Opc.Ua.NodeId.Null;
             this.StructureTypeBTN.ClearSelectedNode();
             this.StructureTypeBTN.SelectedReference = null;
             this.StructureTypeBTN.Session = null;

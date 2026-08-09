@@ -134,7 +134,7 @@ namespace Opc.Ua.Client.Controls
 
             if (configuration != null && configuration.ClientConfiguration != null)
             {
-                discoveryUrls = configuration.ClientConfiguration.WellKnownDiscoveryUrls;
+                discoveryUrls = configuration.ClientConfiguration.WellKnownDiscoveryUrls.ToList();
             }
 
             if (discoveryUrls == null || discoveryUrls.Count == 0)
@@ -269,10 +269,12 @@ namespace Opc.Ua.Client.Controls
                     return false;
                 }
 
-                ServerOnNetworkCollection servers;
-                (servers, lastCounterResetTime) = await client.FindServersOnNetworkAsync(startingRecordId, maxRecordsToReturn, serverCapabilityFilter, ct);
+                ArrayOf<ServerOnNetwork> servers;
+                DateTimeUtc lastReset;
+                (servers, lastReset) = await client.FindServersOnNetworkAsync(startingRecordId, maxRecordsToReturn, serverCapabilityFilter, ct);
+                lastCounterResetTime = (DateTime)lastReset;
                 m_discoveryUrl = discoveryUrl.ToString();
-                OnUpdateServers(servers);
+                OnUpdateServers(new ServerOnNetworkCollection(servers.ToArray()));
                 return true;
             }
             catch (Exception e)

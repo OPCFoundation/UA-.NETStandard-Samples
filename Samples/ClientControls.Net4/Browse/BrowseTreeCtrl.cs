@@ -244,7 +244,7 @@ namespace Opc.Ua.Client.Controls
                 return false;
             }
 
-            await UpdateNodeAsync(parent, results[0].References, ct);
+            await UpdateNodeAsync(parent, results[0].References.ToArray(), ct);
 
             while (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
@@ -265,7 +265,7 @@ namespace Opc.Ua.Client.Controls
                     return false;
                 }
 
-                await UpdateNodeAsync(parent, results[0].References, ct);
+                await UpdateNodeAsync(parent, results[0].References.ToArray(), ct);
             }
 
             return true;

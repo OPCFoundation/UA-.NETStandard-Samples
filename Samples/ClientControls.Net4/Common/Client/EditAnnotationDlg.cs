@@ -80,7 +80,7 @@ namespace Opc.Ua.Client.Controls
                 annotation.Message = "<insert your message here>";
             }
 
-            AnnotationTimeDP.Value = annotation.AnnotationTime;
+            AnnotationTimeDP.Value = (DateTime)annotation.AnnotationTime;
             UserNameTB.Text = annotation.UserName;
             CommentTB.Text = annotation.Message;
 

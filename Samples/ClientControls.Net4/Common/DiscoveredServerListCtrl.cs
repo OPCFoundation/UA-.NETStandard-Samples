@@ -265,7 +265,8 @@ namespace Opc.Ua.Client.Controls
                     DiagnosticsMasks.None,
                     ct);
 
-                ApplicationDescriptionCollection servers = await client.FindServersAsync(ArrayOf<string>.Null, ct);
+                ApplicationDescriptionCollection servers = new ApplicationDescriptionCollection();
+                servers.AddRange(await client.FindServersAsync(ArrayOf<string>.Null, ct));
                 m_discoveryUrl = discoveryUrl.ToString();
                 OnUpdateServers(servers);
                 return true;

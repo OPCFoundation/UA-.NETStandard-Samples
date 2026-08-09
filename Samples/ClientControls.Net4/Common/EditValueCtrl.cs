@@ -88,7 +88,7 @@ namespace Opc.Ua.Client.Controls
             // check if the value needs to be updated.
             if (m_textChanged)
             {
-                object value = TypeInfo.Cast(ValueTB.Text, TypeInfo.Scalars.String, sourceType.BuiltInType);
+                object value = new Variant(ValueTB.Text, TypeInfo.Scalars.String).ConvertTo(sourceType.BuiltInType).Value;
                 m_value = new Variant(value, sourceType);
             }
 
@@ -120,7 +120,7 @@ namespace Opc.Ua.Client.Controls
             // convert to target type.
             if (TargetType != null && TargetType.BuiltInType != sourceType.BuiltInType)
             {
-                m_value = new Variant(TypeInfo.Cast(value.Value, sourceType, TargetType.BuiltInType), TargetType);
+                m_value = new Variant(new Variant(value.Value, sourceType).ConvertTo(TargetType.BuiltInType).Value, TargetType);
                 sourceType = TargetType;
             }
             else
@@ -139,7 +139,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // display as editable text.
-            ValueTB.Text = (string)TypeInfo.Cast(m_value.Value, sourceType, BuiltInType.String);
+            ValueTB.Text = (string)new Variant(m_value.Value, sourceType).ConvertTo(BuiltInType.String).Value;
             ValueTB.Enabled = true;
         }
 
