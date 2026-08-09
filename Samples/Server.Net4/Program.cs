@@ -85,7 +85,7 @@ namespace Opc.Ua.Sample
 
                 // start the server.
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                application.StartAsync(new SampleServer()).Wait();
+                application.StartAsync(new SampleServer(m_telemetry)).Wait();
                 #pragma warning restore CA2000
 
                 // run the application interactively.
