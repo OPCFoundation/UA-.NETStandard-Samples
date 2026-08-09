@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -204,8 +205,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -238,8 +239,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -256,7 +257,7 @@ namespace Opc.Ua.Sample.Controls
                 return DateTime.MinValue;
             }
 
-            DateTime startTime = data.DataValues[0].SourceTimestamp;
+            DateTime startTime = data.DataValues[0].SourceTimestamp.ToDateTime();
 
             if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
@@ -270,8 +271,8 @@ namespace Opc.Ua.Sample.Controls
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = response.Results.ToList();
+                diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -323,8 +324,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -351,7 +352,7 @@ namespace Opc.Ua.Sample.Controls
             details.EndTime = EndTimeDP.Value.ToUniversalTime();
             details.ProcessingInterval = (double)ResampleIntervalNP.Value;
 
-            NodeId aggregateId = null;
+            NodeId aggregateId = NodeId.Null;
 
             switch ((string)AggregateCB.SelectedItem)
             {
@@ -364,7 +365,7 @@ namespace Opc.Ua.Sample.Controls
                 case BrowseNames.AggregateFunction_Total: { aggregateId = ObjectIds.AggregateFunction_Total; break; }
             }
 
-            details.AggregateType.Add(aggregateId);
+            details.AggregateType = details.AggregateType.AddItem(aggregateId);
 
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
@@ -385,8 +386,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

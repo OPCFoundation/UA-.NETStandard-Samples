@@ -241,14 +241,14 @@ namespace Opc.Ua.Sample.Controls
             {
                 // stop any reconnect operation.
                 m_reconnectHandler?.CancelReconnect();
-                Utils.SilentDispose(m_reconnectHandler);
+                m_reconnectHandler?.Dispose();
 
                 m_reconnectHandler = new SessionReconnectHandler(telemetry, true);
                 session.TransferSubscriptionsOnReconnect = true;
 
                 m_session = session;
                 m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
-                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, m_telemetry, ct);
+                await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, m_telemetry, ct);
                 StandardClient_KeepAlive(m_session, null);
             }
         }
@@ -341,11 +341,11 @@ namespace Opc.Ua.Sample.Controls
                         session.KeepAlive -= StandardClient_KeepAlive;
                         m_session = m_reconnectHandler.Session as Session;
                         m_session.KeepAlive += StandardClient_KeepAlive;
-                        Utils.SilentDispose(session);
+                        session?.Dispose();
                     }
                 }
 
-                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, m_telemetry);
+                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, m_telemetry);
 
                 SessionsCTRL.Reload(m_session);
 
@@ -388,7 +388,11 @@ namespace Opc.Ua.Sample.Controls
                 #pragma warning restore CA2000
                     m_configuration,
                     m_endpoints,
-                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true),
+                    await m_configuration.CertificateManager.CertificateProvider.GetPrivateKeyCertificateAsync(
+                        m_configuration.SecurityConfiguration.ApplicationCertificate,
+                        null,
+                        null,
+                        CancellationToken.None),
                     m_telemetry);
             }
             catch (Exception exception)
@@ -428,8 +432,8 @@ namespace Opc.Ua.Sample.Controls
                 if (serverOnNetwork != null)
                 {
                     ApplicationDescription server = new ApplicationDescription();
-                    server.ApplicationName = serverOnNetwork.ServerName;
-                    server.DiscoveryUrls.Add(serverOnNetwork.DiscoveryUrl);
+                    server.ApplicationName = new LocalizedText(serverOnNetwork.ServerName);
+                    server.DiscoveryUrls = server.DiscoveryUrls.AddItem(serverOnNetwork.DiscoveryUrl);
 
                     ConfiguredEndpoint endpoint = new ConfiguredEndpoint(server, EndpointConfiguration.Create(m_configuration));
 

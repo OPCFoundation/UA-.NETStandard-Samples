@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -149,7 +150,7 @@ namespace Opc.Ua.Sample.Controls
                 valueId.NodeId = m_nodeId;
                 valueId.AttributeId = attributeId;
                 valueId.IndexRange = null;
-                valueId.DataEncoding = null;
+                valueId.DataEncoding = QualifiedName.Null;
 
                 nodesToRead.Add(valueId);
             }
@@ -162,8 +163,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            List<DataValue> values = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> values = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -209,7 +210,7 @@ namespace Opc.Ua.Sample.Controls
             browser.NodeClassMask = (int)NodeClass.Variable;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = await browser.BrowseAsync(m_nodeId, ct);
+            var references = await browser.BrowseAsync(m_nodeId, ct);
 
             foreach (ReferenceDescription reference in references)
             {
@@ -218,7 +219,7 @@ namespace Opc.Ua.Sample.Controls
                 valueId.NodeId = (NodeId)reference.NodeId;
                 valueId.AttributeId = Attributes.Value;
                 valueId.IndexRange = null;
-                valueId.DataEncoding = null;
+                valueId.DataEncoding = QualifiedName.Null;
 
                 nodesToRead.Add(valueId);
             }
@@ -237,8 +238,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            List<DataValue> values = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> values = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -284,7 +285,7 @@ namespace Opc.Ua.Sample.Controls
             browser.NodeClassMask = 0;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = await browser.BrowseAsync(m_nodeId, ct);
+            var references = await browser.BrowseAsync(m_nodeId, ct);
 
             // add results to list.
             foreach (ReferenceDescription reference in references)
@@ -318,7 +319,7 @@ namespace Opc.Ua.Sample.Controls
 
                 case Attributes.DataType:
                 {
-                    NodeId datatypeId = value as NodeId;
+                    NodeId datatypeId = value is NodeId nodeId ? nodeId : NodeId.Null;
 
                     if (!datatypeId.IsNull)
                     {

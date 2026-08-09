@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -127,15 +128,15 @@ namespace Opc.Ua.Sample.Controls
                     default);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                CallMethodResultCollection results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                List<CallMethodResult> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 if (StatusCode.IsBad(results[0].StatusCode))
                 {
                     throw new ServiceResultException(new ServiceResult(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable));
                 }
 
-                await OutputArgumentsCTRL.SetValuesAsync(results[0].OutputArguments);
+                await OutputArgumentsCTRL.SetValuesAsync(results[0].OutputArguments.ToList());
 
                 if (results[0].OutputArguments.Count == 0)
                 {

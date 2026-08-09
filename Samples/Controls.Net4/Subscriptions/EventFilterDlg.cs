@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -70,8 +71,8 @@ namespace Opc.Ua.Sample.Controls
             m_telemetry = telemetry;
             m_filter = filter;
 
-            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, null, telemetry);
-            SelectClauseCTRL.Initialize(session, filter.SelectClauses);
+            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, NodeId.Null, telemetry);
+            SelectClauseCTRL.Initialize(session, filter.SelectClauses.ToList());
             ContentFilterCTRL.Initialize(session, filter.WhereClause, telemetry);
             FilterOperandsCTRL.Initialize(session, null, -1, telemetry);
 
@@ -175,7 +176,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 EventFilter filter = new EventFilter();
 
-                filter.SelectClauses.AddRange(SelectClauseCTRL.GetSelectClauses());
+                filter.SelectClauses = SelectClauseCTRL.GetSelectClauses().ToArray();
                 filter.WhereClause = ContentFilterCTRL.GetFilter();
 
                 EventFilter.Result result = filter.Validate(new FilterContext(m_session.NamespaceUris, m_session.TypeTree, m_telemetry));

@@ -67,10 +67,10 @@ namespace Opc.Ua.Sample
             m_session = session;
             m_details = details;
 
-            StartTimeCTRL.Value = ToControlDateTime(details.StartTime);
-            StartTimeSpecifiedCHK.Checked = details.StartTime != DateTime.MinValue;
-            EndTimeCTRL.Value = ToControlDateTime(details.EndTime);
-            EndTimeSpecifiedCHK.Checked = details.EndTime != DateTime.MinValue;
+            StartTimeCTRL.Value = ToControlDateTime(details.StartTime.ToDateTime());
+            StartTimeSpecifiedCHK.Checked = details.StartTime.ToDateTime() != DateTime.MinValue;
+            EndTimeCTRL.Value = ToControlDateTime(details.EndTime.ToDateTime());
+            EndTimeSpecifiedCHK.Checked = details.EndTime.ToDateTime() != DateTime.MinValue;
             MaxValuesCTRL.Value = details.NumValuesPerNode;
             IncludeBoundsCHK.Checked = details.ReturnBounds;
             IsModifiedCHK.Checked = details.IsReadModified;

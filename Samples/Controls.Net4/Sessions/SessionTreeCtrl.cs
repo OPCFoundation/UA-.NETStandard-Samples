@@ -182,7 +182,7 @@ namespace Opc.Ua.Sample.Controls
 
             Telemetry = telemetry;
 
-            EndpointDescriptionCollection availableEndpoints = null;
+            List<EndpointDescription> availableEndpoints = null;
 
             // check if the endpoint needs to be updated.
             if (endpoint.UpdateBeforeConnect)
@@ -206,8 +206,7 @@ namespace Opc.Ua.Sample.Controls
             // copy the message context.
             m_messageContext = m_configuration.CreateMessageContext();
 
-            X509Certificate2 clientCertificate = null;
-            X509Certificate2Collection clientCertificateChain = null;
+            Opc.Ua.Security.Certificates.Certificate clientCertificate = null;
 
             if (endpoint.Description.SecurityPolicyUri != SecurityPolicies.None)
             {
@@ -216,21 +215,17 @@ namespace Opc.Ua.Sample.Controls
                     throw ServiceResultException.Create(StatusCodes.BadConfigurationError, "ApplicationCertificate must be specified.");
                 }
 
-                clientCertificate = await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true, ct: ct);
+                clientCertificate = await m_configuration.CertificateManager.CertificateProvider.GetPrivateKeyCertificateAsync(
+                    m_configuration.SecurityConfiguration.ApplicationCertificate,
+                    null,
+                    null,
+                    ct);
 
                 if (clientCertificate == null)
                 {
                     throw ServiceResultException.Create(StatusCodes.BadConfigurationError, "ApplicationCertificate cannot be found.");
                 }
 
-                // load certificate chain
-                clientCertificateChain = new X509Certificate2Collection(clientCertificate);
-                List<CertificateIdentifier> issuers = new List<CertificateIdentifier>();
-                await m_configuration.CertificateManager.GetIssuersAsync(clientCertificate, issuers, ct);
-                for (int i = 0; i < issuers.Count; i++)
-                {
-                    clientCertificateChain.Add(issuers[i].Certificate);
-                }
             }
 
             // create the channel.
@@ -239,7 +234,6 @@ namespace Opc.Ua.Sample.Controls
                 endpoint.Description,
                 endpoint.Configuration,
                 clientCertificate,
-                m_configuration.SecurityConfiguration.SendCertificateChain ? clientCertificateChain : null,
                 m_messageContext,
                 ct);
 
@@ -250,7 +244,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Opens a new session.
         /// </summary>
-        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, EndpointDescriptionCollection availableEndpoints, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, List<EndpointDescription> availableEndpoints, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (channel == null) throw new ArgumentNullException(nameof(channel));
 
@@ -507,7 +501,7 @@ namespace Opc.Ua.Sample.Controls
             // update address space control.
             if (m_AddressSpaceCtrl != null)
             {
-                m_AddressSpaceCtrl.SetViewAsync(session, BrowseViewType.Objects, null, Telemetry);
+                m_AddressSpaceCtrl.SetViewAsync(session, BrowseViewType.Objects, NodeId.Null, Telemetry);
             }
 
             // update notification messages control.
@@ -719,7 +713,7 @@ namespace Opc.Ua.Sample.Controls
                 if (session != null)
                 {
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    new AddressSpaceDlg().Show(session, BrowseViewType.All, null, Telemetry);
+                    new AddressSpaceDlg().Show(session, BrowseViewType.All, NodeId.Null, Telemetry);
                     #pragma warning restore CA2000
                 }
             }
@@ -747,7 +741,7 @@ namespace Opc.Ua.Sample.Controls
                 if (session != null)
                 {
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    new AddressSpaceDlg().Show(session, BrowseViewType.Objects, null, Telemetry);
+                    new AddressSpaceDlg().Show(session, BrowseViewType.Objects, NodeId.Null, Telemetry);
                     #pragma warning restore CA2000
                 }
             }
@@ -831,7 +825,7 @@ namespace Opc.Ua.Sample.Controls
                 if (session != null)
                 {
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    new AddressSpaceDlg().Show(session, BrowseViewType.DataTypes, null, Telemetry);
+                    new AddressSpaceDlg().Show(session, BrowseViewType.DataTypes, NodeId.Null, Telemetry);
                     #pragma warning restore CA2000
                 }
             }
@@ -859,7 +853,7 @@ namespace Opc.Ua.Sample.Controls
                 if (session != null)
                 {
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    new AddressSpaceDlg().Show(session, BrowseViewType.ReferenceTypes, null, Telemetry);
+                    new AddressSpaceDlg().Show(session, BrowseViewType.ReferenceTypes, NodeId.Null, Telemetry);
                     #pragma warning restore CA2000
                 }
             }
@@ -920,11 +914,11 @@ namespace Opc.Ua.Sample.Controls
 
                     browser.BrowseDirection = BrowseDirection.Forward;
                     browser.IncludeSubtypes = true;
-                    browser.ReferenceTypeId = null;
+                    browser.ReferenceTypeId = NodeId.Null;
                     browser.NodeClassMask = (int)NodeClass.View;
                     browser.ContinueUntilDone = true;
 
-                    ReferenceDescriptionCollection references = await browser.BrowseAsync(Objects.ViewsFolder);
+                    var references = await browser.BrowseAsync(new NodeId(Objects.ViewsFolder));
 
                     foreach (ReferenceDescription reference in references)
                     {
@@ -1162,7 +1156,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (datachange != null)
                     {
-                        value.Value = (DataValue)Utils.Clone(datachange.Value);
+                        value.Value = datachange.Value;
                     }
 
                     values.Add(value);
@@ -1185,7 +1179,7 @@ namespace Opc.Ua.Sample.Controls
 
                             if (datachange != null)
                             {
-                                value.Value = (DataValue)Utils.Clone(datachange.Value);
+                                value.Value = datachange.Value;
                             }
 
                             values.Add(value);

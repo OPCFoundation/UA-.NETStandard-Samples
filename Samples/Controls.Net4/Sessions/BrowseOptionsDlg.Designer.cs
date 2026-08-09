@@ -254,7 +254,7 @@ namespace Opc.Ua.Sample.Controls
             this.ReferenceTypeCTRL.MaximumSize = new System.Drawing.Size(4096, 21);
             this.ReferenceTypeCTRL.MinimumSize = new System.Drawing.Size(200, 21);
             this.ReferenceTypeCTRL.Name = "ReferenceTypeCTRL";
-            this.ReferenceTypeCTRL.SelectedTypeId = null;
+            this.ReferenceTypeCTRL.SelectedTypeId = Opc.Ua.NodeId.Null;
             this.ReferenceTypeCTRL.Size = new System.Drawing.Size(200, 21);
             this.ReferenceTypeCTRL.TabIndex = 14;
             // 

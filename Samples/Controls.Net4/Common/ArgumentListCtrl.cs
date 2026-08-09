@@ -97,15 +97,15 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // select the property to find.
-            QualifiedName browseName = null;
+            QualifiedName browseName = QualifiedName.Null;
 
             if (inputArgs)
             {
-                browseName = Opc.Ua.BrowseNames.InputArguments;
+                browseName = new QualifiedName(Opc.Ua.BrowseNames.InputArguments);
             }
             else
             {
-                browseName = Opc.Ua.BrowseNames.OutputArguments;
+                browseName = new QualifiedName(Opc.Ua.BrowseNames.OutputArguments);
             }
 
             // fetch the argument list.
@@ -147,7 +147,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument != null)
                 {
-                    values.Add(Variant.From(argument.Value));
+                    values.Add(new Variant(argument.Value));
                 }
             }
 
@@ -234,7 +234,7 @@ namespace Opc.Ua.Sample.Controls
                         {
                             if (argument.ValueRank == ValueRanks.Scalar)
                             {
-                                argument.Value = new ExtensionObject(Activator.CreateInstance(type));
+                                argument.Value = new ExtensionObject(ExpandedNodeId.Null, Activator.CreateInstance(type));
                             }
                             else
                             {

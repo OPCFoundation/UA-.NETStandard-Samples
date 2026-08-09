@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -61,13 +62,13 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Session session, ReadValueIdCollection valueIds, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task ShowAsync(Session session, List<ReadValueId> valueIds, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_session = session;
 
-            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, telemetry, ct);
+            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, telemetry, ct);
             ReadValuesCTRL.Initialize(session, valueIds, telemetry);
 
             MoveBTN_ClickAsync(BackBTN, null);
@@ -78,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
 
         private async Task ReadAsync(CancellationToken ct = default)
         {
-            ReadValueIdCollection nodesToRead = ReadValuesCTRL.GetValueIds();
+            List<ReadValueId> nodesToRead = ReadValuesCTRL.GetValueIds();
 
             if (nodesToRead == null || nodesToRead.Count == 0)
             {
@@ -92,8 +93,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            List<DataValue> values = response.Results;
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> values = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

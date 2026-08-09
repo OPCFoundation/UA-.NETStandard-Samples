@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -155,10 +156,10 @@ namespace Opc.Ua.Sample.Controls
             browser.NodeClassMask = (int)NodeClass.Variable;
             browser.ContinueUntilDone = true;
 
-            ReferenceDescriptionCollection references = await browser.BrowseAsync(node.NodeId, ct);
+            var references = await browser.BrowseAsync(node.NodeId, ct);
 
             // add propertoes to view.
-            foreach (ReferenceDescription reference in references)
+            foreach (ReferenceDescription reference in references.ToList())
             {
                 PropertyItem field = new PropertyItem();
 

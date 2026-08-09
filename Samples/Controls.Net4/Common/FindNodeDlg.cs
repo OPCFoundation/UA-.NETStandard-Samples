@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -87,8 +88,8 @@ namespace Opc.Ua.Sample.Controls
                     browsePaths,
                     default);
 
-                BrowsePathResultCollection results = response.Results;
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                List<BrowsePathResult> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 if (results != null && results.Count == 1)
                 {

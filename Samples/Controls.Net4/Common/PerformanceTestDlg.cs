@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -64,7 +65,7 @@ namespace Opc.Ua.Sample.Controls
         private ApplicationConfiguration m_configuration;
         private ConfiguredEndpointCollection m_endpoints;
         private ServiceMessageContext m_messageContext;
-        private X509Certificate2 m_clientCertificate;
+        private Opc.Ua.Security.Certificates.Certificate m_clientCertificate;
         private string m_filePath;
         private ITelemetryContext m_telemetry;
 
@@ -74,7 +75,7 @@ namespace Opc.Ua.Sample.Controls
         public EndpointDescription ShowDialog(
             ApplicationConfiguration configuration,
             ConfiguredEndpointCollection endpoints,
-            X509Certificate2 clientCertificate,
+            Opc.Ua.Security.Certificates.Certificate clientCertificate,
             ITelemetryContext telemetry)
         {
             m_configuration = configuration;
@@ -293,7 +294,7 @@ namespace Opc.Ua.Sample.Controls
                     ct);
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                client = new SessionClient(channel);
+                client = new SessionClient(channel, telemetry);
                 #pragma warning restore CA2000
 
                 List<int> requestSizes = new List<int>(result.Results.Keys);
@@ -337,8 +338,8 @@ namespace Opc.Ua.Sample.Controls
                         nodesToRead,
                         ct);
 
-                    List<DataValue> results = response.Results;
-                    List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
+                    List<DataValue> results = response.Results.ToList();
+                    List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                     if (results.Count != count)
                     {
@@ -357,8 +358,8 @@ namespace Opc.Ua.Sample.Controls
                             nodesToRead,
                             ct);
 
-                        results = response.Results;
-                        diagnosticInfos = response.DiagnosticInfos;
+                        results = response.Results.ToList();
+                        diagnosticInfos = response.DiagnosticInfos.ToList();
 
                         if (results.Count != count)
                         {

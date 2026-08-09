@@ -89,7 +89,7 @@ namespace Opc.Ua.Sample.Controls
             m_subscription = subscription;
 
             BrowseCTRL.AllowPick = true;
-            BrowseCTRL.SetViewAsync(subscription.Session as Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, null, telemetry);
+            BrowseCTRL.SetViewAsync(subscription.Session as Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, NodeId.Null, telemetry);
 
             MonitoredItemsCTRL.Initialize(subscription, telemetry);
         }
