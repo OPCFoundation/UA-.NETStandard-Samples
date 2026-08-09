@@ -106,7 +106,7 @@ namespace TestData
         {
             lock (Lock)
             {
-                variable.Value = value;
+                variable.Value = new Variant(value);
                 variable.StatusCode = statusCode;
                 variable.Timestamp = timestamp;
 
@@ -170,8 +170,8 @@ namespace TestData
                     ConditionState condition = node as ConditionState;
                     if (condition != null && !Object.ReferenceEquals(condition.Parent, conditionsFolder))
                     {
-                        condition.AddNotifier(SystemContext, null, true, conditionsFolder);
-                        conditionsFolder.AddNotifier(SystemContext, null, false, condition);
+                        condition.AddNotifier(SystemContext, NodeId.Null, true, conditionsFolder);
+                        conditionsFolder.AddNotifier(SystemContext, NodeId.Null, false, condition);
                     }
                 }
 
@@ -432,11 +432,12 @@ namespace TestData
 
             HistoryDataReader reader = null;
             HistoryData data = new HistoryData();
+            List<DataValue> values = data.DataValues.ToList();
 
             if (!nodeToRead.ContinuationPoint.IsNull && nodeToRead.ContinuationPoint.Length > 0)
             {
                 // restore the continuation point.
-                reader = RestoreDataReader(serverContext, nodeToRead.ContinuationPoint);
+                reader = RestoreDataReader(serverContext, nodeToRead.ContinuationPoint.ToArray());
 
                 if (reader == null)
                 {
@@ -446,14 +447,14 @@ namespace TestData
                 // node id must match previous node id.
                 if (reader.VariableId != nodeToRead.NodeId)
                 {
-                    Utils.SilentDispose(reader);
+                    reader.Dispose();
                     return StatusCodes.BadContinuationPointInvalid;
                 }
 
                 // check if releasing continuation points.
                 if (releaseContinuationPoints)
                 {
-                    Utils.SilentDispose(reader);
+                    reader.Dispose();
                     return ServiceResult.Good;
                 }
             }
@@ -480,7 +481,7 @@ namespace TestData
                     timestampsToReturn,
                     nodeToRead.ParsedIndexRange,
                     nodeToRead.DataEncoding,
-                    data.DataValues);
+                    values);
             }
 
             // continue reading data until done or max values reached.
@@ -489,7 +490,9 @@ namespace TestData
                 timestampsToReturn,
                 nodeToRead.ParsedIndexRange,
                 nodeToRead.DataEncoding,
-                data.DataValues);
+                values);
+
+            data.DataValues = values.ToArrayOf();
 
             // save continuation point.
             if (!complete)

@@ -227,9 +227,9 @@ namespace MemoryBuffer
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             MemoryTagState tag = node as MemoryTagState;
 
@@ -238,7 +238,7 @@ namespace MemoryBuffer
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (NumericRange.Empty != indexRange)
+            if (!indexRange.IsNull)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -262,7 +262,7 @@ namespace MemoryBuffer
                     return StatusCodes.BadOutOfService;
                 }
 
-                value = GetValueAtOffset(offset).Value;
+                value = GetValueAtOffset(offset);
             }
 
             statusCode = StatusCodes.Good;
@@ -279,9 +279,9 @@ namespace MemoryBuffer
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             MemoryTagState tag = node as MemoryTagState;
 
@@ -290,7 +290,7 @@ namespace MemoryBuffer
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            if (NumericRange.Empty != indexRange)
+            if (!indexRange.IsNull)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -331,7 +331,7 @@ namespace MemoryBuffer
                 {
                     case BuiltInType.UInt32:
                     {
-                        uint? valueToWrite = value as uint?;
+                        uint? valueToWrite = value.Value as uint?;
 
                         if (valueToWrite == null)
                         {
@@ -344,7 +344,7 @@ namespace MemoryBuffer
 
                     case BuiltInType.Double:
                     {
-                        double? valueToWrite = value as double?;
+                        double? valueToWrite = value.Value as double?;
 
                         if (valueToWrite == null)
                         {
@@ -632,12 +632,11 @@ namespace MemoryBuffer
 
                     if (monitoredItems != null)
                     {
-                        DataValue value = new DataValue();
-
-                        value.WrappedValue = GetValueAtOffset(offset);
-                        value.StatusCode = StatusCodes.Good;
-                        value.ServerTimestamp = DateTime.UtcNow;
-                        value.SourceTimestamp = m_lastScanTime;
+                        DataValue value = new DataValue(
+                            GetValueAtOffset(offset),
+                            StatusCodes.Good,
+                            m_lastScanTime,
+                            DateTime.UtcNow);
 
                         for (int ii = 0; ii < monitoredItems.Length; ii++)
                         {

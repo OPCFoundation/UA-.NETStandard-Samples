@@ -39,7 +39,8 @@ namespace MemoryBuffer
     /// <summary>
     /// Stores the configuration the test node manager
     /// </summary>
-    [DataType]
+    // Namespaces.MemoryBuffer is generated in the same pass and is unavailable to the [DataType] generator.
+    [DataType(Namespace = "http://samples.org/UA/MemoryBuffer")]
     public partial class MemoryBufferConfiguration
     {
         #region Constructors
@@ -65,7 +66,7 @@ namespace MemoryBuffer
         /// </summary>
         private void Initialize()
         {
-            m_buffers = null;
+            m_buffers = default;
         }
         #endregion
 
@@ -73,8 +74,8 @@ namespace MemoryBuffer
         /// <summary>
         /// The buffers exposed by the memory 
         /// </summary>
-        [DataTypeField(Order = 1)]
-        public List<MemoryBufferInstance> Buffers
+        [DataTypeField(Order = 1, StructureHandling = StructureHandling.Inline)]
+        public ArrayOf<MemoryBufferInstance> Buffers
         {
             get { return m_buffers; }
             set { m_buffers = value; }
@@ -82,14 +83,15 @@ namespace MemoryBuffer
         #endregion
 
         #region Private Members
-        private List<MemoryBufferInstance> m_buffers;
+        private ArrayOf<MemoryBufferInstance> m_buffers;
         #endregion
     }
 
     /// <summary>
     /// Stores the configuration for a memory buffer instance.
     /// </summary>
-    [DataType]
+    // Namespaces.MemoryBuffer is generated in the same pass and is unavailable to the [DataType] generator.
+    [DataType(Namespace = "http://samples.org/UA/MemoryBuffer")]
     public partial class MemoryBufferInstance
     {
         #region Constructors

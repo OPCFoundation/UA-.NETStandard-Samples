@@ -303,15 +303,22 @@ namespace Opc.Ua.Sample
         public void ValueChanged(ISystemContext context)
         {
             DataValue value = new DataValue();
+            NumericRange indexRange = NumericRange.Null;
 
-            ServiceResult error = m_source.Node.ReadAttribute(context, m_attributeId, NumericRange.Empty, null, value);
+            ServiceResult error = m_source.Node.ReadAttribute(context, m_attributeId, indexRange, QualifiedName.Null, ref value);
 
             if (ServiceResult.IsBad(error))
             {
                 value = DataValue.FromStatusCode(error.StatusCode);
             }
 
-            value.ServerTimestamp = DateTime.UtcNow;
+            value = new DataValue(
+                value.WrappedValue,
+                value.StatusCode,
+                value.SourceTimestamp,
+                DateTime.UtcNow,
+                value.SourcePicoseconds,
+                value.ServerPicoseconds);
 
             QueueValue(value, error, false);
         }
@@ -502,7 +509,7 @@ namespace Opc.Ua.Sample
                 result.StatusCode = StatusCodes.Good;
                 result.RevisedSamplingInterval = m_samplingInterval;
                 result.RevisedQueueSize = 0;
-                result.FilterResult = null;
+                result.FilterResult = ExtensionObject.Null;
 
                 if (m_queue != null)
                 {
@@ -525,7 +532,7 @@ namespace Opc.Ua.Sample
                 result.StatusCode = StatusCodes.Good;
                 result.RevisedSamplingInterval = m_samplingInterval;
                 result.RevisedQueueSize = 0;
-                result.FilterResult = null;
+                result.FilterResult = ExtensionObject.Null;
 
                 if (m_queue != null)
                 {
@@ -572,34 +579,31 @@ namespace Opc.Ua.Sample
                     }
                 }
 
-                // make a shallow copy of the value.
+                // make a shallow copy of the value (DataValue is an immutable struct in 2.0).
+                DataValue queued = value;
+
                 if (value != null)
                 {
-                    DataValue copy = new DataValue();
-
-                    copy.WrappedValue = value.WrappedValue;
-                    copy.StatusCode = value.StatusCode;
-                    copy.SourceTimestamp = value.SourceTimestamp;
-                    copy.SourcePicoseconds = value.SourcePicoseconds;
-                    copy.ServerTimestamp = value.ServerTimestamp;
-                    copy.ServerPicoseconds = value.ServerPicoseconds;
-
-                    value = copy;
-
                     // ensure the data value matches the error status code.
                     if (error != null && error.StatusCode.Code != 0)
                     {
-                        value.StatusCode = error.StatusCode;
+                        queued = new DataValue(
+                            value.WrappedValue,
+                            error.StatusCode,
+                            value.SourceTimestamp,
+                            value.ServerTimestamp,
+                            value.SourcePicoseconds,
+                            value.ServerPicoseconds);
                     }
                 }
 
-                m_lastValue = value;
+                m_lastValue = queued;
                 m_lastError = error;
 
                 // queue value.
                 if (m_queue != null)
                 {
-                    m_queue.QueueValue(value, error);
+                    m_queue.QueueValue(queued, error);
                 }
 
                 // flag the item as ready to publish.
@@ -654,7 +658,7 @@ namespace Opc.Ua.Sample
                 {
                     m_nextSampleTime = DateTime.UtcNow.Ticks;
                     m_lastError = null;
-                    m_lastValue = null;
+                    m_lastValue = default;
                 }
 
                 m_monitoringMode = monitoringMode;
@@ -743,7 +747,7 @@ namespace Opc.Ua.Sample
                 // check if queuing is enabled.
                 if (m_queue != null && (!m_resendData || m_queue.ItemsInQueue != 0))
                 {
-                    DataValue value = null;
+                    DataValue value = default;
                     ServiceResult error = null;
 
                     while (m_queue.Publish(out value, out error))
@@ -783,7 +787,13 @@ namespace Opc.Ua.Sample
             {
                 if (value != null)
                 {
-                    value.StatusCode = value.StatusCode.SetSemanticsChanged(true);
+                    value = new DataValue(
+                        value.WrappedValue,
+                        value.StatusCode.SetSemanticsChanged(true),
+                        value.SourceTimestamp,
+                        value.ServerTimestamp,
+                        value.SourcePicoseconds,
+                        value.ServerPicoseconds);
                 }
 
                 if (error != null)
@@ -805,7 +815,13 @@ namespace Opc.Ua.Sample
             {
                 if (value != null)
                 {
-                    value.StatusCode = value.StatusCode.SetStructureChanged(true);
+                    value = new DataValue(
+                        value.WrappedValue,
+                        value.StatusCode.SetStructureChanged(true),
+                        value.SourceTimestamp,
+                        value.ServerTimestamp,
+                        value.SourcePicoseconds,
+                        value.ServerPicoseconds);
                 }
 
                 if (error != null)
@@ -827,18 +843,33 @@ namespace Opc.Ua.Sample
             MonitoredItemNotification item = new MonitoredItemNotification();
 
             item.ClientHandle = m_clientHandle;
-            item.Value = value;
+
+            DataValue notificationValue = value;
 
             // apply timestamp filter.
             if (m_timestampsToReturn != TimestampsToReturn.Server && m_timestampsToReturn != TimestampsToReturn.Both)
             {
-                item.Value.ServerTimestamp = DateTime.MinValue;
+                notificationValue = new DataValue(
+                    notificationValue.WrappedValue,
+                    notificationValue.StatusCode,
+                    notificationValue.SourceTimestamp,
+                    DateTime.MinValue,
+                    notificationValue.SourcePicoseconds,
+                    notificationValue.ServerPicoseconds);
             }
 
             if (m_timestampsToReturn != TimestampsToReturn.Source && m_timestampsToReturn != TimestampsToReturn.Both)
             {
-                item.Value.SourceTimestamp = DateTime.MinValue;
+                notificationValue = new DataValue(
+                    notificationValue.WrappedValue,
+                    notificationValue.StatusCode,
+                    DateTime.MinValue,
+                    notificationValue.ServerTimestamp,
+                    notificationValue.SourcePicoseconds,
+                    notificationValue.ServerPicoseconds);
             }
+
+            item.Value = notificationValue;
 
             notifications.Enqueue(item);
 

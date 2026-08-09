@@ -76,17 +76,17 @@ namespace TestData
             }
 
             // set the EU range.
-            BaseVariableState euRange = variable.FindChild(context, Opc.Ua.BrowseNames.EURange) as BaseVariableState;
+            BaseVariableState euRange = variable.FindChild(context, new QualifiedName(Opc.Ua.BrowseNames.EURange)) as BaseVariableState;
 
             if (euRange != null)
             {
                 if (context.TypeTable.IsTypeOf(variable.DataType, Opc.Ua.DataTypeIds.UInteger))
                 {
-                    euRange.Value = new Range(250, 50);
+                    euRange.Value = new Variant(new Range(250, 50));
                 }
                 else
                 {
-                    euRange.Value = new Range(100, -100);
+                    euRange.Value = new Variant(new Range(100, -100));
                 }
             }
 
@@ -99,26 +99,26 @@ namespace TestData
         public ServiceResult OnWriteAnalogValue(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             try
             {
 
-                BaseVariableState euRange = node.FindChild(context, Opc.Ua.BrowseNames.EURange) as BaseVariableState;
+                BaseVariableState euRange = node.FindChild(context, new QualifiedName(Opc.Ua.BrowseNames.EURange)) as BaseVariableState;
 
                 if (euRange == null)
                 {
                     return ServiceResult.Good;
                 }
 
-                Range range = euRange.Value as Range;
+                Range range = euRange.Value.Value as Range;
 
                 if (range == null)
                 {
                     return ServiceResult.Good;
                 }
 
-                Array array = value as Array;
+                Array array = value.Value as Array;
 
                 if (array != null)
                 {
@@ -142,7 +142,7 @@ namespace TestData
                     return ServiceResult.Good;
                 }
 
-                double number = Convert.ToDouble(value);
+                double number = Convert.ToDouble(value.Value);
 
                 if (number > range.High || number < range.Low)
                 {
@@ -162,7 +162,7 @@ namespace TestData
         /// </summary>
         protected void GenerateValue(TestDataSystem system, BaseVariableState variable)
         {
-            variable.Value = system.ReadValue(variable);
+            variable.Value = new Variant(system.ReadValue(variable));
             variable.Timestamp = DateTime.UtcNow;
             variable.StatusCode = StatusCodes.Good;
         }
@@ -196,10 +196,10 @@ namespace TestData
                     EventSeverity.MediumLow,
                     new LocalizedText(message));
 
-                e.Iterations = new PropertyState<uint>(e);
+                e.Iterations = PropertyState<uint>.With<VariantBuilder>(e);
                 e.Iterations.Value = count;
 
-                e.NewValueCount = new PropertyState<uint>(e);
+                e.NewValueCount = PropertyState<uint>.With<VariantBuilder>(e);
                 e.NewValueCount.Value = 10;
 
                 ReportEvent(context, e);
@@ -220,9 +220,9 @@ namespace TestData
             NodeState node,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            ref object value,
+            ref Variant value,
             ref StatusCode statusCode,
-            ref DateTime timestamp)
+            ref DateTimeUtc timestamp)
         {
             BaseVariableState variable = node as BaseVariableState;
 
@@ -245,7 +245,7 @@ namespace TestData
 
             try
             {
-                value = system.ReadValue(variable);
+                value = new Variant(system.ReadValue(variable));
 
                 statusCode = StatusCodes.Good;
                 timestamp = DateTime.UtcNow;

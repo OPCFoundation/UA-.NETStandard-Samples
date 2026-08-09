@@ -83,8 +83,8 @@ namespace Boiler
             StateMachineState machine,
             uint transitionId,
             uint causeId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             switch (causeId)
             {
@@ -288,7 +288,7 @@ namespace Boiler
             }
             catch (Exception e)
             {
-                m_logger.LogError(e, "Unexpected error during boiler simulation.");
+                Utils.LogError(e, "Unexpected error during boiler simulation.");
             }
         }
         #endregion

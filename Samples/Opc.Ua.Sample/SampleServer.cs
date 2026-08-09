@@ -42,6 +42,16 @@ namespace Opc.Ua.Sample
     /// </summary>
     public partial class SampleServer : ReverseConnectServer
     {
+        #region Constructors
+        /// <summary>
+        /// Initializes the server instance with the required telemetry context.
+        /// </summary>
+        public SampleServer(ITelemetryContext telemetry)
+            : base(telemetry)
+        {
+        }
+        #endregion
+
         #region Overridden Methods
         /// <summary>
         /// Initializes the server before it starts up.
@@ -103,7 +113,7 @@ namespace Opc.Ua.Sample
         /// the structure of the address space is stored in another system or when the address space is too large
         /// to keep in memory.
         /// </remarks>
-        protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
+        protected override IMasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         {
             Debug.WriteLine("Creating the Node Managers.");
 

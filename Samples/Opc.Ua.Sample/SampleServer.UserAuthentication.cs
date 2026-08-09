@@ -31,6 +31,7 @@ using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Security.Certificates;
 using Opc.Ua.Server;
 
 namespace Opc.Ua.Sample
@@ -54,14 +55,10 @@ namespace Opc.Ua.Sample
                     if (configuration.SecurityConfiguration.TrustedUserCertificates != null &&
                         configuration.SecurityConfiguration.UserIssuerCertificates != null)
                     {
-                        var certificateValidator = new CertificateValidator(ServerInternal.Telemetry);
-                        certificateValidator.UpdateAsync(configuration.SecurityConfiguration, configuration.ApplicationUri).Wait();
-                        certificateValidator.Update(configuration.SecurityConfiguration.UserIssuerCertificates,
-                            configuration.SecurityConfiguration.TrustedUserCertificates,
-                            configuration.SecurityConfiguration.RejectedCertificateStore);
-
-                        // set custom validator for user certificates.
-                        m_certificateValidator = certificateValidator.GetChannelValidator();
+                        // The server's CertificateManager already maps the configured
+                        // TrustedUserCertificates / UserIssuerCertificates onto the Users
+                        // trust list. Validate user certificates against it per call.
+                        m_certificateValidator = CertificateManager;
                     }
                 }
             }
@@ -80,7 +77,7 @@ namespace Opc.Ua.Sample
 
             if (userNameToken != null)
             {
-                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
+                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.Password.Span.ToArray()));
                 args.Identity = new UserIdentity(userNameToken);
                 if (m_logger.IsEnabled(LogLevel.Information))
                 {
@@ -94,7 +91,7 @@ namespace Opc.Ua.Sample
 
             if (x509Token != null)
             {
-                VerifyCertificate(x509Token.Certificate);
+                VerifyCertificate(x509Token.CertificateData);
                 args.Identity = new UserIdentity(x509Token);
                 if (m_logger.IsEnabled(LogLevel.Information))
                 {
@@ -122,7 +119,7 @@ namespace Opc.Ua.Sample
                 throw new ServiceResultException(new ServiceResult(
                     "http://opcfoundation.org/UA/Sample/",
                     new StatusCode(
-                    StatusCodes.BadIdentityTokenRejected,
+                    StatusCodes.BadIdentityTokenRejected.Code,
                     "InvalidPassword"),
                     new LocalizedText(info)));
             }
@@ -131,17 +128,24 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// Verifies that a certificate user token is trusted.
         /// </summary>
-        private void VerifyCertificate(X509Certificate2 certificate)
+        private void VerifyCertificate(ByteString certificateData)
         {
+            using Certificate certificate = Certificate.FromRawData(certificateData.Span.ToArray());
+
             try
             {
-                if (m_certificateValidator != null)
+                if (m_certificateValidator == null)
                 {
-                    m_certificateValidator.ValidateAsync(certificate, System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    throw new ServiceResultException(StatusCodes.BadIdentityTokenRejected);
                 }
-                else
+
+                CertificateValidationResult validationResult = m_certificateValidator
+                    .ValidateAsync(certificate, TrustListIdentifier.Users, System.Threading.CancellationToken.None)
+                    .GetAwaiter().GetResult();
+
+                if (!validationResult.IsValid)
                 {
-                    CertificateValidator.ValidateAsync(certificate, System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    throw new ServiceResultException(validationResult.StatusCode);
                 }
             }
             catch (Exception e)

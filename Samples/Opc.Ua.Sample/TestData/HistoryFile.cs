@@ -96,17 +96,16 @@ namespace TestData
 
                 if (position < 0 || position >= m_entries.Count)
                 {
-                    return null;
+                    return DataValue.Null;
                 }
 
                 HistoryEntry entry = m_entries[position];
 
-                DataValue value = new DataValue();
-
-                value.Value = entry.Value.Value;
-                value.ServerTimestamp = entry.Value.ServerTimestamp;
-                value.SourceTimestamp = entry.Value.SourceTimestamp;
-                value.StatusCode = entry.Value.StatusCode;
+                DataValue value = new DataValue(
+                    entry.Value.WrappedValue,
+                    entry.Value.StatusCode,
+                    entry.Value.SourceTimestamp,
+                    entry.Value.ServerTimestamp);
 
                 return value;
             }
@@ -128,17 +127,16 @@ namespace TestData
             {
                 if (position < 0 || position >= m_entries.Count)
                 {
-                    return null;
+                    return DataValue.Null;
                 }
 
                 HistoryEntry entry = m_entries[position];
 
-                DataValue value = new DataValue();
-
-                value.Value = entry.Value.Value;
-                value.ServerTimestamp = entry.Value.ServerTimestamp;
-                value.SourceTimestamp = entry.Value.SourceTimestamp;
-                value.StatusCode = entry.Value.StatusCode;
+                DataValue value = new DataValue(
+                    entry.Value.WrappedValue,
+                    entry.Value.StatusCode,
+                    entry.Value.SourceTimestamp,
+                    entry.Value.ServerTimestamp);
 
                 return value;
             }

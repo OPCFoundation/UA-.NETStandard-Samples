@@ -116,19 +116,24 @@ namespace TestData
                 {
                     HistoryEntry entry = new HistoryEntry();
 
-                    entry.Value = new DataValue();
-                    entry.Value.ServerTimestamp = now.AddSeconds(-(ii * 10));
-                    entry.Value.SourceTimestamp = entry.Value.ServerTimestamp.AddMilliseconds(1234);
+                    DateTime serverTimestamp = now.AddSeconds(-(ii * 10));
+                    Variant value = Variant.Null;
                     entry.IsModified = false;
 
                     switch (dataType)
                     {
                         case BuiltInType.Int32:
                         {
-                            entry.Value.Value = ii;
+                            value = Variant.From(ii);
                             break;
                         }
                     }
+
+                    entry.Value = new DataValue(
+                        value,
+                        StatusCodes.Good,
+                        serverTimestamp.AddMilliseconds(1234),
+                        serverTimestamp);
 
                     record.RawData.Add(entry);
                 }
@@ -169,9 +174,7 @@ namespace TestData
 
                         HistoryEntry entry = new HistoryEntry();
 
-                        entry.Value = new DataValue();
-                        entry.Value.ServerTimestamp = now;
-                        entry.Value.SourceTimestamp = entry.Value.ServerTimestamp.AddMilliseconds(-4567);
+                        Variant value = Variant.Null;
                         entry.IsModified = false;
 
                         switch (record.DataType)
@@ -179,10 +182,16 @@ namespace TestData
                             case BuiltInType.Int32:
                             {
                                 int lastValue = (int)record.RawData[record.RawData.Count - 1].Value.Value;
-                                entry.Value.Value = lastValue + 1;
+                                value = Variant.From(lastValue + 1);
                                 break;
                             }
                         }
+
+                        entry.Value = new DataValue(
+                            value,
+                            StatusCodes.Good,
+                            now.AddMilliseconds(-4567),
+                            now);
 
                         record.RawData.Add(entry);
                     }

@@ -152,7 +152,7 @@ namespace Opc.Ua.Sample
                 existingValues = new List<DataValue>();
                 existingErrors = new List<ServiceResult>();
 
-                DataValue value = null;
+                DataValue value = default;
                 ServiceResult error = null;
 
                 while (Dequeue(out value, out error))
@@ -317,7 +317,7 @@ namespace Opc.Ua.Sample
         /// <returns>True if a value was found. False if the queue is empty.</returns>
         private bool Dequeue(out DataValue value, out ServiceResult error)
         {
-            value = null;
+            value = default;
             error = null;
 
             // check for empty queue.
@@ -327,7 +327,7 @@ namespace Opc.Ua.Sample
             }
 
             value = m_values[m_start];
-            m_values[m_start] = null;
+            m_values[m_start] = default;
 
             if (m_errors != null)
             {
@@ -369,15 +369,18 @@ namespace Opc.Ua.Sample
         {
             if (value != null)
             {
-                StatusCode status = value.StatusCode;
-                status.Overflow = true;
-                value.StatusCode = status;
+                value = new DataValue(
+                    value.WrappedValue,
+                    value.StatusCode.SetOverflow(true),
+                    value.SourceTimestamp,
+                    value.ServerTimestamp,
+                    value.SourcePicoseconds,
+                    value.ServerPicoseconds);
             }
 
             if (error != null)
             {
-                StatusCode status = error.StatusCode;
-                status.Overflow = true;
+                StatusCode status = error.StatusCode.SetOverflow(true);
 
                 // have to copy before updating because the ServiceResult is invariant.
                 ServiceResult copy = new ServiceResult(
