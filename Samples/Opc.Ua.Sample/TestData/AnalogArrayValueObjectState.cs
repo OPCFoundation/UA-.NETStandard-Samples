@@ -42,9 +42,9 @@ namespace TestData
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(ISystemContext context, NodeState node, System.Threading.CancellationToken ct)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
 
             InitializeVariable(context, SByteValue, TestData.Variables.AnalogArrayValueObjectType_SByteValue);
             InitializeVariable(context, ByteValue, TestData.Variables.AnalogArrayValueObjectType_ByteValue);

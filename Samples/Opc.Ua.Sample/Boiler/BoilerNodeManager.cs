@@ -48,7 +48,7 @@ namespace Boiler
         }
 
         /// <inheritdoc/>
-        public List<string> NamespacesUris
+        public ArrayOf<string> NamespacesUris
         {
             get
             {

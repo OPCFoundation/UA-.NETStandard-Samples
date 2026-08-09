@@ -1,0 +1,142 @@
+FOUND TYPE: Opc.Ua.Client.ComplexTypes.ComplexTypeSystemFactory
+  .ctor(ITelemetryContext telemetry)
+FOUND TYPE: Opc.Ua.Client.ComplexTypes.ComplexTypeSystemClientExtensions
+FOUND TYPE: Opc.Ua.Client.ComplexTypes.DefaultComplexTypeSystemFactory
+  .ctor(ITelemetryContext telemetry)
+FOUND TYPE: Opc.Ua.Client.ComplexTypes.IComplexTypeSystemFactory
+FOUND TYPE: Opc.Ua.ComplexTypeSystem
+  .ctor(IComplexTypeResolver complexTypeResolver)
+  .ctor(IComplexTypeResolver complexTypeResolver, IComplexTypeFactory complexTypeBuilderFactory)
+  .ctor(IComplexTypeResolver complexTypeResolver, ITelemetryContext telemetry)
+  .ctor(IComplexTypeResolver complexTypeResolver, IComplexTypeFactory complexTypeBuilderFactory, ITelemetryContext telemetry)
+FOUND TYPE: Opc.Ua.ComplexTypeSystemLog
+==================== Opc.Ua.ComplexTypeSystem ====================
+--- Methods ---
+Void ClearDataTypeCache()
+NodeIdDictionary`1 get_DataTypeSystem()
+Boolean get_DisableDataTypeDefinition()
+Boolean get_DisableDataTypeDictionary()
+NodeIdDictionary`1 GetDataTypeDefinitionsForDataType(ExpandedNodeId dataTypeId)
+IEnumerable`1 GetDefinedDataTypeIds()
+IReadOnlyList`1 GetDefinedTypes()
+Task`1 Load(Boolean onlyEnumTypes, Boolean throwOnError, CancellationToken ct)
+ValueTask`1 LoadAsync(Boolean onlyEnumTypes, Boolean throwOnError, CancellationToken ct)
+Task`1 LoadNamespaceAsync(String ns, Boolean throwOnError, CancellationToken ct)
+Task`1 LoadTypeAsync(ExpandedNodeId nodeId, Boolean subTypes, Boolean throwOnError, CancellationToken ct)
+DataTypeDefinitionRegistry RegisterDataTypeDefinitions(DataTypeDefinitionRegistry registry)
+Void set_DisableDataTypeDefinition(Boolean value)
+Void set_DisableDataTypeDictionary(Boolean value)
+--- Properties ---
+NodeIdDictionary`1 DataTypeSystem {get;}
+Boolean DisableDataTypeDefinition {get;set;}
+Boolean DisableDataTypeDictionary {get;set;}
+--- Ctors ---
+.ctor(IComplexTypeResolver complexTypeResolver)
+.ctor(IComplexTypeResolver complexTypeResolver, IComplexTypeFactory complexTypeBuilderFactory)
+.ctor(IComplexTypeResolver complexTypeResolver, ITelemetryContext telemetry)
+.ctor(IComplexTypeResolver complexTypeResolver, IComplexTypeFactory complexTypeBuilderFactory, ITelemetryContext telemetry)
+==================== Opc.Ua.Security.Certificates.Certificate ====================
+--- Methods ---
+Certificate AddRef()
+X509Certificate2 AsX509Certificate2()
+Certificate CopyWithPrivateKey(RSA privateKey)
+Certificate CopyWithPrivateKey(ECDsa privateKey)
+Void Dispose()
+Boolean Equals(Certificate other)
+Boolean Equals(Object obj)
+Byte[] Export(X509ContentType contentType)
+Byte[] Export(X509ContentType contentType, ReadOnlySpan`1 password)
+Certificate From(X509Certificate2 certificate)
+Certificate FromRawData(Byte[] rawData)
+Certificate FromRawData(ReadOnlyMemory`1 rawData)
+X509ExtensionCollection get_Extensions()
+String get_FriendlyName()
+HashAlgorithmName get_HashAlgorithmName()
+Boolean get_HasPrivateKey()
+Int64 get_InstancesCreated()
+Int64 get_InstancesDisposed()
+Int64 get_InstancesLeaked()
+String get_Issuer()
+X500DistinguishedName get_IssuerName()
+DateTime get_NotAfter()
+DateTime get_NotBefore()
+PublicKey get_PublicKey()
+Byte[] get_RawData()
+String get_SerialNumber()
+Oid get_SignatureAlgorithm()
+String get_Subject()
+X500DistinguishedName get_SubjectName()
+String get_Thumbprint()
+ECDsa GetECDsaPrivateKey()
+ECDsa GetECDsaPublicKey()
+Int32 GetHashCode()
+String GetKeyAlgorithm()
+String GetNameInfo(X509NameType nameType, Boolean forIssuer)
+RSA GetRSAPrivateKey()
+RSA GetRSAPublicKey()
+Byte[] GetSerialNumber()
+Void ResetLeakCounters()
+String ToString()
+--- Properties ---
+X500DistinguishedName SubjectName {get;}
+X500DistinguishedName IssuerName {get;}
+DateTime NotBefore {get;}
+DateTime NotAfter {get;}
+String SerialNumber {get;}
+HashAlgorithmName HashAlgorithmName {get;}
+X509ExtensionCollection Extensions {get;}
+String Subject {get;}
+String Thumbprint {get;}
+Byte[] RawData {get;}
+Boolean HasPrivateKey {get;}
+PublicKey PublicKey {get;}
+String Issuer {get;}
+String FriendlyName {get;}
+Oid SignatureAlgorithm {get;}
+Int64 InstancesCreated {get;}
+Int64 InstancesDisposed {get;}
+Int64 InstancesLeaked {get;}
+--- Ctors ---
+.ctor(Byte[] rawData)
+.ctor(ReadOnlySpan`1 rawData)
+.ctor(String fileName)
+.ctor(Byte[] rawData, ReadOnlySpan`1 password, X509KeyStorageFlags keyStorageFlags)
+.ctor(String fileName, ReadOnlySpan`1 password, X509KeyStorageFlags keyStorageFlags)
+==================== Opc.Ua.Client.FastDataChangeNotificationEventHandler ====================
+--- Methods ---
+IAsyncResult BeginInvoke(Subscription subscription, DataChangeNotification notification, ArrayOf`1 stringTable, AsyncCallback callback, Object object)
+Void EndInvoke(IAsyncResult result)
+Void Invoke(Subscription subscription, DataChangeNotification notification, ArrayOf`1 stringTable)
+--- Properties ---
+--- Ctors ---
+.ctor(Object object, IntPtr method)
+==================== Opc.Ua.Client.FastEventNotificationEventHandler ====================
+--- Methods ---
+IAsyncResult BeginInvoke(Subscription subscription, EventNotificationList notification, ArrayOf`1 stringTable, AsyncCallback callback, Object object)
+Void EndInvoke(IAsyncResult result)
+Void Invoke(Subscription subscription, EventNotificationList notification, ArrayOf`1 stringTable)
+--- Properties ---
+--- Ctors ---
+.ctor(Object object, IntPtr method)
+==================== Opc.Ua.IComplexTypeResolver ====================
+--- Methods ---
+Task`1 BrowseForEncodingsAsync(ArrayOf`1 nodeIds, String[] supportedEncodings, CancellationToken ct)
+Task`1 BrowseForEncodingsAsync(ExpandedNodeId nodeId, String[] supportedEncodings, CancellationToken ct)
+Task`1 BrowseTypeIdsForDictionaryComponentAsync(ExpandedNodeId nodeId, CancellationToken ct)
+Task`1 FindAsync(ExpandedNodeId nodeId, CancellationToken ct)
+Task`1 FindSuperTypeAsync(NodeId typeId, CancellationToken ct)
+NodeIdDictionary`1 get_DataTypeSystem()
+IEncodeableFactoryBuilder get_FactoryBuilder()
+NamespaceTable get_NamespaceUris()
+Task`1 GetEnumTypeArrayAsync(ExpandedNodeId nodeId, CancellationToken ct)
+Task`1 LoadDataTypesAsync(ExpandedNodeId dataType, Boolean nestedSubTypes, Boolean addRootNode, Boolean filterUATypes, CancellationToken ct)
+Task`1 LoadDataTypeSystem(NodeId dataTypeSystem, CancellationToken ct)
+--- Properties ---
+NamespaceTable NamespaceUris {get;}
+IEncodeableFactoryBuilder FactoryBuilder {get;}
+NodeIdDictionary`1 DataTypeSystem {get;}
+--- Ctors ---
+######## GLOBAL SCAN ########
+Opc.Ua.FilterEvaluator::Variant Cast(ContentFilterElement element)
+Opc.Ua.Matrix::Array FlattenArray(Array array)
+[CONV] Opc.Ua.Variant::Variant ConvertTo(BuiltInType targetType)

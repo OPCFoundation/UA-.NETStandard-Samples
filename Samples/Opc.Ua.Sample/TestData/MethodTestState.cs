@@ -33,6 +33,7 @@ using System.Xml;
 using System.IO;
 using System.Reflection;
 using Opc.Ua;
+using XmlElement = System.Xml.XmlElement;
 
 namespace TestData
 {
@@ -42,9 +43,9 @@ namespace TestData
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(ISystemContext context, NodeState node, System.Threading.CancellationToken ct)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
 
             this.ScalarMethod1.OnCall = OnScalarValue1;
             this.ScalarMethod2.OnCall = OnScalarValue2;

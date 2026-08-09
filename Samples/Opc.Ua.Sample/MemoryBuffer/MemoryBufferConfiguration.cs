@@ -74,7 +74,7 @@ namespace MemoryBuffer
         /// The buffers exposed by the memory 
         /// </summary>
         [DataTypeField(Order = 1)]
-        public MemoryBufferInstanceCollection Buffers
+        public List<MemoryBufferInstance> Buffers
         {
             get { return m_buffers; }
             set { m_buffers = value; }
@@ -82,7 +82,7 @@ namespace MemoryBuffer
         #endregion
 
         #region Private Members
-        private MemoryBufferInstanceCollection m_buffers;
+        private List<MemoryBufferInstance> m_buffers;
         #endregion
     }
 
@@ -159,14 +159,4 @@ namespace MemoryBuffer
         private string m_dataType;
         #endregion
     }
-
-    #region MemoryBufferInstanceCollection Class
-    /// <summary>
-    /// A collection of MemoryBufferInstances.
-    /// </summary>
-    [CollectionDataContract(Name = "ListOfMemoryBufferInstance", Namespace = Namespaces.MemoryBuffer, ItemName = "MemoryBufferInstance")]
-    public partial class MemoryBufferInstanceCollection : List<MemoryBufferInstance>
-    {
-    }
-    #endregion
 }

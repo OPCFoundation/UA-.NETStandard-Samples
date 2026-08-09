@@ -321,9 +321,9 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// The node manager for the monitored item.
         /// </summary>
-        public INodeManager NodeManager
+        public IAsyncNodeManager NodeManager
         {
-            get { return m_source.NodeManager; }
+            get { return AsyncNodeManagerAdapterFactory.ToAsyncNodeManager(m_source.NodeManager); }
         }
 
         public NodeId NodeId
@@ -551,7 +551,7 @@ namespace Opc.Ua.Sample
 
         #region IDataChangeMonitoredItem Members
         /// <inheritdoc/>
-        public void QueueValue(DataValue value, ServiceResult error)
+        public void QueueValue(in DataValue value, ServiceResult? error)
         {
             QueueValue(value, error, false);
         }
@@ -559,7 +559,7 @@ namespace Opc.Ua.Sample
 
         #region IDataChangeMonitoredItem2 Members
         /// <inheritdoc/>
-        public void QueueValue(DataValue value, ServiceResult error, bool ignoreFilters)
+        public void QueueValue(in DataValue value, ServiceResult? error, bool ignoreFilters)
         {
             lock (m_lock)
             {

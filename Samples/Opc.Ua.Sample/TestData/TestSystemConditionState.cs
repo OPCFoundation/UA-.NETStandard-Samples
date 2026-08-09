@@ -42,9 +42,9 @@ namespace TestData
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(ISystemContext context, NodeState node, System.Threading.CancellationToken ct)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
             this.MonitoredNodeCount.OnSimpleReadValue = OnReadMonitoredNodeCount;
         }
         #endregion

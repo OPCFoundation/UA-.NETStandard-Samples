@@ -58,7 +58,7 @@ namespace Quickstarts.ReferenceServer
             public EventType EventType;
             public NodeId NodeId;
             public uint ServerHandle;
-            public DataValue Value;
+            public DataValue? Value;
             public MonitoringParameters Parameters;
             public MonitoringMode MonitoringMode;
         }
@@ -143,12 +143,12 @@ namespace Quickstarts.ReferenceServer
                         }
                     }
 
-                    if (e.Value != null)
+                    if (e.Value is DataValue dv)
                     {
-                        row[9] = e.Value.WrappedValue;
-                        row[10] = e.Value.StatusCode;
-                        row[11] = e.Value.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
-                        row[12] = e.Value.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
+                        row[9] = dv.WrappedValue;
+                        row[10] = dv.StatusCode;
+                        row[11] = dv.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
+                        row[12] = dv.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
                     }
 
                     dataset.Tables[0].Rows.Add(row);
@@ -182,8 +182,7 @@ namespace Quickstarts.ReferenceServer
 
                 if (StatusCode.IsBad(error))
                 {
-                    e.Value = DataValue.FromStatusCode(error);
-                    e.Value.WrappedValue = value.WrappedValue;
+                    e.Value = new DataValue { WrappedValue = value.WrappedValue, StatusCode = error };
                 }
 
                 m_events.Enqueue(e);
