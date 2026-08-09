@@ -92,8 +92,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection values = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> values = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

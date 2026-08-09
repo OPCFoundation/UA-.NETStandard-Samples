@@ -315,11 +315,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the currently selected event at the specified index (null index is not valid).
         /// </summary>
-        public VariantCollection GetSelectedEvent(int index)
+        public List<Variant> GetSelectedEvent(int index)
         {
             if (EventsLV.SelectedItems.Count > index)
             {
-                return EventsLV.SelectedItems[index].Tag as VariantCollection;
+                return EventsLV.SelectedItems[index].Tag as List<Variant>;
             }
 
             return null;
@@ -377,7 +377,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Creates list item for an event.
         /// </summary>
-        private async Task<ListViewItem> CreateListItemAsync(FilterDeclaration filter, VariantCollection fieldValues, CancellationToken ct = default)
+        private async Task<ListViewItem> CreateListItemAsync(FilterDeclaration filter, List<Variant> fieldValues, CancellationToken ct = default)
         {
             ListViewItem item = null;
 
@@ -385,11 +385,11 @@ namespace Opc.Ua.Client.Controls
             {
                 NodeId conditionId = fieldValues[0].Value as NodeId;
 
-                if (conditionId != null)
+                if (!conditionId.IsNull)
                 {
                     for (int ii = 0; ii < EventsLV.Items.Count; ii++)
                     {
-                        VariantCollection fields = EventsLV.Items[ii].Tag as VariantCollection;
+                        List<Variant> fields = EventsLV.Items[ii].Tag as List<Variant>;
 
                         if (fields != null && Utils.IsEqual(conditionId, fields[0].Value))
                         {
@@ -593,7 +593,7 @@ namespace Opc.Ua.Client.Controls
                 ct);
 
             HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -607,7 +607,7 @@ namespace Opc.Ua.Client.Controls
             await AddEventHistoryAsync(events, ct);
 
             // release continuation points.
-            if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -627,7 +627,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Deletes the recent history.
         /// </summary>
-        private async Task DeleteHistoryAsync(NodeId areaId, List<VariantCollection> events, FilterDeclaration filter, CancellationToken ct = default)
+        private async Task DeleteHistoryAsync(NodeId areaId, List<List<Variant>> events, FilterDeclaration filter, CancellationToken ct = default)
         {
             // find the event id.
             int index = 0;
@@ -652,7 +652,7 @@ namespace Opc.Ua.Client.Controls
             DeleteEventDetails details = new DeleteEventDetails();
             details.NodeId = areaId;
 
-            foreach (VariantCollection e in events)
+            foreach (List<Variant> e in events)
             {
                 byte[] eventId = null;
 
@@ -665,7 +665,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // delete the events.
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
             HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
@@ -674,7 +674,7 @@ namespace Opc.Ua.Client.Controls
                 ct);
 
             HistoryUpdateResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -718,7 +718,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                VariantCollection fields = EventsLV.SelectedItems[0].Tag as VariantCollection;
+                List<Variant> fields = EventsLV.SelectedItems[0].Tag as List<Variant>;
 
                 if (fields != null)
                 {
@@ -740,11 +740,11 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                List<VariantCollection> events = new List<VariantCollection>();
+                List<List<Variant>> events = new List<List<Variant>>();
 
                 foreach (ListViewItem item in EventsLV.SelectedItems)
                 {
-                    VariantCollection fields = item.Tag as VariantCollection;
+                    List<Variant> fields = item.Tag as List<Variant>;
 
                     if (fields != null)
                     {
@@ -758,7 +758,7 @@ namespace Opc.Ua.Client.Controls
 
                     foreach (ListViewItem item in EventsLV.SelectedItems)
                     {
-                        VariantCollection fields = item.Tag as VariantCollection;
+                        List<Variant> fields = item.Tag as List<Variant>;
 
                         if (fields != null)
                         {

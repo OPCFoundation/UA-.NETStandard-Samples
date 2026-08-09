@@ -97,7 +97,7 @@ namespace Opc.Ua.Sample.Controls
         public async Task InitializeAsync(
             Session session,
             ReadValueIdCollection valueIds,
-            DataValueCollection values,
+            List<DataValue> values,
             List<ServiceResult> results,
             CancellationToken ct = default)
         {

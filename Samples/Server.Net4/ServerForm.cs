@@ -70,7 +70,7 @@ namespace Opc.Ua.Sample
 
             if (!application.ApplicationConfiguration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                application.ApplicationConfiguration.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                application.ApplicationConfiguration.CertificateManager.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
             }
 
             TrayIcon.Text = this.Text = application.ApplicationName;

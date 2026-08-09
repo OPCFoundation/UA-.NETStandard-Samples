@@ -260,7 +260,7 @@ namespace Opc.Ua.Sample.Controls
                     ContentFilterElement element = null;
 
                     // build the relative path.
-                    QualifiedNameCollection browsePath = [node.BrowseName];
+                    List<QualifiedName> browsePath = [node.BrowseName];
                     NodeId typeId = null;
 
                     switch (node.NodeClass)
@@ -441,7 +441,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // update value.
-                literal.Value = new Variant(value);
+                literal.Value = Variant.From(value);
                 ContentFilter filter = GetFilter();
                 Update(filter);
             }

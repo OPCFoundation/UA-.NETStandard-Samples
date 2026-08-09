@@ -48,11 +48,11 @@ namespace TestData
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
         {
             get
             {
-                var nameSpaces = new StringCollection {
+                var nameSpaces = new List<string> {
                     Namespaces.TestData,
                     Namespaces.TestData + "Instance"
                 };
@@ -375,7 +375,7 @@ namespace TestData
                 return null;
             }
 
-            HistoryDataReader reader = context.OperationContext.Session.RestoreHistoryContinuationPoint(continuationPoint) as HistoryDataReader;
+            HistoryDataReader reader = context.OperationContext.Session.RestoreHistoryContinuationPoint(continuationPoint.ToByteString()) as HistoryDataReader;
 
             if (reader == null)
             {
@@ -433,7 +433,7 @@ namespace TestData
             HistoryDataReader reader = null;
             HistoryData data = new HistoryData();
 
-            if (nodeToRead.ContinuationPoint != null && nodeToRead.ContinuationPoint.Length > 0)
+            if (!nodeToRead.ContinuationPoint.IsNull && nodeToRead.ContinuationPoint.Length > 0)
             {
                 // restore the continuation point.
                 reader = RestoreDataReader(serverContext, nodeToRead.ContinuationPoint);

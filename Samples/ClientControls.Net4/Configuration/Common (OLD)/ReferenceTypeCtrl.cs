@@ -220,7 +220,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task AddReferenceTypesAsync(ExpandedNodeId referenceTypeId, ReferenceTypeChoice supertype, CancellationToken ct = default)
         {
-            if (referenceTypeId == null) throw new ArgumentNullException(nameof(referenceTypeId));
+            if (referenceTypeId.IsNull) throw new ArgumentNullException(nameof(referenceTypeId));
 
             try
             {
@@ -265,7 +265,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     NodeId referenceTypeId = SelectedTypeId;
 
-                    if (referenceTypeId != null)
+                    if (!referenceTypeId.IsNull)
                     {
                         m_referenceSelectionChanged(this, new ReferenceSelectedEventArgs(referenceTypeId));
                     }

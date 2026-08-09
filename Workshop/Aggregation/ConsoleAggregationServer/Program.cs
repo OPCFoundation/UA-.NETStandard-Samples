@@ -178,7 +178,7 @@ namespace AggregationServer
 
             if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                config.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                config.CertificateManager.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
             }
 
             // start the server.

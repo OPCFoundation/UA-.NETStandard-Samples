@@ -355,8 +355,8 @@ namespace AggregationServer
                     default).Result;
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                DataValueCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, requests);
@@ -450,8 +450,8 @@ namespace AggregationServer
                     default).Result;
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                StatusCodeCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<StatusCode> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, requests);
@@ -592,7 +592,7 @@ namespace AggregationServer
 
                 ResponseHeader responseHeader = response.ResponseHeader;
                 CallMethodResultCollection results2 = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results2, requests);
@@ -1692,7 +1692,7 @@ namespace AggregationServer
                 var totalBadRequestCount = session.OutstandingRequestCount + session.DefunctRequestCount;
                 Opc.Ua.Client.SessionReconnectHandler reconnectHandler;
                 if (totalBadRequestCount >= 3 &&
-                    session.SessionId != null)
+                    !session.SessionId.IsNull)
                 {
                     lock (m_clientsLock)
                     {

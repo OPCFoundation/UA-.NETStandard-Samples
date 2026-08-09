@@ -96,8 +96,8 @@ namespace Quickstarts.HistoricalAccess.Client
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -229,8 +229,8 @@ namespace Quickstarts.HistoricalAccess.Client
                     valuesToWrite,
                     default);
 
-                StatusCodeCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<StatusCode> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, valuesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);

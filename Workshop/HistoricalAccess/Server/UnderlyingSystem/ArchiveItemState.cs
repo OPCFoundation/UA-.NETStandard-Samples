@@ -407,7 +407,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         private DataTable SelectTable(QualifiedName propertyName)
         {
-            if (propertyName == null || propertyName.Name == null)
+            if (propertyName.IsNull || propertyName.Name == null)
             {
                 return m_archiveItem.DataSet.Tables[0];
             }

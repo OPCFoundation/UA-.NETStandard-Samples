@@ -320,7 +320,7 @@ namespace Quickstarts.Boiler.Client
                 {
                     controls[ii].Text = "---";
 
-                    if (nodes[ii] != null)
+                    if (!nodes[ii].IsNull)
                     {
                         MonitoredItem monitoredItem = new MonitoredItem(m_telemetry);
                         monitoredItem.StartNodeId = nodes[ii];

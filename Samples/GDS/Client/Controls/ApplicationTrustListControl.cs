@@ -190,7 +190,7 @@ namespace Opc.Ua.Gds.Client
             {
                 NodeId trustListId = await m_gds.GetTrustListAsync(m_application.ApplicationId, NodeId.Null, ct);
 
-                if (trustListId == null)
+                if (trustListId.IsNull)
                 {
                     await CertificateStoreControl.Initialize(m_telemetry, null, null, null, ct);
                     return;

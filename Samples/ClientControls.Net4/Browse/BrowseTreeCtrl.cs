@@ -151,7 +151,7 @@ namespace Opc.Ua.Client.Controls
 
             if (NodeId.IsNull(m_rootId))
             {
-                m_rootId = Objects.RootFolder;
+                m_rootId = (NodeId)Objects.RootFolder;
             }
 
             if (NodeId.IsNull(m_referenceTypeId))
@@ -236,8 +236,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToBrowse,
                 ct);
 
-            BrowseResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<BrowseResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             if (results.Count != 1 || StatusCode.IsBad(results[0].StatusCode))
             {
@@ -246,9 +246,9 @@ namespace Opc.Ua.Client.Controls
 
             await UpdateNodeAsync(parent, results[0].References, ct);
 
-            while (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            while (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
-                ByteStringCollection continuationPoints = new ByteStringCollection();
+                List<ByteString> continuationPoints = new List<ByteString>();
                 continuationPoints.Add(results[0].ContinuationPoint);
 
                 BrowseNextResponse response2 = await m_session.BrowseNextAsync(
@@ -257,8 +257,8 @@ namespace Opc.Ua.Client.Controls
                     continuationPoints,
                     ct);
 
-                results = response2.Results;
-                diagnosticInfos = response2.DiagnosticInfos;
+                results = response2.Results.ToList();
+                diagnosticInfos = response2.DiagnosticInfos.ToList();
 
                 if (results.Count != 1 || StatusCode.IsBad(results[0].StatusCode))
                 {
@@ -274,7 +274,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Adds the browse results to the node (if not null).
         /// </summary>
-        private async Task UpdateNodeAsync(TreeNode parent, ReferenceDescriptionCollection references, CancellationToken ct = default)
+        private async Task UpdateNodeAsync(TreeNode parent, IList<ReferenceDescription> references, CancellationToken ct = default)
         {
             try
             {

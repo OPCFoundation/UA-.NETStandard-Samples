@@ -243,7 +243,7 @@ namespace Opc.Ua.Sample
 
                 NodeState parent = null;
 
-                if (parentId != null)
+                if (!parentId.IsNull)
                 {
                     if (!PredefinedNodes.TryGetValue(parentId, out parent))
                     {
@@ -586,7 +586,7 @@ namespace Opc.Ua.Sample
                 // assign a default value to any variable value.
                 BaseVariableState variable = source as BaseVariableState;
 
-                if (variable != null && variable.Value == null)
+                if (variable != null && variable.Value.IsNull)
                 {
                     variable.Value = TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree);
                 }
@@ -617,7 +617,7 @@ namespace Opc.Ua.Sample
                     IReference reference = references[ii];
 
                     // nothing to do with external nodes.
-                    if (reference.TargetId == null || reference.TargetId.IsAbsolute)
+                    if (reference.TargetId.IsNull || reference.TargetId.IsAbsolute)
                     {
                         continue;
                     }
@@ -732,7 +732,7 @@ namespace Opc.Ua.Sample
         /// <returns>Returns null if not found or not of the correct type.</returns>
         public NodeState FindPredefinedNode(NodeId nodeId, Type expectedType)
         {
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return null;
             }
@@ -1912,7 +1912,7 @@ namespace Opc.Ua.Sample
         {
             ServerSystemContext systemContext = context as ServerSystemContext;
             List<ServiceResult> argumentErrors = new List<ServiceResult>();
-            VariantCollection outputArguments = new VariantCollection();
+            List<Variant> outputArguments = new List<Variant>();
 
             ServiceResult error = method.Call(
                 context,

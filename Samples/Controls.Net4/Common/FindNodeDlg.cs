@@ -54,7 +54,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public NodeIdCollection ShowDialog(Session session, NodeId startNodeId)
+        public List<NodeId> ShowDialog(Session session, NodeId startNodeId)
         {
             m_session = session;
 
@@ -88,7 +88,7 @@ namespace Opc.Ua.Sample.Controls
                     default);
 
                 BrowsePathResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 if (results != null && results.Count == 1)
                 {

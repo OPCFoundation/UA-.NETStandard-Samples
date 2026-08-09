@@ -73,7 +73,7 @@ namespace Opc.Ua.Client.Controls
         /// The browse path to the instance declaration.
         /// </summary>
         #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
-        public QualifiedNameCollection BrowsePath;
+        public List<QualifiedName> BrowsePath;
         #pragma warning restore CA1051
 
         /// <summary>
@@ -382,7 +382,7 @@ namespace Opc.Ua.Client.Controls
             if (browseNames != null)
             {
                 field.InstanceDeclaration.BrowseName = browseNames[browseNames.Length - 1];
-                field.InstanceDeclaration.BrowsePath = new QualifiedNameCollection();
+                field.InstanceDeclaration.BrowsePath = new List<QualifiedName>();
 
                 StringBuilder path = new StringBuilder();
 
@@ -419,7 +419,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the select clause defined by the filter declaration.
         /// </summary>
-        public SimpleAttributeOperandCollection GetSelectClause()
+        public List<SimpleAttributeOperand> GetSelectClause()
         {
             SimpleAttributeOperandCollection selectClause = new SimpleAttributeOperandCollection();
 
@@ -476,14 +476,14 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the value for the specified browse name.
         /// </summary>
-        public T GetValue<T>(QualifiedName browseName, VariantCollection fields, T defaultValue)
+        public T GetValue<T>(QualifiedName browseName, List<Variant> fields, T defaultValue)
         {
             if (fields == null || fields.Count == 0)
             {
                 return defaultValue;
             }
 
-            if (browseName == null)
+            if (browseName.IsNull)
             {
                 browseName = QualifiedName.Null;
             }

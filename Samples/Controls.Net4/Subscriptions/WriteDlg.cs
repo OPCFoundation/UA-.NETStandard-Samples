@@ -112,8 +112,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToWrite,
                 ct);
 
-            StatusCodeCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<StatusCode> results = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToWrite);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);

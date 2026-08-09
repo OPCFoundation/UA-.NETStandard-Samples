@@ -1306,7 +1306,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                         if (encodeable != null)
                         {
-                            text = new Variant(encodeable).ToString();
+                            text = Variant.From(encodeable).ToString();
                         }
                     }
 
@@ -1537,7 +1537,7 @@ namespace Opc.Ua.Client.Controls.Common
                 {
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        array.SetValue(new Variant(info.Value), indexes);
+                        array.SetValue(Variant.From(info.Value), indexes);
                     }
                     else
                     {
@@ -1550,7 +1550,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        list[indexes[0]] = new Variant(info.Value);
+                        list[indexes[0]] = Variant.From(info.Value);
                     }
                     else
                     {

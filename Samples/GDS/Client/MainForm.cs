@@ -77,7 +77,7 @@ namespace Opc.Ua.Gds.Client
 
             RegistrationPanel.InitializeAsync(m_gds, m_server, null, m_configuration, m_telemetry).GetAwaiter().GetResult();
 
-            m_application.ApplicationConfiguration.CertificateValidator.CertificateValidation += CertificateValidator_CertificateValidation;
+            m_application.ApplicationConfiguration.CertificateManager.CertificateValidation += CertificateValidator_CertificateValidation;
             UpdateStatus(true, DateTime.MinValue, "---");
             UpdateGdsStatus(true, DateTime.MinValue, "---");
             UpdateMainFormHeader();
@@ -601,7 +601,7 @@ namespace Opc.Ua.Gds.Client
                         endpoint.Server.ApplicationUri = app.ApplicationUri;
                         endpoint.Server.ProductUri = app.ProductUri;
                         endpoint.Server.ApplicationName = app.ApplicationName;
-                        endpoint.Server.DiscoveryUrls = (app.DiscoveryUrl != null) ? new StringCollection(app.DiscoveryUrl) : null;
+                        endpoint.Server.DiscoveryUrls = (app.DiscoveryUrl != null) ? new List<string>(app.DiscoveryUrl) : null;
 
                         SetServer(endpoint);
                     }

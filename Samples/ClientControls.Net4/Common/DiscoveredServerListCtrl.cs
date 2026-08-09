@@ -142,20 +142,20 @@ namespace Opc.Ua.Client.Controls
             AdjustColumns();
 
             // get a list of well known discovery urls to use.
-            StringCollection discoveryUrls = null;
+            List<string> discoveryUrls = null;
 
             if (configuration != null && configuration.ClientConfiguration != null)
             {
-                discoveryUrls = configuration.ClientConfiguration.WellKnownDiscoveryUrls;
+                discoveryUrls = configuration.ClientConfiguration.WellKnownDiscoveryUrls.ToList();
             }
 
             if (discoveryUrls == null || discoveryUrls.Count == 0)
             {
-                discoveryUrls = new StringCollection(Utils.DiscoveryUrls);
+                discoveryUrls = new List<string>(Utils.DiscoveryUrls);
             }
 
             // update the urls with the hostname.
-            StringCollection urlsToUse = new StringCollection();
+            List<string> urlsToUse = new List<string>();
 
             foreach (string discoveryUrl in discoveryUrls)
             {
@@ -265,7 +265,7 @@ namespace Opc.Ua.Client.Controls
                     DiagnosticsMasks.None,
                     ct);
 
-                ApplicationDescriptionCollection servers = await client.FindServersAsync(null, ct);
+                ApplicationDescriptionCollection servers = await client.FindServersAsync(ArrayOf<string>.Null, ct);
                 m_discoveryUrl = discoveryUrl.ToString();
                 OnUpdateServers(servers);
                 return true;

@@ -88,7 +88,7 @@ namespace Opc.Ua.Client.Controls
 
             public override string ToString()
             {
-                if (EncodingName != null)
+                if (!EncodingName.IsNull)
                 {
                     return EncodingName.ToString();
                 }

@@ -49,7 +49,7 @@ namespace Opc.Ua.Sample.Controls
             InitializeComponent();
 
             m_eventRegistrations = new Dictionary<object, TreeNode>();
-            m_endpointUrls = new StringCollection();
+            m_endpointUrls = new List<string>();
             m_dialogs = new Dictionary<Subscription, SubscriptionDlg>();
 
             m_SessionSubscriptionsChanged = new EventHandler(Session_SubscriptionsChanged);
@@ -64,7 +64,7 @@ namespace Opc.Ua.Sample.Controls
         private EventHandler m_SessionSubscriptionsChanged;
         private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
         private Dictionary<object, TreeNode> m_eventRegistrations;
-        private StringCollection m_endpointUrls;
+        private List<string> m_endpointUrls;
         private Dictionary<Subscription, SubscriptionDlg> m_dialogs;
         private ApplicationConfiguration m_configuration;
         private ServiceMessageContext m_messageContext;
@@ -226,7 +226,7 @@ namespace Opc.Ua.Sample.Controls
                 // load certificate chain
                 clientCertificateChain = new X509Certificate2Collection(clientCertificate);
                 List<CertificateIdentifier> issuers = new List<CertificateIdentifier>();
-                await m_configuration.CertificateValidator.GetIssuersAsync(clientCertificate, issuers, ct);
+                await m_configuration.CertificateManager.GetIssuersAsync(clientCertificate, issuers, ct);
                 for (int i = 0; i < issuers.Count; i++)
                 {
                     clientCertificateChain.Add(issuers[i].Certificate);
@@ -1423,7 +1423,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 PreferredLocales = new string[] { locale };
-                await session.ChangePreferredLocalesAsync(new StringCollection(PreferredLocales), CancellationToken.None);
+                await session.ChangePreferredLocalesAsync(new List<string>(PreferredLocales), CancellationToken.None);
             }
             catch (Exception exception)
             {

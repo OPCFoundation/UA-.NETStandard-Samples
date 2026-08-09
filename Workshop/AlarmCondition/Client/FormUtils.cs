@@ -203,7 +203,7 @@ namespace Quickstarts.AlarmConditionClient
             // find the event type.
             NodeId eventTypeId = FindEventType(monitoredItem, notification);
 
-            if (eventTypeId == null)
+            if (eventTypeId.IsNull)
             {
                 return null;
             }
@@ -225,7 +225,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // browse for the supertypes of the event type.
-                if (knownTypeId == null)
+                if (knownTypeId.IsNull)
                 {
                     ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
 
@@ -248,7 +248,7 @@ namespace Quickstarts.AlarmConditionClient
                             }
                         }
 
-                        if (knownTypeId != null)
+                        if (!knownTypeId.IsNull)
                         {
                             break;
                         }
@@ -256,7 +256,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
             }
 
-            if (knownTypeId == null)
+            if (knownTypeId.IsNull)
             {
                 return null;
             }
@@ -336,7 +336,7 @@ namespace Quickstarts.AlarmConditionClient
                     ct);
 
                 BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -356,13 +356,13 @@ namespace Quickstarts.AlarmConditionClient
                     }
 
                     // check if all references have been fetched.
-                    if (results[0].References.Count == 0 || results[0].ContinuationPoint == null)
+                    if (results[0].References.Count == 0 || results[0].ContinuationPoint.IsNull)
                     {
                         break;
                     }
 
                     // continue browse operation.
-                    ByteStringCollection continuationPoints = new ByteStringCollection();
+                    List<ByteString> continuationPoints = new List<ByteString>();
                     continuationPoints.Add(results[0].ContinuationPoint);
 
                     BrowseNextResponse response2 = await session.BrowseNextAsync(

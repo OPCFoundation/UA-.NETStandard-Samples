@@ -188,7 +188,7 @@ namespace Opc.Ua.Client.Controls
 
                 for (int ii = 0; ii < itemsToMonitor.Length; ii++)
                 {
-                    if (itemsToMonitor[ii] == null)
+                    if (itemsToMonitor[ii].IsNull)
                     {
                         continue;
                     }
@@ -200,7 +200,7 @@ namespace Opc.Ua.Client.Controls
                     monitoredItem.AttributeId = Attributes.EventNotifier;
                     monitoredItem.NodeClass = NodeClass.Object;
                     monitoredItem.IndexRange = null;
-                    monitoredItem.Encoding = null;
+                    monitoredItem.Encoding = QualifiedName.Null;
                     monitoredItem.Handle = row;
                     m_subscription.AddItem(monitoredItem);
 
@@ -230,7 +230,7 @@ namespace Opc.Ua.Client.Controls
             if (m_state == DisplayState.SelectEventType)
             {
                 await BrowseCTRL.InitializeAsync(m_session, Opc.Ua.ObjectTypeIds.BaseEventType, m_telemetry, ct, Opc.Ua.ReferenceTypeIds.HasSubtype);
-                BrowseCTRL.SelectNode((m_filter == null || m_filter.EventTypeId == null) ? Opc.Ua.ObjectTypeIds.BaseEventType : m_filter.EventTypeId);
+                BrowseCTRL.SelectNode((m_filter == null || m_filter.EventTypeId.IsNull) ? Opc.Ua.ObjectTypeIds.BaseEventType : m_filter.EventTypeId);
                 await EventTypeCTRL.ShowTypeAsync(Opc.Ua.ObjectTypeIds.BaseEventType, ct);
                 return;
             }
@@ -572,19 +572,19 @@ namespace Opc.Ua.Client.Controls
         {
             if (!node.Checked)
             {
-                return null;
+                return NodeId.Null;
             }
 
             ReferenceDescription reference = node.Tag as ReferenceDescription;
 
-            NodeId typeId = null;
+            NodeId typeId = NodeId.Null;
             int childCount = 0;
 
             foreach (TreeNode child in node.Nodes)
             {
                 NodeId childTypeId = CollectTypeIds(child, typeIds);
 
-                if (childTypeId != null)
+                if (!childTypeId.IsNull)
                 {
                     typeId = childTypeId;
                     childCount++;
@@ -788,7 +788,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (reference == null || NodeId.IsNull(reference.NodeId) || reference.NodeId.IsAbsolute)
                 {
-                    await EventTypeCTRL.ShowTypeAsync(null);
+                    await EventTypeCTRL.ShowTypeAsync(NodeId.Null);
                     return;
                 }
 

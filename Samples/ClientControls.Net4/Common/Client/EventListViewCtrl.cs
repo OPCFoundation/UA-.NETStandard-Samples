@@ -85,7 +85,7 @@ namespace Opc.Ua.Client.Controls
             m_filter = filter;
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Events");
-            m_dataset.Tables[0].Columns.Add("Event", typeof(VariantCollection));
+            m_dataset.Tables[0].Columns.Add("Event", typeof(List<Variant>));
 
             if (m_filter != null)
             {
@@ -108,7 +108,7 @@ namespace Opc.Ua.Client.Controls
         {
             if (e != null)
             {
-                DisplayEvent(e.EventFields);
+                DisplayEvent(e.EventFields.ToList());
             }
         }
         #endregion
@@ -117,7 +117,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Sets the filter to edit.
         /// </summary>
-        public void DisplayEvent(VariantCollection fields)
+        public void DisplayEvent(List<Variant> fields)
         {
             if (m_filter != null)
             {
@@ -164,7 +164,7 @@ namespace Opc.Ua.Client.Controls
                 ct);
 
             HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -182,7 +182,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // release continuation points.
-            if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -202,7 +202,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Deletes the recent history.
         /// </summary>
-        private async Task DeleteHistoryAsync(NodeId areaId, List<VariantCollection> events, FilterDeclaration filter, CancellationToken ct = default)
+        private async Task DeleteHistoryAsync(NodeId areaId, List<List<Variant>> events, FilterDeclaration filter, CancellationToken ct = default)
         {
             // find the event id.
             int index = 0;
@@ -227,7 +227,7 @@ namespace Opc.Ua.Client.Controls
             DeleteEventDetails details = new DeleteEventDetails();
             details.NodeId = areaId;
 
-            foreach (VariantCollection e in events)
+            foreach (List<Variant> e in events)
             {
                 byte[] eventId = null;
 
@@ -240,7 +240,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // delete the events.
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
 
@@ -250,7 +250,7 @@ namespace Opc.Ua.Client.Controls
                 ct);
 
             HistoryUpdateResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);

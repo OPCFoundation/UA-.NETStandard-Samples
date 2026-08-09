@@ -161,7 +161,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     ct);
 
                 HistoryReadResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -202,7 +202,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 ct);
 
             HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -216,7 +216,7 @@ namespace Quickstarts.HistoricalEvents.Client
             HistoryEvent data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryEvent;
 
             // release the continuation point.
-            if (results[0].ContinuationPoint != null)
+            if (!results[0].ContinuationPoint.IsNull)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -307,7 +307,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
             ResponseHeader responseHeader = response.ResponseHeader;
             HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -322,7 +322,7 @@ namespace Quickstarts.HistoricalEvents.Client
             await ResultsLV.AddEventHistoryAsync(data, ct);
 
             // check if a continuation point exists.
-            if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -427,7 +427,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 using SelectNodeDlg dialog = new SelectNodeDlg();
                 NodeId areaId = await dialog.ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
-                if (areaId == null)
+                if (areaId.IsNull)
                 {
                     return;
                 }

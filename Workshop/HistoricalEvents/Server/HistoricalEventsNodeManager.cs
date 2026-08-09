@@ -298,7 +298,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 HistoryReadRequest request = null;
 
                 // load an exising request.
-                if (nodeToRead.ContinuationPoint != null)
+                if (!nodeToRead.ContinuationPoint.IsNull)
                 {
                     request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
 
@@ -499,7 +499,7 @@ namespace Quickstarts.HistoricalEvents.Server
                     }
 
                     // add value.
-                    fields.EventFields.Add(new Variant(value));
+                    fields.EventFields.Add(Variant.From(value));
                 }
 
                 // add a dummy entry for missing values.
@@ -650,7 +650,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 return null;
             }
 
-            HistoryReadRequest request = session.RestoreHistoryContinuationPoint(continuationPoint) as HistoryReadRequest;
+            HistoryReadRequest request = session.RestoreHistoryContinuationPoint(continuationPoint.ToByteString()) as HistoryReadRequest;
 
             if (request == null)
             {

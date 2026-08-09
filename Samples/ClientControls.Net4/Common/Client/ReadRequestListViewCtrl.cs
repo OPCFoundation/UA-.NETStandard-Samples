@@ -145,8 +145,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -214,7 +214,7 @@ namespace Opc.Ua.Client.Controls
             row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToRead.NodeId, ct) : Utils.ToString(nodeToRead.NodeId);
             row[3] = Attributes.GetBrowseName(nodeToRead.AttributeId);
             row[4] = nodeToRead.IndexRange;
-            row[5] = (nodeToRead.DataEncoding != null) ? nodeToRead.DataEncoding : QualifiedName.Null;
+            row[5] = (!nodeToRead.DataEncoding.IsNull) ? nodeToRead.DataEncoding : QualifiedName.Null;
         }
         #endregion
 

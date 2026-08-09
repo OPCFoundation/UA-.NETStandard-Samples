@@ -53,11 +53,11 @@ namespace MemoryBuffer
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
         {
             get
             {
-                var nameSpaces = new StringCollection {
+                var nameSpaces = new List<string> {
                     Namespaces.MemoryBuffer,
                     Namespaces.MemoryBuffer + "/Instance"
                 };

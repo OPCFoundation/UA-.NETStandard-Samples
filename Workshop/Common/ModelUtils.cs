@@ -138,13 +138,13 @@ namespace Quickstarts
 
                 if (parent != null)
                 {
-                    child.BrowsePath = new QualifiedNameCollection(parent.BrowsePath);
+                    child.BrowsePath = new List<QualifiedName>(parent.BrowsePath);
                     child.BrowsePathDisplayText = Utils.Format("{0}/{1}", parent.BrowsePathDisplayText, reference.BrowseName);
                     child.DisplayPath = Utils.Format("{0}/{1}", parent.DisplayPath, reference.DisplayName);
                 }
                 else
                 {
-                    child.BrowsePath = new QualifiedNameCollection();
+                    child.BrowsePath = new List<QualifiedName>();
                     child.BrowsePathDisplayText = Utils.Format("{0}", reference.BrowseName);
                     child.DisplayPath = Utils.Format("{0}", reference.DisplayName);
                 }
@@ -234,13 +234,13 @@ namespace Quickstarts
                     ct);
 
                 BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
 
                 List<NodeId> targetIds = new List<NodeId>();
-                ByteStringCollection continuationPoints = new ByteStringCollection();
+                List<ByteString> continuationPoints = new List<ByteString>();
 
                 for (int ii = 0; ii < nodeIds.Count; ii++)
                 {
@@ -253,7 +253,7 @@ namespace Quickstarts
                     }
 
                     // check for continuation point.
-                    if (results[ii].ContinuationPoint != null && results[ii].ContinuationPoint.Length > 0)
+                    if (!results[ii].ContinuationPoint.IsNull && results[ii].ContinuationPoint.Length > 0)
                     {
                         continuationPoints.Add(results[ii].ContinuationPoint);
                     }
@@ -335,8 +335,8 @@ namespace Quickstarts
                     nodesToRead,
                     ct);
 
-                DataValueCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -404,7 +404,7 @@ namespace Quickstarts
         /// <summary>
         /// The browse path to the instance declaration.
         /// </summary>
-        public QualifiedNameCollection BrowsePath;
+        public List<QualifiedName> BrowsePath;
 
         /// <summary>
         /// The browse path to the instance declaration.
@@ -649,7 +649,7 @@ namespace Quickstarts
             field.DisplayInList = displayInList;
             field.InstanceDeclaration = new InstanceDeclaration();
             field.InstanceDeclaration.BrowseName = browseName;
-            field.InstanceDeclaration.BrowsePath = new QualifiedNameCollection();
+            field.InstanceDeclaration.BrowsePath = new List<QualifiedName>();
             field.InstanceDeclaration.BrowsePath.Add(field.InstanceDeclaration.BrowseName);
             field.InstanceDeclaration.BrowsePathDisplayText = browseName.Name;
 
@@ -726,7 +726,7 @@ namespace Quickstarts
         /// <summary>
         /// Returns the value for the specified browse name.
         /// </summary>
-        public T GetValue<T>(QualifiedName browseName, VariantCollection fields, T defaultValue)
+        public T GetValue<T>(QualifiedName browseName, List<Variant> fields, T defaultValue)
         {
             if (fields == null || fields.Count == 0)
             {

@@ -655,7 +655,7 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     // load an exising request.
-                    if (nodeToRead.ContinuationPoint != null)
+                    if (!nodeToRead.ContinuationPoint.IsNull)
                     {
                         request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
 
@@ -765,7 +765,7 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     // load an exising request.
-                    if (nodeToRead.ContinuationPoint != null)
+                    if (!nodeToRead.ContinuationPoint.IsNull)
                     {
                         request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
 
@@ -865,7 +865,7 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     // load an exising request.
-                    if (nodeToRead.ContinuationPoint != null)
+                    if (!nodeToRead.ContinuationPoint.IsNull)
                     {
                         request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
 
@@ -1513,7 +1513,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 if (index < 0)
                 {
-                    values.AddLast(new DataValue(StatusCodes.BadNoData, details.ReqTimes[ii]));
+                    values.AddLast(DataValue.FromStatusCode(StatusCodes.BadNoData, details.ReqTimes[ii]));
                     continue;
                 }
 
@@ -1699,7 +1699,7 @@ namespace Quickstarts.HistoricalAccessServer
                 return null;
             }
 
-            HistoryReadRequest request = session.RestoreHistoryContinuationPoint(continuationPoint) as HistoryReadRequest;
+            HistoryReadRequest request = session.RestoreHistoryContinuationPoint(continuationPoint.ToByteString()) as HistoryReadRequest;
 
             if (request == null)
             {

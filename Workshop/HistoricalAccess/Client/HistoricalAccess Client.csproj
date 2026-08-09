@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
@@ -27,10 +27,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
-      <Version>10.0.8</Version>
+      <Version>10.0.10</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>1.5.378.156</Version>
+      <Version>2.0.158.59919-preview</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup Label="Compile items now included by globbing that were not in the original project file">

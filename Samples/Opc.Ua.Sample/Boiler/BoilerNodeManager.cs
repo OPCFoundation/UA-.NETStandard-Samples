@@ -48,11 +48,11 @@ namespace Boiler
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public List<string> NamespacesUris
         {
             get
             {
-                var nameSpaces = new StringCollection {
+                var nameSpaces = new List<string> {
                     Namespaces.Boiler,
                     Namespaces.Boiler + "Instance"
                 };

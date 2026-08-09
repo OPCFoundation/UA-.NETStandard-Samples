@@ -278,7 +278,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
 
             // create reference.
-            if (targetId != null)
+            if (!targetId.IsNull)
             {
                 return new NodeStateReference(ReferenceTypeIds.Organizes, false, targetId);
             }

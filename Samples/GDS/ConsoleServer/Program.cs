@@ -261,7 +261,7 @@ namespace Opc.Ua.Gds.Server
 
             if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                config.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                config.CertificateManager.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
             }
 
             // get the DatabaseStorePath configuration parameter.

@@ -248,10 +248,10 @@ namespace Opc.Ua.Gds.Client.Controls
 
         public TrustListDataType GetTrustLists()
         {
-            ByteStringCollection trusted = new ByteStringCollection();
-            ByteStringCollection trustedCrls = new ByteStringCollection();
-            ByteStringCollection issuers = new ByteStringCollection();
-            ByteStringCollection issuersCrls = new ByteStringCollection();
+            List<ByteString> trusted = new List<ByteString>();
+            List<ByteString> trustedCrls = new List<ByteString>();
+            List<ByteString> issuers = new List<ByteString>();
+            List<ByteString> issuersCrls = new List<ByteString>();
 
             foreach (DataGridViewRow row in CertificateListGridView.Rows)
             {
@@ -265,25 +265,25 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     if (status == Status.Trusted)
                     {
-                        trusted.Add(certificate.RawData);
+                        trusted.Add(certificate.RawData.ToByteString());
 
                         if (crls != null)
                         {
                             foreach (var crl in crls)
                             {
-                                trustedCrls.Add(crl.RawData);
+                                trustedCrls.Add(crl.RawData.ToByteString());
                             }
                         }
                     }
                     else if (status == Status.Issuer)
                     {
-                        issuers.Add(certificate.RawData);
+                        issuers.Add(certificate.RawData.ToByteString());
 
                         if (crls != null)
                         {
                             foreach (var crl in crls)
                             {
-                                issuersCrls.Add(crl.RawData);
+                                issuersCrls.Add(crl.RawData.ToByteString());
                             }
                         }
                     }

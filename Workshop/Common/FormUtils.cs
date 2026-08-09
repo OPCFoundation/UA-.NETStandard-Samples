@@ -436,12 +436,12 @@ namespace Quickstarts
                         nodesToBrowse,
                         ct);
                     BrowseResultCollection results = response.Results;
-                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                    List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                     ClientBase.ValidateResponse(results, nodesToBrowse);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
 
-                    ByteStringCollection continuationPoints = new ByteStringCollection();
+                    List<ByteString> continuationPoints = new List<ByteString>();
 
                     for (int ii = 0; ii < nodesToBrowse.Count; ii++)
                     {
@@ -469,14 +469,14 @@ namespace Quickstarts
                         references.AddRange(results[ii].References);
 
                         // check for continuation point.
-                        if (results[ii].ContinuationPoint != null)
+                        if (!results[ii].ContinuationPoint.IsNull)
                         {
                             continuationPoints.Add(results[ii].ContinuationPoint);
                         }
                     }
 
                     // process continuation points.
-                    ByteStringCollection revisedContinuationPoints = new ByteStringCollection();
+                    List<ByteString> revisedContinuationPoints = new List<ByteString>();
 
                     while (continuationPoints.Count > 0)
                     {
@@ -511,7 +511,7 @@ namespace Quickstarts
                             references.AddRange(results[ii].References);
 
                             // check for continuation point.
-                            if (results[ii].ContinuationPoint != null)
+                            if (!results[ii].ContinuationPoint.IsNull)
                             {
                                 revisedContinuationPoints.Add(results[ii].ContinuationPoint);
                             }
@@ -593,7 +593,7 @@ namespace Quickstarts
                     ct);
 
                 BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -613,13 +613,13 @@ namespace Quickstarts
                     }
 
                     // check if all references have been fetched.
-                    if (results[0].References.Count == 0 || results[0].ContinuationPoint == null)
+                    if (results[0].References.Count == 0 || results[0].ContinuationPoint.IsNull)
                     {
                         break;
                     }
 
                     // continue browse operation.
-                    ByteStringCollection continuationPoints = new ByteStringCollection();
+                    List<ByteString> continuationPoints = new List<ByteString>();
                     continuationPoints.Add(results[0].ContinuationPoint);
 
                     BrowseNextResponse response2 = await session.BrowseNextAsync(
@@ -731,7 +731,7 @@ namespace Quickstarts
             // find the event type.
             NodeId eventTypeId = FindEventType(monitoredItem, notification);
 
-            if (eventTypeId == null)
+            if (eventTypeId.IsNull)
             {
                 return null;
             }
@@ -778,14 +778,14 @@ namespace Quickstarts
                         eventTypeMappings.Add(eventTypeId, superTypeId);
                     }
 
-                    if (knownTypeId != null)
+                    if (!knownTypeId.IsNull)
                     {
                         break;
                     }
                 }
 
                 // can't do anything with unknown types.
-                if (knownTypeId == null)
+                if (knownTypeId.IsNull)
                 {
                     return null;
                 }
@@ -858,7 +858,7 @@ namespace Quickstarts
 
             ResponseHeader responseHeader = response.ResponseHeader;
             BrowsePathResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             // ensure that the server returned valid results.
             Session.ValidateResponse(results, browsePaths);
@@ -922,8 +922,8 @@ namespace Quickstarts
             }
 
             // process the types starting from the top of the tree.
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
-            QualifiedNameCollection parentPath = new QualifiedNameCollection();
+            Dictionary<NodeId, List<QualifiedName>> foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
+            List<QualifiedName> parentPath = new List<QualifiedName>();
 
             for (int ii = supertypes.Count - 1; ii >= 0; ii--)
             {
@@ -945,8 +945,8 @@ namespace Quickstarts
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Public sample API preserves existing List<T> parameter.")]
         public static async Task CollectFieldsForInstanceAsync(Session session, NodeId instanceId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
-            QualifiedNameCollection parentPath = new QualifiedNameCollection();
+            Dictionary<NodeId, List<QualifiedName>> foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
+            List<QualifiedName> parentPath = new List<QualifiedName>();
             await CollectFieldsAsync(session, instanceId, parentPath, fields, fieldNodeIds, foundNodes, ct);
         }
 
@@ -963,10 +963,10 @@ namespace Quickstarts
         private static async Task CollectFieldsAsync(
             Session session,
             NodeId nodeId,
-            QualifiedNameCollection parentPath,
+            List<QualifiedName> parentPath,
             SimpleAttributeOperandCollection fields,
             List<NodeId> fieldNodeIds,
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes,
+            Dictionary<NodeId, List<QualifiedName>> foundNodes,
             CancellationToken ct = default)
         {
             // find all of the children of the field.
@@ -997,7 +997,7 @@ namespace Quickstarts
                 }
 
                 // construct browse path.
-                QualifiedNameCollection browsePath = new QualifiedNameCollection(parentPath);
+                List<QualifiedName> browsePath = new List<QualifiedName>(parentPath);
                 browsePath.Add(child.BrowseName);
 
                 // check if the browse path is already in the list.
@@ -1034,7 +1034,7 @@ namespace Quickstarts
         /// <returns>
         /// 	<c>true</c> if the specified select clause contains path; otherwise, <c>false</c>.
         /// </returns>
-        private static int ContainsPath(SimpleAttributeOperandCollection selectClause, QualifiedNameCollection browsePath)
+        private static int ContainsPath(SimpleAttributeOperandCollection selectClause, List<QualifiedName> browsePath)
         {
             for (int ii = 0; ii < selectClause.Count; ii++)
             {

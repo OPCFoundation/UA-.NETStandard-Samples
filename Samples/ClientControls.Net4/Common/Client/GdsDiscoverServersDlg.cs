@@ -377,8 +377,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -395,7 +395,7 @@ namespace Opc.Ua.Client.Controls
 
             if (discoveryUrls != null)
             {
-                application.DiscoveryUrls = new StringCollection(discoveryUrls);
+                application.DiscoveryUrls = new List<string>(discoveryUrls);
             }
 
             return application;

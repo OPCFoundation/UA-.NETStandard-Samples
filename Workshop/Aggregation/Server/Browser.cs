@@ -140,7 +140,7 @@ namespace AggregationServer
 
                 ResponseHeader responseHeader = response.ResponseHeader;
                 BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, nodesToBrowse);
@@ -200,7 +200,7 @@ namespace AggregationServer
 
                     ResponseHeader responseHeader = response.ResponseHeader;
                     BrowseResultCollection results = response.Results;
-                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                    List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                     // these do sanity checks on the result - make sure response matched the request.
                     ClientBase.ValidateResponse(results, nodesToBrowse);
@@ -247,8 +247,8 @@ namespace AggregationServer
         {
             if (m_continuationPoint != null)
             {
-                ByteStringCollection continuationPoints = new ByteStringCollection();
-                continuationPoints.Add(m_continuationPoint);
+                List<ByteString> continuationPoints = new List<ByteString>();
+                continuationPoints.Add(m_continuationPoint.ToByteString());
 
                 // start the browse operation.
                 BrowseNextResponse response = await m_client.BrowseNextAsync(
@@ -259,7 +259,7 @@ namespace AggregationServer
 
                 ResponseHeader responseHeader = response.ResponseHeader;
                 BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
                 ClientBase.ValidateResponse(results, continuationPoints);

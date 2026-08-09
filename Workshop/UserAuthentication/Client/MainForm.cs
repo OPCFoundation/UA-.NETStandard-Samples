@@ -498,8 +498,8 @@ namespace Quickstarts.UserAuthenticationClient
                     ct);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                DataValueCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, valuesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
@@ -547,8 +547,8 @@ namespace Quickstarts.UserAuthenticationClient
                     default);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                StatusCodeCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<StatusCode> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, valuesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);

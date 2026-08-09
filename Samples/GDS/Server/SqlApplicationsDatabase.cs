@@ -213,7 +213,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                     return null;
                 }
 
-                LocalizedTextCollection names = new LocalizedTextCollection();
+                List<LocalizedText> names = new List<LocalizedText>();
                 if (result.ApplicationNames != null)
                 {
                     foreach (var entry in new List<ApplicationName>(result.ApplicationNames))
@@ -226,11 +226,11 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                     names.Add(new LocalizedText(result.ApplicationName));
                 }
 
-                StringCollection discoveryUrls = null;
+                List<string> discoveryUrls = null;
 
                 if (result.ServerEndpoints != null)
                 {
-                    discoveryUrls = new StringCollection();
+                    discoveryUrls = new List<string>();
 
                     foreach (var endpoint in result.ServerEndpoints)
                     {
@@ -290,11 +290,11 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                     }
 
 
-                    StringCollection discoveryUrls = null;
+                    List<string> discoveryUrls = null;
 
                     if (result.ServerEndpoints != null)
                     {
-                        discoveryUrls = new StringCollection();
+                        discoveryUrls = new List<string>();
 
                         foreach (var endpoint in result.ServerEndpoints)
                         {
@@ -313,7 +313,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         ApplicationId = new NodeId(result.ApplicationId, NamespaceIndex),
                         ApplicationUri = result.ApplicationUri,
                         ApplicationType = (ApplicationType)result.ApplicationType,
-                        ApplicationNames = new LocalizedTextCollection(names),
+                        ApplicationNames = new List<LocalizedText>(names),
                         ProductUri = result.ProductUri,
                         DiscoveryUrls = discoveryUrls,
                         ServerCapabilities = capabilities
@@ -417,10 +417,10 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         continue;
                     }
 
-                    var discoveryUrls = new StringCollection();
+                    var discoveryUrls = new List<string>();
                     if (result.ServerEndpoints != null)
                     {
-                        discoveryUrls = new StringCollection();
+                        discoveryUrls = new List<string>();
 
                         foreach (var endpoint in result.ServerEndpoints)
                         {

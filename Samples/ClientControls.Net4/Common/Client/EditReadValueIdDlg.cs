@@ -71,7 +71,7 @@ namespace Opc.Ua.Client.Controls
 
             public override string ToString()
             {
-                if (EncodingName != null)
+                if (!EncodingName.IsNull)
                 {
                     return EncodingName.ToString();
                 }
@@ -114,7 +114,7 @@ namespace Opc.Ua.Client.Controls
                     // only show the node if all have the same node id.
                     if (editNode)
                     {
-                        if (NodeBTN.SelectedNode != null && nodesToRead[ii].NodeId != NodeBTN.SelectedNode)
+                        if (!NodeBTN.SelectedNode.IsNull && nodesToRead[ii].NodeId != NodeBTN.SelectedNode)
                         {
                             NodeTB.Visible = false;
                             NodeLB.Visible = false;

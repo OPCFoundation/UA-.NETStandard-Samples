@@ -437,7 +437,7 @@ namespace Quickstarts.SimpleEvents.Client
                 }
 
                 ConnectServerCTRL.PreferredLocales = new string[] { locale };
-                m_session.ChangePreferredLocales(new StringCollection(ConnectServerCTRL.PreferredLocales));
+                m_session.ChangePreferredLocales(new List<string>(ConnectServerCTRL.PreferredLocales));
             }
             catch (Exception exception)
             {

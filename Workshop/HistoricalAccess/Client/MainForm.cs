@@ -196,7 +196,7 @@ namespace Quickstarts.HistoricalAccess.Client
                     ReferenceTypes.Organizes,
                     ReferenceTypes.Aggregates);
 
-                if (nodeId != null)
+                if (!nodeId.IsNull)
                 {
                     await ReadCTRL.ChangeNodeAsync(nodeId);
                 }

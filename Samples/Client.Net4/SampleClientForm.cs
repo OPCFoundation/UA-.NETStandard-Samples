@@ -54,7 +54,7 @@ namespace Opc.Ua.Sample
 
             if (!configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                configuration.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                configuration.CertificateManager.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
             }
         }
 

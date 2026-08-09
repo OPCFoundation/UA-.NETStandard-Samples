@@ -37,8 +37,8 @@ namespace Quickstarts.AlarmConditionServer
     /// <summary>
     /// Stores the configuration the Alarm Condition server.
     /// </summary>
-    [DataContract(Namespace = Namespaces.AlarmCondition)]
-    public class AlarmConditionServerConfiguration
+    [DataType]
+    public partial class AlarmConditionServerConfiguration
     {
         #region Constructors
         /// <summary>
@@ -71,7 +71,7 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Gets or sets the list of top level Areas exposed by the server.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public AreaConfigurationCollection Areas
         {
             get { return m_areas; }
@@ -87,8 +87,8 @@ namespace Quickstarts.AlarmConditionServer
     /// <summary>
     /// Stores the configuration for a Area within the Alarm Condition server.
     /// </summary>
-    [DataContract(Namespace = Namespaces.AlarmCondition)]
-    public class AreaConfiguration
+    [DataType]
+    public partial class AreaConfiguration
     {
         #region Constructors
         /// <summary>
@@ -123,7 +123,7 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// The browse name for the instance.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public string Name
         {
             get { return m_name; }
@@ -133,7 +133,7 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Gets or set the list of sub-areas.
         /// </summary>
-        [DataMember(Order = 2)]
+        [DataTypeField(Order = 2)]
         public AreaConfigurationCollection SubAreas
         {
             get { return m_subAreas; }
@@ -143,8 +143,8 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Gets or set the list of sources.
         /// </summary>
-        [DataMember(Order = 3)]
-        public StringCollection SourcePaths
+        [DataTypeField(Order = 3)]
+        public List<string> SourcePaths
         {
             get { return m_sourcePaths; }
             set { m_sourcePaths = value; }
@@ -154,7 +154,7 @@ namespace Quickstarts.AlarmConditionServer
         #region Private Members
         private string m_name;
         private AreaConfigurationCollection m_subAreas;
-        private StringCollection m_sourcePaths;
+        private List<string> m_sourcePaths;
         #endregion
     }
 

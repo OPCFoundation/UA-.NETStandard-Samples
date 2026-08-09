@@ -138,8 +138,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -228,7 +228,7 @@ namespace Opc.Ua.Client.Controls
             nodesToBrowse.Add(nodeToBrowse);
 
             // find properties.
-            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false, ct);
+            List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false, ct);
 
             // build list of properties to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
@@ -263,8 +263,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

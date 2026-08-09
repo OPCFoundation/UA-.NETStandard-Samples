@@ -141,7 +141,7 @@ namespace Opc.Ua.Sample.Controls
                             buffer.Append("\r\n");
                         }
 
-                        buffer.AppendFormat("{0}", new Variant(array.GetValue(ii)));
+                        buffer.AppendFormat("{0}", Variant.From(array.GetValue(ii)));
                     }
                 }
                 else

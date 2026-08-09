@@ -54,7 +54,7 @@ namespace Opc.Ua.Client.Controls
         {
             InitializeComponent();
 
-            m_rootId = Objects.RootFolder;
+            m_rootId = (NodeId)Objects.RootFolder;
             BrowseBTN.Enabled = false;
         }
         #endregion
@@ -117,7 +117,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (NodeId.IsNull(m_rootId))
                 {
-                    m_rootId = Objects.RootFolder;
+                    m_rootId = (NodeId)Objects.RootFolder;
                 }
             }
         }
@@ -183,7 +183,7 @@ namespace Opc.Ua.Client.Controls
                 ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", Telemetry, default, null);
                 #pragma warning restore CA2000
 
-                if (reference != null && reference.NodeId != null)
+                if (reference != null && !reference.NodeId.IsNull)
                 {
                     NodeIdTB.Text = Utils.Format("{0}", reference.NodeId);
                     m_reference = reference;

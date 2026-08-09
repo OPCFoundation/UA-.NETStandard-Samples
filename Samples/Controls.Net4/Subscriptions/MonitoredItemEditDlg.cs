@@ -117,7 +117,7 @@ namespace Opc.Ua.Sample.Controls
             NodeClassCB.SelectedItem = monitoredItem.NodeClass;
             AttributeIdCB.SelectedItem = Attributes.GetBrowseName(monitoredItem.AttributeId);
             IndexRangeTB.Text = monitoredItem.IndexRange;
-            EncodingCB.Text = (monitoredItem.Encoding != null) ? monitoredItem.Encoding.Name : null;
+            EncodingCB.Text = (!monitoredItem.Encoding.IsNull) ? monitoredItem.Encoding.Name : null;
             MonitoringModeCB.SelectedItem = monitoredItem.MonitoringMode;
             SamplingIntervalNC.Value = 1000;
             DisableOldestCK.Checked = monitoredItem.DiscardOldest;

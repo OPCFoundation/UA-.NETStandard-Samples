@@ -95,7 +95,7 @@ namespace Opc.Ua.Sample.Controls
 
             Clear();
 
-            if (nodeId == null)
+            if (nodeId.IsNull)
             {
                 return;
             }
@@ -162,8 +162,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection values = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> values = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -237,8 +237,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection values = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> values = response.Results;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(values, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -320,7 +320,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     NodeId datatypeId = value as NodeId;
 
-                    if (datatypeId != null)
+                    if (!datatypeId.IsNull)
                     {
                         INode datatype = await m_session.NodeCache.FindAsync(datatypeId, ct);
 

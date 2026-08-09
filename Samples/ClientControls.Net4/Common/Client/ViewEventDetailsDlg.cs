@@ -59,7 +59,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Shows all fields for the current condition.
         /// </summary>
-        public bool ShowDialog(FilterDeclaration filter, VariantCollection fields)
+        public bool ShowDialog(FilterDeclaration filter, List<Variant> fields)
         {
             // fill in dialog.
             for (int ii = 0; ii < filter.Fields.Count; ii++)

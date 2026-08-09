@@ -67,7 +67,7 @@ namespace Opc.Ua.Sample.Controls
         public async Task ShowAsync(Session session, NodeId objectId, NodeId methodId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
-            if (methodId == null) throw new ArgumentNullException(nameof(methodId));
+            if (methodId.IsNull) throw new ArgumentNullException(nameof(methodId));
 
             if (m_session != null)
             {
@@ -110,7 +110,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                VariantCollection inputArguments = InputArgumentsCTRL.GetValues();
+                List<Variant> inputArguments = InputArgumentsCTRL.GetValues();
 
                 CallMethodRequest request = new CallMethodRequest();
 
@@ -128,7 +128,7 @@ namespace Opc.Ua.Sample.Controls
 
                 ResponseHeader responseHeader = response.ResponseHeader;
                 CallMethodResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 if (StatusCode.IsBad(results[0].StatusCode))
                 {

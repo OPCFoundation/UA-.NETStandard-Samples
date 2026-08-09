@@ -1423,7 +1423,7 @@ namespace Opc.Ua.Client.Controls
             // show node id value.
             NodeId nodeId = value as NodeId;
 
-            if (nodeId != null)
+            if (!nodeId.IsNull)
             {
                 (index, overwrite) = await ShowValueAsync(index, overwrite, nodeId, 0, ct);
                 (index, overwrite) = await ShowValueAsync(index, overwrite, nodeId, 1, ct);
@@ -1433,7 +1433,7 @@ namespace Opc.Ua.Client.Controls
             // show expanded node id value.
             ExpandedNodeId expandedNodeId = value as ExpandedNodeId;
 
-            if (expandedNodeId != null)
+            if (!expandedNodeId.IsNull)
             {
                 (index, overwrite) = await ShowValueAsync(index, overwrite, expandedNodeId, 0, ct);
                 (index, overwrite) = await ShowValueAsync(index, overwrite, expandedNodeId, 1, ct);
@@ -1444,7 +1444,7 @@ namespace Opc.Ua.Client.Controls
             // show qualified name value.
             QualifiedName qualifiedName = value as QualifiedName;
 
-            if (qualifiedName != null)
+            if (!qualifiedName.IsNull)
             {
                 (index, overwrite) = await ShowValueAsync(index, overwrite, qualifiedName, 0, ct);
                 return await ShowValueAsync(index, overwrite, qualifiedName, 1, ct);

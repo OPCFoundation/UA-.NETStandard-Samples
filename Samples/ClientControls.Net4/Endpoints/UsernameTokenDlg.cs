@@ -71,7 +71,7 @@ namespace Opc.Ua.Client.Controls
             {
                 UserNameCB.Text = token.UserName;
 
-                if (token.Password != null && token.Password.Length > 0)
+                if (!token.Password.IsNull && token.Password.Length > 0)
                 {
                     PasswordTB.Text = new UTF8Encoding().GetString(token.Password);
                 }

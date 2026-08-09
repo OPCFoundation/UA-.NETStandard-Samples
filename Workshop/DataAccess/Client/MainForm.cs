@@ -352,8 +352,8 @@ namespace Quickstarts.DataAccessClient
                     nodesToRead,
                     ct);
 
-                DataValueCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1182,7 +1182,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 ConnectServerCTRL.PreferredLocales = new string[] { locale };
-                m_session.ChangePreferredLocales(new StringCollection(ConnectServerCTRL.PreferredLocales));
+                m_session.ChangePreferredLocales(new List<string>(ConnectServerCTRL.PreferredLocales));
             }
             catch (Exception exception)
             {

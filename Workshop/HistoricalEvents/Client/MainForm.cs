@@ -243,7 +243,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 using SelectNodeDlg dialog = new SelectNodeDlg();
                 NodeId areaId = await dialog.ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
-                if (areaId == null)
+                if (areaId.IsNull)
                 {
                     return;
                 }
@@ -307,7 +307,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 ConnectServerCTRL.PreferredLocales = new string[] { locale };
-                m_session.ChangePreferredLocales(new StringCollection(ConnectServerCTRL.PreferredLocales));
+                m_session.ChangePreferredLocales(new List<string>(ConnectServerCTRL.PreferredLocales));
             }
             catch (Exception exception)
             {

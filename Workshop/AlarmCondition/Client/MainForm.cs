@@ -469,7 +469,7 @@ namespace Quickstarts.AlarmConditionClient
                 methodsToCall,
                 ct);
             CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -523,7 +523,7 @@ namespace Quickstarts.AlarmConditionClient
                 ct);
 
             CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -580,7 +580,7 @@ namespace Quickstarts.AlarmConditionClient
                 ct);
 
             CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -837,7 +837,7 @@ namespace Quickstarts.AlarmConditionClient
                     default);
 
                 CallMethodResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, methodsToCall);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -1172,7 +1172,7 @@ namespace Quickstarts.AlarmConditionClient
                     areaId = dialog.ShowDialog(m_session);
                 }
 
-                if (areaId == null)
+                if (areaId.IsNull)
                 {
                     return;
                 }

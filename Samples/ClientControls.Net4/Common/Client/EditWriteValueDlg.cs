@@ -191,7 +191,7 @@ namespace Opc.Ua.Client.Controls
 
             if (SourceTimestampTB.Enabled && String.IsNullOrEmpty(SourceTimestampTB.Text))
             {
-                SourceTimestampTB.Text = (string)TypeInfo.Cast(DateTime.UtcNow, BuiltInType.String);
+                SourceTimestampTB.Text = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
             }
         }
 
@@ -201,7 +201,7 @@ namespace Opc.Ua.Client.Controls
 
             if (ServerTimestampTB.Enabled && String.IsNullOrEmpty(ServerTimestampTB.Text))
             {
-                ServerTimestampTB.Text = (string)TypeInfo.Cast(DateTime.UtcNow, BuiltInType.String);
+                ServerTimestampTB.Text = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
             }
         }
         #endregion

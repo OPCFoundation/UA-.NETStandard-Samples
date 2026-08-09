@@ -189,7 +189,7 @@ namespace AggregationServer
             }
             else
             {
-                return ToVariant(new Variant(value), m_localNamespaceIndexes).Value;
+                return ToVariant(Variant.From(value), m_localNamespaceIndexes).Value;
             }
         }
 
@@ -204,7 +204,7 @@ namespace AggregationServer
             }
             else
             {
-                return ToVariant(new Variant(value), m_remoteNamespaceIndexes).Value;
+                return ToVariant(Variant.From(value), m_remoteNamespaceIndexes).Value;
             }
         }
         #endregion
@@ -390,7 +390,7 @@ namespace AggregationServer
             }
             else
             {
-                Variant result = ToVariant(new Variant(source), m_localNamespaceIndexes);
+                Variant result = ToVariant(Variant.From(source), m_localNamespaceIndexes);
                 return result.Value;
             }
         }
@@ -407,7 +407,7 @@ namespace AggregationServer
             }
             else
             {
-                Variant result = ToVariant(new Variant(source), m_remoteNamespaceIndexes);
+                Variant result = ToVariant(Variant.From(source), m_remoteNamespaceIndexes);
                 return result.Value;
             }
         }

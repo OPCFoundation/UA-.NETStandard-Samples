@@ -70,7 +70,7 @@ namespace Opc.Ua.Client.Controls
         public async Task<IList<ILocalNode>> ShowDialogAsync(ISession session, NodeId rootId, IList<NodeId> nodeIds, CancellationToken ct = default)
         {
             m_telemetry = session?.MessageContext?.Telemetry;
-            await BrowseCTRL.InitializeAsync(session, rootId, null, null, BrowseDirection.Forward, ct);
+            await BrowseCTRL.InitializeAsync(session, rootId, NodeId.Null, NodeId.Null, BrowseDirection.Forward, ct);
             await ReferencesCTRL.InitializeAsync(session, rootId, ct);
             await AttributesCTRL.InitializeAsync(session, rootId, ct);
             await NodesCTRL.InitializeAsync(session, nodeIds, ct);

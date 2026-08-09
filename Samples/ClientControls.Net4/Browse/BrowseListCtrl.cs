@@ -88,14 +88,14 @@ namespace Opc.Ua.Client.Controls
 
             IList<IReference> references = null;
 
-            references = node.References.Find(ReferenceTypes.NonHierarchicalReferences, false, true, m_session.TypeTree);
+            references = node.References.Find((NodeId)ReferenceTypes.NonHierarchicalReferences, false, true, m_session.TypeTree);
 
             for (int ii = 0; ii < references.Count; ii++)
             {
                 AddItem(references[ii]);
             }
 
-            references = node.References.Find(ReferenceTypes.NonHierarchicalReferences, true, true, m_session.TypeTree);
+            references = node.References.Find((NodeId)ReferenceTypes.NonHierarchicalReferences, true, true, m_session.TypeTree);
 
             for (int ii = 0; ii < references.Count; ii++)
             {
@@ -148,7 +148,7 @@ namespace Opc.Ua.Client.Controls
                     listItem.SubItems[1].Text = Utils.Format("{0}", reference.TargetId);
                 }
 
-                listItem.ImageKey = await GuiUtils.GetTargetIconAsync(m_session, NodeClass.ReferenceType, null, ct);
+                listItem.ImageKey = await GuiUtils.GetTargetIconAsync(m_session, NodeClass.ReferenceType, ExpandedNodeId.Null, ct);
                 listItem.Tag = reference;
             }
             catch (Exception exception)

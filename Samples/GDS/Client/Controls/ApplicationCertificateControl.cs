@@ -85,7 +85,7 @@ namespace Opc.Ua.Gds.Client
 
             if (!isHttps)
             {
-                if (server.Endpoint != null && server.Endpoint.Description.ServerCertificate != null)
+                if (server.Endpoint != null && !server.Endpoint.Description.ServerCertificate.IsNull)
                 {
                     certificate = GdsCertificateLoader.LoadCertificate(server.Endpoint.Description.ServerCertificate);
                 }
@@ -200,13 +200,13 @@ namespace Opc.Ua.Gds.Client
                     m_server.ApplicationCertificateType,
                     string.Empty,
                     false,
-                    unusedNonce);
+unusedNonce.ToByteString());
                 var domainNames = m_application.GetDomainNames(m_certificate);
                 NodeId requestId = await m_gds.StartSigningRequestAsync(
                     m_application.ApplicationId,
                     NodeId.Null,
                     NodeId.Null,
-                    certificateRequest);
+certificateRequest.ToByteString());
 
                 if (applyChanges)
                 {
@@ -261,7 +261,7 @@ namespace Opc.Ua.Gds.Client
                         catch
                         {
                             //create temporary cert to generate csr from
-                            m_certificate = CertificateFactory.CreateCertificate(
+                            m_certificate = DefaultCertificateFactory.Instance.CreateCertificate(
                                 X509Utils.GetApplicationUrisFromCertificate(m_certificate)[0],
                                 m_application.ApplicationName,
                                 Utils.ReplaceDCLocalhost(m_application.CertificateSubjectName),
@@ -322,7 +322,7 @@ namespace Opc.Ua.Gds.Client
                         }
                     }
                     byte[] certificateRequest = CertificateFactory.CreateSigningRequest(csrCertificate, domainNames);
-                    requestId = await m_gds.StartSigningRequestAsync(m_application.ApplicationId, NodeId.Null, NodeId.Null, certificateRequest);
+                    requestId = await m_gds.StartSigningRequestAsync(m_application.ApplicationId, NodeId.Null, NodeId.Null, certificateRequest.ToByteString());
                 }
 
                 m_application.CertificateRequestId = requestId.ToString();
@@ -511,9 +511,9 @@ namespace Opc.Ua.Gds.Client
                     bool applyChanges = await m_server.UpdateCertificateAsync(
                         NodeId.Null,
                         m_server.ApplicationCertificateType,
-                        certificate,
+certificate.ToByteString(),
                         (privateKeyPFX != null) ? "pfx" : String.Empty,
-                        (privateKeyPFX != null) ? privateKeyPFX : unusedPrivateKey,
+(privateKeyPFX != null) ? privateKeyPFX : unusedPrivateKey.ToByteString(),
                         issuerCertificates);
                     if (applyChanges)
                     {

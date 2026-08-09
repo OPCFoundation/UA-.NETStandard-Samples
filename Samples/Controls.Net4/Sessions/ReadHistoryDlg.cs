@@ -138,9 +138,9 @@ namespace Opc.Ua.Sample.Controls
 
         private void ShowResults()
         {
-            GoBTN.Visible = (m_result == null || m_result.ContinuationPoint == null || m_result.ContinuationPoint.Length == 0);
+            GoBTN.Visible = (m_result == null || m_result.ContinuationPoint.IsNull || m_result.ContinuationPoint.Length == 0);
             NextBTN.Visible = !GoBTN.Visible;
-            StopBTN.Enabled = (m_result != null && m_result.ContinuationPoint != null && m_result.ContinuationPoint.Length > 0);
+            StopBTN.Enabled = (m_result != null && !m_result.ContinuationPoint.IsNull && m_result.ContinuationPoint.Length > 0);
 
             if (m_result == null)
             {
@@ -205,7 +205,7 @@ namespace Opc.Ua.Sample.Controls
                 ct);
 
             HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -239,7 +239,7 @@ namespace Opc.Ua.Sample.Controls
                 ct);
 
             HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -258,7 +258,7 @@ namespace Opc.Ua.Sample.Controls
 
             DateTime startTime = data.DataValues[0].SourceTimestamp;
 
-            if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -324,7 +324,7 @@ namespace Opc.Ua.Sample.Controls
                 ct);
 
             HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -386,7 +386,7 @@ namespace Opc.Ua.Sample.Controls
                 ct);
 
             HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

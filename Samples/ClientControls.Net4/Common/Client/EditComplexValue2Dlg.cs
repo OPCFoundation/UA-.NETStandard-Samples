@@ -156,7 +156,7 @@ namespace Opc.Ua.Client.Controls
                 encoding = extension.Encoding;
             }
 
-            if (encodingId == null)
+            if (encodingId.IsNull)
             {
                 StatusCTRL.Visible = false;
                 return;
@@ -320,8 +320,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     default);
 
-                DataValueCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -363,8 +363,8 @@ namespace Opc.Ua.Client.Controls
                     default);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                StatusCodeCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<StatusCode> results = response.Results;
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 ClientBase.ValidateResponse(results, nodesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);

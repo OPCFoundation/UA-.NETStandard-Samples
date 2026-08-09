@@ -139,7 +139,7 @@ namespace Opc.Ua.Sample.Controls
             // get properties from supertype.
             ExpandedNodeId supertypeId = node.GetSuperType(m_session.TypeTree);
 
-            if (supertypeId != null)
+            if (!supertypeId.IsNull)
             {
                 await AddPropertiesAsync(supertypeId, ct);
             }

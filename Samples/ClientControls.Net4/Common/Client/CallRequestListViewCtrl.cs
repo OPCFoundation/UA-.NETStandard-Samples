@@ -97,12 +97,12 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public async Task SetMethodAsync(NodeId objectId, NodeId methodId, CancellationToken ct = default)
         {
-            if (objectId == null)
+            if (objectId.IsNull)
             {
                 throw new ArgumentNullException(nameof(objectId));
             }
 
-            if (methodId == null)
+            if (methodId.IsNull)
             {
                 throw new ArgumentNullException(nameof(methodId));
             }
@@ -127,13 +127,17 @@ namespace Opc.Ua.Client.Controls
             methodToCall.ObjectId = m_objectId;
             methodToCall.MethodId = m_methodId;
 
+            List<Variant> inputArguments = new List<Variant>();
+
             foreach (DataRow row in m_dataset.Tables[0].Rows)
             {
                 Argument argument = (Argument)row[0];
                 Variant value = (Variant)row[4];
                 argument.Value = value.Value;
-                methodToCall.InputArguments.Add(value);
+                inputArguments.Add(value);
             }
+
+            methodToCall.InputArguments = inputArguments;
 
             methodsToCall.Add(methodToCall);
 
@@ -145,8 +149,8 @@ namespace Opc.Ua.Client.Controls
                 ct);
 
             ResponseHeader responseHeader = response.ResponseHeader;
-            CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<CallMethodResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -281,7 +285,7 @@ namespace Opc.Ua.Client.Controls
             nodesToBrowse.Add(nodeToBrowse);
 
             // find properties.
-            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, null, nodesToBrowse, false, ct);
+            List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, null, nodesToBrowse, false, ct);
 
             // build list of properties to read.
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
@@ -323,8 +327,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

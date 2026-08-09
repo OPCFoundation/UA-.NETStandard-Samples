@@ -190,7 +190,7 @@ namespace Opc.Ua.Gds.Client
 
             if (record != null)
             {
-                m_application.ApplicationId = record.ApplicationId?.ToString();
+                m_application.ApplicationId = record.ApplicationId.ToString();
                 m_application.ApplicationUri = record.ApplicationUri;
                 m_application.ApplicationName = (record.ApplicationNames != null && record.ApplicationNames.Count > 0 && record.ApplicationNames[0].Text != null) ? record.ApplicationNames[0].Text.ToString() : null;
                 m_application.ProductUri = record.ProductUri;
@@ -1398,7 +1398,7 @@ namespace Opc.Ua.Gds.Client
                     recordToReplace = new ApplicationRecordDataType();
                 }
 
-                StringCollection urls = new StringCollection();
+                List<string> urls = new List<string>();
 
                 if (discoveryUrls != null)
                 {
@@ -1413,7 +1413,7 @@ namespace Opc.Ua.Gds.Client
                 recordToReplace.ApplicationNames = new LocalizedText[] { applicationName };
                 recordToReplace.ProductUri = productUri;
                 recordToReplace.DiscoveryUrls = urls;
-                recordToReplace.ServerCapabilities = (capabilities != null) ? new StringCollection(capabilities) : new StringCollection();
+                recordToReplace.ServerCapabilities = (capabilities != null) ? new List<string>(capabilities) : new List<string>();
 
                 var applicationId = await m_gds.RegisterApplicationAsync(recordToReplace);
 
@@ -1731,7 +1731,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (m_application.DiscoveryUrl != null)
                 {
-                    StringCollection urls = new StringCollection();
+                    List<string> urls = new List<string>();
 
                     foreach (var discoveryUrl in m_application.DiscoveryUrl)
                     {
@@ -1758,7 +1758,7 @@ namespace Opc.Ua.Gds.Client
 
                     if (m_application.DiscoveryUrl != null)
                     {
-                        StringCollection urls = new StringCollection();
+                        List<string> urls = new List<string>();
 
                         foreach (var discoveryUrl in m_application.DiscoveryUrl)
                         {

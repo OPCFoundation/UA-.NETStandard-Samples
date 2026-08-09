@@ -83,7 +83,7 @@ namespace AggregationServer
                 ReferenceDescription reference = references[ii];
 
                 // ignore absolute references.
-                if (reference.NodeId == null || reference.NodeId.IsAbsolute)
+                if (reference.NodeId.IsNull || reference.NodeId.IsAbsolute)
                 {
                     continue;
                 }
@@ -137,7 +137,7 @@ namespace AggregationServer
 
             ResponseHeader responseHeader = response.ResponseHeader;
             BrowseResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
             // these do sanity checks on the result - make sure response matched the request.
             ClientBase.ValidateResponse(results, nodesToBrowse);
@@ -154,9 +154,9 @@ namespace AggregationServer
             references.AddRange(results[0].References);
 
             // check if server limited the results.
-            while (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            while (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
-                ByteStringCollection continuationPoints = new ByteStringCollection();
+                List<ByteString> continuationPoints = new List<ByteString>();
                 continuationPoints.Add(results[0].ContinuationPoint);
 
                 // continue browse operation.

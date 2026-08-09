@@ -85,7 +85,7 @@ namespace Quickstarts.AlarmConditionClient
         public MonitoredItem CreateMonitoredItem(ISession session, ITelemetryContext telemetry)
         {
             // choose the server object by default.
-            if (AreaId == null)
+            if (AreaId.IsNull)
             {
                 AreaId = ObjectIds.Server;
             }
@@ -140,7 +140,7 @@ namespace Quickstarts.AlarmConditionClient
 
             operand.TypeDefinitionId = ObjectTypeIds.ConditionType;
             operand.AttributeId = Attributes.NodeId;
-            operand.BrowsePath = new QualifiedNameCollection();
+            operand.BrowsePath = new List<QualifiedName>();
 
             selectClauses.Add(operand);
 
@@ -285,8 +285,8 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // process the types starting from the top of the tree.
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
-            QualifiedNameCollection parentPath = new QualifiedNameCollection();
+            Dictionary<NodeId, List<QualifiedName>> foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
+            List<QualifiedName> parentPath = new List<QualifiedName>();
 
             for (int ii = supertypes.Count - 1; ii >= 0; ii--)
             {
@@ -309,9 +309,9 @@ namespace Quickstarts.AlarmConditionClient
         private async Task CollectFieldsAsync(
             ISession session,
             NodeId nodeId,
-            QualifiedNameCollection parentPath,
+            List<QualifiedName> parentPath,
             SimpleAttributeOperandCollection eventFields,
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes,
+            Dictionary<NodeId, List<QualifiedName>> foundNodes,
             CancellationToken ct = default)
         {
             // find all of the children of the field.
@@ -342,7 +342,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // construct browse path.
-                QualifiedNameCollection browsePath = new QualifiedNameCollection(parentPath);
+                List<QualifiedName> browsePath = new List<QualifiedName>(parentPath);
                 browsePath.Add(child.BrowseName);
 
                 // check if the browse path is already in the list.
@@ -376,7 +376,7 @@ namespace Quickstarts.AlarmConditionClient
         /// <returns>
         /// 	<c>true</c> if the specified select clause contains path; otherwise, <c>false</c>.
         /// </returns>
-        private bool ContainsPath(SimpleAttributeOperandCollection selectClause, QualifiedNameCollection browsePath)
+        private bool ContainsPath(SimpleAttributeOperandCollection selectClause, List<QualifiedName> browsePath)
         {
             for (int ii = 0; ii < selectClause.Count; ii++)
             {

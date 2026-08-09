@@ -711,7 +711,7 @@ namespace TestData
 
                 for (int ii = 0; values != null && ii < values.Length; ii++)
                 {
-                    value.VariantValue.Add(new Variant(values[ii]));
+                    value.VariantValue.Add(Variant.From(values[ii]));
                 }
 
                 return new ExtensionObject(value.TypeId, value);

@@ -414,7 +414,7 @@ namespace Quickstarts.AlarmConditionServer
             ISystemContext context = m_nodeManager.SystemContext;
 
             // remove old event.
-            if (node.EventId.Value != null)
+            if (!node.EventId.Value.IsNull)
             {
                 m_events.Remove(Utils.ToHexString(node.EventId.Value));
             }
@@ -706,7 +706,7 @@ namespace Quickstarts.AlarmConditionServer
                 return 0;
             }
 
-            if (alarm.BranchId == null || alarm.BranchId.Value == null)
+            if (alarm.BranchId == null || alarm.BranchId.Value.IsNull)
             {
                 return 0;
             }

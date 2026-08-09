@@ -332,7 +332,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Public Interface
-        public EndpointDescriptionCollection AvailableEnpoints
+        public List<EndpointDescription> AvailableEnpoints
         {
             get { return m_availableEndpoints; }
         }
@@ -1772,7 +1772,7 @@ namespace Opc.Ua.Client.Controls
                         m_statusObject.ClearStatus(StatusChannel.DiscoveryURLs);
                     }
 
-                    if ((m_currentDescription.ServerCertificate != null) && (m_currentDescription.ServerCertificate.Length > 0))
+                    if ((!m_currentDescription.ServerCertificate.IsNull) && (m_currentDescription.ServerCertificate.Length > 0))
                     {
                         X509Certificate2 serverCertificate = X509CertificateLoader.LoadCertificate(m_currentDescription.ServerCertificate);
                         String certificateApplicationUri = X509Utils.GetApplicationUrisFromCertificate(serverCertificate)[0];

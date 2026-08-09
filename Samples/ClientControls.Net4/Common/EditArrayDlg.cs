@@ -102,7 +102,7 @@ namespace Opc.Ua.Client.Controls
                 for (int ii = 0; ii < value.Length; ii++)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    row[0] = new Variant(value.GetValue(ii)).ToString();
+                    row[0] = Variant.From(value.GetValue(ii)).ToString();
                     row[1] = ii;
                     m_dataset.Tables[0].Rows.Add(row);
                 }
@@ -200,7 +200,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    row[0] = new Variant(TypeInfo.GetDefaultValue(m_dataType));
+                    row[0] = Variant.From(TypeInfo.GetDefaultValue(m_dataType));
                     row[1] = index;
                     m_dataset.Tables[0].Rows.Add(row);
                 }

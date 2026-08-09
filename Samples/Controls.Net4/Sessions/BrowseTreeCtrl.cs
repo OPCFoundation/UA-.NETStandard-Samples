@@ -383,7 +383,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (reference != null)
                     {
-                        BrowseMI.Enabled = (reference.NodeId != null && !reference.NodeId.IsAbsolute);
+                        BrowseMI.Enabled = (!reference.NodeId.IsNull && !reference.NodeId.IsAbsolute);
                         ViewAttributesMI.Enabled = true;
 
                         NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_session.NamespaceUris);
@@ -552,7 +552,7 @@ namespace Opc.Ua.Sample.Controls
                 // check if reference type folder is selected.
                 NodeId referenceTypeId = NodesTV.SelectedNode.Tag as NodeId;
 
-                if (referenceTypeId != null)
+                if (!referenceTypeId.IsNull)
                 {
                     m_references = new ReferenceDescriptionCollection();
 
@@ -636,7 +636,7 @@ namespace Opc.Ua.Sample.Controls
             // find node to browse.
             ReferenceDescription reference = node.Tag as ReferenceDescription;
 
-            if (reference == null || reference.NodeId == null || reference.NodeId.IsAbsolute)
+            if (reference == null || reference.NodeId.IsNull || reference.NodeId.IsAbsolute)
             {
                 return false;
             }
@@ -697,7 +697,7 @@ namespace Opc.Ua.Sample.Controls
                     continue;
                 }
 
-                if (reference.NodeId == null || reference.NodeId.IsNull)
+                if (reference.NodeId.IsNull || reference.NodeId.IsNull)
                 {
                     if (m_logger.IsEnabled(LogLevel.Debug))
                     {
@@ -706,7 +706,7 @@ namespace Opc.Ua.Sample.Controls
                     continue;
                 }
 
-                if (reference.BrowseName == null || reference.BrowseName.Name == null)
+                if (reference.BrowseName.IsNull || reference.BrowseName.Name == null)
                 {
                     if (m_logger.IsEnabled(LogLevel.Debug))
                     {
@@ -726,7 +726,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_browser.NodeClassMask != 0 && m_browser.NodeClassMask != 255)
                 {
-                    if (reference.TypeDefinition == null || reference.TypeDefinition.IsNull)
+                    if (reference.TypeDefinition.IsNull || reference.TypeDefinition.IsNull)
                     {
                         if (m_logger.IsEnabled(LogLevel.Debug))
                         {
@@ -861,7 +861,7 @@ namespace Opc.Ua.Sample.Controls
                     return reference.DisplayName.Text;
                 }
 
-                if (reference.BrowseName != null)
+                if (!reference.BrowseName.IsNull)
                 {
                     return reference.BrowseName.Name;
                 }
@@ -1222,7 +1222,7 @@ namespace Opc.Ua.Sample.Controls
 
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
 
-                if (reference == null || reference.NodeId == null || reference.NodeId.IsAbsolute)
+                if (reference == null || reference.NodeId.IsNull || reference.NodeId.IsAbsolute)
                 {
                     return;
                 }
@@ -1247,7 +1247,7 @@ namespace Opc.Ua.Sample.Controls
 
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
 
-                if (reference == null || reference.NodeId == null || reference.NodeId.IsAbsolute)
+                if (reference == null || reference.NodeId.IsNull || reference.NodeId.IsAbsolute)
                 {
                     return;
                 }
