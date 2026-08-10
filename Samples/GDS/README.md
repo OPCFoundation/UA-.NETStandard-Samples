@@ -4,7 +4,7 @@
 This Global Discovery Server and Client implement the `Global Discovery and Certificate Management Server` profile as specified in the OPC Unified Architecture Specification Part 12: Discovery Release 1.03.
 
 The Solution is split into these projects:
-- **GlobalDiscoveryServer:** Global Discovery Server for .Net 4.6 with SQL server as registration and certificate database.
+- **GlobalDiscoveryServer:** Global Discovery Server for .Net (Windows) that uses Entity Framework Core with a SQL server as registration and certificate database.
 - **GlobalDiscoveryServerLibrary:** Common Global Discovery Server classes for .Net 4.6 and .Net Standard.
 - **NetCoreGlobalDiscoveryServer:** Global Discovery Server for .Net Standard with Json database implementation to demonstrate the abstracted database registration and certificate authority interface. (The gdsdb.json is not a secure database and should only be used for testing).
 - **GlobalDiscoveryClient:** Global Discovery Client for .Net 4.6. with Windows forms user interface.
@@ -15,10 +15,10 @@ The Solution is split into these projects:
 ## How to build and run the Windows OPC UA Global Discovery Server
 1. Open the solution **UA Global Discovery Server.sln** with VisualStudio.
 2. Choose the project `GlobalDiscoveryServer` in the Solution Explorer and set it with a right click as `Startup Project`.
-3. The server has a dependency on the Entity Framework and SQL server. By default the server connects to the data source `Data Source=(localdb)\MSSQLLocalDB` which is the SQL server installed with Visual Studio. The default location for the database files is the user home directory. To change the data source modify the connection string in the `app.config` file.
+3. The server uses [Entity Framework Core](https://learn.microsoft.com/ef/core/) and requires a SQL server. By default the server connects to the data source `Data Source=(localdb)\MSSQLLocalDB`, the SQL Server Express LocalDB instance that is installed with Visual Studio. The default location for the database files is the user home directory. To use a different SQL server (for example a full SQL Server instance or another LocalDB instance name) modify the `gdsdbEntities` and `usersdbEntities` connection strings in the `app.config` file.
 4. Hit `Ctrl-F5` to build and execute the sample.
 5. The server loads and initializes all [Certificates](#certificates).
-6. If the SQL database is opened for the first time, the server initializes it according to the script in `\DB\Tables.sql`.
+6. On the first start the server automatically creates the `gdsdb` and `usersdb` databases (via Entity Framework Core `EnsureCreated`) and seeds the required tables and default data from the embedded scripts `\DB\gdsdb.edmx.sql` and `\DB\usersdb.edmx.sql`. No manual database creation or script execution is required. The account used by the connection string must have permission to create databases on the target SQL server.
 7. The server is now running and waiting for the connection of a GDS client. 
 
 ## How to build and run the console OPC UA Global Discovery Server on Windows, Linux and iOS
