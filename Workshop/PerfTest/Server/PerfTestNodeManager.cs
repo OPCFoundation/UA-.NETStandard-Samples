@@ -153,7 +153,10 @@ namespace Quickstarts.PerfTestServer
                 handle.NodeId = nodeId;
                 handle.Validated = true;
 
-                uint id = (uint)nodeId.Identifier;
+                if (!nodeId.TryGetValue(out uint id))
+                {
+                    return null;
+                }
 
                 // find register
                 int registerId = (int)((id & 0xFF000000) >> 24);

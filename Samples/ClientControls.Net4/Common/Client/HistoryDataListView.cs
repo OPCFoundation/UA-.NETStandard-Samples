@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -1110,7 +1110,7 @@ namespace Opc.Ua.Client.Controls
                 filter.ProcessingInterval = (double)ProcessingIntervalNP.Value;
                 filter.AggregateType = ((AvailableAggregate)AggregateCB.SelectedItem).NodeId;
 
-                if (filter.AggregateType != null)
+                if (!filter.AggregateType.IsNull)
                 {
                     m_monitoredItem.Filter = filter;
                 }

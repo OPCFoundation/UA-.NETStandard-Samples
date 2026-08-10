@@ -480,7 +480,7 @@ namespace Quickstarts.HistoricalEvents.Server
             foreach (SimpleAttributeOperand clause in request.Filter.SelectClauses)
             {
                 // get the value of the attribute (apply localization).
-                object value = instance.GetAttributeValue(
+                Variant value = instance.GetAttributeValue(
                     request.FilterContext,
                     clause.TypeDefinitionId,
                     clause.BrowsePath,
@@ -488,16 +488,16 @@ namespace Quickstarts.HistoricalEvents.Server
                     clause.ParsedIndexRange);
 
                 // add the value to the list of event fields.
-                if (value != null)
+                if (!value.IsNull)
                 {
                     // translate any localized text.
-                    if (value is LocalizedText text && !text.IsNullOrEmpty)
+                    if (value.AsBoxedObject() is LocalizedText text && !text.IsNullOrEmpty)
                     {
-                        value = Server.ResourceManager.Translate(request.FilterContext.PreferredLocales, text);
+                        value = Variant.From(Server.ResourceManager.Translate(request.FilterContext.PreferredLocales, text));
                     }
 
                     // add value.
-                    fields.EventFields = fields.EventFields.AddItem(new Variant(value));
+                    fields.EventFields = fields.EventFields.AddItem(value);
                 }
 
                 // add a dummy entry for missing values.
@@ -527,12 +527,12 @@ namespace Quickstarts.HistoricalEvents.Server
                 using DataView view = handle.Node is WellState
                     ? m_generator.ReadHistoryForWellId(
                         ii,
-                        (string)handle.Node.NodeId.Identifier,
+                        handle.Node.NodeId.TryGetValue(out string wellId) ? wellId : null,
                         (DateTime)details.StartTime,
                         (DateTime)details.EndTime)
                     : m_generator.ReadHistoryForArea(
                         ii,
-                        handle.Node.NodeId.Identifier as string,
+                        handle.Node.NodeId.TryGetValue(out string areaId) ? areaId : null,
                         (DateTime)details.StartTime,
                         (DateTime)details.EndTime);
 

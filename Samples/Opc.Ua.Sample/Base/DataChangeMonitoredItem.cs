@@ -582,7 +582,7 @@ namespace Opc.Ua.Sample
                 // make a shallow copy of the value (DataValue is an immutable struct in 2.0).
                 DataValue queued = value;
 
-                if (value != null)
+                if (!value.IsNull)
                 {
                     // ensure the data value matches the error status code.
                     if (error != null && error.StatusCode.Code != 0)
@@ -785,7 +785,7 @@ namespace Opc.Ua.Sample
             // set semantics changed bit.
             if (m_semanticsChanged)
             {
-                if (value != null)
+                if (!value.IsNull)
                 {
                     value = new DataValue(
                         value.WrappedValue,
@@ -813,7 +813,7 @@ namespace Opc.Ua.Sample
             // set structure changed bit.
             if (m_structureChanged)
             {
-                if (value != null)
+                if (!value.IsNull)
                 {
                     value = new DataValue(
                         value.WrappedValue,

@@ -246,7 +246,7 @@ namespace Opc.Ua.Sample.Controls
             Node parent = null;
 
             // if the NodeId is of type string and contains '.' do not use relative paths
-            if (node.NodeId.IdType != IdType.String || (!node.NodeId.Identifier.ToString().Contains('.', StringComparison.Ordinal) && !node.NodeId.Identifier.ToString().Contains('/', StringComparison.Ordinal)))
+            if (node.NodeId.IdType != IdType.String || (!node.NodeId.IdentifierAsString.Contains('.', StringComparison.Ordinal) && !node.NodeId.IdentifierAsString.Contains('/', StringComparison.Ordinal)))
             {
                 parent = await FindParentAsync(node, ct);
             }

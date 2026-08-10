@@ -239,7 +239,7 @@ namespace Quickstarts.DataTypes.Types
 
             public Variant WithValue(VehicleType[] value)
             {
-                return new Variant(value);
+                return Variant.FromStructure<VehicleType>(value, false);
             }
         }
 

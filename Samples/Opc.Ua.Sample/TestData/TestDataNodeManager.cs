@@ -106,12 +106,67 @@ namespace TestData
         {
             lock (Lock)
             {
-                variable.Value = new Variant(value);
+                variable.Value = ToVariant(value);
                 variable.StatusCode = statusCode;
                 variable.Timestamp = timestamp;
 
                 // notifies any monitored items that the value has changed.
                 variable.ClearChangeMasks(SystemContext, false);
+            }
+        }
+
+        private static Variant ToVariant(object value)
+        {
+            switch (value)
+            {
+                case null: return Variant.Null;
+                case Variant v: return v;
+                case bool v: return Variant.From(v);
+                case sbyte v: return Variant.From(v);
+                case byte v: return Variant.From(v);
+                case short v: return Variant.From(v);
+                case ushort v: return Variant.From(v);
+                case int v: return Variant.From(v);
+                case uint v: return Variant.From(v);
+                case long v: return Variant.From(v);
+                case ulong v: return Variant.From(v);
+                case float v: return Variant.From(v);
+                case double v: return Variant.From(v);
+                case string v: return Variant.From(v);
+                case DateTime v: return Variant.From(new DateTimeUtc(v));
+                case Guid v: return Variant.From(new Uuid(v));
+                case ByteString v: return Variant.From(v);
+                case byte[] v: return Variant.From(v.ToByteString());
+                case XmlElement v: return Variant.From(v);
+                case NodeId v: return Variant.From(v);
+                case ExpandedNodeId v: return Variant.From(v);
+                case StatusCode v: return Variant.From(v);
+                case QualifiedName v: return Variant.From(v);
+                case LocalizedText v: return Variant.From(v);
+                case ExtensionObject v: return Variant.From(v);
+                case bool[] v: return Variant.From(new ArrayOf<bool>(v));
+                case sbyte[] v: return Variant.From(new ArrayOf<sbyte>(v));
+                case short[] v: return Variant.From(new ArrayOf<short>(v));
+                case ushort[] v: return Variant.From(new ArrayOf<ushort>(v));
+                case int[] v: return Variant.From(new ArrayOf<int>(v));
+                case uint[] v: return Variant.From(new ArrayOf<uint>(v));
+                case long[] v: return Variant.From(new ArrayOf<long>(v));
+                case ulong[] v: return Variant.From(new ArrayOf<ulong>(v));
+                case float[] v: return Variant.From(new ArrayOf<float>(v));
+                case double[] v: return Variant.From(new ArrayOf<double>(v));
+                case string[] v: return Variant.From(new ArrayOf<string>(v));
+                case DateTime[] v: return Variant.From(new ArrayOf<DateTimeUtc>(Array.ConvertAll(v, x => new DateTimeUtc(x))));
+                case Guid[] v: return Variant.From(new ArrayOf<Uuid>(Array.ConvertAll(v, x => new Uuid(x))));
+                case ByteString[] v: return Variant.From(new ArrayOf<ByteString>(v));
+                case XmlElement[] v: return Variant.From(new ArrayOf<XmlElement>(v));
+                case NodeId[] v: return Variant.From(new ArrayOf<NodeId>(v));
+                case ExpandedNodeId[] v: return Variant.From(new ArrayOf<ExpandedNodeId>(v));
+                case StatusCode[] v: return Variant.From(new ArrayOf<StatusCode>(v));
+                case QualifiedName[] v: return Variant.From(new ArrayOf<QualifiedName>(v));
+                case LocalizedText[] v: return Variant.From(new ArrayOf<LocalizedText>(v));
+                case ExtensionObject[] v: return Variant.From(new ArrayOf<ExtensionObject>(v));
+                case IEncodeable v: return Variant.From(new ExtensionObject(v, false));
+                default: return Variant.Null;
             }
         }
         #endregion
@@ -215,7 +270,12 @@ namespace TestData
                 return predefinedNode;
             }
 
-            switch ((uint)typeId.Identifier)
+            if (!typeId.TryGetValue(out uint numericTypeId))
+            {
+                return predefinedNode;
+            }
+
+            switch (numericTypeId)
             {
                 case ObjectTypes.TestSystemConditionType:
                 {

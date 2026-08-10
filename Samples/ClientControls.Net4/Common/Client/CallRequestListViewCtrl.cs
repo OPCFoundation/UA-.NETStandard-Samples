@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -236,7 +236,7 @@ namespace Opc.Ua.Client.Controls
                 foreach (Argument argument in m_inputArguments)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    await UpdateRowAsync(row, argument, new Variant(argument.Value), false, ct);
+                    await UpdateRowAsync(row, argument, ClientUtils.ToVariant(argument.Value), false, ct);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -342,12 +342,12 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (reference.BrowseName == Opc.Ua.BrowseNames.InputArguments)
                     {
-                        m_inputArguments = (Argument[])ExtensionObject.ToArray(results[ii].GetValue<ExtensionObject[]>(null), typeof(Argument));
+                        m_inputArguments = ExtensionObject.ToArray<Argument>(results[ii].GetValue<ExtensionObject[]>(null)).ToArray();
                     }
 
                     if (reference.BrowseName == Opc.Ua.BrowseNames.OutputArguments)
                     {
-                        m_outputArguments = (Argument[])ExtensionObject.ToArray(results[ii].GetValue<ExtensionObject[]>(null), typeof(Argument));
+                        m_outputArguments = ExtensionObject.ToArray<Argument>(results[ii].GetValue<ExtensionObject[]>(null)).ToArray();
                     }
                 }
             }
@@ -386,7 +386,7 @@ namespace Opc.Ua.Client.Controls
                     if (result != null)
                     {
                         argument.Value = result;
-                        await UpdateRowAsync(source.Row, argument, new Variant(result), false);
+                        await UpdateRowAsync(source.Row, argument, ClientUtils.ToVariant(result), false);
                     }
 
                     break;

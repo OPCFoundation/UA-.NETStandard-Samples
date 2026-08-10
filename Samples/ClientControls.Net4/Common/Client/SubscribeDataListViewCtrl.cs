@@ -429,10 +429,10 @@ namespace Opc.Ua.Client.Controls
 
             row[11] = value;
 
-            if (value != null)
+            if (!value.IsNull)
             {
                 row[1] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, value.WrappedValue.AsBoxedObject())];
-                row[12] = (value.WrappedValue.TypeInfo != null) ? value.WrappedValue.TypeInfo.ToString() : String.Empty;
+                row[12] = (!value.WrappedValue.TypeInfo.IsUnknown) ? value.WrappedValue.TypeInfo.ToString() : String.Empty;
                 row[13] = value.WrappedValue;
                 row[14] = value.StatusCode;
                 row[15] = value.SourceTimestamp.ToLocalTime().ToString("hh:mm:ss.fff");

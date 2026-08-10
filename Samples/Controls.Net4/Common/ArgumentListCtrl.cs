@@ -125,7 +125,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 for (int ii = 0; ii < argumentsList.Length; ii++)
                 {
-                    AddItem(argumentsList[ii].Body as Argument);
+                    AddItem(argumentsList[ii].TryGetValue<Argument>(out var argument, m_session.MessageContext) ? argument : null);
                 }
             }
 
@@ -147,7 +147,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument != null)
                 {
-                    values.Add(new Variant(argument.Value));
+                    values.Add(Variant.From((dynamic)argument.Value));
                 }
             }
 
@@ -234,7 +234,7 @@ namespace Opc.Ua.Sample.Controls
                         {
                             if (argument.ValueRank == ValueRanks.Scalar)
                             {
-                                argument.Value = new ExtensionObject(ExpandedNodeId.Null, Activator.CreateInstance(type));
+                                argument.Value = new ExtensionObject((IEncodeable)Activator.CreateInstance(type), false);
                             }
                             else
                             {

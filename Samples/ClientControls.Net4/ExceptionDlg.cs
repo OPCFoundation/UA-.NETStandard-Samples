@@ -125,7 +125,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     AddBlock(buffer, "SERVICE RESULT (" + new StatusCode(sr.Code).ToString() + ")", 2);
 
-                    string text = (sr.LocalizedText != null) ? sr.LocalizedText.Text : null;
+                    string text = (!sr.LocalizedText.IsNull) ? sr.LocalizedText.Text : null;
 
                     if (text != e.Message)
                     {

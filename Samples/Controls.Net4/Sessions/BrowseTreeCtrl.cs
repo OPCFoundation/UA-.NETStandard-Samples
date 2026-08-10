@@ -807,7 +807,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (typeNode.NodeId == referenceTypeId)
                 {
-                    if (typeNode.InverseName == null)
+                    if (typeNode.InverseName.IsNull)
                     {
                         return child;
                     }
@@ -834,7 +834,7 @@ namespace Opc.Ua.Sample.Controls
                 string text = typeNode.DisplayName.Text;
                 string icon = "ReferenceType";
 
-                if (!reference.IsForward && typeNode.InverseName != null)
+                if (!reference.IsForward && !typeNode.InverseName.IsNull)
                 {
                     text = typeNode.InverseName.Text;
                 }
@@ -857,7 +857,7 @@ namespace Opc.Ua.Sample.Controls
         {
             if (reference != null)
             {
-                if (reference.DisplayName != null && !String.IsNullOrEmpty(reference.DisplayName.Text))
+                if (!reference.DisplayName.IsNull && !String.IsNullOrEmpty(reference.DisplayName.Text))
                 {
                     return reference.DisplayName.Text;
                 }

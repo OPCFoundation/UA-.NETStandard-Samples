@@ -109,6 +109,7 @@ namespace Opc.Ua.Gds.Server
                     database,
                     new CertificateGroup(m_telemetry),
                     userDatabase,
+                    m_telemetry,
                     true);
                 application.StartAsync(server).Wait();
 

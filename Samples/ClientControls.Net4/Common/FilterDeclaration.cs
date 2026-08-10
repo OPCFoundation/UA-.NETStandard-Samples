@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -465,8 +465,8 @@ namespace Opc.Ua.Client.Controls
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
 
-                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(operand1), new Variant(operand2));
-                    element1 = whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
+                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, Variant.From(new ExtensionObject(operand1)), Variant.From(new ExtensionObject(operand2)));
+                    element1 = whereClause.Push(FilterOperator.And, Variant.From(new ExtensionObject(element1)), Variant.From(new ExtensionObject(element2)));
                 }
             }
 

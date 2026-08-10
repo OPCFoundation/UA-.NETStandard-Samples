@@ -60,7 +60,7 @@ namespace Quickstarts.MethodsServer
 
         public Variant WithValue(ArrayOf<Argument> value)
         {
-            return new Variant(value.ToArray());
+            return Variant.FromStructure<Argument>(value, false);
         }
     }
 

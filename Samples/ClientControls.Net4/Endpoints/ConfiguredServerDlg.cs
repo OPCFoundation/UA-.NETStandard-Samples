@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -1695,7 +1695,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (m_currentDescription.Server != null)
                     {
-                        if (m_currentDescription.Server.ApplicationName != null)
+                        if (!m_currentDescription.Server.ApplicationName.IsNull)
                         {
                             ApplicationNameTB.Text = m_currentDescription.Server.ApplicationName.ToString();
                         }

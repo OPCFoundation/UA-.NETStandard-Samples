@@ -236,7 +236,7 @@ namespace Quickstarts
             public DataValue() { m_value = new Opc.Ua.DataValue(); }
             public DataValue(Opc.Ua.DataValue value) { m_value = value; }
             public string Comment { get; set; }
-            public object Value { get { return m_value.WrappedValue.AsBoxedObject(); } set { m_value = new Opc.Ua.DataValue(new Variant(value), m_value.StatusCode, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
+            public object Value { get { return m_value.WrappedValue.AsBoxedObject(); } set { WrappedValue = value is Variant variant ? variant : Variant.Null; } }
             public Variant WrappedValue { get { return m_value.WrappedValue; } set { m_value = new Opc.Ua.DataValue(value, m_value.StatusCode, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
             public DateTime SourceTimestamp { get { return (DateTime)m_value.SourceTimestamp; } set { m_value = new Opc.Ua.DataValue(m_value.WrappedValue, m_value.StatusCode, value, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
             public StatusCode StatusCode { get { return m_value.StatusCode; } set { m_value = new Opc.Ua.DataValue(m_value.WrappedValue, value, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
@@ -430,24 +430,24 @@ namespace Quickstarts
 
             if (String.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
             {
-                return new Variant(true, TypeInfo.Scalars.Boolean);
+                return Variant.From(true);
             }
 
             if (String.Equals(value, "false", StringComparison.OrdinalIgnoreCase))
             {
-                return new Variant(false, TypeInfo.Scalars.Boolean);
+                return Variant.From(false);
             }
 
             try
             {
-                return new Variant(Convert.ToDouble(value), TypeInfo.Scalars.Double);
+                return Variant.From(Convert.ToDouble(value));
             }
             catch
             {
                 try
                 {
                     StatusCode code = (StatusCode)typeof(StatusCodes).GetField(value).GetValue(null);
-                    return new Variant(code, TypeInfo.Scalars.StatusCode);
+                    return Variant.From(code);
                 }
                 catch
                 {

@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -111,12 +111,12 @@ namespace Opc.Ua.Client.Controls
             // get the source type.
             TypeInfo sourceType = value.TypeInfo;
 
-            if (sourceType == null)
+            if (sourceType.IsUnknown)
             {
                 sourceType = TypeInfo.Construct(value.AsBoxedObject());
             }
 
-            m_value = new Variant(value.AsBoxedObject(), sourceType);
+            m_value = ClientUtils.ToVariant(value.AsBoxedObject());
 
             // display value as text.
             StringBuilder buffer = new StringBuilder();

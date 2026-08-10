@@ -543,7 +543,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void PasteMI_Click(object sender, EventArgs e)
+        private async void PasteMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -563,14 +563,16 @@ namespace Opc.Ua.Client.Controls
                     id = (CertificateIdentifier)serializer.ReadObject(reader, false);
                 }
 
-                if (id.Certificate != null)
+                var certificate = await CertificateIdentifierResolver.ResolveAsync(id, null, false, null, Telemetry, default);
+
+                if (certificate != null)
                 {
                     using (ICertificateStore store = m_storeId.OpenStore(Telemetry))
                     {
-                        store.AddAsync(Certificate.From(id.Certificate));
+                        await store.AddAsync(certificate);
                     }
 
-                    AddItem(id.Certificate);
+                    AddItem(certificate.AsX509Certificate2());
                 }
             }
             catch (Exception exception)

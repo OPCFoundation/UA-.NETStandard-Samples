@@ -32,6 +32,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Opc.Ua;
 using Opc.Ua.Server;
 using Microsoft.Extensions.Logging;
@@ -438,7 +439,7 @@ namespace Quickstarts
             // must release the lock before removing cross references to other node managers.
             if (referencesToRemove.Count > 0)
             {
-                Server.NodeManager.RemoveReferences(referencesToRemove);
+                Server.NodeManager.RemoveReferencesAsync(referencesToRemove, CancellationToken.None).AsTask().GetAwaiter().GetResult();
             }
 
             return found;
@@ -680,7 +681,7 @@ namespace Quickstarts
 
                 if (variable != null && variable.Value.IsNull)
                 {
-                    variable.Value = new Variant(Opc.Ua.TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree));
+                    variable.Value = Variant.From((dynamic)Opc.Ua.TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree));
                 }
 
                 IList<IReference> references = new List<IReference>();
@@ -3325,6 +3326,10 @@ namespace Quickstarts
             }
 
             // create the item.
+            // TODO: The non-obsolete MonitoredItem constructor requires an IAsyncNodeManager.
+            // QuickstartNodeManager is a synchronous INodeManager, so migrating to the async
+            // node-manager model is tracked separately. See issue #723.
+#pragma warning disable CS0618 // Type or member is obsolete
             MonitoredItem datachangeItem = new MonitoredItem(
                 Server,
                 this,
@@ -3343,6 +3348,7 @@ namespace Quickstarts
                 queueSize,
                 itemToCreate.RequestedParameters.DiscardOldest,
                 0);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // report the initial value.
             ReadInitialValue(context, handle, datachangeItem);

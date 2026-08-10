@@ -94,7 +94,7 @@ namespace Quickstarts
                 return null;
             }
 
-            string identifier = nodeId.Identifier as string;
+            string identifier = nodeId.TryGetValue(out string id) ? id : null;
 
             if (String.IsNullOrEmpty(identifier))
             {

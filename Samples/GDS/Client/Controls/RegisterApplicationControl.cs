@@ -129,7 +129,7 @@ namespace Opc.Ua.Gds.Client
                 ApplicationUriTextBox.Text = server.ApplicationUri;
                 await ReadRegistrationAsync(true);
 
-                ApplicationNameTextBox.Text = (server.ApplicationName != null) ? server.ApplicationName.Text : "";
+                ApplicationNameTextBox.Text = (!server.ApplicationName.IsNull) ? server.ApplicationName.Text : "";
                 ProductUriTextBox.Text = server.ProductUri;
                 SetDiscoveryUrls(server.DiscoveryUrls.ToArray());
                 SetServerCapabilities(new string[] { Opc.Ua.ServerCapability.DA });

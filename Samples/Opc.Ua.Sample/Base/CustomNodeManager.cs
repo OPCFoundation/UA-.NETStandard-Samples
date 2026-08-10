@@ -297,7 +297,7 @@ namespace Opc.Ua.Sample
             // must release the lock before removing cross references to other node managers.
             if (referencesToRemove.Count > 0)
             {
-                Server.NodeManager.RemoveReferences(referencesToRemove);
+                Server.NodeManager.RemoveReferencesAsync(referencesToRemove).GetAwaiter().GetResult();
             }
 
             return found;
@@ -584,7 +584,7 @@ namespace Opc.Ua.Sample
 
                 if (variable != null && variable.Value.IsNull)
                 {
-                    variable.Value = new Variant(TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree));
+                    variable.Value = TypeInfo.GetDefaultVariantValue(variable.DataType, variable.ValueRank, Server.TypeTree);
                 }
 
                 // add reference from supertype for type nodes.
@@ -2367,7 +2367,7 @@ namespace Opc.Ua.Sample
             range = null;
 
             // check for valid filter type.
-            filter = requestedFilter.Body as DataChangeFilter;
+            filter = requestedFilter.TryGetValue<DataChangeFilter>(out var requestedDataChangeFilter, ServiceMessageContext.CreateEmpty(null)) ? requestedDataChangeFilter : null;
 
             if (filter == null)
             {

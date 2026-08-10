@@ -573,7 +573,7 @@ namespace Quickstarts
 
                 Variant result = TestData.ValidateValue(value.Value);
 
-                if (result.TypeInfo != null)
+                if (!result.TypeInfo.IsUnknown)
                 {
                     if (result.TypeInfo.BuiltInType == BuiltInType.Double)
                     {
@@ -1342,7 +1342,7 @@ namespace Quickstarts
 
                     Variant value = TestData.ValidateValue(row[3]);
 
-                    if (value.TypeInfo != null)
+                    if (!value.TypeInfo.IsUnknown)
                     {
                         if (value.TypeInfo.BuiltInType == BuiltInType.Double)
                         {

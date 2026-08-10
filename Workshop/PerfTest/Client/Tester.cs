@@ -164,7 +164,7 @@ namespace Quickstarts.PerfTestClient
             session.AddSubscription(subscription);
             await subscription.CreateAsync();
 
-            DateTime start = HiResClock.UtcNow;
+            DateTime start = DateTime.UtcNow;
 
             for (int ii = 0; ii < m_itemCount; ii++)
             {
@@ -182,13 +182,13 @@ namespace Quickstarts.PerfTestClient
             }
 
             await subscription.ApplyChangesAsync();
-            DateTime end = HiResClock.UtcNow;
+            DateTime end = DateTime.UtcNow;
 
             ReportMessage("Time to add {1} items {0}ms.", (end - start).TotalMilliseconds, m_itemCount);
 
-            start = HiResClock.UtcNow;
+            start = DateTime.UtcNow;
             await subscription.SetPublishingModeAsync(true);
-            end = HiResClock.UtcNow;
+            end = DateTime.UtcNow;
 
             ReportMessage("Time to emable publishing {0}ms.", (end - start).TotalMilliseconds);
         }
@@ -253,7 +253,9 @@ namespace Quickstarts.PerfTestClient
 
                 for (int ii = 0; ii < e.NotificationMessage.NotificationData.Count; ii++)
                 {
-                    DataChangeNotification notification = e.NotificationMessage.NotificationData[ii].Body as DataChangeNotification;
+                    DataChangeNotification notification = e.NotificationMessage.NotificationData[ii].TryGetValue<DataChangeNotification>(out var decodedNotification, ServiceMessageContext.CreateEmpty(null))
+                        ? decodedNotification
+                        : null;
 
                     if (notification == null)
                     {

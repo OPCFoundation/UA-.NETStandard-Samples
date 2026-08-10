@@ -700,7 +700,7 @@ namespace Quickstarts
         public ContentFilter GetWhereClause()
         {
             ContentFilter whereClause = new ContentFilter();
-            ContentFilterElement element1 = whereClause.Push(FilterOperator.OfType, new Variant(new LiteralOperand { Value = new Variant(EventTypeId) }));
+            ContentFilterElement element1 = whereClause.Push(FilterOperator.OfType, new Variant(new ExtensionObject(new LiteralOperand { Value = new Variant(EventTypeId) })));
 
             EventFilter filter = new EventFilter();
 
@@ -716,8 +716,8 @@ namespace Quickstarts
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
 
-                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(operand1), new Variant(operand2));
-                    element1 = whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
+                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(new ExtensionObject(operand1)), new Variant(new ExtensionObject(operand2)));
+                    element1 = whereClause.Push(FilterOperator.And, new Variant(new ExtensionObject(element1)), new Variant(new ExtensionObject(element2)));
                 }
             }
 

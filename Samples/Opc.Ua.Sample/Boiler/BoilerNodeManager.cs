@@ -177,7 +177,7 @@ namespace Boiler
         {
             LocalizedText displayName = instance.DisplayName;
 
-            if (displayName != null)
+            if (!displayName.IsNull)
             {
                 string text = displayName.Text;
 
@@ -221,7 +221,12 @@ namespace Boiler
                 return predefinedNode;
             }
 
-            switch ((uint)typeId.Identifier)
+            if (!typeId.TryGetValue(out uint numericTypeId))
+            {
+                return predefinedNode;
+            }
+
+            switch (numericTypeId)
             {
                 case ObjectTypes.BoilerType:
                 {

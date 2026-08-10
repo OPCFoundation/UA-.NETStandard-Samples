@@ -118,7 +118,7 @@ namespace AggregationClient
             row[2] = value.WrappedValue;
             row[3] = new StatusCode(value.StatusCode.Code);
 
-            if (value.WrappedValue.TypeInfo != null)
+            if (!value.WrappedValue.TypeInfo.IsUnknown)
             {
                 row[4] = value.WrappedValue.TypeInfo.BuiltInType.ToString();
             }

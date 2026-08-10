@@ -97,7 +97,7 @@ namespace Opc.Ua.Sample.Controls
                 if (ServiceResult.IsGood(result) && indexRange != NumericRange.Null)
                 {
                     // apply the index range.
-                    Variant valueToWrite = new Variant(nodeToWrite.Value.WrappedValue.AsBoxedObject());
+                    Variant valueToWrite = nodeToWrite.Value.WrappedValue;
 
                     result = indexRange.ApplyRange(ref valueToWrite);
 

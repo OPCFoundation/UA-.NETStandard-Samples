@@ -278,6 +278,7 @@ namespace Opc.Ua.Gds.Server
                 database,
                 new CertificateGroup(telemetry),
                 userDatabase,
+                telemetry,
                 true);
             await application.StartAsync(server).ConfigureAwait(false);
 

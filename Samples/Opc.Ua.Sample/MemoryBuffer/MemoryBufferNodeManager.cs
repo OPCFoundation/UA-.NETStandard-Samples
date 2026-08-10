@@ -191,7 +191,7 @@ namespace MemoryBuffer
                     return null;
                 }
 
-                string id = nodeId.Identifier as string;
+                string id = nodeId.TryGetValue(out string identifier) ? identifier : null;
 
                 if (id != null)
                 {

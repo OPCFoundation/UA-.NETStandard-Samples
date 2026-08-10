@@ -346,11 +346,11 @@ certificateRequest);
                         else
                         {
                             #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                            csrCertificate = CertificateFactory.CreateCertificateWithPEMPrivateKey(Certificate.From(m_certificate), pkcsData, m_certificatePassword.AsSpan()).AsX509Certificate2();
+                            csrCertificate = DefaultCertificateFactory.Instance.CreateWithPEMPrivateKey(Certificate.From(m_certificate), pkcsData, m_certificatePassword.AsSpan()).AsX509Certificate2();
                             #pragma warning restore CA2000
                         }
                     }
-                    byte[] certificateRequest = CertificateFactory.CreateSigningRequest(Certificate.From(csrCertificate), domainNames);
+                    byte[] certificateRequest = DefaultCertificateFactory.Instance.CreateSigningRequest(Certificate.From(csrCertificate), domainNames);
                     requestId = await m_gds.StartSigningRequestAsync(NodeId.Parse(m_application.ApplicationId), NodeId.Null, NodeId.Null, certificateRequest.ToByteString());
                 }
 
@@ -411,7 +411,7 @@ certificateRequest);
                                 if (oldCertificate != null && oldCertificate.HasPrivateKey)
                                 {
                                     oldCertificate = await LoadPrivateKeyAsync(cid, oldCertificate, []);
-                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(Certificate.From(newCert), Certificate.From(m_temporaryCertificateCreated ? m_certificate : oldCertificate)).AsX509Certificate2();
+                                    newCert = DefaultCertificateFactory.Instance.CreateWithPrivateKey(Certificate.From(newCert), Certificate.From(m_temporaryCertificateCreated ? m_certificate : oldCertificate)).AsX509Certificate2();
                                     await store.DeleteAsync(oldCertificate.Thumbprint);
                                 }
                                 else
@@ -489,7 +489,7 @@ certificateRequest);
                                     X509Certificate2 oldCertificate = X509PfxUtils.CreateCertificateFromPKCS12(pkcsData, m_certificatePassword.AsSpan()).AsX509Certificate2();
                                     #pragma warning restore CA2000
                                     #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                                    newCert = CertificateFactory.CreateCertificateWithPrivateKey(Certificate.From(newCert), Certificate.From(oldCertificate)).AsX509Certificate2();
+                                    newCert = DefaultCertificateFactory.Instance.CreateWithPrivateKey(Certificate.From(newCert), Certificate.From(oldCertificate)).AsX509Certificate2();
                                     #pragma warning restore CA2000
                                     pkcsData = newCert.Export(X509ContentType.Pfx, m_certificatePassword);
                                     File.WriteAllBytes(absoluteCertificatePrivateKeyPath, pkcsData);

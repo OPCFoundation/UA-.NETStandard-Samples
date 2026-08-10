@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -316,7 +316,7 @@ namespace Opc.Ua.Client.Controls
 
                 AttributeInfo info = AttributesLV.SelectedItems[0].Tag as AttributeInfo;
 
-                if (info == null || info.Value == null)
+                if (info == null || info.Value.IsNull)
                 {
                     return;
                 }

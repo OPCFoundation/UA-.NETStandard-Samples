@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -329,7 +329,7 @@ namespace Opc.Ua.Client.Controls
             if (outputArguments != null && outputArguments.Count == 1)
             {
                 ExtensionObject[] extensions = outputArguments[0].AsBoxedObject() as ExtensionObject[];
-                ApplicationDescription[] descriptions = (ApplicationDescription[])ExtensionObject.ToArray(extensions, typeof(ApplicationDescription));
+                ApplicationDescription[] descriptions = ExtensionObject.ToArray<ApplicationDescription>(extensions).ToArray();
                 await UpdateResultsAsync(descriptions, ct);
             }
         }

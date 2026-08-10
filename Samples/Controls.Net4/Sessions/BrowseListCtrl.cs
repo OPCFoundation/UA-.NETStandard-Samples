@@ -443,7 +443,7 @@ namespace Opc.Ua.Sample.Controls
             listItem.SubItems[1].Text = String.Format("{0}", itemData.Target);
             listItem.SubItems[2].Text = String.Format("{0}", itemData.TypeDefinition);
 
-            if (itemData.Value != null)
+            if (!itemData.Value.IsNull)
             {
                 listItem.SubItems[3].Text = String.Format("{0}", itemData.Value);
             }

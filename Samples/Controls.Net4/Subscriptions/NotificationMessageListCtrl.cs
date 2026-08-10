@@ -238,14 +238,14 @@ namespace Opc.Ua.Sample.Controls
                     continue;
                 }
 
-                DataChangeNotification datachangeNotification = notification.Body as DataChangeNotification;
+                DataChangeNotification datachangeNotification = notification.TryGetValue<DataChangeNotification>(out var dataChangeValue, ServiceMessageContext.CreateEmpty(null)) ? dataChangeValue : null;
 
                 if (datachangeNotification != null)
                 {
                     datachanges += datachangeNotification.MonitoredItems.Count;
                 }
 
-                EventNotificationList EventNotification = notification.Body as EventNotificationList;
+                EventNotificationList EventNotification = notification.TryGetValue<EventNotificationList>(out var eventValue, ServiceMessageContext.CreateEmpty(null)) ? eventValue : null;
 
                 if (EventNotification != null)
                 {

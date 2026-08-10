@@ -659,7 +659,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 }
             }
 
-            return certificate != null;
+            return !certificate.IsNull;
         }
 
         public override bool SetApplicationTrustLists(NodeId applicationId, string certificateTypeId, string trustListId)

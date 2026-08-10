@@ -415,7 +415,7 @@ namespace Quickstarts.SimpleEvents
 
             public Variant WithValue(CycleStepDataType[] value)
             {
-                return new Variant(value);
+                return Variant.FromStructure<CycleStepDataType>(value, false);
             }
         }
 

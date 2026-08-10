@@ -72,7 +72,7 @@ namespace Opc.Ua.Sample.Controls
             // get the locales from the server.
             DataValue value = await m_session.ReadValueAsync(VariableIds.Server_ServerCapabilities_LocaleIdArray, ct);
 
-            if (value != null)
+            if (!value.IsNull)
             {
                 string[] availableLocales = value.GetValue<string[]>(null);
 

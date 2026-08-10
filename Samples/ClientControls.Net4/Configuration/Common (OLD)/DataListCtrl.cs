@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -334,6 +334,73 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns true if the type can be expanded.
         /// </summary>
+        private static object GetExtensionObjectBody(ExtensionObject extension)
+        {
+            if (extension.TryGetAsBinary(out ByteString bytes, ServiceMessageContext.CreateEmpty(null)))
+            {
+                return bytes.ToArray();
+            }
+
+            if (extension.TryGetAsXml(out XmlElement xml, ServiceMessageContext.CreateEmpty(null)))
+            {
+                return xml;
+            }
+
+            if (extension.TryGetValue(out IEncodeable encodeable, ServiceMessageContext.CreateEmpty(null)))
+            {
+                return encodeable;
+            }
+
+            return null;
+        }
+
+        private static object GetIdentifier(NodeId value)
+        {
+            switch (value.IdType)
+            {
+                case IdType.Numeric:
+                    return value.TryGetValue(out uint numeric) ? (object)numeric : value.IdentifierAsString;
+                case IdType.String:
+                    return value.TryGetValue(out string text) ? text : value.IdentifierAsString;
+                case IdType.Guid:
+                    return value.TryGetValue(out Guid uuid) ? (object)uuid : value.IdentifierAsString;
+                case IdType.Opaque:
+                    return value.TryGetValue(out ByteString bytes) ? (object)bytes.ToArray() : value.IdentifierAsString;
+                default:
+                    return value.IdentifierAsString;
+            }
+        }
+
+        private static object GetIdentifier(ExpandedNodeId value)
+        {
+            switch (value.IdType)
+            {
+                case IdType.Numeric:
+                    return value.TryGetValue(out uint numeric) ? (object)numeric : value.IdentifierAsString;
+                case IdType.String:
+                    return value.TryGetValue(out string text) ? text : value.IdentifierAsString;
+                case IdType.Guid:
+                    return value.TryGetValue(out Guid uuid) ? (object)uuid : value.IdentifierAsString;
+                case IdType.Opaque:
+                    return value.TryGetValue(out ByteString bytes) ? (object)bytes.ToArray() : value.IdentifierAsString;
+                default:
+                    return value.IdentifierAsString;
+            }
+        }
+
+        private static string GetDataMemberName(PropertyInfo property)
+        {
+            foreach (Attribute attribute in property.GetCustomAttributes(true))
+            {
+                if (attribute is DataMemberAttribute dataMember && !String.IsNullOrEmpty(dataMember.Name))
+                {
+                    return dataMember.Name;
+                }
+            }
+
+            return property.Name;
+        }
+
         private bool IsExpandableType(object value)
         {
             // check for null.
@@ -406,7 +473,7 @@ namespace Opc.Ua.Client.Controls
             // check for extension object.
             if (value is ExtensionObject extension)
             {
-                return IsExpandableType(extension.Body);
+                return IsExpandableType(GetExtensionObjectBody(extension));
             }
 
             // check for data value.
@@ -534,7 +601,7 @@ namespace Opc.Ua.Client.Controls
             // format extension object.
             if (value is ExtensionObject extension)
             {
-                return await GetValueTextAsync(extension.Body, ct);
+                return await GetValueTextAsync(GetExtensionObjectBody(extension), ct);
             }
 
             // check for event value.
@@ -708,7 +775,7 @@ namespace Opc.Ua.Client.Controls
         private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, IEncodeable value, PropertyInfo property, CancellationToken ct = default)
         {
             // get the name of the property.
-            string name = Utils.GetDataMemberName(property);
+            string name = GetDataMemberName(property);
 
             if (name == null)
             {
@@ -963,7 +1030,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (componentValue is ExtensionObject extension)
                     {
-                        componentValue = extension.Body;
+                        componentValue = GetExtensionObjectBody(extension);
                     }
 
                     break;
@@ -1037,7 +1104,7 @@ namespace Opc.Ua.Client.Controls
                 case 1:
                 {
                     name = "Identifier";
-                    componentValue = value.Identifier;
+                    componentValue = GetIdentifier(value);
                     break;
                 }
 
@@ -1087,7 +1154,7 @@ namespace Opc.Ua.Client.Controls
                 case 1:
                 {
                     name = "Identifier";
-                    componentValue = value.Identifier;
+                    componentValue = GetIdentifier(value);
                     break;
                 }
 
@@ -1309,7 +1376,7 @@ namespace Opc.Ua.Client.Controls
             // show extension bodies.
             if (value is ExtensionObject extension)
             {
-                return await ShowValueAsync(index, overwrite, extension.Body, ct);
+                return await ShowValueAsync(index, overwrite, GetExtensionObjectBody(extension), ct);
             }
 
             // show encodeables.
@@ -1602,7 +1669,7 @@ namespace Opc.Ua.Client.Controls
 
                     switch (component)
                     {
-                        case 0: { state.Value = datavalue.WithWrappedValue(new Variant(value)); state.Component = value; break; }
+                        case 0: { state.Value = datavalue.WithWrappedValue(ClientUtils.ToVariant(value)); state.Component = value; break; }
                     }
                 }
 

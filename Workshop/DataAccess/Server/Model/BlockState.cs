@@ -308,7 +308,7 @@ namespace Quickstarts.DataAccessServer
         private void UpdateVariable(ISystemContext context, UnderlyingSystemTag tag, BaseVariableState variable)
         {
             variable.Description = new LocalizedText(tag.Description);
-            variable.Value = new Variant(tag.Value);
+            variable.Value = Variant.From((dynamic)tag.Value);
             variable.Timestamp = tag.Timestamp;
 
             switch (tag.DataType)

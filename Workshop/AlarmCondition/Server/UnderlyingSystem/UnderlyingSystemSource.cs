@@ -205,7 +205,7 @@ namespace Quickstarts.AlarmConditionServer
                     alarm.UserName = userName;
 
                     // only change the comment if a non-null comment was provided.
-                    if (comment != null && (!String.IsNullOrEmpty(comment.Text) || !String.IsNullOrEmpty(comment.Locale)))
+                    if (!comment.IsNull && (!String.IsNullOrEmpty(comment.Text) || !String.IsNullOrEmpty(comment.Locale)))
                     {
                         alarm.Comment = Utils.Format("{0}", comment);
                     }

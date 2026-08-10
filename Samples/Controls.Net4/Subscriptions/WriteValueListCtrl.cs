@@ -146,7 +146,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (value != null)
                 {
-                    value.Value = new DataValue(new Variant(value.Value.WrappedValue.AsBoxedObject()), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
+                    value.Value = new DataValue(value.Value.WrappedValue, StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
 
                     values.Add(value);
                 }
@@ -175,7 +175,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (ServiceResult.IsBad(result))
             {
-                value = new DataValue(new Variant(GuiUtils.GetDefaultValue(Attributes.GetDataTypeId(attributeId), ValueRanks.Scalar)), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
+                value = new DataValue(Variant.From((dynamic)GuiUtils.GetDefaultValue(Attributes.GetDataTypeId(attributeId), ValueRanks.Scalar)), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
             }
 
             // update the value attribute.
@@ -191,7 +191,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (variable != null)
                     {
-                        value = new DataValue(new Variant(GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank)), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
+                        value = new DataValue(Variant.From((dynamic)GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank)), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
                     }
                 }
             }
@@ -228,7 +228,7 @@ namespace Opc.Ua.Sample.Controls
                 return;
             }
 
-            if (value.Value == null)
+            if (value.Value.IsNull)
             {
                 value.Value = new DataValue();
             }
@@ -403,7 +403,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (value != null)
                 {
-                    values[0].Value = new DataValue(new Variant(value), StatusCodes.Good, values[0].Value.SourceTimestamp, values[0].Value.ServerTimestamp);
+                    values[0].Value = new DataValue(Variant.From((dynamic)value), StatusCodes.Good, values[0].Value.SourceTimestamp, values[0].Value.ServerTimestamp);
 
                     await UpdateItemAsync(ItemsLV.SelectedItems[0], values[0]);
 

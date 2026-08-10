@@ -70,10 +70,10 @@ namespace Opc.Ua.Sample
         private void SessionManager_ImpersonateUser(ISession session, ImpersonateEventArgs args)
         {
             // check for a WSS token.
-            IssuedIdentityToken wssToken = args.NewIdentity as IssuedIdentityToken;
+            IssuedIdentityToken wssToken = args.UserIdentityTokenHandler?.Token as IssuedIdentityToken;
 
             // check for a user name token.
-            UserNameIdentityToken userNameToken = args.NewIdentity as UserNameIdentityToken;
+            UserNameIdentityToken userNameToken = args.UserIdentityTokenHandler?.Token as UserNameIdentityToken;
 
             if (userNameToken != null)
             {
@@ -87,7 +87,7 @@ namespace Opc.Ua.Sample
             }
 
             // check for x509 user token.
-            X509IdentityToken x509Token = args.NewIdentity as X509IdentityToken;
+            X509IdentityToken x509Token = args.UserIdentityTokenHandler?.Token as X509IdentityToken;
 
             if (x509Token != null)
             {

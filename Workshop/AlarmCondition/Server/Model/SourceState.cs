@@ -711,7 +711,7 @@ namespace Quickstarts.AlarmConditionServer
                 return 0;
             }
 
-            uint? recordNumber = alarm.BranchId.Value.Identifier as uint?;
+            uint? recordNumber = alarm.BranchId.Value.TryGetValue(out uint id) ? id : null;
 
             if (recordNumber != null)
             {

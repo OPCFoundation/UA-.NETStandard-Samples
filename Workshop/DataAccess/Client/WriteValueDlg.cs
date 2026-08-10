@@ -118,86 +118,70 @@ namespace Quickstarts.DataAccessClient
         /// Changes the value in the text box to the data type required for the write operation.
         /// </summary>
         /// <returns>A value with the correct type.</returns>
-        private object ChangeType()
+        private Variant ChangeType()
         {
-            object value = (m_value != null) ? m_value.WrappedValue.AsBoxedObject() : null;
-
             switch (m_value.WrappedValue.TypeInfo.BuiltInType)
             {
                 case BuiltInType.Boolean:
                 {
-                    value = Convert.ToBoolean(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToBoolean(ValueTB.Text));
                 }
 
                 case BuiltInType.SByte:
                 {
-                    value = Convert.ToSByte(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToSByte(ValueTB.Text));
                 }
 
                 case BuiltInType.Byte:
                 {
-                    value = Convert.ToByte(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToByte(ValueTB.Text));
                 }
 
                 case BuiltInType.Int16:
                 {
-                    value = Convert.ToInt16(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToInt16(ValueTB.Text));
                 }
 
                 case BuiltInType.UInt16:
                 {
-                    value = Convert.ToUInt16(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToUInt16(ValueTB.Text));
                 }
 
                 case BuiltInType.Int32:
                 {
-                    value = Convert.ToInt32(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToInt32(ValueTB.Text));
                 }
 
                 case BuiltInType.UInt32:
                 {
-                    value = Convert.ToUInt32(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToUInt32(ValueTB.Text));
                 }
 
                 case BuiltInType.Int64:
                 {
-                    value = Convert.ToInt64(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToInt64(ValueTB.Text));
                 }
 
                 case BuiltInType.UInt64:
                 {
-                    value = Convert.ToUInt64(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToUInt64(ValueTB.Text));
                 }
 
                 case BuiltInType.Float:
                 {
-                    value = Convert.ToSingle(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToSingle(ValueTB.Text));
                 }
 
                 case BuiltInType.Double:
                 {
-                    value = Convert.ToDouble(ValueTB.Text);
-                    break;
+                    return Variant.From(Convert.ToDouble(ValueTB.Text));
                 }
 
                 default:
                 {
-                    value = ValueTB.Text;
-                    break;
+                    return Variant.From(ValueTB.Text);
                 }
             }
-
-            return value;
         }
         #endregion
 
@@ -214,7 +198,7 @@ namespace Quickstarts.DataAccessClient
                 valueToWrite.NodeId = m_nodeId;
                 valueToWrite.AttributeId = m_attributeId;
                 valueToWrite.Value = new DataValue(
-                    new Variant(ChangeType()),
+                    ChangeType(),
                     StatusCodes.Good,
                     DateTime.MinValue,
                     DateTime.MinValue);

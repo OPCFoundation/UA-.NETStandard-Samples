@@ -144,7 +144,7 @@ namespace Opc.Ua.Client.Controls
             // allow data type to be changed by default.
             DataTypeCB.Enabled = true;
 
-            if (targetType != null)
+            if (!targetType.IsUnknown)
             {
                 DataType = targetType.BuiltInType;
                 ValueRank = targetType.ValueRank;
@@ -317,9 +317,9 @@ namespace Opc.Ua.Client.Controls
             }
 
             // cast the value to the requested data type.
-            object value = new Variant(ValueTB.Text, TypeInfo.Scalars.String).ConvertTo(targetType).Value;
+            object value = Variant.From(ValueTB.Text).ConvertTo(targetType).AsBoxedObject();
 
-            return new Variant(value, new TypeInfo(targetType, valueRank));
+            return ClientUtils.ToVariant(value);
         }
 
         /// <summary>
@@ -330,7 +330,7 @@ namespace Opc.Ua.Client.Controls
             BuiltInType targetType = BuiltInType.Null;
             int valueRank = ValueRanks.Scalar;
 
-            if (value.TypeInfo != null && value.TypeInfo.BuiltInType != BuiltInType.Null)
+            if (!value.TypeInfo.IsUnknown && value.TypeInfo.BuiltInType != BuiltInType.Null)
             {
                 targetType = value.TypeInfo.BuiltInType;
                 valueRank = value.TypeInfo.ValueRank;
@@ -354,7 +354,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // cast the value to the requested data type.
-            ValueTB.Text = (string)new Variant(value.AsBoxedObject(), value.TypeInfo).ConvertTo(BuiltInType.String).Value;
+            ValueTB.Text = (string)ClientUtils.ToVariant(value.AsBoxedObject()).ConvertTo(BuiltInType.String).AsBoxedObject();
             ValueTB.ReadOnly = false;
         }
 

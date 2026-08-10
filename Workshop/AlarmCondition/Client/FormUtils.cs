@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -263,7 +263,7 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // all of the known event types have a UInt32 as identifier.
-            uint? id = knownTypeId.Identifier as uint?;
+            uint? id = knownTypeId.TryGetValue(out uint numericId) ? numericId : null;
 
             if (id == null)
             {

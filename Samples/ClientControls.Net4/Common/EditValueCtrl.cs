@@ -88,8 +88,8 @@ namespace Opc.Ua.Client.Controls
             // check if the value needs to be updated.
             if (m_textChanged)
             {
-                object value = new Variant(ValueTB.Text, TypeInfo.Scalars.String).ConvertTo(sourceType.BuiltInType).Value;
-                m_value = new Variant(value, sourceType);
+                object value = Variant.From(ValueTB.Text).ConvertTo(sourceType.BuiltInType).AsBoxedObject();
+                m_value = ClientUtils.ToVariant(value);
             }
 
             return m_value;
@@ -112,20 +112,20 @@ namespace Opc.Ua.Client.Controls
             // get the source type.
             TypeInfo sourceType = value.TypeInfo;
 
-            if (sourceType == null)
+            if (sourceType.IsUnknown)
             {
                 sourceType = TypeInfo.Construct(value.AsBoxedObject());
             }
 
             // convert to target type.
-            if (TargetType != null && TargetType.BuiltInType != sourceType.BuiltInType)
+            if (!TargetType.IsUnknown && TargetType.BuiltInType != sourceType.BuiltInType)
             {
-                m_value = new Variant(new Variant(value.AsBoxedObject(), sourceType).ConvertTo(TargetType.BuiltInType).Value, TargetType);
+                m_value = ClientUtils.ToVariant(ClientUtils.ToVariant(value.AsBoxedObject()).ConvertTo(TargetType.BuiltInType).AsBoxedObject());
                 sourceType = TargetType;
             }
             else
             {
-                m_value = new Variant(value.AsBoxedObject(), sourceType);
+                m_value = ClientUtils.ToVariant(value.AsBoxedObject());
             }
 
             m_textChanged = false;
@@ -139,7 +139,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // display as editable text.
-            ValueTB.Text = (string)new Variant(m_value.AsBoxedObject(), sourceType).ConvertTo(BuiltInType.String).Value;
+            ValueTB.Text = (string)ClientUtils.ToVariant(m_value.AsBoxedObject()).ConvertTo(BuiltInType.String).AsBoxedObject();
             ValueTB.Enabled = true;
         }
 
