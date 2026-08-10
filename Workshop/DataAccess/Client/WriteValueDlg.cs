@@ -83,7 +83,7 @@ namespace Quickstarts.DataAccessClient
             nodeToRead.NodeId = nodeId;
             nodeToRead.AttributeId = attributeId;
 
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             // read current value.
@@ -120,7 +120,7 @@ namespace Quickstarts.DataAccessClient
         /// <returns>A value with the correct type.</returns>
         private object ChangeType()
         {
-            object value = (m_value != null) ? m_value.Value : null;
+            object value = (m_value != null) ? m_value.WrappedValue.AsBoxedObject() : null;
 
             switch (m_value.WrappedValue.TypeInfo.BuiltInType)
             {
@@ -219,7 +219,7 @@ namespace Quickstarts.DataAccessClient
                     DateTime.MinValue,
                     DateTime.MinValue);
 
-                WriteValueCollection valuesToWrite = new WriteValueCollection();
+                List<WriteValue> valuesToWrite = new List<WriteValue>();
                 valuesToWrite.Add(valueToWrite);
 
                 // write current value.

@@ -167,7 +167,7 @@ namespace Opc.Ua.Client.Controls
             
             ItemsLV.Items.Clear();
 
-            ApplicationDescriptionCollection servers = state as ApplicationDescriptionCollection;
+            List<ApplicationDescription> servers = state as List<ApplicationDescription>;
 
             if (servers != null)
             {
@@ -254,7 +254,7 @@ namespace Opc.Ua.Client.Controls
                     BindingFactory.Create(m_configuration, m_configuration.CreateMessageContext()),
                     EndpointConfiguration.Create(m_configuration));
 
-                ApplicationDescriptionCollection servers = client.FindServers(null);
+                List<ApplicationDescription> servers = client.FindServers(null);
                 m_discoveryUrl = discoveryUrl.ToString();
                 OnUpdateServers(servers);
                 return true;

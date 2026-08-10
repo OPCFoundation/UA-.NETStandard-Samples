@@ -65,7 +65,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             )
         {
             NodeId appNodeId = base.RegisterApplication(application);
-            if (NodeId.IsNull(appNodeId))
+            if ((appNodeId).IsNull)
             {
                 appNodeId = new NodeId(Guid.NewGuid(), NamespaceIndex);
             }

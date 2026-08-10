@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -223,7 +223,7 @@ namespace Opc.Ua.Client.Controls
                 case Attributes.AccessLevel:
                 case Attributes.UserAccessLevel:
                 {
-                    byte? field = value.Value as byte?;
+                    byte? field = value.AsBoxedObject() as byte?;
 
                     if (field != null)
                     {
@@ -235,7 +235,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.EventNotifier:
                 {
-                    byte? field = value.Value as byte?;
+                    byte? field = value.AsBoxedObject() as byte?;
 
                     if (field != null)
                     {
@@ -247,13 +247,13 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataType:
                 {
-                    NodeId dataTypeId = value.Value is NodeId dt ? dt : NodeId.Null;
+                    NodeId dataTypeId = value.AsBoxedObject() is NodeId dt ? dt : NodeId.Null;
                     return await session.NodeCache.GetDisplayTextAsync(dataTypeId, ct);
                 }
 
                 case Attributes.ValueRank:
                 {
-                    int? field = value.Value as int?;
+                    int? field = value.AsBoxedObject() as int?;
 
                     if (field != null)
                     {
@@ -265,7 +265,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.NodeClass:
                 {
-                    int? field = value.Value as int?;
+                    int? field = value.AsBoxedObject() as int?;
 
                     if (field != null)
                     {
@@ -277,7 +277,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.NodeId:
                 {
-                    if (value.Value is NodeId field && !field.IsNull)
+                    if (value.AsBoxedObject() is NodeId field && !field.IsNull)
                     {
                         return field.ToString();
                     }
@@ -287,7 +287,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataTypeDefinition:
                 {
-                    if (value.Value is ExtensionObject field)
+                    if (value.AsBoxedObject() is ExtensionObject field)
                     {
                         return field.ToString();
                     }
@@ -296,9 +296,9 @@ namespace Opc.Ua.Client.Controls
             }
 
             // check for byte strings.
-            if (value.Value is byte[])
+            if (value.AsBoxedObject() is byte[])
             {
-                return Utils.ToHexString(value.Value as byte[]);
+                return Utils.ToHexString(value.AsBoxedObject() as byte[]);
             }
 
             // use default format.
@@ -348,7 +348,7 @@ namespace Opc.Ua.Client.Controls
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
 
                     List<ByteString> continuationPoints = new List<ByteString>();
-                    BrowseDescriptionCollection unprocessedOperations = new BrowseDescriptionCollection();
+                    List<BrowseDescription> unprocessedOperations = new List<BrowseDescription>();
 
                     for (int ii = 0; ii < nodesToBrowse.Count; ii++)
                     {
@@ -466,7 +466,7 @@ namespace Opc.Ua.Client.Controls
         public static Task<List<ReferenceDescription>> BrowseAsync(ISession session, ViewDescription view, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             // construct browse request.
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection {
+            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription> {
                 nodeToBrowse
             };
 
@@ -548,7 +548,7 @@ namespace Opc.Ua.Client.Controls
             params string[] relativePaths)
         {
             // build the list of browse paths to follow by parsing the relative paths.
-            BrowsePathCollection browsePaths = new BrowsePathCollection();
+            List<BrowsePath> browsePaths = new List<BrowsePath>();
 
             if (relativePaths != null)
             {
@@ -645,7 +645,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == BrowseNames.EventType)
                     {
-                        return notification.EventFields[ii].Value is NodeId nodeId ? nodeId : NodeId.Null;
+                        return notification.EventFields[ii].AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null;
                     }
                 }
             }
@@ -850,7 +850,7 @@ namespace Opc.Ua.Client.Controls
                 child.BrowseName = reference.BrowseName;
                 child.NodeClass = reference.NodeClass;
 
-                if (!LocalizedText.IsNullOrEmpty(reference.DisplayName))
+                if (!(reference.DisplayName).IsNullOrEmpty)
                 {
                     child.DisplayName = reference.DisplayName.Text;
                 }
@@ -905,7 +905,7 @@ namespace Opc.Ua.Client.Controls
                     children[ii].ModellingRule = modellingRules[ii];
 
                     // if the modelling rule is null then the instance is not part of the type declaration.
-                    if (NodeId.IsNull(modellingRules[ii]))
+                    if ((modellingRules[ii]).IsNull)
                     {
                         map.Remove(children[ii].BrowsePathDisplayText);
                     }
@@ -918,7 +918,7 @@ namespace Opc.Ua.Client.Controls
             // recusively collect instance declarations for the tree below.
             for (int ii = 0; ii < children.Count; ii++)
             {
-                if (!NodeId.IsNull(children[ii].ModellingRule))
+                if (!(children[ii].ModellingRule).IsNull)
                 {
                     instances.Add(children[ii]);
                     await CollectInstanceDeclarationsAsync(session, typeId, children[ii], instances, map, ct);
@@ -934,7 +934,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 // construct browse request.
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
 
                 for (int ii = 0; ii < nodeIds.Count; ii++)
                 {
@@ -984,7 +984,7 @@ namespace Opc.Ua.Client.Controls
                     // get the node id.
                     if (results[ii].References.Count > 0)
                     {
-                        if (NodeId.IsNull(results[ii].References[0].NodeId) || results[ii].References[0].NodeId.IsAbsolute)
+                        if ((results[ii].References[0].NodeId).IsNull || results[ii].References[0].NodeId.IsAbsolute)
                         {
                             continue;
                         }
@@ -1030,7 +1030,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+                List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
                 for (int ii = 0; ii < instances.Count; ii++)
                 {
@@ -1073,7 +1073,7 @@ namespace Opc.Ua.Client.Controls
                     instance.DataType = results[ii + 1].GetValue<NodeId>(NodeId.Null);
                     instance.ValueRank = results[ii + 2].GetValue<int>(ValueRanks.Any);
 
-                    if (!NodeId.IsNull(instance.DataType))
+                    if (!(instance.DataType).IsNull)
                     {
                         instance.BuiltInType = TypeInfo.GetBuiltInType(instance.DataType, session.TypeTree);
                         instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType, ct);

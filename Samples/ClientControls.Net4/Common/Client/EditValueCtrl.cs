@@ -111,7 +111,7 @@ namespace Opc.Ua.Client.Controls
             #pragma warning restore CA2000
                 m_value.TypeInfo,
                 null,
-                m_value.Value,
+                m_value.AsBoxedObject(),
                 "Edit Value");
 
             if (value == null)

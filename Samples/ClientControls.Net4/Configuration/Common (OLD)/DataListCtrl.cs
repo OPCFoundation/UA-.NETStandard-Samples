@@ -345,7 +345,7 @@ namespace Opc.Ua.Client.Controls
             // check for Variant.
             if (value is Variant)
             {
-                return IsExpandableType(((Variant)value).Value);
+                return IsExpandableType(((Variant)value).AsBoxedObject());
             }
 
             // check for bytes.
@@ -584,7 +584,7 @@ namespace Opc.Ua.Client.Controls
                     formattedValue.Append("] ");
                 }
 
-                formattedValue.AppendFormat("{0}", dataValue.Value);
+                formattedValue.AppendFormat("{0}", dataValue.WrappedValue.AsBoxedObject());
                 return formattedValue.ToString();
             }
 
@@ -731,7 +731,7 @@ namespace Opc.Ua.Client.Controls
 
             if (propertyValue is Variant)
             {
-                propertyValue = ((Variant)propertyValue).Value;
+                propertyValue = ((Variant)propertyValue).AsBoxedObject();
             }
 
             // update the list view.
@@ -898,7 +898,7 @@ namespace Opc.Ua.Client.Controls
         private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, EventFieldList value, int fieldIndex, CancellationToken ct = default)
         {
             // ignore children that are not elements.
-            object field = value.EventFields[fieldIndex].Value;
+            object field = value.EventFields[fieldIndex].AsBoxedObject();
 
             if (field == null)
             {
@@ -959,7 +959,7 @@ namespace Opc.Ua.Client.Controls
                 case 0:
                 {
                     name = "Value";
-                    componentValue = value.Value;
+                    componentValue = value.WrappedValue.AsBoxedObject();
 
                     if (componentValue is ExtensionObject extension)
                     {
@@ -1271,7 +1271,7 @@ namespace Opc.Ua.Client.Controls
             if (writevalue != null)
             {
                 // check if the value is an array
-                Array arrayvalue = writevalue.Value.Value as Array;
+                Array arrayvalue = writevalue.Value.WrappedValue.AsBoxedObject() as Array;
 
                 if (arrayvalue != null)
                 {
@@ -1442,7 +1442,7 @@ namespace Opc.Ua.Client.Controls
 
             if (variant != null)
             {
-                return await ShowValueAsync(index, overwrite, variant.Value.Value, ct);
+                return await ShowValueAsync(index, overwrite, variant.Value.AsBoxedObject(), ct);
             }
 
             // show unknown types as strings.

@@ -288,10 +288,10 @@ namespace Quickstarts.HistoricalAccess.Client
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -358,10 +358,10 @@ namespace Quickstarts.HistoricalAccess.Client
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -591,12 +591,12 @@ namespace Quickstarts.HistoricalAccess.Client
             details.IsReadModified = isReadModified;
             details.ReturnBounds = (isReadModified)?false:ReturnBoundsCK.Checked;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -638,12 +638,12 @@ namespace Quickstarts.HistoricalAccess.Client
                 details.ReqTimes.Add(startTime.AddMilliseconds((double)(ii*TimeStepNP.Value)));
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -684,12 +684,12 @@ namespace Quickstarts.HistoricalAccess.Client
             details.AggregateType.Add(aggregate.NodeId);
             details.AggregateConfiguration.UseServerCapabilitiesDefaults = true;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -724,10 +724,10 @@ namespace Quickstarts.HistoricalAccess.Client
             // clear existing continuation point.
             if (m_nodeToContinue != null)
             {
-                HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+                List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
                 nodesToRead.Add(m_nodeToContinue);
                                 
-                HistoryReadResultCollection results = null;
+                List<HistoryReadResult> results = null;
                 DiagnosticInfoCollection diagnosticInfos = null;
 
                 m_session.HistoryRead(

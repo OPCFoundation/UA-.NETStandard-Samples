@@ -233,7 +233,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 notifications++;
 
-                if (ExtensionObject.IsNull(notification))
+                if ((notification).IsNull)
                 {
                     continue;
                 }

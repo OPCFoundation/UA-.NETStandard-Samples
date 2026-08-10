@@ -1030,7 +1030,7 @@ namespace Quickstarts.HistoricalAccessServer
                     // process each item.
                     for (int jj = 0; jj < nodeToUpdate.UpdateValues.Count; jj++)
                     {
-                        Annotation annotation = ExtensionObject.ToEncodeable((ExtensionObject)nodeToUpdate.UpdateValues[jj].Value) as Annotation;
+                        Annotation annotation = ExtensionObject.ToEncodeable((ExtensionObject)nodeToUpdate.UpdateValues[jj].WrappedValue.AsBoxedObject()) as Annotation;
 
                         if (annotation == null)
                         {
@@ -1193,7 +1193,7 @@ namespace Quickstarts.HistoricalAccessServer
             HistoryReadValueId nodeToRead)
         {
             bool sizeLimited = (details.StartTime == DateTime.MinValue || details.EndTime == DateTime.MinValue);
-            bool applyIndexRangeOrEncoding = (!nodeToRead.ParsedIndexRange.IsNull || !QualifiedName.IsNull(nodeToRead.DataEncoding));
+            bool applyIndexRangeOrEncoding = (!nodeToRead.ParsedIndexRange.IsNull || !(nodeToRead.DataEncoding).IsNull);
             bool returnBounds = !details.IsReadModified && details.ReturnBounds;
             bool timeFlowsBackward = (details.StartTime == DateTime.MinValue) || (details.EndTime != DateTime.MinValue && details.EndTime < details.StartTime);
 
@@ -1385,7 +1385,7 @@ namespace Quickstarts.HistoricalAccessServer
             HistoryReadValueId nodeToRead,
             NodeId aggregateId)
         {
-            bool applyIndexRangeOrEncoding = (nodeToRead.ParsedIndexRange != NumericRange.Null || !QualifiedName.IsNull(nodeToRead.DataEncoding));
+            bool applyIndexRangeOrEncoding = (nodeToRead.ParsedIndexRange != NumericRange.Null || !(nodeToRead.DataEncoding).IsNull);
             bool timeFlowsBackward = (details.EndTime < details.StartTime);
 
             ArchiveItemState item = handle.Node as ArchiveItemState;
@@ -1472,7 +1472,7 @@ namespace Quickstarts.HistoricalAccessServer
             NodeHandle handle,
             HistoryReadValueId nodeToRead)
         {
-            bool applyIndexRangeOrEncoding = (!nodeToRead.ParsedIndexRange.IsNull || !QualifiedName.IsNull(nodeToRead.DataEncoding));
+            bool applyIndexRangeOrEncoding = (!nodeToRead.ParsedIndexRange.IsNull || !(nodeToRead.DataEncoding).IsNull);
 
             ArchiveItemState item = handle.Node as ArchiveItemState;
 
@@ -1538,7 +1538,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (StatusCode.IsNotBad(value.StatusCode) && dataBeforeIgnored)
                     {
-                        value = new DataValue(value.WrappedValue, value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
+                        value = new DataValue(value.WrappedValue, value.StatusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
                     }
 
                     values.AddLast(value);
@@ -1552,7 +1552,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (StatusCode.IsNotBad(value.StatusCode) && dataBeforeIgnored)
                     {
-                        value = new DataValue(value.WrappedValue, value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
+                        value = new DataValue(value.WrappedValue, value.StatusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
                     }
                 }
                 else
@@ -1561,7 +1561,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (StatusCode.IsNotBad(value.StatusCode) && (dataBeforeIgnored || dataAfterIgnored))
                     {
-                        value = new DataValue(value.WrappedValue, value.StatusCode.SetCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
+                        value = new DataValue(value.WrappedValue, value.StatusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
                     }
                 }
 

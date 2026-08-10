@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -270,10 +270,10 @@ namespace Quickstarts.HistoricalAccessServer
 
                     switch (fields[2 * testId])
                     {
-                        case "GI": { statusCode = statusCode.SetAggregateBits(AggregateBits.Interpolated); break; }
-                        case "GC": { statusCode = statusCode.SetAggregateBits(AggregateBits.Calculated); break; }
-                        case "UC": { statusCode = StatusCodes.UncertainSubNormal.SetAggregateBits(AggregateBits.Calculated); break; }
-                        case "UI": { statusCode = StatusCodes.UncertainSubNormal.SetAggregateBits(AggregateBits.Interpolated); break; }
+                        case "GI": { statusCode = statusCode.WithAggregateBits(AggregateBits.Interpolated); break; }
+                        case "GC": { statusCode = statusCode.WithAggregateBits(AggregateBits.Calculated); break; }
+                        case "UC": { statusCode = StatusCodes.UncertainSubNormal.WithAggregateBits(AggregateBits.Calculated); break; }
+                        case "UI": { statusCode = StatusCodes.UncertainSubNormal.WithAggregateBits(AggregateBits.Interpolated); break; }
                         case "UR": { statusCode = StatusCodes.Uncertain; break; }
                         case "BR": { statusCode = StatusCodes.BadNoData; break; }
                         case "BD": { statusCode = StatusCodes.Bad; break; }
@@ -360,8 +360,8 @@ namespace Quickstarts.HistoricalAccessServer
 
                 if (StatusCode.IsNotBad(values[ii].StatusCode))
                 {
-                    double value1 = Math.Round(Convert.ToDouble(values[ii].Value), 4);
-                    double value2 = Math.Round(Convert.ToDouble(expectedValues[ii].Value), 4);
+                    double value1 = Math.Round(Convert.ToDouble(values[ii].WrappedValue.AsBoxedObject()), 4);
+                    double value2 = Math.Round(Convert.ToDouble(expectedValues[ii].WrappedValue.AsBoxedObject()), 4);
 
                     if (value1 != value2)
                     {

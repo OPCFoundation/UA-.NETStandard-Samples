@@ -423,7 +423,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get the current value.
-                object currentValue = literal.Value.Value;
+                object currentValue = literal.Value.AsBoxedObject();
 
                 if (currentValue == null)
                 {

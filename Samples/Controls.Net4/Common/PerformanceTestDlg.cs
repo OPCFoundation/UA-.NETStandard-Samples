@@ -318,7 +318,7 @@ namespace Opc.Ua.Sample.Controls
                     RequestHeader requestHeader = new RequestHeader();
                     requestHeader.ReturnDiagnostics = 5000;
 
-                    ReadValueIdCollection nodesToRead = new ReadValueIdCollection(count);
+                    List<ReadValueId> nodesToRead = new List<ReadValueId>(count);
 
                     for (int jj = 0; jj < count; jj++)
                     {

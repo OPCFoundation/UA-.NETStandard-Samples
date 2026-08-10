@@ -222,7 +222,7 @@ namespace Quickstarts.ViewsClient
 
                 ReferenceDescription reference = ViewCB.SelectedItem as ReferenceDescription;
 
-                if (reference != null && !NodeId.IsNull(reference.NodeId))
+                if (reference != null && !(reference.NodeId).IsNull)
                 {
                     view = new ViewDescription();
                     view.ViewId = ExpandedNodeId.ToNodeId(reference.NodeId, m_session.NamespaceUris);

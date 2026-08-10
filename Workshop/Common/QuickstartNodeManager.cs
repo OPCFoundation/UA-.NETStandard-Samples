@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -294,7 +294,7 @@ namespace Quickstarts
         protected virtual bool IsNodeIdInNamespace(NodeId nodeId)
         {
             // nulls are never a valid node.
-            if (NodeId.IsNull(nodeId))
+            if ((nodeId).IsNull)
             {
                 return false;
             }
@@ -779,7 +779,7 @@ namespace Quickstarts
         /// </summary>
         protected void AddTypesToTypeTree(BaseTypeState type)
         {
-            if (!NodeId.IsNull(type.SuperTypeId))
+            if (!(type.SuperTypeId).IsNull)
             {
                 if (!Server.TypeTree.IsKnown(type.SuperTypeId))
                 {
@@ -1041,33 +1041,33 @@ namespace Quickstarts
                 metadata.BrowseName = target.BrowseName;
                 metadata.DisplayName = target.DisplayName;
 
-                if (values[0].Value != null && values[1].Value != null)
+                if (values[0].AsBoxedObject() != null && values[1].AsBoxedObject() != null)
                 {
-                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0].Value) & ((uint)values[1].Value));
+                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0].AsBoxedObject()) & ((uint)values[1].AsBoxedObject()));
                 }
 
-                metadata.DataType = (NodeId)values[2].Value;
+                metadata.DataType = (NodeId)values[2].AsBoxedObject();
 
-                if (values[3].Value != null)
+                if (values[3].AsBoxedObject() != null)
                 {
-                    metadata.ValueRank = (int)values[3].Value;
+                    metadata.ValueRank = (int)values[3].AsBoxedObject();
                 }
 
-                metadata.ArrayDimensions = values[4].Value is IList<uint> dims ? dims.ToArrayOf() : ArrayOf<uint>.Empty;
+                metadata.ArrayDimensions = values[4].AsBoxedObject() is IList<uint> dims ? dims.ToArrayOf() : ArrayOf<uint>.Empty;
 
-                if (values[5].Value != null && values[6].Value != null)
+                if (values[5].AsBoxedObject() != null && values[6].AsBoxedObject() != null)
                 {
-                    metadata.AccessLevel = (byte)(((byte)values[5].Value) & ((byte)values[6].Value));
+                    metadata.AccessLevel = (byte)(((byte)values[5].AsBoxedObject()) & ((byte)values[6].AsBoxedObject()));
                 }
 
-                if (values[7].Value != null)
+                if (values[7].AsBoxedObject() != null)
                 {
-                    metadata.EventNotifier = (byte)values[7].Value;
+                    metadata.EventNotifier = (byte)values[7].AsBoxedObject();
                 }
 
-                if (values[8].Value != null && values[9].Value != null)
+                if (values[8].AsBoxedObject() != null && values[9].AsBoxedObject() != null)
                 {
-                    metadata.Executable = (((bool)values[8].Value) && ((bool)values[9].Value));
+                    metadata.Executable = (((bool)values[8].AsBoxedObject()) && ((bool)values[9].AsBoxedObject()));
                 }
 
                 // get instance references.
@@ -3419,7 +3419,7 @@ namespace Quickstarts
             result = null;
 
             // nothing to do if the filter is not specified.
-            if (ExtensionObject.IsNull(filter))
+            if ((filter).IsNull)
             {
                 return StatusCodes.Good;
             }
@@ -3508,7 +3508,7 @@ namespace Quickstarts
                     return StatusCodes.BadFilterNotAllowed;
                 }
 
-                range = property.Value.Value as Opc.Ua.Range;
+                range = property.Value.AsBoxedObject() as Opc.Ua.Range;
 
                 if (range == null)
                 {

@@ -236,7 +236,7 @@ namespace Quickstarts
             public DataValue() { m_value = new Opc.Ua.DataValue(); }
             public DataValue(Opc.Ua.DataValue value) { m_value = value; }
             public string Comment { get; set; }
-            public object Value { get { return m_value.Value; } set { m_value = new Opc.Ua.DataValue(new Variant(value), m_value.StatusCode, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
+            public object Value { get { return m_value.WrappedValue.AsBoxedObject(); } set { m_value = new Opc.Ua.DataValue(new Variant(value), m_value.StatusCode, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
             public Variant WrappedValue { get { return m_value.WrappedValue; } set { m_value = new Opc.Ua.DataValue(value, m_value.StatusCode, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
             public DateTime SourceTimestamp { get { return (DateTime)m_value.SourceTimestamp; } set { m_value = new Opc.Ua.DataValue(m_value.WrappedValue, m_value.StatusCode, value, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
             public StatusCode StatusCode { get { return m_value.StatusCode; } set { m_value = new Opc.Ua.DataValue(m_value.WrappedValue, value, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
@@ -308,7 +308,7 @@ namespace Quickstarts
                 return String.Empty;
             }
 
-            double? doubleValue = value.Value as double?;
+            double? doubleValue = value.AsBoxedObject() as double?;
 
             if (doubleValue != null)
             {
@@ -499,13 +499,13 @@ namespace Quickstarts
                 switch (parts[ii].Trim())
                 {
                     case "I":
-                    case "Interpolated": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.Interpolated); break; }
-                    case "C": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.Calculated); break; }
-                    case "Calculated": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.Calculated); break; }
-                    case "P": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.Partial); break; }
-                    case "Partial": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.Partial); break; }
-                    case "M": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.MultipleValues); break; }
-                    case "MultipleValues": { statusCode = statusCode.SetAggregateBits(statusCode.AggregateBits | AggregateBits.MultipleValues); break; }
+                    case "Interpolated": { statusCode = statusCode.WithAggregateBits(statusCode.AggregateBits | AggregateBits.Interpolated); break; }
+                    case "C": { statusCode = statusCode.WithAggregateBits(statusCode.AggregateBits | AggregateBits.Calculated); break; }
+                    case "Calculated": { statusCode = statusCode.WithAggregateBits(statusCode.AggregateBits | AggregateBits.Calculated); break; }
+                    case "P": { statusCode = statusCode.WithAggregateBits(statusCode.AggregateBits | AggregateBits.Partial); break; }
+                    case "Partial": { statusCode = statusCode.WithAggregateBits(statusCode.AggregateBits | AggregateBits.Partial); break; }
+                    case "M": { statusCode = statusCode.WithAggregateBits(statusCode.AggregateBits | AggregateBits.MultipleValues); break; }
+                    case "MultipleValues": { statusCode = statusCode.WithAggregateBits(statusCode.AggregateBits | AggregateBits.MultipleValues); break; }
 
                     default:
                     {

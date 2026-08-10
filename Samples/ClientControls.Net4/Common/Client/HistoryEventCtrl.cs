@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -223,7 +223,7 @@ namespace Opc.Ua.Client.Controls
             }
             else
             {
-                if (NodeId.IsNull(m_nodeId))
+                if ((m_nodeId).IsNull)
                 {
                     NodeIdTB.Text = String.Empty;
                 }

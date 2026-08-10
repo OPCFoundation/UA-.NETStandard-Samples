@@ -252,7 +252,7 @@ namespace Opc.Ua.Gds.Client.Controls
             if (info.Value is Variant)
             {
                 Variant variant = (Variant)info.Value;
-                currentValue = variant.Value;
+                currentValue = variant.AsBoxedObject();
 
                 if (currentValue != null)
                 {
@@ -411,7 +411,7 @@ namespace Opc.Ua.Gds.Client.Controls
             if (info.Value is Variant)
             {
                 Variant variant = (Variant)info.Value;
-                currentValue = variant.Value;
+                currentValue = variant.AsBoxedObject();
 
                 if (currentValue != null)
                 {
@@ -727,7 +727,7 @@ namespace Opc.Ua.Gds.Client.Controls
             if (value is Variant)
             {
                 Variant variant = (Variant)value;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (value != null)
                 {
@@ -1360,7 +1360,7 @@ namespace Opc.Ua.Gds.Client.Controls
             if (value is Variant)
             {
                 Variant variant = (Variant)value;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (value != null)
                 {
@@ -1457,7 +1457,7 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 Variant variant = (Variant)info.Value;
                 typeInfo = variant.TypeInfo;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (typeInfo == null)
                 {
@@ -1518,7 +1518,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank < 0)
             {
-                parentValue = ((Variant)info.Parent.Value).Value;
+                parentValue = ((Variant)info.Parent.Value).AsBoxedObject();
             }
 
             if (info.PropertyInfo != null && info.Parent.TypeInfo.ValueRank < 0)
@@ -1527,7 +1527,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (variant != null)
                 {
-                    parentValue = variant.Value.Value;
+                    parentValue = variant.Value.AsBoxedObject();
                 }
 
                 if (parentValue is ExtensionObject extension)

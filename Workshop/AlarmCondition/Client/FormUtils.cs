@@ -175,7 +175,7 @@ namespace Quickstarts.AlarmConditionClient
 
                     if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == BrowseNames.EventType)
                     {
-                        return notification.EventFields[ii].Value is NodeId nodeId ? nodeId : NodeId.Null;
+                        return notification.EventFields[ii].AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null;
                     }
                 }
             }

@@ -194,7 +194,7 @@ namespace Opc.Ua.Sample.Controls
                 nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -228,7 +228,7 @@ namespace Opc.Ua.Sample.Controls
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -313,7 +313,7 @@ namespace Opc.Ua.Sample.Controls
                 nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -375,7 +375,7 @@ namespace Opc.Ua.Sample.Controls
                 nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(

@@ -181,7 +181,7 @@ namespace TestData
                         {
                             case BuiltInType.Int32:
                             {
-                                int lastValue = (int)record.RawData[record.RawData.Count - 1].Value.Value;
+                                int lastValue = (int)record.RawData[record.RawData.Count - 1].Value.WrappedValue.AsBoxedObject();
                                 value = Variant.From(lastValue + 1);
                                 break;
                             }

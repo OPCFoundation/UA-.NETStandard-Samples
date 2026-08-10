@@ -508,7 +508,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 DataRow row = ServersTable.NewRow();
 
-                row[0] = (LocalizedText.IsNullOrEmpty(server.ApplicationName)) ? "" : server.ApplicationName.Text;
+                row[0] = ((server.ApplicationName).IsNullOrEmpty) ? "" : server.ApplicationName.Text;
                 row[1] = server.ApplicationType.ToString();
 
                 StringBuilder buffer = new StringBuilder();
@@ -599,7 +599,7 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 if (!headerSet)
                 {
-                    ApplicationNameTextBox.Text = (LocalizedText.IsNullOrEmpty(endpoint.Server.ApplicationName)) ? "---" : endpoint.Server.ApplicationName.Text;
+                    ApplicationNameTextBox.Text = ((endpoint.Server.ApplicationName).IsNullOrEmpty) ? "---" : endpoint.Server.ApplicationName.Text;
                     ApplicationTypeTextBox.Text = endpoint.Server.ApplicationType.ToString();
                     ApplicationUriTextBox.Text = endpoint.Server.ApplicationUri;
                     ProductUriTextBox.Text = endpoint.Server.ProductUri;
@@ -891,7 +891,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                     ApplicationDescription application = (ApplicationDescription)e.Node.Tag;
 
-                    ApplicationNameTextBox.Text = (LocalizedText.IsNullOrEmpty(application.ApplicationName))?"---":application.ApplicationName.Text;
+                    ApplicationNameTextBox.Text = ((application.ApplicationName).IsNullOrEmpty)?"---":application.ApplicationName.Text;
                     ApplicationTypeTextBox.Text = application.ApplicationType.ToString();
                     ApplicationUriTextBox.Text = application.ApplicationUri;
                     ProductUriTextBox.Text = application.ProductUri;

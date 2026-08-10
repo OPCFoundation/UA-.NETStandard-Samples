@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -74,7 +74,7 @@ namespace Opc.Ua.Client.Controls
             m_baseTypeId = baseTypeId;
             m_logger = session?.MessageContext?.Telemetry.CreateLogger<ReferenceTypeCtrl>();
 
-            if (NodeId.IsNull(m_baseTypeId))
+            if ((m_baseTypeId).IsNull)
             {
                 m_baseTypeId = ReferenceTypeIds.References;
             }

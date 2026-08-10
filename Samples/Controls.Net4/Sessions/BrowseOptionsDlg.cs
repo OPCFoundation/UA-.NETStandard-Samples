@@ -194,7 +194,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 ViewDescription view = null;
 
-                if (!NodeId.IsNull(viewId) || ViewTimestampCK.Checked || ViewVersionCK.Checked)
+                if (!(viewId).IsNull || ViewTimestampCK.Checked || ViewVersionCK.Checked)
                 {
                     view = new ViewDescription();
 

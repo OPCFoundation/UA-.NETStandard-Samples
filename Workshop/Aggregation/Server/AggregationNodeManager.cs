@@ -300,7 +300,7 @@ namespace AggregationServer
             List<NodeHandle> nodesToValidate,
             IDictionary<NodeId, NodeState> cache)
         {
-            ReadValueIdCollection requests = new ReadValueIdCollection();
+            List<ReadValueId> requests = new List<ReadValueId>();
             List<int> indexes = new List<int>();
 
             for (int ii = 0; ii < nodesToValidate.Count; ii++)
@@ -405,7 +405,7 @@ namespace AggregationServer
             List<NodeHandle> nodesToValidate,
             IDictionary<NodeId, NodeState> cache)
         {
-            WriteValueCollection requests = new WriteValueCollection();
+            List<WriteValue> requests = new List<WriteValue>();
             List<int> indexes = new List<int>();
 
             // validates the nodes and constructs requests for external nodes.
@@ -505,7 +505,7 @@ namespace AggregationServer
             ServerSystemContext systemContext = SystemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
 
-            CallMethodRequestCollection requests = new CallMethodRequestCollection();
+            List<CallMethodRequest> requests = new List<CallMethodRequest>();
             List<int> indexes = new List<int>();
 
             // validates the nodes and constructs requests for external nodes.

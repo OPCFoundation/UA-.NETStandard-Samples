@@ -339,7 +339,7 @@ namespace Opc.Ua.Client.Controls
             DataTypeCB.SelectedItem = targetType;
             ValueRankCB.SelectedItem = (ValueRankOptions)valueRank;
 
-            if (value.Value == null)
+            if (value.AsBoxedObject() == null)
             {
                 ValueTB.Text = String.Empty;
                 return;
@@ -354,7 +354,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // cast the value to the requested data type.
-            ValueTB.Text = (string)new Variant(value.Value, value.TypeInfo).ConvertTo(BuiltInType.String).Value;
+            ValueTB.Text = (string)new Variant(value.AsBoxedObject(), value.TypeInfo).ConvertTo(BuiltInType.String).Value;
             ValueTB.ReadOnly = false;
         }
 

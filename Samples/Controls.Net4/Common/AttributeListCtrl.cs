@@ -141,7 +141,7 @@ namespace Opc.Ua.Sample.Controls
         private async Task AddAttributesAsync(CancellationToken ct = default)
         {
             // build list of attributes to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             foreach (uint attributeId in Attributes.Identifiers)
             {
@@ -182,7 +182,7 @@ namespace Opc.Ua.Sample.Controls
 
                 field.ValueId = nodesToRead[ii];
                 field.Name = Attributes.GetBrowseName(nodesToRead[ii].AttributeId);
-                field.Value = values[ii].Value;
+                field.Value = values[ii].WrappedValue.AsBoxedObject();
                 field.StatusCode = values[ii].StatusCode;
 
                 if (diagnosticInfos != null && diagnosticInfos.Count > ii)
@@ -200,7 +200,7 @@ namespace Opc.Ua.Sample.Controls
         private async Task AddPropertiesAsync(CancellationToken ct = default)
         {
             // build list of properties to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             Browser browser = new Browser(m_session);
 
@@ -251,7 +251,7 @@ namespace Opc.Ua.Sample.Controls
 
                 field.ValueId = nodesToRead[ii];
                 field.Name = references[ii].ToString();
-                field.Value = values[ii].Value;
+                field.Value = values[ii].WrappedValue.AsBoxedObject();
                 field.StatusCode = values[ii].StatusCode;
 
                 if (diagnosticInfos != null && diagnosticInfos.Count > ii)
@@ -484,7 +484,7 @@ namespace Opc.Ua.Sample.Controls
         /// <see cref="BaseListCtrl.GetDataToDrag" />
         protected override object GetDataToDrag()
         {
-            ReadValueIdCollection valueIds = new ReadValueIdCollection();
+            List<ReadValueId> valueIds = new List<ReadValueId>();
 
             foreach (ListViewItem listItem in ItemsLV.SelectedItems)
             {

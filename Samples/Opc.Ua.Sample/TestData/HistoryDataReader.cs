@@ -242,7 +242,7 @@ namespace TestData
                 }
 
                 // apply the data encoding.
-                if (!QualifiedName.IsNull(dataEncoding))
+                if (!(dataEncoding).IsNull)
                 {
                     wrappedValue = Variant.Null;
                     statusCode = StatusCodes.BadDataEncodingUnsupported;

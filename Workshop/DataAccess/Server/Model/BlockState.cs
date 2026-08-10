@@ -158,7 +158,7 @@ namespace Quickstarts.DataAccessServer
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            StatusCode error = block.WriteTagValue(node.SymbolicName, value.Value);
+            StatusCode error = block.WriteTagValue(node.SymbolicName, value.AsBoxedObject());
 
             if (error != 0)
             {

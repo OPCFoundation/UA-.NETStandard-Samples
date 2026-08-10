@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -786,7 +786,7 @@ namespace Opc.Ua.Client.Controls
             {
                 ReferenceDescription reference = BrowseCTRL.SelectedNode;
 
-                if (reference == null || NodeId.IsNull(reference.NodeId) || reference.NodeId.IsAbsolute)
+                if (reference == null || (reference.NodeId).IsNull || reference.NodeId.IsAbsolute)
                 {
                     await EventTypeCTRL.ShowTypeAsync(NodeId.Null);
                     return;

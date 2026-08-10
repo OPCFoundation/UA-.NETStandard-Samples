@@ -149,7 +149,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task ReadHistoryAsync(ReadEventDetails details, NodeId areaId, CancellationToken ct = default)
         {
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = areaId;
             nodesToRead.Add(nodeToRead);
@@ -163,7 +163,7 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = new HistoryReadResultCollection(response.Results.ToArray());
+            List<HistoryReadResult> results = new List<HistoryReadResult>(response.Results.ToArray());
             List<DiagnosticInfo> diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
 
             ClientBase.ValidateResponse(results, nodesToRead);
@@ -194,7 +194,7 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     ct);
 
-                results = new HistoryReadResultCollection(response.Results.ToArray());
+                results = new List<HistoryReadResult>(response.Results.ToArray());
                 diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
             }
         }
@@ -235,7 +235,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (e.Count > index)
                 {
-                    eventId = e[index].Value as byte[];
+                    eventId = e[index].AsBoxedObject() as byte[];
                 }
 
                 eventIds.Add(eventId.ToByteString());
@@ -253,7 +253,7 @@ namespace Opc.Ua.Client.Controls
                 nodesToUpdate,
                 ct);
 
-            HistoryUpdateResultCollection results = new HistoryUpdateResultCollection(response.Results.ToArray());
+            List<HistoryUpdateResult> results = new List<HistoryUpdateResult>(response.Results.ToArray());
             List<DiagnosticInfo> diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
 
             ClientBase.ValidateResponse(results, nodesToUpdate);

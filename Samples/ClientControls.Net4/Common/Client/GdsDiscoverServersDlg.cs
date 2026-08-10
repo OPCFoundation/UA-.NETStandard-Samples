@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -328,7 +328,7 @@ namespace Opc.Ua.Client.Controls
 
             if (outputArguments != null && outputArguments.Count == 1)
             {
-                ExtensionObject[] extensions = outputArguments[0].Value as ExtensionObject[];
+                ExtensionObject[] extensions = outputArguments[0].AsBoxedObject() as ExtensionObject[];
                 ApplicationDescription[] descriptions = (ApplicationDescription[])ExtensionObject.ToArray(extensions, typeof(ApplicationDescription));
                 await UpdateResultsAsync(descriptions, ct);
             }
@@ -359,7 +359,7 @@ namespace Opc.Ua.Client.Controls
                 ct,
                 browsePaths);
 
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             foreach (NodeId propertyId in propertyIds)
             {

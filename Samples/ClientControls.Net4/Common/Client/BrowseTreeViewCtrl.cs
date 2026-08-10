@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -97,7 +97,7 @@ namespace Opc.Ua.Client.Controls
             params NodeId[] referenceTypeIds)
         {
             // set default root.
-            if (NodeId.IsNull(rootId))
+            if ((rootId).IsNull)
             {
                 rootId = Opc.Ua.ObjectIds.ObjectsFolder;
             }
@@ -388,7 +388,7 @@ namespace Opc.Ua.Client.Controls
                 e.Node.Nodes.Clear();
 
                 // build list of references to browse.
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
 
                 for (int ii = 0; ii < m_referenceTypeIds.Length; ii++)
                 {
@@ -445,7 +445,7 @@ namespace Opc.Ua.Client.Controls
                                 if (nodeIds.Count > 0 && !nodeIds[0].IsNull)
                                 {
                                     DataValue value = await m_session.ReadValueAsync(nodeIds[0]);
-                                    byte[] bytes = value.Value as byte[];
+                                    byte[] bytes = value.WrappedValue.AsBoxedObject() as byte[];
 
                                     if (bytes != null)
                                     {

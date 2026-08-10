@@ -90,7 +90,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     }
 
                     row[0] = record.ApplicationId;
-                    row[1] = (record.ApplicationNames != null && record.ApplicationNames.Count > 0 && !LocalizedText.IsNullOrEmpty(record.ApplicationNames[0]))?record.ApplicationNames[0].Text:String.Empty;
+                    row[1] = (record.ApplicationNames != null && record.ApplicationNames.Count > 0 && !(record.ApplicationNames[0]).IsNullOrEmpty)?record.ApplicationNames[0].Text:String.Empty;
                     row[2] = record.ApplicationType;
                     row[3] = record.ProductUri;
 

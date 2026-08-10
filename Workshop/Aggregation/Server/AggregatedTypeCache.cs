@@ -124,7 +124,7 @@ namespace AggregationServer
             nodeToBrowse.NodeClassMask = 0;
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
             nodesToBrowse.Add(nodeToBrowse);
 
             // start the browse operation.

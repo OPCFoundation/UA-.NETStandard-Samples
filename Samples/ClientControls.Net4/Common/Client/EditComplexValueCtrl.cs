@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -255,7 +255,7 @@ namespace Opc.Ua.Client.Controls.Common
             if (info.Value is Variant)
             {
                 Variant variant = (Variant)info.Value;
-                currentValue = variant.Value;
+                currentValue = variant.AsBoxedObject();
 
                 if (currentValue != null)
                 {
@@ -406,7 +406,7 @@ namespace Opc.Ua.Client.Controls.Common
             if (info.Value is Variant)
             {
                 Variant variant = (Variant)info.Value;
-                currentValue = variant.Value;
+                currentValue = variant.AsBoxedObject();
 
                 if (currentValue != null)
                 {
@@ -512,7 +512,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             // determine the expected data type for value attributes.
-            else if (!NodeId.IsNull(nodeId))
+            else if (!(nodeId).IsNull)
             {
                 IVariableBase variable = await m_session.NodeCache.FindAsync(nodeId, ct) as IVariableBase;
 
@@ -718,7 +718,7 @@ namespace Opc.Ua.Client.Controls.Common
             if (value is Variant)
             {
                 Variant variant = (Variant)value;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (value != null)
                 {
@@ -1215,7 +1215,7 @@ namespace Opc.Ua.Client.Controls.Common
             if (value is Variant)
             {
                 Variant variant = (Variant)value;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (value != null)
                 {
@@ -1360,7 +1360,7 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 Variant variant = (Variant)info.Value;
                 typeInfo = variant.TypeInfo;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (typeInfo == null)
                 {
@@ -1517,7 +1517,7 @@ namespace Opc.Ua.Client.Controls.Common
 
             if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank < 0)
             {
-                parentValue = ((Variant)info.Parent.Value).Value;
+                parentValue = ((Variant)info.Parent.Value).AsBoxedObject();
             }
 
             if (info.PropertyInfo != null && info.Parent.TypeInfo.ValueRank < 0)

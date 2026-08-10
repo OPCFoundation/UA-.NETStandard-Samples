@@ -111,14 +111,14 @@ namespace TestData
                     return ServiceResult.Good;
                 }
 
-                Range range = euRange.Value.Value as Range;
+                Range range = euRange.Value.AsBoxedObject() as Range;
 
                 if (range == null)
                 {
                     return ServiceResult.Good;
                 }
 
-                Array array = value.Value as Array;
+                Array array = value.AsBoxedObject() as Array;
 
                 if (array != null)
                 {
@@ -128,7 +128,7 @@ namespace TestData
 
                         if (typeof(Variant).IsInstanceOfType(element))
                         {
-                            element = ((Variant)element).Value;
+                            element = ((Variant)element).AsBoxedObject();
                         }
 
                         double elementNumber = Convert.ToDouble(element);
@@ -142,7 +142,7 @@ namespace TestData
                     return ServiceResult.Good;
                 }
 
-                double number = Convert.ToDouble(value.Value);
+                double number = Convert.ToDouble(value.AsBoxedObject());
 
                 if (number > range.High || number < range.Low)
                 {

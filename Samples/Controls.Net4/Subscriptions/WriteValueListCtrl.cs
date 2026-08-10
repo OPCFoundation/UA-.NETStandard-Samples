@@ -146,7 +146,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (value != null)
                 {
-                    value.Value = new DataValue(new Variant(value.Value.Value), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
+                    value.Value = new DataValue(new Variant(value.Value.WrappedValue.AsBoxedObject()), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
 
                     values.Add(value);
                 }
@@ -233,7 +233,7 @@ namespace Opc.Ua.Sample.Controls
                 value.Value = new DataValue();
             }
 
-            if (value.Value.Value == null)
+            if (value.Value.WrappedValue.AsBoxedObject() == null)
             {
                 value.Value = await GetDefaultValueAsync(value.NodeId, value.AttributeId, ct);
             }
@@ -252,7 +252,7 @@ namespace Opc.Ua.Sample.Controls
             listItem.SubItems[1].Text = String.Format("{0}", value.NodeId);
             listItem.SubItems[2].Text = String.Format("{0}", Attributes.GetBrowseName(value.AttributeId));
             listItem.SubItems[3].Text = String.Format("{0}", value.IndexRange);
-            listItem.SubItems[4].Text = String.Format("{0}", value.Value.Value);
+            listItem.SubItems[4].Text = String.Format("{0}", value.Value.WrappedValue.AsBoxedObject());
             listItem.SubItems[5].Text = String.Format("{0}", value.Value.StatusCode);
             listItem.SubItems[6].Text = String.Format("{0}", value.Value.SourceTimestamp);
 
@@ -393,12 +393,12 @@ namespace Opc.Ua.Sample.Controls
 
                     if (writeValue != null)
                     {
-                        value = writeValue.Value.Value;
+                        value = writeValue.Value.WrappedValue.AsBoxedObject();
                     }
                 }
                 else
                 {
-                    value = GuiUtils.EditValue(m_session, values[0].Value.Value, datatypeId, valueRank, Telemetry);
+                    value = GuiUtils.EditValue(m_session, values[0].Value.WrappedValue.AsBoxedObject(), datatypeId, valueRank, Telemetry);
                 }
 
                 if (value != null)

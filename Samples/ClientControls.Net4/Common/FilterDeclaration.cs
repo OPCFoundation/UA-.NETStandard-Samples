@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -284,7 +284,7 @@ namespace Opc.Ua.Client.Controls
                     continue;
                 }
 
-                if (NodeId.IsNull(instanceDeclaration.ModellingRule))
+                if ((instanceDeclaration.ModellingRule).IsNull)
                 {
                     continue;
                 }
@@ -421,7 +421,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public List<SimpleAttributeOperand> GetSelectClause()
         {
-            SimpleAttributeOperandCollection selectClause = new SimpleAttributeOperandCollection();
+            List<SimpleAttributeOperand> selectClause = new List<SimpleAttributeOperand>();
 
             SimpleAttributeOperand operand = new SimpleAttributeOperand();
             operand.TypeDefinitionId = Opc.Ua.ObjectTypeIds.BaseEventType;
@@ -497,7 +497,7 @@ namespace Opc.Ua.Client.Controls
                         return defaultValue;
                     }
 
-                    object value = fields[ii + 1].Value;
+                    object value = fields[ii + 1].AsBoxedObject();
 
                     if (typeof(T).IsInstanceOfType(value))
                     {

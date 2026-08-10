@@ -169,7 +169,7 @@ namespace Quickstarts.DataAccessServer
             NodeId targetId = NodeId.Null;
 
             // check if a specific browse name is requested.
-            if (!QualifiedName.IsNull(base.BrowseName))
+            if (!(base.BrowseName).IsNull)
             {
                 // check if match found previously.
                 if (m_position == Int32.MaxValue)

@@ -76,7 +76,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
 
             // set default root.
-            if (NodeId.IsNull(rootId))
+            if ((rootId).IsNull)
             {
                 rootId = Opc.Ua.ObjectTypeIds.BaseEventType;
             }

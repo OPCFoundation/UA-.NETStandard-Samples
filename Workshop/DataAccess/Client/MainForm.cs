@@ -259,7 +259,7 @@ namespace Quickstarts.DataAccessClient
                 nodeToBrowse2.NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable);
                 nodeToBrowse2.ResultMask = (uint)BrowseResultMask.All;
 
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
                 nodesToBrowse.Add(nodeToBrowse1);
                 nodesToBrowse.Add(nodeToBrowse2);
 
@@ -297,7 +297,7 @@ namespace Quickstarts.DataAccessClient
             {
                 AttributesLV.Items.Clear();
 
-                ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+                List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
                 // attempt to read all possible attributes.
                 for (uint ii = Attributes.NodeClass; ii <= Attributes.UserExecutable; ii++)
@@ -320,7 +320,7 @@ namespace Quickstarts.DataAccessClient
                 nodeToBrowse1.NodeClassMask = 0;
                 nodeToBrowse1.ResultMask = (uint)BrowseResultMask.All;
 
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
                 nodesToBrowse.Add(nodeToBrowse1);
 
                 // fetch property references from the server.
@@ -388,7 +388,7 @@ namespace Quickstarts.DataAccessClient
                         // display the value.
                         else
                         {
-                            TypeInfo typeInfo = TypeInfo.Construct(results[ii].Value);
+                            TypeInfo typeInfo = TypeInfo.Construct(results[ii].WrappedValue.AsBoxedObject());
 
                             datatype = typeInfo.BuiltInType.ToString();
 
@@ -397,7 +397,7 @@ namespace Quickstarts.DataAccessClient
                                 datatype += "[]";
                             }
 
-                            value = Utils.Format("{0}", results[ii].Value);
+                            value = Utils.Format("{0}", results[ii].WrappedValue.AsBoxedObject());
                         }
                     }
 
@@ -423,7 +423,7 @@ namespace Quickstarts.DataAccessClient
                         // display the value.
                         else
                         {
-                            TypeInfo typeInfo = TypeInfo.Construct(results[ii].Value);
+                            TypeInfo typeInfo = TypeInfo.Construct(results[ii].WrappedValue.AsBoxedObject());
 
                             datatype = typeInfo.BuiltInType.ToString();
 
@@ -432,7 +432,7 @@ namespace Quickstarts.DataAccessClient
                                 datatype += "[]";
                             }
 
-                            value = Utils.Format("{0}", results[ii].Value);
+                            value = Utils.Format("{0}", results[ii].WrappedValue.AsBoxedObject());
                         }
                     }
 

@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -113,10 +113,10 @@ namespace Opc.Ua.Client.Controls
 
             if (sourceType == null)
             {
-                sourceType = TypeInfo.Construct(value.Value);
+                sourceType = TypeInfo.Construct(value.AsBoxedObject());
             }
 
-            m_value = new Variant(value.Value, sourceType);
+            m_value = new Variant(value.AsBoxedObject(), sourceType);
 
             // display value as text.
             StringBuilder buffer = new StringBuilder();
@@ -140,12 +140,12 @@ namespace Opc.Ua.Client.Controls
 
                 if (sourceType.ValueRank == ValueRanks.Scalar)
                 {
-                    extension = (ExtensionObject)m_value.Value;
+                    extension = (ExtensionObject)m_value.AsBoxedObject();
                 }
                 else
                 {
                     // only use the first item in the list for arrays.
-                    ExtensionObject[] list = (ExtensionObject[])m_value.Value;
+                    ExtensionObject[] list = (ExtensionObject[])m_value.AsBoxedObject();
 
                     if (list.Length > 0)
                     {
@@ -294,7 +294,7 @@ namespace Opc.Ua.Client.Controls
                 nodeToRead.DataEncoding = m_encodingName;
 
 
-                ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+                List<ReadValueId> nodesToRead = new List<ReadValueId>();
                 nodesToRead.Add(nodeToRead);
 
                 // read the attributes.
@@ -337,7 +337,7 @@ namespace Opc.Ua.Client.Controls
                 nodeToWrite.AttributeId = Attributes.Value;
                 nodeToWrite.Value = new DataValue(GetValue());
 
-                WriteValueCollection nodesToWrite = new WriteValueCollection();
+                List<WriteValue> nodesToWrite = new List<WriteValue>();
                 nodesToWrite.Add(nodeToWrite);
 
                 // read the attributes.

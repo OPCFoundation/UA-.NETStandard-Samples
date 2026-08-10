@@ -130,7 +130,7 @@ namespace Opc.Ua.Sample.Controls
 
                 StringBuilder buffer = new StringBuilder();
 
-                Array array = literalOperand.Value.Value as Array;
+                Array array = literalOperand.Value.AsBoxedObject() as Array;
 
                 if (array != null)
                 {

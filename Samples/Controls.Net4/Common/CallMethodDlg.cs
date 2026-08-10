@@ -119,7 +119,7 @@ namespace Opc.Ua.Sample.Controls
                 request.MethodId = m_methodId;
                 request.InputArguments = inputArguments;
 
-                CallMethodRequestCollection requests = new CallMethodRequestCollection();
+                List<CallMethodRequest> requests = new List<CallMethodRequest>();
                 requests.Add(request);
 
                 CallResponse response = await m_session.CallAsync(

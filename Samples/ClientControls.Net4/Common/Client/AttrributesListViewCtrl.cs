@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -114,13 +114,13 @@ namespace Opc.Ua.Client.Controls
         {
             AttributesLV.Items.Clear();
 
-            if (NodeId.IsNull(nodeId))
+            if ((nodeId).IsNull)
             {
                 return;
             }
 
             // build list of attributes to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             foreach (uint attributeId in Attributes.Identifiers)
             {
@@ -177,7 +177,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 item.Tag = new AttributeInfo() { NodeToRead = nodesToRead[ii], Value = results[ii] };
-                item.ImageIndex = ClientUtils.GetImageIndex(nodesToRead[ii].AttributeId, results[ii].Value);
+                item.ImageIndex = ClientUtils.GetImageIndex(nodesToRead[ii].AttributeId, results[ii].WrappedValue.AsBoxedObject());
 
                 // display in list.
                 AttributesLV.Items.Add(item);
@@ -214,7 +214,7 @@ namespace Opc.Ua.Client.Controls
         private async Task ReadPropertiesAsync(NodeId nodeId, CancellationToken ct = default)
         {
             // build list of references to browse.
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
 
             BrowseDescription nodeToBrowse = new BrowseDescription();
 
@@ -231,7 +231,7 @@ namespace Opc.Ua.Client.Controls
             List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false, ct);
 
             // build list of properties to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             for (int ii = 0; references != null && ii < references.Count; ii++)
             {
@@ -274,7 +274,7 @@ namespace Opc.Ua.Client.Controls
             {
                 ReferenceDescription reference = (ReferenceDescription)nodesToRead[ii].Handle;
 
-                TypeInfo typeInfo = TypeInfo.Construct(results[ii].Value);
+                TypeInfo typeInfo = TypeInfo.Construct(results[ii].WrappedValue.AsBoxedObject());
 
                 // add the metadata for the attribute.
                 ListViewItem item = new ListViewItem(reference.ToString());
@@ -328,7 +328,7 @@ namespace Opc.Ua.Client.Controls
                     info.NodeToRead.NodeId,
                     info.NodeToRead.AttributeId,
                     null,
-                    info.Value.Value,
+                    info.Value.WrappedValue.AsBoxedObject(),
                     true,
                     "View Attribute Value");
             }

@@ -119,7 +119,7 @@ namespace Opc.Ua.Sample.Controls
             // read the value from the server.
             DataValue value = await m_session.ReadValueAsync(argumentsNode.NodeId, ct);
 
-            ExtensionObject[] argumentsList = value.Value as ExtensionObject[];
+            ExtensionObject[] argumentsList = value.WrappedValue.AsBoxedObject() as ExtensionObject[];
 
             if (argumentsList != null)
             {
@@ -167,7 +167,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument != null)
                 {
-                    argument.Value = values[ii++].Value;
+                    argument.Value = values[ii++].AsBoxedObject();
                     await UpdateItemAsync(item, argument, ct);
                 }
             }

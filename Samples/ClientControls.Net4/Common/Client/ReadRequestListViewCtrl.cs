@@ -127,7 +127,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // build list of values to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             foreach (DataGridViewRow row in ResultsDV.Rows)
             {

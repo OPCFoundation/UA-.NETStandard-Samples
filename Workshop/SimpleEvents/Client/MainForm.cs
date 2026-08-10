@@ -308,7 +308,7 @@ namespace Quickstarts.SimpleEvents.Client
                 NodeId eventTypeId = ClientUtils.FindEventType(monitoredItem, notification);
 
                 // ignore unknown events.
-                if (NodeId.IsNull(eventTypeId))
+                if ((eventTypeId).IsNull)
                 {
                     return;
                 }

@@ -114,18 +114,18 @@ namespace Opc.Ua.Client.Controls
 
             if (sourceType == null)
             {
-                sourceType = TypeInfo.Construct(value.Value);
+                sourceType = TypeInfo.Construct(value.AsBoxedObject());
             }
 
             // convert to target type.
             if (TargetType != null && TargetType.BuiltInType != sourceType.BuiltInType)
             {
-                m_value = new Variant(new Variant(value.Value, sourceType).ConvertTo(TargetType.BuiltInType).Value, TargetType);
+                m_value = new Variant(new Variant(value.AsBoxedObject(), sourceType).ConvertTo(TargetType.BuiltInType).Value, TargetType);
                 sourceType = TargetType;
             }
             else
             {
-                m_value = new Variant(value.Value, sourceType);
+                m_value = new Variant(value.AsBoxedObject(), sourceType);
             }
 
             m_textChanged = false;
@@ -139,7 +139,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // display as editable text.
-            ValueTB.Text = (string)new Variant(m_value.Value, sourceType).ConvertTo(BuiltInType.String).Value;
+            ValueTB.Text = (string)new Variant(m_value.AsBoxedObject(), sourceType).ConvertTo(BuiltInType.String).Value;
             ValueTB.Enabled = true;
         }
 

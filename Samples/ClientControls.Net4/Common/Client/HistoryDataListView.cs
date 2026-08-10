@@ -266,7 +266,7 @@ namespace Opc.Ua.Client.Controls
             }
             else
             {
-                if (NodeId.IsNull(m_nodeId))
+                if ((m_nodeId).IsNull)
                 {
                     NodeIdTB.Text = String.Empty;
                 }
@@ -427,7 +427,7 @@ namespace Opc.Ua.Client.Controls
 
             set
             {
-                if (NodeId.IsNull(value))
+                if ((value).IsNull)
                 {
                     AggregateCB.SelectedIndex = -1;
                     return;
@@ -567,7 +567,7 @@ namespace Opc.Ua.Client.Controls
             m_dataset.Clear();
             NodeIdTB.Text = await m_session.NodeCache.GetDisplayTextAsync(m_nodeId, ct);
 
-            if (!NodeId.IsNull(nodeId))
+            if (!(nodeId).IsNull)
             {
                 m_properties = await FindPropertiesWithHistoryAsync(ct);
 
@@ -748,7 +748,7 @@ namespace Opc.Ua.Client.Controls
 
             List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, nodeToBrowse, false, ct);
 
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             for (int ii = 0; ii < references.Count; ii++)
             {
@@ -853,7 +853,7 @@ namespace Opc.Ua.Client.Controls
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, pathsToTranslate);
 
             // build list of values to read.
-            ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
+            List<ReadValueId> valuesToRead = new List<ReadValueId>();
 
             for (int ii = 0; ii < pathsToTranslate.Count; ii++)
             {
@@ -935,7 +935,7 @@ namespace Opc.Ua.Client.Controls
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -1006,7 +1006,7 @@ namespace Opc.Ua.Client.Controls
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -1255,7 +1255,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(m_nodeToContinue);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -1311,7 +1311,7 @@ namespace Opc.Ua.Client.Controls
             details.IsReadModified = isReadModified;
             details.ReturnBounds = (isReadModified) ? false : ReturnBoundsCK.Checked;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = GetSelectedNode();
             nodesToRead.Add(nodeToRead);
@@ -1364,7 +1364,7 @@ namespace Opc.Ua.Client.Controls
 
             details.ReqTimes = reqTimes;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = GetSelectedNode();
             nodesToRead.Add(nodeToRead);
@@ -1416,7 +1416,7 @@ namespace Opc.Ua.Client.Controls
             details.AggregateType = new List<NodeId> { aggregate.NodeId };
             details.AggregateConfiguration.UseServerCapabilitiesDefaults = true;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
             nodesToRead.Add(nodeToRead);
@@ -1455,7 +1455,7 @@ namespace Opc.Ua.Client.Controls
             // clear existing continuation point.
             if (m_nodeToContinue != null)
             {
-                HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+                List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
                 nodesToRead.Add(m_nodeToContinue);
 
                 HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -1506,7 +1506,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task InsertReplaceAsync(PerformUpdateType updateType, CancellationToken ct = default)
         {
-            DataValueCollection values = new DataValueCollection();
+            List<DataValue> values = new List<DataValue>();
 
             foreach (DataRowView row in m_dataset.Tables[0].DefaultView)
             {
@@ -1559,7 +1559,7 @@ namespace Opc.Ua.Client.Controls
                 details = details2;
             }
 
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
             HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
@@ -1592,7 +1592,7 @@ namespace Opc.Ua.Client.Controls
             details.StartTime = StartTimeDP.Value;
             details.EndTime = EndTimeDP.Value;
 
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
             HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
@@ -1633,7 +1633,7 @@ namespace Opc.Ua.Client.Controls
 
             details.ReqTimes = reqTimes;
 
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
             HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(

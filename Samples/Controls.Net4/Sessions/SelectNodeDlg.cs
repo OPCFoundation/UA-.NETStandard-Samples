@@ -144,7 +144,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (NodeId.IsNull(reference.NodeId))
+                if ((reference.NodeId).IsNull)
                 {
                     return;
                 }

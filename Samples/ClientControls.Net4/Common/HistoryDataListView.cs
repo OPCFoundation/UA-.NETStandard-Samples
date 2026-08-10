@@ -256,7 +256,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
-                    if (NodeId.IsNull(m_nodeId))
+                    if ((m_nodeId).IsNull)
                     {
                         NodeIdTB.Text = String.Empty;
                     }
@@ -412,7 +412,7 @@ namespace Opc.Ua.Client.Controls
 
             set
             {
-                if (NodeId.IsNull(value))
+                if ((value).IsNull)
                 {
                     AggregateCB.SelectedIndex = -1;
                     return;
@@ -597,7 +597,7 @@ namespace Opc.Ua.Client.Controls
             m_dataset.Clear();
             NodeIdTB.Text = m_session.NodeCache.GetDisplayText(m_nodeId);
 
-            if (!NodeId.IsNull(nodeId))
+            if (!(nodeId).IsNull)
             {
                 m_properties = FindPropertiesWithHistory();
 
@@ -722,7 +722,7 @@ namespace Opc.Ua.Client.Controls
             NodeId rootId,
             NodeState parent,
             RelativePath parentPath,
-            BrowsePathCollection browsePaths)
+            List<BrowsePath> browsePaths)
         {
             List<BaseInstanceState> children = new List<BaseInstanceState>();
             parent.GetChildren(context, children);
@@ -770,9 +770,9 @@ namespace Opc.Ua.Client.Controls
             nodeToBrowse.NodeClassMask = 0;
             nodeToBrowse.ResultMask = (uint)(BrowseResultMask.DisplayName | BrowseResultMask.BrowseName);
 
-            ReferenceDescriptionCollection references = ClientUtils.Browse(m_session, nodeToBrowse, false);
+            List<ReferenceDescription> references = ClientUtils.Browse(m_session, nodeToBrowse, false);
 
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             for (int ii = 0; ii < references.Count; ii++)
             {
@@ -793,7 +793,7 @@ namespace Opc.Ua.Client.Controls
 
             if (nodesToRead.Count > 0)
             {
-                DataValueCollection values = null;
+                List<DataValue> values = null;
                 DiagnosticInfoCollection diagnosticInfos = null;
 
                 m_session.Read(
@@ -854,7 +854,7 @@ namespace Opc.Ua.Client.Controls
             RelativePath relativePath = new RelativePath();
             relativePath.Elements.Add(element);
 
-            BrowsePathCollection pathsToTranslate = new BrowsePathCollection();
+            List<BrowsePath> pathsToTranslate = new List<BrowsePath>();
 
             GetBrowsePathFromNodeState(
                 m_session.SystemContext,
@@ -877,7 +877,7 @@ namespace Opc.Ua.Client.Controls
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, pathsToTranslate);
 
             // build list of values to read.
-            ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
+            List<ReadValueId> valuesToRead = new List<ReadValueId>();
 
             for (int ii = 0; ii < pathsToTranslate.Count; ii++)
             {
@@ -905,7 +905,7 @@ namespace Opc.Ua.Client.Controls
             // read the values.
             if (valuesToRead.Count > 0)
             {
-                DataValueCollection values = null;
+                List<DataValue> values = null;
 
                 m_session.Read(
                     null,
@@ -959,10 +959,10 @@ namespace Opc.Ua.Client.Controls
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -1029,10 +1029,10 @@ namespace Opc.Ua.Client.Controls
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -1273,10 +1273,10 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(m_nodeToContinue);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -1330,12 +1330,12 @@ namespace Opc.Ua.Client.Controls
             details.IsReadModified = isReadModified;
             details.ReturnBounds = (isReadModified)?false:ReturnBoundsCK.Checked;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = GetSelectedNode();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -1380,12 +1380,12 @@ namespace Opc.Ua.Client.Controls
                 details.ReqTimes.Add(startTime.AddMilliseconds((double)(ii*TimeStepNP.Value)));
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = GetSelectedNode();
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -1433,12 +1433,12 @@ namespace Opc.Ua.Client.Controls
             details.AggregateType.Add(aggregate.NodeId);
             details.AggregateConfiguration.UseServerCapabilitiesDefaults = true;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
             nodesToRead.Add(nodeToRead);
 
-            HistoryReadResultCollection results = null;
+            List<HistoryReadResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryRead(
@@ -1473,10 +1473,10 @@ namespace Opc.Ua.Client.Controls
             // clear existing continuation point.
             if (m_nodeToContinue != null)
             {
-                HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+                List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
                 nodesToRead.Add(m_nodeToContinue);
                                 
-                HistoryReadResultCollection results = null;
+                List<HistoryReadResult> results = null;
                 DiagnosticInfoCollection diagnosticInfos = null;
 
                 m_session.HistoryRead(
@@ -1525,7 +1525,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private void InsertReplace(PerformUpdateType updateType)
         {
-            DataValueCollection values = new DataValueCollection();
+            List<DataValue> values = new List<DataValue>();
 
             foreach (DataRowView row in m_dataset.Tables[0].DefaultView)
             {
@@ -1542,7 +1542,7 @@ namespace Opc.Ua.Client.Controls
                 isStructured = true;
             }
 
-            HistoryUpdateResultCollection results = InsertReplace(GetSelectedNode(), updateType, isStructured, values);
+            List<HistoryUpdateResult> results = InsertReplace(GetSelectedNode(), updateType, isStructured, values);
 
             ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
 
@@ -1557,7 +1557,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the history.
         /// </summary>
-        private HistoryUpdateResultCollection InsertReplace(NodeId nodeId, PerformUpdateType updateType, bool isStructure, IList<DataValue> values)
+        private List<HistoryUpdateResult> InsertReplace(NodeId nodeId, PerformUpdateType updateType, bool isStructure, IList<DataValue> values)
         {
             HistoryUpdateDetails details = null;
 
@@ -1578,10 +1578,10 @@ namespace Opc.Ua.Client.Controls
                 details = details2;
             }
 
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
-            HistoryUpdateResultCollection results = null;
+            List<HistoryUpdateResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryUpdate(
@@ -1612,10 +1612,10 @@ namespace Opc.Ua.Client.Controls
             details.StartTime = StartTimeDP.Value;
             details.EndTime = EndTimeDP.Value;
 
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
-            HistoryUpdateResultCollection results = null;
+            List<HistoryUpdateResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryUpdate(
@@ -1650,10 +1650,10 @@ namespace Opc.Ua.Client.Controls
                 details.ReqTimes.Add(value);
             }
 
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
-            HistoryUpdateResultCollection results = null;
+            List<HistoryUpdateResult> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.HistoryUpdate(
@@ -2349,7 +2349,7 @@ namespace Opc.Ua.Client.Controls
 
                     }
 
-                    HistoryUpdateResultCollection results = InsertReplace(propertyId, PerformUpdateType.Insert, true, valuesToUpdate); 
+                    List<HistoryUpdateResult> results = InsertReplace(propertyId, PerformUpdateType.Insert, true, valuesToUpdate); 
 
                     ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
 

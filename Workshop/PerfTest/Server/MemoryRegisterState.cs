@@ -224,7 +224,7 @@ namespace Quickstarts.PerfTestServer
             NodeId targetId = NodeId.Null;
 
             // check if a specific browse name is requested.
-            if (!QualifiedName.IsNull(base.BrowseName))
+            if (!(base.BrowseName).IsNull)
             {
                 // browse name must be qualified by the correct namespace.
                 if (m_parent.BrowseName.NamespaceIndex != base.BrowseName.NamespaceIndex)

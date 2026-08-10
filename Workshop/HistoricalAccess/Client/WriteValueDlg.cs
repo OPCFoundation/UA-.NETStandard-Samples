@@ -85,7 +85,7 @@ namespace Quickstarts.HistoricalAccess.Client
             nodeToRead.NodeId = nodeId;
             nodeToRead.AttributeId = attributeId;
 
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             // read current value.
@@ -104,7 +104,7 @@ namespace Quickstarts.HistoricalAccess.Client
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             m_value = results[0];
-            ValueTB.Text = Utils.Format("{0}", m_value.Value);
+            ValueTB.Text = Utils.Format("{0}", m_value.WrappedValue.AsBoxedObject());
 
             // display the dialog.
             if (ShowDialog() != DialogResult.OK)
@@ -123,7 +123,7 @@ namespace Quickstarts.HistoricalAccess.Client
         /// <returns>A value with the correct type.</returns>
         private object ChangeType()
         {
-            object value = m_value.Value;
+            object value = m_value.WrappedValue.AsBoxedObject();
 
             switch (m_value.WrappedValue.TypeInfo.BuiltInType)
             {
@@ -222,7 +222,7 @@ namespace Quickstarts.HistoricalAccess.Client
                     DateTime.MinValue,
                     DateTime.MinValue);
 
-                WriteValueCollection valuesToWrite = new WriteValueCollection();
+                List<WriteValue> valuesToWrite = new List<WriteValue>();
                 valuesToWrite.Add(valueToWrite);
 
                 // write current value.

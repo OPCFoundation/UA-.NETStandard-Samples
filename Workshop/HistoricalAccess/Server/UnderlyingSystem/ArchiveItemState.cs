@@ -221,7 +221,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 if (typeInfo == null)
                 {
-                    typeInfo = TypeInfo.Construct(value.Value);
+                    typeInfo = TypeInfo.Construct(value.WrappedValue.AsBoxedObject());
                 }
 
                 if (typeInfo == null || typeInfo.BuiltInType != m_archiveItem.DataType || typeInfo.ValueRank != ValueRanks.Scalar)

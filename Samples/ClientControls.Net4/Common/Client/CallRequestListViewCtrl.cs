@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -120,7 +120,7 @@ namespace Opc.Ua.Client.Controls
         public async Task CallAsync(CancellationToken ct = default)
         {
             // build list of methods to call.
-            CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
+            List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
 
             CallMethodRequest methodToCall = new CallMethodRequest();
 
@@ -133,7 +133,7 @@ namespace Opc.Ua.Client.Controls
             {
                 Argument argument = (Argument)row[0];
                 Variant value = (Variant)row[4];
-                argument.Value = value.Value;
+                argument.Value = value.AsBoxedObject();
                 inputArguments.Add(value);
             }
 
@@ -255,7 +255,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             row[0] = argument;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex(isOutputArgument, value.Value)];
+            row[1] = ImageList.Images[ClientUtils.GetImageIndex(isOutputArgument, value.AsBoxedObject())];
             row[2] = argument.Name;
             row[3] = dataType;
             row[4] = value;
@@ -271,7 +271,7 @@ namespace Opc.Ua.Client.Controls
             m_outputArguments = null;
 
             // build list of references to browse.
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
 
             BrowseDescription nodeToBrowse = new BrowseDescription();
 
@@ -288,7 +288,7 @@ namespace Opc.Ua.Client.Controls
             List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, null, nodesToBrowse, false, ct);
 
             // build list of properties to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             for (int ii = 0; references != null && ii < references.Count; ii++)
             {

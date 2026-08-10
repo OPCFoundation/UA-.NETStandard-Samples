@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -187,7 +187,7 @@ namespace Quickstarts
                 case Attributes.AccessLevel:
                 case Attributes.UserAccessLevel:
                 {
-                    byte? field = value.Value as byte?;
+                    byte? field = value.AsBoxedObject() as byte?;
 
                     if (field != null)
                     {
@@ -199,7 +199,7 @@ namespace Quickstarts
 
                 case Attributes.EventNotifier:
                 {
-                    byte? field = value.Value as byte?;
+                    byte? field = value.AsBoxedObject() as byte?;
 
                     if (field != null)
                     {
@@ -211,12 +211,12 @@ namespace Quickstarts
 
                 case Attributes.DataType:
                 {
-                    return await session.NodeCache.GetDisplayTextAsync(value.Value is NodeId nodeId ? nodeId : NodeId.Null, ct);
+                    return await session.NodeCache.GetDisplayTextAsync(value.AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null, ct);
                 }
 
                 case Attributes.ValueRank:
                 {
-                    int? field = value.Value as int?;
+                    int? field = value.AsBoxedObject() as int?;
 
                     if (field != null)
                     {
@@ -228,7 +228,7 @@ namespace Quickstarts
 
                 case Attributes.NodeClass:
                 {
-                    int? field = value.Value as int?;
+                    int? field = value.AsBoxedObject() as int?;
 
                     if (field != null)
                     {
@@ -240,9 +240,9 @@ namespace Quickstarts
 
                 case Attributes.NodeId:
                 {
-                    NodeId field = value.Value is NodeId nodeId ? nodeId : NodeId.Null;
+                    NodeId field = value.AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null;
 
-                    if (!NodeId.IsNull(field))
+                    if (!(field).IsNull)
                     {
                         return field.ToString();
                     }
@@ -252,9 +252,9 @@ namespace Quickstarts
             }
 
             // check for byte strings.
-            if (value.Value is byte[])
+            if (value.AsBoxedObject() is byte[])
             {
-                return Utils.ToHexString(value.Value as byte[]);
+                return Utils.ToHexString(value.AsBoxedObject() as byte[]);
             }
 
             // use default format.
@@ -558,7 +558,7 @@ namespace Quickstarts
 
                     if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == BrowseNames.EventType)
                     {
-                        return notification.EventFields[ii].Value is NodeId nodeId ? nodeId : NodeId.Null;
+                        return notification.EventFields[ii].AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null;
                     }
                 }
             }
@@ -824,7 +824,7 @@ namespace Quickstarts
             params string[] relativePaths)
         {
             // build the list of browse paths to follow by parsing the relative paths.
-            BrowsePathCollection browsePaths = new BrowsePathCollection();
+            List<BrowsePath> browsePaths = new List<BrowsePath>();
 
             if (relativePaths != null)
             {

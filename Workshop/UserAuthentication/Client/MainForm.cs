@@ -487,7 +487,7 @@ namespace Quickstarts.UserAuthenticationClient
                 value.NodeId = m_logFileNodeId;
                 value.AttributeId = Attributes.Value;
 
-                ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
+                List<ReadValueId> valuesToRead = new List<ReadValueId>();
                 valuesToRead.Add(value);
 
                 ReadResponse response = await m_session.ReadAsync(
@@ -538,7 +538,7 @@ namespace Quickstarts.UserAuthenticationClient
                 value.AttributeId = Attributes.Value;
                 value.Value = new DataValue(new Variant(LogFilePathTB.Text));
 
-                WriteValueCollection valuesToWrite = new WriteValueCollection();
+                List<WriteValue> valuesToWrite = new List<WriteValue>();
                 valuesToWrite.Add(value);
 
                 WriteResponse response = await m_session.WriteAsync(

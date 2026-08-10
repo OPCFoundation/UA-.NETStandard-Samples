@@ -125,7 +125,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // build list of values to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             if (nodesToWrite == null || nodesToWrite.Length == 0)
             {
@@ -197,7 +197,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // build list of values to write.
-            WriteValueCollection nodesToWrite = new WriteValueCollection();
+            List<WriteValue> nodesToWrite = new List<WriteValue>();
 
             foreach (DataGridViewRow row in ResultsDV.Rows)
             {
@@ -393,7 +393,7 @@ namespace Opc.Ua.Client.Controls
                         nodeToWrite.NodeId,
                         nodeToWrite.AttributeId,
                         null,
-                        nodeToWrite.Value.Value,
+                        nodeToWrite.Value.WrappedValue.AsBoxedObject(),
                         false,
                         "Edit Value");
 
