@@ -32,9 +32,6 @@
   <ItemGroup>
     <AdditionalFiles Include="Model\ModelDesign.xml" />
     <AdditionalFiles Include="Model\ModelDesign.csv" />
-    <Compile Remove="Model\AggregationModel.Classes.cs" />
-    <Compile Remove="Model\AggregationModel.Constants.cs" />
-    <Compile Remove="Model\AggregationModel.DataTypes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />

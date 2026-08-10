@@ -31,6 +31,7 @@ using System;
 using System.ServiceModel;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
+using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.ViewsServer
@@ -38,8 +39,8 @@ namespace Quickstarts.ViewsServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace = Quickstarts.Views.Namespaces.Views)]
-    public class ViewsServerConfiguration
+    [DataType(Namespace = "http://opcfoundation.org/UA/Quickstarts/Views")]
+    public partial class ViewsServerConfiguration
     {
         #region Constructors
         /// <summary>

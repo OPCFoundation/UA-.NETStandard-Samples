@@ -103,7 +103,10 @@ namespace Opc.Ua.Client.Controls
                 return certificateIdentifier.Certificate;
             }
 
-            if (certificateIdentifier == null || String.IsNullOrEmpty(certificateIdentifier.StoreType) || String.IsNullOrEmpty(certificateIdentifier.StorePath) || String.IsNullOrEmpty(certificateIdentifier.Thumbprint))
+            if (certificateIdentifier == null ||
+                String.IsNullOrEmpty(certificateIdentifier.StoreType) ||
+                String.IsNullOrEmpty(certificateIdentifier.StorePath) ||
+                (String.IsNullOrEmpty(certificateIdentifier.Thumbprint) && String.IsNullOrEmpty(certificateIdentifier.SubjectName)))
             {
                 return null;
             }
@@ -112,18 +115,20 @@ namespace Opc.Ua.Client.Controls
 
             using (ICertificateStore store = storeId.OpenStore(m_telemetry))
             {
-                var certificates = await store.FindByThumbprintAsync(certificateIdentifier.Thumbprint, ct);
+                var certificates = !String.IsNullOrEmpty(certificateIdentifier.Thumbprint)
+                    ? await store.FindByThumbprintAsync(certificateIdentifier.Thumbprint, ct)
+                    : await store.EnumerateAsync(ct);
 
-                foreach (var certificate in certificates)
-                {
-                    if (!needPrivateKey || certificate.HasPrivateKey)
-                    {
-                        return certificate.AsX509Certificate2();
-                    }
-                }
+                var certificate = CertificateIdentifier.Find(
+                    certificates,
+                    certificateIdentifier.Thumbprint,
+                    certificateIdentifier.SubjectName,
+                    null,
+                    certificateIdentifier.CertificateType,
+                    needPrivateKey);
+
+                return certificate?.AsX509Certificate2();
             }
-
-            return null;
         }
 
         /// <summary>
