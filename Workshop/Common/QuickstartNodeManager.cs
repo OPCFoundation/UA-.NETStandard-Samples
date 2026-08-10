@@ -2760,6 +2760,9 @@ namespace Quickstarts
                 }
             }
 
+            result.InputArgumentResults = inputArgumentResults.ToArrayOf();
+            result.InputArgumentDiagnosticInfos = inputArgumentDiagnosticInfos.Count == 0 ? ArrayOf<DiagnosticInfo>.Empty : inputArgumentDiagnosticInfos.ToArrayOf();
+
             // check for validation errors.
             if (!argumentsValid)
             {
@@ -2768,8 +2771,7 @@ namespace Quickstarts
             }
 
             // do not return diagnostics if there are no errors.
-            result.InputArgumentResults = inputArgumentResults.ToArrayOf();
-            result.InputArgumentDiagnosticInfos = inputArgumentDiagnosticInfos.Count == 0 ? ArrayOf<DiagnosticInfo>.Empty : inputArgumentDiagnosticInfos.ToArrayOf();
+            result.InputArgumentDiagnosticInfos = ArrayOf<DiagnosticInfo>.Empty;
 
             // return output arguments.
             result.OutputArguments = outputArguments;

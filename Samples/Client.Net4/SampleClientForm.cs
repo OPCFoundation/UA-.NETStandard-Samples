@@ -60,6 +60,11 @@ namespace Opc.Ua.Sample
 
         private bool CertificateManager_AcceptError(Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
         {
+            if (InvokeRequired)
+            {
+                return (bool)Invoke(new Func<Opc.Ua.Security.Certificates.Certificate, ServiceResult, bool>(CertificateManager_AcceptError), certificate, error);
+            }
+
             try
             {
                 return GuiUtils.HandleCertificateValidationError(this, certificate, error);
