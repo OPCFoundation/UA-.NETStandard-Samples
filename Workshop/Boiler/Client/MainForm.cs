@@ -229,7 +229,7 @@ namespace Quickstarts.Boiler.Client
             nodeToBrowse.NodeClassMask = (uint)(NodeClass.Object);
             nodeToBrowse.ResultMask = (uint)(BrowseResultMask.All);
 
-            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(
+            List<ReferenceDescription> references = await ClientUtils.BrowseAsync(
                 m_session,
                 nodeToBrowse,
                 false,
@@ -320,7 +320,7 @@ namespace Quickstarts.Boiler.Client
                 {
                     controls[ii].Text = "---";
 
-                    if (nodes[ii] != null)
+                    if (!nodes[ii].IsNull)
                     {
                         MonitoredItem monitoredItem = new MonitoredItem(m_telemetry);
                         monitoredItem.StartNodeId = nodes[ii];

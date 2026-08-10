@@ -274,7 +274,7 @@ namespace Quickstarts.MethodsClient
                 RevisedInitialStateTB.Text = String.Empty;
                 RevisedFinalStateTB.Text = String.Empty;
 
-                IList<object> outputArguments = await m_session.CallAsync(
+                ArrayOf<Variant> outputArguments = await m_session.CallAsync(
                     m_objectNode,
                     m_methodNode,
                     default,
@@ -283,8 +283,8 @@ namespace Quickstarts.MethodsClient
 
                 if (outputArguments != null && outputArguments.Count > 1)
                 {
-                    RevisedInitialStateTB.Text = String.Format("{0}", outputArguments[0]);
-                    RevisedFinalStateTB.Text = String.Format("{0}", outputArguments[1]);
+                    RevisedInitialStateTB.Text = String.Format("{0}", outputArguments[0].Value);
+                    RevisedFinalStateTB.Text = String.Format("{0}", outputArguments[1].Value);
                 }
             }
             catch (Exception exception)

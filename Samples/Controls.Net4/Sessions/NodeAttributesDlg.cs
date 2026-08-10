@@ -67,7 +67,7 @@ namespace Opc.Ua.Sample.Controls
         public async Task ShowDialogAsync(Session session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
-            if (nodeId == null) throw new ArgumentNullException(nameof(nodeId));
+            if (nodeId.IsNull) throw new ArgumentNullException(nameof(nodeId));
 
             m_session = session;
             m_nodeId = nodeId;

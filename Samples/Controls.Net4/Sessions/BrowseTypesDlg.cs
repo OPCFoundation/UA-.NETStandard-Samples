@@ -95,7 +95,7 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    await TypeHierarchyCTRL.InitializeAsync(m_session, null);
+                    await TypeHierarchyCTRL.InitializeAsync(m_session, NodeId.Null);
                 }
             }
             catch (Exception exception)

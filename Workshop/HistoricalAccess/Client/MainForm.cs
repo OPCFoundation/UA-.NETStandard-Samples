@@ -193,10 +193,10 @@ namespace Quickstarts.HistoricalAccess.Client
                     "Select Variable to Monitor",
                     m_telemetry,
                     default,
-                    ReferenceTypes.Organizes,
-                    ReferenceTypes.Aggregates);
+                    new NodeId(ReferenceTypes.Organizes),
+                    new NodeId(ReferenceTypes.Aggregates));
 
-                if (nodeId != null)
+                if (!nodeId.IsNull)
                 {
                     await ReadCTRL.ChangeNodeAsync(nodeId);
                 }

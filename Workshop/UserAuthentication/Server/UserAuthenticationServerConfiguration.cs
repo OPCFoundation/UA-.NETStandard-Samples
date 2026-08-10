@@ -31,6 +31,7 @@ using System;
 using System.ServiceModel;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
+using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.UserAuthenticationServer
@@ -38,8 +39,8 @@ namespace Quickstarts.UserAuthenticationServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace = Namespaces.UserAuthentication)]
-    public class UserAuthenticationServerConfiguration
+    [DataType(Namespace = "http://opcfoundation.org/Quickstarts/UserAuthentication")]
+    public partial class UserAuthenticationServerConfiguration
     {
         #region Constructors
         /// <summary>

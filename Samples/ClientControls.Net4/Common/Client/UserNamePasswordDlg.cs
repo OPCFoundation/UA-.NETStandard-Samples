@@ -64,12 +64,14 @@ namespace Opc.Ua.Client.Controls
 
             if (identity != null)
             {
-                UserNameIdentityToken token = identity.GetIdentityToken() as UserNameIdentityToken;
-
-                if (token != null)
+                if (identity.TokenHandler is UserNameIdentityTokenHandler token)
                 {
                     UserNameTB.Text = token.UserName;
-                    PasswordTB.Text = Encoding.UTF8.GetString(token.DecryptedPassword);
+                    PasswordTB.Text = token.DecryptedPassword != null ? Encoding.UTF8.GetString(token.DecryptedPassword) : String.Empty;
+                }
+                else
+                {
+                    UserNameTB.Text = identity.DisplayName;
                 }
             }
 

@@ -46,6 +46,18 @@ namespace AggregationServer
             get { return m_localNamespaceIndexes; }
         }
 
+        private Array CastArray(Array source, Func<object, BuiltInType, BuiltInType, object> converter)
+        {
+            Type elementType = source.GetType().GetElementType() ?? typeof(object);
+            Array result = Array.CreateInstance(elementType, source.Length);
+            for (int ii = 0; ii < source.Length; ii++)
+            {
+                object mapped = converter(source.GetValue(ii), BuiltInType.Null, BuiltInType.Null);
+                result.SetValue(mapped, ii);
+            }
+            return result;
+        }
+
         /// <summary>
         /// Gets or sets the Uris for the Node Managers it supports e.g. "http://samples.org/UA/memorybuffer".
         /// </summary>
@@ -294,9 +306,15 @@ namespace AggregationServer
 
             if (argument != null)
             {
-                Argument argument2 = (Argument)argument.MemberwiseClone();
+                Argument argument2 = new Argument {
+                    Name = argument.Name,
+                    DataType = argument.DataType,
+                    ValueRank = argument.ValueRank,
+                    ArrayDimensions = argument.ArrayDimensions,
+                    Description = argument.Description
+                };
                 argument2.DataType = ToId(argument.DataType, namespaceIndexes);
-                return new ExtensionObject(null, argument2);
+                return new ExtensionObject(ExpandedNodeId.Null, argument2, false);
             }
 
             return extension;
@@ -363,11 +381,11 @@ namespace AggregationServer
 
                         if (Object.ReferenceEquals(m_localNamespaceIndexes, namespaceIndexes))
                         {
-                            array = TypeInfo.CastArray((Array)value.Value, type.BuiltInType, type.BuiltInType, CastArrayToLocal);
+                            array = CastArray((Array)value.Value, CastArrayToLocal);
                         }
                         else
                         {
-                            array = TypeInfo.CastArray((Array)value.Value, type.BuiltInType, type.BuiltInType, CastArrayToRemote);
+                            array = CastArray((Array)value.Value, CastArrayToRemote);
                         }
 
                         return new Variant(array, type);

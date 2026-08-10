@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -49,6 +49,10 @@ namespace Quickstarts.SimpleEvents.Server
     /// </remarks>
     public partial class SimpleEventsServer : StandardServer
     {
+        public SimpleEventsServer(ITelemetryContext telemetry) : base(telemetry)
+        {
+        }
+
         #region Overridden Methods
         /// <summary>
         /// Creates the node managers for the server.

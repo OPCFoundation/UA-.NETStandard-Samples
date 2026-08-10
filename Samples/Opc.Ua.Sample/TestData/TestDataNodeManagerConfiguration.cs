@@ -28,14 +28,15 @@
  * ======================================================================*/
 
 using System.Runtime.Serialization;
+using Opc.Ua;
 
 namespace TestData
 {
     /// <summary>
     /// Stores the configuration the test node manager
     /// </summary>
-    [DataContract(Namespace = Namespaces.TestData)]
-    public class TestDataNodeManagerConfiguration
+    [DataType]
+    public partial class TestDataNodeManagerConfiguration
     {
         #region Constructors
         /// <summary>
@@ -69,7 +70,7 @@ namespace TestData
         /// <summary>
         /// The path to the file that stores state of the node manager.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public string SaveFilePath
         {
             get { return m_saveFilePath; }
@@ -79,7 +80,7 @@ namespace TestData
         /// <summary>
         /// The maximum length for a monitored item sampling queue.
         /// </summary>
-        [DataMember(Order = 2)]
+        [DataTypeField(Order = 2)]
         public uint MaxQueueSize
         {
             get { return m_maxQueueSize; }
@@ -89,7 +90,7 @@ namespace TestData
         /// <summary>
         /// The next unused value that can be assigned to new nodes.
         /// </summary>
-        [DataMember(Order = 3)]
+        [DataTypeField(Order = 3)]
         public uint NextUnusedId
         {
             get { return m_nextUnusedId; }

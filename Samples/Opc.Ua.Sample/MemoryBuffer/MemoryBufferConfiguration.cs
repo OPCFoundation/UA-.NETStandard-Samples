@@ -32,14 +32,16 @@ using System.Runtime.Serialization;
 using System.Collections.Generic;
 
 using Opc.Ua.Server;
+using Opc.Ua;
 
 namespace MemoryBuffer
 {
     /// <summary>
     /// Stores the configuration the test node manager
     /// </summary>
-    [DataContract(Namespace = Namespaces.MemoryBuffer)]
-    public class MemoryBufferConfiguration
+    // Namespaces.MemoryBuffer is generated in the same pass and is unavailable to the [DataType] generator.
+    [DataType(Namespace = "http://samples.org/UA/MemoryBuffer")]
+    public partial class MemoryBufferConfiguration
     {
         #region Constructors
         /// <summary>
@@ -64,7 +66,7 @@ namespace MemoryBuffer
         /// </summary>
         private void Initialize()
         {
-            m_buffers = null;
+            m_buffers = default;
         }
         #endregion
 
@@ -72,8 +74,8 @@ namespace MemoryBuffer
         /// <summary>
         /// The buffers exposed by the memory 
         /// </summary>
-        [DataMember(Order = 1)]
-        public MemoryBufferInstanceCollection Buffers
+        [DataTypeField(Order = 1, StructureHandling = StructureHandling.Inline)]
+        public ArrayOf<MemoryBufferInstance> Buffers
         {
             get { return m_buffers; }
             set { m_buffers = value; }
@@ -81,15 +83,16 @@ namespace MemoryBuffer
         #endregion
 
         #region Private Members
-        private MemoryBufferInstanceCollection m_buffers;
+        private ArrayOf<MemoryBufferInstance> m_buffers;
         #endregion
     }
 
     /// <summary>
     /// Stores the configuration for a memory buffer instance.
     /// </summary>
-    [DataContract(Namespace = Namespaces.MemoryBuffer)]
-    public class MemoryBufferInstance
+    // Namespaces.MemoryBuffer is generated in the same pass and is unavailable to the [DataType] generator.
+    [DataType(Namespace = "http://samples.org/UA/MemoryBuffer")]
+    public partial class MemoryBufferInstance
     {
         #region Constructors
         /// <summary>
@@ -124,7 +127,7 @@ namespace MemoryBuffer
         /// <summary>
         /// The browse name for the instance.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public string Name
         {
             get { return m_name; }
@@ -134,7 +137,7 @@ namespace MemoryBuffer
         /// <summary>
         /// The number of tags in the buffer.
         /// </summary>
-        [DataMember(Order = 2)]
+        [DataTypeField(Order = 2)]
         public int TagCount
         {
             get { return m_tagCount; }
@@ -144,7 +147,7 @@ namespace MemoryBuffer
         /// <summary>
         /// The data type of the tags in the buffer.
         /// </summary>
-        [DataMember(Order = 3)]
+        [DataTypeField(Order = 3)]
         public string DataType
         {
             get { return m_dataType; }
@@ -158,14 +161,4 @@ namespace MemoryBuffer
         private string m_dataType;
         #endregion
     }
-
-    #region MemoryBufferInstanceCollection Class
-    /// <summary>
-    /// A collection of MemoryBufferInstances.
-    /// </summary>
-    [CollectionDataContract(Name = "ListOfMemoryBufferInstance", Namespace = Namespaces.MemoryBuffer, ItemName = "MemoryBufferInstance")]
-    public partial class MemoryBufferInstanceCollection : List<MemoryBufferInstance>
-    {
-    }
-    #endregion
 }

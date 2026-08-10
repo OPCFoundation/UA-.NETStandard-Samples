@@ -31,6 +31,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.ComplexTypes;
 using Opc.Ua.Client.Controls;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -255,9 +256,9 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // open the session.
-                await session.OpenAsync(sessionName, (uint)session.SessionTimeout, identity, preferredLocales, checkDomain ?? true, ct);
+                await session.OpenAsync(sessionName, (uint)session.SessionTimeout, identity, preferredLocales.ToArray(), checkDomain ?? true, false, ct);
 
-                var typeSystemLoader = new ComplexTypeSystem(session);
+                var typeSystemLoader = new ComplexTypeSystemFactory(session.MessageContext.Telemetry).Create(session);
                 _ = await typeSystemLoader.LoadAsync(ct: ct);
 
                 OpenComplete(null);

@@ -116,7 +116,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (element != null)
                 {
-                    filter.Elements.Add(element);
+                    filter.Elements = filter.Elements.AddItem(element);
                 }
             }
 
@@ -245,7 +245,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, ObjectTypes.BaseEventType, m_session, Telemetry);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, new NodeId(ObjectTypes.BaseEventType), m_session, Telemetry);
                 #pragma warning restore CA2000
 
                 if (reference != null)
@@ -260,8 +260,8 @@ namespace Opc.Ua.Sample.Controls
                     ContentFilterElement element = null;
 
                     // build the relative path.
-                    QualifiedNameCollection browsePath = [node.BrowseName];
-                    NodeId typeId = null;
+                    List<QualifiedName> browsePath = [node.BrowseName];
+                    NodeId typeId = NodeId.Null;
 
                     switch (node.NodeClass)
                     {
@@ -284,7 +284,7 @@ namespace Opc.Ua.Sample.Controls
                             object value = GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank);
 
                             // create attribute filter.
-                            element = m_filter.Push(FilterOperator.Equals, attribute, value);
+                            element = m_filter.Push(FilterOperator.Equals, new Variant(attribute), new Variant(value));
                             break;
                         }
 
@@ -299,13 +299,13 @@ namespace Opc.Ua.Sample.Controls
                             attribute.AttributeId = Attributes.NodeId;
 
                             // create attribute filter.
-                            element = m_filter.Push(FilterOperator.IsNull, attribute);
+                            element = m_filter.Push(FilterOperator.IsNull, new Variant(attribute));
                             break;
                         }
 
                         case NodeClass.ObjectType:
                         {
-                            element = m_filter.Push(FilterOperator.OfType, node.NodeId);
+                            element = m_filter.Push(FilterOperator.OfType, new Variant(node.NodeId));
                             break;
                         }
 
@@ -342,7 +342,7 @@ namespace Opc.Ua.Sample.Controls
                 ContentFilterElement element2 = ItemsLV.SelectedItems[1].Tag as ContentFilterElement;
 
                 ContentFilter filter = GetFilter();
-                filter.Push(FilterOperator.And, element1, element2);
+                filter.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
 
                 Update(filter);
             }
@@ -365,7 +365,7 @@ namespace Opc.Ua.Sample.Controls
                 ContentFilterElement element2 = ItemsLV.SelectedItems[1].Tag as ContentFilterElement;
 
                 ContentFilter filter = GetFilter();
-                filter.Push(FilterOperator.Or, element1, element2);
+                filter.Push(FilterOperator.Or, new Variant(element1), new Variant(element2));
 
                 Update(filter);
             }
@@ -387,7 +387,7 @@ namespace Opc.Ua.Sample.Controls
                 ContentFilterElement element1 = ItemsLV.SelectedItems[0].Tag as ContentFilterElement;
 
                 ContentFilter filter = GetFilter();
-                filter.Push(FilterOperator.Not, element1);
+                filter.Push(FilterOperator.Not, new Variant(element1));
 
                 Update(filter);
             }

@@ -82,19 +82,19 @@ namespace Opc.Ua.Client.Controls
 
             if (nodeToWrite.Value.StatusCode != StatusCodes.Good)
             {
-                StatusCodeTB.Text = (string)TypeInfo.Cast(nodeToWrite.Value.StatusCode, BuiltInType.String);
+                StatusCodeTB.Text = (string)new Variant(nodeToWrite.Value.StatusCode).ConvertTo(BuiltInType.String).Value;
                 StatusCodeCK.Checked = true;
             }
 
             if (nodeToWrite.Value.SourceTimestamp != DateTime.MinValue)
             {
-                SourceTimestampTB.Text = (string)TypeInfo.Cast(nodeToWrite.Value.SourceTimestamp, BuiltInType.String);
+                SourceTimestampTB.Text = (string)new Variant(nodeToWrite.Value.SourceTimestamp).ConvertTo(BuiltInType.String).Value;
                 SourceTimestampCK.Checked = true;
             }
 
             if (nodeToWrite.Value.ServerTimestamp != DateTime.MinValue)
             {
-                ServerTimestampTB.Text = (string)TypeInfo.Cast(nodeToWrite.Value.ServerTimestamp, BuiltInType.String);
+                ServerTimestampTB.Text = (string)new Variant(nodeToWrite.Value.ServerTimestamp).ConvertTo(BuiltInType.String).Value;
                 ServerTimestampCK.Checked = true;
             }
 
@@ -109,24 +109,26 @@ namespace Opc.Ua.Client.Controls
             result.NodeId = NodeBTN.SelectedNode;
             result.AttributeId = (uint)(AttributeCB.SelectedIndex + 1);
             result.ParsedIndexRange = NumericRange.Parse(IndexRangeTB.Text);
-            result.Value.WrappedValue = ValueBTN.Value;
+            DataValue dataValue = result.Value.WithWrappedValue(ValueBTN.Value);
 
             if (StatusCodeCK.Checked)
             {
-                result.Value.StatusCode = (StatusCode)TypeInfo.Cast(StatusCodeTB.Text, BuiltInType.StatusCode);
+                dataValue = dataValue.WithStatus((StatusCode)new Variant(StatusCodeTB.Text).ConvertTo(BuiltInType.StatusCode).Value);
             }
 
             if (SourceTimestampCK.Checked)
             {
-                result.Value.SourceTimestamp = (DateTime)TypeInfo.Cast(SourceTimestampTB.Text, BuiltInType.DateTime);
+                dataValue = dataValue.WithSourceTimestamp((DateTimeUtc)new Variant(SourceTimestampTB.Text).ConvertTo(BuiltInType.DateTime).Value);
             }
 
             if (ServerTimestampCK.Checked)
             {
-                result.Value.ServerTimestamp = (DateTime)TypeInfo.Cast(ServerTimestampTB.Text, BuiltInType.DateTime);
+                dataValue = dataValue.WithServerTimestamp((DateTimeUtc)new Variant(ServerTimestampTB.Text).ConvertTo(BuiltInType.DateTime).Value);
             }
 
-            if (NumericRange.Empty != result.ParsedIndexRange)
+            result.Value = dataValue;
+
+            if (default(NumericRange) != result.ParsedIndexRange)
             {
                 result.IndexRange = result.ParsedIndexRange.ToString();
             }
@@ -155,21 +157,21 @@ namespace Opc.Ua.Client.Controls
 
                 if (StatusCodeCK.Checked)
                 {
-                    TypeInfo.Cast(StatusCodeTB.Text, BuiltInType.StatusCode);
+                    new Variant(StatusCodeTB.Text).ConvertTo(BuiltInType.StatusCode);
                 }
 
                 SourceTimestampTB.Text = SourceTimestampTB.Text.Trim();
 
                 if (SourceTimestampCK.Checked)
                 {
-                    TypeInfo.Cast(SourceTimestampTB.Text, BuiltInType.DateTime);
+                    new Variant(SourceTimestampTB.Text).ConvertTo(BuiltInType.DateTime);
                 }
 
                 ServerTimestampTB.Text = ServerTimestampTB.Text.Trim();
 
                 if (ServerTimestampCK.Checked)
                 {
-                    TypeInfo.Cast(ServerTimestampTB.Text, BuiltInType.DateTime);
+                    new Variant(ServerTimestampTB.Text).ConvertTo(BuiltInType.DateTime);
                 }
 
                 DialogResult = DialogResult.OK;
@@ -191,7 +193,7 @@ namespace Opc.Ua.Client.Controls
 
             if (SourceTimestampTB.Enabled && String.IsNullOrEmpty(SourceTimestampTB.Text))
             {
-                SourceTimestampTB.Text = (string)TypeInfo.Cast(DateTime.UtcNow, BuiltInType.String);
+                SourceTimestampTB.Text = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
             }
         }
 
@@ -201,7 +203,7 @@ namespace Opc.Ua.Client.Controls
 
             if (ServerTimestampTB.Enabled && String.IsNullOrEmpty(ServerTimestampTB.Text))
             {
-                ServerTimestampTB.Text = (string)TypeInfo.Cast(DateTime.UtcNow, BuiltInType.String);
+                ServerTimestampTB.Text = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
             }
         }
         #endregion

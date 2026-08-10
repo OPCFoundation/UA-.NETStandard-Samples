@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -50,6 +50,10 @@ namespace Quickstarts.HistoricalAccessServer
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample server type intentionally matches namespace naming.")]
     public partial class HistoricalAccessServer : StandardServer
     {
+        public HistoricalAccessServer(ITelemetryContext telemetry) : base(telemetry)
+        {
+        }
+
         #region Public Interface
         /// <summary>
         /// Returns the current server instance.

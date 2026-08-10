@@ -35,6 +35,7 @@ using System.Drawing;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -263,7 +264,7 @@ namespace Quickstarts.HistoricalEvents.Client
         {
             for (int ii = 0; ii < events.Events.Count; ii++)
             {
-                ListViewItem item = await CreateListItemAsync(m_filter, events.Events[ii].EventFields, ct);
+                ListViewItem item = await CreateListItemAsync(m_filter, events.Events[ii].EventFields.ToList(), ct);
                 EventsLV.Items.Add(item);
             }
 
@@ -326,7 +327,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Creates list item for an event.
         /// </summary>
-        private async Task<ListViewItem> CreateListItemAsync(FilterDeclaration filter, VariantCollection fieldValues, CancellationToken ct = default)
+        private async Task<ListViewItem> CreateListItemAsync(FilterDeclaration filter, List<Variant> fieldValues, CancellationToken ct = default)
         {
             ListViewItem item = new ListViewItem();
             item.Tag = fieldValues;
@@ -427,7 +428,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // create an item and add to top of list.
-                ListViewItem item = await CreateListItemAsync(m_filter, notification.EventFields);
+                ListViewItem item = await CreateListItemAsync(m_filter, notification.EventFields.ToList());
                 EventsLV.Items.Insert(0, item);
 
                 // adjust the width of the columns.
@@ -458,7 +459,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     // get the last hour or 10 events.
                     ReadEventDetails details = new ReadEventDetails();
                     details.StartTime = DateTime.UtcNow.AddSeconds(30);
-                    details.EndTime = details.StartTime.AddHours(-1);
+                    details.EndTime = ((DateTime)details.StartTime).AddHours(-1);
                     details.NumValuesPerNode = 10;
                     details.Filter = m_filter.GetFilter();
 
@@ -486,8 +487,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -501,7 +502,7 @@ namespace Quickstarts.HistoricalEvents.Client
             await AddEventHistoryAsync(events, ct);
 
             // release continuation points.
-            if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -513,15 +514,15 @@ namespace Quickstarts.HistoricalEvents.Client
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = response.Results.ToList();
+                diagnosticInfos = response.DiagnosticInfos.ToList();
             }
         }
 
         /// <summary>
         /// Deletes the recent history.
         /// </summary>
-        private async Task DeleteHistoryAsync(NodeId areaId, List<VariantCollection> events, FilterDeclaration filter, CancellationToken ct = default)
+        private async Task DeleteHistoryAsync(NodeId areaId, List<List<Variant>> events, FilterDeclaration filter, CancellationToken ct = default)
         {
             // find the event id.
             int index = 0;
@@ -546,7 +547,7 @@ namespace Quickstarts.HistoricalEvents.Client
             DeleteEventDetails details = new DeleteEventDetails();
             details.NodeId = areaId;
 
-            foreach (VariantCollection e in events)
+            foreach (List<Variant> e in events)
             {
                 byte[] eventId = null;
 
@@ -555,11 +556,11 @@ namespace Quickstarts.HistoricalEvents.Client
                     eventId = e[index].Value as byte[];
                 }
 
-                details.EventIds.Add(eventId);
+                details.EventIds = details.EventIds.AddItem(eventId.ToByteString());
             }
 
             // delete the events.
-            ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
             nodesToUpdate.Add(new ExtensionObject(details));
 
             HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
@@ -567,8 +568,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 nodesToUpdate,
                 ct);
 
-            HistoryUpdateResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -612,7 +613,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                VariantCollection fields = EventsLV.SelectedItems[0].Tag as VariantCollection;
+                List<Variant> fields = EventsLV.SelectedItems[0].Tag as List<Variant>;
 
                 if (fields != null)
                 {
@@ -635,11 +636,11 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                List<VariantCollection> events = new List<VariantCollection>();
+                List<List<Variant>> events = new List<List<Variant>>();
 
                 foreach (ListViewItem item in EventsLV.SelectedItems)
                 {
-                    VariantCollection fields = item.Tag as VariantCollection;
+                    List<Variant> fields = item.Tag as List<Variant>;
 
                     if (fields != null)
                     {
@@ -653,7 +654,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
                     foreach (ListViewItem item in EventsLV.SelectedItems)
                     {
-                        VariantCollection fields = item.Tag as VariantCollection;
+                        List<Variant> fields = item.Tag as List<Variant>;
 
                         if (fields != null)
                         {

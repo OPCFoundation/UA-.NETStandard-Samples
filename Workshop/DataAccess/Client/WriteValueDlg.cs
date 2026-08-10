@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -93,8 +94,8 @@ namespace Quickstarts.DataAccessClient
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -212,10 +213,11 @@ namespace Quickstarts.DataAccessClient
 
                 valueToWrite.NodeId = m_nodeId;
                 valueToWrite.AttributeId = m_attributeId;
-                valueToWrite.Value.Value = ChangeType();
-                valueToWrite.Value.StatusCode = StatusCodes.Good;
-                valueToWrite.Value.ServerTimestamp = DateTime.MinValue;
-                valueToWrite.Value.SourceTimestamp = DateTime.MinValue;
+                valueToWrite.Value = new DataValue(
+                    new Variant(ChangeType()),
+                    StatusCodes.Good,
+                    DateTime.MinValue,
+                    DateTime.MinValue);
 
                 WriteValueCollection valuesToWrite = new WriteValueCollection();
                 valuesToWrite.Add(valueToWrite);
@@ -226,8 +228,8 @@ namespace Quickstarts.DataAccessClient
                     valuesToWrite,
                     default);
 
-                StatusCodeCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, valuesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);

@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -56,6 +56,10 @@ namespace Quickstarts.UserAuthenticationServer
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample server type name intentionally mirrors the namespace.")]
     public partial class UserAuthenticationServer : StandardServer
     {
+        public UserAuthenticationServer(ITelemetryContext telemetry) : base(telemetry)
+        {
+        }
+
         #region Overridden UserAuthentication
         /// <summary>
         /// Initializes the server before it starts up.
@@ -207,7 +211,7 @@ namespace Quickstarts.UserAuthenticationServer
 
             if (userNameToken != null)
             {
-                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.DecryptedPassword));
+                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.Password.ToArray()));
                 args.Identity = new UserIdentity(userNameToken);
                 if (m_logger.IsEnabled(LogLevel.Information))
                 {
@@ -221,7 +225,7 @@ namespace Quickstarts.UserAuthenticationServer
 
             if (x509Token != null)
             {
-                VerifyCertificate(x509Token.Certificate);
+                VerifyCertificate(new X509Certificate2(x509Token.CertificateData.ToArray()));
                 args.Identity = new UserIdentity(x509Token);
                 if (m_logger.IsEnabled(LogLevel.Information))
                 {
@@ -324,7 +328,7 @@ namespace Quickstarts.UserAuthenticationServer
                 // create an exception with a vendor defined sub-code.
                 throw new ServiceResultException(new ServiceResult(
                     Namespaces.UserAuthentication,
-                    new StatusCode(StatusCodes.BadIdentityTokenRejected,
+                    new StatusCode(StatusCodes.BadIdentityTokenRejected.Code,
                     "InvalidCertificate"),
                     new LocalizedText(info),
                     e));
@@ -416,31 +420,9 @@ namespace Quickstarts.UserAuthenticationServer
         /// <summary>
         /// This method is called at the being of the thread that processes a request.
         /// </summary>
-        protected override OperationContext ValidateRequest(
-            SecureChannelContext secureChannelContext,
-            RequestHeader requestHeader,
-            RequestType requestType)
+        protected override void ValidateRequest(RequestHeader requestHeader)
         {
-            OperationContext context = base.ValidateRequest(secureChannelContext, requestHeader, requestType);
-
-            if (requestType == RequestType.Write)
-            {
-                // reject all writes if no user provided.
-                if (context.UserIdentity.TokenType == UserTokenType.Anonymous)
-                {
-                    // construct translation object with default text.
-                    TranslationInfo info = new TranslationInfo(
-                        "NoWriteAllowed",
-                        "en-US",
-                        "Must provide a valid windows user before calling write.");
-
-                    // create an exception with a vendor defined sub-code.
-                    throw new ServiceResultException(new ServiceResult(
-                        Namespaces.UserAuthentication,
-                        new StatusCode(StatusCodes.BadUserAccessDenied,
-                        "NoWriteAllowed"),
-                        new LocalizedText(info)));
-                }
+            base.ValidateRequest(requestHeader);
 #if TODO
                 SecurityToken securityToken = context.UserIdentity.GetSecurityToken();
 
@@ -466,9 +448,6 @@ namespace Quickstarts.UserAuthenticationServer
                     LogonUser(context, userNameToken);
                 }
 #endif
-            }
-
-            return context;
         }
 
         /// <summary>

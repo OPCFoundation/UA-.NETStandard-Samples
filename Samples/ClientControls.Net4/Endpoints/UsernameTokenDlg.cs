@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -71,9 +71,9 @@ namespace Opc.Ua.Client.Controls
             {
                 UserNameCB.Text = token.UserName;
 
-                if (token.Password != null && token.Password.Length > 0)
+                if (!token.Password.IsNull && token.Password.Length > 0)
                 {
-                    PasswordTB.Text = new UTF8Encoding().GetString(token.Password);
+                    PasswordTB.Text = new UTF8Encoding().GetString(token.Password.ToArray());
                 }
             }
 
@@ -86,11 +86,11 @@ namespace Opc.Ua.Client.Controls
 
             if (!String.IsNullOrEmpty(PasswordTB.Text))
             {
-                token.Password = new UTF8Encoding().GetBytes(PasswordTB.Text);
+                token.Password = new UTF8Encoding().GetBytes(PasswordTB.Text).ToByteString();
             }
             else
             {
-                token.Password = null;
+                token.Password = default;
             }
 
             return true;

@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 using Opc.Ua.Bindings;
 
@@ -57,7 +58,7 @@ namespace Opc.Ua.Sample.Controls
 
         private ITransportChannel m_channel;
         private ApplicationConfiguration m_configuration;
-        private EndpointDescriptionCollection m_endpoints;
+        private List<EndpointDescription> m_endpoints;
         private ServiceMessageContext m_messageContext;
         private ITelemetryContext m_telemetry;
 
@@ -66,7 +67,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public ITransportChannel ShowDialog(
             ApplicationConfiguration configuration,
-            EndpointDescriptionCollection endpoints)
+            List<EndpointDescription> endpoints)
         {
             if (endpoints == null) throw new ArgumentNullException(nameof(endpoints));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
@@ -120,8 +121,13 @@ namespace Opc.Ua.Sample.Controls
                     m_configuration,
                     m_endpoints[EndpointCB.SelectedIndex],
                     configuration,
-                    await m_configuration.SecurityConfiguration.ApplicationCertificate.FindAsync(true),
-                    m_messageContext);
+                    await m_configuration.CertificateManager.CertificateProvider.GetPrivateKeyCertificateAsync(
+                        m_configuration.SecurityConfiguration.ApplicationCertificate,
+                        null,
+                        null,
+                        CancellationToken.None),
+                    m_messageContext,
+                    CancellationToken.None);
 
                 // create the channel.
 

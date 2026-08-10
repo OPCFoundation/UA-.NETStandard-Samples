@@ -40,6 +40,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Gds.Client.Controls;
+using Opc.Ua.Security.Certificates;
 
 namespace Opc.Ua.Gds.Client
 {
@@ -130,8 +131,8 @@ namespace Opc.Ua.Gds.Client
 
                 ApplicationNameTextBox.Text = (server.ApplicationName != null) ? server.ApplicationName.Text : "";
                 ProductUriTextBox.Text = server.ProductUri;
-                SetDiscoveryUrls(server.DiscoveryUrls);
-                SetServerCapabilities(new string[] { ServerCapability.LiveData });
+                SetDiscoveryUrls(server.DiscoveryUrls.ToArray());
+                SetServerCapabilities(new string[] { Opc.Ua.ServerCapability.DA });
 
                 ControlToData();
                 RaiseRegisteredApplicationChangedEvent(m_application);
@@ -190,12 +191,12 @@ namespace Opc.Ua.Gds.Client
 
             if (record != null)
             {
-                m_application.ApplicationId = record.ApplicationId?.ToString();
+                m_application.ApplicationId = record.ApplicationId.ToString();
                 m_application.ApplicationUri = record.ApplicationUri;
                 m_application.ApplicationName = (record.ApplicationNames != null && record.ApplicationNames.Count > 0 && record.ApplicationNames[0].Text != null) ? record.ApplicationNames[0].Text.ToString() : null;
                 m_application.ProductUri = record.ProductUri;
-                m_application.DiscoveryUrl = record.DiscoveryUrls?.ToArray();
-                m_application.ServerCapability = record.ServerCapabilities?.ToArray();
+                m_application.DiscoveryUrl = record.DiscoveryUrls.IsNull ? null : record.DiscoveryUrls.ToArray();
+                m_application.ServerCapability = record.ServerCapabilities.IsNull ? null : record.ServerCapabilities.ToArray();
             }
             else
             {
@@ -515,7 +516,7 @@ namespace Opc.Ua.Gds.Client
                         }
                         else
                         {
-                            SetServerCapabilities(new string[] { ServerCapability.LiveData });
+                            SetServerCapabilities(new string[] { Opc.Ua.ServerCapability.DA });
                         }
                     }
 
@@ -604,7 +605,7 @@ namespace Opc.Ua.Gds.Client
                 if (configuration.ApplicationType != Security.ApplicationType.Client_1)
                 {
                     SetDiscoveryUrls(configuration.BaseAddresses);
-                    SetServerCapabilities(new string[] { ServerCapability.LiveData });
+                    SetServerCapabilities(new string[] { Opc.Ua.ServerCapability.DA });
                 }
 
                 if (configuration.ApplicationCertificate != null)
@@ -817,12 +818,12 @@ namespace Opc.Ua.Gds.Client
 
                 if (String.IsNullOrWhiteSpace(ApplicationUriTextBox.Text))
                 {
-                    ApplicationUriTextBox.Text = X509Utils.GetApplicationUrisFromCertificate(certificate)[0];
+                    ApplicationUriTextBox.Text = X509Utils.GetApplicationUrisFromCertificate(Certificate.From(certificate))[0];
                 }
 
                 if (String.IsNullOrWhiteSpace(DiscoveryUrlsTextBox.Text) && RegistrationTypeComboBox.SelectedIndex != ClientPullManagement)
                 {
-                    var domains = X509Utils.GetDomainsFromCertificate(certificate);
+                    var domains = X509Utils.GetDomainsFromCertificate(Certificate.From(certificate));
 
                     if (domains != null)
                     {
@@ -914,7 +915,7 @@ namespace Opc.Ua.Gds.Client
 
                     if (String.IsNullOrWhiteSpace(ApplicationUriTextBox.Text))
                     {
-                        ApplicationUriTextBox.Text = X509Utils.GetApplicationUrisFromCertificate(certificate)[0];
+                        ApplicationUriTextBox.Text = X509Utils.GetApplicationUrisFromCertificate(Certificate.From(certificate))[0];
                     }
                 }
                 catch (Exception)
@@ -1381,13 +1382,13 @@ namespace Opc.Ua.Gds.Client
 
                 if (records != null)
                 {
-                    if (records.Length > 1)
+                    if (records.Count > 1)
                     {
                         #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                        recordToReplace = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records, recordToReplace?.ApplicationId);
+                        recordToReplace = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records.ToArray(), recordToReplace?.ApplicationId ?? NodeId.Null);
                         #pragma warning restore CA2000
                     }
-                    else if (records.Length > 0)
+                    else if (records.Count > 0)
                     {
                         recordToReplace = records[0];
                     }
@@ -1398,7 +1399,7 @@ namespace Opc.Ua.Gds.Client
                     recordToReplace = new ApplicationRecordDataType();
                 }
 
-                StringCollection urls = new StringCollection();
+                List<string> urls = new List<string>();
 
                 if (discoveryUrls != null)
                 {
@@ -1410,10 +1411,10 @@ namespace Opc.Ua.Gds.Client
 
                 recordToReplace.ApplicationUri = applicationUri;
                 recordToReplace.ApplicationType = (RegistrationTypeComboBox.SelectedIndex != ClientPullManagement) ? ApplicationType.Server : ApplicationType.Client;
-                recordToReplace.ApplicationNames = new LocalizedText[] { applicationName };
+                recordToReplace.ApplicationNames = new LocalizedText[] { new LocalizedText(applicationName) };
                 recordToReplace.ProductUri = productUri;
                 recordToReplace.DiscoveryUrls = urls;
-                recordToReplace.ServerCapabilities = (capabilities != null) ? new StringCollection(capabilities) : new StringCollection();
+                recordToReplace.ServerCapabilities = (capabilities != null) ? new List<string>(capabilities) : new List<string>();
 
                 var applicationId = await m_gds.RegisterApplicationAsync(recordToReplace);
 
@@ -1494,13 +1495,13 @@ namespace Opc.Ua.Gds.Client
 
                 if (records != null)
                 {
-                    if (records.Length > 1)
+                    if (records.Count > 1)
                     {
                         #pragma warning disable CA1849, CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                        existingRecord = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records, null);
+                        existingRecord = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records.ToArray(), NodeId.Null);
                         #pragma warning restore CA1849, CA2000
                     }
-                    else if (records.Length > 0)
+                    else if (records.Count > 0)
                     {
                         existingRecord = records[0];
                     }
@@ -1536,8 +1537,8 @@ namespace Opc.Ua.Gds.Client
             ApplicationUriTextBox.Text = existingRecord.ApplicationUri;
             ApplicationNameTextBox.Text = (existingRecord.ApplicationNames != null && existingRecord.ApplicationNames.Count > 0) ? Utils.Format("{0}", existingRecord.ApplicationNames[0]) : "";
             ProductUriTextBox.Text = existingRecord.ProductUri;
-            SetDiscoveryUrls(existingRecord.DiscoveryUrls);
-            SetServerCapabilities(existingRecord.ServerCapabilities);
+            SetDiscoveryUrls(existingRecord.DiscoveryUrls.ToArray());
+            SetServerCapabilities(existingRecord.ServerCapabilities.ToArray());
 
             UnregisterApplicationButton.Enabled = true;
 
@@ -1731,7 +1732,7 @@ namespace Opc.Ua.Gds.Client
 
                 if (m_application.DiscoveryUrl != null)
                 {
-                    StringCollection urls = new StringCollection();
+                    List<string> urls = new List<string>();
 
                     foreach (var discoveryUrl in m_application.DiscoveryUrl)
                     {
@@ -1758,7 +1759,7 @@ namespace Opc.Ua.Gds.Client
 
                     if (m_application.DiscoveryUrl != null)
                     {
-                        StringCollection urls = new StringCollection();
+                        List<string> urls = new List<string>();
 
                         foreach (var discoveryUrl in m_application.DiscoveryUrl)
                         {

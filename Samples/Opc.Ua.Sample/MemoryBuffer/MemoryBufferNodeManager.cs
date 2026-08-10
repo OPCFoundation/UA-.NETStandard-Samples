@@ -53,11 +53,11 @@ namespace MemoryBuffer
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public ArrayOf<string> NamespacesUris
         {
             get
             {
-                var nameSpaces = new StringCollection {
+                var nameSpaces = new List<string> {
                     Namespaces.MemoryBuffer,
                     Namespaces.MemoryBuffer + "/Instance"
                 };
@@ -121,7 +121,7 @@ namespace MemoryBuffer
                 // create the nodes from configuration.
                 namespaceIndex = Server.NamespaceUris.GetIndexOrAppend(Namespaces.MemoryBuffer + "/Instance");
 
-                if (m_configuration != null && m_configuration.Buffers != null)
+                if (m_configuration != null && !m_configuration.Buffers.IsNull)
                 {
                     for (int ii = 0; ii < m_configuration.Buffers.Count; ii++)
                     {
@@ -137,7 +137,7 @@ namespace MemoryBuffer
                             SystemContext,
                             new NodeId(bufferNode.SymbolicName, namespaceIndex),
                             new QualifiedName(bufferNode.SymbolicName, namespaceIndex),
-                            null,
+                            LocalizedText.Null,
                             true);
 
                         bufferNode.CreateBuffer(instance.DataType, instance.TagCount);
@@ -307,7 +307,7 @@ namespace MemoryBuffer
             }
 
             // index range not supported.
-            if (itemToCreate.ItemToMonitor.ParsedIndexRange != NumericRange.Empty)
+            if (!itemToCreate.ItemToMonitor.ParsedIndexRange.IsNull)
             {
                 return StatusCodes.BadIndexRangeInvalid;
             }
@@ -319,19 +319,19 @@ namespace MemoryBuffer
             }
 
             // read initial value.
-            DataValue initialValue = new DataValue();
-
-            initialValue.Value = null;
-            initialValue.ServerTimestamp = DateTime.UtcNow;
-            initialValue.SourceTimestamp = DateTime.MinValue;
-            initialValue.StatusCode = StatusCodes.Good;
+            DataValue initialValue = new DataValue(
+                Variant.Null,
+                StatusCodes.Good,
+                DateTime.MinValue,
+                DateTime.UtcNow);
+            NumericRange indexRange = itemToCreate.ItemToMonitor.ParsedIndexRange;
 
             ServiceResult error = source.ReadAttribute(
                 context,
                 itemToCreate.ItemToMonitor.AttributeId,
-                itemToCreate.ItemToMonitor.ParsedIndexRange,
+                indexRange,
                 itemToCreate.ItemToMonitor.DataEncoding,
-                initialValue);
+                ref initialValue);
 
             if (ServiceResult.IsBad(error))
             {
@@ -516,23 +516,24 @@ namespace MemoryBuffer
             // need to provide an immediate update after enabling.
             if (previousMode == MonitoringMode.Disabled && monitoringMode != MonitoringMode.Disabled)
             {
-                DataValue initialValue = new DataValue();
-
-                initialValue.Value = null;
-                initialValue.ServerTimestamp = DateTime.UtcNow;
-                initialValue.SourceTimestamp = DateTime.MinValue;
-                initialValue.StatusCode = StatusCodes.Good;
+                DataValue initialValue = new DataValue(
+                    Variant.Null,
+                    StatusCodes.Good,
+                    DateTime.MinValue,
+                    DateTime.UtcNow);
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 MemoryTagState tag = new MemoryTagState(buffer, datachangeItem.Offset);
                 #pragma warning restore CA2000
 
+                NumericRange indexRange = NumericRange.Null;
+
                 ServiceResult error = tag.ReadAttribute(
                     context,
                     datachangeItem.AttributeId,
-                    NumericRange.Empty,
-                    null,
-                    initialValue);
+                    indexRange,
+                    QualifiedName.Null,
+                    ref initialValue);
 
                 datachangeItem.QueueValue(initialValue, error);
             }

@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.ServiceModel;
@@ -132,9 +133,9 @@ namespace Quickstarts.DataAccessClient
 
         private void ShowResults()
         {
-            GoBTN.Visible = (m_result == null || m_result.ContinuationPoint == null);
+            GoBTN.Visible = (m_result == null || m_result.ContinuationPoint.IsNull);
             NextBTN.Visible = !GoBTN.Visible;
-            StopBTN.Enabled = (m_result != null && m_result.ContinuationPoint != null);
+            StopBTN.Enabled = (m_result != null && !m_result.ContinuationPoint.IsNull);
 
             if (m_result == null)
             {
@@ -198,8 +199,8 @@ namespace Quickstarts.DataAccessClient
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -232,8 +233,8 @@ namespace Quickstarts.DataAccessClient
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -250,9 +251,9 @@ namespace Quickstarts.DataAccessClient
                 return DateTime.MinValue;
             }
 
-            DateTime startTime = data.DataValues[0].SourceTimestamp;
+            DateTime startTime = (DateTime)data.DataValues[0].SourceTimestamp;
 
-            if (results[0].ContinuationPoint != null)
+            if (!results[0].ContinuationPoint.IsNull)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -264,8 +265,8 @@ namespace Quickstarts.DataAccessClient
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = response.Results.ToList();
+                diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -317,8 +318,8 @@ namespace Quickstarts.DataAccessClient
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -345,7 +346,7 @@ namespace Quickstarts.DataAccessClient
             details.EndTime = EndTimeDP.Value.ToUniversalTime();
             details.ProcessingInterval = (double)ResampleIntervalNP.Value;
 
-            NodeId aggregateId = null;
+            NodeId aggregateId = NodeId.Null;
 
             switch ((string)AggregateCB.SelectedItem)
             {
@@ -358,7 +359,7 @@ namespace Quickstarts.DataAccessClient
                 case BrowseNames.AggregateFunction_Total: { aggregateId = ObjectIds.AggregateFunction_Total; break; }
             }
 
-            details.AggregateType.Add(aggregateId);
+            details.AggregateType = new[] { aggregateId }.ToArrayOf();
 
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
@@ -379,8 +380,8 @@ namespace Quickstarts.DataAccessClient
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

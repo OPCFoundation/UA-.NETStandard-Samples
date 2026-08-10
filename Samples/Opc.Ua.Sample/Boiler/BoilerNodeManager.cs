@@ -48,11 +48,11 @@ namespace Boiler
         }
 
         /// <inheritdoc/>
-        public StringCollection NamespacesUris
+        public ArrayOf<string> NamespacesUris
         {
             get
             {
-                var nameSpaces = new StringCollection {
+                var nameSpaces = new List<string> {
                     Namespaces.Boiler,
                     Namespaces.Boiler + "Instance"
                 };
@@ -128,15 +128,15 @@ namespace Boiler
         /// <param name="unitNumber">The unit number for the boiler.</param>
         private void CreateBoiler(ServerSystemContext context, int unitNumber)
         {
-            BoilerState boiler = new BoilerState(null, m_logger);
+            BoilerState boiler = new BoilerState(null);
 
             string name = Utils.Format("Boiler #{0}", unitNumber);
 
             boiler.Create(
                 context,
-                null,
+                default,
                 new QualifiedName(name, m_namespaceIndex),
-                null,
+                default,
                 true);
 
             NodeState folder = (NodeState)FindPredefinedNode(
@@ -161,8 +161,8 @@ namespace Boiler
 
             // Autostart boiler simulation state machine
             MethodState start = boiler.Simulation.Start;
-            IList<Variant> inputArguments = new List<Variant>();
-            IList<Variant> outputArguments = new List<Variant>();
+            ArrayOf<Variant> inputArguments = ArrayOf<Variant>.Empty;
+            List<Variant> outputArguments = new List<Variant>();
             List<ServiceResult> errors = new List<ServiceResult>();
             start.Call(context, boiler.NodeId, inputArguments, errors, outputArguments);
         }
@@ -230,7 +230,7 @@ namespace Boiler
                         break;
                     }
 
-                    BoilerState activeNode = new BoilerState(passiveNode.Parent, m_logger);
+                    BoilerState activeNode = new BoilerState(passiveNode.Parent);
                     activeNode.Create(context, passiveNode);
 
                     // replace the node in the parent.
@@ -241,8 +241,8 @@ namespace Boiler
 
                     // Autostart boiler simulation state machine
                     MethodState start = activeNode.Simulation.Start;
-                    IList<Variant> inputArguments = new List<Variant>();
-                    IList<Variant> outputArguments = new List<Variant>();
+                    ArrayOf<Variant> inputArguments = ArrayOf<Variant>.Empty;
+                    List<Variant> outputArguments = new List<Variant>();
                     List<ServiceResult> errors = new List<ServiceResult>();
                     start.Call(context, activeNode.NodeId, inputArguments, errors, outputArguments);
 

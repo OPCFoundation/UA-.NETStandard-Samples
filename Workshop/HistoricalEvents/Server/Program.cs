@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -88,7 +88,7 @@ namespace Quickstarts.HistoricalEvents.Server
 
                 // start the server.
 #pragma warning disable CA2000 // Justification: ownership is transferred to the application instance.
-                application.StartAsync(new HistoricalEventsServer()).Wait();
+                application.StartAsync(new HistoricalEventsServer(m_telemetry)).Wait();
 #pragma warning restore CA2000
 
                 // run the application interactively.

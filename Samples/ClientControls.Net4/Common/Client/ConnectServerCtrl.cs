@@ -51,7 +51,7 @@ namespace Opc.Ua.Client.Controls
         public ConnectServerCtrl()
         {
             InitializeComponent();
-            m_CertificateValidation = new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+            m_CertificateValidation = CertificateValidator_CertificateValidation;
             m_endpoints = new Dictionary<Uri, EndpointDescription>();
         }
         #endregion
@@ -64,7 +64,7 @@ namespace Opc.Ua.Client.Controls
         #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private SessionReconnectHandler m_reconnectHandler;
         #pragma warning restore CA2213
-        private CertificateValidationEventHandler m_CertificateValidation;
+        private Func<Opc.Ua.Security.Certificates.Certificate, ServiceResult, bool> m_CertificateValidation;
         private EventHandler m_ReconnectComplete;
         private EventHandler m_ReconnectStarting;
         private EventHandler m_KeepAliveComplete;
@@ -211,14 +211,14 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (m_configuration != null)
                     {
-                        m_configuration.CertificateValidator.CertificateValidation -= m_CertificateValidation;
+                        m_configuration.CertificateManager.AcceptError = null;
                     }
 
                     m_configuration = value;
 
                     if (m_configuration != null)
                     {
-                        m_configuration.CertificateValidator.CertificateValidation += m_CertificateValidation;
+                        m_configuration.CertificateManager.AcceptError = m_CertificateValidation;
                     }
                 }
             }
@@ -353,7 +353,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 UpdateStatus(false, DateTime.Now, "Connected, loading complex type system.");
-                var typeSystemLoader = new ComplexTypeSystem(m_session);
+                var typeSystemLoader = new ComplexTypeSystemFactory(m_telemetry).Create(m_session);
                 await typeSystemLoader.LoadAsync(ct: ct);
             }
             catch (Exception e)
@@ -402,7 +402,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 UpdateStatus(false, DateTime.Now, "Connected, loading complex type system.");
-                var typeSystemLoader = new ComplexTypeSystem(m_session);
+                var typeSystemLoader = new ComplexTypeSystemFactory(m_telemetry).Create(m_session);
                 await typeSystemLoader.LoadAsync(ct: ct);
             }
             catch (Exception e)
@@ -744,7 +744,7 @@ namespace Opc.Ua.Client.Controls
                         session.KeepAlive -= Session_KeepAlive;
                         m_session = m_reconnectHandler.Session as Session;
                         m_session.KeepAlive += Session_KeepAlive;
-                        Utils.SilentDispose(session);
+                        session.Dispose();
                     }
                 }
 
@@ -760,28 +760,26 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Handles a certificate validation error.
         /// </summary>
-        private void CertificateValidator_CertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
+        private bool CertificateValidator_CertificateValidation(Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(new CertificateValidationEventHandler(CertificateValidator_CertificateValidation), sender, e);
-                return;
+                return (bool)this.Invoke(new Func<Opc.Ua.Security.Certificates.Certificate, ServiceResult, bool>(CertificateValidator_CertificateValidation), certificate, error);
             }
 
             try
             {
                 if (!m_configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
                 {
-                    GuiUtils.HandleCertificateValidationError(this.FindForm(), sender, e);
+                    return GuiUtils.HandleCertificateValidationError(this.FindForm(), certificate, error);
                 }
-                else
-                {
-                    e.Accept = true;
-                }
+
+                return true;
             }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(m_logger, this.Text, exception);
+                return false;
             }
         }
         #endregion

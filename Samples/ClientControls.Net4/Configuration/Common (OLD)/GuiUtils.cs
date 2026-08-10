@@ -287,7 +287,7 @@ namespace Opc.Ua.Client.Controls
                 buffer.AppendFormat("Valid From: {0}\r\n", certificate.NotBefore);
                 buffer.AppendFormat("Valid To: {0}\r\n", certificate.NotAfter);
                 buffer.AppendFormat("Thumbprint: {0}\r\n\r\n", certificate.Thumbprint);
-                var domains = X509Utils.GetDomainsFromCertificate(certificate);
+                var domains = X509Utils.GetDomainsFromCertificate(Opc.Ua.Security.Certificates.Certificate.From(certificate));
                 if (domains.Count > 0)
                 {
                     bool comma = false;
@@ -319,44 +319,43 @@ namespace Opc.Ua.Client.Controls
         /// Handles a certificate validation error.
         /// </summary>
         /// <param name="form">The caller's form is used as the caption of the <see cref="MessageBox"/> shown to provide details about the error.</param>
-        /// <param name="validator">The validator (not used).</param>
-        /// <param name="e">The <see cref="Opc.Ua.CertificateValidationEventArgs"/> instance event arguments provided when a certificate validation error occurs.</param>
-        public static void HandleCertificateValidationError(Form form, CertificateValidator validator, CertificateValidationEventArgs e)
+        /// <param name="certificate">The certificate that failed validation.</param>
+        /// <param name="error">The <see cref="ServiceResult"/> describing the validation error(s).</param>
+        /// <returns><c>true</c> if the user chose to accept the certificate anyway; otherwise <c>false</c>.</returns>
+        public static bool HandleCertificateValidationError(Form form, Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
         {
-            HandleCertificateValidationError(form.Text, validator, e);
+            return HandleCertificateValidationError(form.Text, certificate, error);
         }
 
         /// <summary>
         /// Handles a certificate validation error.
         /// </summary>
         /// <param name="caption">The caller's text is used as the caption of the <see cref="MessageBox"/> shown to provide details about the error.</param>
-        /// <param name="validator">The validator (not used).</param>
-        /// <param name="e">The <see cref="Opc.Ua.CertificateValidationEventArgs"/> instance event arguments provided when a certificate validation error occurs.</param>
-        public static void HandleCertificateValidationError(string caption, CertificateValidator validator, CertificateValidationEventArgs e)
+        /// <param name="certificate">The certificate that failed validation.</param>
+        /// <param name="error">The <see cref="ServiceResult"/> describing the validation error(s).</param>
+        /// <returns><c>true</c> if the user chose to accept the certificate anyway; otherwise <c>false</c>.</returns>
+        public static bool HandleCertificateValidationError(string caption, Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
         {
             StringBuilder buffer = new StringBuilder();
 
             buffer.Append("Certificate could not be validated!\r\n");
             buffer.Append("Validation error(s): \r\n");
-            ServiceResult error = e.Error;
-            while (error != null)
+            ServiceResult current = error;
+            while (current != null)
             {
-                buffer.AppendFormat("- {0}\r\n", error.ToString().Split('\r', '\n').FirstOrDefault());
-                error = error.InnerResult;
+                buffer.AppendFormat("- {0}\r\n", current.ToString().Split('\r', '\n').FirstOrDefault());
+                current = current.InnerResult;
             }
-            buffer.AppendFormat("\r\nSubject: {0}\r\n", e.Certificate.Subject);
-            buffer.AppendFormat("Issuer: {0}\r\n", (e.Certificate.Subject == e.Certificate.Issuer) ? "Self-signed" : e.Certificate.Issuer);
-            buffer.AppendFormat("Valid From: {0}\r\n", e.Certificate.NotBefore);
-            buffer.AppendFormat("Valid To: {0}\r\n", e.Certificate.NotAfter);
-            buffer.AppendFormat("Thumbprint: {0}\r\n\r\n", e.Certificate.Thumbprint);
+            buffer.AppendFormat("\r\nSubject: {0}\r\n", certificate.Subject);
+            buffer.AppendFormat("Issuer: {0}\r\n", X509Utils.CompareDistinguishedName(certificate.Subject, certificate.Issuer) ? "Self-signed" : certificate.Issuer);
+            buffer.AppendFormat("Valid From: {0}\r\n", certificate.NotBefore);
+            buffer.AppendFormat("Valid To: {0}\r\n", certificate.NotAfter);
+            buffer.AppendFormat("Thumbprint: {0}\r\n\r\n", certificate.Thumbprint);
             buffer.Append("Certificate validation errors may indicate an attempt to intercept any data you send ");
             buffer.Append("to a server or to allow an untrusted client to connect to your server.");
             buffer.Append("\r\n\r\nAccept anyway?");
 
-            if (MessageBox.Show(buffer.ToString(), caption, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
-            {
-                e.AcceptAll = true;
-            }
+            return MessageBox.Show(buffer.ToString(), caption, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
         }
 
         /// <summary>
@@ -364,7 +363,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public static object GetDefaultValue(NodeId datatypeId, int valueRank)
         {
-            Type type = TypeInfo.GetSystemType(datatypeId, EncodeableFactory.Create());
+            Type type = TypeInfo.GetSystemType(datatypeId, EncodeableFactory.Create())?.Type;
 
             if (type == null)
             {
@@ -431,7 +430,7 @@ namespace Opc.Ua.Client.Controls
 
             if (typeInfo != null)
             {
-                return EditValue(session, value, (uint)typeInfo.BuiltInType, typeInfo.ValueRank, telemetry);
+                return EditValue(session, value, new NodeId((uint)typeInfo.BuiltInType), typeInfo.ValueRank, telemetry);
             }
 
             return null;
@@ -472,28 +471,28 @@ namespace Opc.Ua.Client.Controls
                 case BuiltInType.Enumeration:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(builtinType, valueRank));
+                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(builtinType).Type);
                     #pragma warning restore CA2000
                 }
 
                 case BuiltInType.Number:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Double, valueRank));
+                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Double).Type);
                     #pragma warning restore CA2000
                 }
 
                 case BuiltInType.Integer:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Int64, valueRank));
+                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Int64).Type);
                     #pragma warning restore CA2000
                 }
 
                 case BuiltInType.UInteger:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.UInt64, valueRank));
+                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.UInt64).Type);
                     #pragma warning restore CA2000
                 }
 

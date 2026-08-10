@@ -33,7 +33,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
+using System.Text.Json;
 using Opc.Ua.Gds.Server.DB;
 
 namespace Opc.Ua.Gds.Server.Database.Sql
@@ -213,7 +213,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                     return null;
                 }
 
-                LocalizedTextCollection names = new LocalizedTextCollection();
+                List<LocalizedText> names = new List<LocalizedText>();
                 if (result.ApplicationNames != null)
                 {
                     foreach (var entry in new List<ApplicationName>(result.ApplicationNames))
@@ -226,11 +226,11 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                     names.Add(new LocalizedText(result.ApplicationName));
                 }
 
-                StringCollection discoveryUrls = null;
+                List<string> discoveryUrls = null;
 
                 if (result.ServerEndpoints != null)
                 {
-                    discoveryUrls = new StringCollection();
+                    discoveryUrls = new List<string>();
 
                     foreach (var endpoint in result.ServerEndpoints)
                     {
@@ -286,15 +286,15 @@ namespace Opc.Ua.Gds.Server.Database.Sql
 
                     if (names.Count == 0 && result.ApplicationName != null)
                     {
-                        names = [result.ApplicationName];
+                        names = [new LocalizedText(result.ApplicationName)];
                     }
 
 
-                    StringCollection discoveryUrls = null;
+                    List<string> discoveryUrls = null;
 
                     if (result.ServerEndpoints != null)
                     {
-                        discoveryUrls = new StringCollection();
+                        discoveryUrls = new List<string>();
 
                         foreach (var endpoint in result.ServerEndpoints)
                         {
@@ -313,7 +313,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         ApplicationId = new NodeId(result.ApplicationId, NamespaceIndex),
                         ApplicationUri = result.ApplicationUri,
                         ApplicationType = (ApplicationType)result.ApplicationType,
-                        ApplicationNames = new LocalizedTextCollection(names),
+                        ApplicationNames = new List<LocalizedText>(names),
                         ProductUri = result.ProductUri,
                         DiscoveryUrls = discoveryUrls,
                         ServerCapabilities = capabilities
@@ -331,8 +331,8 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             string applicationUri,
             uint applicationType,
             string productUri,
-            string[] serverCapabilities,
-            out DateTime lastCounterResetTime,
+            ArrayOf<string> serverCapabilities,
+            out DateTimeUtc lastCounterResetTime,
             out uint nextRecordId)
         {
             lastCounterResetTime = DateTime.MinValue;
@@ -383,11 +383,11 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         capabilities = result.ServerCapabilities.Split(',');
                     }
 
-                    if (serverCapabilities != null && serverCapabilities.Length > 0)
+                    if (!serverCapabilities.IsNull && serverCapabilities.Count > 0)
                     {
                         bool match = true;
 
-                        for (int ii = 0; ii < serverCapabilities.Length; ii++)
+                        for (int ii = 0; ii < serverCapabilities.Count; ii++)
                         {
                             if (capabilities == null || !capabilities.Contains(serverCapabilities[ii]))
                             {
@@ -417,10 +417,10 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         continue;
                     }
 
-                    var discoveryUrls = new StringCollection();
+                    var discoveryUrls = new List<string>();
                     if (result.ServerEndpoints != null)
                     {
-                        discoveryUrls = new StringCollection();
+                        discoveryUrls = new List<string>();
 
                         foreach (var endpoint in result.ServerEndpoints)
                         {
@@ -458,7 +458,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                     records.Add(new ApplicationDescription() {
                         ApplicationUri = result.ApplicationUri,
                         ProductUri = result.ProductUri,
-                        ApplicationName = names.FirstOrDefault() ?? result.ApplicationName,
+                        ApplicationName = names.FirstOrDefault().IsNull ? new LocalizedText(result.ApplicationName) : names.FirstOrDefault(),
                         ApplicationType = (ApplicationType)result.ApplicationType,
                         GatewayServerUri = null,
                         DiscoveryProfileUri = null,
@@ -477,8 +477,8 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             string applicationName,
             string applicationUri,
             string productUri,
-            string[] serverCapabilities,
-            out DateTime lastCounterResetTime)
+            ArrayOf<string> serverCapabilities,
+            out DateTimeUtc lastCounterResetTime)
         {
             lastCounterResetTime = m_lastCounterResetTime;
 
@@ -533,11 +533,11 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                         capabilities = result.ServerCapabilities.Split(',');
                     }
 
-                    if (serverCapabilities != null && serverCapabilities.Length > 0)
+                    if (!serverCapabilities.IsNull && serverCapabilities.Count > 0)
                     {
                         bool match = true;
 
-                        for (int ii = 0; ii < serverCapabilities.Length; ii++)
+                        for (int ii = 0; ii < serverCapabilities.Count; ii++)
                         {
                             if (capabilities == null || !capabilities.Contains(serverCapabilities[ii]))
                             {
@@ -585,7 +585,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
         public override bool SetApplicationCertificate(
             NodeId applicationId,
             string certificateTypeId,
-            byte[] certificate)
+            ByteString certificate)
         {
             Guid id = GetNodeIdGuid(applicationId);
 
@@ -609,11 +609,11 @@ namespace Opc.Ua.Gds.Server.Database.Sql
 
                 if (certificateTypeId.Equals(nameof(Ua.ObjectTypeIds.HttpsCertificateType), StringComparison.OrdinalIgnoreCase))
                 {
-                    result.HttpsCertificate = certificate;
+                    result.HttpsCertificate = certificate.ToArray();
                 }
                 else
                 {
-                    result.Certificate = certificate;
+                    result.Certificate = certificate.ToArray();
                 }
 
                 entities.SaveChanges();
@@ -625,9 +625,9 @@ namespace Opc.Ua.Gds.Server.Database.Sql
         public override bool GetApplicationCertificate(
             NodeId applicationId,
             string certificateTypeId,
-            out byte[] certificate)
+            out ByteString certificate)
         {
-            certificate = null;
+            certificate = default;
 
             Guid id = GetNodeIdGuid(applicationId);
 
@@ -651,11 +651,11 @@ namespace Opc.Ua.Gds.Server.Database.Sql
 
                 if (certificateTypeId.Equals(nameof(Ua.ObjectTypeIds.HttpsCertificateType), StringComparison.OrdinalIgnoreCase))
                 {
-                    certificate = result.HttpsCertificate;
+                    certificate = ByteString.From(result.HttpsCertificate);
                 }
                 else
                 {
-                    certificate = result.Certificate;
+                    certificate = ByteString.From(result.Certificate);
                 }
             }
 
@@ -731,7 +731,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 NodeId applicationId,
                 string certificateGroupId,
                 string certificateTypeId,
-                byte[] certificateRequest,
+                ByteString certificateRequest,
                 string authorityId)
         {
             Guid id = GetNodeIdGuid(applicationId);
@@ -762,7 +762,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 request.DomainNames = null;
                 request.PrivateKeyFormat = null;
                 request.PrivateKeyPassword = null;
-                request.CertificateSigningRequest = certificateRequest;
+                request.CertificateSigningRequest = certificateRequest.ToArray();
 
                 if (isNew)
                 {
@@ -780,7 +780,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             string certificateGroupId,
             string certificateTypeId,
             string subjectName,
-            string[] domainNames,
+            ArrayOf<string> domainNames,
             string privateKeyFormat,
             ReadOnlySpan<char> privateKeyPassword,
             string authorityId)
@@ -810,7 +810,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 request.CertificateGroupId = certificateGroupId;
                 request.CertificateTypeId = certificateTypeId;
                 request.SubjectName = subjectName;
-                request.DomainNames = JsonConvert.SerializeObject(domainNames);
+                request.DomainNames = JsonSerializer.Serialize(domainNames.IsNull ? null : domainNames.ToArray());
                 request.PrivateKeyFormat = privateKeyFormat;
                 request.PrivateKeyPassword = privateKeyPassword.ToString();
                 request.CertificateSigningRequest = null;
@@ -859,7 +859,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
 
         public void AcceptRequest(
             NodeId requestId,
-            byte[] certificate)
+            ByteString certificate)
         {
             Guid id = GetNodeIdGuid(requestId);
             using (gdsdbEntities entities = new gdsdbEntities())
@@ -887,13 +887,13 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             NodeId requestId,
             out string certificateGroupId,
             out string certificateTypeId,
-            out byte[] signedCertificate,
-            out byte[] privateKey)
+            out ByteString signedCertificate,
+            out ByteString privateKey)
         {
             certificateGroupId = null;
             certificateTypeId = null;
-            signedCertificate = null;
-            privateKey = null;
+            signedCertificate = default;
+            privateKey = default;
             Guid reqId = GetNodeIdGuid(requestId);
             Guid appId = GetNodeIdGuid(applicationId);
 
@@ -933,7 +933,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             NodeId requestId,
             out string certificateGroupId,
             out string certificateTypeId,
-            out byte[] certificateRequest,
+            out ByteString certificateRequest,
             out string subjectName,
             out string[] domainNames,
             out string privateKeyFormat,
@@ -941,7 +941,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
         {
             certificateGroupId = null;
             certificateTypeId = null;
-            certificateRequest = null;
+            certificateRequest = default;
             subjectName = null;
             domainNames = null;
             privateKeyFormat = null;
@@ -974,9 +974,9 @@ namespace Opc.Ua.Gds.Server.Database.Sql
 
                 certificateGroupId = request.CertificateGroupId;
                 certificateTypeId = request.CertificateTypeId;
-                certificateRequest = request.CertificateSigningRequest;
+                certificateRequest = ByteString.From(request.CertificateSigningRequest);
                 subjectName = request.SubjectName;
-                domainNames = request.DomainNames != null ? JsonConvert.DeserializeObject<string[]>(request.DomainNames) : null;
+                domainNames = request.DomainNames != null ? JsonSerializer.Deserialize<string[]>(request.DomainNames) : null;
                 privateKeyFormat = request.PrivateKeyFormat;
                 privateKeyPassword = request.PrivateKeyPassword.AsSpan();
 
@@ -991,4 +991,3 @@ namespace Opc.Ua.Gds.Server.Database.Sql
         #endregion
     }
 }
-

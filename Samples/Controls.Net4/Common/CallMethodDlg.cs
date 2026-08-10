@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -67,7 +68,7 @@ namespace Opc.Ua.Sample.Controls
         public async Task ShowAsync(Session session, NodeId objectId, NodeId methodId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
-            if (methodId == null) throw new ArgumentNullException(nameof(methodId));
+            if (methodId.IsNull) throw new ArgumentNullException(nameof(methodId));
 
             if (m_session != null)
             {
@@ -110,7 +111,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                VariantCollection inputArguments = InputArgumentsCTRL.GetValues();
+                List<Variant> inputArguments = InputArgumentsCTRL.GetValues();
 
                 CallMethodRequest request = new CallMethodRequest();
 
@@ -127,15 +128,15 @@ namespace Opc.Ua.Sample.Controls
                     default);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                CallMethodResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<CallMethodResult> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 if (StatusCode.IsBad(results[0].StatusCode))
                 {
                     throw new ServiceResultException(new ServiceResult(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable));
                 }
 
-                await OutputArgumentsCTRL.SetValuesAsync(results[0].OutputArguments);
+                await OutputArgumentsCTRL.SetValuesAsync(results[0].OutputArguments.ToList());
 
                 if (results[0].OutputArguments.Count == 0)
                 {

@@ -130,20 +130,20 @@ namespace Opc.Ua.Client.Controls
             AdjustColumns();
 
             // get a list of well known discovery urls to use.
-            StringCollection discoveryUrls = null;
+            List<string> discoveryUrls = null;
 
             if (configuration != null && configuration.ClientConfiguration != null)
             {
-                discoveryUrls = configuration.ClientConfiguration.WellKnownDiscoveryUrls;
+                discoveryUrls = configuration.ClientConfiguration.WellKnownDiscoveryUrls.ToList();
             }
 
             if (discoveryUrls == null || discoveryUrls.Count == 0)
             {
-                discoveryUrls = new StringCollection(Utils.DiscoveryUrls);
+                discoveryUrls = new List<string>(Utils.DiscoveryUrls);
             }
 
             // update the urls with the hostname.
-            StringCollection urlsToUse = new StringCollection();
+            List<string> urlsToUse = new List<string>();
 
             foreach (string discoveryUrl in discoveryUrls)
             {
@@ -250,7 +250,7 @@ namespace Opc.Ua.Client.Controls
 
                 uint startingRecordId = (uint)0;
                 uint maxRecordsToReturn = (uint)0;
-                StringCollection serverCapabilityFilter = new StringCollection();
+                List<string> serverCapabilityFilter = new List<string>();
                 DateTime lastCounterResetTime = DateTime.MinValue;
 
                 try
@@ -260,7 +260,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (!String.IsNullOrEmpty(m_capabilityFilterTextBox.Text))
                     {
-                        serverCapabilityFilter = new StringCollection(m_capabilityFilterTextBox.Text.Split(','));
+                        serverCapabilityFilter = new List<string>(m_capabilityFilterTextBox.Text.Split(','));
                     }
                 }
                 catch (Exception e)
@@ -269,10 +269,12 @@ namespace Opc.Ua.Client.Controls
                     return false;
                 }
 
-                ServerOnNetworkCollection servers;
-                (servers, lastCounterResetTime) = await client.FindServersOnNetworkAsync(startingRecordId, maxRecordsToReturn, serverCapabilityFilter, ct);
+                ArrayOf<ServerOnNetwork> servers;
+                DateTimeUtc lastReset;
+                (servers, lastReset) = await client.FindServersOnNetworkAsync(startingRecordId, maxRecordsToReturn, serverCapabilityFilter, ct);
+                lastCounterResetTime = (DateTime)lastReset;
                 m_discoveryUrl = discoveryUrl.ToString();
-                OnUpdateServers(servers);
+                OnUpdateServers(new ServerOnNetworkCollection(servers.ToArray()));
                 return true;
             }
             catch (Exception e)

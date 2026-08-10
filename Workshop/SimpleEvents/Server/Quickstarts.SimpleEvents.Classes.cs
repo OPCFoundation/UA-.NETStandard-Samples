@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -195,7 +195,7 @@ namespace Quickstarts.SimpleEvents
                         {
                             if (replacement == null)
                             {
-                                CycleId = new PropertyState<string>(this);
+                                CycleId = PropertyState<string>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -216,7 +216,7 @@ namespace Quickstarts.SimpleEvents
                         {
                             if (replacement == null)
                             {
-                                CurrentStep = new PropertyState<CycleStepDataType>(this);
+                                CurrentStep = PropertyState<CycleStepDataType>.With<StructureBuilder<CycleStepDataType>>(this);
                             }
                             else
                             {
@@ -383,7 +383,7 @@ namespace Quickstarts.SimpleEvents
                         {
                             if (replacement == null)
                             {
-                                Steps = new PropertyState<CycleStepDataType[]>(this);
+                                Steps = PropertyState<CycleStepDataType[]>.With<CycleStepDataTypeArrayBuilder>(this);
                             }
                             else
                             {
@@ -405,6 +405,19 @@ namespace Quickstarts.SimpleEvents
             return base.FindChild(context, browseName, createOrReplace, replacement);
         }
         #endregion
+
+        internal struct CycleStepDataTypeArrayBuilder : IVariantBuilder<CycleStepDataType[]>
+        {
+            public CycleStepDataType[] GetValue(Variant value)
+            {
+                return value.Value as CycleStepDataType[];
+            }
+
+            public Variant WithValue(CycleStepDataType[] value)
+            {
+                return new Variant(value);
+            }
+        }
 
         #region Private Fields
         private PropertyState<CycleStepDataType[]> m_steps;
@@ -549,7 +562,7 @@ namespace Quickstarts.SimpleEvents
                         {
                             if (replacement == null)
                             {
-                                Error = new PropertyState<StatusCode>(this);
+                                Error = PropertyState<StatusCode>.With<VariantBuilder>(this);
                             }
                             else
                             {

@@ -95,7 +95,7 @@ namespace AggregationClient
 
             if (identity != null && identity.TokenType == UserTokenType.UserName)
             {
-                UserNameIdentityToken token = identity.GetIdentityToken() as UserNameIdentityToken;
+                UserNameIdentityTokenHandler token = identity.TokenHandler as UserNameIdentityTokenHandler;
 
                 if (token != null)
                 {
@@ -179,7 +179,7 @@ namespace AggregationClient
                 }
 
                 // can specify multiple locales but just use one here to keep the UI simple.
-                StringCollection preferredLocales = new StringCollection();
+                List<string> preferredLocales = new List<string>();
                 preferredLocales.Add(LocaleCB.SelectedItem as string);
 
                 // override the default diagnostics to get error messages.

@@ -124,7 +124,7 @@ namespace Opc.Ua.Client.Controls
                 for (int ii = 0; ii < m_dataset.Tables[0].DefaultView.Count; ii++)
                 {
                     string oldValue = m_dataset.Tables[0].DefaultView[ii].Row[0] as string;
-                    object newValue = TypeInfo.Cast(oldValue, m_dataType);
+                    object newValue = new Variant(oldValue, TypeInfo.Scalars.String).ConvertTo(m_dataType).Value;
                     value.SetValue(newValue, ii);
                 }
             }
@@ -150,7 +150,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                object newValue = TypeInfo.Cast(e.FormattedValue, m_dataType);
+                object newValue = new Variant(e.FormattedValue, TypeInfo.Scalars.String).ConvertTo(m_dataType).Value;
             }
             catch (Exception exception)
             {

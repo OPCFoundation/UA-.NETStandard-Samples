@@ -68,12 +68,12 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (identity != null)
             {
-                UserNameIdentityToken token = identity.GetIdentityToken() as UserNameIdentityToken;
+                UserNameIdentityToken token = identity.TokenHandler?.Token as UserNameIdentityToken;
 
                 if (token != null)
                 {
                     UserNameTextBox.Text = token.UserName;
-                    PasswordTextBox.Text = Encoding.UTF8.GetString(token.DecryptedPassword);
+                    PasswordTextBox.Text = Encoding.UTF8.GetString(token.Password.ToArray());
                 }
             }
 

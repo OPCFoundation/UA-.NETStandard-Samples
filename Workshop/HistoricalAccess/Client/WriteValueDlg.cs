@@ -35,6 +35,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -96,8 +97,8 @@ namespace Quickstarts.HistoricalAccess.Client
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -215,10 +216,11 @@ namespace Quickstarts.HistoricalAccess.Client
 
                 valueToWrite.NodeId = m_nodeId;
                 valueToWrite.AttributeId = m_attributeId;
-                valueToWrite.Value.Value = ChangeType();
-                valueToWrite.Value.StatusCode = StatusCodes.Good;
-                valueToWrite.Value.ServerTimestamp = DateTime.MinValue;
-                valueToWrite.Value.SourceTimestamp = DateTime.MinValue;
+                valueToWrite.Value = new DataValue(
+                    new Variant(ChangeType()),
+                    StatusCodes.Good,
+                    DateTime.MinValue,
+                    DateTime.MinValue);
 
                 WriteValueCollection valuesToWrite = new WriteValueCollection();
                 valuesToWrite.Add(valueToWrite);
@@ -229,8 +231,8 @@ namespace Quickstarts.HistoricalAccess.Client
                     valuesToWrite,
                     default);
 
-                StatusCodeCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, valuesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);

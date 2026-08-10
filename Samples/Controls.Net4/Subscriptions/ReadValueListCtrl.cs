@@ -79,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, ReadValueIdCollection valueIds, ITelemetryContext telemetry)
+        public void Initialize(Session session, List<ReadValueId> valueIds, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -113,7 +113,7 @@ namespace Opc.Ua.Sample.Controls
             valueId.NodeId = node.NodeId;
             valueId.AttributeId = Attributes.Value;
             valueId.IndexRange = null;
-            valueId.DataEncoding = null;
+            valueId.DataEncoding = QualifiedName.Null;
 
             // read the display name for non-variables.
             if ((node.NodeClass & (NodeClass.Variable | NodeClass.VariableType)) == 0)
@@ -128,9 +128,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the items in the control.
         /// </summary>
-        public ReadValueIdCollection GetValueIds()
+        public List<ReadValueId> GetValueIds()
         {
-            ReadValueIdCollection valueIds = new ReadValueIdCollection();
+            List<ReadValueId> valueIds = new List<ReadValueId>();
 
             foreach (ListViewItem item in ItemsLV.Items)
             {

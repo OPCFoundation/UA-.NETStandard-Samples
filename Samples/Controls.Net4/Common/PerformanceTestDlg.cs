@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -44,6 +45,7 @@ using System.IO;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
+using Opc.Ua;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -63,7 +65,7 @@ namespace Opc.Ua.Sample.Controls
         private ApplicationConfiguration m_configuration;
         private ConfiguredEndpointCollection m_endpoints;
         private ServiceMessageContext m_messageContext;
-        private X509Certificate2 m_clientCertificate;
+        private Opc.Ua.Security.Certificates.Certificate m_clientCertificate;
         private string m_filePath;
         private ITelemetryContext m_telemetry;
 
@@ -73,7 +75,7 @@ namespace Opc.Ua.Sample.Controls
         public EndpointDescription ShowDialog(
             ApplicationConfiguration configuration,
             ConfiguredEndpointCollection endpoints,
-            X509Certificate2 clientCertificate,
+            Opc.Ua.Security.Certificates.Certificate clientCertificate,
             ITelemetryContext telemetry)
         {
             m_configuration = configuration;
@@ -292,7 +294,7 @@ namespace Opc.Ua.Sample.Controls
                     ct);
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                client = new SessionClient(channel);
+                client = new SessionClient(channel, telemetry);
                 #pragma warning restore CA2000
 
                 List<int> requestSizes = new List<int>(result.Results.Keys);
@@ -336,8 +338,8 @@ namespace Opc.Ua.Sample.Controls
                         nodesToRead,
                         ct);
 
-                    DataValueCollection results = response.Results;
-                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                    List<DataValue> results = response.Results.ToList();
+                    List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                     if (results.Count != count)
                     {
@@ -356,8 +358,8 @@ namespace Opc.Ua.Sample.Controls
                             nodesToRead,
                             ct);
 
-                        results = response.Results;
-                        diagnosticInfos = response.DiagnosticInfos;
+                        results = response.Results.ToList();
+                        diagnosticInfos = response.DiagnosticInfos.ToList();
 
                         if (results.Count != count)
                         {
@@ -509,8 +511,8 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// The result of a performance test.
     /// </summary>
-    [DataContract(Namespace = Namespaces.OpcUaXsd)]
-    public class PerformanceTestResult
+    [DataType]
+    public partial class PerformanceTestResult
     {
         #region Constructors
         /// <summary>
@@ -548,7 +550,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The endpoint that was tested.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public ConfiguredEndpoint Endpoint
         {
             get { return m_endpoint; }
@@ -558,7 +560,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The number of iterations for each payload size.
         /// </summary>
-        [DataMember(Order = 2)]
+        [DataTypeField(Order = 2)]
         public int Iterations
         {
             get { return m_iterations; }
@@ -568,7 +570,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The test results returned as an list.
         /// </summary>
-        [DataMember(Name = "Result", Order = 3)]
+        [DataTypeField(Order = 3)]
         private List<PerformanceTestResultItem> TestCaseResults
         {
             get
@@ -620,8 +622,8 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// The result of a performance test.
     /// </summary>
-    [DataContract(Namespace = Namespaces.OpcUaXsd)]
-    public class PerformanceTestResultItem
+    [DataType]
+    public partial class PerformanceTestResultItem
     {
         #region Constructors
         /// <summary>
@@ -655,7 +657,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The number of items used in the test case.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public int Count
         {
             get { return m_count; }
@@ -665,7 +667,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The average response time in milliseconds.
         /// </summary>
-        [DataMember(Order = 2)]
+        [DataTypeField(Order = 2)]
         public double Average
         {
             get { return m_average; }

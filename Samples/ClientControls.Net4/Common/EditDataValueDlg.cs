@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -77,7 +77,7 @@ namespace Opc.Ua.Client.Controls
                 return Variant.Null;
             }
 
-            if (m_value != null)
+            if (m_value != DataValue.Null)
             {
                 return m_value.WrappedValue;
             }
@@ -100,7 +100,7 @@ namespace Opc.Ua.Client.Controls
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return DataValue.Null;
             }
 
             return m_value;

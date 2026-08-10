@@ -244,7 +244,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // add the childen to the control.
-                ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(m_session, nodeToBrowse, false);
+                var references = await FormUtils.BrowseAsync(m_session, nodeToBrowse, false);
 
                 for (int ii = 0; ii < references.Count; ii++)
                 {

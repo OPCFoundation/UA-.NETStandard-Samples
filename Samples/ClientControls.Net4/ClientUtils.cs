@@ -247,7 +247,8 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataType:
                 {
-                    return await session.NodeCache.GetDisplayTextAsync(value.Value as NodeId, ct);
+                    NodeId dataTypeId = value.Value is NodeId dt ? dt : NodeId.Null;
+                    return await session.NodeCache.GetDisplayTextAsync(dataTypeId, ct);
                 }
 
                 case Attributes.ValueRank:
@@ -276,9 +277,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.NodeId:
                 {
-                    NodeId field = value.Value as NodeId;
-
-                    if (!NodeId.IsNull(field))
+                    if (value.Value is NodeId field && !field.IsNull)
                     {
                         return field.ToString();
                     }
@@ -288,8 +287,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataTypeDefinition:
                 {
-                    ExtensionObject field = value.Value as ExtensionObject;
-                    if (field != null)
+                    if (value.Value is ExtensionObject field)
                     {
                         return field.ToString();
                     }
@@ -319,7 +317,7 @@ namespace Opc.Ua.Client.Controls
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static Task<ReferenceDescriptionCollection> BrowseAsync(ISession session, BrowseDescriptionCollection nodesToBrowse, bool throwOnError, CancellationToken ct = default)
+        public static Task<List<ReferenceDescription>> BrowseAsync(ISession session, List<BrowseDescription> nodesToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             return BrowseAsync(session, null, nodesToBrowse, throwOnError, ct);
         }
@@ -327,11 +325,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Browses the address space and returns the references found.
         /// </summary>
-        public static async Task<ReferenceDescriptionCollection> BrowseAsync(ISession session, ViewDescription view, BrowseDescriptionCollection nodesToBrowse, bool throwOnError, CancellationToken ct = default)
+        public static async Task<List<ReferenceDescription>> BrowseAsync(ISession session, ViewDescription view, List<BrowseDescription> nodesToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
-                ReferenceDescriptionCollection references = new ReferenceDescriptionCollection();
+                List<ReferenceDescription> references = new List<ReferenceDescription>();
 
                 while (nodesToBrowse.Count > 0)
                 {
@@ -343,13 +341,13 @@ namespace Opc.Ua.Client.Controls
                         nodesToBrowse,
                         ct);
 
-                    BrowseResultCollection results = response.Results;
-                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                    var results = response.Results.ToList();
+                    var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                     ClientBase.ValidateResponse(results, nodesToBrowse);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
 
-                    ByteStringCollection continuationPoints = new ByteStringCollection();
+                    List<ByteString> continuationPoints = new List<ByteString>();
                     BrowseDescriptionCollection unprocessedOperations = new BrowseDescriptionCollection();
 
                     for (int ii = 0; ii < nodesToBrowse.Count; ii++)
@@ -378,7 +376,7 @@ namespace Opc.Ua.Client.Controls
                         references.AddRange(results[ii].References);
 
                         // check for continuation point.
-                        if (results[ii].ContinuationPoint != null)
+                        if (!results[ii].ContinuationPoint.IsNull)
                         {
                             continuationPoints.Add(results[ii].ContinuationPoint);
                         }
@@ -394,13 +392,13 @@ namespace Opc.Ua.Client.Controls
                             continuationPoints,
                             ct);
 
-                        results = response2.Results;
-                        diagnosticInfos = response2.DiagnosticInfos;
+                        results = response2.Results.ToList();
+                        diagnosticInfos = response2.DiagnosticInfos.ToList();
 
                         ClientBase.ValidateResponse(results, continuationPoints);
                         ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
 
-                        ByteStringCollection revisedContinuationPoints = new ByteStringCollection();
+                        List<ByteString> revisedContinuationPoints = new List<ByteString>();
                         for (int ii = 0; ii < continuationPoints.Count; ii++)
                         {
                             // check for error.
@@ -419,7 +417,7 @@ namespace Opc.Ua.Client.Controls
                             references.AddRange(results[ii].References);
 
                             // check for continuation point.
-                            if (results[ii].ContinuationPoint != null)
+                            if (!results[ii].ContinuationPoint.IsNull)
                             {
                                 revisedContinuationPoints.Add(results[ii].ContinuationPoint);
                             }
@@ -457,7 +455,7 @@ namespace Opc.Ua.Client.Controls
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static Task<ReferenceDescriptionCollection> BrowseAsync(ISession session, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
+        public static Task<List<ReferenceDescription>> BrowseAsync(ISession session, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             return BrowseAsync(session, null, nodeToBrowse, throwOnError, ct);
         }
@@ -465,7 +463,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Browses the address space and returns the references found.
         /// </summary>
-        public static Task<ReferenceDescriptionCollection> BrowseAsync(ISession session, ViewDescription view, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
+        public static Task<List<ReferenceDescription>> BrowseAsync(ISession session, ViewDescription view, BrowseDescription nodeToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             // construct browse request.
             BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection {
@@ -485,9 +483,9 @@ namespace Opc.Ua.Client.Controls
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static async Task<ReferenceDescriptionCollection> BrowseSuperTypesAsync(ISession session, NodeId typeId, bool throwOnError, CancellationToken ct = default)
+        public static async Task<List<ReferenceDescription>> BrowseSuperTypesAsync(ISession session, NodeId typeId, bool throwOnError, CancellationToken ct = default)
         {
-            ReferenceDescriptionCollection supertypes = new ReferenceDescriptionCollection();
+            List<ReferenceDescription> supertypes = new List<ReferenceDescription>();
 
             try
             {
@@ -501,7 +499,7 @@ namespace Opc.Ua.Client.Controls
                 nodeToBrowse.NodeClassMask = 0; // the HasSubtype reference already restricts the targets to Types.
                 nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-                ReferenceDescriptionCollection references = await BrowseAsync(session, nodeToBrowse, throwOnError, ct);
+                List<ReferenceDescription> references = await BrowseAsync(session, nodeToBrowse, throwOnError, ct);
 
                 while (references != null && references.Count > 0)
                 {
@@ -584,8 +582,8 @@ namespace Opc.Ua.Client.Controls
                 ct);
 
             ResponseHeader responseHeader = response.ResponseHeader;
-            BrowsePathResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             // ensure that the server returned valid results.
             Session.ValidateResponse(results, browsePaths);
@@ -599,14 +597,14 @@ namespace Opc.Ua.Client.Controls
                 // check if the start node actually exists.
                 if (StatusCode.IsBad(results[ii].StatusCode))
                 {
-                    nodes.Add(null);
+                    nodes.Add(NodeId.Null);
                     continue;
                 }
 
                 // an empty list is returned if no node was found.
                 if (results[ii].Targets.Count == 0)
                 {
-                    nodes.Add(null);
+                    nodes.Add(NodeId.Null);
                     continue;
                 }
 
@@ -616,7 +614,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (target.RemainingPathIndex != UInt32.MaxValue)
                 {
-                    nodes.Add(null);
+                    nodes.Add(NodeId.Null);
                     continue;
                 }
 
@@ -639,9 +637,7 @@ namespace Opc.Ua.Client.Controls
         /// <returns>The NodeId of the EventType.</returns>
         public static NodeId FindEventType(MonitoredItem monitoredItem, EventFieldList notification)
         {
-            EventFilter filter = monitoredItem.Status.Filter as EventFilter;
-
-            if (filter != null)
+            if (monitoredItem.Status.Filter is EventFilter filter)
             {
                 for (int ii = 0; ii < filter.SelectClauses.Count; ii++)
                 {
@@ -649,12 +645,12 @@ namespace Opc.Ua.Client.Controls
 
                     if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == BrowseNames.EventType)
                     {
-                        return notification.EventFields[ii].Value as NodeId;
+                        return notification.EventFields[ii].Value is NodeId nodeId ? nodeId : NodeId.Null;
                     }
                 }
             }
 
-            return null;
+            return NodeId.Null;
         }
 
         /// <summary>
@@ -680,14 +676,14 @@ namespace Opc.Ua.Client.Controls
             // find the event type.
             NodeId eventTypeId = FindEventType(monitoredItem, notification);
 
-            if (eventTypeId == null)
+            if (eventTypeId.IsNull)
             {
                 return null;
             }
 
             // look up the known event type.
             Type knownType = null;
-            NodeId knownTypeId = null;
+            NodeId knownTypeId = NodeId.Null;
 
             if (eventTypeMappings.TryGetValue(eventTypeId, out knownTypeId))
             {
@@ -708,7 +704,7 @@ namespace Opc.Ua.Client.Controls
             if (knownType == null)
             {
                 // browse for the supertypes of the event type.
-                ReferenceDescriptionCollection supertypes = await ClientUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
+                List<ReferenceDescription> supertypes = await ClientUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
 
                 // can't do anything with unknown types.
                 if (supertypes == null)
@@ -727,14 +723,14 @@ namespace Opc.Ua.Client.Controls
                         eventTypeMappings.Add(eventTypeId, superTypeId);
                     }
 
-                    if (knownTypeId != null)
+                    if (!knownTypeId.IsNull)
                     {
                         break;
                     }
                 }
 
                 // can't do anything with unknown types.
-                if (knownTypeId == null)
+                if (knownTypeId.IsNull)
                 {
                     return null;
                 }
@@ -778,7 +774,7 @@ namespace Opc.Ua.Client.Controls
             // get the supertypes.
             if (includeSupertypes)
             {
-                ReferenceDescriptionCollection supertypes = await ClientUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
+                List<ReferenceDescription> supertypes = await ClientUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
 
                 if (supertypes != null)
                 {
@@ -826,7 +822,7 @@ namespace Opc.Ua.Client.Controls
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
             // ignore any browsing errors.
-            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(session, nodeToBrowse, false, ct);
+            List<ReferenceDescription> references = await ClientUtils.BrowseAsync(session, nodeToBrowse, false, ct);
 
             if (references == null)
             {
@@ -865,13 +861,13 @@ namespace Opc.Ua.Client.Controls
 
                 if (parent != null)
                 {
-                    child.BrowsePath = new QualifiedNameCollection(parent.BrowsePath);
+                    child.BrowsePath = new List<QualifiedName>(parent.BrowsePath);
                     child.BrowsePathDisplayText = Utils.Format("{0}/{1}", parent.BrowsePathDisplayText, reference.BrowseName);
                     child.DisplayPath = Utils.Format("{0}/{1}", parent.DisplayPath, reference.DisplayName);
                 }
                 else
                 {
-                    child.BrowsePath = new QualifiedNameCollection();
+                    child.BrowsePath = new List<QualifiedName>();
                     child.BrowsePathDisplayText = Utils.Format("{0}", reference.BrowseName);
                     child.DisplayPath = Utils.Format("{0}", reference.DisplayName);
                 }
@@ -960,18 +956,18 @@ namespace Opc.Ua.Client.Controls
                     nodesToBrowse,
                     ct);
 
-                BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
 
                 List<NodeId> targetIds = new List<NodeId>();
-                ByteStringCollection continuationPoints = new ByteStringCollection();
+                List<ByteString> continuationPoints = new List<ByteString>();
 
                 for (int ii = 0; ii < nodeIds.Count; ii++)
                 {
-                    targetIds.Add(null);
+                    targetIds.Add(NodeId.Null);
 
                     // check for error.
                     if (StatusCode.IsBad(results[ii].StatusCode))
@@ -980,7 +976,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     // check for continuation point.
-                    if (results[ii].ContinuationPoint != null && results[ii].ContinuationPoint.Length > 0)
+                    if (!results[ii].ContinuationPoint.IsNull && results[ii].ContinuationPoint.Length > 0)
                     {
                         continuationPoints.Add(results[ii].ContinuationPoint);
                     }
@@ -1006,8 +1002,8 @@ namespace Opc.Ua.Client.Controls
                         continuationPoints,
                         ct);
 
-                    results = response2.Results;
-                    diagnosticInfos = response2.DiagnosticInfos;
+                    results = response2.Results.ToList();
+                    diagnosticInfos = response2.DiagnosticInfos.ToList();
 
                     ClientBase.ValidateResponse(results, nodesToBrowse);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -1062,8 +1058,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     ct);
 
-                DataValueCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1079,7 +1075,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (!NodeId.IsNull(instance.DataType))
                     {
-                        instance.BuiltInType = DataTypes.GetBuiltInType(instance.DataType, session.TypeTree);
+                        instance.BuiltInType = TypeInfo.GetBuiltInType(instance.DataType, session.TypeTree);
                         instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType, ct);
 
                         if (instance.ValueRank >= 0)
@@ -1107,10 +1103,10 @@ namespace Opc.Ua.Client.Controls
         /// <param name="typeId">The type id.</param>
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
-        private static async Task CollectFieldsForTypeAsync(Session session, NodeId typeId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
+        private static async Task CollectFieldsForTypeAsync(Session session, NodeId typeId, List<SimpleAttributeOperand> fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             // get the supertypes.
-            ReferenceDescriptionCollection supertypes = await ClientUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
+            List<ReferenceDescription> supertypes = await ClientUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
 
             if (supertypes == null)
             {
@@ -1118,8 +1114,8 @@ namespace Opc.Ua.Client.Controls
             }
 
             // process the types starting from the top of the tree.
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
-            QualifiedNameCollection parentPath = new QualifiedNameCollection();
+            Dictionary<NodeId, List<QualifiedName>> foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
+            List<QualifiedName> parentPath = new List<QualifiedName>();
 
             for (int ii = supertypes.Count - 1; ii >= 0; ii--)
             {
@@ -1138,10 +1134,10 @@ namespace Opc.Ua.Client.Controls
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
         /// <param name="ct">Canceellation token to cancel the operation</param>
-        private static Task CollectFieldsForInstanceAsync(Session session, NodeId instanceId, SimpleAttributeOperandCollection fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
+        private static Task CollectFieldsForInstanceAsync(Session session, NodeId instanceId, List<SimpleAttributeOperand> fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes = new Dictionary<NodeId, QualifiedNameCollection>();
-            QualifiedNameCollection parentPath = new QualifiedNameCollection();
+            Dictionary<NodeId, List<QualifiedName>> foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
+            List<QualifiedName> parentPath = new List<QualifiedName>();
             return CollectFieldsAsync(session, instanceId, parentPath, fields, fieldNodeIds, foundNodes, ct);
         }
 
@@ -1158,10 +1154,10 @@ namespace Opc.Ua.Client.Controls
         private static async Task CollectFieldsAsync(
             Session session,
             NodeId nodeId,
-            QualifiedNameCollection parentPath,
-            SimpleAttributeOperandCollection fields,
+            List<QualifiedName> parentPath,
+            List<SimpleAttributeOperand> fields,
             List<NodeId> fieldNodeIds,
-            Dictionary<NodeId, QualifiedNameCollection> foundNodes,
+            Dictionary<NodeId, List<QualifiedName>> foundNodes,
             CancellationToken ct = default)
         {
             // find all of the children of the field.
@@ -1174,7 +1170,7 @@ namespace Opc.Ua.Client.Controls
             nodeToBrowse.NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable);
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-            ReferenceDescriptionCollection children = await ClientUtils.BrowseAsync(session, nodeToBrowse, false, ct);
+            List<ReferenceDescription> children = await ClientUtils.BrowseAsync(session, nodeToBrowse, false, ct);
 
             if (children == null)
             {
@@ -1192,7 +1188,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // construct browse path.
-                QualifiedNameCollection browsePath = new QualifiedNameCollection(parentPath);
+                List<QualifiedName> browsePath = new List<QualifiedName>(parentPath);
                 browsePath.Add(child.BrowseName);
 
                 // check if the browse path is already in the list.
@@ -1229,7 +1225,7 @@ namespace Opc.Ua.Client.Controls
         /// <returns>
         /// 	<c>true</c> if the specified select clause contains path; otherwise, <c>false</c>.
         /// </returns>
-        private static int ContainsPath(SimpleAttributeOperandCollection selectClause, QualifiedNameCollection browsePath)
+        private static int ContainsPath(List<SimpleAttributeOperand> selectClause, List<QualifiedName> browsePath)
         {
             for (int ii = 0; ii < selectClause.Count; ii++)
             {

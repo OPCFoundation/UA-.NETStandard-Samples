@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -85,7 +85,7 @@ namespace Quickstarts.ViewsServer
                 // start the server.
                 #pragma warning disable CA2000 // Justification: Server ownership is transferred to ApplicationInstance.
 
-                application.StartAsync(new ViewsServer()).Wait();
+                application.StartAsync(new ViewsServer(m_telemetry)).Wait();
 
                 #pragma warning restore CA2000
 

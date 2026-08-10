@@ -496,7 +496,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private async void OnDataChangeAsync(Subscription subscription, DataChangeNotification notification, IList<string> stringTable)
+        private async void OnDataChangeAsync(Subscription subscription, DataChangeNotification notification, ArrayOf<string> stringTable)
         {
             if (!Object.ReferenceEquals(subscription, m_subscription))
             {
@@ -511,7 +511,7 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                foreach (MonitoredItemNotification itemNotification in notification.MonitoredItems)
+                foreach (MonitoredItemNotification itemNotification in notification.MonitoredItems.ToArray())
                 {
                     MonitoredItem monitoredItem = subscription.FindItemByClientHandle(itemNotification.ClientHandle);
 
@@ -646,7 +646,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 MonitoredItem monitoredItem = null;
-                DataValue value = null;
+                DataValue value = DataValue.Null;
 
                 foreach (DataGridViewRow row in ResultsDV.SelectedRows)
                 {

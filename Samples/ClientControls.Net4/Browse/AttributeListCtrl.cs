@@ -104,19 +104,19 @@ namespace Opc.Ua.Client.Controls
                 info.NodeId = node.NodeId;
                 info.AttributeId = attributesId;
                 info.Name = Attributes.GetBrowseName(attributesId);
-                info.Value = new DataValue(StatusCodes.BadWaitingForInitialData);
+                info.Value = DataValue.FromStatusCode(StatusCodes.BadWaitingForInitialData);
 
-                ServiceResult result = node.Read(null, attributesId, info.Value);
+                ServiceResult result = node.Read(null, attributesId, ref info.Value);
 
                 if (ServiceResult.IsBad(result))
                 {
-                    info.Value = new DataValue(result.StatusCode);
+                    info.Value = DataValue.FromStatusCode(result.StatusCode);
                 }
 
                 AddItem(info);
             }
 
-            IList<IReference> references = node.References.Find(ReferenceTypes.HasProperty, false, true, m_session.TypeTree);
+            IList<IReference> references = node.References.Find((NodeId)ReferenceTypes.HasProperty, false, true, m_session.TypeTree);
 
             for (int ii = 0; ii < references.Count; ii++)
             {
@@ -134,13 +134,13 @@ namespace Opc.Ua.Client.Controls
                 info.NodeId = property.NodeId;
                 info.AttributeId = Attributes.Value;
                 info.Name = Utils.Format("{0}", property.DisplayName);
-                info.Value = new DataValue(StatusCodes.BadWaitingForInitialData);
+                info.Value = DataValue.FromStatusCode(StatusCodes.BadWaitingForInitialData);
 
-                ServiceResult result = property.Read(null, Attributes.Value, info.Value);
+                ServiceResult result = property.Read(null, Attributes.Value, ref info.Value);
 
                 if (ServiceResult.IsBad(result))
                 {
-                    info.Value = new DataValue(result.StatusCode);
+                    info.Value = DataValue.FromStatusCode(result.StatusCode);
                 }
 
                 AddItem(info);
@@ -181,8 +181,8 @@ namespace Opc.Ua.Client.Controls
                 valuesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, valuesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
@@ -217,9 +217,9 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataType:
                 {
-                    NodeId datatypeId = value as NodeId;
+                    NodeId datatypeId = value is NodeId dt ? dt : NodeId.Null;
 
-                    if (datatypeId != null)
+                    if (!datatypeId.IsNull)
                     {
                         INode datatype = await m_session.NodeCache.FindAsync(datatypeId, ct);
 

@@ -28,12 +28,12 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Text;
-using System.Linq;
 using System.Windows.Forms;
 using System.Reflection;
 
@@ -87,7 +87,7 @@ namespace Opc.Ua.Sample.Controls
 
             TypeDefinitionIdCTRL.Telemetry = telemetry;
             TypeDefinitionIdCTRL.Browser = new Browser(session);
-            TypeDefinitionIdCTRL.RootId = ObjectTypes.BaseEventType;
+            TypeDefinitionIdCTRL.RootId = new NodeId(ObjectTypes.BaseEventType);
 
             OperandTypeCB.SelectedItem = typeof(LiteralOperand).Name;
 
@@ -125,7 +125,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (literalOperand != null)
             {
-                NodeId datatypeId = TypeInfo.GetDataTypeId(literalOperand.Value.Value);
+                NodeId datatypeId = TypeInfo.GetDataTypeId(literalOperand.Value);
                 DataTypeCB.SelectedItem = TypeInfo.GetBuiltInType(datatypeId);
 
                 StringBuilder buffer = new StringBuilder();

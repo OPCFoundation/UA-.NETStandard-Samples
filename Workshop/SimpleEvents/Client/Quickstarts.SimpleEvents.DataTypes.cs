@@ -167,8 +167,8 @@ namespace Quickstarts.SimpleEvents
         {
             CycleStepDataType clone = (CycleStepDataType)base.MemberwiseClone();
 
-            clone.m_name = (string)Utils.Clone(this.m_name);
-            clone.m_duration = (double)Utils.Clone(this.m_duration);
+            clone.m_name = (string)(this.m_name is ICloneable cloneable ? cloneable.Clone() : this.m_name);
+            clone.m_duration = this.m_duration;
 
             return clone;
         }
@@ -257,7 +257,7 @@ namespace Quickstarts.SimpleEvents
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((CycleStepDataType)Utils.Clone(this[ii]));
+                clone.Add((CycleStepDataType)(this[ii] is ICloneable cloneable ? cloneable.Clone() : this[ii]));
             }
 
             return clone;

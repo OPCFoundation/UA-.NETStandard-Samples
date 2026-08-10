@@ -342,8 +342,8 @@ namespace Opc.Ua.Client.Controls
             this.NodeBTN.Name = "NodeBTN";
             this.NodeBTN.NodeControl = this.NodeTB;
             this.NodeBTN.ReferenceTypeIds = null;
-            this.NodeBTN.RootId = null;
-            this.NodeBTN.SelectedNode = null;
+            this.NodeBTN.RootId = Opc.Ua.NodeId.Null;
+            this.NodeBTN.SelectedNode = Opc.Ua.NodeId.Null;
             this.NodeBTN.SelectedReference = null;
             this.NodeBTN.Session = null;
             this.NodeBTN.Size = new System.Drawing.Size(24, 24);

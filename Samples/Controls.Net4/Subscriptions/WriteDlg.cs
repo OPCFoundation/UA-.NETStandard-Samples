@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -61,13 +62,13 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Session session, WriteValueCollection values, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task ShowAsync(Session session, List<WriteValue> values, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_session = session;
 
-            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, null, telemetry, ct);
+            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, telemetry, ct);
             WriteValuesCTRL.Initialize(session, values, telemetry);
 
             MoveBTN_ClickAsync(BackBTN, null);
@@ -81,7 +82,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         private async Task WriteAsync(CancellationToken ct = default)
         {
-            WriteValueCollection nodesToWrite = Utils.Clone(WriteValuesCTRL.GetValues()) as WriteValueCollection;
+            List<WriteValue> nodesToWrite = WriteValuesCTRL.GetValues().Select(value => (WriteValue)value.Clone()).ToList();
 
             if (nodesToWrite == null || nodesToWrite.Count == 0)
             {
@@ -93,16 +94,16 @@ namespace Opc.Ua.Sample.Controls
                 NumericRange indexRange;
                 ServiceResult result = NumericRange.Validate(nodeToWrite.IndexRange, out indexRange);
 
-                if (ServiceResult.IsGood(result) && indexRange != NumericRange.Empty)
+                if (ServiceResult.IsGood(result) && indexRange != NumericRange.Null)
                 {
                     // apply the index range.
-                    object valueToWrite = nodeToWrite.Value.Value;
+                    Variant valueToWrite = new Variant(nodeToWrite.Value.Value);
 
                     result = indexRange.ApplyRange(ref valueToWrite);
 
                     if (ServiceResult.IsGood(result))
                     {
-                        nodeToWrite.Value.Value = valueToWrite;
+                        nodeToWrite.Value = new DataValue(valueToWrite, nodeToWrite.Value.StatusCode, nodeToWrite.Value.SourceTimestamp, nodeToWrite.Value.ServerTimestamp);
                     }
                 }
             }
@@ -112,8 +113,8 @@ namespace Opc.Ua.Sample.Controls
                 nodesToWrite,
                 ct);
 
-            StatusCodeCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<StatusCode> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToWrite);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);

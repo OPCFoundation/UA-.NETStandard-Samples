@@ -165,6 +165,20 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
+        public IReadOnlyList<UserManagementDataType> GetUsers()
+        {
+            using (usersdbEntities entities = new usersdbEntities())
+            {
+                return entities.UserSet
+                    .Select(user => new UserManagementDataType {
+                        UserName = user.UserName,
+                        UserConfiguration = 0,
+                        Description = null
+                    })
+                    .ToList();
+            }
+        }
+
         public bool ChangePassword(string userName, ReadOnlySpan<byte> oldPassword, ReadOnlySpan<byte> newPassword)
         {
             string oldPasswordString = oldPassword.ToString();
@@ -288,7 +302,6 @@ namespace Opc.Ua.Gds.Server
         #endregion
     }
 }
-
 
 
 

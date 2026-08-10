@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -50,7 +51,7 @@ namespace Opc.Ua.Sample.Controls
         public BrowseTreeCtrl()
         {
             InitializeComponent();
-            m_references = new ReferenceDescriptionCollection();
+            m_references = new List<ReferenceDescription>();
             m_BrowserMoreReferences = new BrowserEventHandler(Browser_MoreReferencesAsync);
         }
         #endregion
@@ -65,7 +66,7 @@ namespace Opc.Ua.Sample.Controls
         private bool m_showReferences;
         private TreeNode m_nodeToBrowse;
         private ReferenceDescription m_parent;
-        private ReferenceDescriptionCollection m_references;
+        private List<ReferenceDescription> m_references;
         private event NodesSelectedEventHandler m_ItemsSelected;
         private event MethodCalledEventHandler m_MethodCalled;
         private BrowserEventHandler m_BrowserMoreReferences;
@@ -108,7 +109,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2227:Collection properties should be read only", Justification = "Sample code preserves existing public API and behavior.")]
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public ReferenceDescriptionCollection SelectedReferences
+        public List<ReferenceDescription> SelectedReferences
         {
             get
             {
@@ -121,7 +122,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_references == null)
                 {
-                    m_references = new ReferenceDescriptionCollection();
+                    m_references = new List<ReferenceDescription>();
                 }
             }
         }
@@ -195,7 +196,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (NodeId.IsNull(rootId))
             {
-                m_rootId = Objects.RootFolder;
+                m_rootId = new NodeId(Objects.RootFolder);
             }
 
             #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
@@ -217,7 +218,7 @@ namespace Opc.Ua.Sample.Controls
                 reference.NodeClass = (NodeClass)node.NodeClass;
                 reference.BrowseName = node.BrowseName;
                 reference.DisplayName = node.DisplayName;
-                reference.TypeDefinition = null;
+                reference.TypeDefinition = ExpandedNodeId.Null;
 
                 string text = GetTargetText(reference);
                 string icon = await GuiUtils.GetTargetIconAsync(m_browser.Session as Session, reference, ct);
@@ -252,12 +253,12 @@ namespace Opc.Ua.Sample.Controls
             Browser browser = new Browser(session);
 
             browser.BrowseDirection = BrowseDirection.Forward;
-            browser.ReferenceTypeId = null;
+            browser.ReferenceTypeId = NodeId.Null;
             browser.IncludeSubtypes = true;
             browser.NodeClassMask = 0;
             browser.ContinueUntilDone = false;
 
-            NodeId rootId = Objects.RootFolder;
+            NodeId rootId = new NodeId(Objects.RootFolder);
             ShowReferences = false;
 
             switch (viewType)
@@ -270,28 +271,28 @@ namespace Opc.Ua.Sample.Controls
 
                 case BrowseViewType.Objects:
                 {
-                    rootId = Objects.ObjectsFolder;
+                    rootId = new NodeId(Objects.ObjectsFolder);
                     browser.ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences;
                     break;
                 }
 
                 case BrowseViewType.Types:
                 {
-                    rootId = Objects.TypesFolder;
+                    rootId = new NodeId(Objects.TypesFolder);
                     browser.ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences;
                     break;
                 }
 
                 case BrowseViewType.ObjectTypes:
                 {
-                    rootId = ObjectTypes.BaseObjectType;
+                    rootId = new NodeId(ObjectTypes.BaseObjectType);
                     browser.ReferenceTypeId = ReferenceTypeIds.HasChild;
                     break;
                 }
 
                 case BrowseViewType.EventTypes:
                 {
-                    rootId = ObjectTypes.BaseEventType;
+                    rootId = new NodeId(ObjectTypes.BaseEventType);
                     browser.ReferenceTypeId = ReferenceTypeIds.HasChild;
                     break;
                 }
@@ -383,7 +384,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (reference != null)
                     {
-                        BrowseMI.Enabled = (reference.NodeId != null && !reference.NodeId.IsAbsolute);
+                        BrowseMI.Enabled = (!reference.NodeId.IsNull && !reference.NodeId.IsAbsolute);
                         ViewAttributesMI.Enabled = true;
 
                         NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_session.NamespaceUris);
@@ -545,16 +546,16 @@ namespace Opc.Ua.Sample.Controls
                 // check for single reference.
                 if (reference != null)
                 {
-                    m_references = new ReferenceDescription[] { reference };
+                    m_references = new List<ReferenceDescription> { reference };
                     return;
                 }
 
                 // check if reference type folder is selected.
-                NodeId referenceTypeId = NodesTV.SelectedNode.Tag as NodeId;
+                NodeId referenceTypeId = NodesTV.SelectedNode.Tag is NodeId nodeId ? nodeId : NodeId.Null;
 
-                if (referenceTypeId != null)
+                if (!referenceTypeId.IsNull)
                 {
-                    m_references = new ReferenceDescriptionCollection();
+                    m_references = new List<ReferenceDescription>();
 
                     foreach (TreeNode child in NodesTV.SelectedNode.Nodes)
                     {
@@ -636,13 +637,13 @@ namespace Opc.Ua.Sample.Controls
             // find node to browse.
             ReferenceDescription reference = node.Tag as ReferenceDescription;
 
-            if (reference == null || reference.NodeId == null || reference.NodeId.IsAbsolute)
+            if (reference == null || reference.NodeId.IsNull || reference.NodeId.IsAbsolute)
             {
                 return false;
             }
 
             // fetch references.
-            ReferenceDescriptionCollection references = null;
+            ArrayOf<ReferenceDescription> references = default;
 
             #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (reference != null)
@@ -664,9 +665,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a target to the tree control.
         /// </summary>
-        private async Task AddReferencesAsync(TreeNode parent, ReferenceDescriptionCollection references, CancellationToken ct = default)
+        private async Task AddReferencesAsync(TreeNode parent, ArrayOf<ReferenceDescription> references, CancellationToken ct = default)
         {
-            foreach (ReferenceDescription reference in references)
+            foreach (ReferenceDescription reference in references.ToList())
             {
                 if (reference.ReferenceTypeId.IsNullNodeId)
                 {
@@ -697,7 +698,7 @@ namespace Opc.Ua.Sample.Controls
                     continue;
                 }
 
-                if (reference.NodeId == null || reference.NodeId.IsNull)
+                if (reference.NodeId.IsNull || reference.NodeId.IsNull)
                 {
                     if (m_logger.IsEnabled(LogLevel.Debug))
                     {
@@ -706,7 +707,7 @@ namespace Opc.Ua.Sample.Controls
                     continue;
                 }
 
-                if (reference.BrowseName == null || reference.BrowseName.Name == null)
+                if (reference.BrowseName.IsNull || reference.BrowseName.Name == null)
                 {
                     if (m_logger.IsEnabled(LogLevel.Debug))
                     {
@@ -726,7 +727,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_browser.NodeClassMask != 0 && m_browser.NodeClassMask != 255)
                 {
-                    if (reference.TypeDefinition == null || reference.TypeDefinition.IsNull)
+                    if (reference.TypeDefinition.IsNull || reference.TypeDefinition.IsNull)
                     {
                         if (m_logger.IsEnabled(LogLevel.Debug))
                         {
@@ -802,7 +803,7 @@ namespace Opc.Ua.Sample.Controls
 
             foreach (TreeNode child in parent.Nodes)
             {
-                NodeId referenceTypeId = child.Tag as NodeId;
+                NodeId referenceTypeId = child.Tag is NodeId nodeId ? nodeId : NodeId.Null;
 
                 if (typeNode.NodeId == referenceTypeId)
                 {
@@ -861,7 +862,7 @@ namespace Opc.Ua.Sample.Controls
                     return reference.DisplayName.Text;
                 }
 
-                if (reference.BrowseName != null)
+                if (!reference.BrowseName.IsNull)
                 {
                     return reference.BrowseName.Name;
                 }
@@ -912,8 +913,6 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 await AddReferencesAsync(m_nodeToBrowse, e.References);
-                e.References.Clear();
-
                 if (MessageBox.Show("More references exist. Continue?", "Browse", MessageBoxButtons.YesNo) == DialogResult.No)
                 {
                     e.Cancel = true;
@@ -955,7 +954,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 m_parent = GetParentOfSelected();
-                m_references = new ReferenceDescriptionCollection();
+                m_references = new List<ReferenceDescription>();
 
                 foreach (TreeNode child in NodesTV.SelectedNode.Nodes)
                 {
@@ -1096,7 +1095,7 @@ namespace Opc.Ua.Sample.Controls
                 valueId.NodeId = (NodeId)reference.NodeId;
                 valueId.AttributeId = Attributes.Value;
                 valueId.IndexRange = null;
-                valueId.DataEncoding = null;
+                valueId.DataEncoding = QualifiedName.Null;
 
                 valueIds.Add(valueId);
 
@@ -1136,7 +1135,7 @@ namespace Opc.Ua.Sample.Controls
                 value.NodeId = (NodeId)reference.NodeId;
                 value.AttributeId = Attributes.Value;
                 value.IndexRange = null;
-                value.Value = null;
+                value.Value = DataValue.Null;
 
                 values.Add(value);
 
@@ -1222,7 +1221,7 @@ namespace Opc.Ua.Sample.Controls
 
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
 
-                if (reference == null || reference.NodeId == null || reference.NodeId.IsAbsolute)
+                if (reference == null || reference.NodeId.IsNull || reference.NodeId.IsAbsolute)
                 {
                     return;
                 }
@@ -1247,7 +1246,7 @@ namespace Opc.Ua.Sample.Controls
 
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
 
-                if (reference == null || reference.NodeId == null || reference.NodeId.IsAbsolute)
+                if (reference == null || reference.NodeId.IsNull || reference.NodeId.IsAbsolute)
                 {
                     return;
                 }
@@ -1272,7 +1271,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a new instance.
         /// </summary>
-        internal NodesSelectedEventArgs(ExpandedNodeId sourceId, ReferenceDescriptionCollection references)
+        internal NodesSelectedEventArgs(ExpandedNodeId sourceId, List<ReferenceDescription> references)
         {
             m_sourceId = sourceId;
             m_references = references;
@@ -1299,7 +1298,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private ExpandedNodeId m_sourceId;
-        private ReferenceDescriptionCollection m_references;
+        private List<ReferenceDescription> m_references;
         #endregion
     }
 

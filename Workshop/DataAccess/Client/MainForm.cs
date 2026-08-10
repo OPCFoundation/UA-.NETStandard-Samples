@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using System.IO;
@@ -263,7 +264,7 @@ namespace Quickstarts.DataAccessClient
                 nodesToBrowse.Add(nodeToBrowse2);
 
                 // fetch references from the server.
-                ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(m_session, nodesToBrowse, false, ct);
+                var references = await FormUtils.BrowseAsync(m_session, nodesToBrowse, false, ct);
 
                 // process results.
                 for (int ii = 0; ii < references.Count; ii++)
@@ -323,7 +324,7 @@ namespace Quickstarts.DataAccessClient
                 nodesToBrowse.Add(nodeToBrowse1);
 
                 // fetch property references from the server.
-                ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(m_session, nodesToBrowse, false, ct);
+                var references = await FormUtils.BrowseAsync(m_session, nodesToBrowse, false, ct);
 
                 if (references == null)
                 {
@@ -352,8 +353,8 @@ namespace Quickstarts.DataAccessClient
                     nodesToRead,
                     ct);
 
-                DataValueCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1182,7 +1183,7 @@ namespace Quickstarts.DataAccessClient
                 }
 
                 ConnectServerCTRL.PreferredLocales = new string[] { locale };
-                m_session.ChangePreferredLocales(new StringCollection(ConnectServerCTRL.PreferredLocales));
+                m_session.ChangePreferredLocales(new List<string>(ConnectServerCTRL.PreferredLocales));
             }
             catch (Exception exception)
             {

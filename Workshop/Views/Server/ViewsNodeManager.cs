@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -144,7 +144,7 @@ namespace Quickstarts.ViewsServer
                     SystemContext,
                     pnd1.Construct(),
                     new QualifiedName("Boiler #1", NamespaceIndex),
-                    null,
+                    LocalizedText.Null,
                     true);
 
                 boiler1.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, root.NodeId);
@@ -161,7 +161,7 @@ namespace Quickstarts.ViewsServer
                     SystemContext,
                     pnd2.Construct(),
                     new QualifiedName("Boiler #2", NamespaceIndex),
-                    null,
+                    LocalizedText.Null,
                     true);
 
                 boiler2.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, root.NodeId);

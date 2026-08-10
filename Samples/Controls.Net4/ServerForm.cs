@@ -56,7 +56,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (!configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                m_server.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                configuration.CertificateManager.AcceptError = CertificateManager_AcceptError;
             }
         }
         #endregion
@@ -105,15 +105,16 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Handles a certificate validation error.
         /// </summary>
-        void CertificateValidator_CertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)
+        private bool CertificateManager_AcceptError(Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
         {
             try
             {
-                Opc.Ua.Client.Controls.GuiUtils.HandleCertificateValidationError(this, validator, e);
+                return Opc.Ua.Client.Controls.GuiUtils.HandleCertificateValidationError(this, certificate, error);
             }
             catch (Exception exception)
             {
                 Opc.Ua.Client.Controls.GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+                return false;
             }
         }
 

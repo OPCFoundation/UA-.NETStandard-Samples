@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -62,7 +62,7 @@ namespace Quickstarts.SimpleEvents.Server
             SetNamespaces(namespaceUrls);
 
             // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<SimpleEventsServerConfiguration>();
+            m_configuration = null;
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -245,7 +245,7 @@ namespace Quickstarts.SimpleEvents.Server
                     step.Duration = 1000;
 
                     e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.CurrentStep, NamespaceIndex), step, false);
-                    e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.Steps, NamespaceIndex), new CycleStepDataType[] { step, step }, false);
+                    e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.Steps, NamespaceIndex), new[] { step, step }.ToArrayOf(), false);
 
                     Server.ReportEvent(e);
                 }

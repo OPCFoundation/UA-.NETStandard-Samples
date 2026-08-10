@@ -230,11 +230,11 @@ namespace Opc.Ua.Client.Controls
 
                         foreach (string thumbprint in thumbprints)
                         {
-                            X509Certificate2Collection certificates = await store.FindByThumbprintAsync(thumbprint, ct);
+                            var certificates = await store.FindByThumbprintAsync(thumbprint, ct);
 
                             if (certificates.Count > 0)
                             {
-                                AddItem(certificates[0]);
+                                AddItem(certificates[0].AsX509Certificate2());
                             }
                         }
                     }
@@ -244,10 +244,10 @@ namespace Opc.Ua.Client.Controls
                     {
                         Instructions = "No certificates are in the store.";
 
-                        X509Certificate2Collection certificates = await store.EnumerateAsync(ct);
-                        foreach (X509Certificate2 certificate in certificates)
+                        var certificates = await store.EnumerateAsync(ct);
+                        foreach (var certificate in certificates)
                         {
-                            AddItem(certificate);
+                            AddItem(certificate.AsX509Certificate2());
                         }
                     }
                 }
@@ -355,7 +355,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // look up domains.
-                IList<string> domains = X509Utils.GetDomainsFromCertificate(certificate);
+                IList<string> domains = X509Utils.GetDomainsFromCertificate(Certificate.From(certificate)).ToList();
 
                 StringBuilder buffer = new StringBuilder();
 
@@ -370,7 +370,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 listItem.SubItems[3].Text = buffer.ToString();
-                listItem.SubItems[4].Text = X509Utils.GetApplicationUrisFromCertificate(certificate)[0];
+                listItem.SubItems[4].Text = X509Utils.GetApplicationUrisFromCertificate(Certificate.From(certificate))[0];
                 listItem.SubItems[5].Text = String.Format("{0:yyyy-MM-dd}", certificate.NotAfter);
             }
 
@@ -413,7 +413,7 @@ namespace Opc.Ua.Client.Controls
                 if (certificate != null)
                 {
                     CertificateIdentifier id = new CertificateIdentifier();
-                    id.Certificate = certificate;
+                    id.RawData = certificate.RawData;
 
                     if (m_storeId != null)
                     {
@@ -463,7 +463,7 @@ namespace Opc.Ua.Client.Controls
                         X509Certificate2 certificate = ItemsLV.SelectedItems[ii].Tag as X509Certificate2;
 
                         // check for private key.
-                        X509Certificate2Collection certificate2 = await store.FindByThumbprintAsync(certificate.Thumbprint);
+                        var certificate2 = await store.FindByThumbprintAsync(certificate.Thumbprint);
 
                         if (!yesToAll && (certificate2.Count > 0) && certificate2[0].HasPrivateKey)
                         {
@@ -527,7 +527,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     DataContractSerializer serializer = new DataContractSerializer(typeof(CertificateIdentifier));
                     CertificateIdentifier id = new CertificateIdentifier();
-                    id.Certificate = certificate;
+                    id.RawData = certificate.RawData;
                     serializer.WriteObject(writer, id);
                 }
                 finally
@@ -567,7 +567,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     using (ICertificateStore store = m_storeId.OpenStore(Telemetry))
                     {
-                        store.AddAsync(id.Certificate);
+                        store.AddAsync(Certificate.From(id.Certificate));
                     }
 
                     AddItem(id.Certificate);

@@ -77,7 +77,7 @@ namespace Opc.Ua.Sample.Controls
             m_browser = browser;
             m_session = session;
             m_telemetry = telemetry;
-            await ReferenceTypeCTRL.InitializeAsync(m_browser.Session as Session, null, ct);
+            await ReferenceTypeCTRL.InitializeAsync(m_browser.Session as Session, NodeId.Null, ct);
 
             ViewIdTB.Text = null;
             ViewTimestampDP.Value = ViewTimestampDP.MinDate;
@@ -91,7 +91,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (browser.View.Timestamp > ViewTimestampDP.MinDate)
                 {
-                    ViewTimestampDP.Value = browser.View.Timestamp;
+                    ViewTimestampDP.Value = browser.View.Timestamp.ToDateTime();
                     ViewTimestampCK.Checked = true;
                 }
             }
@@ -157,7 +157,7 @@ namespace Opc.Ua.Sample.Controls
                 browser.IncludeSubtypes = true;
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(browser, Objects.ViewsFolder, m_session, m_telemetry);
+                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(browser, new NodeId(Objects.ViewsFolder), m_session, m_telemetry);
                 #pragma warning restore CA2000
 
                 if (reference != null)
@@ -179,7 +179,7 @@ namespace Opc.Ua.Sample.Controls
 
         private void OkBTN_Click(object sender, EventArgs e)
         {
-            NodeId viewId = null;
+            NodeId viewId = NodeId.Null;
 
             try
             {

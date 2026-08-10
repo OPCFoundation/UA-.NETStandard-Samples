@@ -95,7 +95,7 @@ namespace Quickstarts.ReferenceServer
 
                 // Create server, add additional node managers
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                var server = new ReferenceServer();
+                var server = new ReferenceServer(m_telemetry);
                 #pragma warning restore CA2000
                 Quickstarts.Servers.Utils.AddDefaultNodeManagers(server);
 
@@ -104,11 +104,32 @@ namespace Quickstarts.ReferenceServer
 
                 // check whether the invalid certificates dialog should be displayed.
                 bool showCertificateValidationDialog = false;
-                ReferenceServerConfiguration refServerconfiguration = application.ApplicationConfiguration.ParseExtension<ReferenceServerConfiguration>();
 
-                if (refServerconfiguration != null)
+                // The 2.0 Quickstarts.Servers ReferenceServerConfiguration is still a
+                // [DataContract] POCO (not IEncodeable), so ApplicationConfiguration.ParseExtension<T>()
+                // can no longer bind it. Read the extension XML directly instead.
+                foreach (var extension in application.ApplicationConfiguration.Extensions)
                 {
-                    showCertificateValidationDialog = refServerconfiguration.ShowCertificateValidationDialog;
+                    if (extension.IsNull || extension.IsEmpty)
+                    {
+                        continue;
+                    }
+
+                    System.Xml.Linq.XElement element = extension.ToXElement();
+                    if (element == null || element.Name.LocalName != "ReferenceServerConfiguration")
+                    {
+                        continue;
+                    }
+
+                    System.Xml.Linq.XElement show = System.Linq.Enumerable.FirstOrDefault(
+                        element.Elements(),
+                        e => e.Name.LocalName == "ShowCertificateValidationDialog");
+                    if (show != null && bool.TryParse(show.Value, out bool value))
+                    {
+                        showCertificateValidationDialog = value;
+                    }
+
+                    break;
                 }
 
                 // run the application interactively.

@@ -42,9 +42,9 @@ namespace TestData
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(ISystemContext context, NodeState node, System.Threading.CancellationToken ct)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
             this.MonitoredNodeCount.OnSimpleReadValue = OnReadMonitoredNodeCount;
         }
         #endregion
@@ -56,7 +56,7 @@ namespace TestData
         protected virtual ServiceResult OnReadMonitoredNodeCount(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             TestDataSystem system = context?.SystemHandle as TestDataSystem;
 
@@ -65,7 +65,7 @@ namespace TestData
                 return StatusCodes.BadOutOfService;
             }
 
-            value = system.MonitoredNodeCount;
+            value = new Variant(system.MonitoredNodeCount);
             return ServiceResult.Good;
         }
         #endregion

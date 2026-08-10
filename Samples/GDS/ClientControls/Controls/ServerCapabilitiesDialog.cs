@@ -38,10 +38,14 @@ namespace Opc.Ua.Gds.Client.Controls
         {
             InitializeComponent();
             Icon = ImageListControl.AppIcon;
-            m_capabilities = new ServerCapabilities();
+            m_capabilities = new List<GdsServerCapability>();
+            foreach (var capability in Opc.Ua.ServerCapability.All)
+            {
+                m_capabilities.Add(new GdsServerCapability { Id = capability.Key, Description = capability.Value });
+            }
         }
 
-        private ServerCapabilities m_capabilities;
+        private List<GdsServerCapability> m_capabilities;
 
         #pragma warning disable CA1002 // Justification: Public sample API compatibility is preserved.
         public List<string> ShowDialog(IWin32Window owner, IList<string> serverCapabilities)
@@ -62,7 +66,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                     for (int ii = 0; ii < CapabilitiesListBox.Items.Count; ii++)
                     {
-                        var item = (ServerCapability)CapabilitiesListBox.Items[ii];
+                        var item = (GdsServerCapability)CapabilitiesListBox.Items[ii];
 
                         if (item.Id == capability)
                         {
@@ -74,7 +78,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                     if (!found)
                     {
-                        CapabilitiesListBox.Items.Add(new ServerCapability() { Id = capability, Description = capability }, true);
+                        CapabilitiesListBox.Items.Add(new GdsServerCapability() { Id = capability, Description = capability }, true);
                     }
                 }
             }
@@ -86,12 +90,23 @@ namespace Opc.Ua.Gds.Client.Controls
 
             List<string> result = new List<string>();
 
-            foreach (ServerCapability item in CapabilitiesListBox.CheckedItems)
+            foreach (GdsServerCapability item in CapabilitiesListBox.CheckedItems)
             {
                 result.Add(item.Id);
             }
 
             return result;
+        }
+
+        private sealed class GdsServerCapability
+        {
+            public string Id { get; set; }
+            public string Description { get; set; }
+
+            public override string ToString()
+            {
+                return $"{Id} - {Description}";
+            }
         }
     }
 }

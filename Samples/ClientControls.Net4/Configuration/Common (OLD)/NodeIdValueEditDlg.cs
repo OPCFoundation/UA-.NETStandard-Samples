@@ -66,12 +66,12 @@ namespace Opc.Ua.Client.Controls
 
             ValueCTRL.Telemetry = telemetry;
             ValueCTRL.Browser = new Browser(session);
-            ValueCTRL.RootId = Objects.RootFolder;
+            ValueCTRL.RootId = (NodeId)Objects.RootFolder;
             ValueCTRL.Identifier = value;
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return NodeId.Null;
             }
 
             return ValueCTRL.Identifier;
@@ -86,12 +86,12 @@ namespace Opc.Ua.Client.Controls
 
             ValueCTRL.Telemetry = telemetry;
             ValueCTRL.Browser = new Browser(session);
-            ValueCTRL.RootId = Objects.RootFolder;
+            ValueCTRL.RootId = (NodeId)Objects.RootFolder;
             ValueCTRL.Identifier = ExpandedNodeId.ToNodeId(value, session.NamespaceUris);
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return ExpandedNodeId.Null;
             }
 
             return ValueCTRL.Identifier;

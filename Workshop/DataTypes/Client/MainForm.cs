@@ -146,8 +146,8 @@ namespace Quickstarts.DataTypes
 
                 if (m_session != null)
                 {
-                    var typeSystem = new ComplexTypeSystem(m_session);
-                    await typeSystem.LoadAsync();
+                    var typeSystem = ComplexTypeSystemClientExtensions.Create(m_session, m_telemetry);
+                    await typeSystem.LoadAsync(true, true, default);
                 }
             }
             catch (Exception exception)

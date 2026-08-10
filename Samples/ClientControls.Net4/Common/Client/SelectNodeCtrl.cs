@@ -38,7 +38,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Newtonsoft.Json.Linq;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -95,10 +94,10 @@ namespace Opc.Ua.Client.Controls
         public NodeId SelectedNode
         #pragma warning restore WFO1000
         {
-            get => m_selectedNode != null ? (NodeId)m_selectedNode.NodeId : null;
+            get => m_selectedNode != null ? (NodeId)m_selectedNode.NodeId : NodeId.Null;
             set
             {
-                if (value == null)
+                if (value.IsNull)
                 {
                     ClearSelectedNode();
                 }
@@ -126,7 +125,7 @@ namespace Opc.Ua.Client.Controls
             {
                 NodeControl.Text = null;
 
-                if (value != null && Session != null)
+                if (!value.IsNull && Session != null)
                 {
                     NodeControl.Text = await Session.NodeCache.GetDisplayTextAsync(value, ct);
                 }

@@ -377,11 +377,11 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // get the event fields.
-            NodeId eventType = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.EventType) as NodeId;
-            string sourceName = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.SourceName) as string;
-            DateTime? time = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Time) as DateTime?;
-            ushort? severity = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Severity) as ushort?;
-            LocalizedText message = monitoredItem.GetFieldValue(eventFields, ObjectTypes.BaseEventType, Opc.Ua.BrowseNames.Message) as LocalizedText;
+            NodeId eventType = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.EventType)) is NodeId eventTypeNodeId ? eventTypeNodeId : NodeId.Null;
+            string sourceName = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.SourceName)) as string;
+            DateTime? time = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.Time)) as DateTime?;
+            ushort? severity = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.Severity)) as ushort?;
+            LocalizedText message = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.Message)) is LocalizedText messageText ? messageText : LocalizedText.Null;
 
             // fill in the columns.
             listItem.SubItems[0].Text = String.Format("[{0}]", eventFields.ClientHandle);

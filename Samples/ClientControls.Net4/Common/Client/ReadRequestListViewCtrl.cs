@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -145,8 +145,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = new List<DataValue>(response.Results.ToArray());
+            List<DiagnosticInfo> diagnosticInfos = new List<DiagnosticInfo>(response.DiagnosticInfos.ToArray());
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -214,7 +214,7 @@ namespace Opc.Ua.Client.Controls
             row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToRead.NodeId, ct) : Utils.ToString(nodeToRead.NodeId);
             row[3] = Attributes.GetBrowseName(nodeToRead.AttributeId);
             row[4] = nodeToRead.IndexRange;
-            row[5] = (nodeToRead.DataEncoding != null) ? nodeToRead.DataEncoding : QualifiedName.Null;
+            row[5] = (!nodeToRead.DataEncoding.IsNull) ? nodeToRead.DataEncoding : QualifiedName.Null;
         }
         #endregion
 
@@ -288,7 +288,7 @@ namespace Opc.Ua.Client.Controls
                         await new EditComplexValueDlg().ShowDialogAsync(
                         #pragma warning restore CA2000
                             m_session,
-                            null,
+                            NodeId.Null,
                             0,
                             null,
                             value,

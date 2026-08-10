@@ -74,7 +74,7 @@ namespace Opc.Ua.Sample.Controls
             NodeIdCTRL.Identifier = valueId.NodeId;
             AttributeIdCB.SelectedItem = Attributes.GetBrowseName(valueId.AttributeId);
             IndexRangeTB.Text = valueId.IndexRange;
-            EncodingCB.Text = (valueId.DataEncoding != null) ? valueId.DataEncoding.Name : null;
+            EncodingCB.Text = (!valueId.DataEncoding.IsNull) ? valueId.DataEncoding.Name : null;
 
             if (ShowDialog() != DialogResult.OK)
             {

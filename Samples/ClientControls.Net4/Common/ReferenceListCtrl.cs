@@ -201,7 +201,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, View, CreateNodesToBrowse(), false, ct);
+            var references = await ClientUtils.BrowseAsync(m_session, View, CreateNodesToBrowse(), false, ct);
 
             for (int ii = 0; references != null && ii < references.Count; ii++)
             {

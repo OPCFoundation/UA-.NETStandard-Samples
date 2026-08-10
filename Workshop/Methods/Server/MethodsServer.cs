@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -50,6 +50,10 @@ namespace Quickstarts.MethodsServer
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample server type name intentionally mirrors the namespace.")]
     public partial class MethodsServer : StandardServer
     {
+        public MethodsServer(ITelemetryContext telemetry) : base(telemetry)
+        {
+        }
+
         #region Overridden Methods
         /// <summary>
         /// Creates the node managers for the server.

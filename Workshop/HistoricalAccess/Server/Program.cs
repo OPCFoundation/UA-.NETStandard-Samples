@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -94,7 +94,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 // start the server.
 #pragma warning disable CA2000 // Justification: ownership is transferred to the application instance.
-                application.StartAsync(new HistoricalAccessServer()).Wait();
+                application.StartAsync(new HistoricalAccessServer(m_telemetry)).Wait();
 #pragma warning restore CA2000
 
                 // run the application interactively.
@@ -272,24 +272,19 @@ namespace Quickstarts.HistoricalAccessServer
                     {
                         case "GI": { statusCode = statusCode.SetAggregateBits(AggregateBits.Interpolated); break; }
                         case "GC": { statusCode = statusCode.SetAggregateBits(AggregateBits.Calculated); break; }
-                        case "UC": { statusCode = new StatusCode(StatusCodes.UncertainSubNormal).SetAggregateBits(AggregateBits.Calculated); break; }
-                        case "UI": { statusCode = new StatusCode(StatusCodes.UncertainSubNormal).SetAggregateBits(AggregateBits.Interpolated); break; }
+                        case "UC": { statusCode = StatusCodes.UncertainSubNormal.SetAggregateBits(AggregateBits.Calculated); break; }
+                        case "UI": { statusCode = StatusCodes.UncertainSubNormal.SetAggregateBits(AggregateBits.Interpolated); break; }
                         case "UR": { statusCode = StatusCodes.Uncertain; break; }
                         case "BR": { statusCode = StatusCodes.BadNoData; break; }
                         case "BD": { statusCode = StatusCodes.Bad; break; }
                     }
 
-                    DataValue dataValue = new DataValue();
-                    dataValue.Value = value;
-                    dataValue.StatusCode = statusCode;
-                    dataValue.SourceTimestamp = startTime.AddSeconds(time);
-                    dataValue.ServerTimestamp = dataValue.SourceTimestamp;
+                    DataValue dataValue = new DataValue(
+                        StatusCode.IsBad(statusCode) ? Variant.Null : Variant.From(value),
+                        statusCode,
+                        startTime.AddSeconds(time),
+                        startTime.AddSeconds(time));
                     results.Add(dataValue);
-
-                    if (StatusCode.IsBad(statusCode))
-                    {
-                        dataValue.Value = null;
-                    }
                 }
             }
 
@@ -338,15 +333,13 @@ namespace Quickstarts.HistoricalAccessServer
                     continue;
                 }
 
-                DataValue processedValue = calculator.GetProcessedValue(false);
-
-                if (processedValue != null)
+                if (calculator.TryGetProcessedValue(false, out DataValue processedValue))
                 {
                     values.Add(processedValue);
                 }
             }
 
-            for (DataValue processedValue = calculator.GetProcessedValue(true); processedValue != null; processedValue = calculator.GetProcessedValue(true))
+            while (calculator.TryGetProcessedValue(true, out DataValue processedValue))
             {
                 values.Add(processedValue);
             }

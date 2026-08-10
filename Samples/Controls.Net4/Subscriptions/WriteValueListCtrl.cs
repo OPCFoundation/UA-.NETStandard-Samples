@@ -82,7 +82,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, WriteValueCollection values, ITelemetryContext telemetry)
+        public void Initialize(Session session, List<WriteValue> values, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -136,9 +136,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the items in the control.
         /// </summary>
-        public WriteValueCollection GetValues()
+        public List<WriteValue> GetValues()
         {
-            WriteValueCollection values = new WriteValueCollection();
+            List<WriteValue> values = new List<WriteValue>();
 
             foreach (ListViewItem item in ItemsLV.Items)
             {
@@ -146,9 +146,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (value != null)
                 {
-                    value.Value.StatusCode = StatusCodes.Good;
-                    value.Value.ServerTimestamp = DateTime.MinValue;
-                    value.Value.SourceTimestamp = DateTime.MinValue;
+                    value.Value = new DataValue(new Variant(value.Value.Value), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
 
                     values.Add(value);
                 }
@@ -173,11 +171,11 @@ namespace Opc.Ua.Sample.Controls
             // read the current attribute value.
             DataValue value = new DataValue();
 
-            ServiceResult result = node.Read(null, attributeId, value);
+            ServiceResult result = node.Read(null, attributeId, ref value);
 
             if (ServiceResult.IsBad(result))
             {
-                value.Value = GuiUtils.GetDefaultValue(Attributes.GetDataTypeId(attributeId), ValueRanks.Scalar);
+                value = new DataValue(new Variant(GuiUtils.GetDefaultValue(Attributes.GetDataTypeId(attributeId), ValueRanks.Scalar)), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
             }
 
             // update the value attribute.
@@ -193,7 +191,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (variable != null)
                     {
-                        value.Value = GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank);
+                        value = new DataValue(new Variant(GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank)), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
                     }
                 }
             }
@@ -328,7 +326,7 @@ namespace Opc.Ua.Sample.Controls
                     {
                         DataValue value = new DataValue();
 
-                        ServiceResult result = node.Read(null, values[0].AttributeId, value);
+                        ServiceResult result = node.Read(null, values[0].AttributeId, ref value);
 
                         if (ServiceResult.IsGood(result))
                         {
@@ -379,7 +377,7 @@ namespace Opc.Ua.Sample.Controls
                     NumericRange indexRange;
                     ServiceResult result = NumericRange.Validate(values[0].IndexRange, out indexRange);
 
-                    if (ServiceResult.IsGood(result) && indexRange != NumericRange.Empty)
+                    if (ServiceResult.IsGood(result) && indexRange != NumericRange.Null)
                     {
                         useIndexRange = true;
                     }
@@ -405,8 +403,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (value != null)
                 {
-                    values[0].Value.Value = value;
-                    values[0].Value.StatusCode = StatusCodes.Good;
+                    values[0].Value = new DataValue(new Variant(value), StatusCodes.Good, values[0].Value.SourceTimestamp, values[0].Value.ServerTimestamp);
 
                     await UpdateItemAsync(ItemsLV.SelectedItems[0], values[0]);
 

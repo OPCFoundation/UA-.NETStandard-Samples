@@ -62,7 +62,7 @@ namespace Quickstarts.DataAccessServer
             this.NodeId = nodeId;
             this.BrowseName = new QualifiedName(block.Name, nodeId.NamespaceIndex);
             this.DisplayName = new LocalizedText(block.Name);
-            this.Description = null;
+            this.Description = LocalizedText.Null;
             this.WriteMask = 0;
             this.UserWriteMask = 0;
             this.EventNotifier = EventNotifiers.None;
@@ -142,7 +142,7 @@ namespace Quickstarts.DataAccessServer
         public ServiceResult OnWriteTagValue(
             ISystemContext context,
             NodeState node,
-            ref object value)
+            ref Variant value)
         {
             UnderlyingSystem system = context.SystemHandle as UnderlyingSystem;
 
@@ -158,7 +158,7 @@ namespace Quickstarts.DataAccessServer
                 return StatusCodes.BadNodeIdUnknown;
             }
 
-            uint error = block.WriteTagValue(node.SymbolicName, value);
+            StatusCode error = block.WriteTagValue(node.SymbolicName, value.Value);
 
             if (error != 0)
             {
@@ -241,12 +241,12 @@ namespace Quickstarts.DataAccessServer
 
                     if (tag.EngineeringUnits != null)
                     {
-                        node.EngineeringUnits = new PropertyState<EUInformation>(node);
+                        node.EngineeringUnits = PropertyState<EUInformation>.With<StructureBuilder<EUInformation>>(node);
                     }
 
                     if (tag.EuRange.Length >= 4)
                     {
-                        node.InstrumentRange = new PropertyState<Opc.Ua.Range>(node);
+                        node.InstrumentRange = PropertyState<Opc.Ua.Range>.With<StructureBuilder<Opc.Ua.Range>>(node);
                     }
 
                     variable = node;
@@ -266,7 +266,7 @@ namespace Quickstarts.DataAccessServer
 
                     if (tag.Labels != null)
                     {
-                        node.EnumStrings = new PropertyState<LocalizedText[]>(node);
+                        node.EnumStrings = PropertyState<ArrayOf<LocalizedText>>.With<VariantBuilder>(node);
                     }
 
                     variable = node;
@@ -288,9 +288,9 @@ namespace Quickstarts.DataAccessServer
             // initialize the variable from the type model.
             variable.Create(
                 context,
-                null,
+                NodeId.Null,
                 new QualifiedName(tag.Name, this.BrowseName.NamespaceIndex),
-                null,
+                LocalizedText.Null,
                 true);
 
             // update the variable values.
@@ -307,21 +307,21 @@ namespace Quickstarts.DataAccessServer
         /// <param name="variable">The variable to update.</param>
         private void UpdateVariable(ISystemContext context, UnderlyingSystemTag tag, BaseVariableState variable)
         {
-            variable.Description = tag.Description;
-            variable.Value = tag.Value;
+            variable.Description = new LocalizedText(tag.Description);
+            variable.Value = new Variant(tag.Value);
             variable.Timestamp = tag.Timestamp;
 
             switch (tag.DataType)
             {
-                case UnderlyingSystemDataType.Integer1: { variable.DataType = DataTypes.SByte; break; }
-                case UnderlyingSystemDataType.Integer2: { variable.DataType = DataTypes.Int16; break; }
-                case UnderlyingSystemDataType.Integer4: { variable.DataType = DataTypes.Int32; break; }
-                case UnderlyingSystemDataType.Real4: { variable.DataType = DataTypes.Float; break; }
-                case UnderlyingSystemDataType.String: { variable.DataType = DataTypes.String; break; }
+                case UnderlyingSystemDataType.Integer1: { variable.DataType = new NodeId(DataTypes.SByte); break; }
+                case UnderlyingSystemDataType.Integer2: { variable.DataType = new NodeId(DataTypes.Int16); break; }
+                case UnderlyingSystemDataType.Integer4: { variable.DataType = new NodeId(DataTypes.Int32); break; }
+                case UnderlyingSystemDataType.Real4: { variable.DataType = new NodeId(DataTypes.Float); break; }
+                case UnderlyingSystemDataType.String: { variable.DataType = new NodeId(DataTypes.String); break; }
             }
 
             variable.ValueRank = ValueRanks.Scalar;
-            variable.ArrayDimensions = null;
+            variable.ArrayDimensions = ArrayOf<uint>.Empty;
 
             if (tag.IsWriteable)
             {
@@ -363,7 +363,7 @@ namespace Quickstarts.DataAccessServer
                     if (!String.IsNullOrEmpty(tag.EngineeringUnits) && node.EngineeringUnits != null)
                     {
                         EUInformation info = new EUInformation();
-                        info.DisplayName = tag.EngineeringUnits;
+                        info.DisplayName = new LocalizedText(tag.EngineeringUnits);
                         info.NamespaceUri = Namespaces.DataAccess;
                         node.EngineeringUnits.Value = info;
                         node.EngineeringUnits.Timestamp = tag.Block.Timestamp;
@@ -403,7 +403,7 @@ namespace Quickstarts.DataAccessServer
                             strings[ii] = new LocalizedText(tag.Labels[ii]);
                         }
 
-                        node.EnumStrings.Value = strings;
+                        node.EnumStrings.Value = strings.ToArrayOf();
                         node.EnumStrings.Timestamp = tag.Block.Timestamp;
                     }
 

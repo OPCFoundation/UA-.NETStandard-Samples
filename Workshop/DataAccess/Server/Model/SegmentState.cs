@@ -59,7 +59,7 @@ namespace Quickstarts.DataAccessServer
             this.NodeId = nodeId;
             this.BrowseName = new QualifiedName(segment.Name, nodeId.NamespaceIndex);
             this.DisplayName = new LocalizedText(segment.Name);
-            this.Description = null;
+            this.Description = LocalizedText.Null;
             this.WriteMask = 0;
             this.UserWriteMask = 0;
             this.EventNotifier = EventNotifiers.None;

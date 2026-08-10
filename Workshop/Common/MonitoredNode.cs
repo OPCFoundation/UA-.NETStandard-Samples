@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -252,23 +252,19 @@ namespace Quickstarts
             NodeState node,
             MonitoredItem monitoredItem)
         {
-            DataValue value = new DataValue();
+            DataValue value = new DataValue(Variant.Null, StatusCodes.Good, DateTime.MinValue, DateTime.UtcNow);
 
-            value.Value = null;
-            value.ServerTimestamp = DateTime.UtcNow;
-            value.SourceTimestamp = DateTime.MinValue;
-            value.StatusCode = StatusCodes.Good;
-
+            NumericRange indexRange = monitoredItem.IndexRange;
             ServiceResult error = node.ReadAttribute(
                 context,
                 monitoredItem.AttributeId,
-                monitoredItem.IndexRange,
+                indexRange,
                 monitoredItem.DataEncoding,
-                value);
+                ref value);
 
             if (ServiceResult.IsBad(error))
             {
-                value = null;
+                value = DataValue.Null;
             }
 
             monitoredItem.QueueValue(value, error);

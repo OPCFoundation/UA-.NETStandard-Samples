@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -29,6 +29,7 @@
 
 using System;
 using System.Text;
+using System.Linq;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -52,7 +53,7 @@ namespace Quickstarts
             Dictionary<string, InstanceDeclaration> map = new Dictionary<string, InstanceDeclaration>();
 
             // get the supertypes.
-            ReferenceDescriptionCollection supertypes = await FormUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
+            List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
 
             if (supertypes != null)
             {
@@ -99,7 +100,7 @@ namespace Quickstarts
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
             // ignore any browsing errors.
-            ReferenceDescriptionCollection references = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
+            List<ReferenceDescription> references = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
 
             if (references == null)
             {
@@ -138,13 +139,13 @@ namespace Quickstarts
 
                 if (parent != null)
                 {
-                    child.BrowsePath = new QualifiedNameCollection(parent.BrowsePath);
+                    child.BrowsePath = new List<QualifiedName>(parent.BrowsePath);
                     child.BrowsePathDisplayText = Utils.Format("{0}/{1}", parent.BrowsePathDisplayText, reference.BrowseName);
                     child.DisplayPath = Utils.Format("{0}/{1}", parent.DisplayPath, reference.DisplayName);
                 }
                 else
                 {
-                    child.BrowsePath = new QualifiedNameCollection();
+                    child.BrowsePath = new List<QualifiedName>();
                     child.BrowsePathDisplayText = Utils.Format("{0}", reference.BrowseName);
                     child.DisplayPath = Utils.Format("{0}", reference.DisplayName);
                 }
@@ -233,18 +234,18 @@ namespace Quickstarts
                     nodesToBrowse,
                     ct);
 
-                BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<BrowseResult> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToBrowse);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
 
                 List<NodeId> targetIds = new List<NodeId>();
-                ByteStringCollection continuationPoints = new ByteStringCollection();
+                List<ByteString> continuationPoints = new List<ByteString>();
 
                 for (int ii = 0; ii < nodeIds.Count; ii++)
                 {
-                    targetIds.Add(null);
+                    targetIds.Add(NodeId.Null);
 
                     // check for error.
                     if (StatusCode.IsBad(results[ii].StatusCode))
@@ -253,7 +254,7 @@ namespace Quickstarts
                     }
 
                     // check for continuation point.
-                    if (results[ii].ContinuationPoint != null && results[ii].ContinuationPoint.Length > 0)
+                    if (!results[ii].ContinuationPoint.IsNull && results[ii].ContinuationPoint.Length > 0)
                     {
                         continuationPoints.Add(results[ii].ContinuationPoint);
                     }
@@ -279,8 +280,8 @@ namespace Quickstarts
                         continuationPoints,
                         ct);
 
-                    results = response2.Results;
-                    diagnosticInfos = response2.DiagnosticInfos;
+                    results = response2.Results.ToList();
+                    diagnosticInfos = response2.DiagnosticInfos.ToList();
 
                     ClientBase.ValidateResponse(results, nodesToBrowse);
                     ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
@@ -335,8 +336,8 @@ namespace Quickstarts
                     nodesToRead,
                     ct);
 
-                DataValueCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -352,7 +353,7 @@ namespace Quickstarts
 
                     if (!NodeId.IsNull(instance.DataType))
                     {
-                        instance.BuiltInType = DataTypes.GetBuiltInType(instance.DataType);
+                        instance.BuiltInType = TypeInfo.GetBuiltInType(instance.DataType, session.TypeTree);
                         instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType, ct);
 
                         if (instance.ValueRank >= 0)
@@ -404,7 +405,7 @@ namespace Quickstarts
         /// <summary>
         /// The browse path to the instance declaration.
         /// </summary>
-        public QualifiedNameCollection BrowsePath;
+        public List<QualifiedName> BrowsePath;
 
         /// <summary>
         /// The browse path to the instance declaration.
@@ -649,12 +650,12 @@ namespace Quickstarts
             field.DisplayInList = displayInList;
             field.InstanceDeclaration = new InstanceDeclaration();
             field.InstanceDeclaration.BrowseName = browseName;
-            field.InstanceDeclaration.BrowsePath = new QualifiedNameCollection();
+            field.InstanceDeclaration.BrowsePath = new List<QualifiedName>();
             field.InstanceDeclaration.BrowsePath.Add(field.InstanceDeclaration.BrowseName);
             field.InstanceDeclaration.BrowsePathDisplayText = browseName.Name;
 
             field.InstanceDeclaration.BuiltInType = dataType;
-            field.InstanceDeclaration.DataType = (uint)dataType;
+            field.InstanceDeclaration.DataType = (NodeId)(uint)dataType;
             field.InstanceDeclaration.ValueRank = valueRank;
             field.InstanceDeclaration.DataTypeDisplayText = dataType.ToString();
 
@@ -672,9 +673,9 @@ namespace Quickstarts
         /// <summary>
         /// Returns the select clause defined by the filter declaration.
         /// </summary>
-        public SimpleAttributeOperandCollection GetSelectClause()
+        public List<SimpleAttributeOperand> GetSelectClause()
         {
-            SimpleAttributeOperandCollection selectClause = new SimpleAttributeOperandCollection();
+            List<SimpleAttributeOperand> selectClause = new List<SimpleAttributeOperand>();
 
             SimpleAttributeOperand operand = new SimpleAttributeOperand();
             operand.TypeDefinitionId = Opc.Ua.ObjectTypeIds.BaseEventType;
@@ -699,7 +700,7 @@ namespace Quickstarts
         public ContentFilter GetWhereClause()
         {
             ContentFilter whereClause = new ContentFilter();
-            ContentFilterElement element1 = whereClause.Push(FilterOperator.OfType, EventTypeId);
+            ContentFilterElement element1 = whereClause.Push(FilterOperator.OfType, new Variant(new LiteralOperand { Value = new Variant(EventTypeId) }));
 
             EventFilter filter = new EventFilter();
 
@@ -715,8 +716,8 @@ namespace Quickstarts
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
 
-                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, operand1, operand2);
-                    element1 = whereClause.Push(FilterOperator.And, element1, element2);
+                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(operand1), new Variant(operand2));
+                    element1 = whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
                 }
             }
 
@@ -726,7 +727,7 @@ namespace Quickstarts
         /// <summary>
         /// Returns the value for the specified browse name.
         /// </summary>
-        public T GetValue<T>(QualifiedName browseName, VariantCollection fields, T defaultValue)
+        public T GetValue<T>(QualifiedName browseName, List<Variant> fields, T defaultValue)
         {
             if (fields == null || fields.Count == 0)
             {

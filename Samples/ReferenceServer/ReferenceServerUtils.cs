@@ -58,7 +58,7 @@ namespace Quickstarts.ReferenceServer
             public EventType EventType;
             public NodeId NodeId;
             public uint ServerHandle;
-            public DataValue Value;
+            public DataValue? Value;
             public MonitoringParameters Parameters;
             public MonitoringMode MonitoringMode;
         }
@@ -143,12 +143,12 @@ namespace Quickstarts.ReferenceServer
                         }
                     }
 
-                    if (e.Value != null)
+                    if (e.Value is DataValue dv)
                     {
-                        row[9] = e.Value.WrappedValue;
-                        row[10] = e.Value.StatusCode;
-                        row[11] = e.Value.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
-                        row[12] = e.Value.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
+                        row[9] = dv.WrappedValue;
+                        row[10] = dv.StatusCode;
+                        row[11] = dv.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
+                        row[12] = dv.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
                     }
 
                     dataset.Tables[0].Rows.Add(row);
@@ -182,8 +182,7 @@ namespace Quickstarts.ReferenceServer
 
                 if (StatusCode.IsBad(error))
                 {
-                    e.Value = new DataValue(error);
-                    e.Value.WrappedValue = value.WrappedValue;
+                    e.Value = new DataValue(value.WrappedValue, error);
                 }
 
                 m_events.Enqueue(e);
@@ -363,7 +362,7 @@ namespace Quickstarts.ReferenceServer
         public static uint CreateError(
             uint code,
             OperationContext context,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<DiagnosticInfo> diagnosticInfos,
             int index,
             ILogger logger)
         {
@@ -382,8 +381,8 @@ namespace Quickstarts.ReferenceServer
         /// </summary>
         public static bool CreateError(
             uint code,
-            StatusCodeCollection results,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<StatusCode> results,
+            List<DiagnosticInfo> diagnosticInfos,
             OperationContext context,
             ILogger logger)
         {
@@ -404,8 +403,8 @@ namespace Quickstarts.ReferenceServer
         /// </summary>
         public static bool CreateError(
             uint code,
-            StatusCodeCollection results,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<StatusCode> results,
+            List<DiagnosticInfo> diagnosticInfos,
             int index,
             OperationContext context,
             ILogger logger)
@@ -426,8 +425,8 @@ namespace Quickstarts.ReferenceServer
         /// Creates a place holder in the lists for the results.
         /// </summary>
         public static void CreateSuccess(
-            StatusCodeCollection results,
-            DiagnosticInfoCollection diagnosticInfos,
+            List<StatusCode> results,
+            List<DiagnosticInfo> diagnosticInfos,
             OperationContext context)
         {
             results.Add(StatusCodes.Good);
@@ -441,7 +440,7 @@ namespace Quickstarts.ReferenceServer
         /// <summary>
         /// Creates a collection of diagnostics from a set of errors.
         /// </summary>
-        public static DiagnosticInfoCollection CreateDiagnosticInfoCollection(
+        public static List<DiagnosticInfo> CreateDiagnosticInfoCollection(
             OperationContext context,
             IList<ServiceResult> errors,
             ILogger logger)
@@ -453,7 +452,7 @@ namespace Quickstarts.ReferenceServer
             }
 
             // create diagnostics.
-            DiagnosticInfoCollection results = new DiagnosticInfoCollection(errors.Count);
+            List<DiagnosticInfo> results = new List<DiagnosticInfo>(errors.Count);
 
             foreach (ServiceResult error in errors)
             {
@@ -473,16 +472,16 @@ namespace Quickstarts.ReferenceServer
         /// <summary>
         /// Creates a collection of status codes and diagnostics from a set of errors.
         /// </summary>
-        public static StatusCodeCollection CreateStatusCodeCollection(
+        public static List<StatusCode> CreateStatusCodeCollection(
             OperationContext context,
             IList<ServiceResult> errors,
             ILogger logger,
-            out DiagnosticInfoCollection diagnosticInfos)
+            out List<DiagnosticInfo> diagnosticInfos)
         {
             diagnosticInfos = null;
 
             bool noErrors = true;
-            StatusCodeCollection results = new StatusCodeCollection(errors.Count);
+            List<StatusCode> results = new List<StatusCode>(errors.Count);
 
             foreach (ServiceResult error in errors)
             {

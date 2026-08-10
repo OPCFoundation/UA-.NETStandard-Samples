@@ -32,14 +32,15 @@ using System.ServiceModel;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using Opc.Ua.Server;
+using Opc.Ua;
 
 namespace Quickstarts.HistoricalAccessServer
 {
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace = Namespaces.HistoricalAccess)]
-    public class HistoricalAccessServerConfiguration
+    [DataType]
+    public partial class HistoricalAccessServerConfiguration
     {
         #region Constructors
         /// <summary>
@@ -71,7 +72,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// The root of the archive.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataTypeField(Order = 1)]
         public string ArchiveRoot
         {
             get { return m_archiveRoot; }

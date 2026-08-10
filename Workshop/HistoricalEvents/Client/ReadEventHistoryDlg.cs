@@ -36,6 +36,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -160,8 +161,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     nodesToRead,
                     ct);
 
-                HistoryReadResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                var results = response.Results.ToList();
+                var diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -185,7 +186,7 @@ namespace Quickstarts.HistoricalEvents.Client
             details.EndTime = DateTime.MinValue;
             details.NumValuesPerNode = 1;
             details.Filter = new EventFilter();
-            details.Filter.AddSelectClause(Opc.Ua.ObjectTypeIds.BaseEventType, Opc.Ua.BrowseNames.Time);
+            details.Filter.AddSelectClause(Opc.Ua.ObjectTypeIds.BaseEventType, new QualifiedName(Opc.Ua.BrowseNames.Time));
 
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_areaId;
@@ -201,8 +202,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -216,7 +217,7 @@ namespace Quickstarts.HistoricalEvents.Client
             HistoryEvent data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryEvent;
 
             // release the continuation point.
-            if (results[0].ContinuationPoint != null)
+            if (!results[0].ContinuationPoint.IsNull)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -228,8 +229,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = response.Results.ToList();
+                diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -306,8 +307,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 ct);
 
             ResponseHeader responseHeader = response.ResponseHeader;
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            var results = response.Results.ToList();
+            var diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -322,7 +323,7 @@ namespace Quickstarts.HistoricalEvents.Client
             await ResultsLV.AddEventHistoryAsync(data, ct);
 
             // check if a continuation point exists.
-            if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -427,7 +428,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 using SelectNodeDlg dialog = new SelectNodeDlg();
                 NodeId areaId = await dialog.ShowDialogAsync(m_session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
-                if (areaId == null)
+                if (areaId.IsNull)
                 {
                     return;
                 }

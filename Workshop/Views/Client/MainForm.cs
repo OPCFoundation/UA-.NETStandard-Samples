@@ -149,10 +149,10 @@ namespace Quickstarts.ViewsClient
                     nodeToBrowse.NodeClassMask = 0;
                     nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-                    ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, nodeToBrowse, false);
+                    List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, nodeToBrowse, false);
 
                     ViewCB.Items.Clear();
-                    ViewCB.Items.Add(new ReferenceDescription() { NodeId = ExpandedNodeId.Null, DisplayName = "None" });
+                    ViewCB.Items.Add(new ReferenceDescription() { NodeId = ExpandedNodeId.Null, DisplayName = new LocalizedText("None") });
 
                     if (references != null)
                     {

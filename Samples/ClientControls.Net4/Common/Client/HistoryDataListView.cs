@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -252,7 +252,7 @@ namespace Opc.Ua.Client.Controls
 
         public void ClearNodeId()
         {
-            m_nodeId = null;
+            m_nodeId = NodeId.Null;
             NodeIdTB.Text = String.Empty;
         }
 
@@ -658,7 +658,7 @@ namespace Opc.Ua.Client.Controls
             ReadType = HistoryReadType.Raw;
             StartTime = DateTime.MinValue;
             EndTime = DateTime.MinValue;
-            Aggregate = null;
+            Aggregate = NodeId.Null;
 
             StartTimeCK.Checked = true;
             EndTimeCK.Checked = false;
@@ -694,7 +694,7 @@ namespace Opc.Ua.Client.Controls
             NodeId rootId,
             NodeState parent,
             RelativePath parentPath,
-            BrowsePathCollection browsePaths)
+            List<BrowsePath> browsePaths)
         {
             List<BaseInstanceState> children = new List<BaseInstanceState>();
             parent.GetChildren(context, children);
@@ -707,9 +707,11 @@ namespace Opc.Ua.Client.Controls
                 browsePath.StartingNode = rootId;
                 browsePath.Handle = child;
 
+                List<RelativePathElement> elements = new List<RelativePathElement>();
+
                 if (parentPath != null)
                 {
-                    browsePath.RelativePath.Elements.AddRange(parentPath.Elements);
+                    elements.AddRange(parentPath.Elements);
                 }
 
                 RelativePathElement element = new RelativePathElement();
@@ -718,7 +720,9 @@ namespace Opc.Ua.Client.Controls
                 element.IncludeSubtypes = false;
                 element.TargetName = child.BrowseName;
 
-                browsePath.RelativePath.Elements.Add(element);
+                elements.Add(element);
+
+                browsePath.RelativePath.Elements = elements;
 
                 if (child.NodeClass == NodeClass.Variable)
                 {
@@ -742,7 +746,7 @@ namespace Opc.Ua.Client.Controls
             nodeToBrowse.NodeClassMask = 0;
             nodeToBrowse.ResultMask = (uint)(BrowseResultMask.DisplayName | BrowseResultMask.BrowseName);
 
-            ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, nodeToBrowse, false, ct);
+            List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, nodeToBrowse, false, ct);
 
             ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 
@@ -772,8 +776,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     ct);
 
-                DataValueCollection values = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> values = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(values, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -800,19 +804,19 @@ namespace Opc.Ua.Client.Controls
             // load the defaults for the historical configuration object.
             HistoricalDataConfigurationState configuration = new HistoricalDataConfigurationState(null);
 
-            configuration.Definition = new PropertyState<string>(configuration);
-            configuration.MaxTimeInterval = new PropertyState<double>(configuration);
-            configuration.MinTimeInterval = new PropertyState<double>(configuration);
-            configuration.ExceptionDeviation = new PropertyState<double>(configuration);
-            configuration.ExceptionDeviationFormat = new PropertyState<ExceptionDeviationFormat>(configuration);
-            configuration.StartOfArchive = new PropertyState<DateTime>(configuration);
-            configuration.StartOfOnlineArchive = new PropertyState<DateTime>(configuration);
+            configuration.Definition = PropertyState<string>.With<VariantBuilder>(configuration);
+            configuration.MaxTimeInterval = PropertyState<double>.With<VariantBuilder>(configuration);
+            configuration.MinTimeInterval = PropertyState<double>.With<VariantBuilder>(configuration);
+            configuration.ExceptionDeviation = PropertyState<double>.With<VariantBuilder>(configuration);
+            configuration.ExceptionDeviationFormat = PropertyState<ExceptionDeviationFormat>.With<EnumerationBuilder<ExceptionDeviationFormat>>(configuration);
+            configuration.StartOfArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(configuration);
+            configuration.StartOfOnlineArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(configuration);
 
             configuration.Create(
                 m_session.SystemContext,
-                null,
-                Opc.Ua.BrowseNames.HAConfiguration,
-                null,
+                NodeId.Null,
+                new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration),
+                LocalizedText.Null,
                 false);
 
             // get the browse paths to query.
@@ -820,12 +824,12 @@ namespace Opc.Ua.Client.Controls
             element.ReferenceTypeId = Opc.Ua.ReferenceTypeIds.HasHistoricalConfiguration;
             element.IsInverse = false;
             element.IncludeSubtypes = false;
-            element.TargetName = Opc.Ua.BrowseNames.HAConfiguration;
+            element.TargetName = new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration);
 
             RelativePath relativePath = new RelativePath();
-            relativePath.Elements.Add(element);
+            relativePath.Elements = new List<RelativePathElement> { element };
 
-            BrowsePathCollection pathsToTranslate = new BrowsePathCollection();
+            List<BrowsePath> pathsToTranslate = new List<BrowsePath>();
 
             GetBrowsePathFromNodeState(
                 m_session.SystemContext,
@@ -841,8 +845,8 @@ namespace Opc.Ua.Client.Controls
                 pathsToTranslate,
                 ct);
 
-            BrowsePathResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<BrowsePathResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
 
             ClientBase.ValidateResponse(results, pathsToTranslate);
@@ -884,8 +888,8 @@ namespace Opc.Ua.Client.Controls
                     valuesToRead,
                     ct);
 
-                DataValueCollection values = response2.Results;
-                diagnosticInfos = response2.DiagnosticInfos;
+                List<DataValue> values = response2.Results.ToList();
+                diagnosticInfos = response2.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(values, valuesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
@@ -942,8 +946,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -960,9 +964,9 @@ namespace Opc.Ua.Client.Controls
                 return DateTime.MinValue;
             }
 
-            DateTime startTime = data.DataValues[0].SourceTimestamp;
+            DateTime startTime = (DateTime)data.DataValues[0].SourceTimestamp;
 
-            if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -974,8 +978,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = response.Results.ToList();
+                diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1013,8 +1017,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             Session.ValidateResponse(results, nodesToRead);
             Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1031,9 +1035,9 @@ namespace Opc.Ua.Client.Controls
                 return DateTime.MinValue;
             }
 
-            DateTime endTime = data.DataValues[0].SourceTimestamp;
+            DateTime endTime = (DateTime)data.DataValues[0].SourceTimestamp;
 
-            if (results[0].ContinuationPoint != null && results[0].ContinuationPoint.Length > 0)
+            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
             {
                 nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
 
@@ -1045,8 +1049,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     ct);
 
-                results = response.Results;
-                diagnosticInfos = response.DiagnosticInfos;
+                results = response.Results.ToList();
+                diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 Session.ValidateResponse(results, nodesToRead);
                 Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1262,8 +1266,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1320,8 +1324,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1351,10 +1355,14 @@ namespace Opc.Ua.Client.Controls
             // generate times
             DateTime startTime = StartTimeDP.Value.ToUniversalTime();
 
+            List<DateTimeUtc> reqTimes = new List<DateTimeUtc>();
+
             for (int ii = 0; ii < MaxReturnValuesNP.Value; ii++)
             {
-                details.ReqTimes.Add(startTime.AddMilliseconds((double)(ii * TimeStepNP.Value)));
+                reqTimes.Add(startTime.AddMilliseconds((double)(ii * TimeStepNP.Value)));
             }
+
+            details.ReqTimes = reqTimes;
 
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
@@ -1369,8 +1377,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1405,7 +1413,7 @@ namespace Opc.Ua.Client.Controls
             details.StartTime = StartTimeDP.Value.ToUniversalTime();
             details.EndTime = EndTimeDP.Value.ToUniversalTime();
             details.ProcessingInterval = (double)ProcessingIntervalNP.Value;
-            details.AggregateType.Add(aggregate.NodeId);
+            details.AggregateType = new List<NodeId> { aggregate.NodeId };
             details.AggregateConfiguration.UseServerCapabilitiesDefaults = true;
 
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
@@ -1421,8 +1429,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            HistoryReadResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryReadResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1442,7 +1450,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Saves a continuation point for later use.
         /// </summary>
-        private async Task SaveContinuationPointAsync(HistoryReadDetails details, HistoryReadValueId nodeToRead, byte[] continuationPoint, CancellationToken ct = default)
+        private async Task SaveContinuationPointAsync(HistoryReadDetails details, HistoryReadValueId nodeToRead, ByteString continuationPoint, CancellationToken ct = default)
         {
             // clear existing continuation point.
             if (m_nodeToContinue != null)
@@ -1458,8 +1466,8 @@ namespace Opc.Ua.Client.Controls
                     nodesToRead,
                     ct);
 
-                HistoryReadResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<HistoryReadResult> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
@@ -1469,7 +1477,7 @@ namespace Opc.Ua.Client.Controls
             m_nodeToContinue = null;
 
             // save new continutation point.
-            if (continuationPoint != null && continuationPoint.Length > 0)
+            if (!continuationPoint.IsNull && continuationPoint.Length > 0)
             {
                 m_details = details;
                 m_nodeToContinue = nodeToRead;
@@ -1515,7 +1523,7 @@ namespace Opc.Ua.Client.Controls
                 isStructured = true;
             }
 
-            HistoryUpdateResultCollection results = await InsertReplaceAsync(GetSelectedNode(), updateType, isStructured, values, ct);
+            List<HistoryUpdateResult> results = await InsertReplaceAsync(GetSelectedNode(), updateType, isStructured, values, ct);
 
             ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
 
@@ -1530,7 +1538,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the history.
         /// </summary>
-        private async Task<HistoryUpdateResultCollection> InsertReplaceAsync(NodeId nodeId, PerformUpdateType updateType, bool isStructure, IList<DataValue> values, CancellationToken ct = default)
+        private async Task<List<HistoryUpdateResult>> InsertReplaceAsync(NodeId nodeId, PerformUpdateType updateType, bool isStructure, IList<DataValue> values, CancellationToken ct = default)
         {
             HistoryUpdateDetails details = null;
 
@@ -1539,7 +1547,7 @@ namespace Opc.Ua.Client.Controls
                 UpdateStructureDataDetails details2 = new UpdateStructureDataDetails();
                 details2.NodeId = nodeId;
                 details2.PerformInsertReplace = updateType;
-                details2.UpdateValues.AddRange(values);
+                details2.UpdateValues = new List<DataValue>(values);
                 details = details2;
             }
             else
@@ -1547,7 +1555,7 @@ namespace Opc.Ua.Client.Controls
                 UpdateDataDetails details2 = new UpdateDataDetails();
                 details2.NodeId = nodeId;
                 details2.PerformInsertReplace = updateType;
-                details2.UpdateValues.AddRange(values);
+                details2.UpdateValues = new List<DataValue>(values);
                 details = details2;
             }
 
@@ -1559,8 +1567,8 @@ namespace Opc.Ua.Client.Controls
                 nodesToUpdate,
                 ct);
 
-            HistoryUpdateResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryUpdateResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -1592,8 +1600,8 @@ namespace Opc.Ua.Client.Controls
                  nodesToUpdate,
                  ct);
 
-            HistoryUpdateResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryUpdateResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -1615,11 +1623,15 @@ namespace Opc.Ua.Client.Controls
             DeleteAtTimeDetails details = new DeleteAtTimeDetails();
             details.NodeId = m_nodeId;
 
+            List<DateTimeUtc> reqTimes = new List<DateTimeUtc>();
+
             foreach (DataRowView row in m_dataset.Tables[0].DefaultView)
             {
                 DateTime value = (DateTime)row.Row[1];
-                details.ReqTimes.Add(value);
+                reqTimes.Add(value);
             }
+
+            details.ReqTimes = reqTimes;
 
             ExtensionObjectCollection nodesToUpdate = new ExtensionObjectCollection();
             nodesToUpdate.Add(new ExtensionObject(details));
@@ -1629,8 +1641,8 @@ namespace Opc.Ua.Client.Controls
                  nodesToUpdate,
                  ct);
 
-            HistoryUpdateResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<HistoryUpdateResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToUpdate);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
@@ -2255,11 +2267,13 @@ namespace Opc.Ua.Client.Controls
                 foreach (DataRowView row in m_dataset.Tables[0].DefaultView)
                 {
                     DataValue value = (DataValue)row.Row[9];
-                    value.SourceTimestamp = value.SourceTimestamp.AddMilliseconds((double)TimeStepNP.Value);
-                    value.ServerTimestamp = value.ServerTimestamp.AddMilliseconds((double)TimeStepNP.Value);
+                    DateTime sourceTs = ((DateTime)value.SourceTimestamp).AddMilliseconds((double)TimeStepNP.Value);
+                    DateTime serverTs = ((DateTime)value.ServerTimestamp).AddMilliseconds((double)TimeStepNP.Value);
+                    value = new DataValue(value.WrappedValue, value.StatusCode, sourceTs, serverTs);
+                    row.Row[9] = value;
 
-                    row[1] = value.SourceTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
-                    row[2] = value.ServerTimestamp.ToLocalTime().ToString("HH:mm:ss.fff");
+                    row[1] = sourceTs.ToLocalTime().ToString("HH:mm:ss.fff");
+                    row[2] = serverTs.ToLocalTime().ToString("HH:mm:ss.fff");
                 }
 
                 m_dataset.AcceptChanges();
@@ -2279,7 +2293,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                NodeId propertyId = null;
+                NodeId propertyId = NodeId.Null;
 
                 if (m_properties != null)
                 {
@@ -2293,7 +2307,7 @@ namespace Opc.Ua.Client.Controls
                     }
                 }
 
-                if (propertyId == null)
+                if (propertyId.IsNull)
                 {
                     return;
                 }
@@ -2313,7 +2327,7 @@ namespace Opc.Ua.Client.Controls
 
                     }
 
-                    HistoryUpdateResultCollection results = await InsertReplaceAsync(propertyId, PerformUpdateType.Insert, true, valuesToUpdate);
+                    List<HistoryUpdateResult> results = await InsertReplaceAsync(propertyId, PerformUpdateType.Insert, true, valuesToUpdate);
 
                     ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
 
@@ -2348,15 +2362,15 @@ namespace Opc.Ua.Client.Controls
                     DataValue value = (DataValue)source.Row[9];
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    DataValue newValue = new EditDataValueDlg().ShowDialog(value, null, null);
+                    Variant newValue = new EditDataValueDlg().ShowDialog(value.WrappedValue, null, null);
                     #pragma warning restore CA2000
 
-                    if (newValue == null)
+                    if (newValue.IsNull)
                     {
                         return;
                     }
 
-                    UpdateRow(source.Row, newValue, null);
+                    UpdateRow(source.Row, new DataValue(newValue), null);
                     m_dataset.AcceptChanges();
                     break;
                 }

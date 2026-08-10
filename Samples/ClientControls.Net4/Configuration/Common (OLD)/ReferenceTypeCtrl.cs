@@ -100,7 +100,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (choice == null)
                 {
-                    return null;
+                    return NodeId.Null;
                 }
 
                 return choice.ReferenceType.NodeId;
@@ -220,7 +220,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task AddReferenceTypesAsync(ExpandedNodeId referenceTypeId, ReferenceTypeChoice supertype, CancellationToken ct = default)
         {
-            if (referenceTypeId == null) throw new ArgumentNullException(nameof(referenceTypeId));
+            if (referenceTypeId.IsNull) throw new ArgumentNullException(nameof(referenceTypeId));
 
             try
             {
@@ -241,9 +241,9 @@ namespace Opc.Ua.Client.Controls
                 ReferenceTypesCB.Items.Add(choice);
 
                 // recursively add subtypes.
-                IList<INode> subtypes = await m_session.NodeCache.FindReferencesAsync(node.NodeId, ReferenceTypeIds.HasSubtype, false, true, ct);
+                var subtypes = await m_session.NodeCache.FindReferencesAsync(node.NodeId, ReferenceTypeIds.HasSubtype, false, true, ct);
 
-                foreach (INode subtype in subtypes)
+                foreach (INode subtype in subtypes.ToArray())
                 {
                     await AddReferenceTypesAsync(subtype.NodeId, choice, ct);
                 }
@@ -265,7 +265,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     NodeId referenceTypeId = SelectedTypeId;
 
-                    if (referenceTypeId != null)
+                    if (!referenceTypeId.IsNull)
                     {
                         m_referenceSelectionChanged(this, new ReferenceSelectedEventArgs(referenceTypeId));
                     }

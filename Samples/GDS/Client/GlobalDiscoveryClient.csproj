@@ -47,13 +47,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
-      <Version>10.0.8</Version>
+      <Version>10.0.10</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>1.5.378.156</Version>
+      <Version>2.0.158.59919-preview</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Client.Common">
-      <Version>1.5.378.156</Version>
+      <Version>2.0.158.59919-preview</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

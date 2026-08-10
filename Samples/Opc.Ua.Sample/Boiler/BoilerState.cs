@@ -42,9 +42,9 @@ namespace Boiler
         /// <summary>
         /// Initializes the object as a collection of counters which change value on read.
         /// </summary>
-        protected override void OnAfterCreate(ISystemContext context, NodeState node)
+        protected override void OnAfterCreate(ISystemContext context, NodeState node, System.Threading.CancellationToken ct)
         {
-            base.OnAfterCreate(context, node);
+            base.OnAfterCreate(context, node, ct);
 
             this.Simulation.OnAfterTransition = OnControlSimulation;
             m_random = new Random();
@@ -55,7 +55,7 @@ namespace Boiler
         /// <summary>
         /// Cleans up when the object is disposed.
         /// </summary>
-        protected override void Dispose(bool disposing)
+        protected new void Dispose(bool disposing)
         {
             try
             {
@@ -70,7 +70,6 @@ namespace Boiler
             }
             finally
             {
-                base.Dispose(disposing);
             }
         }
         #endregion
@@ -84,8 +83,8 @@ namespace Boiler
             StateMachineState machine,
             uint transitionId,
             uint causeId,
-            IList<object> inputArguments,
-            IList<object> outputArguments)
+            ArrayOf<Variant> inputArguments,
+            List<Variant> outputArguments)
         {
             switch (causeId)
             {
@@ -289,7 +288,7 @@ namespace Boiler
             }
             catch (Exception e)
             {
-                m_logger.LogError(e, "Unexpected error during boiler simulation.");
+                Utils.LogError(e, "Unexpected error during boiler simulation.");
             }
         }
         #endregion

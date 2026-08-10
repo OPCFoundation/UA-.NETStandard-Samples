@@ -54,25 +54,25 @@ namespace Opc.Ua.Sample
 
             if (!configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
-                configuration.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler(CertificateValidator_CertificateValidation);
+                configuration.CertificateManager.AcceptError = CertificateManager_AcceptError;
             }
         }
 
-        void CertificateValidator_CertificateValidation(CertificateValidator validator, CertificateValidationEventArgs e)
+        private bool CertificateManager_AcceptError(Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
         {
             if (InvokeRequired)
             {
-                Invoke(new CertificateValidationEventHandler(CertificateValidator_CertificateValidation), validator, e);
-                return;
+                return (bool)Invoke(new Func<Opc.Ua.Security.Certificates.Certificate, ServiceResult, bool>(CertificateManager_AcceptError), certificate, error);
             }
 
             try
             {
-                GuiUtils.HandleCertificateValidationError(this, validator, e);
+                return GuiUtils.HandleCertificateValidationError(this, certificate, error);
             }
             catch (Exception exception)
             {
                 GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+                return false;
             }
         }
     }

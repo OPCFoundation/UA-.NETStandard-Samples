@@ -188,7 +188,7 @@ namespace Opc.Ua.Client.Controls
 
                 ListViewItem item = new ListViewItem();
                 item.Text = Utils.Format("{0}", description.ApplicationName);
-                item.ImageIndex = await ClientUtils.GetImageIndexAsync(ServerCTRL.Session, NodeClass.Object, null, false, ct);
+                item.ImageIndex = await ClientUtils.GetImageIndexAsync(ServerCTRL.Session, NodeClass.Object, ExpandedNodeId.Null, false, ct);
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
                 item.SubItems.Add(new ListViewItem.ListViewSubItem());
@@ -306,7 +306,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            NodeId elementId = null;
+            NodeId elementId = NodeId.Null;
             ReferenceDescription reference = SystemElementBTN.SelectedReference;
 
             if (reference != null && !reference.NodeId.IsAbsolute)
@@ -316,7 +316,7 @@ namespace Opc.Ua.Client.Controls
 
             ushort namespaceIndex = (ushort)session.NamespaceUris.GetIndex(Namespaces.OpcUaGds);
 
-            IList<object> outputArguments = await session.CallAsync(
+            var outputArguments = await session.CallAsync(
                 new NodeId(GdsId_Directory, namespaceIndex),
                 new NodeId(GdsId_RootDirectoryEntryType_QueryServers, namespaceIndex),
                 ct,
@@ -328,7 +328,7 @@ namespace Opc.Ua.Client.Controls
 
             if (outputArguments != null && outputArguments.Count == 1)
             {
-                ExtensionObject[] extensions = outputArguments[0] as ExtensionObject[];
+                ExtensionObject[] extensions = outputArguments[0].Value as ExtensionObject[];
                 ApplicationDescription[] descriptions = (ApplicationDescription[])ExtensionObject.ToArray(extensions, typeof(ApplicationDescription));
                 await UpdateResultsAsync(descriptions, ct);
             }
@@ -377,15 +377,15 @@ namespace Opc.Ua.Client.Controls
                 nodesToRead,
                 ct);
 
-            DataValueCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<DataValue> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, nodesToRead);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             ApplicationDescription application = new ApplicationDescription();
 
-            application.ApplicationName = results[0].GetValue<LocalizedText>(null);
+            application.ApplicationName = results[0].GetValue<LocalizedText>(LocalizedText.Null);
             application.ApplicationType = (ApplicationType)results[1].GetValue<int>((int)ApplicationType.Server);
             application.ApplicationUri = results[2].GetValue<string>(null);
             application.ProductUri = results[3].GetValue<string>(null);
@@ -395,7 +395,7 @@ namespace Opc.Ua.Client.Controls
 
             if (discoveryUrls != null)
             {
-                application.DiscoveryUrls = new StringCollection(discoveryUrls);
+                application.DiscoveryUrls = new List<string>(discoveryUrls);
             }
 
             return application;

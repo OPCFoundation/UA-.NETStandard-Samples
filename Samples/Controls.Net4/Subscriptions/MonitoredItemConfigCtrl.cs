@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -530,7 +531,7 @@ namespace Opc.Ua.Sample.Controls
                     m_subscription.RemoveItems(monitoredItems);
                 }
 
-                IList<MonitoredItem> deletedItems = await m_subscription.DeleteItemsAsync();
+                IList<MonitoredItem> deletedItems = (await m_subscription.DeleteItemsAsync()).ToList();
 
                 string errorString = string.Empty;
 

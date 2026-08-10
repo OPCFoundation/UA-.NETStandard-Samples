@@ -139,16 +139,16 @@ namespace AggregationServer
                     ct);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                ArrayOf<BrowseResult> results = response.Results;
+                ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
-                ClientBase.ValidateResponse(results, nodesToBrowse);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
+                ClientBase.ValidateResponse<BrowseDescription, BrowseResult>((IReadOnlyList<BrowseResult>)results.ToArray(), (IReadOnlyList<BrowseDescription>)nodesToBrowse.ToArray());
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), nodesToBrowse);
 
                 m_position = 0;
-                m_references = null;
-                m_continuationPoint = null;
+                m_references = default;
+                m_continuationPoint = default;
                 m_stage = Stage.References;
 
                 // check status.
@@ -175,14 +175,14 @@ namespace AggregationServer
                     return reference;
                 }
 
-                if (m_source == null && IsRequired(ReferenceTypes.HasNotifier, false))
+                if (m_source == null && IsRequired(ReferenceTypeIds.HasNotifier, false))
                 {
                     // construct request.
                     BrowseDescription nodeToBrowse = new BrowseDescription();
 
                     nodeToBrowse.NodeId = ObjectIds.Server;
                     nodeToBrowse.BrowseDirection = BrowseDirection.Forward;
-                    nodeToBrowse.ReferenceTypeId = ReferenceTypes.HasNotifier;
+                    nodeToBrowse.ReferenceTypeId = ReferenceTypeIds.HasNotifier;
                     nodeToBrowse.IncludeSubtypes = true;
                     nodeToBrowse.NodeClassMask = 0;
                     nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
@@ -199,16 +199,16 @@ namespace AggregationServer
                         ct);
 
                     ResponseHeader responseHeader = response.ResponseHeader;
-                    BrowseResultCollection results = response.Results;
-                    DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                    ArrayOf<BrowseResult> results = response.Results;
+                    ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                     // these do sanity checks on the result - make sure response matched the request.
-                    ClientBase.ValidateResponse(results, nodesToBrowse);
-                    ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
+                    ClientBase.ValidateResponse<BrowseDescription, BrowseResult>((IReadOnlyList<BrowseResult>)results.ToArray(), (IReadOnlyList<BrowseDescription>)nodesToBrowse.ToArray());
+                    ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), nodesToBrowse);
 
                     m_position = 0;
-                    m_references = null;
-                    m_continuationPoint = null;
+                    m_references = default;
+                    m_continuationPoint = default;
                     m_stage = Stage.Notifiers;
 
                     // check status.
@@ -245,9 +245,9 @@ namespace AggregationServer
         /// </summary>
         private async Task<bool> BrowseNextAsync(CancellationToken ct = default)
         {
-            if (m_continuationPoint != null)
+            if (!m_continuationPoint.IsNull)
             {
-                ByteStringCollection continuationPoints = new ByteStringCollection();
+                List<ByteString> continuationPoints = new List<ByteString>();
                 continuationPoints.Add(m_continuationPoint);
 
                 // start the browse operation.
@@ -258,16 +258,16 @@ namespace AggregationServer
                     ct);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
-                BrowseResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                ArrayOf<BrowseResult> results = response.Results;
+                ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
 
                 // these do sanity checks on the result - make sure response matched the request.
-                ClientBase.ValidateResponse(results, continuationPoints);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
+                ClientBase.ValidateResponse<ByteString, BrowseResult>((IReadOnlyList<BrowseResult>)results.ToArray(), continuationPoints);
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), continuationPoints);
 
                 m_position = 0;
-                m_references = null;
-                m_continuationPoint = null;
+                m_references = default;
+                m_continuationPoint = default;
 
                 // check status.
                 if (StatusCode.IsGood(results[0].StatusCode))
@@ -419,8 +419,8 @@ namespace AggregationServer
         private Opc.Ua.Client.ISession m_client;
         private NamespaceMapper m_mapper;
         private NodeState m_source;
-        private byte[] m_continuationPoint;
-        private ReferenceDescriptionCollection m_references;
+        private ByteString m_continuationPoint;
+        private ArrayOf<ReferenceDescription> m_references;
         private NodeId m_rootId;
         #endregion
     }

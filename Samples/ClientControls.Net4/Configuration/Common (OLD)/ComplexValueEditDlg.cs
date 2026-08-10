@@ -77,7 +77,7 @@ namespace Opc.Ua.Client.Controls
         public object ShowDialog(object value, MonitoredItem monitoredItem, ITelemetryContext telemetry)
         {
             m_telemetry = telemetry;
-            m_value = Utils.Clone(value);
+            m_value = value is ICloneable clonable ? clonable.Clone() : value;
 
             ValueCTRL.Telemetry = telemetry;
             ValueCTRL.MonitoredItem = monitoredItem;

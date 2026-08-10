@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
-        private SimpleAttributeOperandCollection m_selectClauses;
+        private List<SimpleAttributeOperand> m_selectClauses;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -78,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, SimpleAttributeOperandCollection selectClauses)
+        public void Initialize(Session session, List<SimpleAttributeOperand> selectClauses)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -125,8 +125,8 @@ namespace Opc.Ua.Sample.Controls
 
             SimpleAttributeOperand clause = new SimpleAttributeOperand();
 
-            clause.BrowsePath.Add(node.BrowseName);
-            clause.TypeDefinitionId = null;
+            clause.BrowsePath = clause.BrowsePath.AddItem(node.BrowseName);
+            clause.TypeDefinitionId = NodeId.Null;
             clause.AttributeId = Attributes.Value;
 
             AddItem(clause, "Property", -1);
@@ -137,9 +137,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the SelectClauses in the control.
         /// </summary>
-        public SimpleAttributeOperandCollection GetSelectClauses()
+        public List<SimpleAttributeOperand> GetSelectClauses()
         {
-            SimpleAttributeOperandCollection clauses = new SimpleAttributeOperandCollection();
+            List<SimpleAttributeOperand> clauses = new List<SimpleAttributeOperand>();
 
             foreach (ListViewItem listItem in ItemsLV.Items)
             {

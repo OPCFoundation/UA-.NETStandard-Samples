@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LibTargetFrameworks)</TargetFrameworks>
@@ -13,14 +13,28 @@
     <EmbeddedResource Include="TestData\TestData.PredefinedNodes.uanodes;MemoryBuffer\MemoryBuffer.PredefinedNodes.uanodes;Boiler\Boiler.PredefinedNodes.uanodes" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <ModelSourceGeneratorUseAllowSubtypes>true</ModelSourceGeneratorUseAllowSubtypes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="TestData\TestDataDesign.xml" />
+    <AdditionalFiles Include="TestData\TestDataDesign.csv" />
+    <AdditionalFiles Include="MemoryBuffer\MemoryBufferDesign.xml" />
+    <AdditionalFiles Include="MemoryBuffer\MemoryBufferDesign.csv" />
+    <AdditionalFiles Include="Boiler\BoilerDesign.xml" />
+    <AdditionalFiles Include="Boiler\BoilerDesign.csv" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
     <Reference Include="System.IdentityModel" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.8" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="1.5.378.156" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="1.5.378.156" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="2.0.158.59919-preview" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="2.0.158.59919-preview" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration" Version="2.0.158.59919-preview" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

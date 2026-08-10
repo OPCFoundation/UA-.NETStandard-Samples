@@ -81,7 +81,7 @@ namespace Opc.Ua.Sample.Controls
         public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
-            if (methodId == null) throw new ArgumentNullException(nameof(methodId));
+            if (methodId.IsNull) throw new ArgumentNullException(nameof(methodId));
 
             Clear();
 
@@ -97,15 +97,15 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // select the property to find.
-            QualifiedName browseName = null;
+            QualifiedName browseName = QualifiedName.Null;
 
             if (inputArgs)
             {
-                browseName = Opc.Ua.BrowseNames.InputArguments;
+                browseName = new QualifiedName(Opc.Ua.BrowseNames.InputArguments);
             }
             else
             {
-                browseName = Opc.Ua.BrowseNames.OutputArguments;
+                browseName = new QualifiedName(Opc.Ua.BrowseNames.OutputArguments);
             }
 
             // fetch the argument list.
@@ -137,9 +137,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the argument values
         /// </summary>
-        public VariantCollection GetValues()
+        public List<Variant> GetValues()
         {
-            VariantCollection values = new VariantCollection();
+            List<Variant> values = new List<Variant>();
 
             foreach (ListViewItem item in ItemsLV.Items)
             {
@@ -157,7 +157,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates the argument values.
         /// </summary>
-        public async Task SetValuesAsync(VariantCollection values, CancellationToken ct = default)
+        public async Task SetValuesAsync(List<Variant> values, CancellationToken ct = default)
         {
             int ii = 0;
 
@@ -234,7 +234,7 @@ namespace Opc.Ua.Sample.Controls
                         {
                             if (argument.ValueRank == ValueRanks.Scalar)
                             {
-                                argument.Value = new ExtensionObject(Activator.CreateInstance(type));
+                                argument.Value = new ExtensionObject(ExpandedNodeId.Null, Activator.CreateInstance(type));
                             }
                             else
                             {

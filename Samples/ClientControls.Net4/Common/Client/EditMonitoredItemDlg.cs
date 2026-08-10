@@ -88,7 +88,7 @@ namespace Opc.Ua.Client.Controls
 
             public override string ToString()
             {
-                if (EncodingName != null)
+                if (!EncodingName.IsNull)
                 {
                     return EncodingName.ToString();
                 }
@@ -234,7 +234,7 @@ namespace Opc.Ua.Client.Controls
                 if (!monitoredItem.Created)
                 {
                     monitoredItem.IndexRange = null;
-                    monitoredItem.Encoding = null;
+                    monitoredItem.Encoding = QualifiedName.Null;
                 }
 
                 monitoredItem.QueueSize = 0;

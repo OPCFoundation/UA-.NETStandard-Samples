@@ -462,7 +462,7 @@ namespace Opc.Ua.Sample.Controls
                 listItem.SubItems[3].Text = change.Value.StatusCode.ToString();
             }
 
-            DateTime time = change.Value.SourceTimestamp;
+            DateTime time = change.Value.SourceTimestamp.ToDateTime();
 
             #pragma warning disable CS8073 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (time != null && time != DateTime.MinValue)
@@ -475,7 +475,7 @@ namespace Opc.Ua.Sample.Controls
                 listItem.SubItems[4].Text = String.Empty;
             }
 
-            time = change.Value.ServerTimestamp;
+            time = change.Value.ServerTimestamp.ToDateTime();
 
             #pragma warning disable CS8073 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (time != null && time != DateTime.MinValue)

@@ -28,6 +28,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -235,7 +236,7 @@ namespace Opc.Ua.Sample.Controls
             // browse the references from the node and build list of variables.
             BeginUpdate();
 
-            foreach (ReferenceDescription reference in await m_browser.BrowseAsync(startId, ct))
+            foreach (ReferenceDescription reference in (await m_browser.BrowseAsync(startId, ct)).ToList())
             {
                 Node target = await m_session.NodeCache.FindAsync(reference.NodeId, ct) as Node;
 
@@ -280,7 +281,7 @@ namespace Opc.Ua.Sample.Controls
                     valueId.NodeId = item.Target.NodeId;
                     valueId.AttributeId = Attributes.Value;
                     valueId.IndexRange = null;
-                    valueId.DataEncoding = null;
+                    valueId.DataEncoding = QualifiedName.Null;
 
                     nodesToRead.Add(valueId);
                 }
@@ -292,8 +293,8 @@ namespace Opc.Ua.Sample.Controls
                     nodesToRead,
                     ct);
 
-                DataValueCollection values = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<DataValue> values = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(values, nodesToRead);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);

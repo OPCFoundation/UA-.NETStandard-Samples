@@ -332,7 +332,7 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Public Interface
-        public EndpointDescriptionCollection AvailableEnpoints
+        public List<EndpointDescription> AvailableEnpoints
         {
             get { return m_availableEndpoints; }
         }
@@ -1102,7 +1102,7 @@ namespace Opc.Ua.Client.Controls
             bool success;
 
             // process each url.
-            foreach (string discoveryUrl in server.DiscoveryUrls)
+            foreach (string discoveryUrl in server.DiscoveryUrls.ToArray())
             {
                 Uri url = Utils.ParseUri(discoveryUrl);
 
@@ -1147,7 +1147,7 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                EndpointDescriptionCollection endpoints = await client.GetEndpointsAsync(null, ct);
+                EndpointDescriptionCollection endpoints = new EndpointDescriptionCollection((await client.GetEndpointsAsync(default, ct)).ToArray());
                 OnUpdateEndpoints(endpoints);
                 return (true, String.Empty);
             }
@@ -1356,7 +1356,7 @@ namespace Opc.Ua.Client.Controls
             endpoint.EndpointUrl = builder.ToString();
             endpoint.SecurityMode = (MessageSecurityMode)SecurityModeCB.SelectedItem;
             endpoint.SecurityPolicyUri = SecurityPolicies.GetUri((string)SecurityPolicyCB.SelectedItem);
-            endpoint.Server.ApplicationName = endpoint.EndpointUrl;
+            endpoint.Server.ApplicationName = new LocalizedText(endpoint.EndpointUrl);
             endpoint.Server.ApplicationType = ApplicationType.Server;
             endpoint.Server.ApplicationUri = endpoint.EndpointUrl;
 
@@ -1772,10 +1772,10 @@ namespace Opc.Ua.Client.Controls
                         m_statusObject.ClearStatus(StatusChannel.DiscoveryURLs);
                     }
 
-                    if ((m_currentDescription.ServerCertificate != null) && (m_currentDescription.ServerCertificate.Length > 0))
+                    if ((!m_currentDescription.ServerCertificate.IsNull) && (m_currentDescription.ServerCertificate.Length > 0))
                     {
-                        X509Certificate2 serverCertificate = X509CertificateLoader.LoadCertificate(m_currentDescription.ServerCertificate);
-                        String certificateApplicationUri = X509Utils.GetApplicationUrisFromCertificate(serverCertificate)[0];
+                        X509Certificate2 serverCertificate = X509CertificateLoader.LoadCertificate(m_currentDescription.ServerCertificate.ToArray());
+                        String certificateApplicationUri = X509Utils.GetApplicationUrisFromCertificate(Certificate.From(serverCertificate))[0];
 
                         if (certificateApplicationUri != m_currentDescription.Server.ApplicationUri)
                         {

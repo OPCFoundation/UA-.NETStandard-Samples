@@ -53,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
-        private NodeIdCollection m_nodeIds;
+        private List<NodeId> m_nodeIds;
         private NodeClass m_nodeClassMask;
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task InitializeAsync(Session session, NodeIdCollection nodeIds, NodeClass nodeClassMask, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task InitializeAsync(Session session, List<NodeId> nodeIds, NodeClass nodeClassMask, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -157,7 +157,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 ExpandedNodeId supertypeId = node.FindTarget(ReferenceTypeIds.HasSubtype, true, 0);
 
-                if (supertypeId != null)
+                if (!supertypeId.IsNull)
                 {
                     await AddNodeIdAsync(supertypeId, ct);
                 }
@@ -174,9 +174,9 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the node ids in the control.
         /// </summary>
-        public NodeIdCollection GetNodeIds()
+        public List<NodeId> GetNodeIds()
         {
-            NodeIdCollection nodeIds = new NodeIdCollection();
+            List<NodeId> nodeIds = new List<NodeId>();
 
             foreach (ListViewItem listItem in ItemsLV.Items)
             {

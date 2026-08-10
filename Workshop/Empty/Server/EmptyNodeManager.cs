@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -56,7 +56,7 @@ namespace Quickstarts.EmptyServer
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<EmptyServerConfiguration>();
+            m_configuration = null;
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -110,7 +110,7 @@ namespace Quickstarts.EmptyServer
 
                 trigger.NodeId = new NodeId(1, NamespaceIndex);
                 trigger.BrowseName = new QualifiedName("Trigger", NamespaceIndex);
-                trigger.DisplayName = trigger.BrowseName.Name;
+                trigger.DisplayName = new LocalizedText(trigger.BrowseName.Name);
                 trigger.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
 
                 // ensure trigger can be found via the server object. 
@@ -130,12 +130,12 @@ namespace Quickstarts.EmptyServer
 
                 property.NodeId = new NodeId(2, NamespaceIndex);
                 property.BrowseName = new QualifiedName("Matrix", NamespaceIndex);
-                property.DisplayName = property.BrowseName.Name;
+                property.DisplayName = new LocalizedText(property.BrowseName.Name);
                 property.TypeDefinitionId = VariableTypeIds.PropertyType;
                 property.ReferenceTypeId = ReferenceTypeIds.HasProperty;
                 property.DataType = DataTypeIds.Int32;
                 property.ValueRank = ValueRanks.TwoDimensions;
-                property.ArrayDimensions = new ReadOnlyList<uint>(new uint[] { 2, 2 });
+                property.ArrayDimensions = new uint[] { 2, 2 }.ToArrayOf();
 
                 trigger.AddChild(property);
 
@@ -148,7 +148,7 @@ namespace Quickstarts.EmptyServer
 
                 referenceType.NodeId = new NodeId(3, NamespaceIndex);
                 referenceType.BrowseName = new QualifiedName("IsTriggerSource", NamespaceIndex);
-                referenceType.DisplayName = referenceType.BrowseName.Name;
+                referenceType.DisplayName = new LocalizedText(referenceType.BrowseName.Name);
                 referenceType.InverseName = new LocalizedText("IsSourceOfTrigger");
                 referenceType.SuperTypeId = ReferenceTypeIds.NonHierarchicalReferences;
 

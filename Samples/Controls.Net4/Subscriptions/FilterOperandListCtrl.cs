@@ -183,7 +183,6 @@ namespace Opc.Ua.Sample.Controls
 
                 AdjustColumns();
 
-                m_elements[m_index].FilterOperands.Clear();
                 m_elements[m_index].SetOperands(GetOperands());
             }
             catch (Exception exception)

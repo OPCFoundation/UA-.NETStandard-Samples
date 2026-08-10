@@ -109,13 +109,13 @@ namespace TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values)
+            List<DataValue> values)
         {
             m_request = request;
 
             // initialize start and end.
-            m_startTime = m_request.StartTime;
-            m_endTime = m_request.EndTime;
+            m_startTime = (DateTime)m_request.StartTime;
+            m_endTime = (DateTime)m_request.EndTime;
 
             if (m_endTime == DateTime.MinValue)
             {
@@ -126,14 +126,14 @@ namespace TestData
             m_isForward = m_startTime < m_endTime;
             m_position = -1;
 
-            DataValue value = null;
+            DataValue value = DataValue.Null;
 
             // get first bound.
             if (m_request.ReturnBounds)
             {
                 value = m_source.FirstRaw(m_startTime, !m_isForward, m_request.IsReadModified, out m_position);
 
-                if (value != null)
+                if (!value.IsNull)
                 {
                     AddValue(timestampsToReturn, indexRange, dataEncoding, values, value);
                 }
@@ -154,9 +154,9 @@ namespace TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values)
+            List<DataValue> values)
         {
-            DataValue value = null;
+            DataValue value = DataValue.Null;
 
             do
             {
@@ -169,7 +169,7 @@ namespace TestData
                 value = m_source.NextRaw(m_lastTime, m_isForward, m_request.IsReadModified, ref m_position);
 
                 // no more data.
-                if (value == null)
+                if (value.IsNull)
                 {
                     return true;
                 }
@@ -188,7 +188,7 @@ namespace TestData
                 AddValue(timestampsToReturn, indexRange, dataEncoding, values, value);
             }
             #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            while (value != null);
+            while (!value.IsNull);
             #pragma warning restore CA1508
 
             return true;
@@ -203,60 +203,71 @@ namespace TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            DataValueCollection values,
+            List<DataValue> values,
             DataValue value)
         {
             // ignore invalid case.
-            if (value == null)
+            if (value.IsNull)
             {
                 return;
             }
 
             // save the last timestamp returned.
-            m_lastTime = value.ServerTimestamp;
+            m_lastTime = (DateTime)value.ServerTimestamp;
+
+            Variant wrappedValue = value.WrappedValue;
+            StatusCode statusCode = value.StatusCode;
+            DateTimeUtc sourceTimestamp = value.SourceTimestamp;
+            DateTimeUtc serverTimestamp = value.ServerTimestamp;
 
             // check if the index range or data encoding can be applied.
             if (StatusCode.IsGood(value.StatusCode))
             {
-                object valueToReturn = value.Value;
+                Variant valueToReturn = value.WrappedValue;
 
                 // apply the index range.
-                if (indexRange != NumericRange.Empty)
+                if (!indexRange.IsNull)
                 {
                     StatusCode error = indexRange.ApplyRange(ref valueToReturn);
 
                     if (StatusCode.IsBad(error))
                     {
-                        value.Value = null;
-                        value.StatusCode = error;
+                        wrappedValue = Variant.Null;
+                        statusCode = error;
                     }
                     else
                     {
-                        value.Value = valueToReturn;
+                        wrappedValue = valueToReturn;
                     }
                 }
 
                 // apply the data encoding.
                 if (!QualifiedName.IsNull(dataEncoding))
                 {
-                    value.Value = null;
-                    value.StatusCode = StatusCodes.BadDataEncodingUnsupported;
+                    wrappedValue = Variant.Null;
+                    statusCode = StatusCodes.BadDataEncodingUnsupported;
                 }
             }
 
             // apply the timestamps filter.
             if (timestampsToReturn == TimestampsToReturn.Neither || timestampsToReturn == TimestampsToReturn.Server)
             {
-                value.SourceTimestamp = DateTime.MinValue;
+                sourceTimestamp = DateTime.MinValue;
             }
 
             if (timestampsToReturn == TimestampsToReturn.Neither || timestampsToReturn == TimestampsToReturn.Source)
             {
-                value.ServerTimestamp = DateTime.MinValue;
+                serverTimestamp = DateTime.MinValue;
             }
 
             // add result.
-            values.Add(value);
+            values.Add(new DataValue(
+                wrappedValue,
+                statusCode,
+                sourceTimestamp,
+                serverTimestamp,
+                value.SourcePicoseconds,
+                value.ServerPicoseconds));
         }
         #endregion
 

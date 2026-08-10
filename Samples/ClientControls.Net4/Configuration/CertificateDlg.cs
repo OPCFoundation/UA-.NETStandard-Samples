@@ -33,6 +33,7 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Security.Certificates;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -70,12 +71,12 @@ namespace Opc.Ua.Client.Controls
 
             if (certificateIdentifier != null)
             {
-                X509Certificate2 certificate = await certificateIdentifier.FindAsync(ct: ct);
+                X509Certificate2 certificate = await FindCertificateAsync(certificateIdentifier, false, ct);
 
                 CertificateStoreCTRL.StoreType = certificateIdentifier.StoreType;
                 CertificateStoreCTRL.StorePath = certificateIdentifier.StorePath;
 
-                if (certificate != null && await certificateIdentifier.FindAsync(true, ct: ct) != null)
+                if (certificate != null && await FindCertificateAsync(certificateIdentifier, true, ct) != null)
                 {
                     PrivateKeyCB.SelectedIndex = 1;
                 }
@@ -93,6 +94,41 @@ namespace Opc.Ua.Client.Controls
             }
 
             return true;
+        }
+
+        private async Task<X509Certificate2> FindCertificateAsync(CertificateIdentifier certificateIdentifier, bool needPrivateKey, CancellationToken ct)
+        {
+            if (certificateIdentifier?.Certificate != null && (!needPrivateKey || certificateIdentifier.Certificate.HasPrivateKey))
+            {
+                return certificateIdentifier.Certificate;
+            }
+
+            if (certificateIdentifier == null ||
+                String.IsNullOrEmpty(certificateIdentifier.StoreType) ||
+                String.IsNullOrEmpty(certificateIdentifier.StorePath) ||
+                (String.IsNullOrEmpty(certificateIdentifier.Thumbprint) && String.IsNullOrEmpty(certificateIdentifier.SubjectName)))
+            {
+                return null;
+            }
+
+            CertificateStoreIdentifier storeId = new CertificateStoreIdentifier { StoreType = certificateIdentifier.StoreType, StorePath = certificateIdentifier.StorePath };
+
+            using (ICertificateStore store = storeId.OpenStore(m_telemetry))
+            {
+                var certificates = !String.IsNullOrEmpty(certificateIdentifier.Thumbprint)
+                    ? await store.FindByThumbprintAsync(certificateIdentifier.Thumbprint, ct)
+                    : await store.EnumerateAsync(ct);
+
+                var certificate = CertificateIdentifier.Find(
+                    certificates,
+                    certificateIdentifier.Thumbprint,
+                    certificateIdentifier.SubjectName,
+                    null,
+                    certificateIdentifier.CertificateType,
+                    needPrivateKey);
+
+                return certificate?.AsX509Certificate2();
+            }
         }
 
         /// <summary>

@@ -81,7 +81,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     DataRow row = ApplicationsTable.NewRow();
 
-                    if (selectedRow == null && defaultRecord != null)
+                    if (selectedRow == null && !defaultRecord.IsNull)
                     {
                         if (defaultRecord == record.ApplicationId)
                         {

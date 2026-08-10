@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -244,7 +244,7 @@ namespace Quickstarts.Views
                         {
                             if (replacement == null)
                             {
-                                SerialNumber = new PropertyState<string>(this);
+                                SerialNumber = PropertyState<string>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -265,7 +265,7 @@ namespace Quickstarts.Views
                         {
                             if (replacement == null)
                             {
-                                Manufacturer = new PropertyState<string>(this);
+                                Manufacturer = PropertyState<string>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -286,7 +286,7 @@ namespace Quickstarts.Views
                         {
                             if (replacement == null)
                             {
-                                SetPoint = new AnalogItemState<double>(this);
+                                SetPoint = AnalogItemState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {
@@ -307,7 +307,7 @@ namespace Quickstarts.Views
                         {
                             if (replacement == null)
                             {
-                                Measurement = new AnalogItemState<double>(this);
+                                Measurement = AnalogItemState<double>.With<VariantBuilder>(this);
                             }
                             else
                             {

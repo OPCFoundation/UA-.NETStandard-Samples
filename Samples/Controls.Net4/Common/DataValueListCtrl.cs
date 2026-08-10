@@ -96,8 +96,8 @@ namespace Opc.Ua.Sample.Controls
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         public async Task InitializeAsync(
             Session session,
-            ReadValueIdCollection valueIds,
-            DataValueCollection values,
+            List<ReadValueId> valueIds,
+            List<DataValue> values,
             List<ServiceResult> results,
             CancellationToken ct = default)
         {
@@ -142,7 +142,7 @@ namespace Opc.Ua.Sample.Controls
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         public async Task InitializeAsync(
             Session session,
-            WriteValueCollection values,
+            List<WriteValue> values,
             List<ServiceResult> results,
             CancellationToken ct = default)
         {

@@ -186,10 +186,6 @@ namespace Quickstarts.PerfTestServer
                     DateTime start = HiResClock.UtcNow;
                     int delta = m_values.Length / 2;
 
-                    DataValue value = new DataValue();
-                    value.ServerTimestamp = DateTime.UtcNow;
-                    value.SourceTimestamp = DateTime.UtcNow;
-
                     for (int ii = m_start; ii < delta + m_start && ii < m_values.Length; ii++)
                     {
                         m_values[ii] += (ii + 1);
@@ -198,7 +194,7 @@ namespace Quickstarts.PerfTestServer
 
                         if (monitoredItems != null)
                         {
-                            value.WrappedValue = new Variant(m_values[ii]);
+                            DataValue value = new DataValue(new Variant(m_values[ii]), StatusCodes.Good, DateTime.UtcNow, DateTime.UtcNow);
 
                             for (int jj = 0; jj < monitoredItems.Length; jj++)
                             {

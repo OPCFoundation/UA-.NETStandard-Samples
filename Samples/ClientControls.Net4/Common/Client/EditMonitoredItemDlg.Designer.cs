@@ -424,7 +424,7 @@ namespace Opc.Ua.Client.Controls
             this.NodeBTN.Name = "NodeBTN";
             this.NodeBTN.NodeControl = this.NodeTB;
             this.NodeBTN.ReferenceTypeIds = null;
-            this.NodeBTN.RootId = null;
+            this.NodeBTN.RootId = Opc.Ua.NodeId.Null;
             this.NodeBTN.ClearSelectedNode();
             this.NodeBTN.SelectedReference = null;
             this.NodeBTN.Session = null;

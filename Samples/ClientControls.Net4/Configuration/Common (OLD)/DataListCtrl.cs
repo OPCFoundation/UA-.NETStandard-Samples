@@ -357,11 +357,11 @@ namespace Opc.Ua.Client.Controls
             }
 
             // check for xml element.
-            XmlElement xml = value as XmlElement;
+            System.Xml.XmlElement xml = value as System.Xml.XmlElement;
 
             if (xml != null)
             {
-                if (xml.ChildNodes.Count == 1 && xml.ChildNodes[0] is XmlText)
+                if (xml.ChildNodes.Count == 1 && xml.ChildNodes[0] is System.Xml.XmlText)
                 {
                     return false;
                 }
@@ -404,17 +404,13 @@ namespace Opc.Ua.Client.Controls
             }
 
             // check for extension object.
-            ExtensionObject extension = value as ExtensionObject;
-
-            if (extension != null)
+            if (value is ExtensionObject extension)
             {
                 return IsExpandableType(extension.Body);
             }
 
             // check for data value.
-            DataValue datavalue = value as DataValue;
-
-            if (datavalue != null)
+            if (value is DataValue datavalue)
             {
                 return true;
             }
@@ -463,7 +459,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // format xml element.
-            XmlElement xml = value as XmlElement;
+            System.Xml.XmlElement xml = value as System.Xml.XmlElement;
 
             if (xml != null)
             {
@@ -536,9 +532,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // format extension object.
-            ExtensionObject extension = value as ExtensionObject;
-
-            if (extension != null)
+            if (value is ExtensionObject extension)
             {
                 return await GetValueTextAsync(extension.Body, ct);
             }
@@ -557,9 +551,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // check for data value.
-            DataValue dataValue = value as DataValue;
-
-            if (dataValue != null)
+            if (value is DataValue dataValue)
             {
                 StringBuilder formattedValue = new StringBuilder();
 
@@ -572,9 +564,8 @@ namespace Opc.Ua.Client.Controls
                 DateTime now = DateTime.UtcNow;
 
                 #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
-                if ((dataValue != null) &&
+                if ((dataValue.ServerTimestamp > now) || (dataValue.SourceTimestamp > now))
                 #pragma warning restore CA1508
-                    ((dataValue.ServerTimestamp > now) || (dataValue.SourceTimestamp > now)))
                 {
                     if (formattedValue.ToString().Length > 0)
                     {
@@ -769,7 +760,8 @@ namespace Opc.Ua.Client.Controls
                     length *= smallArrayDimmensions[i];
                 }
 
-                Array flatArray = Utils.FlattenArray(value);
+                Array flatArray = Array.CreateInstance(value.GetType().GetElementType(), value.Length);
+                Array.Copy(value, flatArray, value.Length);
                 Array flatSmallArray = Array.CreateInstance(value.GetType().GetElementType(), length);
                 Array.Copy(flatArray, element * value.GetLength(1), flatSmallArray, 0, length);
                 Array smallArray = Array.CreateInstance(value.GetType().GetElementType(), smallArrayDimmensions);
@@ -880,10 +872,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Shows an XML element in the control.
         /// </summary>
-        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, XmlElement value, int childIndex, CancellationToken ct = default)
+        private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, System.Xml.XmlElement value, int childIndex, CancellationToken ct = default)
         {
             // ignore children that are not elements.
-            XmlElement child = value.ChildNodes[childIndex] as XmlElement;
+            System.Xml.XmlElement child = value.ChildNodes[childIndex] as System.Xml.XmlElement;
 
             if (child == null)
             {
@@ -969,9 +961,7 @@ namespace Opc.Ua.Client.Controls
                     name = "Value";
                     componentValue = value.Value;
 
-                    ExtensionObject extension = componentValue as ExtensionObject;
-
-                    if (extension != null)
+                    if (componentValue is ExtensionObject extension)
                     {
                         componentValue = extension.Body;
                     }
@@ -1288,7 +1278,7 @@ namespace Opc.Ua.Client.Controls
                     NumericRange indexRange;
                     ServiceResult result = NumericRange.Validate(writevalue.IndexRange, out indexRange);
 
-                    if (ServiceResult.IsGood(result) && indexRange != NumericRange.Empty)
+                    if (ServiceResult.IsGood(result) && !indexRange.IsNull)
                     {
                         for (int ii = 0; ii < arrayvalue.Length; ii++)
                         {
@@ -1317,9 +1307,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // show extension bodies.
-            ExtensionObject extension = value as ExtensionObject;
-
-            if (extension != null)
+            if (value is ExtensionObject extension)
             {
                 return await ShowValueAsync(index, overwrite, extension.Body, ct);
             }
@@ -1395,7 +1383,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // show xml elements
-            XmlElement xml = value as XmlElement;
+            System.Xml.XmlElement xml = value as System.Xml.XmlElement;
 
             if (xml != null)
             {
@@ -1410,9 +1398,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // show data value.
-            DataValue datavalue = value as DataValue;
-
-            if (datavalue != null)
+            if (value is DataValue datavalue)
             {
                 (index, overwrite) = await ShowValueAsync(index, overwrite, datavalue, 0, ct);
                 (index, overwrite) = await ShowValueAsync(index, overwrite, datavalue, 1, ct);
@@ -1421,9 +1407,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // show node id value.
-            NodeId nodeId = value as NodeId;
-
-            if (nodeId != null)
+            if (value is NodeId nodeId && !nodeId.IsNull)
             {
                 (index, overwrite) = await ShowValueAsync(index, overwrite, nodeId, 0, ct);
                 (index, overwrite) = await ShowValueAsync(index, overwrite, nodeId, 1, ct);
@@ -1431,9 +1415,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // show expanded node id value.
-            ExpandedNodeId expandedNodeId = value as ExpandedNodeId;
-
-            if (expandedNodeId != null)
+            if (value is ExpandedNodeId expandedNodeId && !expandedNodeId.IsNull)
             {
                 (index, overwrite) = await ShowValueAsync(index, overwrite, expandedNodeId, 0, ct);
                 (index, overwrite) = await ShowValueAsync(index, overwrite, expandedNodeId, 1, ct);
@@ -1442,18 +1424,14 @@ namespace Opc.Ua.Client.Controls
             }
 
             // show qualified name value.
-            QualifiedName qualifiedName = value as QualifiedName;
-
-            if (qualifiedName != null)
+            if (value is QualifiedName qualifiedName && !qualifiedName.IsNull)
             {
                 (index, overwrite) = await ShowValueAsync(index, overwrite, qualifiedName, 0, ct);
                 return await ShowValueAsync(index, overwrite, qualifiedName, 1, ct);
             }
 
             // show qualified name value.
-            LocalizedText localizedText = value as LocalizedText;
-
-            if (localizedText != null)
+            if (value is LocalizedText localizedText && !localizedText.IsNull)
             {
                 (index, overwrite) = await ShowValueAsync(index, overwrite, localizedText, 0, ct);
                 return await ShowValueAsync(index, overwrite, localizedText, 1, ct);
@@ -1586,7 +1564,7 @@ namespace Opc.Ua.Client.Controls
                     #pragma warning restore CA2000
                     if (value != null)
                     {
-                        value = new LocalizedText(((LocalizedText)state.Component).Key, ((LocalizedText)state.Component).Locale, value.ToString());
+                        value = new LocalizedText(((LocalizedText)state.Component).Locale, ((LocalizedText)state.Component).Locale, value.ToString());
                     }
                 }
                 else
@@ -1618,15 +1596,13 @@ namespace Opc.Ua.Client.Controls
                     }
                 }
 
-                DataValue datavalue = state.Value as DataValue;
-
-                if (datavalue != null)
+                if (state.Value is DataValue datavalue)
                 {
                     int component = (int)state.ComponentId;
 
                     switch (component)
                     {
-                        case 0: { datavalue.Value = value; break; }
+                        case 0: { state.Value = datavalue.WithWrappedValue(new Variant(value)); state.Component = value; break; }
                     }
                 }
 

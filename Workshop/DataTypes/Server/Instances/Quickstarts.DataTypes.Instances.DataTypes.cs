@@ -111,7 +111,7 @@ namespace Quickstarts.DataTypes.Instances
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((ParkingLotType)Utils.Clone(this[ii]));
+                clone.Add(this[ii]);
             }
 
             return clone;
@@ -227,7 +227,7 @@ namespace Quickstarts.DataTypes.Instances
         {
             TwoWheelerType clone = (TwoWheelerType)base.MemberwiseClone();
 
-            clone.m_manufacturerName = (string)Utils.Clone(this.m_manufacturerName);
+            clone.m_manufacturerName = (string)(this.m_manufacturerName is ICloneable cloneable ? cloneable.Clone() : this.m_manufacturerName);
 
             return clone;
         }
@@ -295,7 +295,7 @@ namespace Quickstarts.DataTypes.Instances
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((TwoWheelerType)Utils.Clone(this[ii]));
+                clone.Add((TwoWheelerType)(this[ii] is ICloneable cloneable ? cloneable.Clone() : this[ii]));
             }
 
             return clone;
@@ -411,7 +411,7 @@ namespace Quickstarts.DataTypes.Instances
         {
             BicycleType clone = (BicycleType)base.MemberwiseClone();
 
-            clone.m_noOfGears = (uint)Utils.Clone(this.m_noOfGears);
+            clone.m_noOfGears = this.m_noOfGears;
 
             return clone;
         }
@@ -479,7 +479,7 @@ namespace Quickstarts.DataTypes.Instances
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((BicycleType)Utils.Clone(this[ii]));
+                clone.Add((BicycleType)(this[ii] is ICloneable cloneable ? cloneable.Clone() : this[ii]));
             }
 
             return clone;
@@ -595,7 +595,7 @@ namespace Quickstarts.DataTypes.Instances
         {
             ScooterType clone = (ScooterType)base.MemberwiseClone();
 
-            clone.m_noOfSeats = (uint)Utils.Clone(this.m_noOfSeats);
+            clone.m_noOfSeats = this.m_noOfSeats;
 
             return clone;
         }
@@ -663,7 +663,7 @@ namespace Quickstarts.DataTypes.Instances
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((ScooterType)Utils.Clone(this[ii]));
+                clone.Add((ScooterType)(this[ii] is ICloneable cloneable ? cloneable.Clone() : this[ii]));
             }
 
             return clone;

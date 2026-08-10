@@ -63,7 +63,7 @@ namespace Quickstarts.HistoricalEvents.Server
             SetNamespaces(namespaceUrls);
 
             // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<HistoricalEventsServerConfiguration>();
+            m_configuration = null;
 
             m_logger = server.Telemetry.CreateLogger<HistoricalEventsNodeManager>();
 
@@ -171,7 +171,7 @@ namespace Quickstarts.HistoricalEvents.Server
 
             area.NodeId = new NodeId(areaName, NamespaceIndex);
             area.BrowseName = new QualifiedName(areaName, NamespaceIndex);
-            area.DisplayName = area.BrowseName.Name;
+            area.DisplayName = new LocalizedText(area.BrowseName.Name);
             area.EventNotifier = EventNotifiers.SubscribeToEvents | EventNotifiers.HistoryRead | EventNotifiers.HistoryWrite;
             area.TypeDefinitionId = Opc.Ua.ObjectTypeIds.FolderType;
 
@@ -194,7 +194,7 @@ namespace Quickstarts.HistoricalEvents.Server
 
             well.NodeId = new NodeId(wellId, NamespaceIndex);
             well.BrowseName = new QualifiedName(wellName, NamespaceIndex);
-            well.DisplayName = wellName;
+            well.DisplayName = new LocalizedText(wellName);
             well.EventNotifier = EventNotifiers.SubscribeToEvents | EventNotifiers.HistoryRead | EventNotifiers.HistoryWrite;
             well.TypeDefinitionId = new NodeId(ObjectTypes.WellType, NamespaceIndex);
 
@@ -283,7 +283,7 @@ namespace Quickstarts.HistoricalEvents.Server
             ServerSystemContext context,
             ReadEventDetails details,
             TimestampsToReturn timestampsToReturn,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
@@ -298,7 +298,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 HistoryReadRequest request = null;
 
                 // load an exising request.
-                if (nodeToRead.ContinuationPoint != null)
+                if (!nodeToRead.ContinuationPoint.IsNull)
                 {
                     request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
 
@@ -342,7 +342,7 @@ namespace Quickstarts.HistoricalEvents.Server
                         request.Events.RemoveFirst();
                     }
 
-                    events.Events.Add(GetEventFields(request, e));
+                    events.Events = events.Events.AddItem(GetEventFields(request, e));
                 }
 
                 errors[handle.Index] = ServiceResult.Good;
@@ -424,20 +424,20 @@ namespace Quickstarts.HistoricalEvents.Server
                 {
                     try
                     {
-                        string eventId = new Guid(nodeToUpdate.EventIds[jj]).ToString();
+                        string eventId = new Guid(nodeToUpdate.EventIds[jj].ToArray()).ToString();
 
                         if (!m_generator.DeleteEvent(eventId))
                         {
-                            result.OperationResults.Add(StatusCodes.BadEventIdUnknown);
+                            result.OperationResults = result.OperationResults.AddItem(StatusCodes.BadEventIdUnknown);
                             failed = true;
                             continue;
                         }
 
-                        result.OperationResults.Add(StatusCodes.Good);
+                        result.OperationResults = result.OperationResults.AddItem(StatusCodes.Good);
                     }
                     catch
                     {
-                        result.OperationResults.Add(StatusCodes.BadEventIdUnknown);
+                        result.OperationResults = result.OperationResults.AddItem(StatusCodes.BadEventIdUnknown);
                         failed = true;
                     }
                 }
@@ -451,7 +451,7 @@ namespace Quickstarts.HistoricalEvents.Server
                         {
                             if (StatusCode.IsBad(result.OperationResults[jj]))
                             {
-                                result.DiagnosticInfos.Add(ServerUtils.CreateDiagnosticInfo(Server, context.OperationContext, result.OperationResults[jj], m_logger));
+                                result.DiagnosticInfos = result.DiagnosticInfos.AddItem(ServerUtils.CreateDiagnosticInfo(Server, context.OperationContext, result.OperationResults[jj], m_logger));
                             }
                         }
                     }
@@ -460,7 +460,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 // clear operation results if all good.
                 else
                 {
-                    result.OperationResults.Clear();
+                    result.OperationResults = ArrayOf<StatusCode>.Empty;
                 }
 
                 // all done.
@@ -491,21 +491,19 @@ namespace Quickstarts.HistoricalEvents.Server
                 if (value != null)
                 {
                     // translate any localized text.
-                    LocalizedText text = value as LocalizedText;
-
-                    if (text != null)
+                    if (value is LocalizedText text && !text.IsNullOrEmpty)
                     {
                         value = Server.ResourceManager.Translate(request.FilterContext.PreferredLocales, text);
                     }
 
                     // add value.
-                    fields.EventFields.Add(new Variant(value));
+                    fields.EventFields = fields.EventFields.AddItem(new Variant(value));
                 }
 
                 // add a dummy entry for missing values.
                 else
                 {
-                    fields.EventFields.Add(Variant.Null);
+                    fields.EventFields = fields.EventFields.AddItem(Variant.Null);
                 }
             }
 
@@ -530,13 +528,13 @@ namespace Quickstarts.HistoricalEvents.Server
                     ? m_generator.ReadHistoryForWellId(
                         ii,
                         (string)handle.Node.NodeId.Identifier,
-                        details.StartTime,
-                        details.EndTime)
+                        (DateTime)details.StartTime,
+                        (DateTime)details.EndTime)
                     : m_generator.ReadHistoryForArea(
                         ii,
                         handle.Node.NodeId.Identifier as string,
-                        details.StartTime,
-                        details.EndTime);
+                        (DateTime)details.StartTime,
+                        (DateTime)details.EndTime);
 
                 LinkedListNode<BaseEventState> pos = events.First;
                 bool sizeLimited = (details.StartTime == DateTime.MinValue || details.EndTime == DateTime.MinValue);
@@ -599,7 +597,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// </summary>
         private sealed class HistoryReadRequest
         {
-            public byte[] ContinuationPoint;
+            public ByteString ContinuationPoint;
             public LinkedList<BaseEventState> Events;
             public bool TimeFlowsBackward;
             public uint NumValuesPerNode;
@@ -612,7 +610,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// </summary>
         protected override void HistoryReleaseContinuationPoints(
             ServerSystemContext context,
-            IList<HistoryReadValueId> nodesToRead,
+            ArrayOf<HistoryReadValueId> nodesToRead,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
             IDictionary<NodeId, NodeState> cache)
@@ -641,7 +639,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// </summary>
         private HistoryReadRequest LoadContinuationPoint(
             ServerSystemContext context,
-            byte[] continuationPoint)
+            ByteString continuationPoint)
         {
             ISession session = context.OperationContext.Session;
 
@@ -663,7 +661,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Saves a history continuation point.
         /// </summary>
-        private byte[] SaveContinuationPoint(
+        private ByteString SaveContinuationPoint(
             ServerSystemContext context,
             HistoryReadRequest request)
         {
@@ -671,12 +669,12 @@ namespace Quickstarts.HistoricalEvents.Server
 
             if (session == null)
             {
-                return null;
+                return default;
             }
 
             Guid id = Guid.NewGuid();
             session.SaveHistoryContinuationPoint(id, request);
-            request.ContinuationPoint = id.ToByteArray();
+            request.ContinuationPoint = id.ToByteArray().ToByteString();
             return request.ContinuationPoint;
         }
         #endregion

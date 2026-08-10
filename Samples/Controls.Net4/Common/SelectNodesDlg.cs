@@ -61,10 +61,10 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<NodeIdCollection> ShowDialogAsync(
+        public async Task<List<NodeId>> ShowDialogAsync(
             Session session,
             BrowseViewType browseView,
-            NodeIdCollection nodesIds,
+            List<NodeId> nodesIds,
             NodeClass nodeClassMask,
             ITelemetryContext telemetry,
             CancellationToken ct = default)
@@ -73,7 +73,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_session = session;
 
-            await BrowseCTRL.SetViewAsync(session, browseView, null, telemetry, ct);
+            await BrowseCTRL.SetViewAsync(session, browseView, NodeId.Null, telemetry, ct);
             await NodeListCTRL.InitializeAsync(session, nodesIds, nodeClassMask, telemetry, ct);
 
             if (ShowDialog() != DialogResult.OK)

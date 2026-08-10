@@ -61,9 +61,9 @@ namespace Quickstarts.AlarmConditionServer
             this.SymbolicName = m_source.Name;
             this.NodeId = nodeId;
             this.BrowseName = new QualifiedName(Utils.Format("{0}", m_source.Name), nodeId.NamespaceIndex);
-            this.DisplayName = BrowseName.Name;
-            this.Description = null;
-            this.ReferenceTypeId = null;
+            this.DisplayName = new LocalizedText(BrowseName.Name);
+            this.Description = LocalizedText.Null;
+            this.ReferenceTypeId = NodeId.Null;
             this.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
             this.EventNotifier = EventNotifiers.None;
 
@@ -167,7 +167,7 @@ namespace Quickstarts.AlarmConditionServer
                     // find the alarm branch.
                     AlarmConditionState branch = null;
 
-                    if (!m_branches.TryGetValue(alarm.Name, out branch))
+                    if (!m_branches.TryGetValue(branchId, out branch))
                     {
                         m_branches[branchId] = branch = CreateAlarm(alarm, branchId);
                     }
@@ -190,7 +190,7 @@ namespace Quickstarts.AlarmConditionServer
 
                 if (!m_alarms.TryGetValue(alarm.Name, out node))
                 {
-                    m_alarms[alarm.Name] = node = CreateAlarm(alarm, null);
+                    m_alarms[alarm.Name] = node = CreateAlarm(alarm, NodeId.Null);
                 }
 
                 // map the system information to the UA defined alarm.
@@ -212,9 +212,9 @@ namespace Quickstarts.AlarmConditionServer
 
             // specify optional fields.
             node.EnabledState = new TwoStateVariableState(node);
-            node.EnabledState.TransitionTime = new PropertyState<DateTime>(node.EnabledState);
-            node.EnabledState.EffectiveDisplayName = new PropertyState<LocalizedText>(node.EnabledState);
-            node.EnabledState.Create(context, null, BrowseNames.EnabledState, null, false);
+            node.EnabledState.TransitionTime = PropertyState<DateTimeUtc>.With<VariantBuilder>(node.EnabledState);
+            node.EnabledState.EffectiveDisplayName = PropertyState<LocalizedText>.With<VariantBuilder>(node.EnabledState);
+            node.EnabledState.Create(context, NodeId.Null, new QualifiedName(BrowseNames.EnabledState), LocalizedText.Null, false);
 
             // specify reference type between the source and the alarm.
             node.ReferenceTypeId = ReferenceTypeIds.HasComponent;
@@ -224,29 +224,29 @@ namespace Quickstarts.AlarmConditionServer
             // incorporated into the class when the class was created.
             node.Create(
                 context,
-                null,
+                NodeId.Null,
                 new QualifiedName(dialogName, this.BrowseName.NamespaceIndex),
-                null,
+                LocalizedText.Null,
                 true);
 
             this.AddChild(node);
 
             // initialize event information.
-            node.EventId.Value = Guid.NewGuid().ToByteArray();
+            node.EventId.Value = Guid.NewGuid().ToByteArray().ToByteString();
             node.EventType.Value = node.TypeDefinitionId;
             node.SourceNode.Value = this.NodeId;
             node.SourceName.Value = this.SymbolicName;
             node.ConditionName.Value = node.SymbolicName;
             node.Time.Value = DateTime.UtcNow;
             node.ReceiveTime.Value = node.Time.Value;
-            node.Message.Value = "The dialog was activated";
+            node.Message.Value = new LocalizedText("The dialog was activated");
             node.Retain.Value = true;
 
             node.SetEnableState(context, true);
             node.SetSeverity(context, EventSeverity.Low);
 
             // initialize the dialog information.
-            node.Prompt.Value = "Please specify a new state for the source.";
+            node.Prompt.Value = new LocalizedText("Please specify a new state for the source.");
             node.ResponseOptionSet.Value = s_ResponseOptions;
             node.DefaultResponse.Value = 2;
             node.CancelResponse.Value = 2;
@@ -270,9 +270,9 @@ namespace Quickstarts.AlarmConditionServer
         /// </summary>
         private LocalizedText[] s_ResponseOptions = new LocalizedText[]
         {
-            "Online",
-            "Offline",
-            "No Change"
+            new LocalizedText("Online"),
+            new LocalizedText("Offline"),
+            new LocalizedText("No Change")
         };
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace Quickstarts.AlarmConditionServer
                 {
                     ExclusiveDeviationAlarmState node2 = new ExclusiveDeviationAlarmState(this);
                     node = node2;
-                    node2.HighLimit = new PropertyState<double>(node2);
+                    node2.HighLimit = PropertyState<double>.With<VariantBuilder>(node2);
                     break;
                 }
 
@@ -303,10 +303,10 @@ namespace Quickstarts.AlarmConditionServer
                     NonExclusiveLevelAlarmState node2 = new NonExclusiveLevelAlarmState(this);
                     node = node2;
 
-                    node2.HighHighLimit = new PropertyState<double>(node2);
-                    node2.HighLimit = new PropertyState<double>(node2);
-                    node2.LowLimit = new PropertyState<double>(node2);
-                    node2.LowLowLimit = new PropertyState<double>(node2);
+                    node2.HighHighLimit = PropertyState<double>.With<VariantBuilder>(node2);
+                    node2.HighLimit = PropertyState<double>.With<VariantBuilder>(node2);
+                    node2.LowLimit = PropertyState<double>.With<VariantBuilder>(node2);
+                    node2.LowLowLimit = PropertyState<double>.With<VariantBuilder>(node2);
 
                     node2.HighHighState = new TwoStateVariableState(node2);
                     node2.HighState = new TwoStateVariableState(node2);
@@ -332,8 +332,8 @@ namespace Quickstarts.AlarmConditionServer
             node.SymbolicName = alarm.Name;
 
             // add optional components.
-            node.Comment = new ConditionVariableState<LocalizedText>(node);
-            node.ClientUserId = new PropertyState<string>(node);
+            node.Comment = ConditionVariableState<LocalizedText>.With<VariantBuilder>(node);
+            node.ClientUserId = PropertyState<string>.With<VariantBuilder>(node);
             node.AddComment = new AddCommentMethodState(node);
             node.ConfirmedState = new TwoStateVariableState(node);
             node.Confirm = new AddCommentMethodState(node);
@@ -350,15 +350,15 @@ namespace Quickstarts.AlarmConditionServer
             // and call create without assigning NodeIds. The NodeIds will be assigned when the
             // parent object is created.
             node.EnabledState = new TwoStateVariableState(node);
-            node.EnabledState.TransitionTime = new PropertyState<DateTime>(node.EnabledState);
-            node.EnabledState.EffectiveDisplayName = new PropertyState<LocalizedText>(node.EnabledState);
-            node.EnabledState.Create(context, null, BrowseNames.EnabledState, null, false);
+            node.EnabledState.TransitionTime = PropertyState<DateTimeUtc>.With<VariantBuilder>(node.EnabledState);
+            node.EnabledState.EffectiveDisplayName = PropertyState<LocalizedText>.With<VariantBuilder>(node.EnabledState);
+            node.EnabledState.Create(context, NodeId.Null, new QualifiedName(BrowseNames.EnabledState), LocalizedText.Null, false);
 
             // same procedure add optional components to the ActiveState component.
             node.ActiveState = new TwoStateVariableState(node);
-            node.ActiveState.TransitionTime = new PropertyState<DateTime>(node.ActiveState);
-            node.ActiveState.EffectiveDisplayName = new PropertyState<LocalizedText>(node.ActiveState);
-            node.ActiveState.Create(context, null, BrowseNames.ActiveState, null, false);
+            node.ActiveState.TransitionTime = PropertyState<DateTimeUtc>.With<VariantBuilder>(node.ActiveState);
+            node.ActiveState.EffectiveDisplayName = PropertyState<LocalizedText>.With<VariantBuilder>(node.ActiveState);
+            node.ActiveState.Create(context, NodeId.Null, new QualifiedName(BrowseNames.ActiveState), LocalizedText.Null, false);
 
             // specify reference type between the source and the alarm.
             node.ReferenceTypeId = ReferenceTypeIds.HasComponent;
@@ -372,9 +372,9 @@ namespace Quickstarts.AlarmConditionServer
             // the INodeIdFactory implementation used here.
             node.Create(
                 context,
-                null,
+                NodeId.Null,
                 new QualifiedName(alarm.Name, this.BrowseName.NamespaceIndex),
-                null,
+                LocalizedText.Null,
                 true);
 
             // don't add branches to the address space.
@@ -414,18 +414,18 @@ namespace Quickstarts.AlarmConditionServer
             ISystemContext context = m_nodeManager.SystemContext;
 
             // remove old event.
-            if (node.EventId.Value != null)
+            if (!node.EventId.Value.IsNull)
             {
-                m_events.Remove(Utils.ToHexString(node.EventId.Value));
+                m_events.Remove(Utils.ToHexString(node.EventId.Value.ToArray()));
             }
 
             // update the basic event information (include generating a unique id for the event).
-            node.EventId.Value = Guid.NewGuid().ToByteArray();
+            node.EventId.Value = Guid.NewGuid().ToByteArray().ToByteString();
             node.Time.Value = DateTime.UtcNow;
             node.ReceiveTime.Value = node.Time.Value;
 
             // save the event for later lookup.
-            m_events[Utils.ToHexString(node.EventId.Value)] = node;
+            m_events[Utils.ToHexString(node.EventId.Value.ToArray())] = node;
 
             // determine the retain state.
             node.Retain.Value = true;
@@ -443,7 +443,7 @@ namespace Quickstarts.AlarmConditionServer
                 node.SetSuppressedState(context, (alarm.State & UnderlyingSystemAlarmStates.Suppressed) != 0);
 
                 // update other information.
-                node.SetComment(context, alarm.Comment, alarm.UserName);
+                node.SetComment(context, new LocalizedText(alarm.Comment), alarm.UserName);
                 node.SetSeverity(context, alarm.Severity);
 
                 node.EnabledState.TransitionTime.Value = alarm.EnableTime;
@@ -529,7 +529,7 @@ namespace Quickstarts.AlarmConditionServer
         private ServiceResult OnAddComment(
             ISystemContext context,
             ConditionState condition,
-            byte[] eventId,
+            ByteString eventId,
             LocalizedText comment)
         {
             AlarmConditionState alarm = FindAlarmByEventId(eventId);
@@ -550,7 +550,7 @@ namespace Quickstarts.AlarmConditionServer
         private ServiceResult OnAcknowledge(
             ISystemContext context,
             ConditionState condition,
-            byte[] eventId,
+            ByteString eventId,
             LocalizedText comment)
         {
             AlarmConditionState alarm = FindAlarmByEventId(eventId);
@@ -571,7 +571,7 @@ namespace Quickstarts.AlarmConditionServer
         private ServiceResult OnConfirm(
             ISystemContext context,
             ConditionState condition,
-            byte[] eventId,
+            ByteString eventId,
             LocalizedText comment)
         {
             AlarmConditionState alarm = FindAlarmByEventId(eventId);
@@ -597,7 +597,7 @@ namespace Quickstarts.AlarmConditionServer
             double shelvingTime)
         {
             alarm.SetShelvingState(context, shelving, oneShot, shelvingTime);
-            alarm.Message.Value = "The alarm shelved.";
+            alarm.Message.Value = new LocalizedText("The alarm shelved.");
 
             UpdateAlarm(alarm, null);
             ReportChanges(alarm);
@@ -614,7 +614,7 @@ namespace Quickstarts.AlarmConditionServer
         {
             // update the alarm state and produce and event.
             alarm.SetShelvingState(context, false, false, 0);
-            alarm.Message.Value = "The timed shelving period expired.";
+            alarm.Message.Value = new LocalizedText("The timed shelving period expired.");
 
             UpdateAlarm(alarm, null);
             ReportChanges(alarm);
@@ -646,7 +646,7 @@ namespace Quickstarts.AlarmConditionServer
             dialog.SetResponse(context, selectedResponse);
 
             // dialog no longer interesting once it is deactivated.
-            dialog.Message.Value = "The dialog was deactivated";
+            dialog.Message.Value = new LocalizedText("The dialog was deactivated");
             dialog.Retain.Value = false;
 
             return ServiceResult.Good;
@@ -677,16 +677,16 @@ namespace Quickstarts.AlarmConditionServer
         /// </summary>
         /// <param name="eventId">The event id.</param>
         /// <returns>The alarm. Null if not found.</returns>
-        private AlarmConditionState FindAlarmByEventId(byte[] eventId)
+        private AlarmConditionState FindAlarmByEventId(ByteString eventId)
         {
-            if (eventId == null)
+            if (eventId.IsNull)
             {
                 return null;
             }
 
             AlarmConditionState alarm = null;
 
-            if (!m_events.TryGetValue(Utils.ToHexString(eventId), out alarm))
+            if (!m_events.TryGetValue(Utils.ToHexString(eventId.ToArray()), out alarm))
             {
                 return null;
             }
@@ -706,7 +706,7 @@ namespace Quickstarts.AlarmConditionServer
                 return 0;
             }
 
-            if (alarm.BranchId == null || alarm.BranchId.Value == null)
+            if (alarm.BranchId == null || alarm.BranchId.Value.IsNull)
             {
                 return 0;
             }

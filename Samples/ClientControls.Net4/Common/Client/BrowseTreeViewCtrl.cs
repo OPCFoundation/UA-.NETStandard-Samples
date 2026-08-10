@@ -344,7 +344,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                m_selectedNodeId = null;
+                m_selectedNodeId = NodeId.Null;
 
                 if (BrowseTV.SelectedNode == null)
                 {
@@ -412,7 +412,7 @@ namespace Opc.Ua.Client.Controls
                 // add the childen to the control.
                 SortedDictionary<ExpandedNodeId, TreeNode> dictionary = new SortedDictionary<ExpandedNodeId, TreeNode>();
 
-                ReferenceDescriptionCollection references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false);
+                List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false);
 
                 for (int ii = 0; references != null && ii < references.Count; ii++)
                 {
@@ -442,7 +442,7 @@ namespace Opc.Ua.Client.Controls
                             {
                                 List<NodeId> nodeIds = await ClientUtils.TranslateBrowsePathsAsync(m_session, (NodeId)reference.TypeDefinition, m_session.NamespaceUris, default, Opc.Ua.BrowseNames.Icon);
 
-                                if (nodeIds.Count > 0 && nodeIds[0] != null)
+                                if (nodeIds.Count > 0 && !nodeIds[0].IsNull)
                                 {
                                     DataValue value = await m_session.ReadValueAsync(nodeIds[0]);
                                     byte[] bytes = value.Value as byte[];

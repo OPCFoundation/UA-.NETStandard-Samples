@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
@@ -98,6 +99,13 @@ namespace Quickstarts.AlarmConditionClient
             Condition_Type_DiscreteAlarmsMI.Checked = false;
         }
         #endregion
+
+        private static void AddInputArgument(CallMethodRequest request, Variant argument)
+        {
+            List<Variant> arguments = request.InputArguments.IsNull ? new List<Variant>() : request.InputArguments.ToList();
+            arguments.Add(argument);
+            request.InputArguments = arguments.ToArrayOf();
+        }
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
@@ -425,7 +433,7 @@ namespace Quickstarts.AlarmConditionClient
                 ConditionState condition = (ConditionState)ConditionsLV.SelectedItems[ii].Tag;
 
                 // check if the node supports shelving.
-                BaseObjectState shelvingState = condition.FindChild(m_session.SystemContext, BrowseNames.ShelvingState) as BaseObjectState;
+                BaseObjectState shelvingState = condition.FindChild(m_session.SystemContext, new QualifiedName(BrowseNames.ShelvingState)) as BaseObjectState;
 
                 if (shelvingState == null)
                 {
@@ -451,7 +459,7 @@ namespace Quickstarts.AlarmConditionClient
                     else
                     {
                         request.MethodId = MethodIds.ShelvedStateMachineType_TimedShelve;
-                        request.InputArguments.Add(new Variant(shelvingTime));
+                        AddInputArgument(request, new Variant(shelvingTime));
                     }
                 }
 
@@ -468,8 +476,8 @@ namespace Quickstarts.AlarmConditionClient
                 null,
                 methodsToCall,
                 ct);
-            CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<CallMethodResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -505,7 +513,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 request.ObjectId = dialog.NodeId;
                 request.MethodId = MethodIds.DialogConditionType_Respond;
-                request.InputArguments.Add(new Variant(selectedResponse));
+                AddInputArgument(request, new Variant(selectedResponse));
                 request.Handle = ConditionsLV.SelectedItems[ii];
 
                 methodsToCall.Add(request);
@@ -522,8 +530,8 @@ namespace Quickstarts.AlarmConditionClient
                 methodsToCall,
                 ct);
 
-            CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<CallMethodResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -561,8 +569,8 @@ namespace Quickstarts.AlarmConditionClient
 
                 if (comment != null)
                 {
-                    request.InputArguments.Add(new Variant(condition.EventId.Value));
-                    request.InputArguments.Add(new Variant((LocalizedText)comment));
+                    AddInputArgument(request, new Variant(condition.EventId.Value));
+                    AddInputArgument(request, new Variant((LocalizedText)comment));
                 }
 
                 methodsToCall.Add(request);
@@ -579,8 +587,8 @@ namespace Quickstarts.AlarmConditionClient
                 methodsToCall,
                 ct);
 
-            CallMethodResultCollection results = response.Results;
-            DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+            List<CallMethodResult> results = response.Results.ToList();
+            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             ClientBase.ValidateResponse(results, methodsToCall);
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -659,10 +667,10 @@ namespace Quickstarts.AlarmConditionClient
                     ConditionState current = (ConditionState)ConditionsLV.Items[ii].Tag;
 
                     // the combination of a condition and branch id uniquely identify an item in the display.
-                    if (current.NodeId == condition.NodeId && BaseVariableState.GetValue(current.BranchId) == BaseVariableState.GetValue(condition.BranchId))
+                    if (current.NodeId == condition.NodeId && current.BranchId.Value == condition.BranchId.Value)
                     {
                         // match found but watch out for out of order events (async processing can cause this to happen).
-                        if (BaseVariableState.GetValue(current.Time) > BaseVariableState.GetValue(condition.Time))
+                        if (current.Time.Value > condition.Time.Value)
                         {
                             return;
                         }
@@ -785,13 +793,13 @@ namespace Quickstarts.AlarmConditionClient
                 item.Tag = condition;
 
                 // set the color based on the retain bit.
-                if (!BaseVariableState.GetValue(condition.Retain))
+                if (!condition.Retain.Value)
                 {
                     item.ForeColor = Color.DimGray;
                 }
                 else
                 {
-                    if (NodeId.IsNull(BaseVariableState.GetValue(condition.BranchId)))
+                    if (NodeId.IsNull(condition.BranchId.Value))
                     {
                         item.ForeColor = Color.Empty;
                     }
@@ -826,7 +834,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 request.ObjectId = ObjectTypeIds.ConditionType;
                 request.MethodId = MethodIds.ConditionType_ConditionRefresh;
-                request.InputArguments.Add(new Variant(m_subscription.Id));
+                AddInputArgument(request, new Variant(m_subscription.Id));
 
                 CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
                 methodsToCall.Add(request);
@@ -836,8 +844,8 @@ namespace Quickstarts.AlarmConditionClient
                     methodsToCall,
                     default);
 
-                CallMethodResultCollection results = response.Results;
-                DiagnosticInfoCollection diagnosticInfos = response.DiagnosticInfos;
+                List<CallMethodResult> results = response.Results.ToList();
+                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
                 ClientBase.ValidateResponse(results, methodsToCall);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
@@ -1172,7 +1180,7 @@ namespace Quickstarts.AlarmConditionClient
                     areaId = dialog.ShowDialog(m_session);
                 }
 
-                if (areaId == null)
+                if (areaId.IsNull)
                 {
                     return;
                 }

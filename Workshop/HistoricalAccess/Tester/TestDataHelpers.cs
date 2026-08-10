@@ -236,10 +236,10 @@ namespace Quickstarts
             public DataValue() { m_value = new Opc.Ua.DataValue(); }
             public DataValue(Opc.Ua.DataValue value) { m_value = value; }
             public string Comment { get; set; }
-            public object Value { get { return m_value.Value; } set { m_value.Value = value; } }
-            public Variant WrappedValue { get { return m_value.WrappedValue; } set { m_value.WrappedValue = value; } }
-            public DateTime SourceTimestamp { get { return m_value.SourceTimestamp; } set { m_value.SourceTimestamp = value; } }
-            public StatusCode StatusCode { get { return m_value.StatusCode; } set { m_value.StatusCode = value; } }
+            public object Value { get { return m_value.Value; } set { m_value = new Opc.Ua.DataValue(new Variant(value), m_value.StatusCode, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
+            public Variant WrappedValue { get { return m_value.WrappedValue; } set { m_value = new Opc.Ua.DataValue(value, m_value.StatusCode, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
+            public DateTime SourceTimestamp { get { return (DateTime)m_value.SourceTimestamp; } set { m_value = new Opc.Ua.DataValue(m_value.WrappedValue, m_value.StatusCode, value, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
+            public StatusCode StatusCode { get { return m_value.StatusCode; } set { m_value = new Opc.Ua.DataValue(m_value.WrappedValue, value, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Existing sample API exposes explicit conversion only.")]
             public static explicit operator Opc.Ua.DataValue(DataValue value) { return value.m_value; }
@@ -446,8 +446,8 @@ namespace Quickstarts
             {
                 try
                 {
-                    uint code = StatusCodes.GetIdentifier(value);
-                    return new Variant(new StatusCode(code), TypeInfo.Scalars.StatusCode);
+                    StatusCode code = (StatusCode)typeof(StatusCodes).GetField(value).GetValue(null);
+                    return new Variant(code, TypeInfo.Scalars.StatusCode);
                 }
                 catch
                 {

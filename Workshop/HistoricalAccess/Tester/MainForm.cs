@@ -711,7 +711,7 @@ namespace Quickstarts
             DateTime startTime = new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             IAggregateCalculator calculator = Aggregators.CreateStandardCalculator(
-                Aggregators.GetIdForStandardAggregate(aggregateName),
+                Aggregators.GetIdForStandardAggregate(new QualifiedName(aggregateName)),
                 startTime.AddSeconds(0),
                 startTime.AddSeconds(100),
                 processingInterval,
@@ -729,15 +729,16 @@ namespace Quickstarts
                     break;
                 }
 
-                DataValue processedValue = calculator.GetProcessedValue(false);
+                DataValue processedValue;
+                bool hasProcessedValue = calculator.TryGetProcessedValue(false, out processedValue);
 
-                if (processedValue != null)
+                if (hasProcessedValue)
                 {
                     processedValues.Add(new TestData.DataValue(processedValue));
                 }
             }
 
-            for (DataValue processedValue = calculator.GetProcessedValue(true); processedValue != null; processedValue = calculator.GetProcessedValue(true))
+            while (calculator.TryGetProcessedValue(true, out DataValue processedValue))
             {
                 processedValues.Add(new TestData.DataValue(processedValue));
             }
@@ -779,7 +780,7 @@ namespace Quickstarts
             DateTime startTime = new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             IAggregateCalculator calculator = Aggregators.CreateStandardCalculator(
-                Aggregators.GetIdForStandardAggregate(AggregateCB.SelectedItem as string),
+                Aggregators.GetIdForStandardAggregate(new QualifiedName(AggregateCB.SelectedItem as string)),
                 (!this.TimeFlowsBackwardsCK.Checked) ? startTime : startTime.AddSeconds(100),
                 (this.TimeFlowsBackwardsCK.Checked) ? startTime : startTime.AddSeconds(100),
                 (double)ProcessingIntervalNP.Value,
@@ -809,15 +810,16 @@ namespace Quickstarts
                     break;
                 }
 
-                DataValue processedValue = calculator.GetProcessedValue(false);
+                DataValue processedValue;
+                bool hasProcessedValue = calculator.TryGetProcessedValue(false, out processedValue);
 
-                if (processedValue != null)
+                if (hasProcessedValue)
                 {
                     processedValues.Add(processedValue);
                 }
             }
 
-            for (DataValue processedValue = calculator.GetProcessedValue(true); processedValue != null; processedValue = calculator.GetProcessedValue(true))
+            while (calculator.TryGetProcessedValue(true, out DataValue processedValue))
             {
                 processedValues.Add(processedValue);
             }

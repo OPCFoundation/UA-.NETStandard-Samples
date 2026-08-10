@@ -179,9 +179,9 @@ namespace Quickstarts.Boiler
         {
             ControllerDataType clone = (ControllerDataType)base.MemberwiseClone();
 
-            clone.m_setpoint = (double)Utils.Clone(this.m_setpoint);
-            clone.m_controllerOut = (double)Utils.Clone(this.m_controllerOut);
-            clone.m_processVariable = (double)Utils.Clone(this.m_processVariable);
+            clone.m_setpoint = this.m_setpoint;
+            clone.m_controllerOut = this.m_controllerOut;
+            clone.m_processVariable = this.m_processVariable;
 
             return clone;
         }
@@ -271,7 +271,7 @@ namespace Quickstarts.Boiler
 
             for (int ii = 0; ii < this.Count; ii++)
             {
-                clone.Add((ControllerDataType)Utils.Clone(this[ii]));
+                clone.Add((ControllerDataType)(this[ii] is ICloneable cloneable ? cloneable.Clone() : this[ii]));
             }
 
             return clone;
