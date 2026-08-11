@@ -65,7 +65,7 @@ namespace MemoryBuffer
         :
             base(
                 server,
-                (IAsyncNodeManager)nodeManager,
+                nodeManager.ToAsyncNodeManager(),
                 mangerHandle,
                 subscriptionId,
                 id,

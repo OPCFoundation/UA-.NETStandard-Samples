@@ -188,7 +188,7 @@ namespace TestData
                 case DateTime v: return Variant.From(new DateTimeUtc(v));
                 case Guid v: return Variant.From(new Uuid(v));
                 case ByteString v: return Variant.From(v);
-                case byte[] v: return Variant.From(v.ToByteString());
+                case byte[] v: return Variant.From(new ArrayOf<byte>(v));
                 case XmlElement v: return Variant.From(v);
                 case NodeId v: return Variant.From(v);
                 case ExpandedNodeId v: return Variant.From(v);
@@ -218,6 +218,7 @@ namespace TestData
                 case LocalizedText[] v: return Variant.From(new ArrayOf<LocalizedText>(v));
                 case ExtensionObject[] v: return Variant.From(new ArrayOf<ExtensionObject>(v));
                 case IEncodeable v: return Variant.From(new ExtensionObject(v, false));
+                case Variant[] v: return Variant.From(new ArrayOf<Variant>(v));
                 default: return Variant.Null;
             }
         }
