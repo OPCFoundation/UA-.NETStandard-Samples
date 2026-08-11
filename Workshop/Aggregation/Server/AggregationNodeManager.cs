@@ -1241,6 +1241,12 @@ namespace AggregationServer
                     sessionId = new NodeId(Guid.NewGuid());
                 }
                 sessionName = $"Aggregation Server({Utils.GetHostName()})";
+
+                // The internal metadata session has no incoming user identity, so
+                // derive one from the endpoint configuration. Defaulting to an
+                // anonymous token fails whenever the remote server only accepts
+                // e.g. a certificate user token policy (see issue #658).
+                userIdentity = GetMetadataUserIdentity();
             }
 
             lock (m_clientsLock)
@@ -1366,6 +1372,53 @@ namespace AggregationServer
 
                 throw new ServiceResultException(StatusCodes.BadNotConnected, "Server not connected.");
             }
+        }
+
+        /// <summary>
+        /// Builds the user identity used for the internal metadata session based
+        /// on the endpoint's selected user token policy.
+        /// </summary>
+        /// <remarks>
+        /// The metadata session is opened by the aggregation server itself and
+        /// therefore has no incoming client identity. When the remote endpoint
+        /// only offers a certificate user token policy, connecting anonymously
+        /// fails with "Endpoint does not support the user identity type provided"
+        /// (issue #658). In that case the aggregation server's own application
+        /// certificate is used as the user certificate. All other cases fall
+        /// back to an anonymous identity.
+        /// </remarks>
+        private IUserIdentity GetMetadataUserIdentity()
+        {
+            try
+            {
+                UserTokenPolicy policy = m_endpoint.SelectedUserTokenPolicy;
+
+                if (policy != null && policy.TokenType == UserTokenType.Certificate)
+                {
+                    CertificateIdentifier applicationCertificate =
+                        m_configuration.SecurityConfiguration.ApplicationCertificate;
+
+                    if (applicationCertificate != null)
+                    {
+                        return UserIdentity.CreateAsync(
+                            applicationCertificate,
+                            m_configuration.SecurityConfiguration.CertificatePasswordProvider,
+                            m_configuration.CertificateManager.CertificateProvider,
+                            default(CancellationToken)).GetAwaiter().GetResult();
+                    }
+
+                    m_logger.LogWarning(
+                        "Endpoint {Endpoint} requires a certificate user token but no application certificate is configured; falling back to an anonymous identity.",
+                        m_endpoint);
+                }
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Could not create the user identity for the metadata session; falling back to an anonymous identity.");
+            }
+
+            // default to an anonymous identity
+            return new UserIdentity();
         }
 
         /// <summary>
