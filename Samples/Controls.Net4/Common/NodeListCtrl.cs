@@ -253,7 +253,7 @@ namespace Opc.Ua.Sample.Controls
                     await AddNodeIdAsync(reference, ct);
                 }
 
-                ReferenceDescriptionCollection references = e.Data.GetData(typeof(ReferenceDescriptionCollection)) as ReferenceDescriptionCollection;
+                List<ReferenceDescription> references = e.Data.GetData(typeof(List<ReferenceDescription>)) as List<ReferenceDescription>;
 
                 if (references != null)
                 {
@@ -263,7 +263,7 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                ReadValueIdCollection valueIds = e.Data.GetData(typeof(ReadValueIdCollection)) as ReadValueIdCollection;
+                List<ReadValueId> valueIds = e.Data.GetData(typeof(List<ReadValueId>)) as List<ReadValueId>;
 
                 if (valueIds != null)
                 {

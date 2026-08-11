@@ -150,7 +150,7 @@ namespace Quickstarts.HistoricalEvents.Client
         {
             if (m_details != null)
             {
-                HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+                List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
                 nodesToRead.Add(m_nodeToRead);
 
                 HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -191,7 +191,7 @@ namespace Quickstarts.HistoricalEvents.Client
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_areaId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -243,7 +243,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
 
             // get the event time.
-            DateTime? eventTime = data.Events[0].EventFields[0].Value as DateTime?;
+            DateTime? eventTime = data.Events[0].EventFields[0].AsBoxedObject() as DateTime?;
 
             if (eventTime == null)
             {
@@ -295,7 +295,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// </summary>
         private async Task ReadNextAsync(ReadEventDetails details, HistoryReadValueId nodeToRead, CancellationToken ct = default)
         {
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(

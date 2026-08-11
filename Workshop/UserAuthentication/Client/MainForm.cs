@@ -341,7 +341,7 @@ namespace Quickstarts.UserAuthenticationClient
         #endregion
 
         #region Event Handlers
-        private void UserNameImpersonateBTN_Click(object sender, EventArgs e)
+        private async void UserNameImpersonateBTN_Click(object sender, EventArgs e)
         {
             if (m_session == null)
             {
@@ -357,7 +357,7 @@ namespace Quickstarts.UserAuthenticationClient
                 UserIdentity identity = new UserIdentity(UserNameTB.Text, Encoding.UTF8.GetBytes(PasswordTB.Text));
 #pragma warning restore CA2000
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                m_session.UpdateSession(identity, preferredLocales);
+                await m_session.UpdateSessionAsync(identity, preferredLocales);
 
                 MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -371,7 +371,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
         }
 
-        private void CertificateImpersonateBTN_Click(object sender, EventArgs e)
+        private async void CertificateImpersonateBTN_Click(object sender, EventArgs e)
         {
             if (m_session == null)
             {
@@ -395,7 +395,7 @@ namespace Quickstarts.UserAuthenticationClient
                 UserIdentity identity = new UserIdentity(new X509IdentityToken { CertificateData = certificate.RawData.ToByteString() });
 #pragma warning restore CA2000
                 string[] preferredLocales = PreferredLocalesTB.Text.Split([','], StringSplitOptions.RemoveEmptyEntries);
-                m_session.UpdateSession(identity, preferredLocales);
+                await m_session.UpdateSessionAsync(identity, preferredLocales);
 
                 MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -409,7 +409,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
         }
 
-        private void AnonymousImpersonateBTN_Click(object sender, EventArgs e)
+        private async void AnonymousImpersonateBTN_Click(object sender, EventArgs e)
         {
             if (m_session == null)
             {
@@ -423,7 +423,7 @@ namespace Quickstarts.UserAuthenticationClient
 
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 #pragma warning disable CA2000 // Justification: UserIdentity and token ownership is transferred to the active session.
-                m_session.UpdateSession(new UserIdentity(new AnonymousIdentityToken()), preferredLocales);
+                await m_session.UpdateSessionAsync(new UserIdentity(new AnonymousIdentityToken()), preferredLocales);
 #pragma warning restore CA2000
 
                 MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -438,7 +438,7 @@ namespace Quickstarts.UserAuthenticationClient
             }
         }
 
-        private void KerberosImpersonateBTN_Click(object sender, EventArgs e)
+        private async void KerberosImpersonateBTN_Click(object sender, EventArgs e)
         {
             if (m_session == null)
             {
@@ -454,7 +454,7 @@ namespace Quickstarts.UserAuthenticationClient
                 m_session.ReturnDiagnostics = DiagnosticsMasks.All;
 
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                m_session.UpdateSession(identity, preferredLocales);
+                await m_session.UpdateSessionAsync(identity, preferredLocales);
 
                 MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -487,7 +487,7 @@ namespace Quickstarts.UserAuthenticationClient
                 value.NodeId = m_logFileNodeId;
                 value.AttributeId = Attributes.Value;
 
-                ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
+                List<ReadValueId> valuesToRead = new List<ReadValueId>();
                 valuesToRead.Add(value);
 
                 ReadResponse response = await m_session.ReadAsync(
@@ -538,7 +538,7 @@ namespace Quickstarts.UserAuthenticationClient
                 value.AttributeId = Attributes.Value;
                 value.Value = new DataValue(new Variant(LogFilePathTB.Text));
 
-                WriteValueCollection valuesToWrite = new WriteValueCollection();
+                List<WriteValue> valuesToWrite = new List<WriteValue>();
                 valuesToWrite.Add(value);
 
                 WriteResponse response = await m_session.WriteAsync(

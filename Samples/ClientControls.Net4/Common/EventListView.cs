@@ -385,7 +385,7 @@ namespace Opc.Ua.Client.Controls
             {
                 NodeId conditionId = NodeId.Null;
 
-                if (fieldValues[0].Value is NodeId nodeId)
+                if (fieldValues[0].AsBoxedObject() is NodeId nodeId)
                 {
                     conditionId = nodeId;
                 }
@@ -396,7 +396,7 @@ namespace Opc.Ua.Client.Controls
                     {
                         List<Variant> fields = EventsLV.Items[ii].Tag as List<Variant>;
 
-                        if (fields != null && Utils.IsEqual(conditionId, fields[0].Value))
+                        if (fields != null && Utils.IsEqual(conditionId, fields[0].AsBoxedObject()))
                         {
                             item = EventsLV.Items[ii];
                             break;
@@ -426,7 +426,7 @@ namespace Opc.Ua.Client.Controls
                 Variant value = fieldValues[ii + 1];
 
                 // check for missing fields.
-                if (value.Value == null)
+                if (value.AsBoxedObject() == null)
                 {
                     text = String.Empty;
                 }
@@ -434,7 +434,7 @@ namespace Opc.Ua.Client.Controls
                 // display the name of a node instead of the node id.
                 else if (value.TypeInfo.BuiltInType == BuiltInType.NodeId)
                 {
-                    INode node = await m_session.NodeCache.FindAsync((NodeId)value.Value, ct);
+                    INode node = await m_session.NodeCache.FindAsync((NodeId)value.AsBoxedObject(), ct);
 
                     if (node != null)
                     {
@@ -445,7 +445,7 @@ namespace Opc.Ua.Client.Controls
                 // display local time for any time fields.
                 else if (value.TypeInfo.BuiltInType == BuiltInType.DateTime)
                 {
-                    DateTime datetime = (DateTime)value.Value;
+                    DateTime datetime = (DateTime)value.AsBoxedObject();
 
                     if (m_filter.Fields[ii].InstanceDeclaration.DisplayName.Contains("Time", StringComparison.Ordinal))
                     {
@@ -584,7 +584,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task ReadHistoryAsync(ReadEventDetails details, NodeId areaId, CancellationToken ct = default)
         {
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = areaId;
             nodesToRead.Add(nodeToRead);
@@ -663,11 +663,11 @@ namespace Opc.Ua.Client.Controls
 
                 if (e.Count > index)
                 {
-                    if (e[index].Value is ByteString byteString)
+                    if (e[index].AsBoxedObject() is ByteString byteString)
                     {
                         eventId = byteString;
                     }
-                    else if (e[index].Value is byte[] bytes)
+                    else if (e[index].AsBoxedObject() is byte[] bytes)
                     {
                         eventId = bytes.ToByteString();
                     }

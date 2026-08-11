@@ -326,7 +326,7 @@ namespace Quickstarts.HistoricalAccessServer
         {
             DataSet dataset = CreateDataSet();
 
-            ServiceMessageContext messageContext = new ServiceMessageContext(m_telemetry);
+            ServiceMessageContext messageContext = ServiceMessageContext.Create(m_telemetry);
 
             if (context != null)
             {
@@ -460,7 +460,7 @@ namespace Quickstarts.HistoricalAccessServer
                     row[1] = dataValue.ServerTimestamp;
                     row[2] = dataValue;
                     row[3] = valueType;
-                    row[4] = (value.TypeInfo != null) ? value.TypeInfo.ValueRank : ValueRanks.Any;
+                    row[4] = (!value.TypeInfo.IsUnknown) ? value.TypeInfo.ValueRank : ValueRanks.Any;
 
                     dataset.Tables[0].Rows.Add(row);
                 }
@@ -473,7 +473,7 @@ namespace Quickstarts.HistoricalAccessServer
                     row[1] = dataValue.ServerTimestamp;
                     row[2] = dataValue;
                     row[3] = valueType;
-                    row[4] = (value.TypeInfo != null) ? value.TypeInfo.ValueRank : ValueRanks.Any;
+                    row[4] = (!value.TypeInfo.IsUnknown) ? value.TypeInfo.ValueRank : ValueRanks.Any;
                     row[5] = recordType;
 
                     ModificationInfo info = new ModificationInfo();
@@ -503,7 +503,7 @@ namespace Quickstarts.HistoricalAccessServer
                     row[1] = dataValue.ServerTimestamp;
                     row[2] = dataValue;
                     row[3] = valueType;
-                    row[4] = (value.TypeInfo != null) ? value.TypeInfo.ValueRank : ValueRanks.Any;
+                    row[4] = (!value.TypeInfo.IsUnknown) ? value.TypeInfo.ValueRank : ValueRanks.Any;
                     row[5] = annotation;
 
                     dataset.Tables[2].Rows.Add(row);

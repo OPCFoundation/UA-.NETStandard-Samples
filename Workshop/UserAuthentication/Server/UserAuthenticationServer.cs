@@ -36,6 +36,7 @@ using System.Text;
 using System.Xml;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
 using Microsoft.Extensions.Logging;
@@ -86,8 +87,9 @@ namespace Quickstarts.UserAuthenticationServer
         {
             base.OnServerStarted(server);
 
-            // request notifications when the user identity is changed. all valid users are accepted by default.
-            server.SessionManager.ImpersonateUser += new ImpersonateEventHandler(SessionManager_ImpersonateUser);
+            // Register authenticators for user identity changes.
+            server.IdentityRegistry.Register(new UserNamePasswordAuthenticator(AuthenticateUserNameAsync));
+            server.IdentityRegistry.Register(new X509Authenticator(AuthenticateX509Async));
         }
 
         /// <summary>
@@ -188,51 +190,30 @@ namespace Quickstarts.UserAuthenticationServer
             }
         }
 
-        /// <summary>
-        /// Called when a client tries to change its user identity.
-        /// </summary>
-        private void SessionManager_ImpersonateUser(ISession session, ImpersonateEventArgs args)
+        private ValueTask<IUserIdentity> AuthenticateUserNameAsync(UserNameIdentityTokenHandler handler, System.Threading.CancellationToken ct)
         {
-
-#if TODO
-            // check for a WSS token.
-            IssuedIdentityToken wssToken = args.NewIdentity as IssuedIdentityToken;
-
-            if (wssToken != null)
+            UserNameIdentityToken userNameToken = handler.Token as UserNameIdentityToken;
+            VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.Password.ToArray()));
+            IUserIdentity identity = new UserIdentity(userNameToken);
+            if (m_logger.IsEnabled(LogLevel.Information))
             {
-                SecurityToken kerberosToken = ParseAndVerifyKerberosToken(wssToken.DecryptedTokenData);
-                args.Identity = new UserIdentity(kerberosToken);
-                Utils.Trace("Kerberos Token Accepted: {0}", args.Identity.DisplayName);
-                return;
-            }
-#endif
-            // check for a user name token.
-            UserNameIdentityToken userNameToken = args.NewIdentity as UserNameIdentityToken;
-
-            if (userNameToken != null)
-            {
-                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.Password.ToArray()));
-                args.Identity = new UserIdentity(userNameToken);
-                if (m_logger.IsEnabled(LogLevel.Information))
-                {
-                    m_logger.LogInformation("UserName Token Accepted: {DisplayName}", args.Identity.DisplayName);
-                }
-                return;
+                m_logger.LogInformation("UserName Token Accepted: {DisplayName}", identity.DisplayName);
             }
 
-            // check for x509 user token.
-            X509IdentityToken x509Token = args.NewIdentity as X509IdentityToken;
+            return new ValueTask<IUserIdentity>(identity);
+        }
 
-            if (x509Token != null)
+        private ValueTask<IUserIdentity> AuthenticateX509Async(X509IdentityTokenHandler handler, System.Threading.CancellationToken ct)
+        {
+            X509IdentityToken x509Token = handler.Token as X509IdentityToken;
+            VerifyCertificate(new X509Certificate2(x509Token.CertificateData.ToArray()));
+            IUserIdentity identity = new UserIdentity(x509Token);
+            if (m_logger.IsEnabled(LogLevel.Information))
             {
-                VerifyCertificate(new X509Certificate2(x509Token.CertificateData.ToArray()));
-                args.Identity = new UserIdentity(x509Token);
-                if (m_logger.IsEnabled(LogLevel.Information))
-                {
-                    m_logger.LogInformation("X509 Token Accepted: {DisplayName}", args.Identity.DisplayName);
-                }
-                return;
+                m_logger.LogInformation("X509 Token Accepted: {DisplayName}", identity.DisplayName);
             }
+
+            return new ValueTask<IUserIdentity>(identity);
         }
 
         /// <summary>

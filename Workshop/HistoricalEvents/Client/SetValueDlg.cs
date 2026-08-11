@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Globalization;
 using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
@@ -74,7 +75,115 @@ namespace Quickstarts.HistoricalEvents.Client
                 return Variant.Null;
             }
 
-            return new Variant(ValueTB.Text, new TypeInfo(builtInType, ValueRanks.Scalar));
+            return ConvertToVariant(ValueTB.Text, builtInType);
+        }
+        #endregion
+
+        #region Private Methods
+        private static Variant ConvertToVariant(string text, BuiltInType builtInType)
+        {
+            switch (builtInType)
+            {
+                case BuiltInType.Boolean:
+                {
+                    return Variant.From(Convert.ToBoolean(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.SByte:
+                {
+                    return Variant.From(Convert.ToSByte(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.Byte:
+                {
+                    return Variant.From(Convert.ToByte(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.Int16:
+                {
+                    return Variant.From(Convert.ToInt16(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.UInt16:
+                {
+                    return Variant.From(Convert.ToUInt16(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.Int32:
+                {
+                    return Variant.From(Convert.ToInt32(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.UInt32:
+                {
+                    return Variant.From(Convert.ToUInt32(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.Int64:
+                {
+                    return Variant.From(Convert.ToInt64(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.UInt64:
+                {
+                    return Variant.From(Convert.ToUInt64(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.Float:
+                {
+                    return Variant.From(Convert.ToSingle(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.Double:
+                {
+                    return Variant.From(Convert.ToDouble(text, CultureInfo.InvariantCulture));
+                }
+
+                case BuiltInType.DateTime:
+                {
+                    return Variant.From(new DateTimeUtc(Convert.ToDateTime(text, CultureInfo.InvariantCulture)));
+                }
+
+                case BuiltInType.Guid:
+                {
+                    return Variant.From(new Uuid(Guid.Parse(text)));
+                }
+
+                case BuiltInType.ByteString:
+                {
+                    return Variant.From(ByteString.From(Convert.FromBase64String(text)));
+                }
+
+                case BuiltInType.NodeId:
+                {
+                    return Variant.From(NodeId.Parse(text));
+                }
+
+                case BuiltInType.ExpandedNodeId:
+                {
+                    return Variant.From(ExpandedNodeId.Parse(text));
+                }
+
+                case BuiltInType.StatusCode:
+                {
+                    return Variant.From(new StatusCode(UInt32.Parse(text, CultureInfo.InvariantCulture)));
+                }
+
+                case BuiltInType.QualifiedName:
+                {
+                    return Variant.From(QualifiedName.Parse(text));
+                }
+
+                case BuiltInType.LocalizedText:
+                {
+                    return Variant.From(new LocalizedText(text));
+                }
+
+                default:
+                {
+                    return Variant.From(text);
+                }
+            }
         }
         #endregion
 

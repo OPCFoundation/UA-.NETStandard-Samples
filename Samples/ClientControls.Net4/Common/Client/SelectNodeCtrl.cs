@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -165,13 +165,13 @@ namespace Opc.Ua.Client.Controls
                 {
                     NodeControl.Text = null;
 
-                    if (value != null && !NodeId.IsNull(value.NodeId))
+                    if (value != null && !(value.NodeId).IsNull)
                     {
                         NodeControl.Text = value.ToString();
                     }
                 }
 
-                if (value == null || NodeId.IsNull(value.NodeId))
+                if (value == null || (value.NodeId).IsNull)
                 {
                     m_selectedNode = null;
                     return;

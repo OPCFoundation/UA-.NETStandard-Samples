@@ -71,7 +71,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // set default root.
-            if (NodeId.IsNull(rootId))
+            if ((rootId).IsNull)
             {
                 rootId = Opc.Ua.ObjectIds.ObjectsFolder;
             }
@@ -119,7 +119,7 @@ namespace Opc.Ua.Client.Controls
             }
             
             // set default root.
-            if (NodeId.IsNull(rootId))
+            if ((rootId).IsNull)
             {
                 rootId = Opc.Ua.ObjectIds.ObjectsFolder;
             }

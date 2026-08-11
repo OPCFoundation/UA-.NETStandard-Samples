@@ -144,7 +144,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (NodeId.IsNull(reference.NodeId))
+                if ((reference.NodeId).IsNull)
                 {
                     return;
                 }
@@ -180,13 +180,13 @@ namespace Opc.Ua.Sample.Controls
                 {
                     case IdType.Opaque:
                     {
-                        NodeIdentifierTB.Text = Convert.ToBase64String((byte[])reference.NodeId.Identifier);
+                        NodeIdentifierTB.Text = reference.NodeId.TryGetValue(out ByteString id) ? Convert.ToBase64String(id.Span.ToArray()) : String.Empty;
                         break;
                     }
 
                     default:
                     {
-                        NodeIdentifierTB.Text = Utils.Format("{0}", reference.NodeId.Identifier);
+                        NodeIdentifierTB.Text = Utils.Format("{0}", reference.NodeId.IdentifierAsString);
                         break;
                     }
                 }

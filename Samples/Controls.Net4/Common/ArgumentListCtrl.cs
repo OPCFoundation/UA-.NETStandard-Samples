@@ -119,13 +119,13 @@ namespace Opc.Ua.Sample.Controls
             // read the value from the server.
             DataValue value = await m_session.ReadValueAsync(argumentsNode.NodeId, ct);
 
-            ExtensionObject[] argumentsList = value.Value as ExtensionObject[];
+            ExtensionObject[] argumentsList = value.WrappedValue.AsBoxedObject() as ExtensionObject[];
 
             if (argumentsList != null)
             {
                 for (int ii = 0; ii < argumentsList.Length; ii++)
                 {
-                    AddItem(argumentsList[ii].Body as Argument);
+                    AddItem(argumentsList[ii].TryGetValue<Argument>(out var argument, m_session.MessageContext) ? argument : null);
                 }
             }
 
@@ -147,7 +147,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument != null)
                 {
-                    values.Add(new Variant(argument.Value));
+                    values.Add(Variant.From((dynamic)argument.Value));
                 }
             }
 
@@ -167,7 +167,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument != null)
                 {
-                    argument.Value = values[ii++].Value;
+                    argument.Value = values[ii++].AsBoxedObject();
                     await UpdateItemAsync(item, argument, ct);
                 }
             }
@@ -234,7 +234,7 @@ namespace Opc.Ua.Sample.Controls
                         {
                             if (argument.ValueRank == ValueRanks.Scalar)
                             {
-                                argument.Value = new ExtensionObject(ExpandedNodeId.Null, Activator.CreateInstance(type));
+                                argument.Value = new ExtensionObject((IEncodeable)Activator.CreateInstance(type), false);
                             }
                             else
                             {

@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -227,7 +227,7 @@ namespace Quickstarts.Views
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }
@@ -681,7 +681,7 @@ namespace Quickstarts.Views
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }

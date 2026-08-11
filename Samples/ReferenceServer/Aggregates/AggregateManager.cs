@@ -95,7 +95,7 @@ namespace Opc.Ua.Aggregates
         /// <returns>True if the aggregate is supported.</returns>
         public bool IsSupported(NodeId aggregateId)
         {
-            if (NodeId.IsNull(aggregateId))
+            if ((aggregateId).IsNull)
             {
                 return false;
             }
@@ -178,7 +178,7 @@ namespace Opc.Ua.Aggregates
             double processingInterval,
             AggregateConfiguration configuration)
         {
-            if (NodeId.IsNull(aggregateId))
+            if ((aggregateId).IsNull)
             {
                 return null;
             }

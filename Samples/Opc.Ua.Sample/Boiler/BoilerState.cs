@@ -288,7 +288,7 @@ namespace Boiler
             }
             catch (Exception e)
             {
-                Utils.LogError(e, "Unexpected error during boiler simulation.");
+                m_simulationContext?.Telemetry?.CreateLogger<BoilerState>().LogError(e, "Unexpected error during boiler simulation.");
             }
         }
         #endregion

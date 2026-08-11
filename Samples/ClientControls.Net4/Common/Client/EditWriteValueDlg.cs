@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -82,19 +82,19 @@ namespace Opc.Ua.Client.Controls
 
             if (nodeToWrite.Value.StatusCode != StatusCodes.Good)
             {
-                StatusCodeTB.Text = (string)new Variant(nodeToWrite.Value.StatusCode).ConvertTo(BuiltInType.String).Value;
+                StatusCodeTB.Text = (string)Variant.From(nodeToWrite.Value.StatusCode).ConvertTo(BuiltInType.String).AsBoxedObject();
                 StatusCodeCK.Checked = true;
             }
 
             if (nodeToWrite.Value.SourceTimestamp != DateTime.MinValue)
             {
-                SourceTimestampTB.Text = (string)new Variant(nodeToWrite.Value.SourceTimestamp).ConvertTo(BuiltInType.String).Value;
+                SourceTimestampTB.Text = (string)Variant.From(nodeToWrite.Value.SourceTimestamp).ConvertTo(BuiltInType.String).AsBoxedObject();
                 SourceTimestampCK.Checked = true;
             }
 
             if (nodeToWrite.Value.ServerTimestamp != DateTime.MinValue)
             {
-                ServerTimestampTB.Text = (string)new Variant(nodeToWrite.Value.ServerTimestamp).ConvertTo(BuiltInType.String).Value;
+                ServerTimestampTB.Text = (string)Variant.From(nodeToWrite.Value.ServerTimestamp).ConvertTo(BuiltInType.String).AsBoxedObject();
                 ServerTimestampCK.Checked = true;
             }
 
@@ -113,17 +113,17 @@ namespace Opc.Ua.Client.Controls
 
             if (StatusCodeCK.Checked)
             {
-                dataValue = dataValue.WithStatus((StatusCode)new Variant(StatusCodeTB.Text).ConvertTo(BuiltInType.StatusCode).Value);
+                dataValue = dataValue.WithStatus((StatusCode)Variant.From(StatusCodeTB.Text).ConvertTo(BuiltInType.StatusCode).AsBoxedObject());
             }
 
             if (SourceTimestampCK.Checked)
             {
-                dataValue = dataValue.WithSourceTimestamp((DateTimeUtc)new Variant(SourceTimestampTB.Text).ConvertTo(BuiltInType.DateTime).Value);
+                dataValue = dataValue.WithSourceTimestamp((DateTimeUtc)Variant.From(SourceTimestampTB.Text).ConvertTo(BuiltInType.DateTime).AsBoxedObject());
             }
 
             if (ServerTimestampCK.Checked)
             {
-                dataValue = dataValue.WithServerTimestamp((DateTimeUtc)new Variant(ServerTimestampTB.Text).ConvertTo(BuiltInType.DateTime).Value);
+                dataValue = dataValue.WithServerTimestamp((DateTimeUtc)Variant.From(ServerTimestampTB.Text).ConvertTo(BuiltInType.DateTime).AsBoxedObject());
             }
 
             result.Value = dataValue;
@@ -157,21 +157,21 @@ namespace Opc.Ua.Client.Controls
 
                 if (StatusCodeCK.Checked)
                 {
-                    new Variant(StatusCodeTB.Text).ConvertTo(BuiltInType.StatusCode);
+                    Variant.From(StatusCodeTB.Text).ConvertTo(BuiltInType.StatusCode);
                 }
 
                 SourceTimestampTB.Text = SourceTimestampTB.Text.Trim();
 
                 if (SourceTimestampCK.Checked)
                 {
-                    new Variant(SourceTimestampTB.Text).ConvertTo(BuiltInType.DateTime);
+                    Variant.From(SourceTimestampTB.Text).ConvertTo(BuiltInType.DateTime);
                 }
 
                 ServerTimestampTB.Text = ServerTimestampTB.Text.Trim();
 
                 if (ServerTimestampCK.Checked)
                 {
-                    new Variant(ServerTimestampTB.Text).ConvertTo(BuiltInType.DateTime);
+                    Variant.From(ServerTimestampTB.Text).ConvertTo(BuiltInType.DateTime);
                 }
 
                 DialogResult = DialogResult.OK;

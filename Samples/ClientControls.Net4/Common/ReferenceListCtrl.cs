@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -152,9 +152,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Gets the list of references to follow.
         /// </summary>
-        private BrowseDescriptionCollection CreateNodesToBrowse()
+        private List<BrowseDescription> CreateNodesToBrowse()
         {
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
 
             if (ReferenceTypeIds != null && ReferenceTypeIds.Length > 0)
             {

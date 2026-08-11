@@ -299,11 +299,11 @@ namespace Opc.Ua.Client.Controls
                 nodeToRead.DataEncoding = m_encodingName;
 
 
-                ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+                List<ReadValueId> nodesToRead = new List<ReadValueId>();
                 nodesToRead.Add(nodeToRead);
 
                 // read the attributes.
-                DataValueCollection results = null;
+                List<DataValue> results = null;
                 DiagnosticInfoCollection diagnosticInfos = null;
 
                 m_session.Read(
@@ -344,7 +344,7 @@ namespace Opc.Ua.Client.Controls
                 nodeToWrite.Value = new DataValue();
                 nodeToWrite.Value.WrappedValue = GetValue();
 
-                WriteValueCollection nodesToWrite = new WriteValueCollection();
+                List<WriteValue> nodesToWrite = new List<WriteValue>();
                 nodesToWrite.Add(nodeToWrite);
 
                 // read the attributes.

@@ -45,12 +45,12 @@ namespace Quickstarts.MethodsServer
     {
         public ArrayOf<Argument> GetValue(Variant value)
         {
-            if (value.Value is Argument[] arguments)
+            if (value.AsBoxedObject() is Argument[] arguments)
             {
                 return arguments.ToArrayOf();
             }
 
-            if (value.Value is ArrayOf<Argument> arrayOfArguments)
+            if (value.AsBoxedObject() is ArrayOf<Argument> arrayOfArguments)
             {
                 return arrayOfArguments;
             }
@@ -60,7 +60,7 @@ namespace Quickstarts.MethodsServer
 
         public Variant WithValue(ArrayOf<Argument> value)
         {
-            return new Variant(value.ToArray());
+            return Variant.FromStructure<Argument>(value, false);
         }
     }
 
@@ -263,8 +263,8 @@ namespace Quickstarts.MethodsServer
             }
 
             // check the data type of the input arguments.
-            uint? initialState = inputArguments[0].Value as uint?;
-            uint? finalState = inputArguments[1].Value as uint?;
+            uint? initialState = inputArguments[0].AsBoxedObject() as uint?;
+            uint? finalState = inputArguments[1].AsBoxedObject() as uint?;
 
             if (initialState == null || finalState == null)
             {

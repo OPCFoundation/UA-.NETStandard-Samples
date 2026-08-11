@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -179,7 +179,7 @@ namespace Opc.Ua.Client.Controls
 
             ItemsLV.Items.Clear();
 
-            ApplicationDescriptionCollection servers = state as ApplicationDescriptionCollection;
+            List<ApplicationDescription> servers = state as List<ApplicationDescription>;
 
             if (servers != null)
             {
@@ -265,7 +265,7 @@ namespace Opc.Ua.Client.Controls
                     DiagnosticsMasks.None,
                     ct);
 
-                ApplicationDescriptionCollection servers = new ApplicationDescriptionCollection();
+                List<ApplicationDescription> servers = new List<ApplicationDescription>();
                 servers.AddRange(await client.FindServersAsync(ArrayOf<string>.Null, ct));
                 m_discoveryUrl = discoveryUrl.ToString();
                 OnUpdateServers(servers);

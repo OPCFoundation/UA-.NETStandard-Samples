@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -115,7 +115,7 @@ namespace Opc.Ua.Client.Controls
             {
                 m_rootId = value;
 
-                if (NodeId.IsNull(m_rootId))
+                if ((m_rootId).IsNull)
                 {
                     m_rootId = (NodeId)Objects.RootFolder;
                 }

@@ -189,36 +189,6 @@ namespace AggregationServer
         {
             return ToVariant(value, m_remoteNamespaceIndexes);
         }
-
-        /// <summary>
-        /// Converts a remote ExtensionObject to a local ExtensionObject.
-        /// </summary>
-        public object ToLocalValue(object value)
-        {
-            if (value is Variant)
-            {
-                return ToVariant((Variant)value, m_localNamespaceIndexes);
-            }
-            else
-            {
-                return ToVariant(new Variant(value), m_localNamespaceIndexes).Value;
-            }
-        }
-
-        /// <summary>
-        /// Converts a local ExtensionObject to a remote ExtensionObject.
-        /// </summary>
-        public object ToRemoteValue(object value)
-        {
-            if (value is Variant)
-            {
-                return ToVariant((Variant)value, m_remoteNamespaceIndexes);
-            }
-            else
-            {
-                return ToVariant(new Variant(value), m_remoteNamespaceIndexes).Value;
-            }
-        }
         #endregion
 
         #region Private Methods
@@ -227,7 +197,7 @@ namespace AggregationServer
         /// </summary>
         private NodeId ToId(NodeId nodeId, int[] namespaceIndexes)
         {
-            if (NodeId.IsNull(nodeId))
+            if ((nodeId).IsNull)
             {
                 return NodeId.Null;
             }
@@ -243,7 +213,27 @@ namespace AggregationServer
                 return NodeId.Null;
             }
 
-            return new NodeId(nodeId.Identifier, (ushort)namespaceIndexes[nodeId.NamespaceIndex]);
+            if (nodeId.TryGetValue(out uint numericId))
+            {
+                return new NodeId(numericId, (ushort)namespaceIndexes[nodeId.NamespaceIndex]);
+            }
+
+            if (nodeId.TryGetValue(out string stringId))
+            {
+                return new NodeId(stringId, (ushort)namespaceIndexes[nodeId.NamespaceIndex]);
+            }
+
+            if (nodeId.TryGetValue(out Guid guidId))
+            {
+                return new NodeId(guidId, (ushort)namespaceIndexes[nodeId.NamespaceIndex]);
+            }
+
+            if (nodeId.TryGetValue(out ByteString byteStringId))
+            {
+                return new NodeId(byteStringId, (ushort)namespaceIndexes[nodeId.NamespaceIndex]);
+            }
+
+            return NodeId.Null;
         }
 
         /// <summary>
@@ -251,7 +241,7 @@ namespace AggregationServer
         /// </summary>
         private ExpandedNodeId ToId(ExpandedNodeId nodeId, int[] namespaceIndexes)
         {
-            if (NodeId.IsNull(nodeId))
+            if ((nodeId).IsNull)
             {
                 return NodeId.Null;
             }
@@ -266,7 +256,27 @@ namespace AggregationServer
                 return NodeId.Null;
             }
 
-            return new ExpandedNodeId(nodeId.Identifier, (ushort)namespaceIndexes[nodeId.NamespaceIndex], nodeId.NamespaceUri, nodeId.ServerIndex);
+            if (nodeId.TryGetValue(out uint numericId))
+            {
+                return new ExpandedNodeId(numericId, (ushort)namespaceIndexes[nodeId.NamespaceIndex], nodeId.NamespaceUri, nodeId.ServerIndex);
+            }
+
+            if (nodeId.TryGetValue(out string stringId))
+            {
+                return new ExpandedNodeId(stringId, (ushort)namespaceIndexes[nodeId.NamespaceIndex], nodeId.NamespaceUri, nodeId.ServerIndex);
+            }
+
+            if (nodeId.TryGetValue(out Guid guidId))
+            {
+                return new ExpandedNodeId(guidId, (ushort)namespaceIndexes[nodeId.NamespaceIndex], nodeId.NamespaceUri, nodeId.ServerIndex);
+            }
+
+            if (nodeId.TryGetValue(out ByteString byteStringId))
+            {
+                return new ExpandedNodeId(byteStringId, (ushort)namespaceIndexes[nodeId.NamespaceIndex], nodeId.NamespaceUri, nodeId.ServerIndex);
+            }
+
+            return NodeId.Null;
         }
 
         /// <summary>
@@ -274,7 +284,7 @@ namespace AggregationServer
         /// </summary>
         private QualifiedName ToName(QualifiedName name, int[] namespaceIndexes)
         {
-            if (QualifiedName.IsNull(name))
+            if ((name).IsNull)
             {
                 return QualifiedName.Null;
             }
@@ -297,12 +307,12 @@ namespace AggregationServer
         /// </summary>
         private ExtensionObject ToExtensionObject(ExtensionObject extension, int[] namespaceIndexes)
         {
-            if (ExtensionObject.IsNull(extension))
+            if ((extension).IsNull)
             {
                 return extension;
             }
 
-            Argument argument = extension.Body as Argument;
+            Argument argument = extension.TryGetValue<Argument>(out var value, ServiceMessageContext.CreateEmpty(null)) ? value : null;
 
             if (argument != null)
             {
@@ -332,12 +342,12 @@ namespace AggregationServer
 
             TypeInfo type = value.TypeInfo;
 
-            if (type == null)
+            if (type.IsUnknown)
             {
-                type = TypeInfo.Construct(value.Value);
+                type = TypeInfo.Construct(value.AsBoxedObject());
             }
 
-            if (type == null)
+            if (type.IsUnknown)
             {
                 return Variant.Null;
             }
@@ -348,22 +358,22 @@ namespace AggregationServer
                 {
                     case BuiltInType.NodeId:
                     {
-                        return new Variant(ToId((NodeId)value.Value, namespaceIndexes));
+                        return Variant.From(ToId((NodeId)value.AsBoxedObject(), namespaceIndexes));
                     }
 
                     case BuiltInType.ExpandedNodeId:
                     {
-                        return new Variant(ToId((ExpandedNodeId)value.Value, namespaceIndexes));
+                        return Variant.From(ToId((ExpandedNodeId)value.AsBoxedObject(), namespaceIndexes));
                     }
 
                     case BuiltInType.QualifiedName:
                     {
-                        return new Variant(ToName((QualifiedName)value.Value, namespaceIndexes));
+                        return Variant.From(ToName((QualifiedName)value.AsBoxedObject(), namespaceIndexes));
                     }
 
                     case BuiltInType.ExtensionObject:
                     {
-                        return new Variant(ToExtensionObject((ExtensionObject)value.Value, namespaceIndexes));
+                        return Variant.From(ToExtensionObject((ExtensionObject)value.AsBoxedObject(), namespaceIndexes));
                     }
                 }
             }
@@ -381,14 +391,22 @@ namespace AggregationServer
 
                         if (Object.ReferenceEquals(m_localNamespaceIndexes, namespaceIndexes))
                         {
-                            array = CastArray((Array)value.Value, CastArrayToLocal);
+                            array = CastArray((Array)value.AsBoxedObject(), CastArrayToLocal);
                         }
                         else
                         {
-                            array = CastArray((Array)value.Value, CastArrayToRemote);
+                            array = CastArray((Array)value.AsBoxedObject(), CastArrayToRemote);
                         }
 
-                        return new Variant(array, type);
+                        return type.BuiltInType switch
+                        {
+                            BuiltInType.NodeId => Variant.From((NodeId[])array),
+                            BuiltInType.ExpandedNodeId => Variant.From((ExpandedNodeId[])array),
+                            BuiltInType.QualifiedName => Variant.From((QualifiedName[])array),
+                            BuiltInType.ExtensionObject => Variant.From((ExtensionObject[])array),
+                            BuiltInType.Variant => Variant.From((Variant[])array),
+                            _ => value
+                        };
                     }
                 }
             }
@@ -401,16 +419,7 @@ namespace AggregationServer
         /// </summary>
         private object CastArrayToLocal(object source, BuiltInType srcType, BuiltInType dstType)
         {
-            if (source is Variant)
-            {
-                Variant result = ToVariant((Variant)source, m_localNamespaceIndexes);
-                return result;
-            }
-            else
-            {
-                Variant result = ToVariant(new Variant(source), m_localNamespaceIndexes);
-                return result.Value;
-            }
+            return MapElement(source, m_localNamespaceIndexes);
         }
 
         /// <summary>
@@ -418,15 +427,22 @@ namespace AggregationServer
         /// </summary>
         private object CastArrayToRemote(object source, BuiltInType srcType, BuiltInType dstType)
         {
-            if (source is Variant)
+            return MapElement(source, m_remoteNamespaceIndexes);
+        }
+
+        /// <summary>
+        /// Maps the namespace indexes of a single array element.
+        /// </summary>
+        private object MapElement(object source, int[] namespaceIndexes)
+        {
+            switch (source)
             {
-                Variant result = ToVariant((Variant)source, m_remoteNamespaceIndexes);
-                return result;
-            }
-            else
-            {
-                Variant result = ToVariant(new Variant(source), m_remoteNamespaceIndexes);
-                return result.Value;
+                case Variant variant: return ToVariant(variant, namespaceIndexes);
+                case NodeId nodeId: return ToId(nodeId, namespaceIndexes);
+                case ExpandedNodeId expandedNodeId: return ToId(expandedNodeId, namespaceIndexes);
+                case QualifiedName qualifiedName: return ToName(qualifiedName, namespaceIndexes);
+                case ExtensionObject extension: return ToExtensionObject(extension, namespaceIndexes);
+                default: return source;
             }
         }
         #endregion

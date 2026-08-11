@@ -72,7 +72,7 @@ namespace Quickstarts.HistoricalAccessServer
             }
 
             // parent must have a string identifier.
-            string parentId = instance.Parent.NodeId.Identifier as string;
+            string parentId = instance.Parent.NodeId.TryGetValue(out string id) ? id : null;
 
             if (parentId == null)
             {

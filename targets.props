@@ -1,8 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <!-- OPC UA 2.0 migration shims use C# 14 'extension' members; require LangVersion 14.0. -->
-    <LangVersion>14.0</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <Choose>
@@ -44,12 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.302" PrivateAssets="All" />
-  </ItemGroup>
-
-  <!-- OPC UA 1.5.378 -> 2.0 migration analyzer/generator/runtime shim.
-       Build-only dependency; remove once the migration is complete and the build is warning-free. -->
-  <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.MigrationAnalyzer" Version="2.0.158.59919-preview" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

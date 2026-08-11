@@ -89,12 +89,12 @@ namespace Quickstarts
         public static ParsedNodeId Parse(NodeId nodeId)
         {
             // can only parse non-null string node identifiers.
-            if (NodeId.IsNull(nodeId))
+            if ((nodeId).IsNull)
             {
                 return null;
             }
 
-            string identifier = nodeId.Identifier as string;
+            string identifier = nodeId.TryGetValue(out string id) ? id : null;
 
             if (String.IsNullOrEmpty(identifier))
             {

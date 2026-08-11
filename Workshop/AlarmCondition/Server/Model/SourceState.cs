@@ -338,7 +338,7 @@ namespace Quickstarts.AlarmConditionServer
             node.ConfirmedState = new TwoStateVariableState(node);
             node.Confirm = new AddCommentMethodState(node);
 
-            if (NodeId.IsNull(branchId))
+            if ((branchId).IsNull)
             {
                 node.SuppressedState = new TwoStateVariableState(node);
                 node.ShelvingState = new ShelvedStateMachineState(node);
@@ -378,7 +378,7 @@ namespace Quickstarts.AlarmConditionServer
                 true);
 
             // don't add branches to the address space.
-            if (NodeId.IsNull(branchId))
+            if ((branchId).IsNull)
             {
                 this.AddChild(node);
             }
@@ -711,7 +711,7 @@ namespace Quickstarts.AlarmConditionServer
                 return 0;
             }
 
-            uint? recordNumber = alarm.BranchId.Value.Identifier as uint?;
+            uint? recordNumber = alarm.BranchId.Value.TryGetValue(out uint id) ? id : null;
 
             if (recordNumber != null)
             {

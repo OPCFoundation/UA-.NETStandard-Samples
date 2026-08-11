@@ -243,7 +243,7 @@ namespace MemoryBuffer
                 return StatusCodes.BadIndexRangeInvalid;
             }
 
-            if (!QualifiedName.IsNull(dataEncoding))
+            if (!(dataEncoding).IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }
@@ -295,7 +295,7 @@ namespace MemoryBuffer
                 return StatusCodes.BadIndexRangeInvalid;
             }
 
-            if (!QualifiedName.IsNull(dataEncoding))
+            if (!(dataEncoding).IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }
@@ -331,7 +331,7 @@ namespace MemoryBuffer
                 {
                     case BuiltInType.UInt32:
                     {
-                        uint? valueToWrite = value.Value as uint?;
+                        uint? valueToWrite = value.AsBoxedObject() as uint?;
 
                         if (valueToWrite == null)
                         {
@@ -344,7 +344,7 @@ namespace MemoryBuffer
 
                     case BuiltInType.Double:
                     {
-                        double? valueToWrite = value.Value as double?;
+                        double? valueToWrite = value.AsBoxedObject() as double?;
 
                         if (valueToWrite == null)
                         {

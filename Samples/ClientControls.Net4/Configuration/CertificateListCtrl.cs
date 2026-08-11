@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -72,7 +72,7 @@ namespace Opc.Ua.Client.Controls
         };
 
         private CertificateStoreIdentifier m_storeId;
-        private CertificateIdentifierCollection m_certificates;
+        private List<CertificateIdentifier> m_certificates;
         private IList<string> m_thumbprints;
         private List<ListViewItem> m_items;
         #endregion
@@ -170,7 +170,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the applications in the control.
         /// </summary>
-        internal void Initialize(CertificateIdentifierCollection certificates)
+        internal void Initialize(List<CertificateIdentifier> certificates)
         {
             ItemsLV.Items.Clear();
 
@@ -543,7 +543,7 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private void PasteMI_Click(object sender, EventArgs e)
+        private async void PasteMI_Click(object sender, EventArgs e)
         {
             try
             {
@@ -563,14 +563,16 @@ namespace Opc.Ua.Client.Controls
                     id = (CertificateIdentifier)serializer.ReadObject(reader, false);
                 }
 
-                if (id.Certificate != null)
+                var certificate = await CertificateIdentifierResolver.ResolveAsync(id, null, false, null, Telemetry, default);
+
+                if (certificate != null)
                 {
                     using (ICertificateStore store = m_storeId.OpenStore(Telemetry))
                     {
-                        store.AddAsync(Certificate.From(id.Certificate));
+                        await store.AddAsync(certificate);
                     }
 
-                    AddItem(id.Certificate);
+                    AddItem(certificate.AsX509Certificate2());
                 }
             }
             catch (Exception exception)

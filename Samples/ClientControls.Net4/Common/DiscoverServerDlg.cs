@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -122,7 +122,7 @@ namespace Opc.Ua.Client.Controls
                 // Connect to the local discovery server and find the available servers.
                 using (DiscoveryClient client = await DiscoveryClient.CreateAsync(new Uri(Utils.Format("opc.tcp://{0}:4840", hostName)), configuration, m_telemetry, DiagnosticsMasks.None, ct))
                 {
-                    ApplicationDescriptionCollection servers = new ApplicationDescriptionCollection();
+                    List<ApplicationDescription> servers = new List<ApplicationDescription>();
                     servers.AddRange(await client.FindServersAsync(ArrayOf<string>.Null, ct));
 
                     // populate the drop down list with the discovery URLs for the available servers.

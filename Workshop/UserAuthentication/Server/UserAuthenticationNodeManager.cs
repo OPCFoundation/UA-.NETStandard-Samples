@@ -168,7 +168,7 @@ namespace Quickstarts.UserAuthenticationServer
             // attempt to update file system.
             try
             {
-                string filePath = value.Value as string;
+                string filePath = value.AsBoxedObject() as string;
                 PropertyState<string> variable = node as PropertyState<string>;
 
                 if (!String.IsNullOrEmpty(variable.Value))

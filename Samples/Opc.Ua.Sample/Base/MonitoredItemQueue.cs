@@ -367,7 +367,7 @@ namespace Opc.Ua.Sample
         /// <param name="error">The error to update.</param>
         private void SetOverflowBit(ref DataValue value, ref ServiceResult error)
         {
-            if (value != null)
+            if (!value.IsNull)
             {
                 value = new DataValue(
                     value.WrappedValue,

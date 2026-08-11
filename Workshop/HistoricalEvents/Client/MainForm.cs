@@ -33,6 +33,7 @@ using System.Drawing;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using System.IO;
+using System.Threading;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -307,7 +308,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 ConnectServerCTRL.PreferredLocales = new string[] { locale };
-                m_session.ChangePreferredLocales(new List<string>(ConnectServerCTRL.PreferredLocales));
+                await m_session.ChangePreferredLocalesAsync(new List<string>(ConnectServerCTRL.PreferredLocales), CancellationToken.None);
             }
             catch (Exception exception)
             {

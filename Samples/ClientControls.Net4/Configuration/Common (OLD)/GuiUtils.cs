@@ -428,7 +428,7 @@ namespace Opc.Ua.Client.Controls
         {
             TypeInfo typeInfo = TypeInfo.Construct(value);
 
-            if (typeInfo != null)
+            if (!typeInfo.IsUnknown)
             {
                 return EditValue(session, value, new NodeId((uint)typeInfo.BuiltInType), typeInfo.ValueRank, telemetry);
             }

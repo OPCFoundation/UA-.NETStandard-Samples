@@ -137,7 +137,7 @@ namespace Quickstarts.ReferenceServer
                         row[6] = e.Parameters.QueueSize;
                         row[7] = e.Parameters.DiscardOldest;
 
-                        if (e.Parameters.Filter != null)
+                        if (!e.Parameters.Filter.IsNull)
                         {
                             row[8] = e.Parameters.Filter.ToString();
                         }
@@ -175,7 +175,7 @@ namespace Quickstarts.ReferenceServer
                 e.EventType = EventType.WriteValue;
                 e.NodeId = nodeId;
                 e.ServerHandle = 0;
-                e.Timestamp = HiResClock.UtcNow;
+                e.Timestamp = DateTime.UtcNow;
                 e.Value = value;
                 e.Parameters = null;
                 e.MonitoringMode = MonitoringMode.Disabled;
@@ -205,7 +205,7 @@ namespace Quickstarts.ReferenceServer
                 e.EventType = EventType.QueueValue;
                 e.NodeId = nodeId;
                 e.ServerHandle = serverHandle;
-                e.Timestamp = HiResClock.UtcNow;
+                e.Timestamp = DateTime.UtcNow;
                 e.Value = value;
                 e.Parameters = null;
                 e.MonitoringMode = MonitoringMode.Disabled;
@@ -229,7 +229,7 @@ namespace Quickstarts.ReferenceServer
                 e.EventType = EventType.FilterValue;
                 e.NodeId = nodeId;
                 e.ServerHandle = serverHandle;
-                e.Timestamp = HiResClock.UtcNow;
+                e.Timestamp = DateTime.UtcNow;
                 e.Value = value;
                 e.Parameters = null;
                 e.MonitoringMode = MonitoringMode.Disabled;
@@ -253,7 +253,7 @@ namespace Quickstarts.ReferenceServer
                 e.EventType = EventType.DiscardValue;
                 e.NodeId = nodeId;
                 e.ServerHandle = serverHandle;
-                e.Timestamp = HiResClock.UtcNow;
+                e.Timestamp = DateTime.UtcNow;
                 e.Value = value;
                 e.Parameters = null;
                 e.MonitoringMode = MonitoringMode.Disabled;
@@ -277,7 +277,7 @@ namespace Quickstarts.ReferenceServer
                 e.EventType = EventType.PublishValue;
                 e.NodeId = nodeId;
                 e.ServerHandle = serverHandle;
-                e.Timestamp = HiResClock.UtcNow;
+                e.Timestamp = DateTime.UtcNow;
                 e.Value = value;
                 e.Parameters = null;
                 e.MonitoringMode = MonitoringMode.Disabled;
@@ -308,7 +308,7 @@ namespace Quickstarts.ReferenceServer
                 e.EventType = EventType.CreateItem;
                 e.NodeId = nodeId;
                 e.ServerHandle = serverHandle;
-                e.Timestamp = HiResClock.UtcNow;
+                e.Timestamp = DateTime.UtcNow;
                 e.Value = null;
                 e.Parameters = new MonitoringParameters();
                 e.Parameters.SamplingInterval = samplingInterval;
@@ -343,7 +343,7 @@ namespace Quickstarts.ReferenceServer
                 e.EventType = EventType.ModifyItem;
                 e.NodeId = nodeId;
                 e.ServerHandle = serverHandle;
-                e.Timestamp = HiResClock.UtcNow;
+                e.Timestamp = DateTime.UtcNow;
                 e.Value = null;
                 e.Parameters = new MonitoringParameters();
                 e.Parameters.SamplingInterval = samplingInterval;

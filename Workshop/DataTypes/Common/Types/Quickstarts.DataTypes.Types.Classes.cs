@@ -169,7 +169,7 @@ namespace Quickstarts.DataTypes.Types
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }
@@ -234,12 +234,12 @@ namespace Quickstarts.DataTypes.Types
         {
             public VehicleType[] GetValue(Variant value)
             {
-                return value.Value as VehicleType[];
+                return value.AsBoxedObject() as VehicleType[];
             }
 
             public Variant WithValue(VehicleType[] value)
             {
-                return new Variant(value);
+                return Variant.FromStructure<VehicleType>(value, false);
             }
         }
 

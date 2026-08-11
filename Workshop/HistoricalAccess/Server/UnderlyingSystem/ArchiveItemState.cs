@@ -219,12 +219,12 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 TypeInfo typeInfo = value.WrappedValue.TypeInfo;
 
-                if (typeInfo == null)
+                if (typeInfo.IsUnknown)
                 {
-                    typeInfo = TypeInfo.Construct(value.Value);
+                    typeInfo = TypeInfo.Construct(value.WrappedValue.AsBoxedObject());
                 }
 
-                if (typeInfo == null || typeInfo.BuiltInType != m_archiveItem.DataType || typeInfo.ValueRank != ValueRanks.Scalar)
+                if (typeInfo.IsUnknown || typeInfo.BuiltInType != m_archiveItem.DataType || typeInfo.ValueRank != ValueRanks.Scalar)
                 {
                     return StatusCodes.BadTypeMismatch.Code;
                 }
@@ -279,7 +279,7 @@ namespace Quickstarts.HistoricalAccessServer
                 modifiedRow[1] = value.ServerTimestamp;
                 modifiedRow[2] = value;
 
-                if (value.WrappedValue.TypeInfo != null)
+                if (!value.WrappedValue.TypeInfo.IsUnknown)
                 {
                     modifiedRow[3] = value.WrappedValue.TypeInfo.BuiltInType;
                     modifiedRow[4] = value.WrappedValue.TypeInfo.ValueRank;
@@ -303,7 +303,7 @@ namespace Quickstarts.HistoricalAccessServer
             row[1] = value.ServerTimestamp;
             row[2] = value;
 
-            if (value.WrappedValue.TypeInfo != null)
+            if (!value.WrappedValue.TypeInfo.IsUnknown)
             {
                 row[3] = value.WrappedValue.TypeInfo.BuiltInType;
                 row[4] = value.WrappedValue.TypeInfo.ValueRank;

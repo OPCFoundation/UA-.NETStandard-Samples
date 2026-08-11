@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2021 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -178,7 +178,7 @@ namespace Quickstarts.SimpleEvents
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }
@@ -366,7 +366,7 @@ namespace Quickstarts.SimpleEvents
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }
@@ -410,12 +410,12 @@ namespace Quickstarts.SimpleEvents
         {
             public CycleStepDataType[] GetValue(Variant value)
             {
-                return value.Value as CycleStepDataType[];
+                return value.AsBoxedObject() as CycleStepDataType[];
             }
 
             public Variant WithValue(CycleStepDataType[] value)
             {
-                return new Variant(value);
+                return Variant.FromStructure<CycleStepDataType>(value, false);
             }
         }
 
@@ -545,7 +545,7 @@ namespace Quickstarts.SimpleEvents
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }

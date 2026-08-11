@@ -157,7 +157,7 @@ namespace Opc.Ua.Sample
         /// <returns>True if the namespace is one of the nodes.</returns>
         protected virtual bool IsNodeIdInNamespace(NodeId nodeId)
         {
-            if (NodeId.IsNull(nodeId))
+            if ((nodeId).IsNull)
             {
                 return false;
             }
@@ -286,7 +286,7 @@ namespace Opc.Ua.Sample
             // must release the lock before removing cross references to other node managers.
             if (referencesToRemove.Count > 0)
             {
-                Server.NodeManager.RemoveReferences(referencesToRemove);
+                Server.NodeManager.RemoveReferencesAsync(referencesToRemove).GetAwaiter().GetResult();
             }
 
             return found;
@@ -583,14 +583,14 @@ namespace Opc.Ua.Sample
 
                 if (variable != null && variable.Value.IsNull)
                 {
-                    variable.Value = new Variant(TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree));
+                    variable.Value = TypeInfo.GetDefaultVariantValue(variable.DataType, variable.ValueRank, Server.TypeTree);
                 }
 
                 // add reference from supertype for type nodes.
                 /*
                 BaseTypeState type = source as BaseTypeState;
 
-                if (type != null && !NodeId.IsNull(type.SuperTypeId))
+                if (type != null && !(type.SuperTypeId).IsNull)
                 {
                     if (!IsNodeIdInNamespace(type.SuperTypeId))
                     {
@@ -688,7 +688,7 @@ namespace Opc.Ua.Sample
         /// </summary>
         protected void AddTypesToTypeTree(BaseTypeState type)
         {
-            if (!NodeId.IsNull(type.SuperTypeId))
+            if (!(type.SuperTypeId).IsNull)
             {
                 if (!Server.TypeTree.IsKnown(type.SuperTypeId))
                 {
@@ -930,17 +930,17 @@ namespace Opc.Ua.Sample
 
                 if (!values[0].IsNull && !values[1].IsNull)
                 {
-                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0].Value) & ((uint)values[1].Value));
+                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0].AsBoxedObject()) & ((uint)values[1].AsBoxedObject()));
                 }
 
-                metadata.DataType = (NodeId)values[2].Value;
+                metadata.DataType = (NodeId)values[2].AsBoxedObject();
 
                 if (!values[3].IsNull)
                 {
-                    metadata.ValueRank = (int)values[3].Value;
+                    metadata.ValueRank = (int)values[3].AsBoxedObject();
                 }
 
-                metadata.ArrayDimensions = values[4].Value switch
+                metadata.ArrayDimensions = values[4].AsBoxedObject() switch
                 {
                     ArrayOf<uint> dimensions => dimensions,
                     IList<uint> dimensions => dimensions.ToArrayOf(),
@@ -949,17 +949,17 @@ namespace Opc.Ua.Sample
 
                 if (!values[5].IsNull && !values[6].IsNull)
                 {
-                    metadata.AccessLevel = (byte)(((byte)values[5].Value) & ((byte)values[6].Value));
+                    metadata.AccessLevel = (byte)(((byte)values[5].AsBoxedObject()) & ((byte)values[6].AsBoxedObject()));
                 }
 
                 if (!values[7].IsNull)
                 {
-                    metadata.EventNotifier = (byte)values[7].Value;
+                    metadata.EventNotifier = (byte)values[7].AsBoxedObject();
                 }
 
                 if (!values[8].IsNull && !values[9].IsNull)
                 {
-                    metadata.Executable = (((bool)values[8].Value) && ((bool)values[9].Value));
+                    metadata.Executable = (((bool)values[8].AsBoxedObject()) && ((bool)values[9].AsBoxedObject()));
                 }
 
                 // get instance references.
@@ -2397,7 +2397,7 @@ namespace Opc.Ua.Sample
             range = null;
 
             // check for valid filter type.
-            filter = requestedFilter.Body as DataChangeFilter;
+            filter = requestedFilter.TryGetValue<DataChangeFilter>(out var requestedDataChangeFilter, ServiceMessageContext.CreateEmpty(null)) ? requestedDataChangeFilter : null;
 
             if (filter == null)
             {
@@ -2446,7 +2446,7 @@ namespace Opc.Ua.Sample
                     return StatusCodes.BadMonitoredItemFilterUnsupported;
                 }
 
-                range = euRange.Value.Value as Range;
+                range = euRange.Value.AsBoxedObject() as Range;
 
                 if (range == null)
                 {
@@ -2517,7 +2517,7 @@ namespace Opc.Ua.Sample
             DataChangeFilter filter = null;
             Range range = null;
 
-            if (!ExtensionObject.IsNull(parameters.Filter))
+            if (!(parameters.Filter).IsNull)
             {
                 error = ValidateDataChangeFilter(
                     context,
@@ -2778,7 +2778,7 @@ namespace Opc.Ua.Sample
             DataChangeFilter filter = null;
             Range range = null;
 
-            if (!ExtensionObject.IsNull(parameters.Filter))
+            if (!(parameters.Filter).IsNull)
             {
                 error = ValidateDataChangeFilter(
                     context,

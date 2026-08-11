@@ -169,7 +169,7 @@ namespace AggregationServer
 
                 string rootName = "Root";
 
-                if (m_endpoint.Description != null && m_endpoint.Description.Server != null && m_endpoint.Description.Server.ApplicationName != null)
+                if (m_endpoint.Description != null && m_endpoint.Description.Server != null && !m_endpoint.Description.Server.ApplicationName.IsNull)
                 {
                     rootName = m_endpoint.Description.Server.ApplicationName.Text;
                 }
@@ -300,7 +300,7 @@ namespace AggregationServer
             List<NodeHandle> nodesToValidate,
             IDictionary<NodeId, NodeState> cache)
         {
-            ReadValueIdCollection requests = new ReadValueIdCollection();
+            List<ReadValueId> requests = new List<ReadValueId>();
             List<int> indexes = new List<int>();
 
             for (int ii = 0; ii < nodesToValidate.Count; ii++)
@@ -405,7 +405,7 @@ namespace AggregationServer
             List<NodeHandle> nodesToValidate,
             IDictionary<NodeId, NodeState> cache)
         {
-            WriteValueCollection requests = new WriteValueCollection();
+            List<WriteValue> requests = new List<WriteValue>();
             List<int> indexes = new List<int>();
 
             // validates the nodes and constructs requests for external nodes.
@@ -505,7 +505,7 @@ namespace AggregationServer
             ServerSystemContext systemContext = SystemContext.Copy(context);
             IDictionary<NodeId, NodeState> operationCache = new NodeIdDictionary<NodeState>();
 
-            CallMethodRequestCollection requests = new CallMethodRequestCollection();
+            List<CallMethodRequest> requests = new List<CallMethodRequest>();
             List<int> indexes = new List<int>();
 
             // validates the nodes and constructs requests for external nodes.
@@ -1551,7 +1551,7 @@ namespace AggregationServer
                         BaseVariableTypeState value = new BaseDataVariableTypeState();
 #pragma warning restore CA2000
                         value.IsAbstract = ((IVariableType)node).IsAbstract;
-                        value.Value = new Variant(m_mapper.ToLocalValue(((IVariableType)node).Value));
+                        value.Value = m_mapper.ToLocalVariant(((IVariableType)node).Value);
                         value.DataType = m_mapper.ToLocalId(((IVariableType)node).DataType);
                         value.ValueRank = ((IVariableType)node).ValueRank;
                         value.ArrayDimensions = ((IVariableType)node).ArrayDimensions;
@@ -1596,7 +1596,7 @@ namespace AggregationServer
 #pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node cache/handle.
                         BaseDataVariableState value = new BaseDataVariableState(null);
 #pragma warning restore CA2000
-                        value.Value = new Variant(m_mapper.ToLocalValue(((IVariable)node).Value));
+                        value.Value = m_mapper.ToLocalVariant(((IVariable)node).Value);
                         value.DataType = m_mapper.ToLocalId(((IVariable)node).DataType);
                         value.ValueRank = ((IVariable)node).ValueRank;
                         value.ArrayDimensions = ((IVariable)node).ArrayDimensions;

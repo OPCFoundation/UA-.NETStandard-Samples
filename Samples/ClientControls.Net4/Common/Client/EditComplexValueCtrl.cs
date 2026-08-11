@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -168,7 +168,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (info != null)
                     {
-                        return info.Parent != null && info.Parent.TypeInfo != null && info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant;
+                        return info.Parent != null && !info.Parent.TypeInfo.IsUnknown && info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant;
                     }
                 }
 
@@ -191,7 +191,7 @@ namespace Opc.Ua.Client.Controls.Common
                     {
                         Variant? value = info.Value as Variant?;
 
-                        if (value != null && value.Value.TypeInfo != null)
+                        if (value != null && !value.Value.TypeInfo.IsUnknown)
                         {
                             return value.Value.TypeInfo.BuiltInType;
                         }
@@ -255,13 +255,13 @@ namespace Opc.Ua.Client.Controls.Common
             if (info.Value is Variant)
             {
                 Variant variant = (Variant)info.Value;
-                currentValue = variant.Value;
+                currentValue = variant.AsBoxedObject();
 
                 if (currentValue != null)
                 {
                     currentType = variant.TypeInfo;
 
-                    if (currentType == null)
+                    if (currentType.IsUnknown)
                     {
                         currentType = TypeInfo.Construct(currentValue);
                     }
@@ -406,13 +406,13 @@ namespace Opc.Ua.Client.Controls.Common
             if (info.Value is Variant)
             {
                 Variant variant = (Variant)info.Value;
-                currentValue = variant.Value;
+                currentValue = variant.AsBoxedObject();
 
                 if (currentValue != null)
                 {
                     currentType = variant.TypeInfo;
 
-                    if (currentType == null)
+                    if (currentType.IsUnknown)
                     {
                         currentType = TypeInfo.Construct(currentValue);
                     }
@@ -440,7 +440,7 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 try
                 {
-                    newValue = new Variant(oldValue, oldType).ConvertTo(newType.BuiltInType).Value;
+                    newValue = ClientUtils.ToVariant(oldValue).ConvertTo(newType.BuiltInType).AsBoxedObject();
                 }
                 catch (Exception e)
                 {
@@ -512,7 +512,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             // determine the expected data type for value attributes.
-            else if (!NodeId.IsNull(nodeId))
+            else if (!(nodeId).IsNull)
             {
                 IVariableBase variable = await m_session.NodeCache.FindAsync(nodeId, ct) as IVariableBase;
 
@@ -621,7 +621,7 @@ namespace Opc.Ua.Client.Controls.Common
             NavigationMENU.Items.Clear();
 
             // assign a type.
-            if (expectedType == null)
+            if (expectedType.IsUnknown)
             {
                 if (value == null)
                 {
@@ -649,7 +649,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             // ensure value is the target type.
-            info.Value = new Variant(info.Value).ConvertTo(expectedType.BuiltInType).Value;
+            info.Value = ClientUtils.ToVariant(info.Value).ConvertTo(expectedType.BuiltInType).AsBoxedObject();
 
             info.Name = name;
             m_value = info;
@@ -684,7 +684,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             AccessInfo info = NavigationMENU.Items[NavigationMENU.Items.Count - 1].Tag as AccessInfo;
-            object newValue = new Variant(TextValueTB.Text).ConvertTo(info.TypeInfo.BuiltInType).Value;
+            object newValue = Variant.From(TextValueTB.Text).ConvertTo(info.TypeInfo.BuiltInType).AsBoxedObject();
             info.Value = newValue;
             UpdateParent(info);
         }
@@ -718,13 +718,13 @@ namespace Opc.Ua.Client.Controls.Common
             if (value is Variant)
             {
                 Variant variant = (Variant)value;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (value != null)
                 {
                     parent.TypeInfo = typeInfo = variant.TypeInfo;
 
-                    if (typeInfo == null)
+                    if (typeInfo.IsUnknown)
                     {
                         parent.TypeInfo = typeInfo = TypeInfo.Construct(value);
                     }
@@ -826,7 +826,7 @@ namespace Opc.Ua.Client.Controls.Common
             // check for extension object.
             if (structure is ExtensionObject extension)
             {
-                structure = extension.Body;
+                structure = GetExtensionObjectBody(extension);
             }
 
             // check for XmlElements.
@@ -1017,12 +1017,32 @@ namespace Opc.Ua.Client.Controls.Common
             return typeof(object);
         }
 
+        private static object GetExtensionObjectBody(ExtensionObject extension)
+        {
+            if (extension.TryGetAsBinary(out ByteString bytes, ServiceMessageContext.CreateEmpty(null)))
+            {
+                return bytes.ToArray();
+            }
+
+            if (extension.TryGetAsXml(out XmlElement xml, ServiceMessageContext.CreateEmpty(null)))
+            {
+                return xml;
+            }
+
+            if (extension.TryGetValue(out IEncodeable encodeable, ServiceMessageContext.CreateEmpty(null)))
+            {
+                return encodeable;
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Returns the data type of the value.
         /// </summary>
         private Type GetDataType(AccessInfo accessInfo)
         {
-            if (accessInfo == null || accessInfo.TypeInfo == null)
+            if (accessInfo == null || accessInfo.TypeInfo.IsUnknown)
             {
                 return null;
             }
@@ -1215,13 +1235,13 @@ namespace Opc.Ua.Client.Controls.Common
             if (value is Variant)
             {
                 Variant variant = (Variant)value;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (value != null)
                 {
                     typeInfo = variant.TypeInfo;
 
-                    if (typeInfo == null)
+                    if (typeInfo.IsUnknown)
                     {
                         typeInfo = TypeInfo.Construct(value);
                     }
@@ -1305,19 +1325,21 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (value is ExtensionObject extension)
                     {
-                        if (extension.Body is byte[])
+                        object body = GetExtensionObjectBody(extension);
+
+                        if (body is byte[])
                         {
-                            return ValueToString(extension.Body, new TypeInfo(BuiltInType.ByteString, ValueRanks.Scalar));
+                            return ValueToString(body, new TypeInfo(BuiltInType.ByteString, ValueRanks.Scalar));
                         }
 
-                        if (extension.Body is XmlElement)
+                        if (body is XmlElement)
                         {
-                            return ValueToString(extension.Body, new TypeInfo(BuiltInType.XmlElement, ValueRanks.Scalar));
+                            return ValueToString(body, new TypeInfo(BuiltInType.XmlElement, ValueRanks.Scalar));
                         }
 
-                        if (extension.Body is IEncodeable)
+                        if (body is IEncodeable)
                         {
-                            text = new Variant(extension).ToString();
+                            text = Variant.From(extension).ToString();
                         }
                     }
 
@@ -1327,7 +1349,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                         if (encodeable != null)
                         {
-                            text = new Variant(encodeable).ToString();
+                            text = Variant.From(new ExtensionObject(encodeable)).ToString();
                         }
                     }
 
@@ -1340,7 +1362,7 @@ namespace Opc.Ua.Client.Controls.Common
                 }
             }
 
-            return (string)new Variant(value).ConvertTo(BuiltInType.String).Value;
+            return (string)ClientUtils.ToVariant(value).ConvertTo(BuiltInType.String).AsBoxedObject();
         }
 
         /// <summary>
@@ -1348,7 +1370,7 @@ namespace Opc.Ua.Client.Controls.Common
         /// </summary>
         private bool IsSimpleValue(AccessInfo info)
         {
-            if (info == null || info.TypeInfo == null)
+            if (info == null || info.TypeInfo.IsUnknown)
             {
                 return true;
             }
@@ -1360,9 +1382,9 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 Variant variant = (Variant)info.Value;
                 typeInfo = variant.TypeInfo;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
-                if (typeInfo == null)
+                if (typeInfo.IsUnknown)
                 {
                     typeInfo = TypeInfo.Construct(value);
                 }
@@ -1469,7 +1491,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (IsSimpleValue(info))
                     {
-                        new Variant(e.FormattedValue).ConvertTo(info.TypeInfo.BuiltInType);
+                        ClientUtils.ToVariant(e.FormattedValue).ConvertTo(info.TypeInfo.BuiltInType);
                     }
                 }
             }
@@ -1491,7 +1513,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (IsSimpleValue(info))
                     {
-                        object newValue = new Variant((string)source.Row[3]).ConvertTo(info.TypeInfo.BuiltInType).Value;
+                        object newValue = Variant.From((string)source.Row[3]).ConvertTo(info.TypeInfo.BuiltInType).AsBoxedObject();
                         info.Value = newValue;
                         UpdateParent(info);
                     }
@@ -1517,14 +1539,14 @@ namespace Opc.Ua.Client.Controls.Common
 
             if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank < 0)
             {
-                parentValue = ((Variant)info.Parent.Value).Value;
+                parentValue = ((Variant)info.Parent.Value).AsBoxedObject();
             }
 
             if (info.PropertyInfo != null && info.Parent.TypeInfo.ValueRank < 0)
             {
                 if (parentValue is ExtensionObject extension)
                 {
-                    parentValue = extension.Body;
+                    parentValue = GetExtensionObjectBody(extension);
                 }
 
                 info.PropertyInfo.SetValue(parentValue, info.Value, null);
@@ -1556,7 +1578,7 @@ namespace Opc.Ua.Client.Controls.Common
                 {
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        array.SetValue(new Variant(info.Value), indexes);
+                        array.SetValue(ClientUtils.ToVariant(info.Value), indexes);
                     }
                     else
                     {
@@ -1569,7 +1591,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        list[indexes[0]] = new Variant(info.Value);
+                        list[indexes[0]] = ClientUtils.ToVariant(info.Value);
                     }
                     else
                     {

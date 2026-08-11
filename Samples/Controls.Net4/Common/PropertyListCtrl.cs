@@ -146,7 +146,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // build list of properties to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             Browser browser = new Browser(m_session);
 
@@ -175,7 +175,7 @@ namespace Opc.Ua.Sample.Controls
         /// <see cref="BaseListCtrl.GetDataToDrag" />
         protected override object GetDataToDrag()
         {
-            ReferenceDescriptionCollection references = new ReferenceDescriptionCollection();
+            List<ReferenceDescription> references = new List<ReferenceDescription>();
 
             foreach (ListViewItem listItem in ItemsLV.SelectedItems)
             {

@@ -108,7 +108,7 @@ namespace AggregationClient
             nodeToBrowse.NodeClassMask = 0;
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
             nodesToBrowse.Add(nodeToBrowse);
 
             // start the browse operation.
@@ -193,7 +193,7 @@ namespace AggregationClient
                 {
                     referenceType = referenceTypeNode.DisplayName.Text;
 
-                    if (!reference.IsForward && !LocalizedText.IsNullOrEmpty(referenceTypeNode.InverseName))
+                    if (!reference.IsForward && !(referenceTypeNode.InverseName).IsNullOrEmpty)
                     {
                         referenceType = referenceTypeNode.InverseName.Text;
                     }

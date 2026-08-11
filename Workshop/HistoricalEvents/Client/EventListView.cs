@@ -342,7 +342,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 string text = null;
 
                 // check for missing fields.
-                if (fieldValues[ii].Value == null)
+                if (fieldValues[ii].AsBoxedObject() == null)
                 {
                     text = String.Empty;
                 }
@@ -350,7 +350,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 // display the name of a node instead of the node id.
                 else if (fieldValues[ii].TypeInfo.BuiltInType == BuiltInType.NodeId)
                 {
-                    INode node = await m_session.NodeCache.FindAsync((NodeId)fieldValues[ii].Value, ct);
+                    INode node = await m_session.NodeCache.FindAsync((NodeId)fieldValues[ii].AsBoxedObject(), ct);
 
                     if (node != null)
                     {
@@ -361,7 +361,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 // display local time for any time fields.
                 else if (fieldValues[ii].TypeInfo.BuiltInType == BuiltInType.DateTime)
                 {
-                    DateTime value = (DateTime)fieldValues[ii].Value;
+                    DateTime value = (DateTime)fieldValues[ii].AsBoxedObject();
 
                     if (m_filter.Fields[ii - 1].InstanceDeclaration.DisplayName.Contains("Time", StringComparison.Ordinal))
                     {
@@ -474,7 +474,7 @@ namespace Quickstarts.HistoricalEvents.Client
         /// </summary>
         private async Task ReadHistoryAsync(ReadEventDetails details, NodeId areaId, CancellationToken ct = default)
         {
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = areaId;
             nodesToRead.Add(nodeToRead);
@@ -553,7 +553,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
                 if (e.Count > index)
                 {
-                    eventId = e[index].Value as byte[];
+                    eventId = e[index].AsBoxedObject() as byte[];
                 }
 
                 details.EventIds = details.EventIds.AddItem(eventId.ToByteString());

@@ -410,7 +410,7 @@ namespace Opc.Ua.Sample.Controls
 
             listItem.SubItems[4].Text = String.Format("{0}", severity);
 
-            if (message != null)
+            if (!message.IsNull)
             {
                 listItem.SubItems[5].Text = String.Format("{0}", message.Text);
             }

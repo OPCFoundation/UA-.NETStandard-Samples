@@ -111,7 +111,7 @@ namespace Opc.Ua.Client.Controls
             #pragma warning restore CA2000
                 m_value.TypeInfo,
                 null,
-                m_value.Value,
+                m_value.AsBoxedObject(),
                 "Edit Value");
 
             if (value == null)
@@ -119,7 +119,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            Value = new Variant(value);
+            Value = ClientUtils.ToVariant(value);
 
             m_ValueChanged?.Invoke(this, e);
         }

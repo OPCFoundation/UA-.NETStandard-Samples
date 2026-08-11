@@ -1081,7 +1081,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // build list of nodes to read.
-                ReadValueIdCollection valueIds = new ReadValueIdCollection();
+                List<ReadValueId> valueIds = new List<ReadValueId>();
 
                 MonitoredItem monitoredItem = Get<MonitoredItem>(NodesTV.SelectedNode);
 
@@ -1140,7 +1140,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // build list of nodes to read.
-                WriteValueCollection values = new WriteValueCollection();
+                List<WriteValue> values = new List<WriteValue>();
 
                 MonitoredItem monitoredItem = Get<MonitoredItem>(NodesTV.SelectedNode);
 

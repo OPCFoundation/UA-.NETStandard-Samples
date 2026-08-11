@@ -284,7 +284,7 @@ namespace Opc.Ua.Client.Controls
                     continue;
                 }
 
-                if (NodeId.IsNull(instanceDeclaration.ModellingRule))
+                if ((instanceDeclaration.ModellingRule).IsNull)
                 {
                     continue;
                 }
@@ -421,7 +421,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public List<SimpleAttributeOperand> GetSelectClause()
         {
-            SimpleAttributeOperandCollection selectClause = new SimpleAttributeOperandCollection();
+            List<SimpleAttributeOperand> selectClause = new List<SimpleAttributeOperand>();
 
             SimpleAttributeOperand operand = new SimpleAttributeOperand();
             operand.TypeDefinitionId = Opc.Ua.ObjectTypeIds.BaseEventType;
@@ -465,8 +465,8 @@ namespace Opc.Ua.Client.Controls
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
 
-                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(operand1), new Variant(operand2));
-                    element1 = whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
+                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, Variant.From(new ExtensionObject(operand1)), Variant.From(new ExtensionObject(operand2)));
+                    element1 = whereClause.Push(FilterOperator.And, Variant.From(new ExtensionObject(element1)), Variant.From(new ExtensionObject(element2)));
                 }
             }
 
@@ -497,7 +497,7 @@ namespace Opc.Ua.Client.Controls
                         return defaultValue;
                     }
 
-                    object value = fields[ii + 1].Value;
+                    object value = fields[ii + 1].AsBoxedObject();
 
                     if (typeof(T).IsInstanceOfType(value))
                     {

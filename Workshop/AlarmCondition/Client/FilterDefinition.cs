@@ -198,7 +198,7 @@ namespace Quickstarts.AlarmConditionClient
                 operand2.Value = new Variant((ushort)Severity);
 
                 // specify that the Severity property must be GreaterThanOrEqual the value specified.
-                element1 = whereClause.Push(FilterOperator.GreaterThanOrEqual, new Variant(operand1), new Variant(operand2));
+                element1 = whereClause.Push(FilterOperator.GreaterThanOrEqual, new Variant(new ExtensionObject(operand1)), new Variant(new ExtensionObject(operand2)));
             }
 
             // add the suppressed or shelved.
@@ -215,12 +215,12 @@ namespace Quickstarts.AlarmConditionClient
                 operand2.Value = new Variant(false);
 
                 // specify that the Severity property must Equal the value specified.
-                element2 = whereClause.Push(FilterOperator.Equals, new Variant(operand1), new Variant(operand2));
+                element2 = whereClause.Push(FilterOperator.Equals, new Variant(new ExtensionObject(operand1)), new Variant(new ExtensionObject(operand2)));
 
                 // chain multiple elements together with an AND clause.
                 if (element1 != null)
                 {
-                    element1 = whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
+                    element1 = whereClause.Push(FilterOperator.And, new Variant(new ExtensionObject(element1)), new Variant(new ExtensionObject(element2)));
                 }
                 else
                 {
@@ -239,12 +239,12 @@ namespace Quickstarts.AlarmConditionClient
                     // for this example uses the 'OfType' operator to limit events to thoses with specified event type.
                     LiteralOperand operand1 = new LiteralOperand();
                     operand1.Value = new Variant(EventTypes[ii]);
-                    ContentFilterElement element3 = whereClause.Push(FilterOperator.OfType, new Variant(operand1));
+                    ContentFilterElement element3 = whereClause.Push(FilterOperator.OfType, new Variant(new ExtensionObject(operand1)));
 
                     // need to chain multiple types together with an OR clause.
                     if (element2 != null)
                     {
-                        element2 = whereClause.Push(FilterOperator.Or, new Variant(element2), new Variant(element3));
+                        element2 = whereClause.Push(FilterOperator.Or, new Variant(new ExtensionObject(element2)), new Variant(new ExtensionObject(element3)));
                     }
                     else
                     {
@@ -255,7 +255,7 @@ namespace Quickstarts.AlarmConditionClient
                 // need to link the set of event types with the previous filters.
                 if (element1 != null)
                 {
-                    whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
+                    whereClause.Push(FilterOperator.And, new Variant(new ExtensionObject(element1)), new Variant(new ExtensionObject(element2)));
                 }
             }
 

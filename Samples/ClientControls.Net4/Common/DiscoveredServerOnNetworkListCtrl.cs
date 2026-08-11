@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -167,7 +167,7 @@ namespace Opc.Ua.Client.Controls
 
             ItemsLV.Items.Clear();
 
-            ServerOnNetworkCollection servers = state as ServerOnNetworkCollection;
+            List<ServerOnNetwork> servers = state as List<ServerOnNetwork>;
 
             if (servers != null)
             {
@@ -274,7 +274,7 @@ namespace Opc.Ua.Client.Controls
                 (servers, lastReset) = await client.FindServersOnNetworkAsync(startingRecordId, maxRecordsToReturn, serverCapabilityFilter, ct);
                 lastCounterResetTime = (DateTime)lastReset;
                 m_discoveryUrl = discoveryUrl.ToString();
-                OnUpdateServers(new ServerOnNetworkCollection(servers.ToArray()));
+                OnUpdateServers(new List<ServerOnNetwork>(servers.ToArray()));
                 return true;
             }
             catch (Exception e)

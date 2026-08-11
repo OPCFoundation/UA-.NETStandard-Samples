@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -152,7 +152,7 @@ namespace Quickstarts.AlarmConditionClient
                 NodeId eventTypeId = FormUtils.FindEventType(monitoredItem, notification);
 
                 // ignore unknown events.
-                if (NodeId.IsNull(eventTypeId))
+                if ((eventTypeId).IsNull)
                 {
                     return;
                 }

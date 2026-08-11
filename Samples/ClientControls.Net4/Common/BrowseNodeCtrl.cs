@@ -75,7 +75,7 @@ namespace Opc.Ua.Client.Controls
             params NodeId[] referenceTypeIds)
         {
             // set default root.
-            if (NodeId.IsNull(rootId))
+            if ((rootId).IsNull)
             {
                 rootId = Opc.Ua.ObjectIds.ObjectsFolder;
             }
@@ -224,7 +224,7 @@ namespace Opc.Ua.Client.Controls
         private void ReadAttributes(NodeId nodeId)
         {
             // build list of attributes to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             foreach (uint attributeId in Attributes.GetIdentifiers())
             {
@@ -235,7 +235,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // read the attributes.
-            DataValueCollection results = null;
+            List<DataValue> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.Read(
@@ -300,7 +300,7 @@ namespace Opc.Ua.Client.Controls
         private void ReadProperties(NodeId nodeId)
         {
             // build list of references to browse.
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
 
             BrowseDescription nodeToBrowse = new BrowseDescription();
 
@@ -314,10 +314,10 @@ namespace Opc.Ua.Client.Controls
             nodesToBrowse.Add(nodeToBrowse);
 
             // find properties.
-            ReferenceDescriptionCollection references = ClientUtils.Browse(m_session, View, nodesToBrowse, false);
+            List<ReferenceDescription> references = ClientUtils.Browse(m_session, View, nodesToBrowse, false);
 
             // build list of properties to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             for (int ii = 0; references != null && ii < references.Count; ii++)
             {
@@ -342,7 +342,7 @@ namespace Opc.Ua.Client.Controls
             }
             
             // read the properties.
-            DataValueCollection results = null;
+            List<DataValue> results = null;
             DiagnosticInfoCollection diagnosticInfos = null;
 
             m_session.Read(
@@ -448,7 +448,7 @@ namespace Opc.Ua.Client.Controls
                 e.Node.Nodes.Clear();
 
                 // build list of references to browse.
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
 
                 for (int ii = 0; ii < m_referenceTypeIds.Length; ii++)
                 {
@@ -470,7 +470,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // add the childen to the control.
-                ReferenceDescriptionCollection references = ClientUtils.Browse(m_session, View, nodesToBrowse, false);
+                List<ReferenceDescription> references = ClientUtils.Browse(m_session, View, nodesToBrowse, false);
 
                 for (int ii = 0; references != null && ii < references.Count; ii++)
                 {

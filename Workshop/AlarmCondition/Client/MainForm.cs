@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -426,7 +426,7 @@ namespace Quickstarts.AlarmConditionClient
         private async Task ShelveAsync(bool shelving, bool oneShot, double shelvingTime, CancellationToken ct = default)
         {
             // build list of methods to call.
-            CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
+            List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
 
             for (int ii = 0; ii < ConditionsLV.SelectedItems.Count; ii++)
             {
@@ -498,7 +498,7 @@ namespace Quickstarts.AlarmConditionClient
         private async Task RespondAsync(int selectedResponse, CancellationToken ct = default)
         {
             // build list of dialogs to respond to (caller should always make sure that only one is selected).
-            CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
+            List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
 
             for (int ii = 0; ii < ConditionsLV.SelectedItems.Count; ii++)
             {
@@ -555,7 +555,7 @@ namespace Quickstarts.AlarmConditionClient
         private async Task CallMethodAsync(NodeId methodId, string comment, CancellationToken ct = default)
         {
             // build list of methods to call.
-            CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
+            List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
 
             for (int ii = 0; ii < ConditionsLV.SelectedItems.Count; ii++)
             {
@@ -629,7 +629,7 @@ namespace Quickstarts.AlarmConditionClient
                 NodeId eventTypeId = FormUtils.FindEventType(monitoredItem, notification);
 
                 // ignore unknown events.
-                if (NodeId.IsNull(eventTypeId))
+                if ((eventTypeId).IsNull)
                 {
                     return;
                 }
@@ -721,7 +721,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 // Branch
-                if (condition.BranchId != null && !NodeId.IsNull(condition.BranchId.Value))
+                if (condition.BranchId != null && !(condition.BranchId.Value).IsNull)
                 {
                     item.SubItems[2].Text = Utils.Format("{0}", condition.BranchId.Value);
                 }
@@ -799,7 +799,7 @@ namespace Quickstarts.AlarmConditionClient
                 }
                 else
                 {
-                    if (NodeId.IsNull(condition.BranchId.Value))
+                    if ((condition.BranchId.Value).IsNull)
                     {
                         item.ForeColor = Color.Empty;
                     }
@@ -836,7 +836,7 @@ namespace Quickstarts.AlarmConditionClient
                 request.MethodId = MethodIds.ConditionType_ConditionRefresh;
                 AddInputArgument(request, new Variant(m_subscription.Id));
 
-                CallMethodRequestCollection methodsToCall = new CallMethodRequestCollection();
+                List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
                 methodsToCall.Add(request);
 
                 CallResponse response = await m_session.CallAsync(

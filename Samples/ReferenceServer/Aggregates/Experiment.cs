@@ -249,13 +249,13 @@ namespace Quickstarts.ReferenceServer
                 if (m_timeFlowsBackward)
                 {
                     StatusCode statusCode = (lastBoundBad) ? StatusCodes.UncertainDataSubNormal : StatusCodes.Good;
-                    statusCode = statusCode.SetAggregateBits(AggregateBits.Interpolated);
+                    statusCode = statusCode.WithAggregateBits(AggregateBits.Interpolated);
                     return new DataValue(lastBound.Value.WrappedValue, statusCode, timestamp, timestamp);
                 }
                 else
                 {
                     StatusCode statusCode = (firstBoundBad) ? StatusCodes.UncertainDataSubNormal : StatusCodes.Good;
-                    statusCode = statusCode.SetAggregateBits(AggregateBits.Interpolated);
+                    statusCode = statusCode.WithAggregateBits(AggregateBits.Interpolated);
                     return new DataValue(firstBound.Value.WrappedValue, statusCode, timestamp, timestamp);
                 }
             }
@@ -291,7 +291,7 @@ namespace Quickstarts.ReferenceServer
 
                 // set the aggregate bits as required.
                 StatusCode statusCode = (firstBoundBad || lastBoundBad) ? StatusCodes.UncertainDataSubNormal : StatusCodes.Good;
-                dataValue.StatusCode = statusCode.SetAggregateBits(AggregateBits.Interpolated);
+                dataValue.StatusCode = statusCode.WithAggregateBits(AggregateBits.Interpolated);
                 return dataValue;
             }
         }

@@ -68,7 +68,7 @@ namespace Quickstarts.AlarmConditionClient
 
             if (filter != null)
             {
-                if (eventFields.EventFields[0].Value != null)
+                if (eventFields.EventFields[0].AsBoxedObject() != null)
                 {
                     fieldNames.Add("ConditionId");
                     fieldValues.Add(eventFields.EventFields[0]);
@@ -76,7 +76,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 for (int ii = 1; ii < filter.SelectClauses.Count; ii++)
                 {
-                    object fieldValue = eventFields.EventFields[ii].Value;
+                    object fieldValue = eventFields.EventFields[ii].AsBoxedObject();
 
                     if (fieldValue == null)
                     {
@@ -105,8 +105,8 @@ namespace Quickstarts.AlarmConditionClient
             {
                 ListViewItem item = new ListViewItem(fieldNames[ii]);
 
-                item.SubItems.Add(Utils.Format("{0}", fieldValues[ii].Value));
-                item.SubItems.Add(Utils.Format("{0}", fieldValues[ii].Value.GetType().Name));
+                item.SubItems.Add(Utils.Format("{0}", fieldValues[ii].AsBoxedObject()));
+                item.SubItems.Add(Utils.Format("{0}", fieldValues[ii].AsBoxedObject().GetType().Name));
 
                 FieldsLV.Items.Add(item);
             }

@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -125,7 +125,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // build list of values to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             if (nodesToWrite == null || nodesToWrite.Length == 0)
             {
@@ -197,7 +197,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // build list of values to write.
-            WriteValueCollection nodesToWrite = new WriteValueCollection();
+            List<WriteValue> nodesToWrite = new List<WriteValue>();
 
             foreach (DataGridViewRow row in ResultsDV.Rows)
             {
@@ -266,7 +266,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void UpdateRow(DataRow row, DataValue value)
         {
-            row[5] = (value.WrappedValue.TypeInfo != null) ? value.WrappedValue.TypeInfo.ToString() : String.Empty;
+            row[5] = (!value.WrappedValue.TypeInfo.IsUnknown) ? value.WrappedValue.TypeInfo.ToString() : String.Empty;
             row[6] = value.WrappedValue;
             row[7] = value.StatusCode;
             row[8] = (value.SourceTimestamp != DateTime.MinValue) ? Utils.Format("{0:hh:mm:ss.fff}", value.SourceTimestamp.ToLocalTime()) : String.Empty;
@@ -393,7 +393,7 @@ namespace Opc.Ua.Client.Controls
                         nodeToWrite.NodeId,
                         nodeToWrite.AttributeId,
                         null,
-                        nodeToWrite.Value.Value,
+                        nodeToWrite.Value.WrappedValue.AsBoxedObject(),
                         false,
                         "Edit Value");
 
@@ -404,7 +404,7 @@ namespace Opc.Ua.Client.Controls
                         {
                             DataRowView source = row.DataBoundItem as DataRowView;
                             nodeToWrite = (WriteValue)source.Row[0];
-                            nodeToWrite.Value = new DataValue(new Variant(value));
+                            nodeToWrite.Value = new DataValue(ClientUtils.ToVariant(value));
                             await UpdateRowAsync(source.Row, nodeToWrite);
                         }
                     }

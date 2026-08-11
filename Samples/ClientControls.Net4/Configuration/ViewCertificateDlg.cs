@@ -185,12 +185,19 @@ namespace Opc.Ua.Client.Controls
         #region Private Methods
         private async Task<X509Certificate2> FindCertificateAsync(CertificateIdentifier certificate, CancellationToken ct = default)
         {
-            if (certificate?.Certificate != null)
+            if (certificate == null)
             {
-                return certificate.Certificate;
+                return null;
             }
 
-            if (certificate == null || String.IsNullOrEmpty(certificate.StoreType) || String.IsNullOrEmpty(certificate.StorePath) || String.IsNullOrEmpty(certificate.Thumbprint))
+            var resolvedCertificate = await CertificateIdentifierResolver.ResolveAsync(certificate, null, false, null, m_telemetry, ct);
+
+            if (resolvedCertificate != null)
+            {
+                return resolvedCertificate.AsX509Certificate2();
+            }
+
+            if (String.IsNullOrEmpty(certificate.StoreType) || String.IsNullOrEmpty(certificate.StorePath) || String.IsNullOrEmpty(certificate.Thumbprint))
             {
                 return null;
             }

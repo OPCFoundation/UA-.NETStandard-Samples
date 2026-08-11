@@ -65,7 +65,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
             )
         {
             NodeId appNodeId = base.RegisterApplication(application);
-            if (NodeId.IsNull(appNodeId))
+            if ((appNodeId).IsNull)
             {
                 appNodeId = new NodeId(Guid.NewGuid(), NamespaceIndex);
             }
@@ -659,7 +659,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 }
             }
 
-            return certificate != null;
+            return !certificate.IsNull;
         }
 
         public override bool SetApplicationTrustLists(NodeId applicationId, string certificateTypeId, string trustListId)

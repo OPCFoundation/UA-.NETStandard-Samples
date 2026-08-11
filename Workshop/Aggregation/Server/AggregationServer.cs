@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -90,7 +91,7 @@ namespace AggregationServer
                 // start the server even if no endpoint is configured, because
                 // app config can change during operation  and the manager object
                 // is needed
-                reverseConnectManager.StartService(configuration);
+                reverseConnectManager.StartServiceAsync(configuration, CancellationToken.None).GetAwaiter().GetResult();
             }
 
             foreach (ConfiguredEndpoint endpoint in endpoints.Endpoints)

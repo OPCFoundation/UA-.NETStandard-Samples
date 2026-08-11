@@ -154,7 +154,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task UpdateValuesAsync(CancellationToken ct = default)
         {
-            ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
+            List<ReadValueId> valuesToRead = new List<ReadValueId>();
 
             foreach (ListViewItem item in ItemsLV.Items)
             {
@@ -399,7 +399,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
-                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(info.AttributeId, info.Value.Value, ct);
+                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(info.AttributeId, info.Value.WrappedValue.AsBoxedObject(), ct);
                 }
 
                 if (info.AttributeId != Attributes.Value)

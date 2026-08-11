@@ -137,7 +137,7 @@ namespace MemoryBuffer
             MemoryTagState tag = null;
 
             // check if a specific browse name is requested.
-            if (!QualifiedName.IsNull(base.BrowseName))
+            if (!(base.BrowseName).IsNull)
             {
                 // check if match found previously.
                 if (m_position == UInt32.MaxValue)

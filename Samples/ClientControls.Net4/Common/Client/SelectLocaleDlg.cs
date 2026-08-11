@@ -1,4 +1,4 @@
-/* ========================================================================
+﻿/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -73,7 +73,7 @@ namespace Opc.Ua.Client.Controls
             // get the locales from the server.
             DataValue value = await m_session.ReadValueAsync(VariableIds.Server_ServerCapabilities_LocaleIdArray, ct);
 
-            if (value != null)
+            if (!value.IsNull)
             {
                 string[] availableLocales = value.GetValue<string[]>(null);
 

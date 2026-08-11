@@ -191,7 +191,7 @@ namespace MemoryBuffer
                     return null;
                 }
 
-                string id = nodeId.Identifier as string;
+                string id = nodeId.TryGetValue(out string identifier) ? identifier : null;
 
                 if (id != null)
                 {
@@ -313,7 +313,7 @@ namespace MemoryBuffer
             }
 
             // data encoding not supported.
-            if (!QualifiedName.IsNull(itemToCreate.ItemToMonitor.DataEncoding))
+            if (!(itemToCreate.ItemToMonitor.DataEncoding).IsNull)
             {
                 return StatusCodes.BadDataEncodingUnsupported;
             }

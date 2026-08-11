@@ -127,7 +127,7 @@ namespace AggregationServer
                 nodeToBrowse.NodeClassMask = 0;
                 nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
                 nodesToBrowse.Add(nodeToBrowse);
 
                 // start the browse operation.
@@ -187,7 +187,7 @@ namespace AggregationServer
                     nodeToBrowse.NodeClassMask = 0;
                     nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-                    BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                    List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
                     nodesToBrowse.Add(nodeToBrowse);
 
                     // start the browse operation.
@@ -345,7 +345,7 @@ namespace AggregationServer
         private async Task<NodeStateReference> NextChildAsync(CancellationToken ct = default)
         {
             // check if a specific browse name is requested.
-            if (!QualifiedName.IsNull(base.BrowseName))
+            if (!(base.BrowseName).IsNull)
             {
                 // check if match found previously.
                 if (m_position == Int32.MaxValue)

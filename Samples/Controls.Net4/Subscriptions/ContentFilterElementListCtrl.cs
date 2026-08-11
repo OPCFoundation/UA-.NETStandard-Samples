@@ -284,7 +284,7 @@ namespace Opc.Ua.Sample.Controls
                             object value = GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank);
 
                             // create attribute filter.
-                            element = m_filter.Push(FilterOperator.Equals, new Variant(attribute), new Variant(value));
+                            element = m_filter.Push(FilterOperator.Equals, new Variant(new ExtensionObject(attribute, false)), Variant.From((dynamic)value));
                             break;
                         }
 
@@ -299,13 +299,13 @@ namespace Opc.Ua.Sample.Controls
                             attribute.AttributeId = Attributes.NodeId;
 
                             // create attribute filter.
-                            element = m_filter.Push(FilterOperator.IsNull, new Variant(attribute));
+                            element = m_filter.Push(FilterOperator.IsNull, new Variant(new ExtensionObject(attribute, false)));
                             break;
                         }
 
                         case NodeClass.ObjectType:
                         {
-                            element = m_filter.Push(FilterOperator.OfType, new Variant(node.NodeId));
+                            element = m_filter.Push(FilterOperator.OfType, Variant.From(node.NodeId));
                             break;
                         }
 
@@ -342,7 +342,7 @@ namespace Opc.Ua.Sample.Controls
                 ContentFilterElement element2 = ItemsLV.SelectedItems[1].Tag as ContentFilterElement;
 
                 ContentFilter filter = GetFilter();
-                filter.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
+                filter.Push(FilterOperator.And, new Variant(new ExtensionObject(element1, false)), new Variant(new ExtensionObject(element2, false)));
 
                 Update(filter);
             }
@@ -365,7 +365,7 @@ namespace Opc.Ua.Sample.Controls
                 ContentFilterElement element2 = ItemsLV.SelectedItems[1].Tag as ContentFilterElement;
 
                 ContentFilter filter = GetFilter();
-                filter.Push(FilterOperator.Or, new Variant(element1), new Variant(element2));
+                filter.Push(FilterOperator.Or, new Variant(new ExtensionObject(element1, false)), new Variant(new ExtensionObject(element2, false)));
 
                 Update(filter);
             }
@@ -387,7 +387,7 @@ namespace Opc.Ua.Sample.Controls
                 ContentFilterElement element1 = ItemsLV.SelectedItems[0].Tag as ContentFilterElement;
 
                 ContentFilter filter = GetFilter();
-                filter.Push(FilterOperator.Not, new Variant(element1));
+                filter.Push(FilterOperator.Not, new Variant(new ExtensionObject(element1, false)));
 
                 Update(filter);
             }
@@ -423,7 +423,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get the current value.
-                object currentValue = literal.Value.Value;
+                object currentValue = literal.Value.AsBoxedObject();
 
                 if (currentValue == null)
                 {
@@ -441,7 +441,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // update value.
-                literal.Value = new Variant(value);
+                literal.Value = Variant.From((dynamic)value);
                 ContentFilter filter = GetFilter();
                 Update(filter);
             }

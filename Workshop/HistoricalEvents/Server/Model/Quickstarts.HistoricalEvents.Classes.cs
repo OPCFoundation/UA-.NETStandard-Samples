@@ -233,7 +233,7 @@ namespace Quickstarts.HistoricalEvents
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }
@@ -502,7 +502,7 @@ namespace Quickstarts.HistoricalEvents
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }
@@ -725,7 +725,7 @@ namespace Quickstarts.HistoricalEvents
             bool createOrReplace,
             BaseInstanceState replacement)
         {
-            if (QualifiedName.IsNull(browseName))
+            if ((browseName).IsNull)
             {
                 return null;
             }

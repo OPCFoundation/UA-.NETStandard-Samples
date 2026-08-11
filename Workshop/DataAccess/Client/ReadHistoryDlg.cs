@@ -188,7 +188,7 @@ namespace Quickstarts.DataAccessClient
                 nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -222,7 +222,7 @@ namespace Quickstarts.DataAccessClient
             HistoryReadValueId nodeToRead = new HistoryReadValueId();
             nodeToRead.NodeId = m_nodeId;
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -307,7 +307,7 @@ namespace Quickstarts.DataAccessClient
                 nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(
@@ -369,7 +369,7 @@ namespace Quickstarts.DataAccessClient
                 nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
             }
 
-            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
             nodesToRead.Add(nodeToRead);
 
             HistoryReadResponse response = await m_session.HistoryReadAsync(

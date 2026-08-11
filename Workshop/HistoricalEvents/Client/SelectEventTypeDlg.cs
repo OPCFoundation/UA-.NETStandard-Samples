@@ -165,12 +165,12 @@ namespace Quickstarts.HistoricalEvents.Client
                 filter.EventTypeId = eventTypeId;
 
                 // collect all of the fields defined for the event.
-                SimpleAttributeOperandCollection fields = new SimpleAttributeOperandCollection();
+                List<SimpleAttributeOperand> fields = new List<SimpleAttributeOperand>();
                 List<NodeId> declarationIds = new List<NodeId>();
                 FormUtils.CollectFieldsForType(m_session, eventTypeId, fields, declarationIds);
                 
                 // need to read the description and datatype for each field. 
-                ReadValueIdCollection valuesToRead = new ReadValueIdCollection();
+                List<ReadValueId> valuesToRead = new List<ReadValueId>();
 
                 for (int ii = 0; ii < declarationIds.Count; ii++)
                 {
@@ -190,7 +190,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     valuesToRead.Add(valueToRead);
                 }
 
-                DataValueCollection results = null;
+                List<DataValue> results = null;
                 DiagnosticInfoCollection diagnosticInfos = null;
 
                 m_session.Read(
@@ -319,7 +319,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
                 
                 // add the childen to the control.
-                ReferenceDescriptionCollection references = FormUtils.Browse(m_session, nodeToBrowse, false);
+                List<ReferenceDescription> references = FormUtils.Browse(m_session, nodeToBrowse, false);
                 
                 for (int ii = 0; ii < references.Count; ii++)
                 {

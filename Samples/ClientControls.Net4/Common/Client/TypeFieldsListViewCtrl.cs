@@ -94,7 +94,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public async Task ShowTypeAsync(NodeId typeId, CancellationToken ct = default)
         {
-            if (NodeId.IsNull(typeId))
+            if ((typeId).IsNull)
             {
                 m_dataset.Tables[0].Rows.Clear();
                 return;
@@ -178,7 +178,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // build list of values to read.
-            ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+            List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
             foreach (DataGridViewRow row in ResultsDV.Rows)
             {

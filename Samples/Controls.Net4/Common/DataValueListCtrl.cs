@@ -210,7 +210,7 @@ namespace Opc.Ua.Sample.Controls
             listItem.SubItems[4].Text = "";
             listItem.SubItems[5].Text = "";
 
-            if (dataValue.Value != null)
+            if (!dataValue.Value.IsNull)
             {
                 listItem.SubItems[2].Text = String.Format("{0}", dataValue.Value.WrappedValue);
 

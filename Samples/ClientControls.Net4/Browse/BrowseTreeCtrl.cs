@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -149,12 +149,12 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            if (NodeId.IsNull(m_rootId))
+            if ((m_rootId).IsNull)
             {
                 m_rootId = (NodeId)Objects.RootFolder;
             }
 
-            if (NodeId.IsNull(m_referenceTypeId))
+            if ((m_referenceTypeId).IsNull)
             {
                 m_referenceTypeId = ReferenceTypeIds.HierarchicalReferences;
             }
@@ -216,12 +216,12 @@ namespace Opc.Ua.Client.Controls
             nodeToBrowse.NodeClassMask = 0;
             nodeToBrowse.ResultMask = (uint)(int)BrowseResultMask.All;
 
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
             nodesToBrowse.Add(nodeToBrowse);
 
             ViewDescription view = null;
 
-            if (NodeId.IsNull(m_viewId))
+            if ((m_viewId).IsNull)
             {
                 view = new ViewDescription();
                 view.ViewId = m_viewId;
@@ -431,7 +431,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (reference != null)
                     {
-                        ReferenceDescriptionCollection collection = new ReferenceDescriptionCollection();
+                        List<ReferenceDescription> collection = new List<ReferenceDescription>();
                         collection.Add(reference);
                         m_nodesSelected(this, new NodesSelectedEventArgs(collection));
                     }
@@ -454,7 +454,7 @@ namespace Opc.Ua.Client.Controls
                         return;
                     }
 
-                    ReferenceDescriptionCollection collection = new ReferenceDescriptionCollection();
+                    List<ReferenceDescription> collection = new List<ReferenceDescription>();
 
                     foreach (TreeNode child in NodesTV.SelectedNode.Nodes)
                     {

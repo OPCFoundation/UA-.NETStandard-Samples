@@ -194,7 +194,7 @@ namespace Opc.Ua.Sample.Controls
                 return;
             }
 
-            if (NodeId.IsNull(rootId))
+            if ((rootId).IsNull)
             {
                 m_rootId = new NodeId(Objects.RootFolder);
             }
@@ -669,7 +669,7 @@ namespace Opc.Ua.Sample.Controls
         {
             foreach (ReferenceDescription reference in references.ToList())
             {
-                if (reference.ReferenceTypeId.IsNullNodeId)
+                if (reference.ReferenceTypeId.IsNull)
                 {
                     if (m_logger.IsEnabled(LogLevel.Debug))
                     {
@@ -790,7 +790,7 @@ namespace Opc.Ua.Sample.Controls
                 return null;
             }
 
-            if (reference.ReferenceTypeId.IsNullNodeId)
+            if (reference.ReferenceTypeId.IsNull)
             {
                 if (m_logger.IsEnabled(LogLevel.Debug))
                 {
@@ -807,7 +807,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (typeNode.NodeId == referenceTypeId)
                 {
-                    if (typeNode.InverseName == null)
+                    if (typeNode.InverseName.IsNull)
                     {
                         return child;
                     }
@@ -834,7 +834,7 @@ namespace Opc.Ua.Sample.Controls
                 string text = typeNode.DisplayName.Text;
                 string icon = "ReferenceType";
 
-                if (!reference.IsForward && typeNode.InverseName != null)
+                if (!reference.IsForward && !typeNode.InverseName.IsNull)
                 {
                     text = typeNode.InverseName.Text;
                 }
@@ -857,7 +857,7 @@ namespace Opc.Ua.Sample.Controls
         {
             if (reference != null)
             {
-                if (reference.DisplayName != null && !String.IsNullOrEmpty(reference.DisplayName.Text))
+                if (!reference.DisplayName.IsNull && !String.IsNullOrEmpty(reference.DisplayName.Text))
                 {
                     return reference.DisplayName.Text;
                 }
@@ -1088,7 +1088,7 @@ namespace Opc.Ua.Sample.Controls
                 Session session = m_browser.Session as Session;
 
                 // build list of nodes to read.
-                ReadValueIdCollection valueIds = new ReadValueIdCollection();
+                List<ReadValueId> valueIds = new List<ReadValueId>();
 
                 ReadValueId valueId = new ReadValueId();
 
@@ -1128,7 +1128,7 @@ namespace Opc.Ua.Sample.Controls
                 Session session = m_browser.Session as Session;
 
                 // build list of nodes to read.
-                WriteValueCollection values = new WriteValueCollection();
+                List<WriteValue> values = new List<WriteValue>();
 
                 WriteValue value = new WriteValue();
 

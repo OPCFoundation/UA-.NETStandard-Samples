@@ -98,13 +98,19 @@ namespace Opc.Ua.Client.Controls
 
         private async Task<X509Certificate2> FindCertificateAsync(CertificateIdentifier certificateIdentifier, bool needPrivateKey, CancellationToken ct)
         {
-            if (certificateIdentifier?.Certificate != null && (!needPrivateKey || certificateIdentifier.Certificate.HasPrivateKey))
+            if (certificateIdentifier == null)
             {
-                return certificateIdentifier.Certificate;
+                return null;
             }
 
-            if (certificateIdentifier == null ||
-                String.IsNullOrEmpty(certificateIdentifier.StoreType) ||
+            var resolvedCertificate = await CertificateIdentifierResolver.ResolveAsync(certificateIdentifier, null, needPrivateKey, null, m_telemetry, ct);
+
+            if (resolvedCertificate != null)
+            {
+                return resolvedCertificate.AsX509Certificate2();
+            }
+
+            if (String.IsNullOrEmpty(certificateIdentifier.StoreType) ||
                 String.IsNullOrEmpty(certificateIdentifier.StorePath) ||
                 (String.IsNullOrEmpty(certificateIdentifier.Thumbprint) && String.IsNullOrEmpty(certificateIdentifier.SubjectName)))
             {

@@ -185,7 +185,7 @@ namespace Opc.Ua.Client.Controls
                         declaration.DisplayName,
                         declaration.DataType,
                         declaration.ValueRank,
-                        field.FilterValue.Value,
+                        field.FilterValue.AsBoxedObject(),
                         "Edit Filter Value");
 
                     if (result != null)
@@ -194,7 +194,7 @@ namespace Opc.Ua.Client.Controls
                         source.Row[5] = field.FilterEnabled;
                         source.Row[6] = field.FilterOperator;
 
-                        field.FilterValue = new Variant(result);
+                        field.FilterValue = ClientUtils.ToVariant(result);
                         source.Row[7] = field.FilterValue;
                     }
 

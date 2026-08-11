@@ -225,7 +225,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         private async Task BrowseAsync(NodeId startId, CancellationToken ct = default)
         {
-            if (m_browser == null || NodeId.IsNull(startId))
+            if (m_browser == null || (startId).IsNull)
             {
                 Clear();
                 return;
@@ -272,7 +272,7 @@ namespace Opc.Ua.Sample.Controls
             // read the current value for any variables.
             if (variables.Count > 0)
             {
-                ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+                List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
                 foreach (ItemData item in variables)
                 {
@@ -443,7 +443,7 @@ namespace Opc.Ua.Sample.Controls
             listItem.SubItems[1].Text = String.Format("{0}", itemData.Target);
             listItem.SubItems[2].Text = String.Format("{0}", itemData.TypeDefinition);
 
-            if (itemData.Value != null)
+            if (!itemData.Value.IsNull)
             {
                 listItem.SubItems[3].Text = String.Format("{0}", itemData.Value);
             }

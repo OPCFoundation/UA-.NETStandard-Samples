@@ -155,9 +155,9 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     typeInfo = ((Variant)value).TypeInfo;
 
-                    if (typeInfo == null)
+                    if (typeInfo.IsUnknown)
                     {
-                        typeInfo = TypeInfo.Construct(((Variant)value).Value);
+                        typeInfo = TypeInfo.Construct(((Variant)value).AsBoxedObject());
                     }
                 }
 

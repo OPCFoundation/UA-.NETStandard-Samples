@@ -170,7 +170,7 @@ namespace Quickstarts.MethodsClient
                     browsePaths);
 
                 // subscribe to the state if available.
-                if (nodes.Count > 0 && !NodeId.IsNull(nodes[0]))
+                if (nodes.Count > 0 && !(nodes[0]).IsNull)
                 {
                     m_subscription = new Subscription(m_telemetry);
 
@@ -283,8 +283,8 @@ namespace Quickstarts.MethodsClient
 
                 if (outputArguments != null && outputArguments.Count > 1)
                 {
-                    RevisedInitialStateTB.Text = String.Format("{0}", outputArguments[0].Value);
-                    RevisedFinalStateTB.Text = String.Format("{0}", outputArguments[1].Value);
+                    RevisedInitialStateTB.Text = String.Format("{0}", outputArguments[0].AsBoxedObject());
+                    RevisedFinalStateTB.Text = String.Format("{0}", outputArguments[1].AsBoxedObject());
                 }
             }
             catch (Exception exception)

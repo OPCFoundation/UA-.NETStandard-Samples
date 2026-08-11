@@ -315,7 +315,7 @@ namespace Opc.Ua.Client.Controls
 
         private ConfiguredEndpoint m_endpoint;
         private EndpointDescription m_currentDescription;
-        private EndpointDescriptionCollection m_availableEndpoints;
+        private List<EndpointDescription> m_availableEndpoints;
         private List<EndpointDescriptionString> m_availableEndpointsDescriptions;
         private int m_discoveryTimeout;
         private int m_discoverCount;
@@ -359,7 +359,7 @@ namespace Opc.Ua.Client.Controls
             m_configuration = configuration;
 
             // construct a list of available endpoint descriptions for the application.
-            m_availableEndpoints = new EndpointDescriptionCollection();
+            m_availableEndpoints = new List<EndpointDescription>();
             m_availableEndpointsDescriptions = new List<EndpointDescriptionString>();
             m_endpointConfiguration = EndpointConfiguration.Create(configuration);
 
@@ -395,7 +395,7 @@ namespace Opc.Ua.Client.Controls
             m_configuration = configuration;
 
             // construct a list of available endpoint descriptions for the application.
-            m_availableEndpoints = new EndpointDescriptionCollection();
+            m_availableEndpoints = new List<EndpointDescription>();
             m_availableEndpointsDescriptions = new List<EndpointDescriptionString>();
 
             m_availableEndpoints.Add(endpoint.Description);
@@ -474,7 +474,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Creates the string representation of each EndpointDescription - to be used in the Endpoint Description List
         /// </summary>
-        private void BuildEndpointDescriptionStrings(EndpointDescriptionCollection endpoints)
+        private void BuildEndpointDescriptionStrings(List<EndpointDescription> endpoints)
         {
             lock (m_availableEndpointsDescriptions)
             {
@@ -545,7 +545,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Finds the best match for the current protocol and security selections.
         /// </summary>
-        private EndpointDescription FindBestEndpointDescription(EndpointDescriptionCollection endpoints)
+        private EndpointDescription FindBestEndpointDescription(List<EndpointDescription> endpoints)
         {
             // filter by the current protocol.
             Protocol currentProtocol = (Protocol)ProtocolCB.SelectedItem;
@@ -562,7 +562,7 @@ namespace Opc.Ua.Client.Controls
             string currentPolicy = (string)SecurityPolicyCB.SelectedItem;
 
             // find all matching descriptions.
-            EndpointDescriptionCollection matches = new EndpointDescriptionCollection();
+            List<EndpointDescription> matches = new List<EndpointDescription>();
 
             if (endpoints != null)
             {
@@ -711,7 +711,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes the protocol dropdown.
         /// </summary>
-        private void InitializeProtocols(EndpointDescriptionCollection endpoints)
+        private void InitializeProtocols(List<EndpointDescription> endpoints)
         {
             // preserve the existing value.
             Protocol currentProtocol = (Protocol)ProtocolCB.SelectedItem;
@@ -786,7 +786,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes the security modes dropdown.
         /// </summary>
-        private void InitializeSecurityModes(EndpointDescriptionCollection endpoints)
+        private void InitializeSecurityModes(List<EndpointDescription> endpoints)
         {
             // filter by the current protocol.
             Protocol currentProtocol = (Protocol)ProtocolCB.SelectedItem;
@@ -854,7 +854,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes the security policies dropdown.
         /// </summary>
-        private void InitializeSecurityPolicies(EndpointDescriptionCollection endpoints)
+        private void InitializeSecurityPolicies(List<EndpointDescription> endpoints)
         {
             // filter by the current protocol.
             Protocol currentProtocol = (Protocol)ProtocolCB.SelectedItem;
@@ -940,7 +940,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Initializes the message encodings dropdown.
         /// </summary>
-        private void InitializeEncodings(EndpointDescriptionCollection endpoints, EndpointDescription endpoint)
+        private void InitializeEncodings(List<EndpointDescription> endpoints, EndpointDescription endpoint)
         {
             // preserve the existing value.
             Encoding currentEncoding = Encoding.Default;
@@ -1147,7 +1147,7 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                EndpointDescriptionCollection endpoints = new EndpointDescriptionCollection((await client.GetEndpointsAsync(default, ct)).ToArray());
+                List<EndpointDescription> endpoints = new List<EndpointDescription>((await client.GetEndpointsAsync(default, ct)).ToArray());
                 OnUpdateEndpoints(endpoints);
                 return (true, String.Empty);
             }
@@ -1194,7 +1194,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 // get the updated descriptions.
-                EndpointDescriptionCollection endpoints = state as EndpointDescriptionCollection;
+                List<EndpointDescription> endpoints = state as List<EndpointDescription>;
 
                 if (endpoints == null)
                 {
@@ -1695,7 +1695,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (m_currentDescription.Server != null)
                     {
-                        if (m_currentDescription.Server.ApplicationName != null)
+                        if (!m_currentDescription.Server.ApplicationName.IsNull)
                         {
                             ApplicationNameTB.Text = m_currentDescription.Server.ApplicationName.ToString();
                         }

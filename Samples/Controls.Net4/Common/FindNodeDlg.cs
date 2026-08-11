@@ -74,7 +74,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                BrowsePathCollection browsePaths = new BrowsePathCollection();
+                List<BrowsePath> browsePaths = new List<BrowsePath>();
 
                 BrowsePath browsePath = new BrowsePath();
 

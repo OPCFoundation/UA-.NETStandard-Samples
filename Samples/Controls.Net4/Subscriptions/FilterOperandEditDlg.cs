@@ -130,7 +130,7 @@ namespace Opc.Ua.Sample.Controls
 
                 StringBuilder buffer = new StringBuilder();
 
-                Array array = literalOperand.Value.Value as Array;
+                Array array = literalOperand.Value.AsBoxedObject() as Array;
 
                 if (array != null)
                 {
@@ -141,7 +141,7 @@ namespace Opc.Ua.Sample.Controls
                             buffer.Append("\r\n");
                         }
 
-                        buffer.AppendFormat("{0}", new Variant(array.GetValue(ii)));
+                        buffer.AppendFormat("{0}", Variant.From((dynamic)array.GetValue(ii)));
                     }
                 }
                 else

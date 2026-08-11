@@ -183,7 +183,7 @@ namespace Quickstarts.PerfTestServer
             {
                 lock (m_lock)
                 {
-                    DateTime start = HiResClock.UtcNow;
+                    DateTime start = DateTime.UtcNow;
                     int delta = m_values.Length / 2;
 
                     for (int ii = m_start; ii < delta + m_start && ii < m_values.Length; ii++)
@@ -194,7 +194,7 @@ namespace Quickstarts.PerfTestServer
 
                         if (monitoredItems != null)
                         {
-                            DataValue value = new DataValue(new Variant(m_values[ii]), StatusCodes.Good, DateTime.UtcNow, DateTime.UtcNow);
+                            DataValue value = new DataValue(Variant.From(m_values[ii]), StatusCodes.Good, DateTime.UtcNow, DateTime.UtcNow);
 
                             for (int jj = 0; jj < monitoredItems.Length; jj++)
                             {
@@ -210,9 +210,9 @@ namespace Quickstarts.PerfTestServer
                         m_start = 0;
                     }
 
-                    if ((HiResClock.UtcNow - start).TotalMilliseconds > 50)
+                    if ((DateTime.UtcNow - start).TotalMilliseconds > 50)
                     {
-                        m_logger.LogWarning("Update took {ElapsedMs}ms.", (HiResClock.UtcNow - start).TotalMilliseconds);
+                        m_logger.LogWarning("Update took {ElapsedMs}ms.", (DateTime.UtcNow - start).TotalMilliseconds);
                     }
                 }
             }

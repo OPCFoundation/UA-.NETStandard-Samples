@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -128,7 +128,7 @@ namespace Quickstarts
                 child.BrowseName = reference.BrowseName;
                 child.NodeClass = reference.NodeClass;
 
-                if (!LocalizedText.IsNullOrEmpty(reference.DisplayName))
+                if (!(reference.DisplayName).IsNullOrEmpty)
                 {
                     child.DisplayName = reference.DisplayName.Text;
                 }
@@ -183,7 +183,7 @@ namespace Quickstarts
                     children[ii].ModellingRule = modellingRules[ii];
 
                     // if the modelling rule is null then the instance is not part of the type declaration.
-                    if (NodeId.IsNull(modellingRules[ii]))
+                    if ((modellingRules[ii]).IsNull)
                     {
                         map.Remove(children[ii].BrowsePathDisplayText);
                     }
@@ -196,7 +196,7 @@ namespace Quickstarts
             // recusively collect instance declarations for the tree below.
             for (int ii = 0; ii < children.Count; ii++)
             {
-                if (!NodeId.IsNull(children[ii].ModellingRule))
+                if (!(children[ii].ModellingRule).IsNull)
                 {
                     instances.Add(children[ii]);
                     await CollectInstanceDeclarationsAsync(session, typeId, children[ii], instances, map, ct);
@@ -212,7 +212,7 @@ namespace Quickstarts
             try
             {
                 // construct browse request.
-                BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection();
+                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
 
                 for (int ii = 0; ii < nodeIds.Count; ii++)
                 {
@@ -262,7 +262,7 @@ namespace Quickstarts
                     // get the node id.
                     if (results[ii].References.Count > 0)
                     {
-                        if (NodeId.IsNull(results[ii].References[0].NodeId) || results[ii].References[0].NodeId.IsAbsolute)
+                        if ((results[ii].References[0].NodeId).IsNull || results[ii].References[0].NodeId.IsAbsolute)
                         {
                             continue;
                         }
@@ -308,7 +308,7 @@ namespace Quickstarts
         {
             try
             {
-                ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
+                List<ReadValueId> nodesToRead = new List<ReadValueId>();
 
                 for (int ii = 0; ii < instances.Count; ii++)
                 {
@@ -351,7 +351,7 @@ namespace Quickstarts
                     instance.DataType = results[ii + 1].GetValue<NodeId>(NodeId.Null);
                     instance.ValueRank = results[ii + 2].GetValue<int>(ValueRanks.Any);
 
-                    if (!NodeId.IsNull(instance.DataType))
+                    if (!(instance.DataType).IsNull)
                     {
                         instance.BuiltInType = TypeInfo.GetBuiltInType(instance.DataType, session.TypeTree);
                         instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType, ct);
@@ -572,7 +572,7 @@ namespace Quickstarts
                     continue;
                 }
 
-                if (NodeId.IsNull(instanceDeclaration.ModellingRule))
+                if ((instanceDeclaration.ModellingRule).IsNull)
                 {
                     continue;
                 }
@@ -700,7 +700,7 @@ namespace Quickstarts
         public ContentFilter GetWhereClause()
         {
             ContentFilter whereClause = new ContentFilter();
-            ContentFilterElement element1 = whereClause.Push(FilterOperator.OfType, new Variant(new LiteralOperand { Value = new Variant(EventTypeId) }));
+            ContentFilterElement element1 = whereClause.Push(FilterOperator.OfType, new Variant(new ExtensionObject(new LiteralOperand { Value = new Variant(EventTypeId) })));
 
             EventFilter filter = new EventFilter();
 
@@ -716,8 +716,8 @@ namespace Quickstarts
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
 
-                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(operand1), new Variant(operand2));
-                    element1 = whereClause.Push(FilterOperator.And, new Variant(element1), new Variant(element2));
+                    ContentFilterElement element2 = whereClause.Push(field.FilterOperator, new Variant(new ExtensionObject(operand1)), new Variant(new ExtensionObject(operand2)));
+                    element1 = whereClause.Push(FilterOperator.And, new Variant(new ExtensionObject(element1)), new Variant(new ExtensionObject(element2)));
                 }
             }
 
@@ -743,7 +743,7 @@ namespace Quickstarts
                         return defaultValue;
                     }
 
-                    object value = fields[ii + 1].Value;
+                    object value = fields[ii + 1].AsBoxedObject();
 
                     if (typeof(T).IsInstanceOfType(value))
                     {

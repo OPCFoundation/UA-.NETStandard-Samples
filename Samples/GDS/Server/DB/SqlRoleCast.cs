@@ -28,7 +28,7 @@ namespace Opc.Ua.Gds.Server.DB
             return new SqlRole() {
                 Id = Guid.NewGuid(),
                 Name = role.Name,
-                RoleId = (int?)(role.RoleId.Identifier as uint?),
+                RoleId = role.RoleId.TryGetValue(out uint roleId) ? (int?)roleId : null,
                 NamespaceIndex = role.RoleId.NamespaceIndex
             };
         }

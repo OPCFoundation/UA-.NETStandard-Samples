@@ -174,7 +174,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                     if (info != null)
                     {
-                        return info.Parent != null && info.Parent.TypeInfo != null && info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant;
+                        return info.Parent != null && !info.Parent.TypeInfo.IsUnknown && info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant;
                     }
                 }
 
@@ -197,7 +197,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         Variant? value = info.Value as Variant?;
 
-                        if (value != null && value.Value.TypeInfo != null)
+                        if (value != null && !value.Value.TypeInfo.IsUnknown)
                         {
                             return value.Value.TypeInfo.BuiltInType;
                         }
@@ -252,13 +252,13 @@ namespace Opc.Ua.Gds.Client.Controls
             if (info.Value is Variant)
             {
                 Variant variant = (Variant)info.Value;
-                currentValue = variant.Value;
+                currentValue = variant.AsBoxedObject();
 
                 if (currentValue != null)
                 {
                     currentType = variant.TypeInfo;
 
-                    if (currentType == null)
+                    if (currentType.IsUnknown)
                     {
                         currentType = Opc.Ua.TypeInfo.Construct(currentValue);
                     }
@@ -411,13 +411,13 @@ namespace Opc.Ua.Gds.Client.Controls
             if (info.Value is Variant)
             {
                 Variant variant = (Variant)info.Value;
-                currentValue = variant.Value;
+                currentValue = variant.AsBoxedObject();
 
                 if (currentValue != null)
                 {
                     currentType = variant.TypeInfo;
 
-                    if (currentType == null)
+                    if (currentType.IsUnknown)
                     {
                         currentType = Opc.Ua.TypeInfo.Construct(currentValue);
                     }
@@ -557,7 +557,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
 
             // assign a type.
-            if (expectedType == null)
+            if (expectedType.IsUnknown)
             {
                 if (value == null)
                 {
@@ -578,9 +578,9 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     name = value.GetType().Name;
 
-                    if (value is ExtensionObject extension && extension.Body != null)
+                    if (value is ExtensionObject extension && TryGetExtensionObjectBody(extension, out object body))
                     {
-                        name = extension.Body.GetType().Name;
+                        name = body.GetType().Name;
                     }
                 }
             }
@@ -727,13 +727,13 @@ namespace Opc.Ua.Gds.Client.Controls
             if (value is Variant)
             {
                 Variant variant = (Variant)value;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (value != null)
                 {
                     parent.TypeInfo = typeInfo = variant.TypeInfo;
 
-                    if (typeInfo == null)
+                    if (typeInfo.IsUnknown)
                     {
                         parent.TypeInfo = typeInfo = Opc.Ua.TypeInfo.Construct(value);
                     }
@@ -836,9 +836,7 @@ namespace Opc.Ua.Gds.Client.Controls
             // check for extension object.
             if (structure is ExtensionObject extension)
             {
-                structure = extension.Body;
-
-                if (structure == null)
+                if (!TryGetExtensionObjectBody(extension, out structure))
                 {
                     return;
                 }
@@ -1134,7 +1132,7 @@ namespace Opc.Ua.Gds.Client.Controls
         /// </summary>
         private Type GetDataType(AccessInfo accessInfo)
         {
-            if (accessInfo == null || accessInfo.TypeInfo == null)
+            if (accessInfo == null || accessInfo.TypeInfo.IsUnknown)
             {
                 return null;
             }
@@ -1360,13 +1358,13 @@ namespace Opc.Ua.Gds.Client.Controls
             if (value is Variant)
             {
                 Variant variant = (Variant)value;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
                 if (value != null)
                 {
                     typeInfo = variant.TypeInfo;
 
-                    if (typeInfo == null)
+                    if (typeInfo.IsUnknown)
                     {
                         typeInfo = Opc.Ua.TypeInfo.Construct(value);
                     }
@@ -1445,7 +1443,7 @@ namespace Opc.Ua.Gds.Client.Controls
         /// </summary>
         private bool IsSimpleValue(AccessInfo info)
         {
-            if (info == null || info.TypeInfo == null)
+            if (info == null || info.TypeInfo.IsUnknown)
             {
                 return true;
             }
@@ -1457,9 +1455,9 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 Variant variant = (Variant)info.Value;
                 typeInfo = variant.TypeInfo;
-                value = variant.Value;
+                value = variant.AsBoxedObject();
 
-                if (typeInfo == null)
+                if (typeInfo.IsUnknown)
                 {
                     typeInfo = Opc.Ua.TypeInfo.Construct(value);
                 }
@@ -1497,6 +1495,61 @@ namespace Opc.Ua.Gds.Client.Controls
             return true;
         }
 
+        private static bool TryGetExtensionObjectBody(ExtensionObject extension, out object body)
+        {
+            body = null;
+
+            if (extension.IsNull)
+            {
+                return false;
+            }
+
+            if (extension.TryGetValue(out IEncodeable encodeable, ServiceMessageContext.CreateEmpty(null)))
+            {
+                body = encodeable;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static Variant CreateVariant(object value)
+        {
+            if (value == null)
+            {
+                return Variant.Null;
+            }
+
+            return value switch
+            {
+                bool v => Variant.From(v),
+                sbyte v => Variant.From(v),
+                byte v => Variant.From(v),
+                short v => Variant.From(v),
+                ushort v => Variant.From(v),
+                int v => Variant.From(v),
+                uint v => Variant.From(v),
+                long v => Variant.From(v),
+                ulong v => Variant.From(v),
+                float v => Variant.From(v),
+                double v => Variant.From(v),
+                string v => Variant.From(v),
+                DateTime v => Variant.From(new DateTimeUtc(v)),
+                Guid v => Variant.From(new Uuid(v)),
+                byte[] v => Variant.From(ByteString.From(v)),
+                NodeId v => Variant.From(v),
+                ExpandedNodeId v => Variant.From(v),
+                StatusCode v => Variant.From(v),
+                QualifiedName v => Variant.From(v),
+                LocalizedText v => Variant.From(v),
+                ExtensionObject v => Variant.From(v),
+                DataValue v => Variant.From(v),
+                Variant v => Variant.From(ref v),
+                IEncodeable v => Variant.From(new ExtensionObject(v)),
+                _ => Variant.Null
+            };
+        }
+
         private object CreateInstance(Type type)
         {
             if (typeof(string).Equals(type))
@@ -1518,7 +1571,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank < 0)
             {
-                parentValue = ((Variant)info.Parent.Value).Value;
+                parentValue = ((Variant)info.Parent.Value).AsBoxedObject();
             }
 
             if (info.PropertyInfo != null && info.Parent.TypeInfo.ValueRank < 0)
@@ -1527,12 +1580,12 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 if (variant != null)
                 {
-                    parentValue = variant.Value.Value;
+                    parentValue = variant.Value.AsBoxedObject();
                 }
 
-                if (parentValue is ExtensionObject extension)
+                if (parentValue is ExtensionObject extension && TryGetExtensionObjectBody(extension, out object body))
                 {
-                    parentValue = extension.Body;
+                    parentValue = body;
                 }
 
                 if (info.PropertyInfo.CanWrite && info.PropertyInfo.PropertyType.IsInstanceOfType(info.Value))
@@ -1567,7 +1620,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        array.SetValue(new Variant(info.Value), indexes);
+                        array.SetValue(CreateVariant(info.Value), indexes);
                     }
                     else
                     {
@@ -1580,7 +1633,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                     if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
                     {
-                        list[indexes[0]] = new Variant(info.Value);
+                        list[indexes[0]] = CreateVariant(info.Value);
                     }
                     else
                     {
