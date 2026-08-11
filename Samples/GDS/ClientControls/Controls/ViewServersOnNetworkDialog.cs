@@ -123,6 +123,13 @@ namespace Opc.Ua.Gds.Client.Controls
                     #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                     new SelectGdsDialog().ShowDialog(null, m_gds, await m_gds.GetDefaultGdsUrlsAsync(null), m_telemetry);
                     #pragma warning restore CA2000
+
+                    // The user may have cancelled the dialog or the connection may have failed.
+                    // Abort the query instead of letting the GDS client connect with a null endpoint.
+                    if (!m_gds.IsConnected)
+                    {
+                        return;
+                    }
                 }
 
                 uint maxNoOfRecords = (uint)NumberOfRecordsUpDown.Value;
