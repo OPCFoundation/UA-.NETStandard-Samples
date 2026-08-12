@@ -283,8 +283,8 @@ namespace Quickstarts
                     results = response2.Results.ToList();
                     diagnosticInfos = response2.DiagnosticInfos.ToList();
 
-                    ClientBase.ValidateResponse(results, nodesToBrowse);
-                    ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
+                    ClientBase.ValidateResponse(results, continuationPoints);
+                    ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
                 }
 
                 //return complete list.
