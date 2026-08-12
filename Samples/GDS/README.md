@@ -34,6 +34,110 @@ Please follow instructions in this [article](https://aka.ms/dotnetcoregs) to set
 5. The server loads and initializes all [Certificates](#certificates).
 6. The server is now running and waiting for the connection of a GDS client. 
 
+## Integrating the v2 Local Discovery Server (LDS) library with the GDS
+Starting with UA .NET Standard v2 the stack ships a managed Local Discovery Server as the NuGet package
+[`OPCFoundation.NetStandard.Opc.Ua.Lds.Server`](https://github.com/OPCFoundation/UA-.NETStandard/tree/master/src/Opc.Ua.Lds.Server).
+It implements the Local Discovery Server (LDS) and the Local Discovery Server with Multicast Extension (LDS-ME) as
+specified in OPC UA Part 12, and is a managed, cross-platform replacement for the legacy C++ LDS.
+
+### Roles of the LDS and the GDS
+The LDS and the GDS are complementary discovery components and are meant to run side by side:
+- The **LDS / LDS-ME** is a *local* directory. Servers on the same host register themselves with the LDS through
+  `RegisterServer` / `RegisterServer2`, and the LDS-ME re-publishes those endpoints over mDNS so that other nodes on
+  the local network can find them. Clients call `FindServers` and `FindServersOnNetwork` on the LDS to enumerate what
+  is currently reachable. The LDS keeps only volatile, TTL-based records and performs **no** certificate management.
+- The **GDS** is a *global*, persistent directory and certificate authority. It stores approved
+  `ApplicationRecordDataType` entries in its database and issues/manages certificates and trust lists.
+
+Integrating the two lets the GDS reuse the network view that the LDS-ME already maintains, instead of every server
+having to register with the GDS explicitly. This is the feature tracked in
+[issue #329 – *GDS autopopulate from LDSes*](https://github.com/OPCFoundation/UA-.NETStandard-Samples/issues/329):
+the GDS periodically scans one or more LDSes for servers on the network and, **after an administrator approves them**,
+adds records to its own database.
+
+### Relevant LDS library API
+The package exposes the pieces you need to host an LDS and to read what it has discovered:
+- **`Opc.Ua.Lds.Server.LdsServer`** – a `DiscoveryServerBase` subclass that answers `FindServers`,
+  `FindServersOnNetwork`, `GetEndpoints`, `RegisterServer` and `RegisterServer2`. Host it from a small executable the
+  same way the sample GDS hosts `GlobalDiscoverySampleServer`.
+- **`Opc.Ua.Lds.Server.IRegisteredServerStore`** – the backing store for explicit registrations and mDNS-observed
+  network records. Useful members:
+  - `IReadOnlyList<ServerOnNetworkRecord> SnapshotNetworkRecords()` – all currently known network records.
+  - `(IList<ServerOnNetwork> records, DateTime lastCounterResetTime) ListOnNetwork(startingRecordId, maxRecordsToReturn, serverCapabilityFilter)` – the same paginated view returned by `FindServersOnNetwork`.
+  - `IList<ApplicationDescription> Find(serverUriFilter, requestedLocaleIds)` – translated application descriptions for the active registrations.
+
+### How the GDS pulls records from an LDS
+From the GDS side the LDS is just another discovery endpoint, so the scan can be driven entirely with the standard
+UA client discovery services — no direct reference to the LDS assembly is required:
+
+1. **List the servers the LDS knows about.** Call `FindServersOnNetwork` on each configured LDS discovery URL
+   (default `opc.tcp://<lds-host>:4840`). Each returned `ServerOnNetwork` record carries a `RecordId`,
+   `ServerName`, `DiscoveryUrl` and the advertised `ServerCapabilities`. Page through the results using the
+   `startingRecordId` / `maxRecordsToReturn` arguments exactly as the sample
+   `ViewServersOnNetworkDialog` does against the GDS.
+2. **Resolve full application information.** For every candidate `DiscoveryUrl`, call `FindServers` (and optionally
+   `GetEndpoints`) to obtain the complete `ApplicationDescription` (application URI, product URI, application type,
+   discovery URLs, and — from the endpoints — the application instance certificate).
+3. **Stage the candidates for approval.** Do **not** register discovered servers automatically. Present them to a
+   user holding the **`DiscoveryAdmin`** role (see [GDS Users](#gds-users)); auto-populating the GDS without review
+   would let any server on the network insert itself into the global directory.
+4. **Register approved applications.** Map each approved `ApplicationDescription` to an `ApplicationRecordDataType`
+   and persist it through the GDS applications database, e.g. `ApplicationsDatabaseBase.RegisterApplication(...)`
+   (implemented by `SqlApplicationsDatabase` for the Windows/SQL server and by `JsonApplicationsDatabase` for the
+   .NET console server). Once registered, the application can request a CA-signed certificate and trust list through
+   the normal GDS pull workflow.
+
+The following sketch shows the scan-and-stage step (the approval gate and the final `RegisterApplication` call are
+left to the host application):
+
+```csharp
+// 'ldsUrl' is a configured LDS discovery URL, e.g. "opc.tcp://lds-host:4840".
+// 'discovery' is an Opc.Ua.DiscoveryClient created for that URL.
+var candidates = new List<ServerOnNetwork>();
+uint startingRecordId = 0;
+
+while (true)
+{
+    // FindServersOnNetwork mirrors IRegisteredServerStore.ListOnNetwork on the LDS side.
+    var onNetwork = await discovery.FindServersOnNetworkAsync(
+        startingRecordId,
+        maxRecordsToReturn: 100,
+        serverCapabilityFilter: null);
+
+    if (onNetwork.Servers.Count == 0)
+    {
+        break;
+    }
+
+    candidates.AddRange(onNetwork.Servers);
+    startingRecordId = onNetwork.Servers.Max(s => s.RecordId) + 1;
+}
+
+foreach (var server in candidates)
+{
+    // Resolve the full ApplicationDescription(s) behind each discovery URL.
+    using var serverDiscovery = DiscoveryClient.Create(new Uri(server.DiscoveryUrl));
+    ApplicationDescriptionCollection apps = await serverDiscovery.FindServersAsync(null);
+
+    // -> hand 'apps' to a DiscoveryAdmin for approval, then map the approved
+    //    entries to ApplicationRecordDataType and call RegisterApplication on
+    //    the GDS applications database.
+}
+```
+
+### Configuration
+Two related settings already exist in the GDS config (`Opc.Ua.GlobalDiscoveryServer.Config.xml`, under
+`ServerConfiguration`):
+- **`RegistrationEndpoint`** – the discovery endpoint the GDS *registers itself* with on start-up. In the sample it
+  points at `opc.tcp://localhost:4840`, i.e. a local LDS. Point this at your LDS so the GDS becomes visible through it.
+- **`MultiCastDnsEnabled`** – set to `true` to let the GDS announce itself over mDNS through an LDS-ME.
+
+The scan direction (the GDS *reading* servers from one or more LDSes) is not represented by an existing element, so
+add your own list of LDS discovery URLs to the GDS extension configuration and read it when driving the scan above.
+The default LDS discovery URL is `opc.tcp://<lds-host>:4840`. In every case make sure the GDS trusts each LDS
+application certificate (copy it from the GDS **rejected** store to **trusted/certs**, see
+[GDS Certificate stores](#gds-certificate-stores)) so the discovery calls can use a secure channel.
+
 ## GDS Users
 The sample GDS servers only implement the username/password authentication. The following combinations can be used to connect to the servers:
 - **DiscoveryAdmin**
