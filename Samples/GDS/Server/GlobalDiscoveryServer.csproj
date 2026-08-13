@@ -27,6 +27,10 @@
     <ProjectReference Include="..\..\ServerControls.Net4\UA Server Controls.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Common\GlobalDiscoveryServerAliasMerger.cs" Link="Common\GlobalDiscoveryServerAliasMerger.cs" />
+    <Compile Include="..\Common\AliasMergingGlobalDiscoverySampleServer.cs" Link="Common\AliasMergingGlobalDiscoverySampleServer.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
       <PrivateAssets>all</PrivateAssets>
@@ -36,6 +40,9 @@
       <Version>10.0.10</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
+      <Version>2.0.158.59919-preview</Version>
+    </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>2.0.158.59919-preview</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common">

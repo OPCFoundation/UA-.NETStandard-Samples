@@ -102,21 +102,40 @@ namespace Opc.Ua.Gds.Server
 
                 // start the server.
                 var database = new SqlApplicationsDatabase();
+
+                // GDS master AliasNames list (issue #274): merge each
+                // registered server's AliasNames into a master list served by
+                // this GDS.
+                var aliasMerger = new GlobalDiscoveryServerAliasMerger(m_telemetry);
+
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                var server = new GlobalDiscoverySampleServer(
+                var server = new AliasMergingGlobalDiscoverySampleServer(
                 #pragma warning restore CA2000
                     database,
                     database,
                     new CertificateGroup(m_telemetry),
                     userDatabase,
                     m_telemetry,
+                    aliasMerger,
                     true);
                 application.StartAsync(server).Wait();
+
+                // start refreshing the master AliasNames list and merge each
+                // server as soon as it registers.
+                aliasMerger.Start(application.ApplicationConfiguration, database);
+                database.ApplicationRegistered += (sender, app) =>
+                    aliasMerger.QueueMerge(
+                        app.ApplicationUri,
+                        app.DiscoveryUrls.IsNull
+                            ? new List<string>()
+                            : app.DiscoveryUrls.ToArray());
 
                 // run the application interactively.
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration, m_telemetry));
                 #pragma warning restore CA2000
+
+                aliasMerger.Dispose();
             }
             catch (Exception e)
             {
