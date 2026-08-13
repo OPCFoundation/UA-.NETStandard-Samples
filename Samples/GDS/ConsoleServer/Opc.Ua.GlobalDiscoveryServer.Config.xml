@@ -152,6 +152,17 @@
         <UsersDatabaseStorePath>%LocalApplicationData%/OPC Foundation/GDS/gdsuserdb.json</UsersDatabaseStorePath>
       </GlobalDiscoveryServerConfiguration>
     </ua:XmlElement>
+    <ua:XmlElement>
+      <!-- Sample-only extension read by LdsScannerConfiguration.Parse.
+           Lists the Local Discovery Server(s) the GDS scans for servers on the
+           network. Trigger a scan interactively with the 'scan' console command.
+           Make sure the GDS trusts each LDS application certificate. -->
+      <LdsScannerConfiguration xmlns="http://opcfoundation.org/UA/GDS/Sample/LdsScanner.xsd">
+        <LdsDiscoveryUrls>
+          <Url>opc.tcp://localhost:4840</Url>
+        </LdsDiscoveryUrls>
+      </LdsScannerConfiguration>
+    </ua:XmlElement>
   </Extensions>
 
   <TraceConfiguration>
