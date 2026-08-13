@@ -85,10 +85,9 @@ namespace Opc.Ua.Sample.Controls
             valueId.AttributeId = Attributes.GetIdentifier((string)AttributeIdCB.SelectedItem);
             valueId.IndexRange = IndexRangeTB.Text;
 
-            if (String.IsNullOrEmpty(EncodingCB.Text))
-            {
-                valueId.DataEncoding = new QualifiedName(EncodingCB.Text);
-            }
+            valueId.DataEncoding = !String.IsNullOrEmpty(EncodingCB.Text)
+                ? new QualifiedName(EncodingCB.Text)
+                : QualifiedName.Null;
 
             return true;
         }
