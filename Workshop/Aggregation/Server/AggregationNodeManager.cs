@@ -1765,10 +1765,14 @@ namespace AggregationServer
                 {
                     m_logger.LogDebug("{Status} {OutstandingRequestCount}/{DefunctRequestCount}", e.Status, session.OutstandingRequestCount, session.DefunctRequestCount);
                 }
-                var totalBadRequestCount = session.OutstandingRequestCount + session.DefunctRequestCount;
                 Opc.Ua.Client.SessionReconnectHandler reconnectHandler;
-                if (totalBadRequestCount >= 3 &&
-                    !session.SessionId.IsNull)
+                // Any not-good keep-alive status means the connection to the downstream
+                // server is broken, so start reconnecting immediately. Previously this was
+                // gated on OutstandingRequestCount + DefunctRequestCount >= 3, but when a
+                // keep-alive read fails synchronously (e.g. BadConnectionClosed after the
+                // downstream server is restarted or the network is lost) those counters are
+                // never incremented, so the reconnect logic never triggered (issue #312).
+                if (!session.SessionId.IsNull)
                 {
                     lock (m_clientsLock)
                     {
