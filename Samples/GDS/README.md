@@ -87,6 +87,14 @@ UA client discovery services — no direct reference to the LDS assembly is requ
    .NET console server). Once registered, the application can request a CA-signed certificate and trust list through
    the normal GDS pull workflow.
 
+This scan-and-stage flow is implemented in the **NetCoreGlobalDiscoveryServer** sample. Once the console GDS is
+running, type `scan` at the prompt to enumerate the configured LDSes, review each discovered server, and register the
+ones you approve (`help` lists the available commands). The scanner lives in
+[`Samples/GDS/ConsoleServer/LdsGdsScanner.cs`](ConsoleServer/LdsGdsScanner.cs) and the list of LDS discovery URLs it
+scans is read from the `<LdsScannerConfiguration>` extension in `Opc.Ua.GlobalDiscoveryServer.Config.xml` (see
+[Configuration](#configuration) below). A companion LDS host you can scan against ships as the
+[**ConsoleLds**](../LDS/ConsoleServer) sample.
+
 The following sketch shows the scan-and-stage step (the approval gate and the final `RegisterApplication` call are
 left to the host application):
 
@@ -133,7 +141,9 @@ Two related settings already exist in the GDS config (`Opc.Ua.GlobalDiscoverySer
 - **`MultiCastDnsEnabled`** – set to `true` to let the GDS announce itself over mDNS through an LDS-ME.
 
 The scan direction (the GDS *reading* servers from one or more LDSes) is not represented by an existing element, so
-add your own list of LDS discovery URLs to the GDS extension configuration and read it when driving the scan above.
+the sample adds its own `<LdsScannerConfiguration>` extension element with a list of LDS discovery URLs, which the
+`scan` command reads when driving the scan above (see
+[`Samples/GDS/ConsoleServer/LdsScannerConfiguration.cs`](ConsoleServer/LdsScannerConfiguration.cs)).
 The default LDS discovery URL is `opc.tcp://<lds-host>:4840`. In every case make sure the GDS trusts each LDS
 application certificate (copy it from the GDS **rejected** store to **trusted/certs**, see
 [GDS Certificate stores](#gds-certificate-stores)) so the discovery calls can use a secure channel.

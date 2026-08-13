@@ -60,6 +60,9 @@
     <Project Path="Samples/GDS/ConsoleServer/NetCoreGlobalDiscoveryServer.csproj" />
     <Project Path="Samples/GDS/Server/GlobalDiscoveryServer.csproj" />
   </Folder>
+  <Folder Name="/LDS/">
+    <Project Path="Samples/LDS/ConsoleServer/ConsoleLds.csproj" />
+  </Folder>
   <Folder Name="/Reference/">
     <Project Path="Samples/ReferenceClient/Reference Client.csproj" Id="9c1e7f15-2ee3-440d-8e17-00c38073822a" />
     <Project Path="Samples/ReferenceServer/Reference Server.csproj" Id="42ef4f25-29bf-4ab7-b403-8523694a3b36" />

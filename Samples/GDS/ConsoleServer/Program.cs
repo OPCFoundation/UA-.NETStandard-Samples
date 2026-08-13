@@ -39,6 +39,7 @@ using Microsoft.Extensions.Logging;
 using Mono.Options;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Linq;
+using Opc.Ua.Gds.Server.Database;
 using Opc.Ua.Server;
 using Opc.Ua.Server.UserDatabase;
 
@@ -162,6 +163,9 @@ namespace Opc.Ua.Gds.Server
         private readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
         private Task status;
         private DateTime lastEventTime;
+        private ApplicationConfiguration m_configuration;
+        private IApplicationsDatabase m_database;
+        private LdsScannerConfiguration m_ldsScannerConfiguration;
         #pragma warning disable CA2211 // Justification: Public sample API compatibility is preserved.
         public static ExitCode exitCode;
         #pragma warning restore CA2211
@@ -176,7 +180,8 @@ namespace Opc.Ua.Gds.Server
             {
                 exitCode = ExitCode.ErrorServerNotStarted;
                 await ConsoleGlobalDiscoveryServerAsync(m_telemetry).ConfigureAwait(false);
-                Console.WriteLine("Server started. Press Ctrl-C to exit...");
+                Console.WriteLine("Server started.");
+                PrintCommandHelp();
                 exitCode = ExitCode.ErrorServerRunning;
             }
             catch (Exception ex)
@@ -190,7 +195,7 @@ namespace Opc.Ua.Gds.Server
                 return;
             }
 
-            using (ManualResetEvent quitEvent = new ManualResetEvent(false))
+            using (var quitEvent = new ManualResetEventSlim(false))
             {
                 try
                 {
@@ -204,8 +209,38 @@ namespace Opc.Ua.Gds.Server
                 {
                 }
 
-                // wait for timeout or Ctrl-C
-                quitEvent.WaitOne();
+                // interactive command loop: read commands until quit or Ctrl-C.
+                while (!quitEvent.IsSet)
+                {
+                    string command = await ReadCommandAsync(quitEvent).ConfigureAwait(false);
+                    if (command == null)
+                    {
+                        break;
+                    }
+
+                    switch (command.Trim().ToUpperInvariant())
+                    {
+                        case "":
+                            break;
+                        case "Q":
+                        case "QUIT":
+                        case "EXIT":
+                            quitEvent.Set();
+                            break;
+                        case "S":
+                        case "SCAN":
+                            await RunLdsScanWorkflowAsync().ConfigureAwait(false);
+                            break;
+                        case "H":
+                        case "HELP":
+                        case "?":
+                            PrintCommandHelp();
+                            break;
+                        default:
+                            Console.WriteLine("Unknown command '{0}'. Type 'help' for options.", command.Trim());
+                            break;
+                    }
+                }
             }
 
             if (server != null)
@@ -226,6 +261,105 @@ namespace Opc.Ua.Gds.Server
         }
 
         public static ExitCode ExitCode => exitCode;
+
+        private static void PrintCommandHelp()
+        {
+            Console.WriteLine();
+            Console.WriteLine("Commands:");
+            Console.WriteLine("  scan  - scan the configured LDS(es) for servers and stage them for approval");
+            Console.WriteLine("  help  - show this message");
+            Console.WriteLine("  quit  - stop the server and exit (Ctrl-C also works)");
+            Console.WriteLine();
+        }
+
+        private static async Task<string> ReadCommandAsync(ManualResetEventSlim quitEvent)
+        {
+            Console.Write("gds> ");
+
+            // read a line on a background thread so Ctrl-C can still interrupt.
+            Task<string> readTask = Task.Run(() => Console.ReadLine());
+
+            while (!readTask.IsCompleted)
+            {
+                if (quitEvent.IsSet)
+                {
+                    return null;
+                }
+                await Task.WhenAny(readTask, Task.Delay(200)).ConfigureAwait(false);
+            }
+
+            return await readTask.ConfigureAwait(false);
+        }
+
+        private async Task RunLdsScanWorkflowAsync()
+        {
+            if (m_database == null || m_configuration == null || m_ldsScannerConfiguration == null)
+            {
+                Console.WriteLine("The server is not ready to scan yet.");
+                return;
+            }
+
+            IList<string> ldsUrls = m_ldsScannerConfiguration.LdsDiscoveryUrls;
+            Console.WriteLine("Scanning {0} LDS discovery URL(s): {1}",
+                ldsUrls.Count, string.Join(", ", ldsUrls));
+
+            var scanner = new LdsGdsScanner(m_configuration, m_database, m_telemetry);
+
+            IList<LdsScanCandidate> candidates;
+            try
+            {
+                candidates = await scanner.ScanAsync(ldsUrls).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Scan failed: {0}", ex.Message);
+                return;
+            }
+
+            if (candidates.Count == 0)
+            {
+                Console.WriteLine("No new servers found on the configured LDS(es).");
+                return;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Found {0} server(s) not yet registered in the GDS.", candidates.Count);
+            Console.WriteLine("Approval represents the DiscoveryAdmin role - only approved servers are added.");
+            Console.WriteLine();
+
+            var approved = new List<LdsScanCandidate>();
+
+            foreach (LdsScanCandidate candidate in candidates)
+            {
+                ApplicationDescription app = candidate.Application;
+                Console.WriteLine("  Server name     : {0}", candidate.Network?.ServerName);
+                Console.WriteLine("  Application URI : {0}", app?.ApplicationUri ?? "(unresolved)");
+                Console.WriteLine("  Application type: {0}", app?.ApplicationType.ToString() ?? "(unresolved)");
+                Console.WriteLine("  Product URI     : {0}", app?.ProductUri);
+                Console.WriteLine("  Discovery URL   : {0}", candidate.Network?.DiscoveryUrl);
+                Console.WriteLine("  Found via LDS   : {0}", candidate.SourceLdsUrl);
+                Console.Write("  Register this application? (y/n, default n): ");
+
+                string answer = Console.ReadLine();
+                if (!string.IsNullOrEmpty(answer) &&
+                    (answer.StartsWith('y') || answer.StartsWith('Y')))
+                {
+                    approved.Add(candidate);
+                }
+
+                Console.WriteLine();
+            }
+
+            if (approved.Count == 0)
+            {
+                Console.WriteLine("No servers approved. Nothing registered.");
+                return;
+            }
+
+            IList<NodeId> registered = scanner.RegisterApproved(approved);
+            Console.WriteLine("Registered {0} of {1} approved server(s) in the GDS.",
+                registered.Count, approved.Count);
+        }
 
         private async Task ConsoleGlobalDiscoveryServerAsync(ITelemetryContext telemetry)
         {
@@ -281,6 +415,12 @@ namespace Opc.Ua.Gds.Server
                 telemetry,
                 true);
             await application.StartAsync(server).ConfigureAwait(false);
+
+            // keep the configuration and database so the interactive LDS scan
+            // can register approved servers after start-up.
+            m_configuration = config;
+            m_database = database;
+            m_ldsScannerConfiguration = LdsScannerConfiguration.Parse(config);
 
             // print endpoint info
             IEnumerable<string> endpoints = application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
