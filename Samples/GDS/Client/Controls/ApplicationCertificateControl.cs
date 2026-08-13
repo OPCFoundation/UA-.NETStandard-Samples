@@ -86,7 +86,14 @@ namespace Opc.Ua.Gds.Client
 
             if (!isHttps)
             {
-                if (server.Endpoint != null && !server.Endpoint.Description.ServerCertificate.IsNull)
+                // Only ServerPush applications may seed the certificate from the connected
+                // server's endpoint. For pull applications (ClientPull/ServerPull) the connected
+                // server is the GDS (or the target server) and its certificate must not be used
+                // as the application certificate, otherwise the GDS/server host name leaks into
+                // the requested certificate's domain list (SANs). See issue #741.
+                if (application?.RegistrationType == RegistrationType.ServerPush
+                    && server.Endpoint != null
+                    && !server.Endpoint.Description.ServerCertificate.IsNull)
                 {
                     certificate = GdsCertificateLoader.LoadCertificate(server.Endpoint.Description.ServerCertificate.ToArray());
                 }
