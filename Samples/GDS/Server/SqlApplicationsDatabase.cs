@@ -40,6 +40,13 @@ namespace Opc.Ua.Gds.Server.Database.Sql
 {
     public class SqlApplicationsDatabase : ApplicationsDatabaseBase, ICertificateRequest
     {
+        /// <summary>
+        /// Raised after a server successfully (re-)registers with the GDS.
+        /// The GDS host uses this to merge the newly registered server's
+        /// AliasNames into the master AliasNames list (issue #274).
+        /// </summary>
+        public event EventHandler<ApplicationRecordDataType> ApplicationRegistered;
+
         #region IApplicationsDatabase Members
         public override void Initialize()
         {
@@ -148,6 +155,9 @@ namespace Opc.Ua.Gds.Server.Database.Sql
 
                 entities.SaveChanges();
                 m_lastCounterResetTime = DateTime.UtcNow;
+
+                ApplicationRegistered?.Invoke(this, application);
+
                 return new NodeId(applicationId, NamespaceIndex); ;
             }
         }

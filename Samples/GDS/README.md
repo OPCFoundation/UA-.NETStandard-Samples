@@ -148,6 +148,50 @@ The default LDS discovery URL is `opc.tcp://<lds-host>:4840`. In every case make
 application certificate (copy it from the GDS **rejected** store to **trusted/certs**, see
 [GDS Certificate stores](#gds-certificate-stores)) so the discovery calls can use a secure channel.
 
+## Merging AliasNames from registered servers into a GDS master list
+OPC UA Part 17 (AliasNames) lets a server expose an `Aliases` directory that maps human-friendly names (for example
+`TagVariables` and `Topics`) onto the `NodeId`s they resolve to. The GDS is the natural place to aggregate those
+per-server alias directories into a single, global view. This is the feature tracked in
+[issue #274 – *How GDS pulls the AliasNames from Registered servers*](https://github.com/OPCFoundation/UA-.NETStandard-Samples/issues/274):
+> When a Server registers with the GDS, the GDS shall merge the AliasNames of the registering Server into a master
+> AliasNames list on the GDS.
+
+Both sample GDS servers (the Windows **GlobalDiscoveryServer** and the cross-platform
+**NetCoreGlobalDiscoveryServer**) now implement this. The master list is served through the standard Part 17
+well-known nodes on the GDS itself — `Aliases (i=23470)`, `TagVariables (i=23479)` and `Topics (i=23488)` — so any UA
+client can browse the aggregated aliases on the GDS exactly as it would on an individual server.
+
+### How the merge works
+The shared implementation lives in
+[`Samples/GDS/Common/GlobalDiscoveryServerAliasMerger.cs`](Common/GlobalDiscoveryServerAliasMerger.cs) and
+[`Samples/GDS/Common/AliasMergingGlobalDiscoverySampleServer.cs`](Common/AliasMergingGlobalDiscoverySampleServer.cs),
+which are linked into both sample projects.
+
+1. **Master store.** `GlobalDiscoveryServerAliasMerger` owns an in-memory Part 17 `InMemoryAliasNameStore` laid out
+   with the standard `Aliases` root and its `TagVariables` / `Topics` sub-categories. The
+   `AliasMergingGlobalDiscoverySampleServer` subclass registers this store with the server's
+   `IAliasNameStoreRegistry` in `OnServerStarted`, so the well-known alias nodes on the GDS dispatch through it.
+2. **Pull on registration.** When a server registers, the applications database raises a registration event and the
+   merger connects **out to that server as a UA client** and calls the Part 17 `FindAlias` service (with the `%`
+   wildcard) to read every alias the server publishes.
+3. **Merge.** The pulled aliases are written into the GDS master `Aliases` category, tagged with the contributing
+   server's application URI as their `TargetServer`. The merger tracks each server's contribution, so a
+   re-registration (or the periodic refresh) cleanly **replaces** that server's previous aliases instead of
+   duplicating them.
+4. **Periodic refresh.** A background worker re-scans every registered server on an interval (default five minutes)
+   so the master list also reflects alias changes made after registration.
+
+### Authentication of the pull
+The GDS never captures a registering server's user credentials, so it cannot impersonate a named user when reading
+that server's aliases. The pull is therefore performed **anonymously over a secured (Sign / SignAndEncrypt) channel**
+authenticated with the **GDS application instance certificate**. For the merge to succeed:
+- The server must offer a secure endpoint that permits **anonymous** access to the Part 17 `FindAlias` service.
+- The server must **trust the GDS application certificate** (and the GDS must trust the server's certificate) so the
+  secure channel can be established — copy the certificates between the trust lists exactly as for the LDS scan above.
+
+Servers that require a named user or a user certificate to read their aliases are simply skipped, and the failure is
+logged; nothing else about registration is affected.
+
 ## GDS Users
 The sample GDS servers only implement the username/password authentication. The following combinations can be used to connect to the servers:
 - **DiscoveryAdmin**

@@ -166,6 +166,7 @@ namespace Opc.Ua.Gds.Server
         private ApplicationConfiguration m_configuration;
         private IApplicationsDatabase m_database;
         private LdsScannerConfiguration m_ldsScannerConfiguration;
+        private GlobalDiscoveryServerAliasMerger m_aliasMerger;
         #pragma warning disable CA2211 // Justification: Public sample API compatibility is preserved.
         public static ExitCode exitCode;
         #pragma warning restore CA2211
@@ -246,6 +247,9 @@ namespace Opc.Ua.Gds.Server
             if (server != null)
             {
                 Console.WriteLine("Server stopped. Waiting for exit...");
+
+                m_aliasMerger?.Dispose();
+                m_aliasMerger = null;
 
                 using (GlobalDiscoverySampleServer _server = server)
                 {
@@ -406,13 +410,18 @@ namespace Opc.Ua.Gds.Server
 
             bool createStandardUsers = ConfigureUsers(userDatabase);
 
+            // GDS master AliasNames list (issue #274): merge each registered
+            // server's AliasNames into a master list served by this GDS.
+            m_aliasMerger = new GlobalDiscoveryServerAliasMerger(telemetry);
+
             // start the server.
-            server = new GlobalDiscoverySampleServer(
+            server = new AliasMergingGlobalDiscoverySampleServer(
                 database,
                 database,
                 new CertificateGroup(telemetry),
                 userDatabase,
                 telemetry,
+                m_aliasMerger,
                 true);
             await application.StartAsync(server).ConfigureAwait(false);
 
@@ -421,6 +430,10 @@ namespace Opc.Ua.Gds.Server
             m_configuration = config;
             m_database = database;
             m_ldsScannerConfiguration = LdsScannerConfiguration.Parse(config);
+
+            // start periodically refreshing the GDS master AliasNames list
+            // from every registered server.
+            m_aliasMerger.Start(config, database);
 
             // print endpoint info
             IEnumerable<string> endpoints = application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
