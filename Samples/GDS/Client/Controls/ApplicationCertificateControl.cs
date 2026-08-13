@@ -29,6 +29,7 @@
 
 using Opc.Ua.Security.Certificates;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -193,6 +194,146 @@ namespace Opc.Ua.Gds.Client
             {
                 await RequestNewCertificatePullModeAsync(sender, e);
             }
+        }
+
+        private async void NewKeyPairFromDerButton_Click(object sender, EventArgs e)
+        {
+            await CreatePfxFromCertificateInfoAsync().ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Creates a new .pfx (with a fresh public/private key pair) from the information
+        /// contained in the currently loaded certificate.
+        /// </summary>
+        /// <remarks>
+        /// The subject name, application URI(s) and domain names (Subject Alternative Name) of the
+        /// loaded certificate are reused, while a brand new RSA key pair is generated. This makes it
+        /// possible to turn a public-only certificate (e.g. loaded from a <c>.der</c> file) into a
+        /// usable <c>.pfx</c> that carries a private key.
+        /// </remarks>
+        private async Task CreatePfxFromCertificateInfoAsync()
+        {
+            try
+            {
+                if (m_certificate == null)
+                {
+                    MessageBox.Show(
+                        Parent,
+                        "No certificate is loaded. Load a public certificate (e.g. a .der file) first.",
+                        Parent?.Text,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Clone the subject and the domain/application URI information from the loaded certificate.
+                string subjectName = m_certificate.Subject;
+                Certificate certificateInfo = Certificate.From(m_certificate);
+                IList<string> domainNames = X509Utils.GetDomainsFromCertificate(certificateInfo).ToList();
+                IReadOnlyList<string> applicationUris = X509Utils.GetApplicationUrisFromCertificate(certificateInfo);
+                ushort keySize = (ushort)(m_certificate.GetRSAPublicKey()?.KeySize ?? X509Defaults.RSAKeySize);
+
+                ICertificateBuilder builder = DefaultCertificateFactory.Instance.CreateCertificate(subjectName)
+                    .SetNotBefore(DateTime.Today.AddDays(-1))
+                    .SetNotAfter(DateTime.Today.AddYears(1));
+
+                // Reuse the Subject Alternative Name (application URI + domains) of the original certificate.
+                if (domainNames.Count > 0 || applicationUris.Count > 0)
+                {
+                    builder = builder.AddExtension(
+                        new X509SubjectAltNameExtension(
+                            applicationUris.Count > 0 ? applicationUris[0] : string.Empty,
+                            domainNames));
+                }
+
+                // Generate a new key pair for the cloned certificate information.
+                X509Certificate2 newCertificate = builder
+                    .SetRSAKeySize(keySize)
+                    .CreateForRSA()
+                    .AsX509Certificate2();
+
+                string savePath;
+                #pragma warning disable CA1849 // Justification: Synchronous WinForms sample handler preserves existing behavior.
+                using (SaveFileDialog dialog = new SaveFileDialog {
+                    Title = "Save new PFX certificate",
+                    Filter = "PKCS#12 files (*.pfx)|*.pfx|All files (*.*)|*.*",
+                    DefaultExt = "pfx",
+                    FileName = GetDefaultPfxFileName(subjectName),
+                    OverwritePrompt = true
+                })
+                {
+                    if (dialog.ShowDialog(this) != DialogResult.OK)
+                    {
+                        newCertificate.Dispose();
+                        return;
+                    }
+
+                    savePath = dialog.FileName;
+                }
+
+                string password = string.IsNullOrEmpty(m_certificatePassword) ? null : m_certificatePassword;
+                byte[] pfx = newCertificate.Export(X509ContentType.Pfx, password);
+                File.WriteAllBytes(savePath, pfx);
+                #pragma warning restore CA1849
+
+                if (m_temporaryCertificateCreated)
+                {
+                    m_certificate.Dispose();
+                    m_temporaryCertificateCreated = false;
+                }
+                m_certificate = newCertificate;
+
+                var wrapper = new CertificateWrapper() { Certificate = Certificate.From(newCertificate) };
+                CertificateControl.ShowValue(TypeInfo.Construct(wrapper), "Application Certificate", wrapper, true);
+                WarningLabel.Visible = false;
+
+                MessageBox.Show(
+                    Parent,
+                    "A new .pfx with a fresh key pair was created from the certificate information and saved to:\n" + savePath,
+                    Parent?.Text,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                await Task.CompletedTask.ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                #pragma warning disable CA1849 // Justification: Synchronous WinForms sample handler preserves existing behavior.
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
+                #pragma warning restore CA1849
+            }
+        }
+
+        /// <summary>
+        /// Builds a sensible default file name for the exported .pfx based on the certificate subject.
+        /// </summary>
+        private static string GetDefaultPfxFileName(string subjectName)
+        {
+            string commonName = null;
+            if (!String.IsNullOrEmpty(subjectName))
+            {
+                foreach (string part in subjectName.Split(','))
+                {
+                    string trimmed = part.Trim();
+                    if (trimmed.StartsWith("CN=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        commonName = trimmed.Substring(3).Trim();
+                        break;
+                    }
+                }
+            }
+
+            if (String.IsNullOrEmpty(commonName))
+            {
+                commonName = "certificate";
+            }
+
+            foreach (char invalid in Path.GetInvalidFileNameChars())
+            {
+                commonName = commonName.Replace(invalid, '_');
+            }
+
+            return commonName + ".pfx";
         }
 
         private async Task RequestNewCertificatePushModeAsync(object sender, EventArgs e)
