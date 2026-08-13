@@ -34,6 +34,8 @@
             this.WarningLabel = new System.Windows.Forms.Label();
             this.CertificateControl = new Opc.Ua.Gds.Client.Controls.EditValueCtrl();
             this.RegistrationButtonsPanel = new System.Windows.Forms.Panel();
+            this.PrivateKeyPasswordTextBox = new System.Windows.Forms.TextBox();
+            this.PrivateKeyPasswordLabel = new System.Windows.Forms.Label();
             this.ApplyChangesButton = new System.Windows.Forms.Button();
             this.RequestNewButton = new System.Windows.Forms.Button();
             this.CertificateRequestTimer = new System.Windows.Forms.Timer(this.components);
@@ -94,6 +96,8 @@
             // RegistrationButtonsPanel
             // 
             this.RegistrationButtonsPanel.BackColor = System.Drawing.Color.MidnightBlue;
+            this.RegistrationButtonsPanel.Controls.Add(this.PrivateKeyPasswordTextBox);
+            this.RegistrationButtonsPanel.Controls.Add(this.PrivateKeyPasswordLabel);
             this.RegistrationButtonsPanel.Controls.Add(this.ApplyChangesButton);
             this.RegistrationButtonsPanel.Controls.Add(this.RequestNewButton);
             this.RegistrationButtonsPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
@@ -101,6 +105,27 @@
             this.RegistrationButtonsPanel.Name = "RegistrationButtonsPanel";
             this.RegistrationButtonsPanel.Size = new System.Drawing.Size(879, 32);
             this.RegistrationButtonsPanel.TabIndex = 13;
+            // 
+            // PrivateKeyPasswordLabel
+            // 
+            this.PrivateKeyPasswordLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.PrivateKeyPasswordLabel.AutoSize = true;
+            this.PrivateKeyPasswordLabel.ForeColor = System.Drawing.Color.White;
+            this.PrivateKeyPasswordLabel.Location = new System.Drawing.Point(524, 9);
+            this.PrivateKeyPasswordLabel.Name = "PrivateKeyPasswordLabel";
+            this.PrivateKeyPasswordLabel.Size = new System.Drawing.Size(115, 13);
+            this.PrivateKeyPasswordLabel.TabIndex = 5;
+            this.PrivateKeyPasswordLabel.Text = "Private Key Password:";
+            // 
+            // PrivateKeyPasswordTextBox
+            // 
+            this.PrivateKeyPasswordTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.PrivateKeyPasswordTextBox.Location = new System.Drawing.Point(645, 6);
+            this.PrivateKeyPasswordTextBox.Name = "PrivateKeyPasswordTextBox";
+            this.PrivateKeyPasswordTextBox.Size = new System.Drawing.Size(225, 20);
+            this.PrivateKeyPasswordTextBox.TabIndex = 6;
+            this.PrivateKeyPasswordTextBox.UseSystemPasswordChar = true;
+            this.PrivateKeyPasswordTextBox.TextChanged += new System.EventHandler(this.PrivateKeyPasswordTextBox_TextChanged);
             // 
             // ApplyChangesButton
             // 
@@ -163,5 +188,7 @@
         private System.Windows.Forms.Timer CertificateRequestTimer;
         private System.Windows.Forms.Label RequestProgressLabel;
         private System.Windows.Forms.Button ApplyChangesButton;
+        private System.Windows.Forms.Label PrivateKeyPasswordLabel;
+        private System.Windows.Forms.TextBox PrivateKeyPasswordTextBox;
     }
 }

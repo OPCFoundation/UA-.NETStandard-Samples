@@ -74,6 +74,7 @@ namespace Opc.Ua.Gds.Client
             m_certificate = null;
             m_temporaryCertificateCreated = false;
             m_certificatePassword = null;
+            PrivateKeyPasswordTextBox.Text = string.Empty;
 
             CertificateRequestTimer.Enabled = false;
             RequestProgressLabel.Visible = false;
@@ -260,9 +261,46 @@ certificateRequest);
             return null;
         }
 
-        private Task<X509Certificate2> LoadPrivateKeyAsync(CertificateIdentifier id, X509Certificate2 certificate, char[] password)
+        private async Task<X509Certificate2> LoadPrivateKeyAsync(CertificateIdentifier id, X509Certificate2 certificate, char[] password)
         {
-            return Task.FromResult(certificate);
+            if (certificate == null)
+            {
+                return null;
+            }
+
+            // Certificate already carries an exportable private key, nothing to load.
+            if (certificate.HasPrivateKey)
+            {
+                return certificate;
+            }
+
+            if (id == null || String.IsNullOrEmpty(id.StorePath))
+            {
+                return certificate;
+            }
+
+            var storeIdentifier = new CertificateStoreIdentifier(id.StorePath, false);
+            using (ICertificateStore store = storeIdentifier.OpenStore(m_telemetry))
+            {
+                if (store == null || !store.SupportsLoadPrivateKey)
+                {
+                    return certificate;
+                }
+
+                Certificate withPrivateKey = await store.LoadPrivateKeyAsync(
+                    certificate.Thumbprint,
+                    certificate.Subject,
+                    null,
+                    id.CertificateType,
+                    (password != null && password.Length > 0) ? password : null);
+
+                if (withPrivateKey != null)
+                {
+                    return withPrivateKey.AsX509Certificate2();
+                }
+            }
+
+            return certificate;
         }
         private async Task RequestNewCertificatePullModeAsync(object sender, EventArgs e)
         {
@@ -410,7 +448,7 @@ certificateRequest);
                                 X509Certificate2 oldCertificate = await FindCertificateAsync(cid);
                                 if (oldCertificate != null && oldCertificate.HasPrivateKey)
                                 {
-                                    oldCertificate = await LoadPrivateKeyAsync(cid, oldCertificate, []);
+                                    oldCertificate = await LoadPrivateKeyAsync(cid, oldCertificate, m_certificatePassword?.ToCharArray());
                                     newCert = DefaultCertificateFactory.Instance.CreateWithPrivateKey(Certificate.From(newCert), Certificate.From(m_temporaryCertificateCreated ? m_certificate : oldCertificate)).AsX509Certificate2();
                                     await store.DeleteAsync(oldCertificate.Thumbprint);
                                 }
@@ -421,7 +459,7 @@ certificateRequest);
                             }
                             else
                             {
-                                newCert = GdsCertificateLoader.LoadPkcs12(privateKeyPFX.ToArray(), string.Empty, X509KeyStorageFlags.Exportable);
+                                newCert = GdsCertificateLoader.LoadPkcs12(privateKeyPFX.ToArray(), m_certificatePassword ?? string.Empty, X509KeyStorageFlags.Exportable);
                             }
                             await store.AddAsync(Certificate.From(newCert));
                             if (m_temporaryCertificateCreated)
@@ -609,6 +647,11 @@ certificate,
         private void Button_MouseLeave(object sender, EventArgs e)
         {
             ((Control)sender).BackColor = Color.MidnightBlue;
+        }
+
+        private void PrivateKeyPasswordTextBox_TextChanged(object sender, EventArgs e)
+        {
+            m_certificatePassword = PrivateKeyPasswordTextBox.Text;
         }
 
     }
