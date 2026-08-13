@@ -473,7 +473,7 @@ certificateRequest);
                     else
                     {
                         DialogResult result = DialogResult.Yes;
-                        string absoluteCertificatePublicKeyPath = Utils.GetAbsoluteFilePath(m_application.CertificatePublicKeyPath, true, false, false) ?? m_application.CertificatePublicKeyPath;
+                        string absoluteCertificatePublicKeyPath = GetSaveFilePath(m_application.CertificatePublicKeyPath);
                         FileInfo file = new FileInfo(absoluteCertificatePublicKeyPath);
                         if (file.Exists)
                         {
@@ -504,7 +504,7 @@ certificateRequest);
                         // if we provided a PFX or P12 with the private key, we need to merge the new cert with the private key
                         if (m_application.GetPrivateKeyFormat((m_server != null ? await m_server.GetSupportedKeyFormatsAsync() : ArrayOf<string>.Empty).ToArray()) == "PFX")
                         {
-                            string absoluteCertificatePrivateKeyPath = Utils.GetAbsoluteFilePath(m_application.CertificatePrivateKeyPath, true, false, false) ?? m_application.CertificatePrivateKeyPath;
+                            string absoluteCertificatePrivateKeyPath = GetSaveFilePath(m_application.CertificatePrivateKeyPath);
                             file = new FileInfo(absoluteCertificatePrivateKeyPath);
                             if (file.Exists)
                             {
@@ -610,6 +610,42 @@ certificate,
                 CertificateRequestTimer.Enabled = false;
                 Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, exception);
             }
+        }
+
+        /// <summary>
+        /// Resolves a certificate file path for saving.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Utils.GetAbsoluteFilePath(string, bool, bool, bool)"/> only resolves paths to files that
+        /// already exist. When saving a new certificate the target file does not exist yet, so that call fails
+        /// and the raw path (which may still contain an unexpanded placeholder such as
+        /// <c>%CommonApplicationData%</c>) would be used verbatim. This helper falls back to
+        /// <see cref="Utils.ReplaceSpecialFolderNames(string)"/> so environment/special-folder placeholders are
+        /// consistently expanded and the certificate is written to the intended location.
+        /// </remarks>
+        private static string GetSaveFilePath(string filePath)
+        {
+            if (String.IsNullOrEmpty(filePath))
+            {
+                return filePath;
+            }
+
+            try
+            {
+                // Prefer an already existing file (also handles current-directory lookup).
+                string resolved = Utils.GetAbsoluteFilePath(filePath, true, false, false);
+                if (!String.IsNullOrEmpty(resolved))
+                {
+                    return resolved;
+                }
+            }
+            catch (ServiceResultException)
+            {
+                // File does not exist yet (new certificate): fall back to placeholder expansion below.
+            }
+
+            // Expand special-folder/environment placeholders so a new certificate is saved to the intended path.
+            return Utils.ReplaceSpecialFolderNames(filePath) ?? filePath;
         }
 
         private async void ApplyChangesButton_Click(object sender, EventArgs e)
