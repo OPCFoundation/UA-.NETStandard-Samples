@@ -547,6 +547,23 @@ namespace Opc.Ua.Client.Controls
                     #pragma warning restore CA2000
                 }
 
+                case BuiltInType.ByteString:
+                {
+                    byte[] bytes = value as byte[];
+                    string hex = FormatByteString(bytes);
+
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
+                    string edited = new StringValueEditDlg().ShowDialog(hex);
+                    #pragma warning restore CA2000
+
+                    if (edited == null)
+                    {
+                        return null;
+                    }
+
+                    return ParseByteString(edited);
+                }
+
                 case BuiltInType.LocalizedText:
                 {
                     LocalizedText ltext = (LocalizedText)value;
@@ -567,6 +584,110 @@ namespace Opc.Ua.Client.Controls
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             return new ComplexValueEditDlg().ShowDialog(value, telemetry);
             #pragma warning restore CA2000
+        }
+
+        /// <summary>
+        /// Formats a byte array as a whitespace separated hex string for editing.
+        /// </summary>
+        private static string FormatByteString(byte[] bytes)
+        {
+            if (bytes == null)
+            {
+                return String.Empty;
+            }
+
+            var builder = new StringBuilder(bytes.Length * 3);
+
+            for (int ii = 0; ii < bytes.Length; ii++)
+            {
+                if (ii > 0)
+                {
+                    builder.Append(' ');
+                }
+
+                builder.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, "{0:X2}", bytes[ii]);
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Parses an edited ByteString. Accepts hex (with optional whitespace, commas
+        /// or 0x prefixes) or, as a fallback, a base64 encoded string.
+        /// </summary>
+        private static byte[] ParseByteString(string text)
+        {
+            if (String.IsNullOrWhiteSpace(text))
+            {
+                return Array.Empty<byte>();
+            }
+
+            // Strip common separators and prefixes so both "0x0A, 0x0B" and "0A0B" work.
+            string cleaned = text
+                .Replace("0x", String.Empty)
+                .Replace("0X", String.Empty)
+                .Replace(",", String.Empty)
+                .Replace("-", String.Empty);
+
+            var hexOnly = new StringBuilder(cleaned.Length);
+
+            foreach (char ch in cleaned)
+            {
+                if (Char.IsWhiteSpace(ch))
+                {
+                    continue;
+                }
+
+                hexOnly.Append(ch);
+            }
+
+            string hex = hexOnly.ToString();
+
+            if (hex.Length > 0 &&
+                hex.Length % 2 == 0 &&
+                IsHexString(hex))
+            {
+                var bytes = new byte[hex.Length / 2];
+
+                for (int ii = 0; ii < bytes.Length; ii++)
+                {
+                    bytes[ii] = Convert.ToByte(hex.Substring(ii * 2, 2), 16);
+                }
+
+                return bytes;
+            }
+
+            // Fall back to base64 if the text is not valid hex.
+            try
+            {
+                return Convert.FromBase64String(text.Trim());
+            }
+            catch (FormatException)
+            {
+                throw new FormatException(
+                    "The value could not be interpreted as a ByteString. Enter the bytes as hex (e.g. '0A 1B 2C') or as a base64 string.");
+            }
+        }
+
+        /// <summary>
+        /// Returns true if every character in the string is a hexadecimal digit.
+        /// </summary>
+        private static bool IsHexString(string text)
+        {
+            foreach (char ch in text)
+            {
+                bool isHexDigit =
+                    (ch >= '0' && ch <= '9') ||
+                    (ch >= 'a' && ch <= 'f') ||
+                    (ch >= 'A' && ch <= 'F');
+
+                if (!isHexDigit)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
