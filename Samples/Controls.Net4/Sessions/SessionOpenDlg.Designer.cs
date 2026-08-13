@@ -46,6 +46,10 @@ namespace Opc.Ua.Sample.Controls
             {
                 components.Dispose();
             }
+            if (disposing)
+            {
+                m_userCertificate?.Dispose();
+            }
             base.Dispose(disposing);
         }
 
@@ -128,6 +132,7 @@ namespace Opc.Ua.Sample.Controls
             this.UserNameCB.Name = "UserNameCB";
             this.UserNameCB.Size = new System.Drawing.Size(197, 21);
             this.UserNameCB.TabIndex = 5;
+            this.UserNameCB.SelectedIndexChanged += new System.EventHandler(this.UserNameCB_SelectedIndexChanged);
             // 
             // PasswordTB
             // 

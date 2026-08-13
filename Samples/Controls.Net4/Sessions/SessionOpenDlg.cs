@@ -34,6 +34,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,6 +58,7 @@ namespace Opc.Ua.Sample.Controls
         private static uint m_Counter = 0;
         private IList<string> m_preferredLocales;
         private bool m_checkDomain = true;
+        private X509Certificate2 m_userCertificate;
         #endregion
 
         #region Public Interface
@@ -117,6 +119,9 @@ namespace Opc.Ua.Sample.Controls
                 UserNameCB.Enabled = true;
                 PasswordTB.Enabled = true;
 
+                // reset any previously selected user certificate.
+                m_userCertificate = null;
+
                 // allow use to browse certificate stores.
                 if (tokenType == UserTokenType.Certificate)
                 {
@@ -139,6 +144,100 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
+        /// <summary>
+        /// Opens a certificate picker when the user selects the &lt;Browse...&gt; entry.
+        /// </summary>
+        private void UserNameCB_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                if ((UserTokenType)UserIdentityTypeCB.SelectedItem != UserTokenType.Certificate)
+                {
+                    return;
+                }
+
+                if (!Object.Equals(UserNameCB.SelectedItem, m_BrowseCertificates))
+                {
+                    return;
+                }
+
+                X509Certificate2 certificate = BrowseForCertificate();
+
+                if (certificate != null)
+                {
+                    m_userCertificate = certificate;
+
+                    string displayName = certificate.Subject;
+
+                    int index = UserNameCB.Items.IndexOf(displayName);
+
+                    if (index < 0)
+                    {
+                        index = UserNameCB.Items.Add(displayName);
+                    }
+
+                    UserNameCB.SelectedIndex = index;
+                }
+                else
+                {
+                    // restore selection to the browse entry if nothing was picked.
+                    UserNameCB.SelectedIndex = UserNameCB.Items.IndexOf(m_BrowseCertificates);
+                }
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+
+        /// <summary>
+        /// Prompts the user to select a certificate (with private key) from the current user store.
+        /// </summary>
+        private X509Certificate2 BrowseForCertificate()
+        {
+            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+
+                // only offer certificates that have a private key available.
+                var candidates = new X509Certificate2Collection();
+
+                foreach (X509Certificate2 certificate in store.Certificates)
+                {
+                    if (certificate.HasPrivateKey)
+                    {
+                        candidates.Add(certificate);
+                    }
+                }
+
+                if (candidates.Count == 0)
+                {
+                    MessageBox.Show(
+                        this,
+                        "No certificates with a private key were found in the CurrentUser\\My store.",
+                        this.Text,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+
+                    return null;
+                }
+
+                X509Certificate2Collection selection = X509Certificate2UI.SelectFromCollection(
+                    candidates,
+                    "Select User Certificate",
+                    "Select the certificate to use for user authentication.",
+                    X509SelectionFlag.SingleSelection,
+                    this.Handle);
+
+                if (selection.Count > 0)
+                {
+                    return selection[0];
+                }
+
+                return null;
+            }
+        }
+
         private void OkBTN_Click(object sender, EventArgs e)
         {
             try
@@ -146,7 +245,9 @@ namespace Opc.Ua.Sample.Controls
                 // construct the user identity.
                 IUserIdentity identity = null;
 
-                if ((UserTokenType)UserIdentityTypeCB.SelectedItem == UserTokenType.UserName)
+                UserTokenType tokenType = (UserTokenType)UserIdentityTypeCB.SelectedItem;
+
+                if (tokenType == UserTokenType.UserName)
                 {
                     string username = (string)UserNameCB.SelectedItem;
 
@@ -161,6 +262,24 @@ namespace Opc.Ua.Sample.Controls
                         identity = new UserIdentity(username, Encoding.UTF8.GetBytes(PasswordTB.Text));
                         #pragma warning restore CA2000
                     }
+                }
+                else if (tokenType == UserTokenType.Certificate)
+                {
+                    if (m_userCertificate == null)
+                    {
+                        MessageBox.Show(
+                            this,
+                            "Select a user certificate using the <Browse...> entry before opening the session.",
+                            this.Text,
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+
+                        return;
+                    }
+
+                    #pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the active session.
+                    identity = new UserIdentity(new X509IdentityToken { CertificateData = m_userCertificate.RawData.ToByteString() });
+                    #pragma warning restore CA2000
                 }
 
                 Cursor = Cursors.WaitCursor;
