@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Server;
@@ -119,6 +120,11 @@ namespace AggregationServer
         {
             if (disposing)
             {
+                if (m_sessionManager != null)
+                {
+                    m_sessionManager.SessionClosing -= SessionManager_SessionClosing;
+                    m_sessionManager = null;
+                }
                 m_metadataUpdateTimer?.Dispose();
                 m_metadataUpdateTimer = null;
                 m_root = null;
@@ -224,6 +230,15 @@ namespace AggregationServer
                 AddPredefinedNode(SystemContext, status);
 
                 StartMetadataUpdates(DoMetadataUpdateAsync, null, DefaultMetadataInitDelay, DefaultMetadataRefresh);
+
+                // Close the downstream session that was opened for a client session
+                // as soon as that client session is closed, so connections to the
+                // underlying servers are not leaked when clients disconnect (issue #26).
+                m_sessionManager = Server.SessionManager;
+                if (m_sessionManager != null)
+                {
+                    m_sessionManager.SessionClosing += SessionManager_SessionClosing;
+                }
             }
         }
 
@@ -1757,6 +1772,71 @@ namespace AggregationServer
         #endregion
 
         #region Private Methods
+        /// <summary>
+        /// Closes the downstream session opened for a client session when that
+        /// client session is closed on the aggregation server (issue #26).
+        /// </summary>
+        private void SessionManager_SessionClosing(Opc.Ua.Server.ISession session, Opc.Ua.Server.SessionEventReason reason)
+        {
+            NodeId clientSessionId = session?.Id ?? NodeId.Null;
+            if (clientSessionId.IsNull)
+            {
+                return;
+            }
+
+            AggregationClientSession clientSession;
+            lock (m_clientsLock)
+            {
+                if (!m_clients.TryGetValue(clientSessionId, out clientSession) || clientSession == null)
+                {
+                    return;
+                }
+
+                // never tear down the internal metadata session.
+                if (clientSession.IsMetaDataSession)
+                {
+                    return;
+                }
+
+                m_clients.Remove(clientSessionId);
+            }
+
+            // Event sinks must not block the session manager thread, so close the
+            // downstream session on a background task.
+            _ = Task.Run(() => CloseDownstreamSession(clientSessionId, clientSession));
+        }
+
+        /// <summary>
+        /// Closes and disposes the downstream session associated with a client session.
+        /// </summary>
+        private void CloseDownstreamSession(NodeId clientSessionId, AggregationClientSession clientSession)
+        {
+            try
+            {
+                clientSession.ReconnectHandler?.Dispose();
+
+                Opc.Ua.Client.ISession session = clientSession.Session;
+                if (session != null)
+                {
+                    session.KeepAlive -= Client_KeepAlive;
+                    try
+                    {
+                        session.CloseAsync().GetAwaiter().GetResult();
+                    }
+                    finally
+                    {
+                        session.Dispose();
+                    }
+                }
+
+                m_logger.LogInformation("Closed downstream session for client {SessionId}.", clientSessionId);
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Error closing downstream session for client {SessionId}.", clientSessionId);
+            }
+        }
+
         private void Client_KeepAlive(Opc.Ua.Client.ISession session, Opc.Ua.Client.KeepAliveEventArgs e)
         {
             if (e.Status != null && ServiceResult.IsNotGood(e.Status))
@@ -1850,6 +1930,7 @@ namespace AggregationServer
         private Opc.Ua.Client.ReverseConnectManager m_reverseConnectManager;
         private Dictionary<NodeId, AggregationClientSession> m_clients;
         private object m_clientsLock;
+        private Opc.Ua.Server.ISessionManager m_sessionManager;
         private AggregatedTypeCache m_typeCache;
         private bool m_typeCacheInitialized;
         // Justification: disposed via Utils.SilentDispose in Dispose(bool); analyzer does not recognize the helper.
