@@ -38,6 +38,7 @@
             this.PrivateKeyPasswordLabel = new System.Windows.Forms.Label();
             this.ApplyChangesButton = new System.Windows.Forms.Button();
             this.RequestNewButton = new System.Windows.Forms.Button();
+            this.NewKeyPairFromDerButton = new System.Windows.Forms.Button();
             this.CertificateRequestTimer = new System.Windows.Forms.Timer(this.components);
             this.RegistrationPanel.SuspendLayout();
             this.RegistrationButtonsPanel.SuspendLayout();
@@ -98,6 +99,7 @@
             this.RegistrationButtonsPanel.BackColor = System.Drawing.Color.MidnightBlue;
             this.RegistrationButtonsPanel.Controls.Add(this.PrivateKeyPasswordTextBox);
             this.RegistrationButtonsPanel.Controls.Add(this.PrivateKeyPasswordLabel);
+            this.RegistrationButtonsPanel.Controls.Add(this.NewKeyPairFromDerButton);
             this.RegistrationButtonsPanel.Controls.Add(this.ApplyChangesButton);
             this.RegistrationButtonsPanel.Controls.Add(this.RequestNewButton);
             this.RegistrationButtonsPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
@@ -159,6 +161,22 @@
             this.RequestNewButton.MouseEnter += new System.EventHandler(this.Button_MouseEnter);
             this.RequestNewButton.MouseLeave += new System.EventHandler(this.Button_MouseLeave);
             // 
+            // NewKeyPairFromDerButton
+            // 
+            this.NewKeyPairFromDerButton.BackColor = System.Drawing.Color.MidnightBlue;
+            this.NewKeyPairFromDerButton.Dock = System.Windows.Forms.DockStyle.Left;
+            this.NewKeyPairFromDerButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.NewKeyPairFromDerButton.ForeColor = System.Drawing.Color.White;
+            this.NewKeyPairFromDerButton.Location = new System.Drawing.Point(258, 0);
+            this.NewKeyPairFromDerButton.Name = "NewKeyPairFromDerButton";
+            this.NewKeyPairFromDerButton.Size = new System.Drawing.Size(160, 32);
+            this.NewKeyPairFromDerButton.TabIndex = 7;
+            this.NewKeyPairFromDerButton.Text = "New Key Pair (.pfx)";
+            this.NewKeyPairFromDerButton.UseVisualStyleBackColor = false;
+            this.NewKeyPairFromDerButton.Click += new System.EventHandler(this.NewKeyPairFromDerButton_Click);
+            this.NewKeyPairFromDerButton.MouseEnter += new System.EventHandler(this.Button_MouseEnter);
+            this.NewKeyPairFromDerButton.MouseLeave += new System.EventHandler(this.Button_MouseLeave);
+            // 
             // CertificateRequestTimer
             // 
             this.CertificateRequestTimer.Interval = 5000;
@@ -183,6 +201,7 @@
         private System.Windows.Forms.Panel RegistrationPanel;
         private System.Windows.Forms.Panel RegistrationButtonsPanel;
         private System.Windows.Forms.Button RequestNewButton;
+        private System.Windows.Forms.Button NewKeyPairFromDerButton;
         private Opc.Ua.Gds.Client.Controls.EditValueCtrl CertificateControl;
         private System.Windows.Forms.Label WarningLabel;
         private System.Windows.Forms.Timer CertificateRequestTimer;
