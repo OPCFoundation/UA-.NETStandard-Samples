@@ -78,13 +78,10 @@ namespace Opc.Ua.Sample
         {
             base.OnServerStarted(server);
 
-            // request notifications when the user identity is changed. all valid users are accepted by default.
-            // TODO: ISessionManager.ImpersonateUser is replaced by IUserTokenAuthenticator +
-            // IServerIdentityRegistry. Migrating the sample's impersonation flow is tracked
-            // separately. See issue #724.
-#pragma warning disable CS0618 // Type or member is obsolete
-            server.SessionManager.ImpersonateUser += new ImpersonateEventHandler(SessionManager_ImpersonateUser);
-#pragma warning restore CS0618 // Type or member is obsolete
+            // register the user token authenticators for the identity token types supported by
+            // this sample. all valid users are accepted by default (anonymous tokens fall back to
+            // the default identity because no authenticator claims them).
+            RegisterUserTokenAuthenticators(server);
         }
 
         /// <summary>

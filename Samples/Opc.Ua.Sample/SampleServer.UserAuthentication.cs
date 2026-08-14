@@ -29,8 +29,10 @@
 
 using System;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Identity;
 using Opc.Ua.Security.Certificates;
 using Opc.Ua.Server;
 
@@ -65,48 +67,70 @@ namespace Opc.Ua.Sample
         }
 
         /// <summary>
-        /// Called when a client tries to change its user identity.
+        /// Registers the user token authenticators supported by this sample with the server
+        /// identity registry. This replaces the obsolete <c>ISessionManager.ImpersonateUser</c>
+        /// event with the <see cref="IUserTokenAuthenticator"/> +
+        /// <see cref="IServerIdentityRegistry"/> model.
         /// </summary>
-        private void SessionManager_ImpersonateUser(ISession session, ImpersonateEventArgs args)
+        internal void RegisterUserTokenAuthenticators(IServerInternal server)
         {
-            // check for a WSS token.
-            IssuedIdentityToken wssToken = args.UserIdentityTokenHandler?.Token as IssuedIdentityToken;
+            server.IdentityRegistry.Register(new UserNameTokenAuthenticator(this));
+            server.IdentityRegistry.Register(new CertificateTokenAuthenticator(this));
+        }
 
-            // check for a user name token.
-            UserNameIdentityToken userNameToken = args.UserIdentityTokenHandler?.Token as UserNameIdentityToken;
-
-            if (userNameToken != null)
+        /// <summary>
+        /// Validates a UserName identity token and produces the associated user identity.
+        /// </summary>
+        private AuthenticationResult AuthenticateUserNameToken(UserNameIdentityTokenHandler tokenHandler)
+        {
+            try
             {
-                VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.Password.Span.ToArray()));
-                args.Identity = new UserIdentity(userNameToken);
+                VerifyPassword(tokenHandler.UserName, tokenHandler.DecryptedPassword);
+
+                var identity = new UserIdentity(tokenHandler);
                 if (m_logger.IsEnabled(LogLevel.Information))
                 {
-                    m_logger.LogInformation("UserName Token Accepted: {DisplayName}", args.Identity.DisplayName);
+                    m_logger.LogInformation("UserName Token Accepted: {DisplayName}", identity.DisplayName);
                 }
-                return;
+
+                return AuthenticationResult.Accept(identity);
             }
-
-            // check for x509 user token.
-            X509IdentityToken x509Token = args.UserIdentityTokenHandler?.Token as X509IdentityToken;
-
-            if (x509Token != null)
+            catch (ServiceResultException e)
             {
-                VerifyCertificate(x509Token.CertificateData);
-                args.Identity = new UserIdentity(x509Token);
+                return AuthenticationResult.Reject(e.Result);
+            }
+        }
+
+        /// <summary>
+        /// Validates an X509 identity token and produces the associated user identity.
+        /// </summary>
+        private AuthenticationResult AuthenticateCertificateToken(X509IdentityTokenHandler tokenHandler)
+        {
+            try
+            {
+                var wireToken = (X509IdentityToken)tokenHandler.Token;
+                VerifyCertificate(wireToken.CertificateData);
+
+                var identity = new UserIdentity(tokenHandler);
                 if (m_logger.IsEnabled(LogLevel.Information))
                 {
-                    m_logger.LogInformation("X509 Token Accepted: {DisplayName}", args.Identity.DisplayName);
+                    m_logger.LogInformation("X509 Token Accepted: {DisplayName}", identity.DisplayName);
                 }
-                return;
+
+                return AuthenticationResult.Accept(identity);
+            }
+            catch (ServiceResultException e)
+            {
+                return AuthenticationResult.Reject(e.Result);
             }
         }
 
         /// <summary>
         /// Validates the password for a username token.
         /// </summary>
-        private void VerifyPassword(string userName, string password)
+        private void VerifyPassword(string userName, byte[] password)
         {
-            if (String.IsNullOrEmpty(password))
+            if (password == null || password.Length == 0)
             {
                 // construct translation object with default text.
                 TranslationInfo info = new TranslationInfo(
@@ -178,6 +202,74 @@ namespace Opc.Ua.Sample
                     "http://opcfoundation.org/UA/Sample/",
                     result,
                     new LocalizedText(info)));
+            }
+        }
+        #endregion
+
+        #region User Token Authenticators
+        /// <summary>
+        /// Authenticates UserName identity tokens supported by the sample server.
+        /// </summary>
+        private sealed class UserNameTokenAuthenticator : IUserTokenAuthenticator
+        {
+            private readonly SampleServer m_server;
+
+            public UserNameTokenAuthenticator(SampleServer server)
+            {
+                m_server = server;
+            }
+
+            /// <inheritdoc/>
+            public UserTokenType TokenType => UserTokenType.UserName;
+
+            /// <inheritdoc/>
+            public string IssuedTokenProfileUri => null;
+
+            /// <inheritdoc/>
+            public ValueTask<AuthenticationResult> AuthenticateAsync(
+                AuthenticationContext context,
+                CancellationToken ct = default)
+            {
+                if (context.TokenHandler is not UserNameIdentityTokenHandler tokenHandler)
+                {
+                    return new ValueTask<AuthenticationResult>(AuthenticationResult.NotHandled);
+                }
+
+                return new ValueTask<AuthenticationResult>(
+                    m_server.AuthenticateUserNameToken(tokenHandler));
+            }
+        }
+
+        /// <summary>
+        /// Authenticates X509 identity tokens supported by the sample server.
+        /// </summary>
+        private sealed class CertificateTokenAuthenticator : IUserTokenAuthenticator
+        {
+            private readonly SampleServer m_server;
+
+            public CertificateTokenAuthenticator(SampleServer server)
+            {
+                m_server = server;
+            }
+
+            /// <inheritdoc/>
+            public UserTokenType TokenType => UserTokenType.Certificate;
+
+            /// <inheritdoc/>
+            public string IssuedTokenProfileUri => null;
+
+            /// <inheritdoc/>
+            public ValueTask<AuthenticationResult> AuthenticateAsync(
+                AuthenticationContext context,
+                CancellationToken ct = default)
+            {
+                if (context.TokenHandler is not X509IdentityTokenHandler tokenHandler)
+                {
+                    return new ValueTask<AuthenticationResult>(AuthenticationResult.NotHandled);
+                }
+
+                return new ValueTask<AuthenticationResult>(
+                    m_server.AuthenticateCertificateToken(tokenHandler));
             }
         }
         #endregion
