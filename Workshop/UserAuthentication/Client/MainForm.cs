@@ -224,6 +224,11 @@ namespace Quickstarts.UserAuthenticationClient
                     break;
                 }
 
+                if (m_subscription == null)
+                {
+                    return;
+                }
+
                 foreach (MonitoredItem monitoredItem in m_subscription.MonitoredItems)
                 {
                     m_monitoredItem = monitoredItem;
