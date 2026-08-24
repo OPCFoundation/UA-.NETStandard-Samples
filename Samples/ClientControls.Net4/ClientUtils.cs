@@ -696,7 +696,7 @@ namespace Opc.Ua.Client.Controls
                 if (knownEventTypes.TryGetValue(eventTypeId, out knownType))
                 {
                     knownTypeId = eventTypeId;
-                    eventTypeMappings.Add(eventTypeId, eventTypeId);
+                    eventTypeMappings.TryAdd(eventTypeId, eventTypeId);
                 }
             }
 
@@ -720,7 +720,7 @@ namespace Opc.Ua.Client.Controls
                     if (knownEventTypes.TryGetValue(superTypeId, out knownType))
                     {
                         knownTypeId = superTypeId;
-                        eventTypeMappings.Add(eventTypeId, superTypeId);
+                        eventTypeMappings.TryAdd(eventTypeId, superTypeId);
                     }
 
                     if (!knownTypeId.IsNull)

@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -60,7 +60,7 @@ namespace Quickstarts.AlarmConditionServer
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<AlarmConditionServerConfiguration>();
 
             m_logger = server.Telemetry.CreateLogger<AlarmConditionServerNodeManager>();
 

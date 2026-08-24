@@ -385,7 +385,6 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 ReferenceDescription reference = (ReferenceDescription)e.Node.Tag;
-                e.Node.Nodes.Clear();
 
                 // build list of references to browse.
                 List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
@@ -409,9 +408,11 @@ namespace Opc.Ua.Client.Controls
                     nodesToBrowse.Add(nodeToBrowse);
                 }
 
-                // add the childen to the control.
+                // add the children to the control.
                 SortedDictionary<ExpandedNodeId, TreeNode> dictionary = new SortedDictionary<ExpandedNodeId, TreeNode>();
 
+                // browse FIRST (await) before touching the tree so the placeholder
+                // stays in place while the expand is in progress.
                 List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false);
 
                 for (int ii = 0; references != null && ii < references.Count; ii++)
@@ -479,10 +480,26 @@ namespace Opc.Ua.Client.Controls
                     dictionary[reference.NodeId] = child;
                 }
 
-                // add nodes to tree.
-                foreach (TreeNode node in dictionary.Values.OrderBy(i => i.Text))
+                // now that the data is ready, swap the placeholder for the real children.
+                BrowseTV.BeginUpdate();
+                try
                 {
-                    e.Node.Nodes.Add(node);
+                    e.Node.Nodes.Clear();
+
+                    foreach (TreeNode node in dictionary.Values.OrderBy(i => i.Text))
+                    {
+                        e.Node.Nodes.Add(node);
+                    }
+                }
+                finally
+                {
+                    BrowseTV.EndUpdate();
+                }
+
+                // ensure the node shows as expanded even though children were added asynchronously.
+                if (e.Node.Nodes.Count > 0)
+                {
+                    e.Node.Expand();
                 }
             }
             catch (Exception exception)

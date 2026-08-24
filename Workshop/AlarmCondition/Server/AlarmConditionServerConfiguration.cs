@@ -37,42 +37,16 @@ namespace Quickstarts.AlarmConditionServer
     /// <summary>
     /// Stores the configuration the Alarm Condition server.
     /// </summary>
-    [DataType]
+    [DataType(Namespace = "http://opcfoundation.org/Quickstarts/AlarmCondition")]
     public partial class AlarmConditionServerConfiguration
     {
-        #region Constructors
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
-        public AlarmConditionServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
-        private void Initialize()
-        {
-            m_areas = new AreaConfigurationCollection();
-        }
-        #endregion
 
         #region Public Properties
         /// <summary>
         /// Gets or sets the list of top level Areas exposed by the server.
         /// </summary>
         [DataTypeField(Order = 1)]
-        public AreaConfigurationCollection Areas
+        public ArrayOf<AreaConfiguration> Areas
         {
             get { return m_areas; }
             set { m_areas = value; }
@@ -80,44 +54,16 @@ namespace Quickstarts.AlarmConditionServer
         #endregion
 
         #region Private Members
-        private AreaConfigurationCollection m_areas;
+        private ArrayOf<AreaConfiguration> m_areas;
         #endregion
     }
 
     /// <summary>
     /// Stores the configuration for a Area within the Alarm Condition server.
     /// </summary>
-    [DataType]
+    [DataType(Namespace = "http://opcfoundation.org/Quickstarts/AlarmCondition")]
     public partial class AreaConfiguration
     {
-        #region Constructors
-        /// <summary>
-        /// The default constructor.
-        /// </summary>
-        public AreaConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Sets private members to default values.
-        /// </summary>
-        private void Initialize()
-        {
-            m_name = null;
-            m_subAreas = null;
-            m_sourcePaths = null;
-        }
-        #endregion
 
         #region Public Properties
         /// <summary>
@@ -134,7 +80,7 @@ namespace Quickstarts.AlarmConditionServer
         /// Gets or set the list of sub-areas.
         /// </summary>
         [DataTypeField(Order = 2)]
-        public AreaConfigurationCollection SubAreas
+        public ArrayOf<AreaConfiguration> SubAreas
         {
             get { return m_subAreas; }
             set { m_subAreas = value; }
@@ -144,7 +90,7 @@ namespace Quickstarts.AlarmConditionServer
         /// Gets or set the list of sources.
         /// </summary>
         [DataTypeField(Order = 3)]
-        public List<string> SourcePaths
+        public ArrayOf<string> SourcePaths
         {
             get { return m_sourcePaths; }
             set { m_sourcePaths = value; }
@@ -153,18 +99,8 @@ namespace Quickstarts.AlarmConditionServer
 
         #region Private Members
         private string m_name;
-        private AreaConfigurationCollection m_subAreas;
-        private List<string> m_sourcePaths;
+        private ArrayOf<AreaConfiguration> m_subAreas;
+        private ArrayOf<string> m_sourcePaths;
         #endregion
     }
-
-    #region AreaConfigurationCollection Class
-    /// <summary>
-    /// A collection of AreaConfiguration objects.
-    /// </summary>
-    [CollectionDataContract(Name = "ListOfAreaConfiguration", Namespace = Namespaces.AlarmCondition, ItemName = "AreaConfiguration")]
-    public partial class AreaConfigurationCollection : List<AreaConfiguration>
-    {
-    }
-    #endregion
 }
