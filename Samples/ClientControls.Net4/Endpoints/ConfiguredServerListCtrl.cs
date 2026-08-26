@@ -152,7 +152,7 @@ namespace Opc.Ua.Client.Controls
 
             listItem.SubItems[3].Text = String.Format(
                 "{0}/{1}",
-                SecurityPolicies.GetDisplayName(endpoint.Description.SecurityPolicyUri),
+                SecurityPolicies.Default.GetDisplayName(endpoint.Description.SecurityPolicyUri),
                 endpoint.Description.SecurityMode);
 
             listItem.SubItems[4].Text = "<Unknown>";

@@ -436,7 +436,7 @@ namespace TestData
                 return null;
             }
 
-            HistoryDataReader reader = context.OperationContext.Session.RestoreHistoryContinuationPoint(continuationPoint.ToByteString()) as HistoryDataReader;
+            HistoryDataReader reader = context.OperationContext.Session.ContinuationPoints.RestoreHistory(continuationPoint.ToByteString()) as HistoryDataReader;
 
             if (reader == null)
             {
@@ -456,7 +456,7 @@ namespace TestData
                 return;
             }
 
-            context.OperationContext.Session.SaveHistoryContinuationPoint(reader.Id, reader);
+            context.OperationContext.Session.ContinuationPoints.SaveHistory(reader);
         }
 
         /// <summary>

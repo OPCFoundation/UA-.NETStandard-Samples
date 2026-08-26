@@ -595,14 +595,19 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Stores a read history request.
         /// </summary>
-        private sealed class HistoryReadRequest
+        private sealed class HistoryReadRequest : IHistoryContinuationPoint
         {
+            public Guid Id { get; set; }
             public ByteString ContinuationPoint;
             public LinkedList<BaseEventState> Events;
             public bool TimeFlowsBackward;
             public uint NumValuesPerNode;
             public EventFilter Filter;
             public FilterContext FilterContext;
+
+            public void Dispose()
+            {
+            }
         }
 
         /// <summary>
@@ -648,7 +653,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 return null;
             }
 
-            HistoryReadRequest request = session.RestoreHistoryContinuationPoint(continuationPoint) as HistoryReadRequest;
+            HistoryReadRequest request = session.ContinuationPoints.RestoreHistory(continuationPoint) as HistoryReadRequest;
 
             if (request == null)
             {
@@ -672,9 +677,9 @@ namespace Quickstarts.HistoricalEvents.Server
                 return default;
             }
 
-            Guid id = Guid.NewGuid();
-            session.SaveHistoryContinuationPoint(id, request);
-            request.ContinuationPoint = id.ToByteArray().ToByteString();
+            request.Id = Guid.NewGuid();
+            session.ContinuationPoints.SaveHistory(request);
+            request.ContinuationPoint = request.Id.ToByteArray().ToByteString();
             return request.ContinuationPoint;
         }
         #endregion

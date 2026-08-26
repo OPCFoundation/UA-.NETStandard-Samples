@@ -611,7 +611,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
                 row[0] = endpoint.EndpointUrl;
                 row[1] = endpoint.SecurityMode.ToString();
-                row[2] = SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri);
+                row[2] = SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri);
                 row[3] = endpoint;
 
                 EndpointsTable.Rows.Add(row);

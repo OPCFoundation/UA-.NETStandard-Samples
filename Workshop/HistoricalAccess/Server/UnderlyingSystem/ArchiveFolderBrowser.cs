@@ -91,87 +91,86 @@ namespace Quickstarts.HistoricalAccessServer
         {
             UnderlyingSystem system = (UnderlyingSystem)this.SystemContext.SystemHandle;
 
-            lock (DataLock)
+            // NodeBrowser instances are single-consumer and perform no
+            // synchronization of their own; the former DataLock is gone.
+            IReference reference = null;
+
+            // enumerate pre-defined references.
+            // always call first to ensure any pushed-back references are returned first.
+            reference = base.Next();
+
+            if (reference != null)
             {
-                IReference reference = null;
+                return reference;
+            }
 
-                // enumerate pre-defined references.
-                // always call first to ensure any pushed-back references are returned first.
-                reference = base.Next();
+            if (m_stage == Stage.Begin)
+            {
+                m_folders = m_source.ArchiveFolder.GetChildFolders();
+                m_stage = Stage.Folders;
+                m_position = 0;
+            }
 
-                if (reference != null)
-                {
-                    return reference;
-                }
-
-                if (m_stage == Stage.Begin)
-                {
-                    m_folders = m_source.ArchiveFolder.GetChildFolders();
-                    m_stage = Stage.Folders;
-                    m_position = 0;
-                }
-
-                // don't start browsing huge number of references when only internal references are requested.
-                if (InternalOnly)
-                {
-                    return null;
-                }
-
-                // enumerate folders.
-                if (m_stage == Stage.Folders)
-                {
-                    if (IsRequired(ReferenceTypeIds.Organizes, false))
-                    {
-                        reference = NextChild();
-
-                        if (reference != null)
-                        {
-                            return reference;
-                        }
-                    }
-
-                    m_items = m_source.ArchiveFolder.GetItems();
-                    m_stage = Stage.Items;
-                    m_position = 0;
-                }
-
-                // enumerate items.
-                if (m_stage == Stage.Items)
-                {
-                    if (IsRequired(ReferenceTypeIds.Organizes, false))
-                    {
-                        reference = NextChild();
-
-                        if (reference != null)
-                        {
-                            return reference;
-                        }
-
-                        m_stage = Stage.Parents;
-                        m_position = 0;
-                    }
-                }
-
-                // enumerate parents.
-                if (m_stage == Stage.Parents)
-                {
-                    if (IsRequired(ReferenceTypeIds.Organizes, true))
-                    {
-                        reference = NextChild();
-
-                        if (reference != null)
-                        {
-                            return reference;
-                        }
-
-                        m_stage = Stage.Done;
-                        m_position = 0;
-                    }
-                }
-
-                // all done.
+            // don't start browsing huge number of references when only internal references are requested.
+            if (InternalOnly)
+            {
                 return null;
             }
+
+            // enumerate folders.
+            if (m_stage == Stage.Folders)
+            {
+                if (IsRequired(ReferenceTypeIds.Organizes, false))
+                {
+                    reference = NextChild();
+
+                    if (reference != null)
+                    {
+                        return reference;
+                    }
+                }
+
+                m_items = m_source.ArchiveFolder.GetItems();
+                m_stage = Stage.Items;
+                m_position = 0;
+            }
+
+            // enumerate items.
+            if (m_stage == Stage.Items)
+            {
+                if (IsRequired(ReferenceTypeIds.Organizes, false))
+                {
+                    reference = NextChild();
+
+                    if (reference != null)
+                    {
+                        return reference;
+                    }
+
+                    m_stage = Stage.Parents;
+                    m_position = 0;
+                }
+            }
+
+            // enumerate parents.
+            if (m_stage == Stage.Parents)
+            {
+                if (IsRequired(ReferenceTypeIds.Organizes, true))
+                {
+                    reference = NextChild();
+
+                    if (reference != null)
+                    {
+                        return reference;
+                    }
+
+                    m_stage = Stage.Done;
+                    m_position = 0;
+                }
+            }
+
+            // all done.
+            return null;
         }
         #endregion
 
