@@ -8,6 +8,7 @@
  * ======================================================================*/
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -98,28 +99,47 @@ namespace Opc.Ua.Samples.Tests
                 ApplicationConfiguration configuration =
                     await CreateConfigurationAsync(application, pki, ct).ConfigureAwait(false);
 
-                EndpointDescription description = await SelectEndpointAsync(configuration, endpointUrl, ct)
+                EndpointDescription[] candidates = await SelectEndpointsAsync(configuration, endpointUrl, ct)
                     .ConfigureAwait(false);
 
-                var endpoint = new ConfiguredEndpoint(
-                    null,
-                    description,
-                    EndpointConfiguration.Create(configuration));
-
                 var factory = new DefaultSessionFactory(NullTelemetry.Instance);
+                var refusals = new List<string>();
 
-                ISession session = await factory.CreateAsync(
-                    configuration,
-                    endpoint,
-                    false,
-                    false,
-                    sessionName,
-                    30_000,
-                    new UserIdentity(),
-                    default,
-                    ct).ConfigureAwait(false);
+                foreach (EndpointDescription description in candidates)
+                {
+                    var endpoint = new ConfiguredEndpoint(
+                        null,
+                        description,
+                        EndpointConfiguration.Create(configuration));
 
-                return new TestClient(session, application, pki) { Endpoint = description };
+                    try
+                    {
+                        ISession session = await factory.CreateAsync(
+                            configuration,
+                            endpoint,
+                            false,
+                            false,
+                            sessionName,
+                            30_000,
+                            new UserIdentity(),
+                            default,
+                            ct).ConfigureAwait(false);
+
+                        return new TestClient(session, application, pki) { Endpoint = description };
+                    }
+                    catch (ServiceResultException refused)
+                    {
+                        // a sample server may offer endpoints its own certificate cannot
+                        // actually serve - a freshly created certificate and a policy which
+                        // demands a different signature, for instance - so try the next one
+                        // rather than deciding the sample is broken
+                        refusals.Add($"{Describe(description)}: {refused.Message}");
+                    }
+                }
+
+                throw new InvalidOperationException(
+                    $"None of the {candidates.Length} endpoints of {endpointUrl} accepted a session." +
+                    $"{Environment.NewLine}{string.Join(Environment.NewLine, refusals)}");
             }
             catch
             {
@@ -154,7 +174,7 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// Asks the server for its endpoints and takes the least secure one it offers.
+        /// Asks the server for its endpoints, least secure first.
         /// </summary>
         /// <remarks>
         /// Tier 1 is about the address space, not about security, and an unsecured endpoint
@@ -163,7 +183,7 @@ namespace Opc.Ua.Samples.Tests
         /// through CoreClientUtils.SelectEndpoint, because that helper ranks by security
         /// level and would pick a secured endpoint even when None is on offer.
         /// </remarks>
-        private static async Task<EndpointDescription> SelectEndpointAsync(
+        private static async Task<EndpointDescription[]> SelectEndpointsAsync(
             ApplicationConfiguration configuration,
             string endpointUrl,
             CancellationToken ct)
@@ -188,6 +208,10 @@ namespace Opc.Ua.Samples.Tests
                 // opening a channel on one of those is refused by the server
                 .OrderBy(endpoint => endpoint.SecurityMode == MessageSecurityMode.None
                     && endpoint.SecurityPolicyUri == SecurityPolicies.None ? 0 : 1)
+                // an RsaPss policy demands a certificate signed the same way, which a sample
+                // server which just created its own certificate may well not have, so leave
+                // those for last
+                .ThenBy(endpoint => endpoint.SecurityPolicyUri?.Contains("RsaPss", StringComparison.Ordinal) == true ? 1 : 0)
                 .ThenBy(endpoint => endpoint.SecurityLevel)
                 .ToArray();
 
@@ -196,7 +220,12 @@ namespace Opc.Ua.Samples.Tests
                 throw new InvalidOperationException($"{endpointUrl} offers no opc.tcp endpoint.");
             }
 
-            return usable[0];
+            return usable;
+        }
+
+        private static string Describe(EndpointDescription endpoint)
+        {
+            return $"{endpoint.SecurityMode} {endpoint.SecurityPolicyUri}";
         }
 
         private static async Task<ApplicationConfiguration> CreateConfigurationAsync(
