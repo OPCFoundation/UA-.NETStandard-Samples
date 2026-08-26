@@ -205,10 +205,11 @@ than parked:
 
 `s_knownIssues` in `SampleClientTests` is empty again.
 
-The same unguarded continuation point check exists three times in
-`Workshop/HistoricalAccess/Server/HistoricalAccessNodeManager.cs`. It is latent there: the
-HistoricalAccess client does not read history from its ConnectComplete handler, so no test
-reaches it yet.
+The same unguarded continuation point check existed three times in
+`Workshop/HistoricalAccess/Server/HistoricalAccessNodeManager.cs` - in `HistoryReadRawModified`,
+`HistoryReadProcessed` and `HistoryReadAtTime` - and carries the same guard now. It is latent
+there: the HistoricalAccess client does not read history from its ConnectComplete handler, so
+no test reaches it, which is why it is fixed by inspection rather than by a failing test.
 
 ## Status / roadmap
 
