@@ -244,26 +244,33 @@ Because it needs a window station, the fixture is `[Category("RequiresDesktop")]
 filter skips it. Remove `--filter "TestCategory!=RequiresDesktop"` from `.azurepipelines/test.yml`
 to turn it on once it has been seen to work on the hosted agents.
 
-15 of 16 cases pass. The one that does not is a **regression from the 2.0.0-preview.2 package
-bump**: the AlarmCondition client connects, and its post connect logic then throws a
-`NullReferenceException` and `An item with the same key has already been added. Key: i=9764`
-into a modal dialog. It is recorded in `s_knownIssues` until the client is fixed - and, as
-with every entry there, the test fails again the moment it starts working.
+All 16 cases pass. Two samples did not, and both were fixed rather than parked.
 
-The first run of this tier found another sample that did not pass, and it is
+The **AlarmCondition client** connected and then filled a modal dialog with a
+`NullReferenceException` followed by `An item with the same key has already been added.
+Key: i=9764`, `i=10751` and `i=10060` - the alarm types its own server raises. Both messages
+come from one defect: its event notification handler is an `async void` which awaits in the
+middle of its work, so the message loop delivers the next event into a second run of the
+handler while the first one is suspended. The events arrive in a burst, because the sample
+sends a `ConditionRefresh` as soon as it is connected. Two places did not survive that:
+
+| Where | What was wrong |
+|-------|----------------|
+| `Workshop/AlarmCondition/Client/MainForm.cs` | `MonitoredItem_NotificationAsync` added the `ListViewItem` for a condition to `ConditionsLV` and only assigned `item.Tag = condition` after `await NodeCache.FindAsync`. A reentering handler walked the list, found the entry with an empty `Tag`, cast it to `ConditionState` and dereferenced `null`. The cache lookup now happens before the list is touched, so nothing is awaited between finding or creating an entry and completing it |
+| `Workshop/AlarmCondition/Client/FormUtils.cs` | `ConstructEventAsync` filled its event type mapping with `Dictionary.Add` after an awaited supertype browse. Every event of an unmapped type that arrived while that browse was running started its own browse, and all but the first threw on the duplicate key. `TryAdd` is the fix, and is what the shared `Samples/ClientControls.Net4/ClientUtils.cs` copy of this method already did - it was hardened in `f3417859` and the private copy in this sample was missed |
+
+The first run of this tier found the other sample, and it is
 exactly the kind the watchdog exists for: the **HistoricalEvents client** connected, then its
 post connect logic read the event history and failed with `BadContinuationPointInvalid`,
 which the sample reported in a modal dialog. Without the watchdog the test would simply have
-hung. Two defects, both in the sample's own server, were behind it and both were fixed rather
-than parked:
+hung. Two defects, both in the sample's own server, were behind it:
 
 | Where | What was wrong |
 |-------|----------------|
 | `Workshop/HistoricalEvents/Server/HistoricalEventsNodeManager.cs` | `HistoryReadEvents` treated any non null `HistoryReadValueId.ContinuationPoint` as a continuation point to restore. `ContinuationPoint` is a `ByteString` now and a freshly created `HistoryReadValueId` carries an *empty* one rather than a null one, so the very first history read of a session looked like a continuation of a request the server had never issued and answered `BadContinuationPointInvalid`. An empty continuation point has to be read as "no continuation point", which is what `Samples/Opc.Ua.Sample/TestData/TestDataNodeManager.cs` already does |
 | `Workshop/HistoricalEvents/Server/ReportGenerator.cs` | the `DataView` row filter it builds wrote its `#...#` date literals with `DateTime.ToString()`, so in the current culture. The `System.Data` expression parser reads them with the invariant culture, so on a machine that is not formatting dates the invariant way - a German Windows, for instance - the history read threw `FormatException` and the client saw `BadUnexpectedError` |
 
-The known issue list in `SampleClientTests` therefore holds exactly one entry, the
-AlarmCondition regression above.
+The known issue list in `SampleClientTests` is therefore empty again.
 
 The same unguarded continuation point check exists three times in
 `Workshop/HistoricalAccess/Server/HistoricalAccessNodeManager.cs`. It is latent there: the

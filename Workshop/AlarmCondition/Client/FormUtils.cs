@@ -220,12 +220,15 @@ namespace Quickstarts.AlarmConditionClient
                     if (KnownEventTypes[jj] == eventTypeId)
                     {
                         knownTypeId = eventTypeId;
-                        eventTypeMappings.Add(eventTypeId, eventTypeId);
+                        eventTypeMappings.TryAdd(eventTypeId, eventTypeId);
                         break;
                     }
                 }
 
-                // browse for the supertypes of the event type.
+                // browse for the supertypes of the event type. the browse is awaited, so the
+                // callers - the async void notification handlers of the sample - can be in
+                // here several times for the same event type at once. the mapping therefore
+                // has to be filled with TryAdd, the way ClientUtils.ConstructEventAsync does.
                 if (knownTypeId.IsNull)
                 {
                     List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
@@ -244,7 +247,7 @@ namespace Quickstarts.AlarmConditionClient
                             if (KnownEventTypes[jj] == supertypes[ii].NodeId)
                             {
                                 knownTypeId = KnownEventTypes[jj];
-                                eventTypeMappings.Add(eventTypeId, knownTypeId);
+                                eventTypeMappings.TryAdd(eventTypeId, knownTypeId);
                                 break;
                             }
                         }
