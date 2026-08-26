@@ -73,6 +73,15 @@ namespace Opc.Ua.Samples.Tests
         {
             SampleDefinition sample = SampleCatalog.All.Single(entry => entry.Name == "GdsConsole");
 
+            // create the certificate of the sample before it starts. On a machine which has
+            // never run it - a build agent - the server would otherwise create it while
+            // starting up, and the first run would differ from every later one.
+            string certificate = await SampleCertificates
+                .EnsureApplicationCertificateAsync(sample.ServerConfig, ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out.WriteLineAsync($"GdsConsole: certificate {certificate}").ConfigureAwait(false);
+
             await using ConsoleSampleProcess gds = await ConsoleSampleProcess.StartAsync(
                 sample.ServerProject,
                 "NetCoreGlobalDiscoveryServer",
@@ -99,8 +108,6 @@ namespace Opc.Ua.Samples.Tests
                 Has.Some.Contains("GDS"),
                 "The global discovery server does not serve the GDS namespace.");
         }
-
-        /// <summary>
 
         private static async Task AssertServerIsRunningAsync(ISession session, CancellationToken ct)
         {

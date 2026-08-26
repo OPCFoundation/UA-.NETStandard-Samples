@@ -209,6 +209,14 @@ Two limits worth knowing:
   `%LocalApplicationData%`, not with a temporary one - a process started from a test reads
   the configuration file the sample ships. They therefore create their certificates and,
   for the GDS, its JSON databases, where running the sample by hand would.
+
+  The GDS test creates that certificate itself, before starting the sample, through the same
+  `ApplicationInstance` the sample uses (`SampleCertificates`). On an agent which has never
+  run the sample the server would otherwise create it while starting up, and the first run
+  would differ from every later one - which is exactly how the endpoint the test picked came
+  to be one the freshly created certificate could not serve. A store which already holds a
+  certificate is left alone, whatever the stack thinks of it: on a developer machine it was
+  often created for a different host name, and repairing it is not a test's business.
 - The aggregation sample is only tested as far as "it starts and serves". Its configuration
   aggregates external servers (a UA CTT server on 65300 and others), and the entry pointing
   at this repository's reference server is commented out, so there is nothing to aggregate
