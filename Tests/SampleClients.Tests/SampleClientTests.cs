@@ -60,11 +60,9 @@ namespace Opc.Ua.Samples.Tests
         /// </remarks>
         private static readonly IReadOnlyDictionary<string, string> s_knownIssues =
             new Dictionary<string, string>(StringComparer.Ordinal) {
-                ["HistoricalEvents"] =
-                    "connects, then its post connect logic reads the event history and fails " +
-                    "with BadContinuationPointInvalid, which the sample reports in a modal " +
-                    "ExceptionDlg (Workshop/HistoricalEvents/Client, see EventListView.cs " +
-                    "around the ContinuationPoint loop)",
+                // empty on purpose: every sample client this tier covers works. The
+                // HistoricalEvents client, the only entry this list ever had, was fixed
+                // rather than parked here.
             };
 
         public static IEnumerable<SampleClientUnderTest> Clients => SampleClientFactories.All;

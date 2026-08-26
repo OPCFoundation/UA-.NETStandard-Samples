@@ -165,7 +165,7 @@ than parked:
 `s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests`) reports a
 listed sample as **ignored** rather than failed, and fails the moment it starts working, so
 an entry cannot rot. Both lists are used sparingly: a sample that is broken is worth fixing,
-not parking. The server list is currently empty.
+not parking. Both lists are currently empty.
 
 ## What Tier 2 checks today
 
@@ -191,12 +191,24 @@ Because it needs a window station, the fixture is `[Category("RequiresDesktop")]
 filter skips it. Remove `--filter "TestCategory!=RequiresDesktop"` from `.azurepipelines/test.yml`
 to turn it on once it has been seen to work on the hosted agents.
 
-15 of 16 cases pass. The one that does not is the first defect this tier found on its own,
-and it is exactly the kind the watchdog exists for: the **HistoricalEvents client** connects,
-then its post connect logic reads the event history and fails with
-`BadContinuationPointInvalid`, which the sample reports in a modal dialog. Without the
-watchdog the test would simply have hung. It is recorded in `s_knownIssues` until the client
-is fixed.
+All 16 cases pass. The first run of this tier found one sample that did not, and it is
+exactly the kind the watchdog exists for: the **HistoricalEvents client** connected, then its
+post connect logic read the event history and failed with `BadContinuationPointInvalid`,
+which the sample reported in a modal dialog. Without the watchdog the test would simply have
+hung. Two defects, both in the sample's own server, were behind it and both were fixed rather
+than parked:
+
+| Where | What was wrong |
+|-------|----------------|
+| `Workshop/HistoricalEvents/Server/HistoricalEventsNodeManager.cs` | `HistoryReadEvents` treated any non null `HistoryReadValueId.ContinuationPoint` as a continuation point to restore. `ContinuationPoint` is a `ByteString` now and a freshly created `HistoryReadValueId` carries an *empty* one rather than a null one, so the very first history read of a session looked like a continuation of a request the server had never issued and answered `BadContinuationPointInvalid`. An empty continuation point has to be read as "no continuation point", which is what `Samples/Opc.Ua.Sample/TestData/TestDataNodeManager.cs` already does |
+| `Workshop/HistoricalEvents/Server/ReportGenerator.cs` | the `DataView` row filter it builds wrote its `#...#` date literals with `DateTime.ToString()`, so in the current culture. The `System.Data` expression parser reads them with the invariant culture, so on a machine that is not formatting dates the invariant way - a German Windows, for instance - the history read threw `FormatException` and the client saw `BadUnexpectedError` |
+
+`s_knownIssues` in `SampleClientTests` is empty again.
+
+The same unguarded continuation point check exists three times in
+`Workshop/HistoricalAccess/Server/HistoricalAccessNodeManager.cs`. It is latent there: the
+HistoricalAccess client does not read history from its ConnectComplete handler, so no test
+reaches it yet.
 
 ## Status / roadmap
 

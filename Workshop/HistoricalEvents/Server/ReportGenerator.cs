@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Data;
+using System.Globalization;
 using Opc.Ua;
 
 namespace Quickstarts.HistoricalEvents.Server
@@ -344,7 +345,9 @@ namespace Quickstarts.HistoricalEvents.Server
                 filter.Append(Opc.Ua.BrowseNames.Time);
                 filter.Append(">=");
                 filter.Append('#');
-                filter.Append(earlyTime);
+                // the DataView expression parser reads date literals with the invariant
+                // culture, so the literal has to be written with it as well.
+                filter.Append(earlyTime.ToString(CultureInfo.InvariantCulture));
                 filter.Append('#');
                 filter.Append(')');
             }
@@ -360,7 +363,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 filter.Append(Opc.Ua.BrowseNames.Time);
                 filter.Append('<');
                 filter.Append('#');
-                filter.Append(lateTime);
+                filter.Append(lateTime.ToString(CultureInfo.InvariantCulture));
                 filter.Append('#');
                 filter.Append(')');
             }
