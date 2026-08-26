@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -104,6 +105,21 @@ namespace Opc.Ua.Samples.Tests
 
         private void OnTick(object sender, EventArgs e)
         {
+            // this runs on the message loop of the test. An exception escaping from here
+            // would come out of the loop rather than out of the sample, so the whole tick is
+            // guarded, not only the parts which are known to be able to fail.
+            try
+            {
+                CloseOpenDialogs();
+            }
+            catch (Exception exception)
+            {
+                m_captured.Add($"<the watchdog itself failed: {exception.GetType().Name}: {exception.Message}>");
+            }
+        }
+
+        private void CloseOpenDialogs()
+        {
             // only modal dialogs are of interest: the form under test is never shown modally,
             // so anything modal is a popup the sample opened to complain about something
             foreach (Form form in Application.OpenForms.OfType<Form>().Where(form => form.Modal).ToArray())
@@ -119,6 +135,10 @@ namespace Opc.Ua.Samples.Tests
                 {
                     // a dialog which is already closing must not break the watchdog
                 }
+                catch (COMException)
+                {
+                    // nor one whose window is already gone
+                }
             }
         }
 
@@ -128,9 +148,16 @@ namespace Opc.Ua.Samples.Tests
 
             text.Append(CultureInfo.InvariantCulture, $"{form.GetType().Name}");
 
-            if (!string.IsNullOrWhiteSpace(form.Text))
+            try
             {
-                text.Append(CultureInfo.InvariantCulture, $" '{form.Text}'");
+                if (!string.IsNullOrWhiteSpace(form.Text))
+                {
+                    text.Append(CultureInfo.InvariantCulture, $" '{form.Text}'");
+                }
+            }
+            catch (Exception e) when (e is COMException or InvalidOperationException or ObjectDisposedException)
+            {
+                text.Append(" <caption unreadable>");
             }
 
             string content = string.Join(" | ", CollectText(form).Distinct());
@@ -148,29 +175,48 @@ namespace Opc.Ua.Samples.Tests
         /// message dialog, the exception dialog of the samples renders its detail as html
         /// into a browser control.
         /// </summary>
-        private static IEnumerable<string> CollectText(Control control)
+        /// <remarks>
+        /// Nothing in here may throw. Reading a control can fail - on a build agent the COM
+        /// object behind a <see cref="WebBrowser"/> is not always there, and asking it for its
+        /// document answers RPC_E_DISCONNECTED - and a watchdog which dies while describing a
+        /// dialog leaves the dialog open and the test without its message.
+        /// </remarks>
+        private static List<string> CollectText(Control control)
+        {
+            var texts = new List<string>();
+
+            Collect(control, texts);
+
+            return texts;
+        }
+
+        private static void Collect(Control control, List<string> texts)
         {
             foreach (Control child in control.Controls)
             {
-                switch (child)
+                try
                 {
-                    case Label label when !string.IsNullOrWhiteSpace(label.Text):
-                        yield return label.Text.Trim();
-                        break;
+                    switch (child)
+                    {
+                        case Label label when !string.IsNullOrWhiteSpace(label.Text):
+                            texts.Add(label.Text.Trim());
+                            break;
 
-                    case TextBoxBase textBox when !string.IsNullOrWhiteSpace(textBox.Text):
-                        yield return textBox.Text.Trim();
-                        break;
+                        case TextBoxBase textBox when !string.IsNullOrWhiteSpace(textBox.Text):
+                            texts.Add(textBox.Text.Trim());
+                            break;
 
-                    case WebBrowser browser when !string.IsNullOrWhiteSpace(browser.DocumentText):
-                        yield return StripMarkup(browser.DocumentText);
-                        break;
+                        case WebBrowser browser when !string.IsNullOrWhiteSpace(browser.DocumentText):
+                            texts.Add(StripMarkup(browser.DocumentText));
+                            break;
+                    }
+                }
+                catch (Exception e) when (e is COMException or InvalidOperationException or ObjectDisposedException)
+                {
+                    texts.Add($"<{child.GetType().Name} could not be read: {e.GetType().Name}>");
                 }
 
-                foreach (string text in CollectText(child))
-                {
-                    yield return text;
-                }
+                Collect(child, texts);
             }
         }
 
