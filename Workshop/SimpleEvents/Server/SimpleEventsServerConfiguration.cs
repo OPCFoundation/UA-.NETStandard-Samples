@@ -28,9 +28,8 @@
  * ======================================================================*/
 
 using System;
-using System.ServiceModel;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
+using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.SimpleEvents.Server
@@ -38,23 +37,14 @@ namespace Quickstarts.SimpleEvents.Server
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace = Namespaces.SimpleEvents)]
-    public class SimpleEventsServerConfiguration
+    [DataType(Namespace = Namespaces.SimpleEvents)]
+    public sealed partial class SimpleEventsServerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public SimpleEventsServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

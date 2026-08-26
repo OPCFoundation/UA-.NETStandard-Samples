@@ -512,7 +512,7 @@ namespace Opc.Ua.Sample.Controls
     /// The result of a performance test.
     /// </summary>
     [DataType]
-    public partial class PerformanceTestResult
+    public sealed partial class PerformanceTestResult
     {
         #region Constructors
         /// <summary>
@@ -623,7 +623,7 @@ namespace Opc.Ua.Sample.Controls
     /// The result of a performance test.
     /// </summary>
     [DataType]
-    public partial class PerformanceTestResultItem
+    public sealed partial class PerformanceTestResultItem
     {
         #region Constructors
         /// <summary>

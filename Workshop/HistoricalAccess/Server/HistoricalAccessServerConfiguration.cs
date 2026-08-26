@@ -28,8 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.ServiceModel;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using Opc.Ua.Server;
 using Opc.Ua;
@@ -40,22 +38,13 @@ namespace Quickstarts.HistoricalAccessServer
     /// Stores the configuration the data access node manager.
     /// </summary>
     [DataType]
-    public partial class HistoricalAccessServerConfiguration
+    public sealed partial class HistoricalAccessServerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public HistoricalAccessServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

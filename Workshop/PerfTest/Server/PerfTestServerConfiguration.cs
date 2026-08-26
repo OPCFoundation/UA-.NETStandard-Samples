@@ -28,9 +28,8 @@
  * ======================================================================*/
 
 using System;
-using System.ServiceModel;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
+using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.PerfTestServer
@@ -38,23 +37,14 @@ namespace Quickstarts.PerfTestServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace = Namespaces.PerfTest)]
-    public class PerfTestServerConfiguration
+    [DataType(Namespace = Namespaces.PerfTest)]
+    public sealed partial class PerfTestServerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public PerfTestServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

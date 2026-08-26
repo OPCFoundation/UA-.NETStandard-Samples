@@ -28,8 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.ServiceModel;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Server;
@@ -40,22 +38,13 @@ namespace Quickstarts.ViewsServer
     /// Stores the configuration the data access node manager.
     /// </summary>
     [DataType(Namespace = "http://opcfoundation.org/UA/Quickstarts/Views")]
-    public partial class ViewsServerConfiguration
+    public sealed partial class ViewsServerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public ViewsServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

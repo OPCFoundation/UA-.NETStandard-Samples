@@ -61,6 +61,12 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
       <Version>2.0.158.59919-preview</Version>
     </PackageReference>
+
+    <PackageReference
+      Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
+      Version="2.0.158.59919-preview"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
     <Compile Remove="UnderlyingSystem\UnderlyingSystemTagType.cs" />

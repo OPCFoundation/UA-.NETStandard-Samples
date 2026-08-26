@@ -27,7 +27,6 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-using System.Runtime.Serialization;
 using Opc.Ua;
 
 namespace TestData
@@ -36,22 +35,13 @@ namespace TestData
     /// Stores the configuration the test node manager
     /// </summary>
     [DataType]
-    public partial class TestDataNodeManagerConfiguration
+    public sealed partial class TestDataNodeManagerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public TestDataNodeManagerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }
