@@ -59,6 +59,12 @@ namespace Opc.Ua.Samples.Tests
                 ["Views"] = telemetry => new Quickstarts.ViewsServer.ViewsServer(telemetry),
                 ["Sample"] = telemetry => new Opc.Ua.Sample.SampleServer(telemetry),
                 ["Reference"] = CreateReferenceServer,
+
+                // the console variant of the aggregation sample shares its sources with the
+                // WinForms one and only differs in its configuration, which is the one that
+                // can actually run: the WinForms configuration puts the server on the port of
+                // the downstream server it aggregates
+                ["AggregationConsole"] = telemetry => new AggregationServer.AggregationServer(telemetry),
             };
 
         /// <summary>

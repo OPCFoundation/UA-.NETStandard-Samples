@@ -8,6 +8,7 @@
  * ======================================================================*/
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua.Client;
@@ -41,6 +42,40 @@ namespace Opc.Ua.Samples.Tests
         public ISession Session { get; }
 
         /// <summary>
+        /// The endpoint the session was opened on, for test output.
+        /// </summary>
+        public EndpointDescription Endpoint { get; private set; }
+
+        /// <summary>
+        /// Builds the configuration of a plain client, certificate included.
+        /// </summary>
+        /// <remarks>
+        /// Discovery needs a configuration but no session, so it is available on its own.
+        /// The caller owns the returned application instance.
+        /// </remarks>
+        public static async Task<(ApplicationInstance Application, ApplicationConfiguration Configuration)>
+            CreateApplicationAsync(TemporaryPki pki, CancellationToken ct = default)
+        {
+            var application = new ApplicationInstance(NullTelemetry.Instance) {
+                ApplicationName = "Sample Test Client",
+                ApplicationType = ApplicationType.Client,
+            };
+
+            try
+            {
+                ApplicationConfiguration configuration =
+                    await CreateConfigurationAsync(application, pki, ct).ConfigureAwait(false);
+
+                return (application, configuration);
+            }
+            catch
+            {
+                await application.DisposeAsync().ConfigureAwait(false);
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Connects to the endpoint and opens a session with an anonymous user.
         /// </summary>
         /// <param name="endpointUrl">The endpoint to connect to.</param>
@@ -63,8 +98,13 @@ namespace Opc.Ua.Samples.Tests
                 ApplicationConfiguration configuration =
                     await CreateConfigurationAsync(application, pki, ct).ConfigureAwait(false);
 
-                ConfiguredEndpoint endpoint = await SelectEndpointAsync(configuration, endpointUrl, ct)
+                EndpointDescription description = await SelectEndpointAsync(configuration, endpointUrl, ct)
                     .ConfigureAwait(false);
+
+                var endpoint = new ConfiguredEndpoint(
+                    null,
+                    description,
+                    EndpointConfiguration.Create(configuration));
 
                 var factory = new DefaultSessionFactory(NullTelemetry.Instance);
 
@@ -79,7 +119,7 @@ namespace Opc.Ua.Samples.Tests
                     default,
                     ct).ConfigureAwait(false);
 
-                return new TestClient(session, application, pki);
+                return new TestClient(session, application, pki) { Endpoint = description };
             }
             catch
             {
@@ -114,33 +154,49 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// Prefers an unsecured endpoint, because tier 1 is about the address space and
-        /// not about security, but falls back to a secured one for samples which do not
-        /// offer SecurityPolicy None.
+        /// Asks the server for its endpoints and takes the least secure one it offers.
         /// </summary>
-        private static async Task<ConfiguredEndpoint> SelectEndpointAsync(
+        /// <remarks>
+        /// Tier 1 is about the address space, not about security, and an unsecured endpoint
+        /// keeps a sample server which runs out of process from having to trust the throw
+        /// away certificate of this client. The endpoints are read directly rather than
+        /// through CoreClientUtils.SelectEndpoint, because that helper ranks by security
+        /// level and would pick a secured endpoint even when None is on offer.
+        /// </remarks>
+        private static async Task<EndpointDescription> SelectEndpointAsync(
             ApplicationConfiguration configuration,
             string endpointUrl,
             CancellationToken ct)
         {
-            EndpointDescription description;
-
-            try
-            {
-                description = await CoreClientUtils
-                    .SelectEndpointAsync(configuration, endpointUrl, false, NullTelemetry.Instance, ct)
-                    .ConfigureAwait(false);
-            }
-            catch (ServiceResultException)
-            {
-                description = await CoreClientUtils
-                    .SelectEndpointAsync(configuration, endpointUrl, true, NullTelemetry.Instance, ct)
-                    .ConfigureAwait(false);
-            }
-
             var endpointConfiguration = EndpointConfiguration.Create(configuration);
 
-            return new ConfiguredEndpoint(null, description, endpointConfiguration);
+            using DiscoveryClient discovery = await DiscoveryClient
+                .CreateAsync(configuration, new Uri(endpointUrl), endpointConfiguration, DiagnosticsMasks.None, ct)
+                .ConfigureAwait(false);
+
+            ArrayOf<EndpointDescription> endpoints = await discovery
+                .GetEndpointsAsync(default, ct)
+                .ConfigureAwait(false);
+
+            EndpointDescription[] usable = endpoints
+                .ToArray()
+                .Where(endpoint => endpoint.EndpointUrl != null
+                    && endpoint.EndpointUrl.StartsWith(Utils.UriSchemeOpcTcp, StringComparison.OrdinalIgnoreCase))
+                // an endpoint counts as unsecured only when mode and policy agree: some
+                // sample configurations declare a security policy with an empty uri, which
+                // produces endpoints whose mode says None while their policy does not, and
+                // opening a channel on one of those is refused by the server
+                .OrderBy(endpoint => endpoint.SecurityMode == MessageSecurityMode.None
+                    && endpoint.SecurityPolicyUri == SecurityPolicies.None ? 0 : 1)
+                .ThenBy(endpoint => endpoint.SecurityLevel)
+                .ToArray();
+
+            if (usable.Length == 0)
+            {
+                throw new InvalidOperationException($"{endpointUrl} offers no opc.tcp endpoint.");
+            }
+
+            return usable[0];
         }
 
         private static async Task<ApplicationConfiguration> CreateConfigurationAsync(

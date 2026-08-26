@@ -135,8 +135,8 @@ hosted agents.
 
 ## What Tier 1 checks today
 
-16 test cases, about 15 seconds. Each one starts the real sample server in process, from the
-sample's own configuration file, and connects to it with a plain OPC UA client:
+19 test cases, about 25 seconds. Fifteen of them start a sample server in process, from the
+sample's own configuration file, and connect to it with a plain OPC UA client:
 
 - the server comes up on the endpoint the catalog claims
 - a session can be opened, and the server reports `ServerState.Running`
@@ -159,6 +159,32 @@ than parked:
 | `Workshop/HistoricalAccess/Server` | the archive stored `DateTimeUtc` timestamps in `DataTable` columns typed `DateTime` |
 | `Workshop/HistoricalEvents/Server` | `QuickstartNodeManager` passed a null default value to `Variant.From` through a `dynamic`, and a null has no type for the binder to resolve an overload from |
 | `Samples/Opc.Ua.Sample` | `TestDataSystem` cast the boxed random arrays to `T[]` where the stack now hands out `ArrayOf<T>` - in all eleven array cases |
+
+### The console samples
+
+Three samples build their host in `Main` and block there, so they are started as the
+processes they really are (`ConsoleSampleProcess`), which also covers the entry point and the
+configuration lookup that the in process tests bypass. The test waits for the line the sample
+prints when it is up, then talks to it:
+
+- **LDS** (`Samples/LDS/ConsoleServer`) - answers `FindServers` and reports itself. Note it
+  binds the well known discovery port **4840**, so a real local discovery server on the
+  machine will make this test fail.
+- **GDS** (`Samples/GDS/ConsoleServer`) - serves its address space, and is asked to shut down
+  through the `quit` command it documents.
+- The **aggregation** server is started in process instead, because the console project
+  compiles the very same sources and only its configuration differs.
+
+Two limits worth knowing:
+
+- The console samples run with the machine's own PKI under `%CommonApplicationData%` and
+  `%LocalApplicationData%`, not with a temporary one - a process started from a test reads
+  the configuration file the sample ships. They therefore create their certificates and,
+  for the GDS, its JSON databases, where running the sample by hand would.
+- The aggregation sample is only tested as far as "it starts and serves". Its configuration
+  aggregates external servers (a UA CTT server on 65300 and others), and the entry pointing
+  at this repository's reference server is commented out, so there is nothing to aggregate
+  in an unattended run without changing the sample.
 
 ### Known issues
 
@@ -215,12 +241,12 @@ reaches it yet.
 - [x] Phase 1 - shared helpers, Tier 0 configuration tests, CI test stage
 - [x] Phase 2 - Tier 1 server smoke tests (12 Workshop servers + Reference + Sample server)
 - [x] Phase 3 - Tier 2 client smoke tests (no separate host process was needed)
-- [ ] Phase 4 - GDS, Aggregation (needs two servers), LDS
+- [x] Phase 4 - LDS, the console GDS and the aggregation server
 
 Two further issues, found while writing this plan and caught by Tier 0:
 
-- `Workshop/Aggregation/Server/Quickstarts.AggregationServer.Config.xml` listens on port
-  **62541** while aggregating a downstream ReferenceServer that also lives on **62541**. That
-  sample cannot run as configured. The console variant correctly uses 62530.
+- `Workshop/Aggregation/Server/Quickstarts.AggregationServer.Config.xml` binds port **62541**,
+  which the reference server sample already uses, so those two samples cannot run side by
+  side. The console variant of the same server uses 62530 and is the one the tests start.
 - `testclientserver.sh` builds `Samples/NetCoreConsoleServer` and `Samples/NetCoreConsoleClient`,
   which no longer exist in this repository. Tier 1 replaces it.

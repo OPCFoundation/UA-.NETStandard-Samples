@@ -20,4 +20,15 @@
     <ProjectReference Include="..\Samples.Servers.Hosting\Samples.Servers.Hosting.csproj" />
   </ItemGroup>
 
+  <!-- the console samples are started as the processes they are, so they only have to be
+       built, not referenced. They also target their own frameworks. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Samples\LDS\ConsoleServer\ConsoleLds.csproj"
+                      ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\..\Samples\GDS\ConsoleServer\NetCoreGlobalDiscoveryServer.csproj"
+                      ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\..\Workshop\Aggregation\ConsoleAggregationServer\ConsoleAggregationServer.csproj"
+                      ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
 </Project>

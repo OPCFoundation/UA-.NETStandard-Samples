@@ -44,9 +44,9 @@ namespace Opc.Ua.Samples.Tests
             // same server, they are never started together
             new[] { "Gds", "GdsConsole" },
 
-            // KNOWN DEFECT, see docs/TESTING.md: the WinForms aggregation server listens on
-            // 62541 while aggregating a downstream reference server on the very same port,
-            // so it cannot run as configured. The console variant uses 62530 instead.
+            // KNOWN DEFECT, see docs/TESTING.md: the WinForms aggregation server binds
+            // 62541, the port the reference server sample already uses, so the two cannot
+            // run side by side. The console variant of the same server uses 62530.
             new[] { "Aggregation", "Reference" },
         };
 

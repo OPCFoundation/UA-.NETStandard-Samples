@@ -27,6 +27,9 @@
     <ProjectReference Include="..\..\Workshop\SimpleEvents\Server\SimpleEvents Server.csproj" />
     <ProjectReference Include="..\..\Workshop\UserAuthentication\Server\UserAuthentication Server.csproj" />
     <ProjectReference Include="..\..\Workshop\Views\Server\Views Server.csproj" />
+    <!-- the console aggregation server compiles the very same sources, so hosting this
+         project covers both variants of that sample -->
+    <ProjectReference Include="..\..\Workshop\Aggregation\Server\Aggregation Server.csproj" />
     <ProjectReference Include="..\..\Samples\ReferenceServer\Reference Server.csproj" />
     <ProjectReference Include="..\..\Samples\Server.Net4\UA Sample Server.csproj" />
   </ItemGroup>

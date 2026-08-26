@@ -97,9 +97,13 @@ namespace Opc.Ua.Samples.Tests
         [Test]
         public void UncoveredServerSamplesAreDeclared()
         {
-            // GDS, Aggregation and LDS need more than a configuration file to start,
-            // they are covered by phase 4 of docs/TESTING.md
-            string[] expectedGaps = ["Aggregation", "AggregationConsole", "Gds", "GdsConsole", "Lds"];
+            // the console GDS and the LDS build their host in Main, so they are started as
+            // processes by ConsoleSampleTests instead of through a factory. The WinForms
+            // aggregation server is not started at all: it shares its sources with the
+            // console variant and only differs in a configuration which binds the port of
+            // the reference server sample. The WinForms GDS brings its own certificate
+            // authority and user database.
+            string[] expectedGaps = ["Aggregation", "Gds", "GdsConsole", "Lds"];
 
             IEnumerable<string> uncovered = SampleCatalog.Servers
                 .Select(sample => sample.Name)

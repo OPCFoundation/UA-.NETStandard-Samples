@@ -135,7 +135,9 @@
         <CertificateGroups>
           <CertificateGroupConfiguration>
             <Id>Default</Id>
-            <CertificateType>RsaSha256ApplicationCertificateType</CertificateType>
+            <CertificateTypes>
+              <ua:String>RsaSha256ApplicationCertificateType</ua:String>
+            </CertificateTypes>
             <SubjectName>CN=IOP-2018 CA, O=OPC Foundation</SubjectName>
             <BaseStorePath>%LocalApplicationData%/OPC Foundation/GDS/PKI/CA/default</BaseStorePath>
             <DefaultCertificateLifetime>12</DefaultCertificateLifetime>
