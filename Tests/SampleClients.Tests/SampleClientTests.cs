@@ -60,9 +60,11 @@ namespace Opc.Ua.Samples.Tests
         /// </remarks>
         private static readonly IReadOnlyDictionary<string, string> s_knownIssues =
             new Dictionary<string, string>(StringComparer.Ordinal) {
-                // empty on purpose: every sample client this tier covers works. The
-                // HistoricalEvents client, the only entry this list ever had, was fixed
-                // rather than parked here.
+                ["AlarmCondition"] =
+                    "connects, then its post connect logic throws NullReferenceException and " +
+                    "'An item with the same key has already been added. Key: i=9764' into a " +
+                    "modal dialog. New since the 2.0.0-preview.2 package bump on master " +
+                    "(Workshop/AlarmCondition/Client)",
             };
 
         public static IEnumerable<SampleClientUnderTest> Clients => SampleClientFactories.All;

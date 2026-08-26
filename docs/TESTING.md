@@ -135,7 +135,7 @@ hosted agents.
 
 ## What Tier 1 checks today
 
-19 test cases, about 25 seconds. Fifteen of them start a sample server in process, from the
+89 test cases, about 25 seconds. Fifteen of them start a sample server in process, from the
 sample's own configuration file, and connect to it with a plain OPC UA client:
 
 - the server comes up on the endpoint the catalog claims
@@ -159,6 +159,36 @@ than parked:
 | `Workshop/HistoricalAccess/Server` | the archive stored `DateTimeUtc` timestamps in `DataTable` columns typed `DateTime` |
 | `Workshop/HistoricalEvents/Server` | `QuickstartNodeManager` passed a null default value to `Variant.From` through a `dynamic`, and a null has no type for the binder to resolve an overload from |
 | `Samples/Opc.Ua.Sample` | `TestDataSystem` cast the boxed random arrays to `T[]` where the stack now hands out `ArrayOf<T>` - in all eleven array cases |
+
+### Configuration drift
+
+`ConfigurationExtensionTests` is the regression cover for the way these samples actually rot.
+The OPC UA configuration decoder **ignores what it does not recognize**: a renamed or retyped
+configuration property does not fail, it silently loses its value, and the sample breaks later
+and somewhere else. That is precisely how both GDS samples came to declare a certificate group
+with a `<CertificateType>` element long after the stack had renamed it to `<CertificateTypes>`,
+and answered *"Please specify at least one valid Certificate Type"* at startup.
+
+The test walks the element tree of every configuration file against the classes which decode
+it - `ApplicationConfiguration` for the file itself, and for each `<Extensions>` entry the
+class whose name matches the extension element - and reports every element that has no member
+behind it. Member lookup follows the name a serialization attribute gives a member, because
+that is what the decoder matches on. It lives with tier 1 rather than tier 0 because the
+extension classes belong to the sample assemblies.
+
+It found `<ShutdownDelay>` inside the GDS extension, which belongs to `ServerConfiguration`
+and was doing nothing where it stood; that one is removed. Two more are recorded in
+`s_knownDeadElements` rather than swept, because they sit in nearly every sample
+configuration and predate this work:
+
+| Element | Why it is dead |
+|---------|----------------|
+| `ServerConfiguration/MinMetadataSamplingInterval` | no such member on `ServerConfiguration` in the 2.0 stack |
+| `SecurityPolicies/ServerSecurityPolicy/SecurityLevel` | the security level is computed by `ServerSecurityPolicy.CalculateSecurityLevel`, not configured |
+
+Recorded, not allowed: a **new** dead element still fails, and `KnownDeadElementsAreStillThere`
+fails once one of these is cleaned out of the configurations, so the list cannot outlive the
+problem it describes.
 
 ### The console samples
 
@@ -217,7 +247,13 @@ Because it needs a window station, the fixture is `[Category("RequiresDesktop")]
 filter skips it. Remove `--filter "TestCategory!=RequiresDesktop"` from `.azurepipelines/test.yml`
 to turn it on once it has been seen to work on the hosted agents.
 
-All 16 cases pass. The first run of this tier found one sample that did not, and it is
+15 of 16 cases pass. The one that does not is a **regression from the 2.0.0-preview.2 package
+bump**: the AlarmCondition client connects, and its post connect logic then throws a
+`NullReferenceException` and `An item with the same key has already been added. Key: i=9764`
+into a modal dialog. It is recorded in `s_knownIssues` until the client is fixed - and, as
+with every entry there, the test fails again the moment it starts working.
+
+The first run of this tier found another sample that did not pass, and it is
 exactly the kind the watchdog exists for: the **HistoricalEvents client** connected, then its
 post connect logic read the event history and failed with `BadContinuationPointInvalid`,
 which the sample reported in a modal dialog. Without the watchdog the test would simply have
@@ -229,7 +265,8 @@ than parked:
 | `Workshop/HistoricalEvents/Server/HistoricalEventsNodeManager.cs` | `HistoryReadEvents` treated any non null `HistoryReadValueId.ContinuationPoint` as a continuation point to restore. `ContinuationPoint` is a `ByteString` now and a freshly created `HistoryReadValueId` carries an *empty* one rather than a null one, so the very first history read of a session looked like a continuation of a request the server had never issued and answered `BadContinuationPointInvalid`. An empty continuation point has to be read as "no continuation point", which is what `Samples/Opc.Ua.Sample/TestData/TestDataNodeManager.cs` already does |
 | `Workshop/HistoricalEvents/Server/ReportGenerator.cs` | the `DataView` row filter it builds wrote its `#...#` date literals with `DateTime.ToString()`, so in the current culture. The `System.Data` expression parser reads them with the invariant culture, so on a machine that is not formatting dates the invariant way - a German Windows, for instance - the history read threw `FormatException` and the client saw `BadUnexpectedError` |
 
-`s_knownIssues` in `SampleClientTests` is empty again.
+The known issue list in `SampleClientTests` therefore holds exactly one entry, the
+AlarmCondition regression above.
 
 The same unguarded continuation point check exists three times in
 `Workshop/HistoricalAccess/Server/HistoricalAccessNodeManager.cs`. It is latent there: the

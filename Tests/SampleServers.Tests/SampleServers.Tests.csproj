@@ -25,8 +25,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Samples\LDS\ConsoleServer\ConsoleLds.csproj"
                       ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
-    <ProjectReference Include="..\..\Samples\GDS\ConsoleServer\NetCoreGlobalDiscoveryServer.csproj"
-                      ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <!-- referenced with its assembly, so that ConfigurationExtensionTests can resolve the
+         LdsScannerConfiguration extension this sample defines -->
+    <ProjectReference Include="..\..\Samples\GDS\ConsoleServer\NetCoreGlobalDiscoveryServer.csproj" />
     <ProjectReference Include="..\..\Workshop\Aggregation\ConsoleAggregationServer\ConsoleAggregationServer.csproj"
                       ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
