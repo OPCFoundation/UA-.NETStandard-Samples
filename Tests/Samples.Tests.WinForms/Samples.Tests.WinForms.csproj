@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Opc.Ua.Samples.Tests</RootNamespace>
+    <AssemblyName>Samples.Tests.WinForms</AssemblyName>
+    <Description>Drives the WinForms sample clients from tests: an STA message loop and a watchdog for the modal dialogs the samples put their errors into.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Samples.Tests.Common\Samples.Tests.Common.csproj" />
+    <ProjectReference Include="..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
+  </ItemGroup>
+
+</Project>

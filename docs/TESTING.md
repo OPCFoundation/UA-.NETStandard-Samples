@@ -42,26 +42,27 @@ Three properties of the samples make headless testing cheap:
 ```
 Tests/
   Directory.Build.props        # relaxes the repo-wide "AnalysisMode=all" for test code
-  Samples.Tests.Common/        # shared helpers, and the sample catalog that drives every tier   (exists)
-  SampleConfiguration.Tests/   # Tier 0. No project references, no network.                      (exists)
-  SampleServers.Tests/         # Tier 1. References the sample *server* projects.                (exists)
-  Samples.TestHost/            # console app: starts any sample server headless, prints "READY <url>"  (phase 3)
-  Samples.Tests.WinForms/      # STA message loop runner and the modal dialog watchdog           (phase 3)
-  SampleClients.Tests/         # Tier 2. References the sample *client* projects.                (phase 3)
+  Samples.Tests.Common/        # shared helpers, and the sample catalog that drives every tier
+  Samples.Servers.Hosting/     # references every sample server, knows how each creates its server
+  Samples.Tests.WinForms/      # STA message loop runner, dialog watchdog, form reflection helpers
+  SampleConfiguration.Tests/   # Tier 0. No project references, no network.
+  SampleServers.Tests/         # Tier 1. Starts the servers from Samples.Servers.Hosting.
+  SampleClients.Tests/         # Tier 2. References the sample *client* projects.
 ```
 
-`Samples.Tests.Common` targets `net10.0` and stays free of WinForms, so Tier 0 runs anywhere;
-the WinForms helpers live in their own `net10.0-windows` library from phase 3 on.
+`Samples.Tests.Common` targets `net10.0` and stays free of WinForms, so Tier 0 runs anywhere.
+Everything that touches a sample assembly targets `net10.0-windows`, because the samples are
+WinForms executables - even though the tests never show a window.
 
-The client/server split is load-bearing, not cosmetic. Generated model types such as
-`Quickstarts.Boiler.Constants` are compiled into *both* the Boiler client and the Boiler
-server assembly, so one test project referencing both would fail with `CS0433`. Splitting by
-role avoids it, and `Samples.TestHost` is how the client tests get a server without
-referencing one.
+Generated model types such as `Quickstarts.Boiler.Constants` are compiled into *both* the
+Boiler client and the Boiler server assembly, so a project referencing both has two copies of
+them. That is harmless as long as the tests only name types which exist once - `MainForm`,
+`BoilerServer` - and it is why Tier 2 can start a server in process instead of having to spawn
+one. Should a test ever need one of the duplicated types, it will fail to compile with
+`CS0433`; the fix is an `Aliases` attribute on the project reference, not a redesign.
 
-Test framework is **NUnit** (matching UA-.NETStandard). Test projects target `net10.0-windows`
-except Tier 0, which is portable. The assembly is `[NonParallelizable]`: sample servers use
-fixed, sometimes overlapping ports.
+Test framework is **NUnit** (matching UA-.NETStandard). Fixtures which start servers are
+`[NonParallelizable]`: the samples bind fixed, sometimes overlapping ports.
 
 ## The sample catalog
 
@@ -70,11 +71,12 @@ files and the expected endpoint URL. **Adding a new sample means adding one row.
 tiers iterate that table, so a sample that is not in the catalog is not tested; Tier 0
 additionally globs the repo for `*.Config.xml` so new configs cannot be silently forgotten.
 
-Tier 1 pairs each entry with the way the sample creates its server, in
-`SampleServers.Tests/SampleServerFactories.cs`. Those factories are written out rather than
-resolved by reflection on purpose: renaming or removing a sample server then breaks the build
-of the tests, which is the earliest and clearest moment to notice. A server sample without a
-factory has to be listed as a known gap, so it cannot drop out unnoticed.
+Two factory tables pair those entries with the sample code: `SampleServerFactories`
+(`Samples.Servers.Hosting`) knows how each sample creates its server, `SampleClientFactories`
+(`SampleClients.Tests`) how each creates its main form. Both are written out rather than
+resolved by reflection on purpose: renaming or removing a sample then breaks the build of the
+tests, which is the earliest and clearest moment to notice. A sample without a factory has to
+be listed as a known gap, so it cannot drop out unnoticed.
 
 ## Practical notes
 
@@ -96,11 +98,16 @@ UI popups into readable failures and is the single most valuable piece of the ha
 `AggregationServer` both use 62541). The tests therefore keep the ports the samples ship with -
 that is part of what is being tested - and run one sample at a time (`[NonParallelizable]`).
 
+The consequence is machine wide: **only one test run at a time**. Two runs in parallel fail
+with "address already in use", and a second git worktree of this repository is not isolation -
+the ports are the same. The same applies to a sample you left running by hand.
+
 ## Running
 
 ```bash
 dotnet test Tests/SampleConfiguration.Tests
 dotnet test Tests/SampleServers.Tests
+dotnet test Tests/SampleClients.Tests
 ```
 
 ```bash
@@ -157,11 +164,38 @@ moment one of them starts working, so nobody has to remember to remove the entry
 All four are the samples not having caught up with the value types the 2.0 stack introduced
 (`ArrayOf<T>`, `DateTimeUtc`, the `Variant.From` overloads).
 
+## What Tier 2 checks today
+
+16 test cases, about 50 seconds, Windows only. For each WinForms sample client the test
+starts its sample server in process, then on a dedicated STA thread with a running message
+loop - but without ever showing a window:
+
+- builds the client's real `MainForm` from the client's own configuration file
+- reaches the shared `ConnectServerCtrl` through its designer field and connects it to the
+  server the sample ships with
+- asserts the session is connected and that the control kept it
+- waits two seconds so the sample's `async void` ConnectComplete handler can run, and for
+  the samples that have one, asserts the control it enables afterwards is enabled - which is
+  the proof that the sample's own logic ran, not just the shared control
+- disconnects and asserts the session was released
+
+The **dialog watchdog** is what makes this safe: the sample clients report errors through a
+modal `ExceptionDlg`, which in an unattended run would wait forever for a click. A timer on
+the UI thread closes any modal form, keeps its text, and the harness fails the test with it.
+`WatchdogTurnsAModalDialogIntoAFailure` proves the watchdog itself works.
+
+Because it needs a window station, the fixture is `[Category("RequiresDesktop")]` and the CI
+filter skips it. Remove `--filter "TestCategory!=RequiresDesktop"` from `.azurepipelines/test.yml`
+to turn it on once it has been seen to work on the hosted agents.
+
+`HistoricalAccess` and `HistoricalEvents` are ignored here as well, since their servers do not
+start.
+
 ## Status / roadmap
 
 - [x] Phase 1 - shared helpers, Tier 0 configuration tests, CI test stage
 - [x] Phase 2 - Tier 1 server smoke tests (12 Workshop servers + Reference + Sample server)
-- [ ] Phase 3 - `Samples.TestHost` + Tier 2 client smoke tests
+- [x] Phase 3 - Tier 2 client smoke tests (no separate host process was needed)
 - [ ] Phase 4 - GDS, Aggregation (needs two servers), LDS
 
 Two further issues, found while writing this plan and caught by Tier 0:

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Opc.Ua.Samples.Tests</RootNamespace>
+    <AssemblyName>SampleClients.Tests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <Description>Tier 2: builds the main form of every WinForms sample client and connects it to its own sample server.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="NUnit" Version="4.6.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.14.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Samples.Tests.Common\Samples.Tests.Common.csproj" />
+    <ProjectReference Include="..\Samples.Tests.WinForms\Samples.Tests.WinForms.csproj" />
+    <ProjectReference Include="..\Samples.Servers.Hosting\Samples.Servers.Hosting.csproj" />
+  </ItemGroup>
+
+  <!-- the sample clients under test -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Workshop\AlarmCondition\Client\AlarmCondition Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\Boiler\Client\Boiler Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\DataAccess\Client\DataAccess Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\DataTypes\Client\DataTypes Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\Empty\Client\Empty Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\HistoricalAccess\Client\HistoricalAccess Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\HistoricalEvents\Client\HistoricalEvents Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\Methods\Client\Methods Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\PerfTest\Client\PerfTest Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\SimpleEvents\Client\SimpleEvents Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\UserAuthentication\Client\UserAuthentication Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\Views\Client\Views Client.csproj" />
+    <ProjectReference Include="..\..\Samples\ReferenceClient\Reference Client.csproj" />
+  </ItemGroup>
+
+</Project>

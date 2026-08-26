@@ -78,8 +78,11 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/Samples.Tests.Common/Samples.Tests.Common.csproj" />
+    <Project Path="Tests/Samples.Servers.Hosting/Samples.Servers.Hosting.csproj" />
+    <Project Path="Tests/Samples.Tests.WinForms/Samples.Tests.WinForms.csproj" />
     <Project Path="Tests/SampleConfiguration.Tests/SampleConfiguration.Tests.csproj" />
     <Project Path="Tests/SampleServers.Tests/SampleServers.Tests.csproj" />
+    <Project Path="Tests/SampleClients.Tests/SampleClients.Tests.csproj" />
     <File Path="docs/TESTING.md" />
     <File Path="Tests/Directory.Build.props" />
   </Folder>
