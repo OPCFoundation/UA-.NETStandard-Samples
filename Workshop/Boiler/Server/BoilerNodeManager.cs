@@ -63,7 +63,7 @@ namespace Quickstarts.Boiler.Server
             SetNamespaces(namespaceUrls);
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<BoilerServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)

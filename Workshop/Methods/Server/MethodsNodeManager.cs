@@ -80,7 +80,7 @@ namespace Quickstarts.MethodsServer
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<MethodsServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)

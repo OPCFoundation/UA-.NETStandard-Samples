@@ -28,7 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 
 using Opc.Ua.Server;
@@ -41,22 +40,13 @@ namespace MemoryBuffer
     /// </summary>
     // Namespaces.MemoryBuffer is generated in the same pass and is unavailable to the [DataType] generator.
     [DataType(Namespace = "http://samples.org/UA/MemoryBuffer")]
-    public partial class MemoryBufferConfiguration
+    public sealed partial class MemoryBufferConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public MemoryBufferConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }
@@ -92,22 +82,13 @@ namespace MemoryBuffer
     /// </summary>
     // Namespaces.MemoryBuffer is generated in the same pass and is unavailable to the [DataType] generator.
     [DataType(Namespace = "http://samples.org/UA/MemoryBuffer")]
-    public partial class MemoryBufferInstance
+    public sealed partial class MemoryBufferInstance
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public MemoryBufferInstance()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

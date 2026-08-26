@@ -28,8 +28,8 @@
  * ======================================================================*/
 
 using System;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
+using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.DataTypes
@@ -37,23 +37,14 @@ namespace Quickstarts.DataTypes
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace = Namespaces.DataTypes)]
-    public class DataTypesServerConfiguration
+    [DataType(Namespace = Namespaces.DataTypes)]
+    public sealed partial class DataTypesServerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public DataTypesServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

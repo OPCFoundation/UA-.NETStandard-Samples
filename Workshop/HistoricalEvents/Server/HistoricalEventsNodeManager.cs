@@ -63,7 +63,7 @@ namespace Quickstarts.HistoricalEvents.Server
             SetNamespaces(namespaceUrls);
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<HistoricalEventsServerConfiguration>();
 
             m_logger = server.Telemetry.CreateLogger<HistoricalEventsNodeManager>();
 

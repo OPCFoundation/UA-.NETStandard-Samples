@@ -28,9 +28,8 @@
  * ======================================================================*/
 
 using System;
-using System.ServiceModel;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
+using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.Boiler.Server
@@ -38,23 +37,14 @@ namespace Quickstarts.Boiler.Server
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace = Namespaces.Boiler)]
-    public class BoilerServerConfiguration
+    [DataType(Namespace = Namespaces.Boiler)]
+    public sealed partial class BoilerServerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public BoilerServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

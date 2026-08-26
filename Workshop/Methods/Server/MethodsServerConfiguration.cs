@@ -28,9 +28,8 @@
  * ======================================================================*/
 
 using System;
-using System.ServiceModel;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
+using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.MethodsServer
@@ -38,23 +37,14 @@ namespace Quickstarts.MethodsServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataContract(Namespace = Namespaces.Methods)]
-    public class MethodsServerConfiguration
+    [DataType(Namespace = Namespaces.Methods)]
+    public sealed partial class MethodsServerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public MethodsServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

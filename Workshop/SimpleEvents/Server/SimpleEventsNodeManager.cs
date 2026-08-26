@@ -62,7 +62,7 @@ namespace Quickstarts.SimpleEvents.Server
             SetNamespaces(namespaceUrls);
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<SimpleEventsServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
