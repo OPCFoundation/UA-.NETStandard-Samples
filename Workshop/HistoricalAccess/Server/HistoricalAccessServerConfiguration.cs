@@ -37,7 +37,7 @@ namespace Quickstarts.HistoricalAccessServer
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataType]
+    [DataType(Namespace = Namespaces.HistoricalAccess)]
     public sealed partial class HistoricalAccessServerConfiguration
     {
         #region Constructors

@@ -59,7 +59,7 @@ namespace Quickstarts.DataAccessServer
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<DataAccessServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)

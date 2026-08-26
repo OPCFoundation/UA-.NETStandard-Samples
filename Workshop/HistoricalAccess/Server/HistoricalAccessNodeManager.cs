@@ -58,7 +58,7 @@ namespace Quickstarts.HistoricalAccessServer
             this.AliasRoot = "HDA";
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<HistoricalAccessServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
