@@ -134,14 +134,14 @@ namespace Opc.Ua.Samples.Tests
         {
             Assert.That(
                 async () => await WinFormsHarness.RunAsync(
-                    _ => {
+                    watchdog => {
                         using var dialog = new Form { Text = "Sample complaint" };
 
                         dialog.Controls.Add(new Label { Text = "something went wrong" });
 
                         // blocks the message loop until the watchdog closes it, which is
                         // exactly what a sample error dialog does in a test run
-                        _ = dialog.ShowDialog();
+                        DialogResult ignored = dialog.ShowDialog();
 
                         return Task.CompletedTask;
                     },
