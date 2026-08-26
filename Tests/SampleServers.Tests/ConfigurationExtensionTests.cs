@@ -56,23 +56,6 @@ namespace Opc.Ua.Samples.Tests
                 ["schemaLocation"] = "xml schema annotation, not configuration",
             };
 
-        /// <summary>
-        /// Elements which the sample configurations have been carrying since the 1.x schema
-        /// and which nothing reads any more.
-        /// </summary>
-        /// <remarks>
-        /// They are recorded rather than allowed: a new dead element still fails the tests,
-        /// and <see cref="KnownDeadElementsAreStillThere"/> fails once one of these is cleaned
-        /// out of the configurations, so the list cannot outlive the problem it describes.
-        /// </remarks>
-        private static readonly IReadOnlyDictionary<string, string> s_knownDeadElements =
-            new Dictionary<string, string>(StringComparer.Ordinal) {
-                ["ApplicationConfiguration/ServerConfiguration/MinMetadataSamplingInterval"] =
-                    "ServerConfiguration has no such member in the 2.0 stack",
-                ["ApplicationConfiguration/ServerConfiguration/SecurityPolicies/ServerSecurityPolicy/SecurityLevel"] =
-                    "the security level is computed by ServerSecurityPolicy.CalculateSecurityLevel, not configured",
-            };
-
         public static IEnumerable<string> ConfigurationFiles => RepositoryLayout.EnumerateConfigurationFiles();
 
         [OneTimeSetUp]
@@ -152,8 +135,7 @@ namespace Opc.Ua.Samples.Tests
             IEnumerable<string> unknown = FindUnknownElements(
                 document.DocumentElement,
                 typeof(ApplicationConfiguration),
-                "ApplicationConfiguration")
-                .Where(entry => !IsKnownDead(entry));
+                "ApplicationConfiguration");
 
             Assert.That(
                 unknown,
@@ -161,45 +143,6 @@ namespace Opc.Ua.Samples.Tests
                 $"{relativePath} configures elements which no class reads, so their values are " +
                 "silently dropped. Either the sample configuration or the class it belongs to " +
                 "is out of date.");
-        }
-
-        /// <summary>
-        /// Every recorded dead element still has to be in at least one configuration.
-        /// </summary>
-        /// <remarks>
-        /// Once a dead element is cleaned out of the sample configurations, this fails and
-        /// asks for its entry to be dropped, so the record cannot outlive the problem.
-        /// </remarks>
-        [Test]
-        public void KnownDeadElementsAreStillThere()
-        {
-            var found = new HashSet<string>(StringComparer.Ordinal);
-
-            foreach (string relativePath in ConfigurationFiles)
-            {
-                var document = new SysXmlDocument();
-                document.Load(RepositoryLayout.PathOf(relativePath));
-
-                foreach (string entry in FindUnknownElements(
-                    document.DocumentElement,
-                    typeof(ApplicationConfiguration),
-                    "ApplicationConfiguration"))
-                {
-                    foreach (string dead in s_knownDeadElements.Keys)
-                    {
-                        if (entry.StartsWith(dead + " ", StringComparison.Ordinal))
-                        {
-                            found.Add(dead);
-                        }
-                    }
-                }
-            }
-
-            Assert.That(
-                s_knownDeadElements.Keys.Except(found),
-                Is.Empty,
-                "These elements are recorded as dead but no longer appear in any sample " +
-                "configuration. Remove them from s_knownDeadElements.");
         }
 
         /// <summary>
@@ -434,14 +377,6 @@ namespace Opc.Ua.Samples.Tests
                 || type == typeof(object)
                 || typeof(SysXmlNode).IsAssignableFrom(type) || type.Name.Contains("XmlElement", StringComparison.Ordinal)
                 || type.Namespace?.StartsWith("System", StringComparison.Ordinal) == true;
-        }
-
-        /// <summary>
-        /// True when the reported element is one of the recorded dead ones.
-        /// </summary>
-        private static bool IsKnownDead(string entry)
-        {
-            return s_knownDeadElements.Keys.Any(dead => entry.StartsWith(dead + " ", StringComparison.Ordinal));
         }
 
         private static bool HasChildElements(SysXmlElement element)

@@ -176,19 +176,16 @@ behind it. Member lookup follows the name a serialization attribute gives a memb
 that is what the decoder matches on. It lives with tier 1 rather than tier 0 because the
 extension classes belong to the sample assemblies.
 
-It found `<ShutdownDelay>` inside the GDS extension, which belongs to `ServerConfiguration`
-and was doing nothing where it stood; that one is removed. Two more are recorded in
-`s_knownDeadElements` rather than swept, because they sit in nearly every sample
-configuration and predate this work:
+It found three dead elements, all now removed from the sample configurations:
 
-| Element | Why it is dead |
-|---------|----------------|
-| `ServerConfiguration/MinMetadataSamplingInterval` | no such member on `ServerConfiguration` in the 2.0 stack |
+| Element | Why it was dead |
+|---------|-----------------|
+| `GlobalDiscoveryServerConfiguration/ShutdownDelay` | belongs to `ServerConfiguration`, where both GDS configurations already have it; inside the extension it did nothing |
+| `ServerConfiguration/MinMetadataSamplingInterval` | no such member on `ServerConfiguration` in the 2.0 stack - it was in 19 configurations |
 | `SecurityPolicies/ServerSecurityPolicy/SecurityLevel` | the security level is computed by `ServerSecurityPolicy.CalculateSecurityLevel`, not configured |
 
-Recorded, not allowed: a **new** dead element still fails, and `KnownDeadElementsAreStillThere`
-fails once one of these is cleaned out of the configurations, so the list cannot outlive the
-problem it describes.
+There is no allow list. Every element of every sample configuration now maps onto a member of
+the class which reads it, and anything that stops doing so fails the build.
 
 ### The console samples
 

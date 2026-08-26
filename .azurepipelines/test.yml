@@ -40,6 +40,8 @@ jobs:
     inputs:
       command: test
       projects: 'Tests/**/*.Tests.csproj'
-      arguments: '--no-build --configuration Release --filter "TestCategory!=RequiresDesktop" --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+      # the task adds --logger trx and --results-directory itself when it publishes the
+      # results, so repeating them here makes dotnet test reject the command line
+      arguments: '--no-build --configuration Release --filter "TestCategory!=RequiresDesktop"'
       publishTestResults: true
       testRunTitle: 'Sample smoke tests'
