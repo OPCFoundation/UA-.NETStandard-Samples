@@ -60,6 +60,10 @@ namespace Opc.Ua.Samples.Tests
 
             DialogWatchdog watchdog = await completion.Task.ConfigureAwait(false);
 
+            // let the message loop end and the harness close whatever the sample opened on
+            // its way out, so that what is reported below is everything this test saw
+            thread.Join(TimeSpan.FromSeconds(10));
+
             if (watchdog.Captured.Count > 0)
             {
                 throw new InvalidOperationException(
@@ -191,6 +195,20 @@ namespace Opc.Ua.Samples.Tests
             finally
             {
                 Application.ThreadException -= onUiThread;
+
+                // a dialog which the sample opened while the form was being disposed is still
+                // open, and this thread is the only one which can close it. Left behind, it
+                // stays in the process wide Application.OpenForms and the next test finds a
+                // dialog it never opened.
+                try
+                {
+                    watchdog.CloseOpenDialogs();
+                }
+                catch (Exception exception)
+                {
+                    watchdog.NoteDuringTeardown(exception);
+                }
+
                 watchdog.Dispose();
                 context.Dispose();
 

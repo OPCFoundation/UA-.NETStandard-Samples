@@ -118,11 +118,22 @@ namespace Opc.Ua.Samples.Tests
             }
         }
 
-        private void CloseOpenDialogs()
+        /// <summary>
+        /// Closes the dialogs which belong to this test.
+        /// </summary>
+        /// <remarks>
+        /// Application.OpenForms is process wide while every test runs on its own thread, so
+        /// a dialog another test left behind would otherwise be reported here - and could not
+        /// even be closed from this thread. Only forms of this thread are touched.
+        /// </remarks>
+        internal void CloseOpenDialogs()
         {
             // only modal dialogs are of interest: the form under test is never shown modally,
             // so anything modal is a popup the sample opened to complain about something
-            foreach (Form form in Application.OpenForms.OfType<Form>().Where(form => form.Modal).ToArray())
+            foreach (Form form in Application.OpenForms
+                .OfType<Form>()
+                .Where(form => form.Modal && BelongsToThisThread(form))
+                .ToArray())
             {
                 m_captured.Add(Describe(form));
 
@@ -139,6 +150,21 @@ namespace Opc.Ua.Samples.Tests
                 {
                     // nor one whose window is already gone
                 }
+            }
+        }
+
+        /// <summary>
+        /// True when the form was created on the thread this watchdog runs on.
+        /// </summary>
+        private static bool BelongsToThisThread(Form form)
+        {
+            try
+            {
+                return !form.InvokeRequired;
+            }
+            catch (Exception e) when (e is ObjectDisposedException or InvalidOperationException or COMException)
+            {
+                return false;
             }
         }
 
