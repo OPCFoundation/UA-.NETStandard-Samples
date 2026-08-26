@@ -117,8 +117,8 @@ namespace Opc.Ua.Sample.Controls
             }
             else
             {
-                DeadbandNC.Minimum = Decimal.MinValue;
-                DeadbandNC.Maximum = Decimal.MaxValue;
+                DeadbandNC.Minimum = decimal.MinValue;
+                DeadbandNC.Maximum = decimal.MaxValue;
             }
         }
     }

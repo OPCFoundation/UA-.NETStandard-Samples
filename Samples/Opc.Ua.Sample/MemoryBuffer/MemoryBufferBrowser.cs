@@ -80,51 +80,50 @@ namespace MemoryBuffer
         /// <returns></returns>
         public override IReference Next()
         {
-            lock (DataLock)
+            // NodeBrowser instances are single-consumer and perform no
+            // synchronization of their own; the former DataLock is gone.
+            IReference reference = null;
+
+            // enumerate pre-defined references.
+            // always call first to ensure any pushed-back references are returned first.
+            reference = base.Next();
+
+            if (reference != null)
             {
-                IReference reference = null;
+                return reference;
+            }
 
-                // enumerate pre-defined references.
-                // always call first to ensure any pushed-back references are returned first.
-                reference = base.Next();
+            if (m_stage == Stage.Begin)
+            {
+                m_stage = Stage.Components;
+                m_position = 0;
+            }
 
-                if (reference != null)
-                {
-                    return reference;
-                }
-
-                if (m_stage == Stage.Begin)
-                {
-                    m_stage = Stage.Components;
-                    m_position = 0;
-                }
-
-                // don't start browsing huge number of references when only internal references are requested.
-                if (InternalOnly)
-                {
-                    return null;
-                }
-
-                // enumerate components.
-                if (m_stage == Stage.Components)
-                {
-                    if (IsRequired(ReferenceTypeIds.HasComponent, false))
-                    {
-                        reference = NextChild();
-
-                        if (reference != null)
-                        {
-                            return reference;
-                        }
-                    }
-
-                    m_stage = Stage.ModelParents;
-                    m_position = 0;
-                }
-
-                // all done.
+            // don't start browsing huge number of references when only internal references are requested.
+            if (InternalOnly)
+            {
                 return null;
             }
+
+            // enumerate components.
+            if (m_stage == Stage.Components)
+            {
+                if (IsRequired(ReferenceTypeIds.HasComponent, false))
+                {
+                    reference = NextChild();
+
+                    if (reference != null)
+                    {
+                        return reference;
+                    }
+                }
+
+                m_stage = Stage.ModelParents;
+                m_position = 0;
+            }
+
+            // all done.
+            return null;
         }
         #endregion
 

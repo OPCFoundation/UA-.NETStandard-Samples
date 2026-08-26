@@ -209,7 +209,7 @@ namespace Opc.Ua.Client.Controls
             {
                 m_endpointDescription = endpointDescription;
                 m_protocol = new Protocol(endpointDescription);
-                m_currentPolicy = SecurityPolicies.GetDisplayName(endpointDescription.SecurityPolicyUri);
+                m_currentPolicy = SecurityPolicies.Default.GetDisplayName(endpointDescription.SecurityPolicyUri);
                 m_messageSecurityMode = endpointDescription.SecurityMode;
 
                 switch (m_endpointDescription.EncodingSupport)
@@ -280,7 +280,7 @@ namespace Opc.Ua.Client.Controls
             {
                 m_stringRepresentation = m_protocol.ToString() + " - ";
                 m_stringRepresentation += m_endpointDescription.SecurityMode + " - ";
-                m_stringRepresentation += SecurityPolicies.GetDisplayName(m_endpointDescription.SecurityPolicyUri) + " - ";
+                m_stringRepresentation += SecurityPolicies.Default.GetDisplayName(m_endpointDescription.SecurityPolicyUri) + " - ";
 
                 switch (m_endpointDescription.EncodingSupport)
                 {
@@ -585,7 +585,7 @@ namespace Opc.Ua.Client.Controls
                         continue;
                     }
 
-                    if (currentPolicy != SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri))
+                    if (currentPolicy != SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri))
                     {
                         continue;
                     }
@@ -875,7 +875,7 @@ namespace Opc.Ua.Client.Controls
             // set all available security policies.
             if (m_showAllOptions)
             {
-                SecurityPolicyCB.Items.AddRange(SecurityPolicies.GetDisplayNames());
+                SecurityPolicyCB.Items.AddRange(SecurityPolicies.Default.GetDisplayNames());
             }
 
             // find all unique security policies.
@@ -899,7 +899,7 @@ namespace Opc.Ua.Client.Controls
                                 continue;
                             }
 
-                            string policyName = SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri);
+                            string policyName = SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri);
 
                             if (policyName != null)
                             {
@@ -918,7 +918,7 @@ namespace Opc.Ua.Client.Controls
             // add at least one policy.
             if (SecurityPolicyCB.Items.Count == 0)
             {
-                SecurityPolicyCB.Items.Add(SecurityPolicies.GetDisplayName(SecurityPolicies.None));
+                SecurityPolicyCB.Items.Add(SecurityPolicies.Default.GetDisplayName(SecurityPolicies.None));
             }
 
             // set the current value.
@@ -955,13 +955,13 @@ namespace Opc.Ua.Client.Controls
             if (endpoint != null)
             {
                 Protocol protocol = new Protocol(endpoint);
-                String securityPolicy = SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri);
+                String securityPolicy = SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri);
 
                 foreach (EndpointDescription endpointDescription in endpoints)
                 {
                     if ((protocol.Matches(Utils.ParseUri(endpointDescription.EndpointUrl))) &&
                         (endpoint.SecurityMode == endpointDescription.SecurityMode) &&
-                        (securityPolicy == SecurityPolicies.GetDisplayName(endpointDescription.SecurityPolicyUri)))
+                        (securityPolicy == SecurityPolicies.Default.GetDisplayName(endpointDescription.SecurityPolicyUri)))
                     {
                         switch (endpointDescription.EncodingSupport)
                         {
@@ -1355,7 +1355,7 @@ namespace Opc.Ua.Client.Controls
             endpoint = new EndpointDescription();
             endpoint.EndpointUrl = builder.ToString();
             endpoint.SecurityMode = (MessageSecurityMode)SecurityModeCB.SelectedItem;
-            endpoint.SecurityPolicyUri = SecurityPolicies.GetUri((string)SecurityPolicyCB.SelectedItem);
+            endpoint.SecurityPolicyUri = SecurityPolicies.Default.GetUri((string)SecurityPolicyCB.SelectedItem);
             endpoint.Server.ApplicationName = new LocalizedText(endpoint.EndpointUrl);
             endpoint.Server.ApplicationType = ApplicationType.Server;
             endpoint.Server.ApplicationUri = endpoint.EndpointUrl;
@@ -1791,7 +1791,7 @@ namespace Opc.Ua.Client.Controls
                     {
                         m_statusObject.SetStatus(StatusChannel.SecurityPolicyUri, "Error: Security Policy URI is missing.", StatusType.Warning);
                     }
-                    else if (string.IsNullOrEmpty(SecurityPolicies.GetDisplayName(m_currentDescription.SecurityPolicyUri)))
+                    else if (string.IsNullOrEmpty(SecurityPolicies.Default.GetDisplayName(m_currentDescription.SecurityPolicyUri)))
                     {
                         m_statusObject.SetStatus(StatusChannel.SecurityPolicyUri, "Error: Security Policy URI is invalid.", StatusType.Warning);
                     }

@@ -57,7 +57,7 @@ namespace Opc.Ua.Sample.Controls
                 SecurityModeCB.Items.Add(value);
             }
 
-            SecurityPolicyUriCB.Items.AddRange(SecurityPolicies.GetDisplayNames());
+            SecurityPolicyUriCB.Items.AddRange(SecurityPolicies.Default.GetDisplayNames());
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (!String.IsNullOrEmpty(securityPolicyUri))
             {
-                SecurityPolicyUriCB.SelectedItem = SecurityPolicies.GetDisplayName(securityPolicyUri);
+                SecurityPolicyUriCB.SelectedItem = SecurityPolicies.Default.GetDisplayName(securityPolicyUri);
             }
 
             // show dialog.
@@ -88,7 +88,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             securityMode = (MessageSecurityMode)SecurityModeCB.SelectedItem;
-            securityPolicyUri = SecurityPolicies.GetUri((string)SecurityPolicyUriCB.SelectedItem);
+            securityPolicyUri = SecurityPolicies.Default.GetUri((string)SecurityPolicyUriCB.SelectedItem);
             useNativeStack = UseNativeStackCK.Checked;
 
             return true;

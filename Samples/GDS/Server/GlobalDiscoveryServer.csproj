@@ -40,13 +40,13 @@
       <Version>10.0.10</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>2.0.158.59919-preview</Version>
+      <Version>2.0.0-preview.2</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>2.0.158.59919-preview</Version>
+      <Version>2.0.0-preview.2</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common">
-      <Version>2.0.158.59919-preview</Version>
+      <Version>2.0.0-preview.2</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup />
