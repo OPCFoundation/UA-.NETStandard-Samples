@@ -182,7 +182,7 @@ namespace Opc.Ua.Sample.Controls
 
             Telemetry = telemetry;
 
-            List<EndpointDescription> availableEndpoints = null;
+            IList<EndpointDescription> availableEndpoints = null;
 
             // check if the endpoint needs to be updated.
             if (endpoint.UpdateBeforeConnect)
@@ -244,7 +244,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Opens a new session.
         /// </summary>
-        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, List<EndpointDescription> availableEndpoints, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, IList<EndpointDescription> availableEndpoints, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (channel == null) throw new ArgumentNullException(nameof(channel));
 

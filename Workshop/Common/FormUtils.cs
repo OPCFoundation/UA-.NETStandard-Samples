@@ -420,7 +420,7 @@ namespace Quickstarts
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static async Task<List<ReferenceDescription>> BrowseAsync(ISession session, List<BrowseDescription> nodesToBrowse, bool throwOnError, CancellationToken ct = default)
+        public static async Task<List<ReferenceDescription>> BrowseAsync(ISession session, IReadOnlyList<BrowseDescription> nodesToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
@@ -434,7 +434,7 @@ namespace Quickstarts
                         null,
                         null,
                         0,
-                        nodesToBrowse,
+                        nodesToBrowse.ToArrayOf(),
                         ct);
                     List<BrowseResult> results = response.Results.ToList();
                     List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
@@ -911,8 +911,7 @@ namespace Quickstarts
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
         /// <param name="ct">The cancellation token to cancel the operation with</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Public sample API preserves existing List<T> parameter.")]
-        public static async Task CollectFieldsForTypeAsync(Session session, NodeId typeId, List<SimpleAttributeOperand> fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
+        public static async Task CollectFieldsForTypeAsync(Session session, NodeId typeId, IList<SimpleAttributeOperand> fields, IList<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             // get the supertypes.
             List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
@@ -943,8 +942,7 @@ namespace Quickstarts
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
         /// <param name="ct">The cancellation token to cancel the operation with</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Public sample API preserves existing List<T> parameter.")]
-        public static async Task CollectFieldsForInstanceAsync(Session session, NodeId instanceId, List<SimpleAttributeOperand> fields, List<NodeId> fieldNodeIds, CancellationToken ct = default)
+        public static async Task CollectFieldsForInstanceAsync(Session session, NodeId instanceId, IList<SimpleAttributeOperand> fields, IList<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             Dictionary<NodeId, List<QualifiedName>> foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
             List<QualifiedName> parentPath = new List<QualifiedName>();
@@ -965,8 +963,8 @@ namespace Quickstarts
             Session session,
             NodeId nodeId,
             List<QualifiedName> parentPath,
-            List<SimpleAttributeOperand> fields,
-            List<NodeId> fieldNodeIds,
+            IList<SimpleAttributeOperand> fields,
+            IList<NodeId> fieldNodeIds,
             Dictionary<NodeId, List<QualifiedName>> foundNodes,
             CancellationToken ct = default)
         {
@@ -1035,7 +1033,7 @@ namespace Quickstarts
         /// <returns>
         /// 	<c>true</c> if the specified select clause contains path; otherwise, <c>false</c>.
         /// </returns>
-        private static int ContainsPath(List<SimpleAttributeOperand> selectClause, List<QualifiedName> browsePath)
+        private static int ContainsPath(IList<SimpleAttributeOperand> selectClause, List<QualifiedName> browsePath)
         {
             for (int ii = 0; ii < selectClause.Count; ii++)
             {

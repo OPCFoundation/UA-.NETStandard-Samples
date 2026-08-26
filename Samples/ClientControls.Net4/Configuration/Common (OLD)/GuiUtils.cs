@@ -624,10 +624,10 @@ namespace Opc.Ua.Client.Controls
 
             // Strip common separators and prefixes so both "0x0A, 0x0B" and "0A0B" work.
             string cleaned = text
-                .Replace("0x", String.Empty)
-                .Replace("0X", String.Empty)
-                .Replace(",", String.Empty)
-                .Replace("-", String.Empty);
+                .Replace("0x", String.Empty, StringComparison.Ordinal)
+                .Replace("0X", String.Empty, StringComparison.Ordinal)
+                .Replace(",", String.Empty, StringComparison.Ordinal)
+                .Replace("-", String.Empty, StringComparison.Ordinal);
 
             var hexOnly = new StringBuilder(cleaned.Length);
 

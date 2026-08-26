@@ -317,7 +317,7 @@ namespace Opc.Ua.Client.Controls
         /// <returns>
         /// The references found. Null if an error occurred.
         /// </returns>
-        public static Task<List<ReferenceDescription>> BrowseAsync(ISession session, List<BrowseDescription> nodesToBrowse, bool throwOnError, CancellationToken ct = default)
+        public static Task<List<ReferenceDescription>> BrowseAsync(ISession session, IReadOnlyList<BrowseDescription> nodesToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             return BrowseAsync(session, null, nodesToBrowse, throwOnError, ct);
         }
@@ -325,7 +325,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Browses the address space and returns the references found.
         /// </summary>
-        public static async Task<List<ReferenceDescription>> BrowseAsync(ISession session, ViewDescription view, List<BrowseDescription> nodesToBrowse, bool throwOnError, CancellationToken ct = default)
+        public static async Task<List<ReferenceDescription>> BrowseAsync(ISession session, ViewDescription view, IReadOnlyList<BrowseDescription> nodesToBrowse, bool throwOnError, CancellationToken ct = default)
         {
             try
             {
@@ -338,7 +338,7 @@ namespace Opc.Ua.Client.Controls
                         null,
                         view,
                         0,
-                        nodesToBrowse,
+                        nodesToBrowse.ToArrayOf(),
                         ct);
 
                     var results = response.Results.ToList();
@@ -1075,7 +1075,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (!(instance.DataType).IsNull)
                     {
-                        instance.BuiltInType = TypeInfo.GetBuiltInType(instance.DataType, session.TypeTree);
+                        instance.BuiltInType = await TypeInfo.GetBuiltInTypeAsync(instance.DataType, session.TypeTree, ct);
                         instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType, ct);
 
                         if (instance.ValueRank >= 0)

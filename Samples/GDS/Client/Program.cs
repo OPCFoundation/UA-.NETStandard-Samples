@@ -88,6 +88,11 @@ namespace Opc.Ua.Gds.Client
             {
                 ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
             }
+            finally
+            {
+                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
+                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
         }
     }
 }

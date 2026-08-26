@@ -106,14 +106,16 @@ namespace Opc.Ua.Gds.Server
                 // GDS master AliasNames list (issue #274): merge each
                 // registered server's AliasNames into a master list served by
                 // this GDS.
-                var aliasMerger = new GlobalDiscoveryServerAliasMerger(m_telemetry);
+                using var aliasMerger = new GlobalDiscoveryServerAliasMerger(m_telemetry);
 
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 var server = new AliasMergingGlobalDiscoverySampleServer(
                 #pragma warning restore CA2000
                     database,
                     database,
+                    #pragma warning disable CA2000 // Justification: Certificate group ownership is transferred to the server.
                     new CertificateGroup(m_telemetry),
+                    #pragma warning restore CA2000
                     userDatabase,
                     m_telemetry,
                     aliasMerger,
@@ -123,23 +125,26 @@ namespace Opc.Ua.Gds.Server
                 // start refreshing the master AliasNames list and merge each
                 // server as soon as it registers.
                 aliasMerger.Start(application.ApplicationConfiguration, database);
-                database.ApplicationRegistered += (sender, app) =>
+                database.ApplicationRegistered += (sender, e) =>
                     aliasMerger.QueueMerge(
-                        app.ApplicationUri,
-                        app.DiscoveryUrls.IsNull
+                        e.Application.ApplicationUri,
+                        e.Application.DiscoveryUrls.IsNull
                             ? new List<string>()
-                            : app.DiscoveryUrls.ToArray());
+                            : e.Application.DiscoveryUrls.ToArray());
 
                 // run the application interactively.
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 System.Windows.Forms.Application.Run(new ServerForm(server, application.ApplicationConfiguration, m_telemetry));
                 #pragma warning restore CA2000
-
-                aliasMerger.Dispose();
             }
             catch (Exception e)
             {
                 ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
+            }
+            finally
+            {
+                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
+                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
             }
         }
 

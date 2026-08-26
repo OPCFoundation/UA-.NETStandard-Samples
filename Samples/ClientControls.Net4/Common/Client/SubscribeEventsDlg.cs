@@ -518,7 +518,7 @@ namespace Opc.Ua.Client.Controls
             m_filter.Fields = fields;
         }
 
-        private void AddDefaultFilter(List<FilterDeclarationField> fields, string browsePath, bool displayInList)
+        private void AddDefaultFilter(IList<FilterDeclarationField> fields, string browsePath, bool displayInList)
         {
             FilterDeclarationField field = new FilterDeclarationField();
             field.InstanceDeclaration = new InstanceDeclaration();

@@ -77,8 +77,7 @@ namespace Quickstarts
         /// <summary>
         /// Gets the current list of data change MonitoredItems.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample API exposes mutable monitored item lists by design.")]
-        public List<MonitoredItem> DataChangeMonitoredItems
+        public IList<MonitoredItem> DataChangeMonitoredItems
         {
             get { return m_dataChangeMonitoredItems; }
             private set { m_dataChangeMonitoredItems = value; }
@@ -87,8 +86,7 @@ namespace Quickstarts
         /// <summary>
         /// Gets the current list of event MonitoredItems.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample API exposes mutable monitored item lists by design.")]
-        public List<IEventMonitoredItem> EventMonitoredItems
+        public IList<IEventMonitoredItem> EventMonitoredItems
         {
             get { return m_eventMonitoredItems; }
             private set { m_eventMonitoredItems = value; }
@@ -274,8 +272,8 @@ namespace Quickstarts
         #region Private Fields
         private QuickstartNodeManager m_nodeManager;
         private NodeState m_node;
-        private List<MonitoredItem> m_dataChangeMonitoredItems;
-        private List<IEventMonitoredItem> m_eventMonitoredItems;
+        private IList<MonitoredItem> m_dataChangeMonitoredItems;
+        private IList<IEventMonitoredItem> m_eventMonitoredItems;
         #endregion
     }
 }

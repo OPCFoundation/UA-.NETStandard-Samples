@@ -29,9 +29,11 @@ namespace Opc.Ua.Gds.Client
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                components?.Dispose();
+                // LocalDiscoveryServerClient is only IAsyncDisposable, and Dispose is synchronous
+                m_lds?.DisposeAsync().AsTask().GetAwaiter().GetResult();
             }
             base.Dispose(disposing);
         }

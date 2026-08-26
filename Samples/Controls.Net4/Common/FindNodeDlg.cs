@@ -55,7 +55,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public List<NodeId> ShowDialog(Session session, NodeId startNodeId)
+        public IList<NodeId> ShowDialog(Session session, NodeId startNodeId)
         {
             m_session = session;
 

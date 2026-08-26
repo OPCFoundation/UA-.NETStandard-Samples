@@ -109,7 +109,7 @@ namespace TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            List<DataValue> values)
+            IList<DataValue> values)
         {
             m_request = request;
 
@@ -154,7 +154,7 @@ namespace TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            List<DataValue> values)
+            IList<DataValue> values)
         {
             DataValue value = DataValue.Null;
 
@@ -203,7 +203,7 @@ namespace TestData
             TimestampsToReturn timestampsToReturn,
             NumericRange indexRange,
             QualifiedName dataEncoding,
-            List<DataValue> values,
+            IList<DataValue> values,
             DataValue value)
         {
             // ignore invalid case.

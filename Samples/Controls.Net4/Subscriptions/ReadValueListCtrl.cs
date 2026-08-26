@@ -79,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, List<ReadValueId> valueIds, ITelemetryContext telemetry)
+        public void Initialize(Session session, IList<ReadValueId> valueIds, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -128,7 +128,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the items in the control.
         /// </summary>
-        public List<ReadValueId> GetValueIds()
+        public IList<ReadValueId> GetValueIds()
         {
             List<ReadValueId> valueIds = new List<ReadValueId>();
 

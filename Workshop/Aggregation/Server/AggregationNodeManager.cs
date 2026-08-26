@@ -368,7 +368,7 @@ namespace AggregationServer
                     0,
                     TimestampsToReturn.Both,
                     requests,
-                    default).Result;
+                    default).AsTask().Result;
 
                 ResponseHeader responseHeader = response.ResponseHeader;
                 ArrayOf<DataValue> results = response.Results;
@@ -475,7 +475,7 @@ namespace AggregationServer
                 WriteResponse response = client.WriteAsync(
                     null,
                     requests,
-                    default).Result;
+                    default).AsTask().Result;
 
                 ResponseHeader responseHeader = response.ResponseHeader;
                 ArrayOf<StatusCode> results = response.Results;
@@ -618,7 +618,7 @@ namespace AggregationServer
                 CallResponse response = client.CallAsync(
                     null,
                     requests,
-                    default).Result;
+                    default).AsTask().Result;
 
                 ResponseHeader responseHeader = response.ResponseHeader;
                 ArrayOf<CallMethodResult> results2 = response.Results;
@@ -1828,7 +1828,10 @@ namespace AggregationServer
                     }
                 }
 
-                m_logger.LogInformation("Closed downstream session for client {SessionId}.", clientSessionId);
+                if (m_logger.IsEnabled(LogLevel.Information))
+                {
+                    m_logger.LogInformation("Closed downstream session for client {SessionId}.", clientSessionId);
+                }
             }
             catch (Exception e)
             {

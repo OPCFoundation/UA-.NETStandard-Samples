@@ -114,7 +114,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     foreach (object item in e.Items)
                     {
-                        List<ContentFilterElement> elements = ContentFilterCTRL.GetElements();
+                        IList<ContentFilterElement> elements = ContentFilterCTRL.GetElements();
 
                         for (int ii = 0; ii < elements.Count; ii++)
                         {

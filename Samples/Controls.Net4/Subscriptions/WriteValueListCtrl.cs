@@ -82,7 +82,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, List<WriteValue> values, ITelemetryContext telemetry)
+        public void Initialize(Session session, IList<WriteValue> values, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -136,7 +136,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the items in the control.
         /// </summary>
-        public List<WriteValue> GetValues()
+        public IList<WriteValue> GetValues()
         {
             List<WriteValue> values = new List<WriteValue>();
 

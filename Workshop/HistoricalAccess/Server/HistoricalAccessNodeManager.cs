@@ -122,7 +122,7 @@ namespace Quickstarts.HistoricalAccessServer
         {
             // The server owns its diagnostics lock and no longer exposes it; this
             // section does not touch the diagnostics summary it guarded.
-            HistoryServerCapabilitiesState capabilities = Server.DiagnosticsNodeManager.GetDefaultHistoryCapabilitiesAsync(System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+            HistoryServerCapabilitiesState capabilities = Server.DiagnosticsNodeManager.GetDefaultHistoryCapabilitiesAsync(System.Threading.CancellationToken.None).AsTask().GetAwaiter().GetResult();
             capabilities.AccessHistoryDataCapability.Value = true;
             capabilities.InsertDataCapability.Value = true;
             capabilities.ReplaceDataCapability.Value = true;
@@ -424,7 +424,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             try
             {
-                HistoryReadRequest request = CreateHistoryReadRequest(
+                using HistoryReadRequest request = CreateHistoryReadRequest(
                     context,
                     details,
                     handle,
@@ -672,11 +672,13 @@ namespace Quickstarts.HistoricalAccessServer
                     // create a new request.
                     else
                     {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the session continuation points.
                         request = CreateHistoryReadRequest(
                             context,
                             details,
                             handle,
                             nodeToRead);
+#pragma warning restore CA2000
                     }
 
                     // process values until the max is reached.
@@ -791,12 +793,14 @@ namespace Quickstarts.HistoricalAccessServer
                             continue;
                         }
 
+#pragma warning disable CA2000 // Justification: ownership is transferred to the session continuation points.
                         request = CreateHistoryReadRequest(
                             context,
                             details,
                             handle,
                             nodeToRead,
                             details.AggregateType[ii]);
+#pragma warning restore CA2000
                     }
 
                     // process values until the max is reached.
@@ -886,11 +890,13 @@ namespace Quickstarts.HistoricalAccessServer
                     // create a new request.
                     else
                     {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the session continuation points.
                         request = CreateHistoryReadRequest(
                             context,
                             details,
                             handle,
                             nodeToRead);
+#pragma warning restore CA2000
                     }
 
                     // process values until the max is reached.

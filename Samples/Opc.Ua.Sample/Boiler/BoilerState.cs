@@ -36,6 +36,7 @@ using Opc.Ua;
 
 namespace Boiler
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Sample code preserves existing public API and behavior; the simulation timer is disposed on every state transition.")]
     public partial class BoilerState
     {
         #region Initialization
@@ -55,7 +56,7 @@ namespace Boiler
         /// <summary>
         /// Cleans up when the object is disposed.
         /// </summary>
-        protected new void Dispose(bool disposing)
+        protected void Dispose(bool disposing)
         {
             try
             {
