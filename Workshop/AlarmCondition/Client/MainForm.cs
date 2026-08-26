@@ -659,6 +659,12 @@ namespace Quickstarts.AlarmConditionClient
                     return;
                 }
 
+                // look up the condition type metadata in the local cache. this has to happen
+                // before the list view is touched: the handler is called once per event and
+                // every await lets the message loop deliver the next one, which would then
+                // walk a list view holding an entry that has no condition in its Tag yet.
+                INode type = await m_session.NodeCache.FindAsync(condition.TypeDefinitionId);
+
                 // look for existing entry.
                 ListViewItem item = null;
 
@@ -697,8 +703,8 @@ namespace Quickstarts.AlarmConditionClient
                     ConditionsLV.Items.Add(item);
                 }
 
-                // look up the condition type metadata in the local cache.
-                INode type = await m_session.NodeCache.FindAsync(condition.TypeDefinitionId);
+                // from here to the end of the handler nothing is awaited, so the entry is
+                // complete and carries its condition before the next event is processed.
 
                 // Source
                 if (condition.SourceName != null)

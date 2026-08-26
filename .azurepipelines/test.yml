@@ -1,0 +1,52 @@
+#
+# Run the sample test suite
+#
+# The tiers are documented in docs/TESTING.md. Tier 0 (configuration) needs nothing but
+# the sources, the higher tiers start sample servers on localhost, and tier 2 builds the
+# main form of every WinForms client on an STA thread - which is why this job runs on a
+# Windows agent and no test category is filtered out.
+#
+# The samples bind fixed ports, so this job must not run beside another one on the same
+# agent.
+#
+jobs:
+- job: testsamples
+  displayName: Test Samples
+  pool:
+    vmImage: 'windows-2025-vs2026'
+  variables:
+    DOTNET_CLI_TELEMETRY_OPTOUT: true
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  steps:
+  - task: NuGetAuthenticate@1
+  - task: UseDotNet@2
+    displayName: 'Install .NET 10.0'
+    inputs:
+      packageType: 'sdk'
+      version: '10.0.x'
+  - task: DotNetCoreCLI@2
+    displayName: Restore Tests
+    inputs:
+      command: restore
+      projects: 'Tests/**/*.csproj'
+      includeNuGetOrg: true
+      feedsToUse: config
+      nugetConfigPath: $(Build.SourcesDirectory)/Nuget.Config
+  - task: DotNetCoreCLI@2
+    displayName: Build Tests
+    inputs:
+      command: build
+      projects: 'Tests/**/*.csproj'
+      arguments: '--no-restore --configuration Release'
+  - task: DotNetCoreCLI@2
+    displayName: Run Tests
+    inputs:
+      command: test
+      projects: 'Tests/**/*.Tests.csproj'
+      # the task adds --logger trx and --results-directory itself when it publishes the
+      # results, so repeating them here makes dotnet test reject the command line.
+      # No category is filtered out: the tier 2 client tests are tagged RequiresDesktop
+      # and this job runs on a Windows agent, which is what they need.
+      arguments: '--no-build --configuration Release'
+      publishTestResults: true
+      testRunTitle: 'Sample smoke tests'

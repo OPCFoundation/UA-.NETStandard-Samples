@@ -297,8 +297,10 @@ namespace Quickstarts.HistoricalEvents.Server
 
                 HistoryReadRequest request = null;
 
-                // load an exising request.
-                if (!nodeToRead.ContinuationPoint.IsNull)
+                // load an exising request. an empty continuation point means the client is
+                // starting a new request: HistoryReadValueId hands out an empty ByteString
+                // rather than a null one when the client never assigned a continuation point.
+                if (!nodeToRead.ContinuationPoint.IsNull && nodeToRead.ContinuationPoint.Length > 0)
                 {
                     request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
 
