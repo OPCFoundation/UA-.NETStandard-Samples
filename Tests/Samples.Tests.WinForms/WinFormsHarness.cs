@@ -132,6 +132,38 @@ namespace Opc.Ua.Samples.Tests
             var watchdog = new DialogWatchdog();
             watchdog.Start();
 
+            // an unhandled exception on the UI thread otherwise opens the WinForms
+            // ThreadExceptionDialog, which is a modal dialog nobody will click away. Handling
+            // the event keeps the loop under the control of the test.
+            bool running = true;
+            var onUiThread = new ThreadExceptionEventHandler((sender, e) => {
+                if (running)
+                {
+                    completion.TrySetException(e.Exception);
+                    Application.ExitThread();
+                    return;
+                }
+
+                // after the body is done the form is being disposed, and a callback of the
+                // sample which arrives late finds a window that is already gone. That is the
+                // harness tearing down, not the sample failing.
+                watchdog.NoteDuringTeardown(e.Exception);
+            });
+
+            Application.ThreadException += onUiThread;
+
+            try
+            {
+                // per thread, not for the whole process: the process wide setting can only be
+                // made once and before the first window exists, and every test brings its own
+                // thread
+                Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException, false);
+            }
+            catch (InvalidOperationException)
+            {
+                // a window already exists on this thread, so the mode is what it is
+            }
+
             context.Post(
                 async _ => {
                     try
@@ -145,6 +177,7 @@ namespace Opc.Ua.Samples.Tests
                     }
                     finally
                     {
+                        running = false;
                         watchdog.Stop();
                         Application.ExitThread();
                     }
@@ -157,6 +190,7 @@ namespace Opc.Ua.Samples.Tests
             }
             finally
             {
+                Application.ThreadException -= onUiThread;
                 watchdog.Dispose();
                 context.Dispose();
 

@@ -141,7 +141,7 @@ namespace Opc.Ua.Samples.Tests
 
                         // blocks the message loop until the watchdog closes it, which is
                         // exactly what a sample error dialog does in a test run
-                        dialog.ShowDialog();
+                        _ = dialog.ShowDialog();
 
                         return Task.CompletedTask;
                     },
@@ -169,10 +169,24 @@ namespace Opc.Ua.Samples.Tests
                 .StartAsync(client.Sample.Name, server.Sample.ServerConfig, server.CreateServer, ct)
                 .ConfigureAwait(false);
 
+            DialogWatchdog watchdog = null;
+
             await WinFormsHarness.RunAsync(
-                async _ => await DriveClientAsync(client, host.EndpointUrl, ct).ConfigureAwait(true),
+                async dialogs => {
+                    watchdog = dialogs;
+
+                    await DriveClientAsync(client, host.EndpointUrl, ct).ConfigureAwait(true);
+                },
                 TimeSpan.FromMilliseconds(kTimeout) - TimeSpan.FromSeconds(15))
                 .ConfigureAwait(false);
+
+            if (watchdog?.DuringTeardown.Count > 0)
+            {
+                await TestContext.Out.WriteLineAsync(
+                    $"{client.Sample.Name}: while the form was being disposed - " +
+                    string.Join("; ", watchdog.DuringTeardown))
+                    .ConfigureAwait(false);
+            }
         }
 
         /// <summary>

@@ -49,6 +49,11 @@ namespace Opc.Ua.Samples.Tests
             ApplicationConfiguration configuration =
                 await SampleConfigurationLoader.LoadAsync(configPath, null, ct).ConfigureAwait(false);
 
+            // the sample replaces localhost with the host name when it starts, and the
+            // certificate has to carry the application uri the server will then publish -
+            // otherwise the client rejects it with BadCertificateUriInvalid
+            ApplicationInstance.FixupAppConfig(configuration);
+
             CertificateIdentifier certificate = configuration.SecurityConfiguration.ApplicationCertificate;
             string subject = certificate?.SubjectName ?? configuration.ApplicationName;
 

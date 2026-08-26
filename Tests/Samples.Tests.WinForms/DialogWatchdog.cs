@@ -30,6 +30,7 @@ namespace Opc.Ua.Samples.Tests
     public sealed partial class DialogWatchdog : IDisposable
     {
         private readonly List<string> m_captured = [];
+        private readonly List<string> m_duringTeardown = [];
         private readonly Timer m_timer;
         private bool m_disposed;
 
@@ -69,6 +70,28 @@ namespace Opc.Ua.Samples.Tests
             m_timer.Stop();
             m_timer.Tick -= OnTick;
             m_timer.Dispose();
+        }
+
+        /// <summary>
+        /// What went wrong on the UI thread after the test body was done.
+        /// </summary>
+        /// <remarks>
+        /// The form is being disposed at that point and a late callback of the sample can
+        /// find a window which is already gone. It is recorded for the test output rather
+        /// than failing the test, because it says nothing about the sample.
+        /// </remarks>
+        public IReadOnlyList<string> DuringTeardown => m_duringTeardown;
+
+        /// <summary>
+        /// Records an exception which reached the UI thread while the harness was tearing
+        /// the form down.
+        /// </summary>
+        public void NoteDuringTeardown(Exception exception)
+        {
+            if (exception != null)
+            {
+                m_duringTeardown.Add($"{exception.GetType().Name}: {exception.Message.Split('\n')[0].Trim()}");
+            }
         }
 
         /// <summary>
