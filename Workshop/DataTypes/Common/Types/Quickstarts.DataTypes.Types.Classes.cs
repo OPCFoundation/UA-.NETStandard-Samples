@@ -167,7 +167,8 @@ namespace Quickstarts.DataTypes.Types
             ISystemContext context,
             QualifiedName browseName,
             bool createOrReplace,
-            BaseInstanceState replacement)
+            BaseInstanceState replacement,
+            bool assignInstanceNodeIds = true)
         {
             if ((browseName).IsNull)
             {
@@ -226,7 +227,7 @@ namespace Quickstarts.DataTypes.Types
                 return instance;
             }
 
-            return base.FindChild(context, browseName, createOrReplace, replacement);
+            return base.FindChild(context, browseName, createOrReplace, replacement, assignInstanceNodeIds);
         }
         #endregion
 

@@ -147,15 +147,15 @@ namespace Opc.Ua.Client.Controls
 
             if (type == typeof(float))
             {
-                ValueCTRL.Minimum = Decimal.MinValue;
-                ValueCTRL.Maximum = Decimal.MaxValue;
+                ValueCTRL.Minimum = decimal.MinValue;
+                ValueCTRL.Maximum = decimal.MaxValue;
                 ValueCTRL.DecimalPlaces = 6;
             }
 
             if (type == typeof(double))
             {
-                ValueCTRL.Minimum = Decimal.MinValue;
-                ValueCTRL.Maximum = Decimal.MaxValue;
+                ValueCTRL.Minimum = decimal.MinValue;
+                ValueCTRL.Maximum = decimal.MaxValue;
                 ValueCTRL.DecimalPlaces = 15;
             }
         }

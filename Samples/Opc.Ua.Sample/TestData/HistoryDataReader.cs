@@ -43,7 +43,7 @@ namespace TestData
     /// <summary>
     /// A class used to read values from a history data source.
     /// </summary>
-    public class HistoryDataReader : IDisposable
+    public class HistoryDataReader : IHistoryContinuationPoint
     {
         #region Constructors
         /// <summary>

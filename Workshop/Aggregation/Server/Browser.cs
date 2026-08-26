@@ -83,10 +83,9 @@ namespace AggregationServer
         /// <returns>The next reference that meets the browse criteria.</returns>
         public override IReference Next()
         {
-            lock (DataLock)
-            {
-                return NextAsync().Result;
-            }
+            // NodeBrowser instances are single-consumer and perform no
+            // synchronization of their own; the former DataLock is gone.
+            return NextAsync().Result;
         }
 
         public async Task<IReference> NextAsync(CancellationToken ct = default)

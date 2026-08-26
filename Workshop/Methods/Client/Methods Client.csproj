@@ -30,7 +30,7 @@
       <Version>10.0.10</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>2.0.158.59919-preview</Version>
+      <Version>2.0.0-preview.2</Version>
     </PackageReference>
   </ItemGroup>
 </Project>
