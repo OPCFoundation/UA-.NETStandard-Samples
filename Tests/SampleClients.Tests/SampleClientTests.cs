@@ -60,12 +60,12 @@ namespace Opc.Ua.Samples.Tests
         /// </remarks>
         private static readonly IReadOnlyDictionary<string, string> s_knownIssues =
             new Dictionary<string, string>(StringComparer.Ordinal) {
-                ["HistoricalAccess"] = "the HistoricalAccess sample server does not start",
-                ["HistoricalEvents"] = "the HistoricalEvents sample server does not start",
+                ["HistoricalEvents"] =
+                    "connects, then its post connect logic reads the event history and fails " +
+                    "with BadContinuationPointInvalid, which the sample reports in a modal " +
+                    "ExceptionDlg (Workshop/HistoricalEvents/Client, see EventListView.cs " +
+                    "around the ContinuationPoint loop)",
             };
-
-        // DataAccess is deliberately not listed: its server defect only shows when the
-        // Objects folder is browsed, the client connects and enables its tree just fine.
 
         public static IEnumerable<SampleClientUnderTest> Clients => SampleClientFactories.All;
 

@@ -148,21 +148,24 @@ Only the opc.tcp endpoints are exercised; https base addresses are stripped in m
 the server starts, because they need their own bindings and would double the ports a test run
 occupies.
 
+All 14 servers pass. The first run of this tier found four that did not, all of them samples
+which had not caught up with the value types the 2.0 stack introduced (`ArrayOf<T>`,
+`DateTimeUtc`, `NodeId` as a struct, the `Variant.From` overloads); they were fixed rather
+than parked:
+
+| Sample | What was wrong |
+|--------|----------------|
+| `Workshop/DataAccess/Server` | `QuickstartNodeManager` unboxed the absent `DataType` attribute of an Object node straight into `NodeId`, now a struct, so every browse answered `BadUnexpectedError` |
+| `Workshop/HistoricalAccess/Server` | the archive stored `DateTimeUtc` timestamps in `DataTable` columns typed `DateTime` |
+| `Workshop/HistoricalEvents/Server` | `QuickstartNodeManager` passed a null default value to `Variant.From` through a `dynamic`, and a null has no type for the binder to resolve an overload from |
+| `Samples/Opc.Ua.Sample` | `TestDataSystem` cast the boxed random arrays to `T[]` where the stack now hands out `ArrayOf<T>` - in all eleven array cases |
+
 ### Known issues
 
-Four samples do not survive this today. They are listed in `s_knownIssues` in
-`SampleServerTests`, which reports them as **ignored** rather than failed - and fails the
-moment one of them starts working, so nobody has to remember to remove the entry.
-
-| Sample | Symptom |
-|--------|---------|
-| `Workshop/DataAccess/Server` | starts and accepts a session, but browsing the Objects folder answers `BadUnexpectedError` |
-| `Workshop/HistoricalAccess/Server` | fails to start: the archive stores a `DateTimeUtc` in a `DataTable` column typed `DateTime` |
-| `Workshop/HistoricalEvents/Server` | fails to start: a `dynamic` call to `Variant.From` is ambiguous between `From(MatrixOf<Variant>)` and `From(string)` |
-| `Samples/Opc.Ua.Sample` | fails to start: an `ArrayOf<SByte>` is cast to `SByte[]` |
-
-All four are the samples not having caught up with the value types the 2.0 stack introduced
-(`ArrayOf<T>`, `DateTimeUtc`, the `Variant.From` overloads).
+`s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests`) reports a
+listed sample as **ignored** rather than failed, and fails the moment it starts working, so
+an entry cannot rot. Both lists are used sparingly: a sample that is broken is worth fixing,
+not parking. The server list is currently empty.
 
 ## What Tier 2 checks today
 
@@ -188,8 +191,12 @@ Because it needs a window station, the fixture is `[Category("RequiresDesktop")]
 filter skips it. Remove `--filter "TestCategory!=RequiresDesktop"` from `.azurepipelines/test.yml`
 to turn it on once it has been seen to work on the hosted agents.
 
-`HistoricalAccess` and `HistoricalEvents` are ignored here as well, since their servers do not
-start.
+15 of 16 cases pass. The one that does not is the first defect this tier found on its own,
+and it is exactly the kind the watchdog exists for: the **HistoricalEvents client** connects,
+then its post connect logic reads the event history and fails with
+`BadContinuationPointInvalid`, which the sample reports in a modal dialog. Without the
+watchdog the test would simply have hung. It is recorded in `s_knownIssues` until the client
+is fixed.
 
 ## Status / roadmap
 

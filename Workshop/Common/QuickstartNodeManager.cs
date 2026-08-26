@@ -681,7 +681,14 @@ namespace Quickstarts
 
                 if (variable != null && variable.Value.IsNull)
                 {
-                    variable.Value = Variant.From((dynamic)Opc.Ua.TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree));
+                    object defaultValue = Opc.Ua.TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree);
+
+                    // there is no default value for arrays, and a null has no type which
+                    // the dynamic dispatch below could use to select an overload.
+                    if (defaultValue != null)
+                    {
+                        variable.Value = Variant.From((dynamic)defaultValue);
+                    }
                 }
 
                 IList<IReference> references = new List<IReference>();
@@ -1047,7 +1054,10 @@ namespace Quickstarts
                     metadata.WriteMask = (AttributeWriteMask)(((uint)values[0].AsBoxedObject()) & ((uint)values[1].AsBoxedObject()));
                 }
 
-                metadata.DataType = (NodeId)values[2].AsBoxedObject();
+                if (values[2].AsBoxedObject() != null)
+                {
+                    metadata.DataType = (NodeId)values[2].AsBoxedObject();
+                }
 
                 if (values[3].AsBoxedObject() != null)
                 {

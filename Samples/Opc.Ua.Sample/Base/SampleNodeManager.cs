@@ -933,7 +933,10 @@ namespace Opc.Ua.Sample
                     metadata.WriteMask = (AttributeWriteMask)(((uint)values[0].AsBoxedObject()) & ((uint)values[1].AsBoxedObject()));
                 }
 
-                metadata.DataType = (NodeId)values[2].AsBoxedObject();
+                if (!values[2].IsNull)
+                {
+                    metadata.DataType = (NodeId)values[2].AsBoxedObject();
+                }
 
                 if (!values[3].IsNull)
                 {
@@ -944,6 +947,7 @@ namespace Opc.Ua.Sample
                 {
                     ArrayOf<uint> dimensions => dimensions,
                     IList<uint> dimensions => dimensions.ToArrayOf(),
+                    null => ArrayOf<uint>.Empty,
                     _ => throw new InvalidCastException("Unexpected ArrayDimensions attribute type.")
                 };
 

@@ -369,7 +369,7 @@ namespace TestData
 
                     case TestData.Variables.AnalogArrayValueObjectType_SByteValue:
                     {
-                        sbyte[] values = (sbyte[])m_generator.GetRandomArray(BuiltInType.SByte, 100, false, false).AsBoxedObject();
+                        sbyte[] values = ((ArrayOf<sbyte>)m_generator.GetRandomArray(BuiltInType.SByte, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -387,7 +387,7 @@ namespace TestData
 
                     case TestData.Variables.AnalogArrayValueObjectType_ByteValue:
                     {
-                        byte[] values = (byte[])m_generator.GetRandomArray(BuiltInType.Byte, 100, false, false).AsBoxedObject();
+                        byte[] values = ((ArrayOf<byte>)m_generator.GetRandomArray(BuiltInType.Byte, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -405,7 +405,7 @@ namespace TestData
 
                     case TestData.Variables.AnalogArrayValueObjectType_Int16Value:
                     {
-                        short[] values = (short[])m_generator.GetRandomArray(BuiltInType.Int16, 100, false, false).AsBoxedObject();
+                        short[] values = ((ArrayOf<short>)m_generator.GetRandomArray(BuiltInType.Int16, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -423,7 +423,7 @@ namespace TestData
 
                     case TestData.Variables.AnalogArrayValueObjectType_UInt16Value:
                     {
-                        ushort[] values = (ushort[])m_generator.GetRandomArray(BuiltInType.UInt16, 100, false, false).AsBoxedObject();
+                        ushort[] values = ((ArrayOf<ushort>)m_generator.GetRandomArray(BuiltInType.UInt16, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -442,7 +442,7 @@ namespace TestData
                     case TestData.Variables.AnalogArrayValueObjectType_Int32Value:
                     case TestData.Variables.AnalogArrayValueObjectType_IntegerValue:
                     {
-                        int[] values = (int[])m_generator.GetRandomArray(BuiltInType.Int32, 100, false, false).AsBoxedObject();
+                        int[] values = ((ArrayOf<int>)m_generator.GetRandomArray(BuiltInType.Int32, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -461,7 +461,7 @@ namespace TestData
                     case TestData.Variables.AnalogArrayValueObjectType_UInt32Value:
                     case TestData.Variables.AnalogArrayValueObjectType_UIntegerValue:
                     {
-                        uint[] values = (uint[])m_generator.GetRandomArray(BuiltInType.UInt32, 100, false, false).AsBoxedObject();
+                        uint[] values = ((ArrayOf<uint>)m_generator.GetRandomArray(BuiltInType.UInt32, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -479,7 +479,7 @@ namespace TestData
 
                     case TestData.Variables.AnalogArrayValueObjectType_Int64Value:
                     {
-                        long[] values = (long[])m_generator.GetRandomArray(BuiltInType.Int64, 100, false, false).AsBoxedObject();
+                        long[] values = ((ArrayOf<long>)m_generator.GetRandomArray(BuiltInType.Int64, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -497,7 +497,7 @@ namespace TestData
 
                     case TestData.Variables.AnalogArrayValueObjectType_UInt64Value:
                     {
-                        ulong[] values = (ulong[])m_generator.GetRandomArray(BuiltInType.UInt64, 100, false, false).AsBoxedObject();
+                        ulong[] values = ((ArrayOf<ulong>)m_generator.GetRandomArray(BuiltInType.UInt64, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -515,7 +515,7 @@ namespace TestData
 
                     case TestData.Variables.AnalogArrayValueObjectType_FloatValue:
                     {
-                        float[] values = (float[])m_generator.GetRandomArray(BuiltInType.Float, 100, false, false).AsBoxedObject();
+                        float[] values = ((ArrayOf<float>)m_generator.GetRandomArray(BuiltInType.Float, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -534,7 +534,7 @@ namespace TestData
                     case TestData.Variables.AnalogArrayValueObjectType_DoubleValue:
                     case TestData.Variables.AnalogArrayValueObjectType_NumberValue:
                     {
-                        double[] values = (double[])m_generator.GetRandomArray(BuiltInType.Double, 100, false, false).AsBoxedObject();
+                        double[] values = ((ArrayOf<double>)m_generator.GetRandomArray(BuiltInType.Double, 100, false, false).AsBoxedObject()).ToArray();
 
                         for (int ii = 0; ii < values.Length; ii++)
                         {
@@ -612,7 +612,10 @@ namespace TestData
 
                     case TestData.Variables.ArrayValueObjectType_StructureValue:
                     {
-                        ExtensionObject[] values = (ExtensionObject[])m_generator.GetRandomArray(BuiltInType.ExtensionObject, 10, false, false).AsBoxedObject();
+                        // the generator has no random extension objects, so the array may be null.
+                        object random = m_generator.GetRandomArray(BuiltInType.ExtensionObject, 10, false, false).AsBoxedObject();
+
+                        ExtensionObject[] values = (random is ArrayOf<ExtensionObject> array) ? array.ToArray() : null;
 
                         for (int ii = 0; values != null && ii < values.Length; ii++)
                         {

@@ -45,17 +45,9 @@ namespace Opc.Ua.Samples.Tests
         /// </remarks>
         private static readonly IReadOnlyDictionary<string, string> s_knownIssues =
             new Dictionary<string, string>(StringComparer.Ordinal) {
-                ["DataAccess"] =
-                    "starts and accepts a session, but browsing the Objects folder answers " +
-                    "BadUnexpectedError (Workshop/DataAccess/Server)",
-                ["HistoricalAccess"] =
-                    "fails to start: the archive stores a DateTimeUtc in a DataTable column " +
-                    "typed DateTime (Workshop/HistoricalAccess/Server)",
-                ["HistoricalEvents"] =
-                    "fails to start: a dynamic call to Variant.From is ambiguous between " +
-                    "From(MatrixOf<Variant>) and From(string) (Workshop/HistoricalEvents/Server)",
-                ["Sample"] =
-                    "fails to start: an ArrayOf<SByte> is cast to SByte[] (Samples/Opc.Ua.Sample)",
+                // empty on purpose: every sample server this tier covers works. The four
+                // samples which did not survive the 2.0 preview stack were fixed rather
+                // than parked here.
             };
 
         public static IEnumerable<SampleServerUnderTest> Servers => SampleServerFactories.All;

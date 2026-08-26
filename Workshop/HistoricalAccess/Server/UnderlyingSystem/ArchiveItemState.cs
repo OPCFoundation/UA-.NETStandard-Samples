@@ -189,8 +189,8 @@ namespace Quickstarts.HistoricalAccessServer
 
                 DataRow row = m_archiveItem.DataSet.Tables[0].NewRow();
 
-                row[0] = value.SourceTimestamp;
-                row[1] = value.ServerTimestamp;
+                row[0] = (DateTime)value.SourceTimestamp;
+                row[1] = (DateTime)value.ServerTimestamp;
                 row[2] = value;
                 row[3] = value.WrappedValue.TypeInfo.BuiltInType;
                 row[4] = value.WrappedValue.TypeInfo.ValueRank;
@@ -275,8 +275,8 @@ namespace Quickstarts.HistoricalAccessServer
 
                 DataRow modifiedRow = m_archiveItem.DataSet.Tables[1].NewRow();
 
-                modifiedRow[0] = value.SourceTimestamp;
-                modifiedRow[1] = value.ServerTimestamp;
+                modifiedRow[0] = (DateTime)value.SourceTimestamp;
+                modifiedRow[1] = (DateTime)value.ServerTimestamp;
                 modifiedRow[2] = value;
 
                 if (!value.WrappedValue.TypeInfo.IsUnknown)
@@ -299,8 +299,8 @@ namespace Quickstarts.HistoricalAccessServer
             }
 
             // add/update new record.
-            row[0] = value.SourceTimestamp;
-            row[1] = value.ServerTimestamp;
+            row[0] = (DateTime)value.SourceTimestamp;
+            row[1] = (DateTime)value.ServerTimestamp;
             row[2] = value;
 
             if (!value.WrappedValue.TypeInfo.IsUnknown)
@@ -377,8 +377,8 @@ namespace Quickstarts.HistoricalAccessServer
             // add/update new record.
             if (performUpdateType != PerformUpdateType.Remove)
             {
-                row[0] = value.SourceTimestamp;
-                row[1] = value.ServerTimestamp;
+                row[0] = (DateTime)value.SourceTimestamp;
+                row[1] = (DateTime)value.ServerTimestamp;
                 row[2] = new DataValue(new ExtensionObject(annotation), StatusCodes.Good, value.SourceTimestamp, value.ServerTimestamp);
                 row[3] = BuiltInType.ExtensionObject;
                 row[4] = ValueRanks.Scalar;
