@@ -3892,6 +3892,32 @@ namespace Quickstarts
             IList<bool> processedItems,
             IList<ServiceResult> errors)
         {
+            TransferMonitoredItems(
+                context,
+                sendInitialValues,
+                monitoredItems,
+                processedItems,
+                errors,
+                new MonitoredItemTransferOptions());
+        }
+
+        /// <summary>
+        /// Transfers a set of monitored items.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="sendInitialValues">Whether the subscription should send initial values after transfer.</param>
+        /// <param name="monitoredItems">The set of monitoring items to update.</param>
+        /// <param name="processedItems">The list of bool with items that were already processed.</param>
+        /// <param name="errors">Any errors.</param>
+        /// <param name="transferOptions">Controls how the transfer is executed.</param>
+        public virtual void TransferMonitoredItems(
+            OperationContext context,
+            bool sendInitialValues,
+            IList<IMonitoredItem> monitoredItems,
+            IList<bool> processedItems,
+            IList<ServiceResult> errors,
+            MonitoredItemTransferOptions transferOptions)
+        {
             ServerSystemContext systemContext = m_systemContext.Copy(context);
             List<IMonitoredItem> transferredItems = new List<IMonitoredItem>();
             lock (Lock)
@@ -3915,7 +3941,7 @@ namespace Quickstarts
                     // owned by this node manager.
                     processedItems[ii] = true;
                     transferredItems.Add(monitoredItems[ii]);
-                    if (sendInitialValues)
+                    if (sendInitialValues && !transferOptions.DeferInitialValues)
                     {
                         monitoredItems[ii].SetupResendDataTrigger();
                     }

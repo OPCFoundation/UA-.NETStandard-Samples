@@ -90,7 +90,7 @@ namespace Opc.Ua.Client.Controls
                                     builder.Append(", ");
                                 }
 
-                                builder.Append(SecurityPolicies.GetDisplayName(value[ii].ProfileUri));
+                                builder.Append(SecurityPolicies.Default.GetDisplayName(value[ii].ProfileUri));
                             }
                         }
                     }

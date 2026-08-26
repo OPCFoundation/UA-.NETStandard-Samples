@@ -61,7 +61,7 @@ namespace Quickstarts.DataTypes
                 Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances);
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<DataTypesServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)

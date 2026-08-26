@@ -91,70 +91,69 @@ namespace Quickstarts.HistoricalAccessServer
         {
             UnderlyingSystem system = (UnderlyingSystem)this.SystemContext.SystemHandle;
 
-            lock (DataLock)
+            // NodeBrowser instances are single-consumer and perform no
+            // synchronization of their own; the former DataLock is gone.
+            IReference reference = null;
+
+            // enumerate pre-defined references.
+            // always call first to ensure any pushed-back references are returned first.
+            reference = base.Next();
+
+            if (reference != null)
             {
-                IReference reference = null;
+                return reference;
+            }
 
-                // enumerate pre-defined references.
-                // always call first to ensure any pushed-back references are returned first.
-                reference = base.Next();
+            if (m_stage == Stage.Begin)
+            {
+                m_segments = system.FindSegments(m_source.SegmentPath);
+                m_stage = Stage.Segments;
+                m_position = 0;
+            }
 
-                if (reference != null)
-                {
-                    return reference;
-                }
-
-                if (m_stage == Stage.Begin)
-                {
-                    m_segments = system.FindSegments(m_source.SegmentPath);
-                    m_stage = Stage.Segments;
-                    m_position = 0;
-                }
-
-                // don't start browsing huge number of references when only internal references are requested.
-                if (InternalOnly)
-                {
-                    return null;
-                }
-                
-                // enumerate segments.
-                if (m_stage == Stage.Segments)
-                {
-                    if (IsRequired(ReferenceTypeIds.Organizes, false))
-                    {
-                        reference = NextChild();
-
-                        if (reference != null)
-                        {
-                            return reference;
-                        }
-                    }
-
-                    m_blocks = system.FindBlocks(m_source.SegmentPath);
-                    m_stage = Stage.Blocks;
-                    m_position = 0;
-                }
-                
-                // enumerate blocks.
-                if (m_stage == Stage.Blocks)
-                {
-                    if (IsRequired(ReferenceTypeIds.Organizes, false))
-                    {
-                        reference = NextChild();
-
-                        if (reference != null)
-                        {
-                            return reference;
-                        }
-
-                        m_stage = Stage.Done;
-                        m_position = 0;
-                    }
-                }
-
-                // all done.
+            // don't start browsing huge number of references when only internal references are requested.
+            if (InternalOnly)
+            {
                 return null;
             }
+            
+            // enumerate segments.
+            if (m_stage == Stage.Segments)
+            {
+                if (IsRequired(ReferenceTypeIds.Organizes, false))
+                {
+                    reference = NextChild();
+
+                    if (reference != null)
+                    {
+                        return reference;
+                    }
+                }
+
+                m_blocks = system.FindBlocks(m_source.SegmentPath);
+                m_stage = Stage.Blocks;
+                m_position = 0;
+            }
+            
+            // enumerate blocks.
+            if (m_stage == Stage.Blocks)
+            {
+                if (IsRequired(ReferenceTypeIds.Organizes, false))
+                {
+                    reference = NextChild();
+
+                    if (reference != null)
+                    {
+                        return reference;
+                    }
+
+                    m_stage = Stage.Done;
+                    m_position = 0;
+                }
+            }
+
+            // all done.
+            return null;
         }
         #endregion
 

@@ -102,24 +102,27 @@ namespace Opc.Ua.Server.Controls
             {
                 ISession session = sessions[ii];
 
-                lock (session.DiagnosticsLock)
+                // The session owns its diagnostics lock and no longer exposes it.
+                // ReadDiagnostics applies the projection while holding that lock;
+                // the diagnostics object must not escape the callback.
+                string sessionName = session.ReadDiagnostics(d => d.SessionName);
+                DateTimeUtc lastContactTime = session.ReadDiagnostics(d => d.ClientLastContactTime);
+
+                ListViewItem item = new ListViewItem(sessionName);
+
+                if (session.Identity != null)
                 {
-                    ListViewItem item = new ListViewItem(session.SessionDiagnostics.SessionName);
-
-                    if (session.Identity != null)
-                    {
-                        item.SubItems.Add(session.Identity.DisplayName);
-                    }
-                    else
-                    {
-                        item.SubItems.Add(String.Empty);
-                    }
-
-                    item.SubItems.Add(String.Format("{0}", session.Id));
-                    item.SubItems.Add(String.Format("{0:HH:mm:ss}", session.SessionDiagnostics.ClientLastContactTime.ToLocalTime()));
-
-                    SessionsLV.Items.Add(item);
+                    item.SubItems.Add(session.Identity.DisplayName);
                 }
+                else
+                {
+                    item.SubItems.Add(String.Empty);
+                }
+
+                item.SubItems.Add(String.Format("{0}", session.Id));
+                item.SubItems.Add(String.Format("{0:HH:mm:ss}", lastContactTime.ToLocalTime()));
+
+                SessionsLV.Items.Add(item);
             }
 
             // adjust
@@ -147,10 +150,10 @@ namespace Opc.Ua.Server.Controls
                 item.SubItems.Add(String.Format("{0}", (int)subscription.PublishingInterval));
                 item.SubItems.Add(String.Format("{0}", subscription.MonitoredItemCount));
 
-                lock (subscription.DiagnosticsLock)
-                {
-                    item.SubItems.Add(String.Format("{0}", subscription.Diagnostics.NextSequenceNumber));
-                }
+                // Same as above: the subscription reads its own diagnostics under
+                // the lock it owns, replacing the former DiagnosticsLock property.
+                item.SubItems.Add(String.Format("{0}",
+                    subscription.ReadDiagnostics(d => d.NextSequenceNumber)));
 
                 SubscriptionsLV.Items.Add(item);
             }

@@ -58,7 +58,7 @@ namespace Quickstarts.HistoricalAccessServer
             this.AliasRoot = "HDA";
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<HistoricalAccessServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -120,17 +120,16 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
         {
-            lock (Server.DiagnosticsLock)
-            {
-                HistoryServerCapabilitiesState capabilities = Server.DiagnosticsNodeManager.GetDefaultHistoryCapabilitiesAsync(System.Threading.CancellationToken.None).GetAwaiter().GetResult();
-                capabilities.AccessHistoryDataCapability.Value = true;
-                capabilities.InsertDataCapability.Value = true;
-                capabilities.ReplaceDataCapability.Value = true;
-                capabilities.UpdateDataCapability.Value = true;
-                capabilities.DeleteRawCapability.Value = true;
-                capabilities.DeleteAtTimeCapability.Value = true;
-                capabilities.InsertAnnotationCapability.Value = true;
-            }
+            // The server owns its diagnostics lock and no longer exposes it; this
+            // section does not touch the diagnostics summary it guarded.
+            HistoryServerCapabilitiesState capabilities = Server.DiagnosticsNodeManager.GetDefaultHistoryCapabilitiesAsync(System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+            capabilities.AccessHistoryDataCapability.Value = true;
+            capabilities.InsertDataCapability.Value = true;
+            capabilities.ReplaceDataCapability.Value = true;
+            capabilities.UpdateDataCapability.Value = true;
+            capabilities.DeleteRawCapability.Value = true;
+            capabilities.DeleteAtTimeCapability.Value = true;
+            capabilities.InsertAnnotationCapability.Value = true;
 
             lock (Lock)
             {
@@ -1643,13 +1642,18 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Stores a read history request.
         /// </summary>
-        private sealed class HistoryReadRequest
+        private sealed class HistoryReadRequest : IHistoryContinuationPoint
         {
+            public Guid Id { get; set; }
             public ByteString ContinuationPoint;
             public LinkedList<DataValue> Values;
             public LinkedList<ModificationInfo> ModificationInfos;
             public uint NumValuesPerNode;
             public AggregateFilter Filter;
+
+            public void Dispose()
+            {
+            }
         }
 
         /// <summary>
@@ -1695,7 +1699,7 @@ namespace Quickstarts.HistoricalAccessServer
                 return null;
             }
 
-            HistoryReadRequest request = session.RestoreHistoryContinuationPoint(continuationPoint) as HistoryReadRequest;
+            HistoryReadRequest request = session.ContinuationPoints.RestoreHistory(continuationPoint) as HistoryReadRequest;
 
             if (request == null)
             {
@@ -1719,9 +1723,9 @@ namespace Quickstarts.HistoricalAccessServer
                 return default;
             }
 
-            Guid id = Guid.NewGuid();
-            session.SaveHistoryContinuationPoint(id, request);
-            request.ContinuationPoint = id.ToByteArray().ToByteString();
+            request.Id = Guid.NewGuid();
+            session.ContinuationPoints.SaveHistory(request);
+            request.ContinuationPoint = request.Id.ToByteArray().ToByteString();
             return request.ContinuationPoint;
         }
         #endregion

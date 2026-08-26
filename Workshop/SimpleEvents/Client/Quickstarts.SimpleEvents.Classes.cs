@@ -176,7 +176,8 @@ namespace Quickstarts.SimpleEvents
             ISystemContext context,
             QualifiedName browseName,
             bool createOrReplace,
-            BaseInstanceState replacement)
+            BaseInstanceState replacement,
+            bool assignInstanceNodeIds = true)
         {
             if ((browseName).IsNull)
             {
@@ -235,7 +236,7 @@ namespace Quickstarts.SimpleEvents
                 return instance;
             }
 
-            return base.FindChild(context, browseName, createOrReplace, replacement);
+            return base.FindChild(context, browseName, createOrReplace, replacement, assignInstanceNodeIds);
         }
         #endregion
 
@@ -364,7 +365,8 @@ namespace Quickstarts.SimpleEvents
             ISystemContext context,
             QualifiedName browseName,
             bool createOrReplace,
-            BaseInstanceState replacement)
+            BaseInstanceState replacement,
+            bool assignInstanceNodeIds = true)
         {
             if ((browseName).IsNull)
             {
@@ -402,7 +404,7 @@ namespace Quickstarts.SimpleEvents
                 return instance;
             }
 
-            return base.FindChild(context, browseName, createOrReplace, replacement);
+            return base.FindChild(context, browseName, createOrReplace, replacement, assignInstanceNodeIds);
         }
         #endregion
 
@@ -543,7 +545,8 @@ namespace Quickstarts.SimpleEvents
             ISystemContext context,
             QualifiedName browseName,
             bool createOrReplace,
-            BaseInstanceState replacement)
+            BaseInstanceState replacement,
+            bool assignInstanceNodeIds = true)
         {
             if ((browseName).IsNull)
             {
@@ -581,7 +584,7 @@ namespace Quickstarts.SimpleEvents
                 return instance;
             }
 
-            return base.FindChild(context, browseName, createOrReplace, replacement);
+            return base.FindChild(context, browseName, createOrReplace, replacement, assignInstanceNodeIds);
         }
         #endregion
 

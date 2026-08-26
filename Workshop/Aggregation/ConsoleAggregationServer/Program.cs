@@ -238,23 +238,22 @@ namespace AggregationServer
 
         private void PrintSessionStatus(ISession session, string reason, bool lastContact = false)
         {
-            lock (session.DiagnosticsLock)
+            // The session owns its diagnostics lock and no longer exposes it;
+            // ReadDiagnostics applies each projection while holding that lock.
+            string item = String.Format("{0,9}:{1,20}:", reason, session.ReadDiagnostics(d => d.SessionName));
+            if (lastContact)
             {
-                string item = String.Format("{0,9}:{1,20}:", reason, session.SessionDiagnostics.SessionName);
-                if (lastContact)
-                {
-                    item += String.Format(":{0:HH:mm:ss}", session.SessionDiagnostics.ClientLastContactTime.ToLocalTime());
-                }
-                else
-                {
-                    if (session.Identity != null)
-                    {
-                        item += String.Format(":{0,20}", session.Identity.DisplayName);
-                    }
-                    item += String.Format(":{0}", session.Id);
-                }
-                Console.WriteLine(item);
+                item += String.Format(":{0:HH:mm:ss}", session.ReadDiagnostics(d => d.ClientLastContactTime).ToLocalTime());
             }
+            else
+            {
+                if (session.Identity != null)
+                {
+                    item += String.Format(":{0,20}", session.Identity.DisplayName);
+                }
+                item += String.Format(":{0}", session.Id);
+            }
+            Console.WriteLine(item);
         }
 
         private async Task StatusThreadAsync()

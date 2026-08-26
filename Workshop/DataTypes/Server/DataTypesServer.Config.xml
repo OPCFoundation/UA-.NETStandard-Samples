@@ -133,7 +133,7 @@
 
   <Extensions>
     <ua:XmlElement>
-      <DataTypesServerConfiguration xmlns="http://somecompany.com/DataTypes">
+      <DataTypesServerConfiguration xmlns="urn:localhost:somecompany.com:DataTypesServer">
       </DataTypesServerConfiguration>
     </ua:XmlElement>
   </Extensions>

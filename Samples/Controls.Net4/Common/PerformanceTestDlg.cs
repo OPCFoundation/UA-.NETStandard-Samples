@@ -159,7 +159,7 @@ namespace Opc.Ua.Sample.Controls
                 writer.Write("{0}", uri);
                 writer.Write(",{0}", uri.Scheme);
                 writer.Write(",{0}", endpoint.SecurityMode);
-                writer.Write(",{0}", SecurityPolicies.GetDisplayName(endpoint.SecurityPolicyUri));
+                writer.Write(",{0}", SecurityPolicies.Default.GetDisplayName(endpoint.SecurityPolicyUri));
                 writer.Write(",{0}", (results[ii].Endpoint.Configuration.UseBinaryEncoding) ? "Binary" : "XML");
 
                 foreach (KeyValuePair<int, double> result in results[ii].Results)
@@ -512,7 +512,7 @@ namespace Opc.Ua.Sample.Controls
     /// The result of a performance test.
     /// </summary>
     [DataType]
-    public partial class PerformanceTestResult
+    public sealed partial class PerformanceTestResult
     {
         #region Constructors
         /// <summary>
@@ -623,7 +623,7 @@ namespace Opc.Ua.Sample.Controls
     /// The result of a performance test.
     /// </summary>
     [DataType]
-    public partial class PerformanceTestResultItem
+    public sealed partial class PerformanceTestResultItem
     {
         #region Constructors
         /// <summary>

@@ -225,7 +225,8 @@ namespace Quickstarts.Views
             ISystemContext context,
             QualifiedName browseName,
             bool createOrReplace,
-            BaseInstanceState replacement)
+            BaseInstanceState replacement,
+            bool assignInstanceNodeIds = true)
         {
             if ((browseName).IsNull)
             {
@@ -326,7 +327,7 @@ namespace Quickstarts.Views
                 return instance;
             }
 
-            return base.FindChild(context, browseName, createOrReplace, replacement);
+            return base.FindChild(context, browseName, createOrReplace, replacement, assignInstanceNodeIds);
         }
         #endregion
 
@@ -679,7 +680,8 @@ namespace Quickstarts.Views
             ISystemContext context,
             QualifiedName browseName,
             bool createOrReplace,
-            BaseInstanceState replacement)
+            BaseInstanceState replacement,
+            bool assignInstanceNodeIds = true)
         {
             if ((browseName).IsNull)
             {
@@ -759,7 +761,7 @@ namespace Quickstarts.Views
                 return instance;
             }
 
-            return base.FindChild(context, browseName, createOrReplace, replacement);
+            return base.FindChild(context, browseName, createOrReplace, replacement, assignInstanceNodeIds);
         }
         #endregion
 

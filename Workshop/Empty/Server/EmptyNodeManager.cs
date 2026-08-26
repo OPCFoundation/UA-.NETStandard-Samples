@@ -56,7 +56,7 @@ namespace Quickstarts.EmptyServer
             SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<EmptyServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)

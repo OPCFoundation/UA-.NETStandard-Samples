@@ -28,8 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.ServiceModel;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Server;
@@ -40,22 +38,13 @@ namespace Quickstarts.UserAuthenticationServer
     /// Stores the configuration the data access node manager.
     /// </summary>
     [DataType(Namespace = "http://opcfoundation.org/Quickstarts/UserAuthentication")]
-    public partial class UserAuthenticationServerConfiguration
+    public sealed partial class UserAuthenticationServerConfiguration
     {
         #region Constructors
         /// <summary>
         /// The default constructor.
         /// </summary>
         public UserAuthenticationServerConfiguration()
-        {
-            Initialize();
-        }
-
-        /// <summary>
-        /// Initializes the object during deserialization.
-        /// </summary>
-        [OnDeserializing()]
-        private void Initialize(StreamingContext context)
         {
             Initialize();
         }

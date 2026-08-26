@@ -34,7 +34,13 @@
       <Version>10.0.10</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>2.0.158.59919-preview</Version>
+      <Version>2.0.0-preview.2</Version>
     </PackageReference>
+
+    <PackageReference
+      Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
+      Version="2.0.0-preview.2"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

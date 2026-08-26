@@ -1237,7 +1237,7 @@ namespace AggregationServer
             if (context != null)
             {
                 sessionId = context.SessionId ?? NodeId.Null;
-                sessionName = context.OperationContext.Session.SessionDiagnostics.SessionName;
+                sessionName = context.OperationContext.Session.ReadDiagnostics(d => d.SessionName);
                 userIdentity = context.UserIdentity;
                 preferredLocales = context.PreferredLocales;
             }
@@ -1492,39 +1492,38 @@ namespace AggregationServer
                     "http://opcfoundation.org/UA/Diagnostics"
                 };
 
-                lock (Server.DiagnosticsLock)
+                // The server owns its diagnostics lock and no longer exposes it; this
+                // section does not touch the diagnostics summary it guarded.
+                ushort[] namespaceIndexes = null;
+                lock (Lock)
                 {
-                    ushort[] namespaceIndexes = null;
-                    lock (Lock)
+                    var mapper = new NamespaceMapper();
+                    mapper.TypeSystemNamespaceUris = TypeSystemNamespaceUris;
+                    mapper.Initialize(Server.NamespaceUris, client.NamespaceUris, m_endpoint.Description.Server.ApplicationUri);
+
+                    // set the namespace indexes.
+                    namespaceIndexes = new ushort[mapper.LocalNamespaceIndexes.Length + ((m_ownsTypeModel) ? 1 : 0)];
+
+                    int index = 0;
+                    namespaceIndexes[index++] = (ushort)Server.NamespaceUris.GetIndex(Namespaces.Aggregation);
+
+                    if (m_ownsTypeModel)
                     {
-                        var mapper = new NamespaceMapper();
-                        mapper.TypeSystemNamespaceUris = TypeSystemNamespaceUris;
-                        mapper.Initialize(Server.NamespaceUris, client.NamespaceUris, m_endpoint.Description.Server.ApplicationUri);
-
-                        // set the namespace indexes.
-                        namespaceIndexes = new ushort[mapper.LocalNamespaceIndexes.Length + ((m_ownsTypeModel) ? 1 : 0)];
-
-                        int index = 0;
-                        namespaceIndexes[index++] = (ushort)Server.NamespaceUris.GetIndex(Namespaces.Aggregation);
-
-                        if (m_ownsTypeModel)
-                        {
-                            namespaceIndexes[index++] = (ushort)Server.NamespaceUris.GetIndex(AggregationModel.Namespaces.Aggregation);
-                        }
-
-                        for (int ii = 1; ii < mapper.LocalNamespaceIndexes.Length; ii++)
-                        {
-                            namespaceIndexes[index++] = (ushort)mapper.LocalNamespaceIndexes[ii];
-                        }
-                        m_mapper = mapper;
-                        SetNamespaceIndexes(namespaceIndexes);
+                        namespaceIndexes[index++] = (ushort)Server.NamespaceUris.GetIndex(AggregationModel.Namespaces.Aggregation);
                     }
 
-                    // re-register node manager.
-                    for (int ii = 0; ii < namespaceIndexes.Length; ii++)
+                    for (int ii = 1; ii < mapper.LocalNamespaceIndexes.Length; ii++)
                     {
-                        Server.NodeManager.RegisterNamespaceManager(Server.NamespaceUris.GetString(namespaceIndexes[ii]), this);
+                        namespaceIndexes[index++] = (ushort)mapper.LocalNamespaceIndexes[ii];
                     }
+                    m_mapper = mapper;
+                    SetNamespaceIndexes(namespaceIndexes);
+                }
+
+                // re-register node manager.
+                for (int ii = 0; ii < namespaceIndexes.Length; ii++)
+                {
+                    Server.NodeManager.RegisterNamespaceManager(Server.NamespaceUris.GetString(namespaceIndexes[ii]), this);
                 }
 
                 AggregatedTypeCache cache = new AggregatedTypeCache();

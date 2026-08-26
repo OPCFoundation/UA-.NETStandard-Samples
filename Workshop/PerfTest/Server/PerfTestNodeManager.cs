@@ -57,7 +57,7 @@ namespace Quickstarts.PerfTestServer
             SystemContext.SystemHandle = m_system = new UnderlyingSystem();
 
             // get the configuration for the node manager.
-            m_configuration = null;
+            m_configuration = configuration.ParseExtension<PerfTestServerConfiguration>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)

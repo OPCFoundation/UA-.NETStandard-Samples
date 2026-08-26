@@ -29,7 +29,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using Opc.Ua;
 
 namespace Quickstarts.AlarmConditionServer
@@ -38,7 +37,7 @@ namespace Quickstarts.AlarmConditionServer
     /// Stores the configuration the Alarm Condition server.
     /// </summary>
     [DataType(Namespace = "http://opcfoundation.org/Quickstarts/AlarmCondition")]
-    public partial class AlarmConditionServerConfiguration
+    public sealed partial class AlarmConditionServerConfiguration
     {
 
         #region Public Properties
@@ -62,7 +61,7 @@ namespace Quickstarts.AlarmConditionServer
     /// Stores the configuration for a Area within the Alarm Condition server.
     /// </summary>
     [DataType(Namespace = "http://opcfoundation.org/Quickstarts/AlarmCondition")]
-    public partial class AreaConfiguration
+    public sealed partial class AreaConfiguration
     {
 
         #region Public Properties
