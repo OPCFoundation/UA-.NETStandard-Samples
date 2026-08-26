@@ -17,9 +17,9 @@ and answers a browse/read is considered working.
 | 1 — Server smoke | Every sample server starts headless and answers a real OPC UA session (browse, read, sample-specific check) | localhost | no | ~1 min |
 | 2 — Client smoke | Every WinForms client builds its main form, connects to its own sample server, and completes its post-connect logic | localhost | yes | ~2-3 min |
 
-Tier 0 and Tier 1 run anywhere, including Linux agents for Tier 0. Tier 2 is Windows-only
-and is tagged `[Category("RequiresDesktop")]` so it can be excluded if an agent's window
-station misbehaves.
+Tier 0 and Tier 1 run anywhere, including Linux agents for Tier 0. Tier 2 is Windows-only and
+is tagged `[Category("RequiresDesktop")]` so it can be excluded where there is no window
+station. CI runs all three: the `Test Samples` job is on a Windows agent.
 
 ### Why this works at all
 
@@ -114,9 +114,10 @@ dotnet test Tests/SampleClients.Tests
 dotnet test "UA Samples.slnx" --filter "TestCategory!=RequiresDesktop"
 ```
 
-CI runs the same thing in the `Test Samples` stage of `azure-pipelines.yml`
-(`.azurepipelines/test.yml`), excluding `RequiresDesktop` until Tier 2 is proven stable on
-hosted agents.
+CI runs all three tiers in the `Test Samples` stage of `azure-pipelines.yml`
+(`.azurepipelines/test.yml`). The job runs on a Windows agent and filters nothing out, so
+the WinForms client tests run there too. The `--filter` above is for running the suite where
+there is no window station, a Linux machine or a container.
 
 ## What Tier 0 checks today
 
@@ -240,9 +241,9 @@ modal `ExceptionDlg`, which in an unattended run would wait forever for a click.
 the UI thread closes any modal form, keeps its text, and the harness fails the test with it.
 `WatchdogTurnsAModalDialogIntoAFailure` proves the watchdog itself works.
 
-Because it needs a window station, the fixture is `[Category("RequiresDesktop")]` and the CI
-filter skips it. Remove `--filter "TestCategory!=RequiresDesktop"` from `.azurepipelines/test.yml`
-to turn it on once it has been seen to work on the hosted agents.
+The fixture is `[Category("RequiresDesktop")]` because it needs a window station. CI runs it:
+the `Test Samples` job is on a Windows agent and filters nothing out. The category is there so
+the suite can still be run where no window station exists - `--filter "TestCategory!=RequiresDesktop"`.
 
 All 16 cases pass. Two samples did not, and both were fixed rather than parked.
 

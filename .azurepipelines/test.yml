@@ -2,9 +2,12 @@
 # Run the sample test suite
 #
 # The tiers are documented in docs/TESTING.md. Tier 0 (configuration) needs nothing but
-# the sources, the higher tiers start sample servers on localhost. Tests tagged
-# "RequiresDesktop" drive WinForms clients and are excluded until they are proven stable
-# on hosted agents.
+# the sources, the higher tiers start sample servers on localhost, and tier 2 builds the
+# main form of every WinForms client on an STA thread - which is why this job runs on a
+# Windows agent and no test category is filtered out.
+#
+# The samples bind fixed ports, so this job must not run beside another one on the same
+# agent.
 #
 jobs:
 - job: testsamples
@@ -41,7 +44,9 @@ jobs:
       command: test
       projects: 'Tests/**/*.Tests.csproj'
       # the task adds --logger trx and --results-directory itself when it publishes the
-      # results, so repeating them here makes dotnet test reject the command line
-      arguments: '--no-build --configuration Release --filter "TestCategory!=RequiresDesktop"'
+      # results, so repeating them here makes dotnet test reject the command line.
+      # No category is filtered out: the tier 2 client tests are tagged RequiresDesktop
+      # and this job runs on a Windows agent, which is what they need.
+      arguments: '--no-build --configuration Release'
       publishTestResults: true
       testRunTitle: 'Sample smoke tests'
