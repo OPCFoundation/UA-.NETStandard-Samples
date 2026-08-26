@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Opc.Ua.Samples.Tests</RootNamespace>
+    <AssemblyName>Samples.Tests.Common</AssemblyName>
+    <Description>Helpers shared by all sample test projects: repository layout, the sample catalog and OPC UA configuration utilities.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="2.0.158.59919-preview" />
+  </ItemGroup>
+
+</Project>

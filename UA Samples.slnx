@@ -76,10 +76,17 @@
     <Project Path="Samples/Controls.Net4/UA Sample Controls.csproj" Id="92ae819b-4938-4502-ac32-67063f9893cd" />
     <Project Path="Samples/Opc.Ua.Sample/Opc.Ua.Sample.csproj" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Samples.Tests.Common/Samples.Tests.Common.csproj" />
+    <Project Path="Tests/SampleConfiguration.Tests/SampleConfiguration.Tests.csproj" />
+    <File Path="docs/TESTING.md" />
+    <File Path="Tests/Directory.Build.props" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".azurepipelines/ci.yml" />
     <File Path=".azurepipelines/get-matrix.ps1" />
     <File Path=".azurepipelines/sln.yml" />
+    <File Path=".azurepipelines/test.yml" />
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".github/workflows/codeql-analysis.yml" />

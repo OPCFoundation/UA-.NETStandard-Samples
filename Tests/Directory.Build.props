@@ -1,0 +1,17 @@
+<Project>
+
+  <!-- inherit the repository wide settings (targets.props, analyzers) -->
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!-- test code is not shipped: the repo wide "all analyzers, all rules" setting
+         produces mostly noise here, so stay on the recommended set -->
+    <AnalysisMode>Recommended</AnalysisMode>
+    <!-- CA1707: test names read better with underscores where they are used
+         CA1054/CA1056: endpoint urls are kept as strings, the way the samples spell them
+         CA2007: there is no synchronization context to capture in a test host -->
+    <NoWarn>$(NoWarn);CA1707;CA1054;CA1056;CA2007</NoWarn>
+  </PropertyGroup>
+
+</Project>

@@ -18,3 +18,8 @@ stages:
   displayName: 'Build Solutions'
   jobs:
   - template: .azurepipelines/sln.yml
+- stage: test
+  dependsOn: []
+  displayName: 'Test Samples'
+  jobs:
+  - template: .azurepipelines/test.yml
