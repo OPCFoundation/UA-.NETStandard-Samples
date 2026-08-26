@@ -78,13 +78,18 @@ namespace Opc.Ua.Samples.Tests
                 .ToList();
         }
 
+        /// <summary>
+        /// Directory names whose content is generated, not source.
+        /// </summary>
+        private static readonly string[] s_generatedDirectories = [".git", "bin", "obj", "TestResults"];
+
         private static bool IsBuildOutput(string path)
         {
-            string relative = RelativePathOf(path);
-
-            return relative.StartsWith(".git/", StringComparison.Ordinal)
-                || relative.Contains("/bin/", StringComparison.Ordinal)
-                || relative.Contains("/obj/", StringComparison.Ordinal);
+            // the samples build into a shared bin directory in the repository root, so the
+            // check has to look at every segment and not only at nested paths
+            return RepositoryLayout.RelativePathOf(path)
+                .Split('/')
+                .Any(segment => s_generatedDirectories.Contains(segment, StringComparer.OrdinalIgnoreCase));
         }
 
         private static DirectoryInfo FindRoot()

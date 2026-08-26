@@ -79,6 +79,7 @@
   <Folder Name="/Tests/">
     <Project Path="Tests/Samples.Tests.Common/Samples.Tests.Common.csproj" />
     <Project Path="Tests/SampleConfiguration.Tests/SampleConfiguration.Tests.csproj" />
+    <Project Path="Tests/SampleServers.Tests/SampleServers.Tests.csproj" />
     <File Path="docs/TESTING.md" />
     <File Path="Tests/Directory.Build.props" />
   </Folder>

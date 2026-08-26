@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- the sample servers are WinForms executables, so the test project has to
+         target the windows flavour even though no window is ever created -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Opc.Ua.Samples.Tests</RootNamespace>
+    <AssemblyName>SampleServers.Tests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <Description>Tier 1: starts every sample server headless and connects to it.</Description>
+    <!-- every referenced sample brings its own App.ico and configuration files along -->
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="NUnit" Version="4.6.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.14.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Samples.Tests.Common\Samples.Tests.Common.csproj" />
+  </ItemGroup>
+
+  <!-- the sample servers under test -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Workshop\AlarmCondition\Server\AlarmCondition Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\Boiler\Server\Boiler Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\DataAccess\Server\DataAccess Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\DataTypes\Server\DataTypes Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\Empty\Server\Empty Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\HistoricalAccess\Server\HistoricalAccess Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\HistoricalEvents\Server\HistoricalEvents Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\Methods\Server\Methods Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\PerfTest\Server\PerfTest Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\SimpleEvents\Server\SimpleEvents Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\UserAuthentication\Server\UserAuthentication Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\Views\Server\Views Server.csproj" />
+    <ProjectReference Include="..\..\Samples\ReferenceServer\Reference Server.csproj" />
+    <ProjectReference Include="..\..\Samples\Server.Net4\UA Sample Server.csproj" />
+  </ItemGroup>
+
+</Project>

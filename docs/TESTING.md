@@ -44,7 +44,7 @@ Tests/
   Directory.Build.props        # relaxes the repo-wide "AnalysisMode=all" for test code
   Samples.Tests.Common/        # shared helpers, and the sample catalog that drives every tier   (exists)
   SampleConfiguration.Tests/   # Tier 0. No project references, no network.                      (exists)
-  SampleServers.Tests/         # Tier 1. References the sample *server* projects.                (phase 2)
+  SampleServers.Tests/         # Tier 1. References the sample *server* projects.                (exists)
   Samples.TestHost/            # console app: starts any sample server headless, prints "READY <url>"  (phase 3)
   Samples.Tests.WinForms/      # STA message loop runner and the modal dialog watchdog           (phase 3)
   SampleClients.Tests/         # Tier 2. References the sample *client* projects.                (phase 3)
@@ -66,10 +66,15 @@ fixed, sometimes overlapping ports.
 ## The sample catalog
 
 `Samples.Tests.Common/SampleCatalog.cs` holds one entry per sample - project paths, config
-file, expected endpoint URL, and the sample-specific smoke check. **Adding a new sample means
-adding one row.** All three tiers iterate that table, so a sample that is not in the catalog
-is not tested; Tier 0 additionally globs the repo for `*.Config.xml` so new configs cannot be
-silently forgotten.
+files and the expected endpoint URL. **Adding a new sample means adding one row.** All three
+tiers iterate that table, so a sample that is not in the catalog is not tested; Tier 0
+additionally globs the repo for `*.Config.xml` so new configs cannot be silently forgotten.
+
+Tier 1 pairs each entry with the way the sample creates its server, in
+`SampleServers.Tests/SampleServerFactories.cs`. Those factories are written out rather than
+resolved by reflection on purpose: renaming or removing a sample server then breaks the build
+of the tests, which is the earliest and clearest moment to notice. A server sample without a
+factory has to be listed as a known gap, so it cannot drop out unnoticed.
 
 ## Practical notes
 
@@ -88,13 +93,14 @@ captures any dialog's text, closes it, and fails the test with that message. Thi
 UI popups into readable failures and is the single most valuable piece of the harness.
 
 **Ports.** Sample servers bind fixed ports and some overlap (`ReferenceServer` and the WinForms
-`AggregationServer` both use 62541). Tests run sequentially, and Tier 1 rewrites base addresses
-to a free port in memory where a sample allows it.
+`AggregationServer` both use 62541). The tests therefore keep the ports the samples ship with -
+that is part of what is being tested - and run one sample at a time (`[NonParallelizable]`).
 
 ## Running
 
 ```bash
 dotnet test Tests/SampleConfiguration.Tests
+dotnet test Tests/SampleServers.Tests
 ```
 
 ```bash
@@ -120,14 +126,45 @@ hosted agents.
 - and one self check: a file that is not an application configuration has to be rejected,
   so the checks above cannot pass vacuously
 
+## What Tier 1 checks today
+
+16 test cases, about 15 seconds. Each one starts the real sample server in process, from the
+sample's own configuration file, and connects to it with a plain OPC UA client:
+
+- the server comes up on the endpoint the catalog claims
+- a session can be opened, and the server reports `ServerState.Running`
+- browsing the Objects folder returns the nodes of the sample - Boiler answers with
+  `Boiler #1` and `Boiler #2`, Methods with `My Process`, Views with `Plant`
+- the sample registered its own namespace, which means its node manager loaded
+
+Only the opc.tcp endpoints are exercised; https base addresses are stripped in memory before
+the server starts, because they need their own bindings and would double the ports a test run
+occupies.
+
+### Known issues
+
+Four samples do not survive this today. They are listed in `s_knownIssues` in
+`SampleServerTests`, which reports them as **ignored** rather than failed - and fails the
+moment one of them starts working, so nobody has to remember to remove the entry.
+
+| Sample | Symptom |
+|--------|---------|
+| `Workshop/DataAccess/Server` | starts and accepts a session, but browsing the Objects folder answers `BadUnexpectedError` |
+| `Workshop/HistoricalAccess/Server` | fails to start: the archive stores a `DateTimeUtc` in a `DataTable` column typed `DateTime` |
+| `Workshop/HistoricalEvents/Server` | fails to start: a `dynamic` call to `Variant.From` is ambiguous between `From(MatrixOf<Variant>)` and `From(string)` |
+| `Samples/Opc.Ua.Sample` | fails to start: an `ArrayOf<SByte>` is cast to `SByte[]` |
+
+All four are the samples not having caught up with the value types the 2.0 stack introduced
+(`ArrayOf<T>`, `DateTimeUtc`, the `Variant.From` overloads).
+
 ## Status / roadmap
 
 - [x] Phase 1 - shared helpers, Tier 0 configuration tests, CI test stage
-- [ ] Phase 2 - Tier 1 server smoke tests (15 Workshop servers + Reference + Sample server)
+- [x] Phase 2 - Tier 1 server smoke tests (12 Workshop servers + Reference + Sample server)
 - [ ] Phase 3 - `Samples.TestHost` + Tier 2 client smoke tests
 - [ ] Phase 4 - GDS, Aggregation (needs two servers), LDS
 
-Two known issues that Tier 0 exists to catch, both found while writing this plan:
+Two further issues, found while writing this plan and caught by Tier 0:
 
 - `Workshop/Aggregation/Server/Quickstarts.AggregationServer.Config.xml` listens on port
   **62541** while aggregating a downstream ReferenceServer that also lives on **62541**. That
