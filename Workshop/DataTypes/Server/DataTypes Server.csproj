@@ -43,7 +43,7 @@
 
     <PackageReference
       Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
-      Version="2.0.158.59919-preview"
+      Version="2.0.0-preview.2"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
   </ItemGroup>
