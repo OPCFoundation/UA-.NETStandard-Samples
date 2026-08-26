@@ -211,16 +211,33 @@ Two limits worth knowing:
   for the GDS, its JSON databases, where running the sample by hand would.
 
   The GDS test creates that certificate itself, before starting the sample, through the same
-  `ApplicationInstance` the sample uses (`SampleCertificates`). On an agent which has never
-  run the sample the server would otherwise create it while starting up, and the first run
-  would differ from every later one - which is exactly how the endpoint the test picked came
-  to be one the freshly created certificate could not serve. A store which already holds a
-  certificate is left alone, whatever the stack thinks of it: on a developer machine it was
-  often created for a different host name, and repairing it is not a test's business.
+  `ApplicationInstance` the sample uses (`SampleCertificates`), so a machine which has never
+  run the sample behaves like one which has. A store which already holds a certificate is
+  left alone, whatever the stack thinks of it: on a developer machine it was often created
+  for a different host name, and repairing it is not a test's business.
+
+  This is what uncovered the key size defect below. If your machine still has a 1024 bit GDS
+  certificate from before that fix, delete
+  `%LocalApplicationData%/OPC Foundation/GDS/pki/own` and let the sample create a new one -
+  the stack will not replace an existing certificate on its own.
 - The aggregation sample is only tested as far as "it starts and serves". Its configuration
   aggregates external servers (a UA CTT server on 65300 and others), and the entry pointing
   at this repository's reference server is commented out, so there is nothing to aggregate
   in an unattended run without changing the sample.
+
+### The GDS key size
+
+Worth recording, because it took a build agent to find and a developer machine actively hid
+it: the three GDS configurations declared `<MinimumCertificateKeySize>1024</MinimumCertificateKeySize>`,
+and the stack uses that value as the key size when it creates the application instance
+certificate. On any machine without an older certificate the GDS therefore built itself a
+**1024 bit** certificate, which no security policy it offers will accept - `Basic256Sha256`
+and both AES policies all require at least 2048. Every endpoint answered
+`BadCertificatePolicyCheckFailed`, so the sample could not be connected to at all.
+
+It passed on a developer machine only because the store there still held a 2048 bit
+certificate from before the value was lowered. All three configurations now say 2048, which
+is what every other sample in the repository uses.
 
 ### Known issues
 
