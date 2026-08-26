@@ -46,9 +46,7 @@ namespace Opc.Ua.Gds.Client.Controls
         private List<string> m_discoveryUrls;
         private ILogger m_logger = LoggerUtils.Null.Logger;
 
-        #pragma warning disable CA1002 // Justification: Public sample API compatibility is preserved.
-        public List<string> ShowDialog(ILogger logger, IWin32Window owner, IList<string> discoveryUrls)
-        #pragma warning restore CA1002
+        public IList<string> ShowDialog(ILogger logger, IWin32Window owner, IList<string> discoveryUrls)
         {
             m_logger = logger;
             StringBuilder builder = new StringBuilder();

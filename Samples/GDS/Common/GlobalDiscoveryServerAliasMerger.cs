@@ -192,6 +192,7 @@ namespace Opc.Ua.Gds.Server
         /// registration hook so a newly registered server's aliases are
         /// merged without waiting for the next periodic sweep.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "The application URI is a string in ApplicationRecordDataType and is used here as a key.")]
         public void QueueMerge(string applicationUri, IList<string> discoveryUrls)
         {
             if (m_configuration == null)
@@ -286,6 +287,7 @@ namespace Opc.Ua.Gds.Server
         /// aliases and as the replace key.</param>
         /// <param name="discoveryUrls">The server's discovery URLs.</param>
         /// <param name="ct">A cancellation token.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "The application URI is a string in ApplicationRecordDataType and is used here as a key.")]
         public async Task MergeServerAsync(
             string applicationUri,
             IList<string> discoveryUrls,

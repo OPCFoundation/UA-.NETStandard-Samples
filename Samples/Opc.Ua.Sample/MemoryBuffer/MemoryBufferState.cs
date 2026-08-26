@@ -40,6 +40,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MemoryBuffer
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Sample code preserves existing public API and behavior.")]
     public partial class MemoryBufferState
     {
         #region Constructors

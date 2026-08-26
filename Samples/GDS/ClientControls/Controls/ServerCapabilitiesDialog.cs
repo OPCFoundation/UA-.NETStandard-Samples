@@ -47,9 +47,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private List<GdsServerCapability> m_capabilities;
 
-        #pragma warning disable CA1002 // Justification: Public sample API compatibility is preserved.
-        public List<string> ShowDialog(IWin32Window owner, IList<string> serverCapabilities)
-        #pragma warning restore CA1002
+        public IList<string> ShowDialog(IWin32Window owner, IList<string> serverCapabilities)
         {
             CapabilitiesListBox.Items.Clear();
 

@@ -61,10 +61,10 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<List<NodeId>> ShowDialogAsync(
+        public async Task<IList<NodeId>> ShowDialogAsync(
             Session session,
             BrowseViewType browseView,
-            List<NodeId> nodesIds,
+            IList<NodeId> nodesIds,
             NodeClass nodeClassMask,
             ITelemetryContext telemetry,
             CancellationToken ct = default)

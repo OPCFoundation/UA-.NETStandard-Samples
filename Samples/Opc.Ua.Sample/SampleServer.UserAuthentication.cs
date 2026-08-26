@@ -163,9 +163,11 @@ namespace Opc.Ua.Sample
                     throw new ServiceResultException(StatusCodes.BadIdentityTokenRejected);
                 }
 
+#pragma warning disable CA2025 // Justification: the validation completes here, before the certificate leaves scope.
                 CertificateValidationResult validationResult = m_certificateValidator
                     .ValidateAsync(certificate, TrustListIdentifier.Users, System.Threading.CancellationToken.None)
                     .GetAwaiter().GetResult();
+#pragma warning restore CA2025
 
                 if (!validationResult.IsValid)
                 {

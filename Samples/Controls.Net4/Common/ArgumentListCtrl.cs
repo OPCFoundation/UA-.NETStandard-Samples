@@ -137,7 +137,8 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the argument values
         /// </summary>
-        public List<Variant> GetValues()
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1024:Use properties where appropriate", Justification = "Each call reads the list view and builds a new list, and the matching setter is asynchronous.")]
+        public IList<Variant> GetValues()
         {
             List<Variant> values = new List<Variant>();
 
@@ -157,7 +158,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates the argument values.
         /// </summary>
-        public async Task SetValuesAsync(List<Variant> values, CancellationToken ct = default)
+        public async Task SetValuesAsync(IList<Variant> values, CancellationToken ct = default)
         {
             int ii = 0;
 

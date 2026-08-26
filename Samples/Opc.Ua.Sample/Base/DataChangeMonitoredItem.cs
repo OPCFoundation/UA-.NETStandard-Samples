@@ -27,6 +27,10 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+// the IDataChangeMonitoredItem members this class implements are annotated,
+// so the annotations need a nullable context to live in
+#nullable enable annotations
+
 using System;
 using System.Collections.Generic;
 using System.Text;

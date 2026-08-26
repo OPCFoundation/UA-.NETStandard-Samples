@@ -141,7 +141,9 @@ namespace Opc.Ua.Samples.Tests
 
                         // blocks the message loop until the watchdog closes it, which is
                         // exactly what a sample error dialog does in a test run
+#pragma warning disable CA1849 // Justification: blocking the message loop is what this test exercises.
                         DialogResult ignored = dialog.ShowDialog();
+#pragma warning restore CA1849
 
                         return Task.CompletedTask;
                     },

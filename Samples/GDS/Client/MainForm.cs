@@ -52,17 +52,11 @@ namespace Opc.Ua.Gds.Client
             m_application = application;
             m_telemetry = telemetry;
 
-            // get the configuration.
-            m_configuration = null;
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new GlobalDiscoveryClientConfiguration() {
-                    GlobalDiscoveryServerUrl = "opc.tcp://localhost:58810/GlobalDiscoveryServer",
-                    ExternalEditor = "notepad.exe"
-                };
-            }
+            // the sample keeps no persisted configuration, so start from suitable defaults.
+            m_configuration = new GlobalDiscoveryClientConfiguration() {
+                GlobalDiscoveryServerUrl = "opc.tcp://localhost:58810/GlobalDiscoveryServer",
+                ExternalEditor = "notepad.exe"
+            };
 
             m_filters = new QueryServersFilter();
             m_identity = new UserIdentity();
@@ -459,7 +453,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (m_server.IsConnected)
                 {
-                    m_server.DisconnectAsync().GetAwaiter().GetResult();
+                    m_server.DisconnectAsync().AsTask().GetAwaiter().GetResult();
                     UpdateStatus(true, DateTime.UtcNow, "Disconnected {0}", m_server.Endpoint);
                     await ServerStatusPanel.InitializeAsync(null, m_telemetry);
                 }
@@ -477,7 +471,7 @@ namespace Opc.Ua.Gds.Client
                 if (!m_gdsConfigured)
                 {
                     #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                    string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).GetAwaiter().GetResult(), m_telemetry);
+                    string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).AsTask().GetAwaiter().GetResult(), m_telemetry);
                     #pragma warning restore CA2000
                     if (uri != null)
                     {
@@ -634,12 +628,12 @@ namespace Opc.Ua.Gds.Client
         private void SelectGdsButton_Click(object sender, EventArgs e)
         {
             m_gds.AdminCredentials = null;
-            m_gds.DisconnectAsync().GetAwaiter().GetResult();
+            m_gds.DisconnectAsync().AsTask().GetAwaiter().GetResult();
             m_gdsConfigured = false;
             UpdateGdsStatus(true, DateTime.UtcNow, "Disconnected");
 
             #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-            string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).GetAwaiter().GetResult(), m_telemetry);
+            string uri = new SelectGdsDialog().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).AsTask().GetAwaiter().GetResult(), m_telemetry);
             #pragma warning restore CA2000
             if (uri != null)
             {

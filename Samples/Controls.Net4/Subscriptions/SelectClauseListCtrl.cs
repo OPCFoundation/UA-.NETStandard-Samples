@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private Session m_session;
-        private List<SimpleAttributeOperand> m_selectClauses;
+        private IList<SimpleAttributeOperand> m_selectClauses;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -78,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, List<SimpleAttributeOperand> selectClauses)
+        public void Initialize(Session session, IList<SimpleAttributeOperand> selectClauses)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -137,7 +137,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the SelectClauses in the control.
         /// </summary>
-        public List<SimpleAttributeOperand> GetSelectClauses()
+        public IList<SimpleAttributeOperand> GetSelectClauses()
         {
             List<SimpleAttributeOperand> clauses = new List<SimpleAttributeOperand>();
 

@@ -111,13 +111,13 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                List<Variant> inputArguments = InputArgumentsCTRL.GetValues();
+                IList<Variant> inputArguments = InputArgumentsCTRL.GetValues();
 
                 CallMethodRequest request = new CallMethodRequest();
 
                 request.ObjectId = m_objectId;
                 request.MethodId = m_methodId;
-                request.InputArguments = inputArguments;
+                request.InputArguments = inputArguments.ToArrayOf();
 
                 List<CallMethodRequest> requests = new List<CallMethodRequest>();
                 requests.Add(request);

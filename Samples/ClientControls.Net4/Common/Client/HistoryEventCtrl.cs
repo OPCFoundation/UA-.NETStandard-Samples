@@ -257,7 +257,7 @@ namespace Opc.Ua.Client.Controls
             NodeId rootId,
             NodeState parent,
             RelativePath parentPath,
-            List<BrowsePath> browsePaths)
+            IList<BrowsePath> browsePaths)
         {
             List<BaseInstanceState> children = new List<BaseInstanceState>();
             parent.GetChildren(context, children);

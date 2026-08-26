@@ -93,12 +93,11 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         public async Task InitializeAsync(
             Session session,
-            List<ReadValueId> valueIds,
-            List<DataValue> values,
-            List<ServiceResult> results,
+            IList<ReadValueId> valueIds,
+            IList<DataValue> values,
+            IList<ServiceResult> results,
             CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
@@ -139,11 +138,10 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
         public async Task InitializeAsync(
             Session session,
-            List<WriteValue> values,
-            List<ServiceResult> results,
+            IList<WriteValue> values,
+            IList<ServiceResult> results,
             CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));

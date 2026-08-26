@@ -66,7 +66,7 @@ namespace Opc.Ua.Sample.Controls
         private bool m_showReferences;
         private TreeNode m_nodeToBrowse;
         private ReferenceDescription m_parent;
-        private List<ReferenceDescription> m_references;
+        private IList<ReferenceDescription> m_references;
         private event NodesSelectedEventHandler m_ItemsSelected;
         private event MethodCalledEventHandler m_MethodCalled;
         private BrowserEventHandler m_BrowserMoreReferences;
@@ -109,7 +109,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2227:Collection properties should be read only", Justification = "Sample code preserves existing public API and behavior.")]
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public List<ReferenceDescription> SelectedReferences
+        public IList<ReferenceDescription> SelectedReferences
         {
             get
             {
@@ -1271,7 +1271,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a new instance.
         /// </summary>
-        internal NodesSelectedEventArgs(ExpandedNodeId sourceId, List<ReferenceDescription> references)
+        internal NodesSelectedEventArgs(ExpandedNodeId sourceId, IList<ReferenceDescription> references)
         {
             m_sourceId = sourceId;
             m_references = references;
@@ -1298,7 +1298,7 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private ExpandedNodeId m_sourceId;
-        private List<ReferenceDescription> m_references;
+        private IList<ReferenceDescription> m_references;
         #endregion
     }
 

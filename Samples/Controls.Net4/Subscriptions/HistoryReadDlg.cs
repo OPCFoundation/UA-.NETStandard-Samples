@@ -62,7 +62,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Session session, List<ReadValueId> valueIds, ITelemetryContext telemetry)
+        public void Show(Session session, IList<ReadValueId> valueIds, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -79,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
 
         private async Task ReadAsync(CancellationToken ct = default)
         {
-            List<ReadValueId> nodesToRead = ReadValuesCTRL.GetValueIds();
+            List<ReadValueId> nodesToRead = ReadValuesCTRL.GetValueIds().ToList();
 
             if (nodesToRead == null || nodesToRead.Count == 0)
             {

@@ -117,7 +117,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Sets the filter to edit.
         /// </summary>
-        public void DisplayEvent(List<Variant> fields)
+        public void DisplayEvent(IList<Variant> fields)
         {
             if (m_filter != null)
             {
