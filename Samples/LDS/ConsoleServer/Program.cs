@@ -67,8 +67,7 @@ namespace Opc.Ua.Lds.Server.Sample
 
             // a console sample logs to the console as well as to a file, the same way
             // every other sample does.
-            builder.Logging.AddConsole();
-            builder.Logging.SetMinimumLevel(LogLevel.Information);
+            builder.Logging.AddSampleConsole();
 
             builder.Services.AddSampleLogFile(@"Logs\Opc.Ua.LocalDiscoveryServer.log.txt");
 

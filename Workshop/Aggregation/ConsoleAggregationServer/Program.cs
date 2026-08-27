@@ -95,7 +95,9 @@ namespace AggregationServer
     {
         AggregationServer server;
         IHost host;
-        Task status;
+        // a completed task until the status thread is started, so a failure between
+        // the server being created and the thread starting still shuts down cleanly.
+        Task status = Task.CompletedTask;
         DateTime lastEventTime;
         private ITelemetryContext m_telemetry;
 
@@ -182,8 +184,7 @@ namespace AggregationServer
             // to the file the configuration names.
             HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
 
-            builder.Logging.AddConsole();
-            builder.Logging.SetMinimumLevel(LogLevel.Information);
+            builder.Logging.AddSampleConsole();
 
             builder.Services
                 .AddSampleApplication(options => {

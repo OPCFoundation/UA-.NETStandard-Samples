@@ -149,7 +149,9 @@ namespace Opc.Ua.Gds.Server
         private GlobalDiscoverySampleServer server;
         private IHost m_host;
         private ITelemetryContext m_telemetry;
-        private Task status;
+        // a completed task until the status thread is started, so a failure between
+        // the server being created and the thread starting still shuts down cleanly.
+        private Task status = Task.CompletedTask;
         private DateTime lastEventTime;
         private ApplicationConfiguration m_configuration;
         private IApplicationsDatabase m_database;
@@ -376,8 +378,7 @@ namespace Opc.Ua.Gds.Server
             // to the file the configuration names.
             HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
 
-            builder.Logging.AddConsole();
-            builder.Logging.SetMinimumLevel(LogLevel.Information);
+            builder.Logging.AddSampleConsole();
 
             builder.Services
                 .AddSampleApplication(options => {

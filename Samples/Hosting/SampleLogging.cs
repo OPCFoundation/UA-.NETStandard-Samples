@@ -177,6 +177,15 @@ namespace Opc.Ua.Samples.Hosting
                 return null;
             }
 
+            // the configuration files of the samples were written on Windows and
+            // separate with a backslash, which is an ordinary character in a file name
+            // everywhere else. Without this, Path.GetDirectoryName below sees no
+            // directory at all and the log lands next to the executable under a name
+            // with backslashes in it.
+            outputFilePath = outputFilePath
+                .Replace('\\', Path.DirectorySeparatorChar)
+                .Replace('/', Path.DirectorySeparatorChar);
+
             try
             {
                 string directory = Path.GetDirectoryName(outputFilePath);
