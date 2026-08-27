@@ -28,77 +28,41 @@
  * ======================================================================*/
 
 using System;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.Hosting;
 using Opc.Ua.Server.Controls;
 
 namespace AggregationServer
 {
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        public ConsoleTelemetry()
-        : base(
-#pragma warning disable CA2000 // Justification: LoggerFactory ownership is transferred to TelemetryContextBase.
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-#pragma warning restore CA2000
-            )
-        {
-        }
-    }
     static class Program
     {
-        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
-        {
-            MyMainAsync().Wait();
-        }
-        static async Task MyMainAsync()
+        static void Main(string[] args)
         {
             // Initialize the user interface.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            await using ApplicationInstance application = new ApplicationInstance(m_telemetry);
-            application.ApplicationType = ApplicationType.Server;
-            application.ConfigSectionName = "Quickstarts.AggregationServer";
 
-            try
-            {
-                // load the application configuration.
-                await application.LoadApplicationConfigurationAsync(false);
-
-                // check the application certificate.
-                await application.CheckApplicationInstanceCertificatesAsync(false);
-
-                // start the server.
-#pragma warning disable CA2000 // Justification: Server ownership is transferred to ApplicationInstance.
-                await application.StartAsync(new AggregationServer(m_telemetry));
-#pragma warning restore CA2000
-
-                // run the application interactively.
-#pragma warning disable CA2000 // Justification: Form ownership is transferred to Application.Run.
-                Application.Run(new ServerForm(application, m_telemetry));
-#pragma warning restore CA2000
-            }
-            catch (Exception e)
-            {
-#pragma warning disable CA1849 // Justification: WinForms sample uses synchronous dialog from exception handler.
-                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
-#pragma warning restore CA1849
-            }
+            // the generic host owns the configuration, the certificate, the logging
+            // and the lifetime of the server; the main form is created by the container
+            // from the services registered here.
+            SampleWinFormsHost.Run<ServerForm>(
+                args,
+                services => services
+                    .AddSampleApplication(options => {
+                        options.ApplicationType = ApplicationType.Server;
+                        options.ConfigSectionName = "Quickstarts.AggregationServer";
+                    })
+                    .AddSampleServer<AggregationServer>(),
+                ExceptionDlg.Show);
         }
     }
 }

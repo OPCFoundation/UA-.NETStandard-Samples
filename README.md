@@ -48,6 +48,7 @@ Use this table to quickly find the project that suits your needs. If you already
 | [GlobalDiscoveryServer](Samples/GDS/Server) | **Server** | OPC UA Global Discovery Server (GDS) for .NET 4.6 with SQL Server as database. Manages application registration and certificate issuance across a UA network. |
 | [NetCoreGlobalDiscoveryServer](Samples/GDS/ConsoleServer) | **Server** | Cross-platform console GDS server using a JSON-based database. Use for testing GDS workflows without SQL Server. |
 | [GlobalDiscoveryClient](Samples/GDS/Client) | **Client** | Windows Forms GDS client. Use this to register applications, request CA-signed certificates, and manage trust lists via a running GDS server. |
+| [Opc.Ua.Samples.Hosting](Samples/Hosting/README.md) | **Library** | The bootstrap every sample shares: dependency injection, the .NET Generic Host and file based logging. Read this first if you want to know how a sample starts up. |
 
 ### Quickstart Workshop Samples (`Workshop/`)
 

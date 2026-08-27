@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ServerControls.Net4\UA Server Controls.csproj" />
+    <ProjectReference Include="..\..\Hosting\Opc.Ua.Samples.Hosting.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Common\GlobalDiscoveryServerAliasMerger.cs" Link="Common\GlobalDiscoveryServerAliasMerger.cs" />
@@ -35,9 +36,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Logging.Console">
-      <Version>10.0.11</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
       <Version>2.0.0-preview.2</Version>

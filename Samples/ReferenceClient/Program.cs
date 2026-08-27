@@ -29,77 +29,40 @@
 
 using System;
 using System.Windows.Forms;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua;
-using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.Hosting;
+using Opc.Ua.Client.Controls;
 
 namespace Quickstarts.ReferenceClient
 {
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        public ConsoleTelemetry()
-        : base(
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            #pragma warning restore CA2000
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-            )
-        {
-        }
-    }
     static class Program
     {
-        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             // Initialize the user interface.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance(m_telemetry);
-            application.ApplicationName = "UA Reference Client";
-            application.ApplicationType = ApplicationType.Client;
-            application.ConfigSectionName = "Quickstarts.ReferenceClient";
 
-            try
-            {
-
-                // load the application configuration.
-                _ = application.LoadApplicationConfigurationAsync(false).AsTask().Result;
-
-                // check the application certificate.
-                var certOK = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Result;
-                if (!certOK)
-                {
-                    #pragma warning disable CA2201 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    throw new Exception("Application instance certificate invalid!");
-                    #pragma warning restore CA2201
-                }
-
-                // run the application interactively.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                Application.Run(new MainForm(application.ApplicationConfiguration, m_telemetry));
-                #pragma warning restore CA2000
-            }
-            catch (Exception e)
-            {
-                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
-            }
-            finally
-            {
-                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
-                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
-            }
+            // the generic host owns the configuration, the certificate, the logging
+            // and the lifetime of the client; the main form is created by the container
+            // from the services registered here.
+            SampleWinFormsHost.Run<MainForm>(
+                args,
+                services => services
+                    .AddSampleApplication(options => {
+                        options.ApplicationType = ApplicationType.Client;
+                        options.ApplicationName = "UA Reference Client";
+                        options.ConfigSectionName = "Quickstarts.ReferenceClient";
+                    }),
+                ExceptionDlg.Show);
         }
     }
 

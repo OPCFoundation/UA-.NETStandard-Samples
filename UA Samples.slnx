@@ -75,6 +75,7 @@
     <Project Path="Samples/Server.Net4/UA Sample Server.csproj" Id="b109ebae-bb08-40a7-bb9e-7e56b9151b17" />
     <Project Path="Samples/Controls.Net4/UA Sample Controls.csproj" Id="92ae819b-4938-4502-ac32-67063f9893cd" />
     <Project Path="Samples/Opc.Ua.Sample/Opc.Ua.Sample.csproj" />
+    <Project Path="Samples/Hosting/Opc.Ua.Samples.Hosting.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/Samples.Tests.Common/Samples.Tests.Common.csproj" />

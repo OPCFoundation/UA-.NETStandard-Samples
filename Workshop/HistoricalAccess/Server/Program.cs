@@ -36,82 +36,48 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Windows.Forms;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.Hosting;
 using Opc.Ua.Server;
 using Opc.Ua.Server.Controls;
 
 namespace Quickstarts.HistoricalAccessServer
 {
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "LoggerFactory ownership is transferred to telemetry context.")]
-        public ConsoleTelemetry()
-        : base(
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-            )
-        {
-        }
-    }
     static class Program
     {
-        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
-        private static ILogger m_logger;
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             // Initialize the user interface.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance(m_telemetry);
-            application.ApplicationType = ApplicationType.Server;
-            application.ConfigSectionName = "HistoricalAccessServer";
 
-            m_logger = m_telemetry.CreateLogger(nameof(Program));
+            // the aggregate test harness below is run against the recorded data instead
+            // of the server, and needs nothing but a telemetry context:
+            // DoTests(telemetry, false, false, "Quickstarts.HistoricalAccessServer.Data.Historian1.txt", "..\\..\\Data\\Historian1ExpectedData.csv");
+            // DoTests(telemetry, false, true, "Quickstarts.HistoricalAccessServer.Data.Historian2.txt", "..\\..\\Data\\Historian2ExpectedData.csv");
+            // DoTests(telemetry, true, true, "Quickstarts.HistoricalAccessServer.Data.Historian3.txt", "..\\..\\Data\\Historian3ExpectedData.csv");
 
-            try
-            {
-                // DoTests(false, false, "Quickstarts.HistoricalAccessServer.Data.Historian1.txt", "..\\..\\Data\\Historian1ExpectedData.csv");
-                // DoTests(false, true, "Quickstarts.HistoricalAccessServer.Data.Historian2.txt", "..\\..\\Data\\Historian2ExpectedData.csv");
-                // DoTests(true, true, "Quickstarts.HistoricalAccessServer.Data.Historian3.txt", "..\\..\\Data\\Historian3ExpectedData.csv");
-
-                // load the application configuration.
-                application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
-
-                // check the application certificate.
-                application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
-
-                // start the server.
-#pragma warning disable CA2000 // Justification: ownership is transferred to the application instance.
-                application.StartAsync(new HistoricalAccessServer(m_telemetry)).Wait();
-#pragma warning restore CA2000
-
-                // run the application interactively.
-#pragma warning disable CA2000 // Justification: ownership is transferred to Application.Run for form lifetime.
-                Application.Run(new ServerForm(application, m_telemetry));
-#pragma warning restore CA2000
-            }
-            catch (Exception e)
-            {
-                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
-                return;
-            }
-            finally
-            {
-                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
-                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
-            }
+            // the generic host owns the configuration, the certificate, the logging
+            // and the lifetime of the server; the main form is created by the container
+            // from the services registered here.
+            SampleWinFormsHost.Run<ServerForm>(
+                args,
+                services => services
+                    .AddSampleApplication(options => {
+                        options.ApplicationType = ApplicationType.Server;
+                        options.ConfigSectionName = "HistoricalAccessServer";
+                    })
+                    .AddSampleServer<HistoricalAccessServer>(),
+                ExceptionDlg.Show);
         }
 
         internal sealed class TestCase
@@ -125,7 +91,7 @@ namespace Quickstarts.HistoricalAccessServer
             public bool UseSlopedExtrapolation { get; set; }
         }
 
-        static void DoTests(bool stepped, bool treatUncertainAsBad, string dataPath, string expectedResultsPath)
+        static void DoTests(ITelemetryContext telemetry, bool stepped, bool treatUncertainAsBad, string dataPath, string expectedResultsPath)
         {
             TestCase test8 = new TestCase() {
                 TestId = 8,
@@ -137,7 +103,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test8, "..\\..\\Data\\Results8.csv");
+            DoTest(telemetry, test8, "..\\..\\Data\\Results8.csv");
 
             TestCase test9 = new TestCase() {
                 TestId = 9,
@@ -149,7 +115,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test9, "..\\..\\Data\\Results9.csv");
+            DoTest(telemetry, test9, "..\\..\\Data\\Results9.csv");
 
             TestCase test7 = new TestCase() {
                 TestId = 7,
@@ -161,7 +127,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test7, "..\\..\\Data\\Results7.csv");
+            DoTest(telemetry, test7, "..\\..\\Data\\Results7.csv");
 
             TestCase test6 = new TestCase() {
                 TestId = 6,
@@ -173,7 +139,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test6, "..\\..\\Data\\Results6.csv");
+            DoTest(telemetry, test6, "..\\..\\Data\\Results6.csv");
 
             TestCase test5 = new TestCase() {
                 TestId = 5,
@@ -185,7 +151,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test5, "..\\..\\Data\\Results5.csv");
+            DoTest(telemetry, test5, "..\\..\\Data\\Results5.csv");
 
             TestCase test1 = new TestCase() {
                 TestId = 1,
@@ -197,7 +163,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test1, "..\\..\\Data\\Results1.csv");
+            DoTest(telemetry, test1, "..\\..\\Data\\Results1.csv");
 
             TestCase test2 = new TestCase() {
                 TestId = 2,
@@ -209,7 +175,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test2, "..\\..\\Data\\Results2.csv");
+            DoTest(telemetry, test2, "..\\..\\Data\\Results2.csv");
 
             TestCase test3 = new TestCase() {
                 TestId = 3,
@@ -221,7 +187,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test3, "..\\..\\Data\\Results3.csv");
+            DoTest(telemetry, test3, "..\\..\\Data\\Results3.csv");
 
             TestCase test4 = new TestCase() {
                 TestId = 4,
@@ -233,7 +199,7 @@ namespace Quickstarts.HistoricalAccessServer
                 UseSlopedExtrapolation = !stepped
             };
 
-            DoTest(test4, "..\\..\\Data\\Results4.csv");
+            DoTest(telemetry, test4, "..\\..\\Data\\Results4.csv");
             /*
             */
         }
@@ -296,14 +262,16 @@ namespace Quickstarts.HistoricalAccessServer
             return results;
         }
 
-        static void DoTest(TestCase test, string filePath)
+        static void DoTest(ITelemetryContext telemetry, TestCase test, string filePath)
         {
+            ILogger logger = telemetry.CreateLogger(nameof(Program));
+
             List<DataValue> expectedValues = GetExpectedResults(test.ExpectedResultsPath, test.TestId);
 
             ArchiveItem item = new ArchiveItem(test.DataPath, Assembly.GetExecutingAssembly(), test.DataPath);
 
             DataFileReader reader = new DataFileReader();
-            reader.LoadConfiguration(null, item, m_telemetry);
+            reader.LoadConfiguration(null, item, telemetry);
             reader.LoadHistoryData(null, item);
 
             AggregateConfiguration configuration = new AggregateConfiguration();
@@ -323,7 +291,7 @@ namespace Quickstarts.HistoricalAccessServer
                 5000,
                 test.Stepped,
                 configuration,
-                m_telemetry);
+                telemetry);
 
             StringBuilder buffer = new StringBuilder();
             List<DataValue> values = new List<DataValue>();
@@ -334,7 +302,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 if (!calculator.QueueRawValue(rawValue))
                 {
-                    m_logger.LogTrace("Oops!");
+                    logger.LogTrace("Oops!");
                     continue;
                 }
 
@@ -353,13 +321,13 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 if (values[ii].SourceTimestamp != expectedValues[ii].SourceTimestamp)
                 {
-                    m_logger.LogTrace("Wrong Status Timestamp");
+                    logger.LogTrace("Wrong Status Timestamp");
                     continue;
                 }
 
                 if (values[ii].StatusCode != expectedValues[ii].StatusCode)
                 {
-                    m_logger.LogTrace("Wrong Status Code");
+                    logger.LogTrace("Wrong Status Code");
                     continue;
                 }
 
@@ -370,7 +338,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (value1 != value2)
                     {
-                        m_logger.LogTrace("Wrong Value");
+                        logger.LogTrace("Wrong Value");
                         continue;
                     }
                 }

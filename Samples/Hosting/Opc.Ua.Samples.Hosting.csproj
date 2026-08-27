@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Windows Desktop target carries the WinForms entry point helpers, and the
+       targeting pack it needs is only available on Windows builds. The console
+       samples build against the platform neutral targets on every platform. -->
+  <Choose>
+    <When Condition="$([MSBuild]::IsOsPlatform('Windows'))">
+      <PropertyGroup>
+        <TargetFrameworks>net8.0;net10.0;net10.0-windows</TargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <PropertyGroup>
+    <RootNamespace>Opc.Ua.Samples.Hosting</RootNamespace>
+    <AssemblyName>Opc.Ua.Samples.Hosting</AssemblyName>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Bootstrap shared by the OPC UA sample and workshop applications: dependency injection, generic host and file based logging.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows'">
+    <Compile Remove="WinForms\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting">
+      <Version>10.0.11</Version>
+    </PackageReference>
+    <PackageReference Include="Serilog">
+      <Version>4.4.0</Version>
+    </PackageReference>
+    <PackageReference Include="Serilog.Extensions.Logging">
+      <Version>10.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Serilog.Sinks.Debug">
+      <Version>3.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Serilog.Sinks.File">
+      <Version>7.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
+      <Version>2.0.0-preview.2</Version>
+    </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
+      <Version>2.0.0-preview.2</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

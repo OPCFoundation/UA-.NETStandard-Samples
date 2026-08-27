@@ -28,124 +28,103 @@
  * ======================================================================*/
 
 using System;
-using System.Threading.Tasks;
+using System.Linq;
 using System.Windows.Forms;
-using Microsoft.Extensions.Logging;
+using System.Xml.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.Hosting;
 using Opc.Ua.Server.Controls;
-using Serilog;
 
 namespace Quickstarts.ReferenceServer
 {
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        public ConsoleTelemetry()
-        : base(
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            #pragma warning restore CA2000
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-            )
-        {
-        }
-    }
     static class Program
     {
-        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             // Initialize the user interface.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance(m_telemetry);
-            application.ApplicationType = ApplicationType.Server;
-            application.ConfigSectionName = "Quickstarts.ReferenceServer";
 
-            try
+            // the generic host owns the configuration, the certificate, the logging
+            // and the lifetime of the server; the main form is created by the container
+            // from the services registered here.
+            SampleWinFormsHost.Run(
+                args,
+                services => services
+                    .AddSampleApplication(options => {
+                        options.ApplicationType = ApplicationType.Server;
+                        options.ConfigSectionName = "Quickstarts.ReferenceServer";
+                    })
+                    .AddSampleServer(CreateReferenceServer),
+                CreateServerForm,
+                ExceptionDlg.Show);
+        }
+
+        /// <summary>
+        /// Creates the reference server, with the node managers of the quickstart
+        /// library added to it.
+        /// </summary>
+        private static ReferenceServer CreateReferenceServer(IServiceProvider provider)
+        {
+            var server = new ReferenceServer(provider.GetRequiredService<ITelemetryContext>());
+
+            Quickstarts.Servers.Utils.AddDefaultNodeManagers(server);
+
+            return server;
+        }
+
+        /// <summary>
+        /// Creates the main form, which shows the certificate validation dialog when
+        /// the extension of the configuration asks for it.
+        /// </summary>
+        private static Form CreateServerForm(IServiceProvider provider)
+        {
+            ApplicationConfiguration configuration = provider.GetRequiredService<ApplicationConfiguration>();
+
+            return ActivatorUtilities.CreateInstance<ServerForm>(
+                provider,
+                ShowCertificateValidationDialog(configuration));
+        }
+
+        /// <summary>
+        /// Reads ShowCertificateValidationDialog out of the ReferenceServerConfiguration
+        /// extension of the configuration.
+        /// </summary>
+        /// <remarks>
+        /// The 2.0 Quickstarts.Servers ReferenceServerConfiguration is still a
+        /// [DataContract] POCO (not IEncodeable), so ApplicationConfiguration.ParseExtension&lt;T&gt;()
+        /// can no longer bind it. The extension XML is therefore read directly.
+        /// </remarks>
+        private static bool ShowCertificateValidationDialog(ApplicationConfiguration configuration)
+        {
+            foreach (Opc.Ua.XmlElement extension in configuration.Extensions)
             {
-                // load the application configuration.
-                ApplicationConfiguration config = application.LoadApplicationConfigurationAsync(false).AsTask().Result;
-
-                LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
-#if DEBUG
-#pragma warning disable CA1305 // Specify IFormatProvider
-                loggerConfiguration.WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning);
-#pragma warning restore CA1305 // Specify IFormatProvider
-#endif
-
-                // check the application certificate.
-                bool certOk = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Result;
-                if (!certOk)
+                if (extension.IsNull || extension.IsEmpty)
                 {
-                    #pragma warning disable CA2201 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    throw new Exception("Application instance certificate invalid!");
-                    #pragma warning restore CA2201
+                    continue;
                 }
 
-                // Create server, add additional node managers
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                var server = new ReferenceServer(m_telemetry);
-                #pragma warning restore CA2000
-                Quickstarts.Servers.Utils.AddDefaultNodeManagers(server);
-
-                // start the server.
-                application.StartAsync(server).Wait();
-
-                // check whether the invalid certificates dialog should be displayed.
-                bool showCertificateValidationDialog = false;
-
-                // The 2.0 Quickstarts.Servers ReferenceServerConfiguration is still a
-                // [DataContract] POCO (not IEncodeable), so ApplicationConfiguration.ParseExtension<T>()
-                // can no longer bind it. Read the extension XML directly instead.
-                foreach (var extension in application.ApplicationConfiguration.Extensions)
+                XElement element = extension.ToXElement();
+                if (element == null || element.Name.LocalName != "ReferenceServerConfiguration")
                 {
-                    if (extension.IsNull || extension.IsEmpty)
-                    {
-                        continue;
-                    }
-
-                    System.Xml.Linq.XElement element = extension.ToXElement();
-                    if (element == null || element.Name.LocalName != "ReferenceServerConfiguration")
-                    {
-                        continue;
-                    }
-
-                    System.Xml.Linq.XElement show = System.Linq.Enumerable.FirstOrDefault(
-                        element.Elements(),
-                        e => e.Name.LocalName == "ShowCertificateValidationDialog");
-                    if (show != null && bool.TryParse(show.Value, out bool value))
-                    {
-                        showCertificateValidationDialog = value;
-                    }
-
-                    break;
+                    continue;
                 }
 
-                // run the application interactively.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                Application.Run(new ServerForm(application, m_telemetry, showCertificateValidationDialog));
-                #pragma warning restore CA2000
+                XElement show = element.Elements()
+                    .FirstOrDefault(child => child.Name.LocalName == "ShowCertificateValidationDialog");
+
+                return show != null && bool.TryParse(show.Value, out bool value) && value;
             }
-            catch (Exception e)
-            {
-                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
-            }
-            finally
-            {
-                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
-                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
-            }
+
+            return false;
         }
     }
 

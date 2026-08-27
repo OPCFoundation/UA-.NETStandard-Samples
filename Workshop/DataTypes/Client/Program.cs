@@ -28,79 +28,42 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua;
-using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.Hosting;
+using Opc.Ua.Client.Controls;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
 namespace Quickstarts.DataTypes
 {
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Logger factory ownership is transferred to TelemetryContextBase.")]
-        public ConsoleTelemetry()
-        : base(
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-            )
-        {
-        }
-    }
     static class Program
     {
-        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             // Initialize the user interface.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance(m_telemetry);
-            application.ApplicationType = ApplicationType.Client;
-            application.ConfigSectionName = "DataTypesClient";
 
-            try
-            {
-                // load the application configuration.
-                application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
-
-#pragma warning disable UA_NETStandard_1 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-                AmbientMessageContext.CurrentContext.Factory.AddEncodeableTypes(typeof(Quickstarts.DataTypes.Types.Namespaces).Assembly);
-#pragma warning restore UA_NETStandard_1 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-
-                // check the application certificate.
-                application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
-
-                // run the application interactively.
-                using (MainForm mainForm = new MainForm(application.ApplicationConfiguration, m_telemetry))
-                {
-                    Application.Run(mainForm);
-                }
-            }
-            catch (Exception e)
-            {
-                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
-                return;
-            }
-            finally
-            {
-                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
-                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
-            }
+            // the generic host owns the configuration, the certificate, the logging
+            // and the lifetime of the client; the main form is created by the container
+            // from the services registered here.
+            SampleWinFormsHost.Run<MainForm>(
+                args,
+                services => services
+                    .AddSampleApplication(options => {
+                        options.ApplicationType = ApplicationType.Client;
+                        options.ConfigSectionName = "DataTypesClient";
+                    }),
+                ExceptionDlg.Show);
         }
     }
 }

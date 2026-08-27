@@ -35,7 +35,10 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.Hosting;
 using Mono.Options;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Linq;
@@ -133,25 +136,9 @@ namespace Opc.Ua.Gds.Server
             }
 
             var server = new NetCoreGlobalDiscoveryServer();
-            await server.RunAsync().ConfigureAwait(false);
+            await server.RunAsync(args).ConfigureAwait(false);
 
             return (int)NetCoreGlobalDiscoveryServer.ExitCode;
-        }
-    }
-
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        public ConsoleTelemetry()
-        : base(
-            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            #pragma warning restore CA2000
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-            )
-        {
         }
     }
 
@@ -160,14 +147,16 @@ namespace Opc.Ua.Gds.Server
     #pragma warning restore CA1001, CA1708
     {
         private GlobalDiscoverySampleServer server;
-        private readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
-        private Task status;
+        private IHost m_host;
+        private ITelemetryContext m_telemetry;
+        // a completed task until the status thread is started, so a failure between
+        // the server being created and the thread starting still shuts down cleanly.
+        private Task status = Task.CompletedTask;
         private DateTime lastEventTime;
         private ApplicationConfiguration m_configuration;
         private IApplicationsDatabase m_database;
         private LdsScannerConfiguration m_ldsScannerConfiguration;
         private GlobalDiscoveryServerAliasMerger m_aliasMerger;
-        private ApplicationInstance m_application;
         #pragma warning disable CA2211 // Justification: Public sample API compatibility is preserved.
         public static ExitCode exitCode;
         #pragma warning restore CA2211
@@ -176,22 +165,22 @@ namespace Opc.Ua.Gds.Server
         {
         }
 
-        public async Task RunAsync()
+        public async Task RunAsync(string[] args)
         {
             try
             {
                 exitCode = ExitCode.ErrorServerNotStarted;
-                await ConsoleGlobalDiscoveryServerAsync(m_telemetry).ConfigureAwait(false);
+                await ConsoleGlobalDiscoveryServerAsync(args).ConfigureAwait(false);
                 Console.WriteLine("Server started.");
                 PrintCommandHelp();
                 exitCode = ExitCode.ErrorServerRunning;
             }
             catch (Exception ex)
             {
-                m_telemetry.CreateLogger<NetCoreGlobalDiscoveryServer>()
-                    #pragma warning disable CA2254 // Justification: Public sample API compatibility is preserved.
+                #pragma warning disable CA2254 // Justification: Public sample API compatibility is preserved.
+                m_telemetry?.CreateLogger<NetCoreGlobalDiscoveryServer>()
                     .LogError("ServiceResultException:" + ex.Message);
-                    #pragma warning restore CA2254
+                #pragma warning restore CA2254
                 Console.WriteLine("Exception: {0}", ex.Message);
                 exitCode = ExitCode.ErrorServerException;
                 return;
@@ -252,21 +241,29 @@ namespace Opc.Ua.Gds.Server
                 m_aliasMerger?.Dispose();
                 m_aliasMerger = null;
 
-                using (GlobalDiscoverySampleServer _server = server)
-                {
-                    // Stop status thread
-                    server = null;
-                    await status.ConfigureAwait(false);
-                    // Stop server and dispose
-                    await _server.StopAsync();
-                }
+                // stop the status thread, then let the host stop and dispose the
+                // server it started.
+                server = null;
+                await status.ConfigureAwait(false);
+            }
 
-                if (m_application != null)
+            if (m_host != null)
+            {
+                IHost host = m_host;
+                m_host = null;
+
+                await host.StopAsync().ConfigureAwait(false);
+                if (host is IAsyncDisposable asyncDisposable)
                 {
-                    await m_application.DisposeAsync().ConfigureAwait(false);
-                    m_application = null;
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    host.Dispose();
                 }
             }
+
+            SampleLogging.CloseAndFlush();
 
             exitCode = ExitCode.Ok;
         }
@@ -372,80 +369,47 @@ namespace Opc.Ua.Gds.Server
                 registered.Count, approved.Count);
         }
 
-        private async Task ConsoleGlobalDiscoveryServerAsync(ITelemetryContext telemetry)
+        private async Task ConsoleGlobalDiscoveryServerAsync(string[] args)
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            m_application = new ApplicationInstance(telemetry)
-            {
-                ApplicationName = "Global Discovery Server",
-                ApplicationType = ApplicationType.Server,
-                ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer"
-            };
 
-            // load the application configuration.
-            ApplicationConfiguration config = await m_application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
+            // the generic host owns the configuration, the certificate and the
+            // lifetime of the server. A console sample logs to the console as well as
+            // to the file the configuration names.
+            HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
 
-            // check the application certificate.
-            bool haveAppCertificate = await m_application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
-            if (!haveAppCertificate)
-            {
-                #pragma warning disable CA2201 // Justification: Public sample API compatibility is preserved.
-                throw new Exception("Application instance certificate invalid!");
-                #pragma warning restore CA2201
-            }
+            builder.Logging.AddSampleConsole();
 
-            if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
-            {
-                config.CertificateManager.AcceptError = (certificate, error) =>
-                {
-                    bool accept = error.StatusCode == StatusCodes.BadCertificateUntrusted;
-                    if (accept)
-                    {
-                        Console.WriteLine("Accepted Certificate: {0}", certificate.AsX509Certificate2().Subject);
-                    }
-                    return accept;
-                };
-            }
+            builder.Services
+                .AddSampleApplication(options => {
+                    options.ApplicationName = "Global Discovery Server";
+                    options.ApplicationType = ApplicationType.Server;
+                    options.ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer";
+                    options.ConfigureConfiguration = AcceptUntrustedCertificatesInteractively;
+                })
+                .AddSampleServer(CreateServer);
 
-            // get the DatabaseStorePath configuration parameter.
-            GlobalDiscoveryServerConfiguration gdsConfiguration = config.ParseExtension<GlobalDiscoveryServerConfiguration>();
-            string databaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.DatabaseStorePath);
-            string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
+            m_host = builder.Build();
+            m_telemetry = m_host.Services.GetRequiredService<ITelemetryContext>();
 
-            var database = JsonApplicationsDatabase.Load(databaseStorePath);
-            var userDatabase = JsonUserDatabase.Load(userdatabaseStorePath, telemetry);
+            await m_host.StartAsync().ConfigureAwait(false);
 
-            bool createStandardUsers = ConfigureUsers(userDatabase);
+            server = m_host.Services.GetRequiredService<AliasMergingGlobalDiscoverySampleServer>();
 
-            // GDS master AliasNames list (issue #274): merge each registered
-            // server's AliasNames into a master list served by this GDS.
-            m_aliasMerger = new GlobalDiscoveryServerAliasMerger(telemetry);
-
-            // start the server.
-            server = new AliasMergingGlobalDiscoverySampleServer(
-                database,
-                database,
-                #pragma warning disable CA2000 // Justification: Certificate group ownership is transferred to the server.
-                new CertificateGroup(telemetry),
-                #pragma warning restore CA2000
-                userDatabase,
-                telemetry,
-                m_aliasMerger,
-                true);
-            await m_application.StartAsync(server).ConfigureAwait(false);
+            ApplicationInstance application = m_host.Services.GetRequiredService<ApplicationInstance>();
+            ApplicationConfiguration config = m_host.Services.GetRequiredService<ApplicationConfiguration>();
 
             // keep the configuration and database so the interactive LDS scan
             // can register approved servers after start-up.
             m_configuration = config;
-            m_database = database;
             m_ldsScannerConfiguration = LdsScannerConfiguration.Parse(config);
 
             // start periodically refreshing the GDS master AliasNames list
             // from every registered server.
-            m_aliasMerger.Start(config, database);
+            m_aliasMerger.Start(config, m_database);
 
             // print endpoint info
-            IEnumerable<string> endpoints = m_application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
+            IEnumerable<string> endpoints = application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
             foreach (string endpoint in endpoints)
             {
                 Console.WriteLine(endpoint);
@@ -458,7 +422,64 @@ namespace Opc.Ua.Gds.Server
             server.CurrentInstance.SessionManager.SessionActivated += EventStatus;
             server.CurrentInstance.SessionManager.SessionClosing += EventStatus;
             server.CurrentInstance.SessionManager.SessionCreated += EventStatus;
+        }
 
+        /// <summary>
+        /// Creates the server, together with the databases and the alias merger it is
+        /// built on. Called by the host once the configuration has been read.
+        /// </summary>
+        private AliasMergingGlobalDiscoverySampleServer CreateServer(IServiceProvider provider)
+        {
+            ITelemetryContext telemetry = provider.GetRequiredService<ITelemetryContext>();
+            ApplicationConfiguration config = provider.GetRequiredService<ApplicationConfiguration>();
+
+            // get the DatabaseStorePath configuration parameter.
+            GlobalDiscoveryServerConfiguration gdsConfiguration = config.ParseExtension<GlobalDiscoveryServerConfiguration>();
+            string databaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.DatabaseStorePath);
+            string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
+
+            var database = JsonApplicationsDatabase.Load(databaseStorePath);
+            var userDatabase = JsonUserDatabase.Load(userdatabaseStorePath, telemetry);
+
+            ConfigureUsers(userDatabase);
+
+            m_database = database;
+
+            // GDS master AliasNames list (issue #274): merge each registered
+            // server's AliasNames into a master list served by this GDS.
+            m_aliasMerger = new GlobalDiscoveryServerAliasMerger(telemetry);
+
+            return new AliasMergingGlobalDiscoverySampleServer(
+                database,
+                database,
+                #pragma warning disable CA2000 // Justification: Certificate group ownership is transferred to the server.
+                new CertificateGroup(telemetry),
+                #pragma warning restore CA2000
+                userDatabase,
+                telemetry,
+                m_aliasMerger,
+                true);
+        }
+
+        /// <summary>
+        /// Accepts an untrusted certificate after reporting it, which the
+        /// configuration file cannot express.
+        /// </summary>
+        private static void AcceptUntrustedCertificatesInteractively(ApplicationConfiguration config)
+        {
+            if (config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
+            {
+                return;
+            }
+
+            config.CertificateManager.AcceptError = (certificate, error) => {
+                bool accept = error.StatusCode == StatusCodes.BadCertificateUntrusted;
+                if (accept)
+                {
+                    Console.WriteLine("Accepted Certificate: {0}", certificate.AsX509Certificate2().Subject);
+                }
+                return accept;
+            };
         }
 
         private bool ConfigureUsers(IUserDatabase userDatabase)
