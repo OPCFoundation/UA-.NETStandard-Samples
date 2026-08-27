@@ -1,6 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Windows Desktop target carries the WinForms entry point helpers, and the
+       targeting pack it needs is only available on Windows builds. The console
+       samples build against the platform neutral targets on every platform. -->
+  <Choose>
+    <When Condition="$([MSBuild]::IsOsPlatform('Windows'))">
+      <PropertyGroup>
+        <TargetFrameworks>net8.0;net10.0;net10.0-windows</TargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net10.0;net10.0-windows</TargetFrameworks>
     <RootNamespace>Opc.Ua.Samples.Hosting</RootNamespace>
     <AssemblyName>Opc.Ua.Samples.Hosting</AssemblyName>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -8,7 +23,6 @@
     <Description>Bootstrap shared by the OPC UA sample and workshop applications: dependency injection, generic host and file based logging.</Description>
   </PropertyGroup>
 
-  <!-- The WinForms entry point helpers only exist on the Windows Desktop target. -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
