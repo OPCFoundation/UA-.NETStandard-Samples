@@ -170,6 +170,17 @@ namespace Opc.Ua.Samples.Tests
                 return "null";
             }
 
+            // a collection formats as its type name, which says nothing about why the wait
+            // gave up. What a reader wants to know is how much of it there was.
+            if (value is System.Collections.ICollection collection)
+            {
+                return string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0} with {1} item(s)",
+                    value.GetType().Name,
+                    collection.Count);
+            }
+
             return string.Format(CultureInfo.InvariantCulture, "{0}", value);
         }
     }

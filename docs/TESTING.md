@@ -300,8 +300,9 @@ What each fixture pins down, in one line:
 Three expectations are written the way the sample is *meant* to behave and reported as
 **ignored** because they do not hold today, through `KnownIssue.RecordAsync`. Like `s_knownIssues`
 in Tier 1, an entry fails the moment it starts passing, so it cannot rot - and that has already
-happened twice while these tests were being written, both times because the expectation was
-wrong about the harness rather than about the sample.
+happened three times, every time because the expectation was wrong about the harness rather
+than about the sample. The third was caught by CI rather than locally: an entry which held on
+a developer machine and not on a build agent, which is the most useful kind to be told about.
 
 They are not asserted the other way round on purpose: recording the broken behaviour as
 expected would ask the migration to preserve it.
@@ -314,14 +315,13 @@ expected would ask the migration to preserve it.
   the select clauses - the filter result for the monitored item is empty - and then delivers a
   null for each of them. Whatever drops them sits below the sample; the standard fields of the
   same event, selected the same way, arrive normally.
-- **HistoricalAccess** - two. A read at a recorded point in time returns a bad value, and what
-  a dynamic item reports to a subscriber does not turn up in its history. Both are worth
-  looking at together with one observation: a raw read whose range starts *before* the first
-  archived value returns nothing rather than the values inside the range, and the archive is
-  searched with a binary search over a view sorted by source timestamp. Deleting a value which
-  *is* in the archive answers `BadUnexpectedError` and leaves the item refusing every later
-  read, so that one is described here rather than tested - a test for it would take the rest
-  of the fixture down with it.
+- **HistoricalAccess** - a read at a recorded point in time returns a bad value. The archive is
+  searched with a binary search over a view sorted by source timestamp, and a bounded raw read
+  whose range starts *before* the first archived value returns nothing rather than the values
+  inside the range, which looks like the same root. Deleting a value which *is* in the archive
+  answers `BadUnexpectedError` and leaves the item refusing every later read, so that one is
+  described here rather than tested - a test for it would take the rest of the fixture down
+  with it.
 - **Aggregation** - the server publishes its proxy root and then answers `BadNotConnected` to
   every browse of it. The refusal is deliberate rather than an error: the node manager hands
   out a downstream session only once its type cache is loaded and its status node reads Good,

@@ -555,51 +555,57 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// What a dynamic item reports ought to end up in its history, and today it does not.
+        /// What a dynamic item reports is added to its history.
         /// </summary>
         /// <remarks>
         /// The simulation appends to the dynamic archive while the item is monitored, which
-        /// DynamicItemChangesWhileItIsMonitored shows happening. Reading the history of the
-        /// span the subscription covered returns nothing, so the values were reported to the
-        /// subscriber but never archived.
+        /// DynamicItemChangesWhileItIsMonitored shows from the subscriber's side. This is
+        /// the other side of it: the archive has to grow while that is happening.
         ///
-        /// This is no longer the archive being thrown away between operations - that was
-        /// real, and is fixed, which is why an inserted value survives now. What is left is
-        /// either the simulation not writing what it reports into the archive at all, or a
-        /// bounded read failing to find it: a raw read whose range starts before the first
-        /// archived value returns nothing rather than the values inside the range.
+        /// Growth is what is measured, over the whole archive, rather than reading back the
+        /// span the subscription covered. A bounded read whose range starts before the first
+        /// archived value returns nothing rather than the values inside the range - see
+        /// ReadAtTimeCarriesTheValue - so a test written that way says more about that bug
+        /// than about whether anything was archived, and answers differently depending on
+        /// where the generated data happens to end relative to the clock.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
-        public Task DynamicItemRecordsWhatItReported(CancellationToken ct)
+        public async Task DynamicItemRecordsWhatItReported(CancellationToken ct)
         {
-            return KnownIssueAsync(
-                async () => {
-                    NodeId item = await ResolveDynamicItemAsync(ct).ConfigureAwait(false);
+            NodeId item = await ResolveDynamicItemAsync(ct).ConfigureAwait(false);
 
-                    DateTime start = DateTime.UtcNow;
+            IReadOnlyList<DataValue> before = await HistoryOps
+                .ReadAllRawAsync(Session, item, ArchiveStart, ArchiveEnd, 0, ct)
+                .ConfigureAwait(false);
 
-                    await using DataChangeCapture capture = await DataChangeCapture
-                        .CreateAsync(Session, item, ct)
+            await using DataChangeCapture capture = await DataChangeCapture
+                .CreateAsync(Session, item, ct)
+                .ConfigureAwait(false);
+
+            await capture.CollectDistinctAsync(3, TimeSpan.FromSeconds(25), ct).ConfigureAwait(false);
+
+            int grown = await Poll.UntilAsync(
+                async token => {
+                    IReadOnlyList<DataValue> now = await HistoryOps
+                        .ReadAllRawAsync(Session, item, ArchiveStart, ArchiveEnd, 0, token)
                         .ConfigureAwait(false);
 
-                    await capture.CollectDistinctAsync(3, TimeSpan.FromSeconds(25), ct).ConfigureAwait(false);
-
-                    IReadOnlyList<DataValue> recorded = await Poll.UntilNoThrowAsync(
-                        token => HistoryOps.ReadAllRawAsync(Session, item, start, DateTime.UtcNow, 0, token),
-                        values => values.Count >= 2,
-                        "the dynamic item to record what the subscription reported",
-                        timeout: TimeSpan.FromSeconds(15),
-                        ct: ct).ConfigureAwait(false);
-
-                    Assert.That(
-                        recorded.Select(At),
-                        Is.All.GreaterThanOrEqualTo(start),
-                        "Everything recorded during the test has to be stamped during the test.");
+                    return now.Count;
                 },
-                "the values a dynamic item reports to a subscriber do not turn up in its " +
-                "history, although the simulation which produces them is what is meant to " +
-                "archive them.");
+                count => count > before.Count,
+                $"the history of the dynamic item to grow beyond the {before.Count} values it held",
+                timeout: TimeSpan.FromSeconds(20),
+                ct: ct).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"The dynamic archive grew from {before.Count} to {grown} values while monitored.")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                grown,
+                Is.GreaterThan(before.Count),
+                "A dynamic item has to archive what it reports while it is being monitored.");
         }
 
         /// <summary>
