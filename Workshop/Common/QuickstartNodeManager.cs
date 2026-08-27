@@ -40,15 +40,17 @@ using Microsoft.Extensions.Logging;
 namespace Quickstarts
 {
     /// <summary>
-    /// A sample implementation of the INodeManager interface.
+    /// A sample implementation of the INodeManager and IAsyncNodeManager interfaces.
     /// </summary>
     /// <remarks>
     /// This node manager is a base class used in multiple samples. It implements the INodeManager
     /// interface and allows sub-classes to override only the methods that they need. This example
     /// is not part of the SDK because most real implementations of a INodeManager will need to
     /// modify the behavior of the base class.
+    /// The node manager also implements <see cref="IAsyncNodeManager"/>; that half of the class
+    /// lives in QuickstartNodeManagerAsync.cs.
     /// </remarks>
-    public class QuickstartNodeManager : INodeManager, INodeIdFactory, IDisposable
+    public partial class QuickstartNodeManager : INodeManager, IAsyncNodeManager, INodeIdFactory, IDisposable
     {
         #region Constructors
         /// <summary>
@@ -3335,14 +3337,11 @@ namespace Quickstarts
                 return error;
             }
 
-            // create the item.
-            // TODO: The non-obsolete MonitoredItem constructor requires an IAsyncNodeManager.
-            // QuickstartNodeManager is a synchronous INodeManager, so migrating to the async
-            // node-manager model is tracked separately. See issue #723.
-#pragma warning disable CS0618 // Type or member is obsolete
+            // create the item. The cast picks the IAsyncNodeManager overload: this class
+            // implements both node manager interfaces, so an uncast "this" would be ambiguous.
             MonitoredItem datachangeItem = new MonitoredItem(
                 Server,
-                this,
+                (IAsyncNodeManager)this,
                 handle,
                 subscriptionId,
                 monitoredItemId,
@@ -3358,7 +3357,6 @@ namespace Quickstarts
                 queueSize,
                 itemToCreate.RequestedParameters.DiscardOldest,
                 0);
-#pragma warning restore CS0618 // Type or member is obsolete
 
             // report the initial value.
             ReadInitialValue(context, handle, datachangeItem);
