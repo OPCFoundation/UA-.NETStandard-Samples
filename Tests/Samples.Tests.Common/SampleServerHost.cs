@@ -67,11 +67,17 @@ namespace Opc.Ua.Samples.Tests
         /// <param name="configPath">The sample configuration, relative to the repository root.</param>
         /// <param name="serverFactory">Creates the server instance of the sample.</param>
         /// <param name="ct">The cancellation token.</param>
+        /// <param name="configure">
+        /// Changes the configuration after it was loaded and before the server is started.
+        /// Used by the aggregation sample, whose shipped configuration names a downstream
+        /// server which is not the one a test starts.
+        /// </param>
         public static async Task<SampleServerHost> StartAsync(
             string name,
             string configPath,
             Func<ITelemetryContext, StandardServer> serverFactory,
-            CancellationToken ct = default)
+            CancellationToken ct = default,
+            Action<ApplicationConfiguration> configure = null)
         {
             if (serverFactory == null)
             {
@@ -87,6 +93,8 @@ namespace Opc.Ua.Samples.Tests
                     await SampleConfigurationLoader.LoadAsync(configPath, pki, ct).ConfigureAwait(false);
 
                 string endpointUrl = KeepOpcTcpEndpointsOnly(configuration);
+
+                configure?.Invoke(configuration);
 
                 var application = new ApplicationInstance(configuration, NullTelemetry.Instance);
 

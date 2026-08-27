@@ -58,6 +58,7 @@ namespace Quickstarts.DataAccessServer
             m_blockId = block.Id;
             m_nodeManager = nodeManager;
 
+            this.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
             this.SymbolicName = block.Name;
             this.NodeId = nodeId;
             this.BrowseName = new QualifiedName(block.Name, nodeId.NamespaceIndex);
@@ -199,6 +200,22 @@ namespace Quickstarts.DataAccessServer
         protected override void PopulateBrowser(ISystemContext context, NodeBrowser browser)
         {
             base.PopulateBrowser(context, browser);
+
+            // Add the tags of the block. A block is built for the duration of an operation
+            // and is never part of the address space, so nothing else offers its children
+            // to a browser: without this a client cannot discover the tags of a block.
+            // The tags hang below the block, so an inverse browse must not see them; the
+            // browser filters by reference type on its own, but not by direction here.
+            if (browser.BrowseDirection != BrowseDirection.Inverse)
+            {
+                var tags = new List<BaseInstanceState>();
+                GetChildren(context, tags);
+
+                for (int ii = 0; ii < tags.Count; ii++)
+                {
+                    browser.Add(tags[ii].ReferenceTypeId, false, tags[ii]);
+                }
+            }
 
             // check if the parent segments need to be returned.
             if (browser.IsRequired(ReferenceTypeIds.Organizes, true))

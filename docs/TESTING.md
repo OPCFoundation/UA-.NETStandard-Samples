@@ -9,17 +9,24 @@ automatically for every sample:
 Anything beyond that is out of scope. A sample that starts, serves its address space,
 and answers a browse/read is considered working.
 
-## The three tiers
+## The four tiers
 
 | Tier | What it proves | Needs a network? | Needs a desktop? | Runtime |
 |------|----------------|------------------|------------------|---------|
 | 0 — Configuration | Every `*.Config.xml` parses and validates; client URLs match their server's endpoint; ports don't collide | no | no | seconds |
 | 1 — Server smoke | Every sample server starts headless and answers a real OPC UA session (browse, read, sample-specific check) | localhost | no | ~1 min |
+| 1.5 — Node managers | Every sample node manager still does the thing it was written to demonstrate | localhost | no | ~1.5 min |
 | 2 — Client smoke | Every WinForms client builds its main form, connects to its own sample server, and completes its post-connect logic | localhost | yes | ~2-3 min |
 
 Tier 0 and Tier 1 run anywhere, including Linux agents for Tier 0. Tier 2 is Windows-only and
 is tagged `[Category("RequiresDesktop")]` so it can be excluded where there is no window
-station. CI runs all three: the `Test Samples` job is on a Windows agent.
+station. CI runs all of them: the `Test Samples` job is on a Windows agent.
+
+Tier 1.5 is the odd one out and is worth explaining. The other three ask whether a sample
+works; this one asks whether it still does what it *means*. It exists because the sample node
+managers are due to be migrated, and a rewrite of a node manager is exactly the kind of change
+which leaves a server starting, browsing and reading perfectly while quietly dropping the
+behaviour the sample was written to show. Tier 1 would not notice any of that.
 
 ### Why this works at all
 
@@ -47,6 +54,7 @@ Tests/
   Samples.Tests.WinForms/      # STA message loop runner, dialog watchdog, form reflection helpers
   SampleConfiguration.Tests/   # Tier 0. No project references, no network.
   SampleServers.Tests/         # Tier 1. Starts the servers from Samples.Servers.Hosting.
+  SampleNodeManagers.Tests/    # Tier 1.5. One fixture per node manager, over a real session.
   SampleClients.Tests/         # Tier 2. References the sample *client* projects.
 ```
 
@@ -107,6 +115,7 @@ the ports are the same. The same applies to a sample you left running by hand.
 ```bash
 dotnet test Tests/SampleConfiguration.Tests
 dotnet test Tests/SampleServers.Tests
+dotnet test Tests/SampleNodeManagers.Tests
 dotnet test Tests/SampleClients.Tests
 ```
 
@@ -114,10 +123,17 @@ dotnet test Tests/SampleClients.Tests
 dotnet test "UA Samples.slnx" --filter "TestCategory!=RequiresDesktop"
 ```
 
-CI runs all three tiers in the `Test Samples` stage of `azure-pipelines.yml`
+One fixture of Tier 1.5 while working on it:
+
+```bash
+dotnet test Tests/SampleNodeManagers.Tests --filter "FullyQualifiedName~MethodsNodeManagerTests"
+```
+
+CI runs every tier in the `Test Samples` stage of `azure-pipelines.yml`
 (`.azurepipelines/test.yml`). The job runs on a Windows agent and filters nothing out, so
 the WinForms client tests run there too. The `--filter` above is for running the suite where
-there is no window station, a Linux machine or a container.
+there is no window station, a Linux machine or a container. The pipeline globs
+`Tests/**/*.Tests.csproj`, so a new tier needs no pipeline change.
 
 ## What Tier 0 checks today
 
@@ -246,6 +262,92 @@ listed sample as **ignored** rather than failed, and fails the moment it starts 
 an entry cannot rot. Both lists are used sparingly: a sample that is broken is worth fixing,
 not parking. Both lists are currently empty.
 
+## What Tier 1.5 checks today
+
+83 test cases across 16 fixtures, about 1.5 minutes. One fixture per node manager, each
+starting its sample server once and driving it through an ordinary OPC UA session.
+
+**Everything is observed through the services a client would use.** No test reaches into a
+node manager object, because that is precisely the part which is going to be replaced. Nodes
+are resolved by browse path rather than by node id where the sample does not fix the id, and
+namespace *indexes* are never written down - only namespace uris, looked up per run. A
+migration is allowed to renumber namespaces and to restructure its internals; it is not
+allowed to change what a client sees.
+
+What each fixture pins down, in one line:
+
+| Node manager | The behaviour under test |
+|---|---|
+| Empty | The hand-built trigger, its 2x2 matrix property, and the sample's own reference type in both directions |
+| Boiler (Workshop) | The boiler from the node set and the one built in code; the simulation counts one below 100 and the other below 20 |
+| DataTypes | Custom structures with both encodings, an instance from a second node set carrying a value of a type from the first |
+| Views | The same node browsed through two views shows two different sets of children |
+| SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing |
+| Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
+| UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session |
+| PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
+| DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths |
+| AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area |
+| HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting into the history, and which items are still being collected |
+| HistoricalEvents | The well tree, event history with continuation points, and the two refusals the sample declares |
+| Aggregation | The proxy root published for the configured downstream server |
+| TestData | Static write round trip, simulated values while monitored, and which single variable is archived |
+| MemoryBuffer | Tags synthesized from node ids, and the three creation refusals the custom monitored item makes |
+| Boiler (sample server) | Display names renamed after the unit, and the state machine started by the node manager itself |
+
+### Recorded issues
+
+Three expectations are written the way the sample is *meant* to behave and reported as
+**ignored** because they do not hold today, through `KnownIssue.RecordAsync`. Like `s_knownIssues`
+in Tier 1, an entry fails the moment it starts passing, so it cannot rot - and that has already
+happened twice while these tests were being written, both times because the expectation was
+wrong about the harness rather than about the sample.
+
+They are not asserted the other way round on purpose: recording the broken behaviour as
+expected would ask the migration to preserve it.
+
+- **SimpleEvents** - events arrive with the sample's own fields (`CycleId`, `CurrentStep`,
+  `Steps`) empty. This is no longer the node manager building the event wrongly, which it was:
+  the event is now created from its type model, so the fields exist, carry their browse names
+  and hold their values, and asking the event object itself to resolve `2:CycleId` through the
+  very method the server uses to apply an event filter returns the value. The server accepts
+  the select clauses - the filter result for the monitored item is empty - and then delivers a
+  null for each of them. Whatever drops them sits below the sample; the standard fields of the
+  same event, selected the same way, arrive normally.
+- **HistoricalAccess** - two. A read at a recorded point in time returns a bad value, and what
+  a dynamic item reports to a subscriber does not turn up in its history. Both are worth
+  looking at together with one observation: a raw read whose range starts *before* the first
+  archived value returns nothing rather than the values inside the range, and the archive is
+  searched with a binary search over a view sorted by source timestamp. Deleting a value which
+  *is* in the archive answers `BadUnexpectedError` and leaves the item refusing every later
+  read, so that one is described here rather than tested - a test for it would take the rest
+  of the fixture down with it.
+- **Aggregation** - the server publishes its proxy root and then answers `BadNotConnected` to
+  every browse of it. The refusal is deliberate rather than an error: the node manager hands
+  out a downstream session only once its type cache is loaded and its status node reads Good,
+  and both are set by the metadata update it schedules five seconds after start. That update
+  never finishes - the proxy root still carries its placeholder name `Root` rather than the
+  name of the downstream server, and renaming it is the first thing the update does. The
+  fixture holds an ordinary session to that same downstream server and reads from it, which is
+  asserted separately so this cannot be blamed on the downstream server being absent.
+  Everything the sample exists for is behind that browse.
+
+One further test, `AuthenticatedUserMayWriteAndTheLogFileAppears`, is skipped unless
+`OPCUA_SAMPLES_TEST_USER` and `OPCUA_SAMPLES_TEST_PASSWORD` name a real local Windows account.
+The UserAuthentication server verifies passwords with `LogonUser`, so there is no way to
+authenticate without one. The two refusal paths need no account and run everywhere, including
+CI.
+
+### Waiting without sleeping
+
+Most of these node managers are driven by a timer, so most of these tests have to wait for
+something. None of them sleep for a guessed duration: `Poll.UntilAsync` retries a probe until
+a condition holds, `DataChangeCapture` collects notifications from a subscription, and
+`EventCapture` waits for an event matching a predicate. Each reports what it last saw when it
+gives up, which is the difference between a failure that explains itself and one that does not.
+Nothing assumes it has seen the *first* event of a run either: the simulations have been going
+since the server started.
+
 ## What Tier 2 checks today
 
 16 test cases, about 50 seconds, Windows only. For each WinForms sample client the test
@@ -310,6 +412,22 @@ no test reaches it, which is why it is fixed by inspection rather than by a fail
 - [x] Phase 2 - Tier 1 server smoke tests (12 Workshop servers + Reference + Sample server)
 - [x] Phase 3 - Tier 2 client smoke tests (no separate host process was needed)
 - [x] Phase 4 - LDS, the console GDS and the aggregation server
+- [x] Phase 5 - Tier 1.5 node manager tests, ahead of migrating the node managers
+
+Writing Tier 1.5 found four defects which are fixed rather than recorded:
+
+| Where | What was wrong |
+|-------|----------------|
+| `Workshop/Methods/Server/MethodsNodeManager.cs` | The `Start` method could not be called. Its `InputArguments` and `OutputArguments` were declared with a hand-written `IVariantBuilder` whose `WithValue` stored the arguments through `Variant.FromStructure` and whose `GetValue` could not read that back, so it returned an empty array. Reading the property over a session worked - the encoding is fine - but the server read the declaration back to validate a call, saw zero declared arguments, and answered `BadTooManyArguments` to any call carrying any. Both properties now use the SDK's own `StructureBuilder<Argument>`, which is what a structure property is meant to be built with; the local builder is gone |
+| `Workshop/DataAccess/Server/Model/BlockState.cs` | Browsing a block returned no references at all, so a client could not discover its tags - which is most of what the sample demonstrates. A block is built for the duration of an operation and never lives in the address space, so nothing populates a browser for it with its children; `SegmentState` already does this for itself and `BlockState` did not. It also had no `TypeDefinitionId`, so it did not even report what kind of object it was |
+| `Workshop/HistoricalAccess/Server/UnderlyingSystem/UnderlyingSystem.cs` | Nothing written to the history was ever stored. Every operation was handed a freshly constructed archive item which loaded its own copy of the data from the resource it came from, so a write went into a copy that was then thrown away and the next read loaded the file again. Both halves reported success. Archive items are now kept, which is also what lets the simulation's appends survive |
+| `Workshop/SimpleEvents/Server/SimpleEventsNodeManager.cs` | The events were built as empty shells: a freshly constructed event has none of the fields its type declares, and the code filled them in with `SetChildValue`, which only writes a field that is already there. The event is now created from its type model first, so the fields exist and carry their browse names. This is not enough to make them reach a client - see the recorded issue above - but it is the half of it which belongs to the sample |
+
+A stale duplicate was removed at the same time: `Workshop/DataAccess/Server/Namespaces.cs`
+declared `Quickstarts.EmptyServer.Namespaces` inside the DataAccess assembly, so any project
+referencing both that and the Empty server - such as a test project which hosts several
+samples - failed to compile with `CS0433`. The real constant lives in
+`Workshop/DataAccess/Server/Model/Namespaces.cs` and nothing referenced the copy.
 
 Two further issues, found while writing this plan and caught by Tier 0:
 
