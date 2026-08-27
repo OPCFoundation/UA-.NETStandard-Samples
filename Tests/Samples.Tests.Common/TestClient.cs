@@ -77,6 +77,29 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// Connects to the endpoint and opens a session for the given user.
+        /// </summary>
+        /// <remarks>
+        /// The session is opened on the first endpoint which accepts one, so a server which
+        /// offers an endpoint its own certificate cannot serve does not fail the test. A
+        /// test which needs to see why a server refused a user has to ask for one endpoint
+        /// only, which is what ConnectWithIdentityAsync is for.
+        /// </remarks>
+        /// <param name="endpointUrl">The endpoint to connect to.</param>
+        /// <param name="sessionName">The name of the session, for readable server logs.</param>
+        /// <param name="identity">The user to open the session for. Null for anonymous.</param>
+        /// <param name="ct">The cancellation token.</param>
+        public static async Task<TestClient> ConnectAsync(
+            string endpointUrl,
+            string sessionName,
+            IUserIdentity identity,
+            CancellationToken ct = default)
+        {
+            return await ConnectCoreAsync(endpointUrl, sessionName, identity, false, ct)
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Connects to the endpoint and opens a session with an anonymous user.
         /// </summary>
         /// <param name="endpointUrl">The endpoint to connect to.</param>
@@ -86,6 +109,36 @@ namespace Opc.Ua.Samples.Tests
             string endpointUrl,
             string sessionName,
             CancellationToken ct = default)
+        {
+            return await ConnectCoreAsync(endpointUrl, sessionName, null, false, ct)
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Opens a session on the unsecured endpoint and lets a refusal through.
+        /// </summary>
+        /// <remarks>
+        /// A test which asserts that a server rejects a user needs the status code the
+        /// server answered with. The ordinary connect swallows that: it treats a refusal as
+        /// a reason to try the next endpoint and ends up reporting that none of them
+        /// worked, which says nothing about why.
+        /// </remarks>
+        public static async Task<TestClient> ConnectWithIdentityAsync(
+            string endpointUrl,
+            string sessionName,
+            IUserIdentity identity,
+            CancellationToken ct = default)
+        {
+            return await ConnectCoreAsync(endpointUrl, sessionName, identity, true, ct)
+                .ConfigureAwait(false);
+        }
+
+        private static async Task<TestClient> ConnectCoreAsync(
+            string endpointUrl,
+            string sessionName,
+            IUserIdentity identity,
+            bool unsecuredOnly,
+            CancellationToken ct)
         {
             TemporaryPki pki = null;
             ApplicationInstance application = null;
@@ -104,6 +157,21 @@ namespace Opc.Ua.Samples.Tests
 
                 EndpointDescription[] candidates = await SelectEndpointsAsync(configuration, endpointUrl, ct)
                     .ConfigureAwait(false);
+
+                if (unsecuredOnly)
+                {
+                    candidates = candidates
+                        .Where(endpoint => endpoint.SecurityMode == MessageSecurityMode.None
+                            && endpoint.SecurityPolicyUri == SecurityPolicies.None)
+                        .Take(1)
+                        .ToArray();
+
+                    if (candidates.Length == 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"{endpointUrl} offers no unsecured endpoint to open a session on.");
+                    }
+                }
 
                 var factory = new DefaultSessionFactory(NullTelemetry.Instance);
                 var refusals = new List<string>();
@@ -124,7 +192,7 @@ namespace Opc.Ua.Samples.Tests
                             false,
                             sessionName,
                             30_000,
-                            new UserIdentity(),
+                            identity ?? new UserIdentity(),
                             default,
                             ct).ConfigureAwait(false);
 
@@ -134,6 +202,12 @@ namespace Opc.Ua.Samples.Tests
                         application = null;
                         pki = null;
                         return client;
+                    }
+                    catch (ServiceResultException) when (unsecuredOnly)
+                    {
+                        // the caller asked for one endpoint on purpose, because what the
+                        // server answered is the thing it wants to look at
+                        throw;
                     }
                     catch (ServiceResultException refused)
                     {

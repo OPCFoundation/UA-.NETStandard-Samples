@@ -41,29 +41,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.MethodsServer
 {
-    internal struct ArgumentArrayBuilder : IVariantBuilder<ArrayOf<Argument>>
-    {
-        public ArrayOf<Argument> GetValue(Variant value)
-        {
-            if (value.AsBoxedObject() is Argument[] arguments)
-            {
-                return arguments.ToArrayOf();
-            }
-
-            if (value.AsBoxedObject() is ArrayOf<Argument> arrayOfArguments)
-            {
-                return arrayOfArguments;
-            }
-
-            return ArrayOf<Argument>.Empty;
-        }
-
-        public Variant WithValue(ArrayOf<Argument> value)
-        {
-            return Variant.FromStructure<Argument>(value, false);
-        }
-    }
-
     /// <summary>
     /// A node manager for a server that exposes several variables.
     /// </summary>
@@ -177,7 +154,7 @@ namespace Quickstarts.MethodsServer
                 start.Executable = true;
 
                 // add input arguments.
-                start.InputArguments = PropertyState<ArrayOf<Argument>>.With<ArgumentArrayBuilder>(start);
+                start.InputArguments = PropertyState<ArrayOf<Argument>>.With<StructureBuilder<Argument>>(start);
                 start.InputArguments.NodeId = new NodeId(4, NamespaceIndex);
                 start.InputArguments.BrowseName = new QualifiedName(BrowseNames.InputArguments);
                 start.InputArguments.DisplayName = new LocalizedText(start.InputArguments.BrowseName.Name);
@@ -202,7 +179,7 @@ namespace Quickstarts.MethodsServer
                 start.InputArguments.Value = args.ToArrayOf();
 
                 // add output arguments.
-                start.OutputArguments = PropertyState<ArrayOf<Argument>>.With<ArgumentArrayBuilder>(start);
+                start.OutputArguments = PropertyState<ArrayOf<Argument>>.With<StructureBuilder<Argument>>(start);
                 start.OutputArguments.NodeId = new NodeId(5, NamespaceIndex);
                 start.OutputArguments.BrowseName = new QualifiedName(BrowseNames.OutputArguments);
                 start.OutputArguments.DisplayName = new LocalizedText(start.OutputArguments.BrowseName.Name);

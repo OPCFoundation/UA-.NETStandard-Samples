@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -230,6 +230,18 @@ namespace Quickstarts.SimpleEvents.Server
                     SystemCycleStartedEventState e = new SystemCycleStartedEventState(null);
 #pragma warning restore CA2000
 
+                    // Build the event from its type model first. A freshly constructed event
+                    // is an empty shell: the fields this event type declares are created only
+                    // by Create, which is also what gives them their browse names. A client
+                    // selects an event field by browse path, so without this the event
+                    // arrives with every one of the sample's own fields empty.
+                    e.Create(
+                        SystemContext,
+                        NodeId.Null,
+                        new QualifiedName(BrowseNames.SystemCycleStartedEventType, NamespaceIndex),
+                        LocalizedText.Null,
+                        false);
+
                     e.Initialize(
                         SystemContext,
                         null,
@@ -238,14 +250,19 @@ namespace Quickstarts.SimpleEvents.Server
 
                     e.SetChildValue(SystemContext, Opc.Ua.BrowseNames.SourceName, "System", false);
                     e.SetChildValue(SystemContext, Opc.Ua.BrowseNames.SourceNode, Opc.Ua.ObjectIds.Server, false);
-                    e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.CycleId, NamespaceIndex), m_cycleId.ToString(), false);
+
+                    var cycleId = new QualifiedName(BrowseNames.CycleId, NamespaceIndex);
+                    var currentStep = new QualifiedName(BrowseNames.CurrentStep, NamespaceIndex);
+                    var steps = new QualifiedName(BrowseNames.Steps, NamespaceIndex);
+
+                    e.SetChildValue(SystemContext, cycleId, m_cycleId.ToString(), false);
 
                     CycleStepDataType step = new CycleStepDataType();
                     step.Name = "Step 1";
                     step.Duration = 1000;
 
-                    e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.CurrentStep, NamespaceIndex), step, false);
-                    e.SetChildValue(SystemContext, new QualifiedName(BrowseNames.Steps, NamespaceIndex), new[] { step, step }.ToArrayOf(), false);
+                    e.SetChildValue(SystemContext, currentStep, step, false);
+                    e.SetChildValue(SystemContext, steps, new[] { step, step }.ToArrayOf(), false);
 
                     Server.ReportEvent(e);
                 }
@@ -255,6 +272,7 @@ namespace Quickstarts.SimpleEvents.Server
                 m_logger.LogError(e, "Unexpected error during simulation.");
             }
         }
+
         #endregion
 
         #region Private Fields

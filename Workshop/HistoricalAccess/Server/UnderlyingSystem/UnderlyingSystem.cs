@@ -67,6 +67,14 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Returns a item object for the specified node.
         /// </summary>
+        /// <remarks>
+        /// The item is kept, so that every operation on it works on the same archive. A
+        /// fresh item per call would mean each one loading its own copy of the data from
+        /// the resource it came from: a value written into the history would be written
+        /// into a copy nobody reads from again, and the simulation would append to a copy
+        /// which the next read replaces. Both looked like they worked - the write is
+        /// accepted - and neither had any effect.
+        /// </remarks>
         public ArchiveItemState GetItemState(ISystemContext context, ParsedNodeId parsedNodeId)
         {
             if (parsedNodeId.RootType != NodeTypes.Item)
@@ -74,15 +82,30 @@ namespace Quickstarts.HistoricalAccessServer
                 return null;
             }
 
-            StringBuilder path = new StringBuilder();
-            path.Append(m_configuration.ArchiveRoot);
-            path.Append('/');
-            path.Append(parsedNodeId.RootId);
+            lock (m_items)
+            {
+                if (m_items.TryGetValue(parsedNodeId.RootId, out ArchiveItemState existing))
+                {
+                    return existing;
+                }
 
-            ArchiveItem item = new ArchiveItem(parsedNodeId.RootId, new FileInfo(path.ToString()));
+                StringBuilder path = new StringBuilder();
+                path.Append(m_configuration.ArchiveRoot);
+                path.Append('/');
+                path.Append(parsedNodeId.RootId);
 
-            return new ArchiveItemState(context, item, m_namespaceIndex);
+                ArchiveItem item = new ArchiveItem(parsedNodeId.RootId, new FileInfo(path.ToString()));
+
+                var state = new ArchiveItemState(context, item, m_namespaceIndex);
+
+                m_items.Add(parsedNodeId.RootId, state);
+
+                return state;
+            }
         }
+
+        private readonly Dictionary<string, ArchiveItemState> m_items =
+            new Dictionary<string, ArchiveItemState>(StringComparer.Ordinal);
 
         private ushort m_namespaceIndex;
         private HistoricalAccessServerConfiguration m_configuration;
