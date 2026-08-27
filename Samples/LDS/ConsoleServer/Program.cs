@@ -31,6 +31,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.Hosting;
 
 namespace Opc.Ua.Lds.Server.Sample
 {
@@ -62,9 +63,14 @@ namespace Opc.Ua.Lds.Server.Sample
         {
             Console.WriteLine(".NET OPC UA Local Discovery Server (LDS / LDS-ME)");
 
-            HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+            HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
 
+            // a console sample logs to the console as well as to a file, the same way
+            // every other sample does.
+            builder.Logging.AddConsole();
             builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+            builder.Services.AddSampleLogFile(@"Logs\Opc.Ua.LocalDiscoveryServer.log.txt");
 
             builder.Services
                 .AddOpcUa()

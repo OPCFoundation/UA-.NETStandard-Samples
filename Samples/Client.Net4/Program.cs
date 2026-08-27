@@ -29,78 +29,53 @@
 
 using System;
 using System.Windows.Forms;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.Hosting;
 
 namespace Opc.Ua.Sample
 {
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        public ConsoleTelemetry()
-        : base(
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            #pragma warning restore CA2000
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-            )
-        {
-        }
-    }
     static class Program
     {
-        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance(m_telemetry);
-            application.ApplicationName = "UA Sample Client";
-            application.ApplicationType = ApplicationType.ClientAndServer;
-            application.ConfigSectionName = "Opc.Ua.SampleClient";
 
-            try
-            {
-                application.LoadApplicationConfigurationAsync(false).AsTask().GetAwaiter().GetResult();
+            // the sample is a client and a server at once: the generic host owns the
+            // configuration, the certificate, the logging and the lifetime of the
+            // server, and the container creates the client form.
+            SampleWinFormsHost.Run(
+                args,
+                services => services
+                    .AddSampleApplication(options => {
+                        options.ApplicationName = "UA Sample Client";
+                        options.ApplicationType = ApplicationType.ClientAndServer;
+                        options.ConfigSectionName = "Opc.Ua.SampleClient";
+                    })
+                    .AddSampleServer<SampleServer>(),
+                CreateClientForm,
+                ExceptionDlg.Show);
+        }
 
-                // check the application certificate.
-                bool certOK = application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Result;
-                if (!certOK)
-                {
-                    #pragma warning disable CA2201 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    throw new Exception("Application instance certificate invalid!");
-                    #pragma warning restore CA2201
-                }
-
-                // start the server.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                application.StartAsync(new SampleServer(m_telemetry)).Wait();
-                #pragma warning restore CA2000
-
-                // run the application interactively.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                Application.Run(new SampleClientForm(application, null, application.ApplicationConfiguration, m_telemetry));
-                #pragma warning restore CA2000
-            }
-            catch (Exception e)
-            {
-                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
-            }
-            finally
-            {
-                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
-                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
-            }
+        /// <summary>
+        /// Creates the main form. The sample has no master form to attach to, which the
+        /// container cannot know, so the form is created explicitly.
+        /// </summary>
+        private static Form CreateClientForm(IServiceProvider provider)
+        {
+            return new SampleClientForm(
+                provider.GetRequiredService<ApplicationInstance>(),
+                masterForm: null,
+                provider.GetRequiredService<ApplicationConfiguration>(),
+                provider.GetRequiredService<ITelemetryContext>());
         }
     }
 }

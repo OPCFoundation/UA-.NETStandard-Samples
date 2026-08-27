@@ -26,6 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ClientControls.Net4\UA Client Controls.csproj" />
+    <ProjectReference Include="..\Hosting\Opc.Ua.Samples.Hosting.csproj" />
     <ProjectReference Include="..\Controls.Net4\UA Sample Controls.csproj" />
     <ProjectReference Include="..\Opc.Ua.Sample\Opc.Ua.Sample.csproj" />
   </ItemGroup>
@@ -34,9 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions">
-      <Version>10.0.11</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Logging.Console">
       <Version>10.0.11</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">

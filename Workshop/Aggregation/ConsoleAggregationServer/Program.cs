@@ -27,8 +27,11 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Samples.Hosting;
 using Opc.Ua.Configuration;
 using Opc.Ua.Server;
 using System;
@@ -80,26 +83,10 @@ namespace AggregationServer
 
     public static class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            MyServer server = new MyServer();
-            server.Start();
-        }
-    }
-
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        public ConsoleTelemetry()
-        : base(
-#pragma warning disable CA2000 // Justification: LoggerFactory ownership is transferred to TelemetryContextBase.
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-#pragma warning restore CA2000
-            )
-        {
+            var server = new MyServer();
+            await server.RunAsync(args).ConfigureAwait(false);
         }
     }
 
@@ -107,23 +94,21 @@ namespace AggregationServer
     public class MyServer
     {
         AggregationServer server;
-        ApplicationInstance application;
+        IHost host;
         Task status;
         DateTime lastEventTime;
-        private readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
+        private ITelemetryContext m_telemetry;
 
-        public void Start()
+        public async Task RunAsync(string[] args)
         {
-
             try
             {
-                Task t = ConsoleAggregationServerAsync();
-                t.Wait();
+                await ConsoleAggregationServerAsync(args).ConfigureAwait(false);
                 Console.WriteLine("Server started. Press any key to exit...");
             }
             catch (Exception ex)
             {
-                m_telemetry.CreateLogger<MyServer>()
+                m_telemetry?.CreateLogger<MyServer>()
                     .LogError(ex, "ServiceResultException:");
                 Console.WriteLine("Exception: {0}", ex.Message);
             }
@@ -135,24 +120,35 @@ namespace AggregationServer
             catch
             {
                 // wait forever if there is no console
-                Thread.Sleep(Timeout.Infinite);
+                await Task.Delay(Timeout.Infinite).ConfigureAwait(false);
             }
 
             if (server != null)
             {
                 Console.WriteLine("Server stopped. Waiting for exit...");
 
-                server.Dispose();
+                // let the status thread run out before the host stops the server.
                 server = null;
-
-                if (application != null)
-                {
-                    application.DisposeAsync().AsTask().GetAwaiter().GetResult();
-                    application = null;
-                }
-
-                status.Wait();
+                await status.ConfigureAwait(false);
             }
+
+            if (host != null)
+            {
+                IHost stopping = host;
+                host = null;
+
+                await stopping.StopAsync().ConfigureAwait(false);
+                if (stopping is IAsyncDisposable asyncDisposable)
+                {
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    stopping.Dispose();
+                }
+            }
+
+            SampleLogging.CloseAndFlush();
         }
 
         private static bool CertificateManager_AcceptError(Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
@@ -165,35 +161,47 @@ namespace AggregationServer
             return false;
         }
 
-        private async Task ConsoleAggregationServerAsync()
+        /// <summary>
+        /// Reports an untrusted certificate before rejecting it, which the
+        /// configuration file cannot express.
+        /// </summary>
+        private static void RejectUntrustedCertificatesLoudly(ApplicationConfiguration config)
         {
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            application = new ApplicationInstance(m_telemetry);
-
-            application.ApplicationName = "Quickstart Aggregation Server";
-            application.ApplicationType = ApplicationType.Server;
-            application.ConfigSectionName = "Quickstarts.AggregationServer";
-
-            // load the application configuration.
-            ApplicationConfiguration config = await application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
-
-            // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
-            if (!haveAppCertificate)
-            {
-                throw new InvalidOperationException("Application instance certificate invalid!");
-            }
-
             if (!config.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
                 config.CertificateManager.AcceptError = CertificateManager_AcceptError;
             }
+        }
 
-            // start the server.
-#pragma warning disable CA2000 // Justification: Server is stored in a field and disposed during shutdown.
-            server = new AggregationServer(m_telemetry);
-#pragma warning restore CA2000
-            await application.StartAsync(server).ConfigureAwait(false);
+        private async Task ConsoleAggregationServerAsync(string[] args)
+        {
+            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
+
+            // the generic host owns the configuration, the certificate and the
+            // lifetime of the server. A console sample logs to the console as well as
+            // to the file the configuration names.
+            HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
+
+            builder.Logging.AddConsole();
+            builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+            builder.Services
+                .AddSampleApplication(options => {
+                    options.ApplicationName = "Quickstart Aggregation Server";
+                    options.ApplicationType = ApplicationType.Server;
+                    options.ConfigSectionName = "Quickstarts.AggregationServer";
+                    options.ConfigureConfiguration = RejectUntrustedCertificatesLoudly;
+                })
+                .AddSampleServer<AggregationServer>();
+
+            host = builder.Build();
+            m_telemetry = host.Services.GetRequiredService<ITelemetryContext>();
+
+            await host.StartAsync().ConfigureAwait(false);
+
+            server = host.Services.GetRequiredService<AggregationServer>();
+
+            ApplicationConfiguration config = host.Services.GetRequiredService<ApplicationConfiguration>();
 
             // print reverse connect info
             Console.WriteLine("Reverse Connect Clients:");

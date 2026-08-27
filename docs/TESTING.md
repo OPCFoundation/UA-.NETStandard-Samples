@@ -32,11 +32,13 @@ behaviour the sample was written to show. Tier 1 would not notice any of that.
 
 Three properties of the samples make headless testing cheap:
 
-1. **Server `Main` methods are UI-free until the last line.** Every sample server does
-   `LoadApplicationConfigurationAsync` -> `CheckApplicationInstanceCertificatesAsync` ->
-   `application.StartAsync(new XServer(...))` and only *then* calls `Application.Run(serverForm)`.
-   The server class is `public` and derives from `StandardServer`, so a test starts the real
-   server object with the real config file and never touches WinForms.
+1. **Server `Main` methods are UI-free until the last line.** Every sample server registers
+   itself with `AddSampleApplication(...)` / `AddSampleServer<XServer>()` and lets the generic
+   host do `LoadApplicationConfigurationAsync` -> `CheckApplicationInstanceCertificatesAsync` ->
+   `application.StartAsync(server)`; only *then* is the main form resolved from the container
+   and shown. See [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is
+   `public` and derives from `StandardServer`, so a test starts the real server object with the
+   real config file and never touches WinForms.
 2. **Every WinForms client uses the same control under the same name.** All client
    `MainForm.Designer.cs` files declare `private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;`,
    and that control exposes `ConnectAsync()`, `Session` and `ConnectComplete`. One reflection

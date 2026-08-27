@@ -28,78 +28,41 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.Hosting;
 using Opc.Ua.Server.Controls;
 
 namespace Quickstarts.AlarmConditionServer
 {
-    public sealed class ConsoleTelemetry : TelemetryContextBase
-    {
-        public ConsoleTelemetry()
-        : base(
-#pragma warning disable CA2000 // Justification: LoggerFactory ownership is transferred to TelemetryContextBase.
-            Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            {
-                builder.SetMinimumLevel(LogLevel.Information);
-                builder.AddConsole();
-            })
-#pragma warning restore CA2000
-            )
-        {
-        }
-    }
     static class Program
     {
-        private static readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             // Initialize the user interface.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance(m_telemetry);
-            application.ApplicationType = ApplicationType.Server;
-            application.ConfigSectionName = "AlarmConditionServer";
 
-            try
-            {
-                // load the application configuration.
-                application.LoadApplicationConfigurationAsync(false).AsTask().Wait();
-
-                // check the application certificate.
-                application.CheckApplicationInstanceCertificatesAsync(false).AsTask().Wait();
-
-                // start the server.
-#pragma warning disable CA2000 // Justification: Server ownership is transferred to ApplicationInstance.
-                application.StartAsync(new AlarmConditionServer(m_telemetry)).Wait();
-#pragma warning restore CA2000
-
-                // run the application interactively.
-#pragma warning disable CA2000 // Justification: Form ownership is transferred to Application.Run.
-                Application.Run(new ServerForm(application, m_telemetry));
-#pragma warning restore CA2000
-            }
-            catch (Exception e)
-            {
-                ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
-                return;
-            }
-            finally
-            {
-                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
-                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
-            }
+            // the generic host owns the configuration, the certificate, the logging
+            // and the lifetime of the server; the main form is created by the container
+            // from the services registered here.
+            SampleWinFormsHost.Run<ServerForm>(
+                args,
+                services => services
+                    .AddSampleApplication(options => {
+                        options.ApplicationType = ApplicationType.Server;
+                        options.ConfigSectionName = "AlarmConditionServer";
+                    })
+                    .AddSampleServer<AlarmConditionServer>(),
+                ExceptionDlg.Show);
         }
     }
 
