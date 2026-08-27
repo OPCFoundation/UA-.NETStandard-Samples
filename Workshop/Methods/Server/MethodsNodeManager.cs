@@ -227,6 +227,7 @@ namespace Quickstarts.MethodsServer
         /// <param name="inputArguments">The input arguments.</param>
         /// <param name="outputArguments">The output arguments.</param>
         /// <returns></returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "GenericMethodCalledEventHandler target: the SDK hands the handler a mutable List<Variant> to fill, because ArrayOf<Variant> is immutable.")]
         public ServiceResult OnStart(
             ISystemContext context,
             MethodState method,

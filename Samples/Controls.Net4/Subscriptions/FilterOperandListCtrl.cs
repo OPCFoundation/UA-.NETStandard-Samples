@@ -105,8 +105,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Returns the list of operands in the control.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Sample code preserves existing public API and behavior.")]
-        public List<FilterOperand> GetOperands()
+        public IList<FilterOperand> GetOperands()
         {
             List<FilterOperand> operands = new List<FilterOperand>();
 

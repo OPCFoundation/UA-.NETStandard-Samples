@@ -172,8 +172,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Creates a new sample.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Public sample API preserves existing return type.")]
-        public List<DataValue> NewSamples(ISystemContext context)
+        public IList<DataValue> NewSamples(ISystemContext context)
         {
             List<DataValue> newSamples = new List<DataValue>();
 

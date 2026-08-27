@@ -58,7 +58,7 @@ namespace Opc.Ua.Sample.Controls
 
         private ITransportChannel m_channel;
         private ApplicationConfiguration m_configuration;
-        private List<EndpointDescription> m_endpoints;
+        private IList<EndpointDescription> m_endpoints;
         private ServiceMessageContext m_messageContext;
         private ITelemetryContext m_telemetry;
 
@@ -67,7 +67,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public ITransportChannel ShowDialog(
             ApplicationConfiguration configuration,
-            List<EndpointDescription> endpoints)
+            IList<EndpointDescription> endpoints)
         {
             if (endpoints == null) throw new ArgumentNullException(nameof(endpoints));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));

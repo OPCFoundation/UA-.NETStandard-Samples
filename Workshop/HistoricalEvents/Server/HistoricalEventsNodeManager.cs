@@ -314,11 +314,13 @@ namespace Quickstarts.HistoricalEvents.Server
                 // create a new request.
                 else
                 {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the session continuation points.
                     request = CreateHistoryReadRequest(
                         context,
                         details,
                         handle,
                         nodeToRead);
+#pragma warning restore CA2000
                 }
 
                 // process events until the max is reached.

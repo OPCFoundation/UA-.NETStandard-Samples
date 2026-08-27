@@ -286,7 +286,7 @@ namespace Opc.Ua.Sample
             // must release the lock before removing cross references to other node managers.
             if (referencesToRemove.Count > 0)
             {
-                Server.NodeManager.RemoveReferencesAsync(referencesToRemove).GetAwaiter().GetResult();
+                Server.NodeManager.RemoveReferencesAsync(referencesToRemove).AsTask().GetAwaiter().GetResult();
             }
 
             return found;

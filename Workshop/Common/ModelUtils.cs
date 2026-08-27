@@ -353,7 +353,7 @@ namespace Quickstarts
 
                     if (!(instance.DataType).IsNull)
                     {
-                        instance.BuiltInType = TypeInfo.GetBuiltInType(instance.DataType, session.TypeTree);
+                        instance.BuiltInType = await TypeInfo.GetBuiltInTypeAsync(instance.DataType, session.TypeTree, ct);
                         instance.DataTypeDisplayText = await session.NodeCache.GetDisplayTextAsync(instance.DataType, ct);
 
                         if (instance.ValueRank >= 0)
@@ -378,7 +378,7 @@ namespace Quickstarts
     /// </summary>
     public class TypeDeclaration
     {
-#pragma warning disable CA1051, CA1002 // Justification: sample data transfer types intentionally expose mutable fields.
+#pragma warning disable CA1051 // Justification: sample data transfer types intentionally expose mutable fields.
         /// <summary>
         /// The node if for the type.
         /// </summary>
@@ -387,8 +387,8 @@ namespace Quickstarts
         /// <summary>
         /// The fully inhierited list of instance declarations for the type.
         /// </summary>
-        public List<InstanceDeclaration> Declarations;
-#pragma warning restore CA1051, CA1002
+        public IList<InstanceDeclaration> Declarations;
+#pragma warning restore CA1051
     }
 
     /// <summary>
@@ -405,7 +405,7 @@ namespace Quickstarts
         /// <summary>
         /// The browse path to the instance declaration.
         /// </summary>
-        public List<QualifiedName> BrowsePath;
+        public IList<QualifiedName> BrowsePath;
 
         /// <summary>
         /// The browse path to the instance declaration.
@@ -627,7 +627,7 @@ namespace Quickstarts
         public EventFilter GetFilter()
         {
             EventFilter filter = new EventFilter();
-            filter.SelectClauses = GetSelectClause();
+            filter.SelectClauses = GetSelectClause().ToArrayOf();
             filter.WhereClause = GetWhereClause();
             return filter;
         }
@@ -673,7 +673,7 @@ namespace Quickstarts
         /// <summary>
         /// Returns the select clause defined by the filter declaration.
         /// </summary>
-        public List<SimpleAttributeOperand> GetSelectClause()
+        public IList<SimpleAttributeOperand> GetSelectClause()
         {
             List<SimpleAttributeOperand> selectClause = new List<SimpleAttributeOperand>();
 
@@ -687,7 +687,7 @@ namespace Quickstarts
                 operand = new SimpleAttributeOperand();
                 operand.TypeDefinitionId = field.InstanceDeclaration.RootTypeId;
                 operand.AttributeId = (field.InstanceDeclaration.NodeClass == NodeClass.Object) ? Attributes.NodeId : Attributes.Value;
-                operand.BrowsePath = field.InstanceDeclaration.BrowsePath;
+                operand.BrowsePath = field.InstanceDeclaration.BrowsePath.ToArrayOf();
                 selectClause.Add(operand);
             }
 
@@ -711,7 +711,7 @@ namespace Quickstarts
                     SimpleAttributeOperand operand1 = new SimpleAttributeOperand();
                     operand1.TypeDefinitionId = field.InstanceDeclaration.RootTypeId;
                     operand1.AttributeId = (field.InstanceDeclaration.NodeClass == NodeClass.Object) ? Attributes.NodeId : Attributes.Value;
-                    operand1.BrowsePath = field.InstanceDeclaration.BrowsePath;
+                    operand1.BrowsePath = field.InstanceDeclaration.BrowsePath.ToArrayOf();
 
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
@@ -727,7 +727,7 @@ namespace Quickstarts
         /// <summary>
         /// Returns the value for the specified browse name.
         /// </summary>
-        public T GetValue<T>(QualifiedName browseName, List<Variant> fields, T defaultValue)
+        public T GetValue<T>(QualifiedName browseName, IList<Variant> fields, T defaultValue)
         {
             if (fields == null || fields.Count == 0)
             {
@@ -757,9 +757,9 @@ namespace Quickstarts
             return defaultValue;
         }
 
-        #pragma warning disable CA1051, CA1002 // Justification: sample data transfer type intentionally exposes mutable fields.
+        #pragma warning disable CA1051 // Justification: sample data transfer type intentionally exposes mutable fields.
         public NodeId EventTypeId;
-        public List<FilterDeclarationField> Fields;
-        #pragma warning restore CA1051, CA1002
+        public IList<FilterDeclarationField> Fields;
+        #pragma warning restore CA1051
     }
 }

@@ -1544,7 +1544,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 LocalizedText v => Variant.From(v),
                 ExtensionObject v => Variant.From(v),
                 DataValue v => Variant.From(v),
-                Variant v => Variant.From(ref v),
+                Variant v => Variant.From(in v),
                 IEncodeable v => Variant.From(new ExtensionObject(v)),
                 _ => Variant.Null
             };

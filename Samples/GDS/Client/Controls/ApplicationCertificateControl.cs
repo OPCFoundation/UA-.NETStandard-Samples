@@ -399,7 +399,7 @@ certificateRequest);
                     }
 
                     if (!String.IsNullOrEmpty(id.SubjectName) &&
-                        x509.Subject.IndexOf(id.SubjectName, StringComparison.OrdinalIgnoreCase) >= 0)
+                        x509.Subject.Contains(id.SubjectName, StringComparison.OrdinalIgnoreCase))
                     {
                         return x509;
                     }

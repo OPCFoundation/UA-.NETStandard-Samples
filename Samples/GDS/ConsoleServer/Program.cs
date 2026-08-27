@@ -167,6 +167,7 @@ namespace Opc.Ua.Gds.Server
         private IApplicationsDatabase m_database;
         private LdsScannerConfiguration m_ldsScannerConfiguration;
         private GlobalDiscoveryServerAliasMerger m_aliasMerger;
+        private ApplicationInstance m_application;
         #pragma warning disable CA2211 // Justification: Public sample API compatibility is preserved.
         public static ExitCode exitCode;
         #pragma warning restore CA2211
@@ -258,6 +259,12 @@ namespace Opc.Ua.Gds.Server
                     await status.ConfigureAwait(false);
                     // Stop server and dispose
                     await _server.StopAsync();
+                }
+
+                if (m_application != null)
+                {
+                    await m_application.DisposeAsync().ConfigureAwait(false);
+                    m_application = null;
                 }
             }
 
@@ -368,7 +375,7 @@ namespace Opc.Ua.Gds.Server
         private async Task ConsoleGlobalDiscoveryServerAsync(ITelemetryContext telemetry)
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            var application = new ApplicationInstance(telemetry)
+            m_application = new ApplicationInstance(telemetry)
             {
                 ApplicationName = "Global Discovery Server",
                 ApplicationType = ApplicationType.Server,
@@ -376,10 +383,10 @@ namespace Opc.Ua.Gds.Server
             };
 
             // load the application configuration.
-            ApplicationConfiguration config = await application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
+            ApplicationConfiguration config = await m_application.LoadApplicationConfigurationAsync(false).ConfigureAwait(false);
 
             // check the application certificate.
-            bool haveAppCertificate = await application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
+            bool haveAppCertificate = await m_application.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
             if (!haveAppCertificate)
             {
                 #pragma warning disable CA2201 // Justification: Public sample API compatibility is preserved.
@@ -418,12 +425,14 @@ namespace Opc.Ua.Gds.Server
             server = new AliasMergingGlobalDiscoverySampleServer(
                 database,
                 database,
+                #pragma warning disable CA2000 // Justification: Certificate group ownership is transferred to the server.
                 new CertificateGroup(telemetry),
+                #pragma warning restore CA2000
                 userDatabase,
                 telemetry,
                 m_aliasMerger,
                 true);
-            await application.StartAsync(server).ConfigureAwait(false);
+            await m_application.StartAsync(server).ConfigureAwait(false);
 
             // keep the configuration and database so the interactive LDS scan
             // can register approved servers after start-up.
@@ -436,7 +445,7 @@ namespace Opc.Ua.Gds.Server
             m_aliasMerger.Start(config, database);
 
             // print endpoint info
-            IEnumerable<string> endpoints = application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
+            IEnumerable<string> endpoints = m_application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
             foreach (string endpoint in endpoints)
             {
                 Console.WriteLine(endpoint);

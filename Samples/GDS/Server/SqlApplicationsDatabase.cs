@@ -38,6 +38,22 @@ using Opc.Ua.Gds.Server.DB;
 
 namespace Opc.Ua.Gds.Server.Database.Sql
 {
+    /// <summary>
+    /// Carries the application record of a server which has just (re-)registered.
+    /// </summary>
+    public class ApplicationRegisteredEventArgs : EventArgs
+    {
+        public ApplicationRegisteredEventArgs(ApplicationRecordDataType application)
+        {
+            Application = application;
+        }
+
+        /// <summary>
+        /// The record the server registered with.
+        /// </summary>
+        public ApplicationRecordDataType Application { get; }
+    }
+
     public class SqlApplicationsDatabase : ApplicationsDatabaseBase, ICertificateRequest
     {
         /// <summary>
@@ -45,7 +61,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
         /// The GDS host uses this to merge the newly registered server's
         /// AliasNames into the master AliasNames list (issue #274).
         /// </summary>
-        public event EventHandler<ApplicationRecordDataType> ApplicationRegistered;
+        public event EventHandler<ApplicationRegisteredEventArgs> ApplicationRegistered;
 
         #region IApplicationsDatabase Members
         public override void Initialize()
@@ -156,7 +172,7 @@ namespace Opc.Ua.Gds.Server.Database.Sql
                 entities.SaveChanges();
                 m_lastCounterResetTime = DateTime.UtcNow;
 
-                ApplicationRegistered?.Invoke(this, application);
+                ApplicationRegistered?.Invoke(this, new ApplicationRegisteredEventArgs(application));
 
                 return new NodeId(applicationId, NamespaceIndex); ;
             }

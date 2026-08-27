@@ -140,15 +140,18 @@ namespace Opc.Ua.Samples.Tests
             bool unsecuredOnly,
             CancellationToken ct)
         {
-            var pki = new TemporaryPki($"client-{sessionName}");
-
-            var application = new ApplicationInstance(NullTelemetry.Instance) {
-                ApplicationName = "Sample Test Client",
-                ApplicationType = ApplicationType.Client,
-            };
+            TemporaryPki pki = null;
+            ApplicationInstance application = null;
 
             try
             {
+                pki = new TemporaryPki($"client-{sessionName}");
+
+                application = new ApplicationInstance(NullTelemetry.Instance) {
+                    ApplicationName = "Sample Test Client",
+                    ApplicationType = ApplicationType.Client,
+                };
+
                 ApplicationConfiguration configuration =
                     await CreateConfigurationAsync(application, pki, ct).ConfigureAwait(false);
 
@@ -193,7 +196,12 @@ namespace Opc.Ua.Samples.Tests
                             default,
                             ct).ConfigureAwait(false);
 
-                        return new TestClient(session, application, pki) { Endpoint = description };
+                        // the client owns the application and the pki from here on, so the
+                        // locals are cleared to keep the finally below from disposing them
+                        var client = new TestClient(session, application, pki) { Endpoint = description };
+                        application = null;
+                        pki = null;
+                        return client;
                     }
                     catch (ServiceResultException) when (unsecuredOnly)
                     {
@@ -215,11 +223,15 @@ namespace Opc.Ua.Samples.Tests
                     $"None of the {candidates.Length} endpoints of {endpointUrl} accepted a session." +
                     $"{Environment.NewLine}{string.Join(Environment.NewLine, refusals)}");
             }
-            catch
+            finally
             {
-                await application.DisposeAsync().ConfigureAwait(false);
-                pki.Dispose();
-                throw;
+                // both locals are cleared once the client takes ownership, so this only
+                // runs for the paths which never produced a client
+                if (application != null)
+                {
+                    await application.DisposeAsync().ConfigureAwait(false);
+                }
+                pki?.Dispose();
             }
         }
 
@@ -307,6 +319,9 @@ namespace Opc.Ua.Samples.Tests
             TemporaryPki pki,
             CancellationToken ct)
         {
+// the diagnostic for the obsolete overload below lands on the start of the chain,
+// so the suppression has to cover the whole statement
+#pragma warning disable CS0618
             ApplicationConfiguration configuration = await application
                 .Build(
                     "urn:localhost:OPCFoundation:SampleTestClient",
@@ -316,15 +331,14 @@ namespace Opc.Ua.Samples.Tests
                 // leaves SecurityConfiguration.ApplicationCertificate unset in 2.0.158-preview,
                 // and the configuration then fails validation with "ApplicationCertificate must
                 // be specified", so the subject name overload is used here on purpose
-#pragma warning disable CS0618
                 .AddSecurityConfiguration(
                     "CN=Sample Test Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost",
                     pki.RootPath)
-#pragma warning restore CS0618
                 .SetAutoAcceptUntrustedCertificates(true)
                 .SetAddAppCertToTrustedStore(true)
                 .CreateAsync(ct)
                 .ConfigureAwait(false);
+#pragma warning restore CS0618
 
             bool certificateOk = await application
                 .CheckApplicationInstanceCertificatesAsync(true, null, ct)

@@ -206,7 +206,9 @@ namespace Quickstarts.UserAuthenticationServer
         private ValueTask<IUserIdentity> AuthenticateX509Async(X509IdentityTokenHandler handler, System.Threading.CancellationToken ct)
         {
             X509IdentityToken x509Token = handler.Token as X509IdentityToken;
-            VerifyCertificate(new X509Certificate2(x509Token.CertificateData.ToArray()));
+            using X509Certificate2 userCertificate =
+                X509CertificateLoader.LoadCertificate(x509Token.CertificateData.ToArray());
+            VerifyCertificate(userCertificate);
             IUserIdentity identity = new UserIdentity(x509Token);
             if (m_logger.IsEnabled(LogLevel.Information))
             {

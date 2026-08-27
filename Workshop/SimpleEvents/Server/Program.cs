@@ -100,6 +100,11 @@ namespace Quickstarts.SimpleEvents.Server
                 ExceptionDlg.Show(m_telemetry, application.ApplicationName, e);
                 return;
             }
+            finally
+            {
+                // ApplicationInstance is only IAsyncDisposable, and Main is synchronous
+                application.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
         }
     }
 

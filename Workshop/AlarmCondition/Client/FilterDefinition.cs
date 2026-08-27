@@ -74,7 +74,7 @@ namespace Quickstarts.AlarmConditionClient
         /// The select clauses to use with the filter.
         /// </summary>
 #pragma warning disable CA1051 // Justification: Sample code exposes fields by design.
-        public List<SimpleAttributeOperand> SelectClauses;
+        public IList<SimpleAttributeOperand> SelectClauses;
 #pragma warning restore CA1051
 
         /// <summary>
@@ -171,7 +171,7 @@ namespace Quickstarts.AlarmConditionClient
             EventFilter filter = new EventFilter();
 
             // the select clauses specify the values returned with each event notification.
-            filter.SelectClauses = SelectClauses;
+            filter.SelectClauses = SelectClauses.ToArrayOf();
 
             // the where clause restricts the events returned by the server.
             // it works a lot like the WHERE clause in a SQL statement and supports

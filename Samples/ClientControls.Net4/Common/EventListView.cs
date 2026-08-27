@@ -315,7 +315,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the currently selected event at the specified index (null index is not valid).
         /// </summary>
-        public List<Variant> GetSelectedEvent(int index)
+        public IList<Variant> GetSelectedEvent(int index)
         {
             if (EventsLV.SelectedItems.Count > index)
             {

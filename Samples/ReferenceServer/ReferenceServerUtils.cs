@@ -362,7 +362,7 @@ namespace Quickstarts.ReferenceServer
         public static uint CreateError(
             uint code,
             OperationContext context,
-            List<DiagnosticInfo> diagnosticInfos,
+            IList<DiagnosticInfo> diagnosticInfos,
             int index,
             ILogger logger)
         {
@@ -381,8 +381,8 @@ namespace Quickstarts.ReferenceServer
         /// </summary>
         public static bool CreateError(
             uint code,
-            List<StatusCode> results,
-            List<DiagnosticInfo> diagnosticInfos,
+            IList<StatusCode> results,
+            IList<DiagnosticInfo> diagnosticInfos,
             OperationContext context,
             ILogger logger)
         {
@@ -403,8 +403,8 @@ namespace Quickstarts.ReferenceServer
         /// </summary>
         public static bool CreateError(
             uint code,
-            List<StatusCode> results,
-            List<DiagnosticInfo> diagnosticInfos,
+            IList<StatusCode> results,
+            IList<DiagnosticInfo> diagnosticInfos,
             int index,
             OperationContext context,
             ILogger logger)
@@ -425,8 +425,8 @@ namespace Quickstarts.ReferenceServer
         /// Creates a place holder in the lists for the results.
         /// </summary>
         public static void CreateSuccess(
-            List<StatusCode> results,
-            List<DiagnosticInfo> diagnosticInfos,
+            IList<StatusCode> results,
+            IList<DiagnosticInfo> diagnosticInfos,
             OperationContext context)
         {
             results.Add(StatusCodes.Good);
@@ -440,7 +440,7 @@ namespace Quickstarts.ReferenceServer
         /// <summary>
         /// Creates a collection of diagnostics from a set of errors.
         /// </summary>
-        public static List<DiagnosticInfo> CreateDiagnosticInfoCollection(
+        public static IList<DiagnosticInfo> CreateDiagnosticInfoCollection(
             OperationContext context,
             IList<ServiceResult> errors,
             ILogger logger)
@@ -472,11 +472,11 @@ namespace Quickstarts.ReferenceServer
         /// <summary>
         /// Creates a collection of status codes and diagnostics from a set of errors.
         /// </summary>
-        public static List<StatusCode> CreateStatusCodeCollection(
+        public static IList<StatusCode> CreateStatusCodeCollection(
             OperationContext context,
             IList<ServiceResult> errors,
             ILogger logger,
-            out List<DiagnosticInfo> diagnosticInfos)
+            out IList<DiagnosticInfo> diagnosticInfos)
         {
             diagnosticInfos = null;
 

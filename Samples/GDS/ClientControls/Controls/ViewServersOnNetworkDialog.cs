@@ -70,9 +70,7 @@ namespace Opc.Ua.Gds.Client.Controls
         private GlobalDiscoveryServerClient m_gds;
         private ITelemetryContext m_telemetry;
 
-        #pragma warning disable CA1002 // Justification: Public sample API compatibility is preserved.
-        public List<ServerOnNetwork> ShowDialog(IWin32Window owner, ref QueryServersFilter filters)
-        #pragma warning restore CA1002
+        public IList<ServerOnNetwork> ShowDialog(IWin32Window owner, ref QueryServersFilter filters)
         {
             ServersTable.Rows.Clear();
 

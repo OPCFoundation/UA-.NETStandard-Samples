@@ -125,7 +125,7 @@ namespace Opc.Ua.Client.Controls
             XmlEncoder encoder = new XmlEncoder(new XmlQualifiedName("Value", Namespaces.OpcUaXsd), writer, m_session.MessageContext);
             #pragma warning restore CA2000
             Variant valueToEncode = m_value;
-            encoder.WriteVariant("Value", ref valueToEncode);
+            encoder.WriteVariant("Value", in valueToEncode);
             writer.Close();
 
             ValueTB.Text = buffer.ToString();

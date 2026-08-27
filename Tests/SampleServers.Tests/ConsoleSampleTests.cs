@@ -122,7 +122,7 @@ namespace Opc.Ua.Samples.Tests
                 Is.True,
                 $"Reading the server state failed: {state.StatusCode}");
 
-            var serverState = (ServerState)Convert.ToInt32(state.WrappedValue.Value, CultureInfo.InvariantCulture);
+            var serverState = (ServerState)Convert.ToInt32(state.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture);
 
             Assert.That(serverState, Is.EqualTo(ServerState.Running), "The server does not report itself as running.");
         }

@@ -57,7 +57,7 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private event EventHandler m_UrlsChanged;
         private ITelemetryContext m_telemetry;
-        private List<Uri> m_urls;
+        private IList<Uri> m_urls;
         #endregion
 
         #region Public Interface
@@ -65,10 +65,8 @@ namespace Opc.Ua.Client.Controls
         /// The list of urls.
         /// </summary>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        #pragma warning disable CA1002 // Justification: sample public API shape is preserved by design.
         #pragma warning disable CA2227 // Justification: sample public API shape is preserved by design.
-        public List<Uri> Urls
-        #pragma warning restore CA1002
+        public IList<Uri> Urls
         #pragma warning restore CA2227
         {
             get

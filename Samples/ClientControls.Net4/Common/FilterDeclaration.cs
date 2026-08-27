@@ -50,10 +50,8 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The fully inhierited list of instance declarations for the type.
         /// </summary>
-        #pragma warning disable CA1002 // Justification: sample public API shape is preserved by design.
         #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
-        public List<InstanceDeclaration> Declarations;
-        #pragma warning restore CA1002
+        public IList<InstanceDeclaration> Declarations;
         #pragma warning restore CA1051
     }
 
@@ -73,7 +71,7 @@ namespace Opc.Ua.Client.Controls
         /// The browse path to the instance declaration.
         /// </summary>
         #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
-        public List<QualifiedName> BrowsePath;
+        public IList<QualifiedName> BrowsePath;
         #pragma warning restore CA1051
 
         /// <summary>
@@ -339,7 +337,7 @@ namespace Opc.Ua.Client.Controls
         public EventFilter GetFilter()
         {
             EventFilter filter = new EventFilter();
-            filter.SelectClauses = GetSelectClause();
+            filter.SelectClauses = GetSelectClause().ToArrayOf();
             filter.WhereClause = GetWhereClause();
             return filter;
         }
@@ -419,7 +417,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the select clause defined by the filter declaration.
         /// </summary>
-        public List<SimpleAttributeOperand> GetSelectClause()
+        public IList<SimpleAttributeOperand> GetSelectClause()
         {
             List<SimpleAttributeOperand> selectClause = new List<SimpleAttributeOperand>();
 
@@ -435,7 +433,7 @@ namespace Opc.Ua.Client.Controls
                     operand = new SimpleAttributeOperand();
                     operand.TypeDefinitionId = field.InstanceDeclaration.RootTypeId;
                     operand.AttributeId = (field.InstanceDeclaration.NodeClass == NodeClass.Object) ? Attributes.NodeId : Attributes.Value;
-                    operand.BrowsePath = field.InstanceDeclaration.BrowsePath;
+                    operand.BrowsePath = field.InstanceDeclaration.BrowsePath.ToArrayOf();
                     selectClause.Add(operand);
                 }
             }
@@ -460,7 +458,7 @@ namespace Opc.Ua.Client.Controls
                     SimpleAttributeOperand operand1 = new SimpleAttributeOperand();
                     operand1.TypeDefinitionId = field.InstanceDeclaration.RootTypeId;
                     operand1.AttributeId = (field.InstanceDeclaration.NodeClass == NodeClass.Object) ? Attributes.NodeId : Attributes.Value;
-                    operand1.BrowsePath = field.InstanceDeclaration.BrowsePath;
+                    operand1.BrowsePath = field.InstanceDeclaration.BrowsePath.ToArrayOf();
 
                     LiteralOperand operand2 = new LiteralOperand();
                     operand2.Value = field.FilterValue;
@@ -476,7 +474,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the value for the specified browse name.
         /// </summary>
-        public T GetValue<T>(QualifiedName browseName, List<Variant> fields, T defaultValue)
+        public T GetValue<T>(QualifiedName browseName, IList<Variant> fields, T defaultValue)
         {
             if (fields == null || fields.Count == 0)
             {
@@ -521,10 +519,8 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The list of declarations for the fields.
         /// </summary>
-        #pragma warning disable CA1002 // Justification: sample public API shape is preserved by design.
         #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
-        public List<FilterDeclarationField> Fields;
-        #pragma warning restore CA1002
+        public IList<FilterDeclarationField> Fields;
         #pragma warning restore CA1051
     }
 }

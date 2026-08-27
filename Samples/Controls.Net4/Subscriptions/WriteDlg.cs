@@ -62,7 +62,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Session session, List<WriteValue> values, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task ShowAsync(Session session, IList<WriteValue> values, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

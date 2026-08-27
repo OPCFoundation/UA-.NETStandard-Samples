@@ -107,6 +107,7 @@ namespace AggregationServer
     public class MyServer
     {
         AggregationServer server;
+        ApplicationInstance application;
         Task status;
         DateTime lastEventTime;
         private readonly ITelemetryContext m_telemetry = new ConsoleTelemetry();
@@ -144,6 +145,12 @@ namespace AggregationServer
                 server.Dispose();
                 server = null;
 
+                if (application != null)
+                {
+                    application.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                    application = null;
+                }
+
                 status.Wait();
             }
         }
@@ -161,7 +168,7 @@ namespace AggregationServer
         private async Task ConsoleAggregationServerAsync()
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-            ApplicationInstance application = new ApplicationInstance(m_telemetry);
+            application = new ApplicationInstance(m_telemetry);
 
             application.ApplicationName = "Quickstart Aggregation Server";
             application.ApplicationType = ApplicationType.Server;
