@@ -35,7 +35,14 @@ namespace Opc.Ua.Samples.Tests
         /// <summary>
         /// How long a single test gets.
         /// </summary>
-        protected const int kTimeout = 60_000;
+        /// <remarks>
+        /// A safety net rather than an assertion: every wait in these tests is bounded by
+        /// its own budget and reports what it saw when it gives up, which is the failure a
+        /// reader wants. This only has to be comfortably above the longest of those budgets
+        /// on a build agent, which is slower than a developer machine and has to create the
+        /// certificate of every sample from scratch.
+        /// </remarks>
+        protected const int kTimeout = 120_000;
 
         private SampleServerHost m_host;
         private TestClient m_client;

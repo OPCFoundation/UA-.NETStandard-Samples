@@ -37,7 +37,7 @@ namespace Opc.Ua.Samples.Tests
     [NonParallelizable]
     public class AggregationNodeManagerTests
     {
-        private const int kTimeout = 90_000;
+        private const int kTimeout = 120_000;
 
         private const string DownstreamSample = "Reference";
         private const string AggregatingSample = "AggregationConsole";
@@ -47,6 +47,7 @@ namespace Opc.Ua.Samples.Tests
         private TestClient m_downstreamClient;
         private TestClient m_aggregatingClient;
         private NodeId m_proxyRoot;
+        private string m_setupFailure;
 
         [OneTimeSetUp]
         public async Task StartBothServersAsync()
@@ -69,35 +70,57 @@ namespace Opc.Ua.Samples.Tests
             await m_downstreamClient.Session.FetchNamespaceTablesAsync().ConfigureAwait(false);
             await m_aggregatingClient.Session.FetchNamespaceTablesAsync().ConfigureAwait(false);
 
-            // the node manager waits a few seconds before it connects downstream, and the
-            // proxy root only appears once it has
-            m_proxyRoot = await Poll.UntilNoThrowAsync(
-                async token => {
-                    IReadOnlyList<ReferenceDescription> children = await SessionOps
-                        .BrowseAsync(Aggregating, ObjectIds.ObjectsFolder, token)
-                        .ConfigureAwait(false);
+            // The node manager waits a few seconds before it publishes its proxy root. If it
+            // never appears the fixture does not throw from its setup: that reports every
+            // test in it as an error with the same stack and says nothing useful. The tests
+            // check for the root themselves and say what is missing.
+            try
+            {
+                m_proxyRoot = await Poll.UntilNoThrowAsync(
+                    async token => {
+                        IReadOnlyList<ReferenceDescription> children = await SessionOps
+                            .BrowseAsync(Aggregating, ObjectIds.ObjectsFolder, token)
+                            .ConfigureAwait(false);
 
-                    ReferenceDescription root = children.FirstOrDefault(child =>
-                        child.NodeClass == NodeClass.Object
-                        && child.BrowseName.NamespaceIndex > 1);
+                        ReferenceDescription root = children.FirstOrDefault(child =>
+                            child.NodeClass == NodeClass.Object
+                            && child.BrowseName.NamespaceIndex > 1);
 
-                    return root == null
-                        ? NodeId.Null
-                        : ExpandedNodeId.ToNodeId(root.NodeId, Aggregating.NamespaceUris);
-                },
-                nodeId => !nodeId.IsNull,
-                "the aggregation server to connect downstream and publish its proxy root",
-                timeout: TimeSpan.FromSeconds(45)).ConfigureAwait(false);
+                        return root == null
+                            ? NodeId.Null
+                            : ExpandedNodeId.ToNodeId(root.NodeId, Aggregating.NamespaceUris);
+                    },
+                    nodeId => !nodeId.IsNull,
+                    "the aggregation server to connect downstream and publish its proxy root",
+                    timeout: TimeSpan.FromSeconds(45)).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"The proxy root is {m_proxyRoot}").ConfigureAwait(false);
+                DataValue rootName = await SessionOps
+                    .ReadAttributeAsync(Aggregating, m_proxyRoot, Attributes.BrowseName, default)
+                    .ConfigureAwait(false);
 
-            DataValue rootName = await SessionOps
-                .ReadAttributeAsync(Aggregating, m_proxyRoot, Attributes.BrowseName, default)
-                .ConfigureAwait(false);
+                await TestContext.Out
+                    .WriteLineAsync($"The proxy root is {m_proxyRoot}, called {rootName.WrappedValue}")
+                    .ConfigureAwait(false);
+            }
+            catch (Exception failure) when (failure is not OperationCanceledException)
+            {
+                m_setupFailure = failure.Message;
 
-            await TestContext.Out
-                .WriteLineAsync($"The proxy root is called {rootName.WrappedValue}")
-                .ConfigureAwait(false);
+                await TestContext.Out
+                    .WriteLineAsync($"The proxy root never appeared: {failure.Message}")
+                    .ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Fails the test unless the aggregating server got as far as publishing its root.
+        /// </summary>
+        private void RequireProxyRoot()
+        {
+            Assert.That(
+                m_setupFailure,
+                Is.Null,
+                $"The aggregation server never published its proxy root: {m_setupFailure}");
         }
 
         [OneTimeTearDown]
@@ -141,6 +164,8 @@ namespace Opc.Ua.Samples.Tests
         [CancelAfter(kTimeout)]
         public async Task ProxyRootIsPublishedForTheConfiguredServer(CancellationToken ct)
         {
+            RequireProxyRoot();
+
             DataValue browseName = await SessionOps
                 .ReadAttributeAsync(Aggregating, m_proxyRoot, Attributes.BrowseName, ct)
                 .ConfigureAwait(false);
@@ -210,6 +235,8 @@ namespace Opc.Ua.Samples.Tests
         {
             return KnownIssue.RecordAsync(
                 async () => {
+                    RequireProxyRoot();
+
                     IReadOnlyList<string> throughTheProxy = await SessionOps
                         .BrowseNamesAsync(Aggregating, m_proxyRoot, ct)
                         .ConfigureAwait(false);
