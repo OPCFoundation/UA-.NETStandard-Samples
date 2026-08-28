@@ -64,12 +64,31 @@ namespace Quickstarts.Boiler.Server
 
         #region Overridden Methods
         /// <summary>
-        /// Loads the predefined nodes of the model and builds the second boiler.
+        /// Captures the external references collection of the startup for <see cref="Configure"/>.
         /// </summary>
-        protected override async ValueTask LoadPredefinedNodesAsync(
+        /// <remarks>
+        /// The fluent builder cannot publish references on nodes another node manager
+        /// owns, so Configure links the second boiler below the Objects folder through
+        /// this collection - the same route the Organizes reference the model declares
+        /// for Boiler #1 takes. The master node manager distributes the collected
+        /// references once every address space exists.
+        /// </remarks>
+        protected override ValueTask LoadPredefinedNodesAsync(
             ISystemContext context,
             IDictionary<NodeId, IList<IReference>> externalReferences,
             CancellationToken cancellationToken = default)
+        {
+            m_externalReferences = externalReferences;
+            return base.LoadPredefinedNodesAsync(context, externalReferences, cancellationToken);
+        }
+        #endregion
+
+        #region Configure
+        /// <summary>
+        /// Builds the dynamic part of the address space and wires the behaviour of
+        /// the sample once the predefined nodes are in place.
+        /// </summary>
+        partial void Configure(INodeManagerBuilder builder)
         {
             // the generated constructor only registers the namespace of the type
             // model; add a second namespace for the dynamically created nodes. the
@@ -77,8 +96,6 @@ namespace Quickstarts.Boiler.Server
             // reported one namespace, so the new namespace is registered with it too.
             SetNamespaces(Namespaces.Boiler, Namespaces.Boiler + "/Instance");
             Server.NodeManager.RegisterNamespaceManager(Namespaces.Boiler + "/Instance", this);
-
-            await base.LoadPredefinedNodesAsync(context, externalReferences, cancellationToken).ConfigureAwait(false);
 
             // find the typed Boiler1 node that was created when the model was loaded.
             m_boiler1 = FindPredefinedNode<BoilerState>(new NodeId(Objects.Boiler1, NamespaceIndexes[0]));
@@ -97,7 +114,7 @@ namespace Quickstarts.Boiler.Server
                 true);
 
             // store it and all of its children in the pre-defined nodes dictionary for easy look up.
-            await AddPredefinedNodeAsync(context, m_boiler2, cancellationToken).ConfigureAwait(false);
+            AddPredefinedNodeSynchronously(m_boiler2);
 
             // link it below the Objects folder, which another node manager owns.
             AddExternalReference(
@@ -105,16 +122,8 @@ namespace Quickstarts.Boiler.Server
                 Opc.Ua.ReferenceTypeIds.Organizes,
                 false,
                 m_boiler2.NodeId,
-                externalReferences);
-        }
-        #endregion
+                m_externalReferences);
 
-        #region Configure
-        /// <summary>
-        /// Wires the behaviour of the sample once the address space exists.
-        /// </summary>
-        partial void Configure(INodeManagerBuilder builder)
-        {
             // start a simulation that changes the values of the nodes. the loop is
             // owned by the node manager and stops when the node manager is disposed.
             builder.Simulation(TimeSpan.FromSeconds(1))
@@ -141,6 +150,7 @@ namespace Quickstarts.Boiler.Server
         #endregion
 
         #region Private Fields
+        private IDictionary<NodeId, IList<IReference>> m_externalReferences;
         private BoilerState m_boiler1;
         private BoilerState m_boiler2;
         private uint m_nodeIdCounter;
