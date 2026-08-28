@@ -24,9 +24,10 @@ namespace Opc.Ua.Samples.Tests
     /// reports it on a timer.
     /// </summary>
     /// <remarks>
-    /// The simulation reports two events every three seconds and has been running since
-    /// the server started, so nothing here assumes it sees the first one. Each event
-    /// carries a cycle number which counts up, both in a field of its own and in the
+    /// The sample publishes its events through the fluent event source registry, which
+    /// starts the stream when the first client subscribes and reports two events every
+    /// three seconds from then on. The cycle counter lives on the node manager, so it
+    /// keeps counting up across subscriptions, both in a field of its own and in the
     /// message.
     /// </remarks>
     [TestFixture]

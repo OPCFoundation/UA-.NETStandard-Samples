@@ -28,6 +28,8 @@
  * ======================================================================*/
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
@@ -53,73 +55,96 @@ namespace Quickstarts.SimpleEvents.Server
         /// <summary>
         /// Wires the behaviour of the sample once the address space exists.
         /// </summary>
-        partial void Configure(INodeManagerBuilder builder)
+        /// <remarks>
+        /// The system object comes from the model, which also declares it as an event
+        /// notifier below the server object, so the base class has already registered
+        /// it as a root notifier while the predefined nodes were loaded - a client
+        /// subscribing to the server object receives its events.
+        /// </remarks>
+        partial void Configure(ISimpleEventsNodeManagerBuilder builder)
         {
             // register the encodeable type for the cycle steps so clients can decode them.
             Server.Factory.Builder.AddQuickstartsSimpleEvents().Commit();
 
-            // start a simulation that reports events for the system cycles. the loop is
-            // owned by the node manager and stops when the node manager is disposed.
-            builder.Simulation(TimeSpan.FromSeconds(3))
-                .OnTick((context, elapsed, cancellationToken) => DoSimulationAsync(cancellationToken));
+            // publish the cycle events on the system notifier. the event source registry
+            // of the fluent SDK owns the lifecycle: the iterator starts when the first
+            // client subscribes to events on the system or the server object, is cancelled
+            // when the last interested monitored item disappears, and is disposed with
+            // the node manager.
+            builder.System.Publish(GenerateSystemCyclesAsync);
         }
         #endregion
 
         #region Private Methods
         /// <summary>
-        /// Does the simulation.
+        /// Reports two started cycles every three seconds while at least one client
+        /// is monitoring events on the system notifier.
         /// </summary>
-        private async ValueTask DoSimulationAsync(CancellationToken cancellationToken)
+        private async IAsyncEnumerable<SystemCycleStartedEventState> GenerateSystemCyclesAsync(
+            BaseObjectState notifier,
+            ISystemContext context,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            for (int ii = 1; ii < 3; ii++)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                // construct translation object with default text.
-                TranslationInfo info = new TranslationInfo(
-                    "SystemCycleStarted",
-                    "en-US",
-                    "The system cycle '{0}' has started.",
-                    ++m_cycleId);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    yield break;
+                }
 
-                // construct the event.
-#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
-                SystemCycleStartedEventState e = new SystemCycleStartedEventState(null);
+                for (int ii = 1; ii < 3; ii++)
+                {
+                    // construct translation object with default text.
+                    TranslationInfo info = new TranslationInfo(
+                        "SystemCycleStarted",
+                        "en-US",
+                        "The system cycle '{0}' has started.",
+                        ++m_cycleId);
+
+                    // construct the event.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the event source registry.
+                    SystemCycleStartedEventState e = new SystemCycleStartedEventState(null);
 #pragma warning restore CA2000
 
-                // Build the event from its type model first. A freshly constructed event
-                // is an empty shell: the fields this event type declares are created only
-                // by Create, which is also what gives them their browse names. A client
-                // selects an event field by browse path, so without this the event
-                // arrives with every one of the sample's own fields empty.
-                e.Create(
-                    SystemContext,
-                    NodeId.Null,
-                    new QualifiedName(BrowseNames.SystemCycleStartedEventType, NamespaceIndex),
-                    LocalizedText.Null,
-                    false);
+                    // Build the event from its type model first. A freshly constructed event
+                    // is an empty shell: the fields this event type declares are created only
+                    // by Create, which is also what gives them their browse names. A client
+                    // selects an event field by browse path, so without this the event
+                    // arrives with every one of the sample's own fields empty.
+                    e.Create(
+                        context,
+                        NodeId.Null,
+                        new QualifiedName(BrowseNames.SystemCycleStartedEventType, NamespaceIndex),
+                        LocalizedText.Null,
+                        false);
 
-                e.Initialize(
-                    SystemContext,
-                    null,
-                    (EventSeverity)ii,
-                    new LocalizedText(info));
+                    e.Initialize(
+                        context,
+                        null,
+                        (EventSeverity)ii,
+                        new LocalizedText(info));
 
-                e.SetChildValue(SystemContext, Opc.Ua.BrowseNames.SourceName, "System", false);
-                e.SetChildValue(SystemContext, Opc.Ua.BrowseNames.SourceNode, Opc.Ua.ObjectIds.Server, false);
+                    // the registry populates SourceNode and SourceName from the notifier on
+                    // the way out, so only the sample's own fields are set here.
+                    var cycleId = new QualifiedName(BrowseNames.CycleId, NamespaceIndex);
+                    var currentStep = new QualifiedName(BrowseNames.CurrentStep, NamespaceIndex);
+                    var steps = new QualifiedName(BrowseNames.Steps, NamespaceIndex);
 
-                var cycleId = new QualifiedName(BrowseNames.CycleId, NamespaceIndex);
-                var currentStep = new QualifiedName(BrowseNames.CurrentStep, NamespaceIndex);
-                var steps = new QualifiedName(BrowseNames.Steps, NamespaceIndex);
+                    e.SetChildValue(context, cycleId, m_cycleId.ToString(), false);
 
-                e.SetChildValue(SystemContext, cycleId, m_cycleId.ToString(), false);
+                    CycleStepDataType step = new CycleStepDataType();
+                    step.Name = "Step 1";
+                    step.Duration = 1000;
 
-                CycleStepDataType step = new CycleStepDataType();
-                step.Name = "Step 1";
-                step.Duration = 1000;
+                    e.SetChildValue(context, currentStep, step, false);
+                    e.SetChildValue(context, steps, new[] { step, step }.ToArrayOf(), false);
 
-                e.SetChildValue(SystemContext, currentStep, step, false);
-                e.SetChildValue(SystemContext, steps, new[] { step, step }.ToArrayOf(), false);
-
-                await Server.ReportEventAsync(SystemContext, e, cancellationToken).ConfigureAwait(false);
+                    yield return e;
+                }
             }
         }
         #endregion
