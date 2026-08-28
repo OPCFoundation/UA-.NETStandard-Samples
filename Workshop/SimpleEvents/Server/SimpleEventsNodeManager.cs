@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,193 +29,73 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Reflection;
+using System.Threading.Tasks;
 using Opc.Ua;
-using Opc.Ua.Server;
-using Microsoft.Extensions.Logging;
+using Opc.Ua.Server.Fluent;
 
 namespace Quickstarts.SimpleEvents.Server
 {
     /// <summary>
-    /// A node manager for a server that exposes several variables.
+    /// A node manager for a server that reports events of its own event types.
     /// </summary>
-    public class SimpleEventsNodeManager : CustomNodeManager2
+    /// <remarks>
+    /// The <c>[NodeManager]</c> attribute opts this partial class in to source
+    /// generation: the generator emits a sibling partial which derives from
+    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
+    /// <c>ModelDesign.xml</c>, and calls <see cref="Configure"/> once the address
+    /// space is in place. It also emits the <c>SimpleEventsNodeManagerFactory</c>
+    /// the server registers to create this node manager.
+    /// </remarks>
+    [NodeManager]
+    public partial class SimpleEventsNodeManager
     {
-        #region Constructors
+        #region Configure
         /// <summary>
-        /// Initializes the node manager.
-        /// </summary>
-        public SimpleEventsNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        :
-            base(server, configuration)
-        {
-            SystemContext.NodeIdFactory = this;
-
-            // set one namespace for the type model and one names for dynamically created nodes.
-            string[] namespaceUrls = new string[1];
-            namespaceUrls[0] = Namespaces.SimpleEvents;
-            SetNamespaces(namespaceUrls);
-
-            // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<SimpleEventsServerConfiguration>();
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new SimpleEventsServerConfiguration();
-            }
-        }
-        #endregion
-
-        #region IDisposable Members
-        /// <summary>
-        /// An overrideable version of the Dispose.
-        /// </summary>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (m_simulationTimer != null)
-                {
-                    m_simulationTimer.Dispose();
-                    m_simulationTimer = null;
-                }
-            }
-
-            base.Dispose(disposing);
-        }
-        #endregion
-
-        #region INodeIdFactory Members
-        /// <summary>
-        /// Creates the NodeId for the specified node.
-        /// </summary>
-        public override NodeId New(ISystemContext context, NodeState node)
-        {
-            return node.NodeId;
-        }
-        #endregion
-
-        #region Overridden Methods
-        /// <summary>
-        /// Loads a node set from a file or resource and addes them to the set of predefined nodes.
-        /// </summary>
-        protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
-        {
-            NodeStateCollection predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(context,
-                "Quickstarts.SimpleEvents.Server.Quickstarts.SimpleEvents.PredefinedNodes.uanodes",
-                typeof(SimpleEventsNodeManager).GetTypeInfo().Assembly,
-                true);
-            return predefinedNodes;
-        }
-        #endregion
-
-        #region INodeManager Members
-        /// <summary>
-        /// Does any initialization required before the address space can be used.
+        /// Wires the behaviour of the sample once the address space exists.
         /// </summary>
         /// <remarks>
-        /// The externalReferences is an out parameter that allows the node manager to link to nodes
-        /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// The system object comes from the model, which also declares it as an event
+        /// notifier below the server object, so the base class has already registered
+        /// it as a root notifier while the predefined nodes were loaded - a client
+        /// subscribing to the server object receives its events.
         /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        partial void Configure(ISimpleEventsNodeManagerBuilder builder)
         {
-            lock (Lock)
-            {
-                LoadPredefinedNodes(SystemContext, externalReferences);
+            // register the encodeable type for the cycle steps so clients can decode them.
+            Server.Factory.Builder.AddQuickstartsSimpleEvents().Commit();
 
-                // start a simulation that changes the values of the nodes.
-                m_simulationTimer = new Timer(DoSimulation, null, 3000, 3000);
-            }
-        }
-
-        /// <summary>
-        /// Frees any resources allocated for the address space.
-        /// </summary>
-        public override void DeleteAddressSpace()
-        {
-            lock (Lock)
-            {
-                base.DeleteAddressSpace();
-            }
-        }
-
-        /// <summary>
-        /// Returns a unique handle for the node.
-        /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
-        {
-            lock (Lock)
-            {
-                // quickly exclude nodes that are not in the namespace.
-                if (!IsNodeIdInNamespace(nodeId))
-                {
-                    return null;
-                }
-
-                // check for predefined nodes.
-                if (PredefinedNodes != null)
-                {
-                    NodeState node = null;
-
-                    if (PredefinedNodes.TryGetValue(nodeId, out node))
-                    {
-                        NodeHandle handle = new NodeHandle();
-
-                        handle.NodeId = nodeId;
-                        handle.Validated = true;
-                        handle.Node = node;
-
-                        return handle;
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Verifies that the specified node exists.
-        /// </summary>
-        protected override NodeState ValidateNode(
-            ServerSystemContext context,
-            NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            // not valid if no root.
-            if (handle == null)
-            {
-                return null;
-            }
-
-            // check if previously validated.
-            if (handle.Validated)
-            {
-                return handle.Node;
-            }
-
-            // TBD
-
-            return null;
+            // publish the cycle events on the system notifier. the event source registry
+            // of the fluent SDK owns the lifecycle: the iterator starts when the first
+            // client subscribes to events on the system or the server object, is cancelled
+            // when the last interested monitored item disappears, and is disposed with
+            // the node manager.
+            builder.System.Publish(GenerateSystemCyclesAsync);
         }
         #endregion
 
         #region Private Methods
         /// <summary>
-        /// Does the simulation.
+        /// Reports two started cycles every three seconds while at least one client
+        /// is monitoring events on the system notifier.
         /// </summary>
-        /// <param name="state">The state.</param>
-        private void DoSimulation(object state)
+        private async IAsyncEnumerable<SystemCycleStartedEventState> GenerateSystemCyclesAsync(
+            BaseObjectState notifier,
+            ISystemContext context,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    yield break;
+                }
+
                 for (int ii = 1; ii < 3; ii++)
                 {
                     // construct translation object with default text.
@@ -226,7 +106,7 @@ namespace Quickstarts.SimpleEvents.Server
                         ++m_cycleId);
 
                     // construct the event.
-#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the event source registry.
                     SystemCycleStartedEventState e = new SystemCycleStartedEventState(null);
 #pragma warning restore CA2000
 
@@ -236,48 +116,40 @@ namespace Quickstarts.SimpleEvents.Server
                     // selects an event field by browse path, so without this the event
                     // arrives with every one of the sample's own fields empty.
                     e.Create(
-                        SystemContext,
+                        context,
                         NodeId.Null,
                         new QualifiedName(BrowseNames.SystemCycleStartedEventType, NamespaceIndex),
                         LocalizedText.Null,
                         false);
 
                     e.Initialize(
-                        SystemContext,
+                        context,
                         null,
                         (EventSeverity)ii,
                         new LocalizedText(info));
 
-                    e.SetChildValue(SystemContext, Opc.Ua.BrowseNames.SourceName, "System", false);
-                    e.SetChildValue(SystemContext, Opc.Ua.BrowseNames.SourceNode, Opc.Ua.ObjectIds.Server, false);
-
+                    // the registry populates SourceNode and SourceName from the notifier on
+                    // the way out, so only the sample's own fields are set here.
                     var cycleId = new QualifiedName(BrowseNames.CycleId, NamespaceIndex);
                     var currentStep = new QualifiedName(BrowseNames.CurrentStep, NamespaceIndex);
                     var steps = new QualifiedName(BrowseNames.Steps, NamespaceIndex);
 
-                    e.SetChildValue(SystemContext, cycleId, m_cycleId.ToString(), false);
+                    e.SetChildValue(context, cycleId, m_cycleId.ToString(), false);
 
                     CycleStepDataType step = new CycleStepDataType();
                     step.Name = "Step 1";
                     step.Duration = 1000;
 
-                    e.SetChildValue(SystemContext, currentStep, step, false);
-                    e.SetChildValue(SystemContext, steps, new[] { step, step }.ToArrayOf(), false);
+                    e.SetChildValue(context, currentStep, step, false);
+                    e.SetChildValue(context, steps, new[] { step, step }.ToArrayOf(), false);
 
-                    Server.ReportEvent(e);
+                    yield return e;
                 }
             }
-            catch (Exception e)
-            {
-                m_logger.LogError(e, "Unexpected error during simulation.");
-            }
         }
-
         #endregion
 
         #region Private Fields
-        private SimpleEventsServerConfiguration m_configuration;
-        private Timer m_simulationTimer;
         private int m_cycleId;
         #endregion
     }

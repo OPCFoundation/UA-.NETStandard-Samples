@@ -46,5 +46,18 @@
     <opc:Description>An event raised when a system cycle completes.</opc:Description>
   </opc:ObjectType>
 
+  <opc:Object SymbolicName="System" TypeDefinition="ua:BaseObjectType" SupportsEvents="true">
+    <opc:Description>The system that reports the cycle events.</opc:Description>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:HasNotifier</opc:ReferenceType>
+        <opc:TargetId>ua:Server</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:Object>
 
 </opc:ModelDesign>

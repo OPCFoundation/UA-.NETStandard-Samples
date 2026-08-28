@@ -24,11 +24,11 @@ namespace Opc.Ua.Samples.Tests
     /// reports it on a timer.
     /// </summary>
     /// <remarks>
-    /// The simulation reports two events every three seconds and has been running since
-    /// the server started, so nothing here assumes it sees the first one. Each event
-    /// carries a cycle number which counts up, and that number also appears in the
-    /// message, which is what lets the counter be checked even though the field which is
-    /// supposed to carry it is currently empty - see CustomEventFieldsAreReported.
+    /// The sample publishes its events through the fluent event source registry, which
+    /// starts the stream when the first client subscribes and reports two events every
+    /// three seconds from then on. The cycle counter lives on the node manager, so it
+    /// keeps counting up across subscriptions, both in a field of its own and in the
+    /// message.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]
@@ -150,10 +150,9 @@ namespace Opc.Ua.Samples.Tests
         /// The cycle counter moves on from one tick of the simulation to the next.
         /// </summary>
         /// <remarks>
-        /// The counter is read out of the message, because the field which is meant to
-        /// carry it is empty today. That makes this test a slightly awkward way of
-        /// checking the counter, but it does check it, and it will keep working once the
-        /// field is filled in again.
+        /// The counter is read out of the message, which every client sees regardless of
+        /// the filter it builds, so this keeps working even if the sample's own fields
+        /// ever regress - CustomEventFieldsAreReported covers those separately.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
@@ -186,52 +185,33 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// The events ought to carry the sample's own fields, and today they do not.
+        /// The events carry the sample's own fields.
         /// </summary>
         /// <remarks>
-        /// The type model is complete: the cycle id, the current step and the list of steps
-        /// are all declared, which EventTypeDeclaresTheSamplesOwnFields checks. The events
-        /// themselves arrive with those fields empty, so the one thing this sample exists
-        /// to demonstrate - an event with fields of its own - does not reach a client.
-        ///
-        /// This is not the node manager getting the event wrong, which is worth knowing
-        /// before anybody migrates it. The simulation was building an event that had none
-        /// of these fields on it at all, and that part is fixed: the event is now created
-        /// from its type model, so the fields exist, carry their browse names and hold
-        /// their values. Asking the event object itself to resolve `2:CycleId` in process,
-        /// through the very method the server uses to apply an event filter, returns the
-        /// value. The server accepts the select clauses without complaint - the filter
-        /// result it returns for the monitored item is empty - and then delivers a null for
-        /// every one of them.
-        ///
-        /// So the field is on the event, resolves against the event, and is asked for by a
-        /// clause the server accepted, and it still arrives empty. Whatever is dropping it
-        /// sits below this sample. The standard fields of the same event, selected the same
-        /// way, arrive normally.
+        /// This is the one thing the sample exists to demonstrate - an event with fields
+        /// of its own - and for a long time it did not work: the events arrived with the
+        /// sample's own fields empty even though they were on the event and the server
+        /// had accepted the select clauses asking for them. The layer which dropped them
+        /// sat below the sample, and the migration of the node manager to
+        /// AsyncCustomNodeManager was what fixed it.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
-        public Task CustomEventFieldsAreReported(CancellationToken ct)
+        public async Task CustomEventFieldsAreReported(CancellationToken ct)
         {
-            return KnownIssueAsync(
-                async () => {
-                    await using EventCapture capture = await SubscribeAsync(ct).ConfigureAwait(false);
+            await using EventCapture capture = await SubscribeAsync(ct).ConfigureAwait(false);
 
-                    CapturedEvent reported = await capture.WaitAsync(
-                        candidate => candidate.EventType == CycleStartedType
-                            && candidate.Field(EventBrowseNames.CycleId).AsBoxedObject() != null,
-                        TimeSpan.FromSeconds(15),
-                        "a cycle event carrying a cycle id",
-                        ct).ConfigureAwait(false);
+            CapturedEvent reported = await capture.WaitAsync(
+                candidate => candidate.EventType == CycleStartedType
+                    && candidate.Field(EventBrowseNames.CycleId).AsBoxedObject() != null,
+                TimeSpan.FromSeconds(15),
+                "a cycle event carrying a cycle id",
+                ct).ConfigureAwait(false);
 
-                    Assert.That(
-                        reported.Field(EventBrowseNames.CycleId).AsBoxedObject() as string,
-                        Is.Not.Null.And.Not.Empty,
-                        "The cycle id is a field of the sample's own event type.");
-                },
-                "the events arrive with the sample's own fields empty. The fields are on the " +
-                "event and resolve against it in process, and the server accepted the select " +
-                "clauses which ask for them, so this is below the sample rather than in it.");
+            Assert.That(
+                reported.Field(EventBrowseNames.CycleId).AsBoxedObject() as string,
+                Is.Not.Null.And.Not.Empty,
+                "The cycle id is a field of the sample's own event type.");
         }
 
         private ushort SimpleEventsIndex => NamespaceIndex(SimpleEventsNamespace);
