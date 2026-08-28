@@ -83,6 +83,29 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// Reads the modified history - the replaced and deleted values - between
+        /// two points in time.
+        /// </summary>
+        public static Task<HistoryReadOutcome> ReadModifiedAsync(
+            ISession session,
+            NodeId nodeId,
+            DateTime startTime,
+            DateTime endTime,
+            uint numValuesPerNode,
+            CancellationToken ct,
+            ByteString continuationPoint = default)
+        {
+            var details = new ReadRawModifiedDetails {
+                IsReadModified = true,
+                StartTime = startTime,
+                EndTime = endTime,
+                NumValuesPerNode = numValuesPerNode,
+            };
+
+            return ReadAsync(session, nodeId, details, ct, continuationPoint);
+        }
+
+        /// <summary>
         /// Follows the continuation points of a raw read until the server is done.
         /// </summary>
         /// <remarks>
@@ -229,6 +252,26 @@ namespace Opc.Ua.Samples.Tests
             CancellationToken ct)
         {
             var details = new UpdateDataDetails {
+                NodeId = nodeId,
+                PerformInsertReplace = updateType,
+                UpdateValues = values.ToArray().ToArrayOf(),
+            };
+
+            return await UpdateAsync(session, details, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Inserts, replaces or updates structured values - annotations - in the
+        /// history of a node.
+        /// </summary>
+        public static async Task<(StatusCode Result, IReadOnlyList<StatusCode> PerValue)> UpdateStructureDataAsync(
+            ISession session,
+            NodeId nodeId,
+            PerformUpdateType updateType,
+            IEnumerable<DataValue> values,
+            CancellationToken ct)
+        {
+            var details = new UpdateStructureDataDetails {
                 NodeId = nodeId,
                 PerformInsertReplace = updateType,
                 UpdateValues = values.ToArray().ToArrayOf(),

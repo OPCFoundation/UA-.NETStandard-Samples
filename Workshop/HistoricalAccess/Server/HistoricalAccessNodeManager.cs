@@ -29,23 +29,28 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
-using System.Threading;
 using System.Reflection;
-using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
-using Microsoft.Extensions.Logging;
+using Opc.Ua.Server.Historian;
 
 namespace Quickstarts.HistoricalAccessServer
 {
     /// <summary>
-    /// A node manager for a server that exposes several variables.
+    /// A node manager for a server that exposes a file based archive of recorded
+    /// values through the history services.
     /// </summary>
-    public class HistoricalAccessServerNodeManager : CustomNodeManager2
+    /// <remarks>
+    /// The address space is built by hand from the archive folders and files. The
+    /// history services themselves are not implemented here any more: the manager
+    /// registers an <see cref="ArchiveHistorianProvider"/> for its namespace, and
+    /// the <see cref="AsyncCustomNodeManager"/> base class routes every HistoryRead
+    /// and HistoryUpdate through the SDK's historian dispatcher to that provider.
+    /// </remarks>
+    public class HistoricalAccessServerNodeManager : AsyncCustomNodeManager
     {
         #region Constructors
         /// <summary>
@@ -68,6 +73,10 @@ namespace Quickstarts.HistoricalAccessServer
 
             SystemContext.SystemHandle = m_system = new UnderlyingSystem(m_configuration, NamespaceIndex);
             SystemContext.NodeIdFactory = this;
+
+            // the provider serves the archive through the SDK's native historian
+            // interfaces; the address space registers it when it is created.
+            m_historian = new ArchiveHistorianProvider(server, m_system);
         }
         #endregion
 
@@ -118,37 +127,34 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Does any initialization required before the address space can be used.
         /// </summary>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        public override async ValueTask CreateAddressSpaceAsync(IDictionary<NodeId, IList<IReference>> externalReferences, CancellationToken cancellationToken = default)
         {
-            // The server owns its diagnostics lock and no longer exposes it; this
-            // section does not touch the diagnostics summary it guarded.
-            HistoryServerCapabilitiesState capabilities = Server.DiagnosticsNodeManager.GetDefaultHistoryCapabilitiesAsync(System.Threading.CancellationToken.None).AsTask().GetAwaiter().GetResult();
-            capabilities.AccessHistoryDataCapability.Value = true;
-            capabilities.InsertDataCapability.Value = true;
-            capabilities.ReplaceDataCapability.Value = true;
-            capabilities.UpdateDataCapability.Value = true;
-            capabilities.DeleteRawCapability.Value = true;
-            capabilities.DeleteAtTimeCapability.Value = true;
-            capabilities.InsertAnnotationCapability.Value = true;
+            await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
 
-            lock (Lock)
+            // register the historian for every node of the namespace. the base class
+            // resolves it through this registry when it dispatches the history
+            // services, and the diagnostics node manager rolls the provider
+            // capabilities up into the HistoryServerCapabilities node - which this
+            // method used to populate by hand - once every address space exists.
+            Server.UseHistorian()
+                .UseProvider(m_historian)
+                .RegisterForNamespace(Namespaces.HistoricalAccess);
+
+            IList<IReference> references = null;
+
+            if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out references))
             {
-                IList<IReference> references = null;
-
-                if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out references))
-                {
-                    externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
-                }
+                externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
+            }
 
 #pragma warning disable CA2000 // Justification: ownership is transferred to the address space/predefined node collection.
-                ArchiveFolderState root = m_system.GetFolderState(SystemContext, String.Empty);
+            ArchiveFolderState root = m_system.GetFolderState(SystemContext, String.Empty);
 #pragma warning restore CA2000
-                references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, root.NodeId));
-                root.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
+            references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, root.NodeId));
+            root.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
 
-                CreateFolderFromResources(root, "Sample");
-                CreateFolderFromResources(root, "Dynamic");
-            }
+            CreateFolderFromResources(root, "Sample");
+            CreateFolderFromResources(root, "Dynamic");
         }
 
         /// <summary>
@@ -168,7 +174,7 @@ namespace Quickstarts.HistoricalAccessServer
             dataFolder.UserWriteMask = AttributeWriteMask.None;
             dataFolder.EventNotifier = EventNotifiers.None;
             root.AddChild(dataFolder);
-            AddPredefinedNode(SystemContext, root);
+            AddPredefinedNodeSynchronously(root);
 
             foreach (string resourcePath in Assembly.GetExecutingAssembly().GetManifestResourceNames())
             {
@@ -183,95 +189,79 @@ namespace Quickstarts.HistoricalAccessServer
 #pragma warning restore CA2000
                 node.ReloadFromSource(SystemContext, Server.Telemetry);
 
+                // register with the underlying system so the historian resolves the
+                // item - and its capabilities - by node id like any other.
+                m_system.RegisterItemState(node);
+
                 dataFolder.AddReference(ReferenceTypeIds.Organizes, false, node.NodeId);
                 node.AddReference(ReferenceTypeIds.Organizes, true, dataFolder.NodeId);
 
-                AddPredefinedNode(SystemContext, node);
-            }
-        }
-
-        /// <summary>
-        /// Frees any resources allocated for the address space.
-        /// </summary>
-        public override void DeleteAddressSpace()
-        {
-            lock (Lock)
-            {
-                // TBD
+                AddPredefinedNodeSynchronously(node);
             }
         }
 
         /// <summary>
         /// Returns a unique handle for the node.
         /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
+        protected override async ValueTask<NodeHandle> GetManagerHandleAsync(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache, CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            // check for predefined nodes.
+            NodeHandle handle = await base.GetManagerHandleAsync(context, nodeId, cache, cancellationToken).ConfigureAwait(false);
+
+            if (handle != null)
             {
-                // quickly exclude nodes that are not in the namespace.
-                if (!IsNodeIdInNamespace(nodeId))
-                {
-                    return null;
-                }
+                return handle;
+            }
 
-                // check for check for nodes that are being currently monitored.
-                MonitoredNode2 monitoredNode = null;
-
-                if (MonitoredNodes.TryGetValue(nodeId, out monitoredNode))
-                {
-                    NodeHandle handle = new NodeHandle();
-
-                    handle.NodeId = nodeId;
-                    handle.Validated = true;
-                    handle.Node = monitoredNode.Node;
-
-                    return handle;
-                }
-
-                // check for predefined nodes,
-                NodeState node = null;
-
-                if (PredefinedNodes.TryGetValue(nodeId, out node))
-                {
-                    NodeHandle handle = new NodeHandle();
-
-                    handle.NodeId = nodeId;
-                    handle.Node = node;
-                    handle.Validated = true;
-
-                    return handle;
-                }
-
-                // parse the identifier.
-                ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
-
-                if (parsedNodeId != null)
-                {
-                    NodeHandle handle = new NodeHandle();
-
-                    handle.NodeId = nodeId;
-                    handle.Validated = false;
-                    handle.Node = null;
-                    handle.ParsedNodeId = parsedNodeId;
-
-                    return handle;
-                }
-
+            // quickly exclude nodes that are not in the namespace.
+            if (!IsNodeIdInNamespace(nodeId))
+            {
                 return null;
             }
+
+            // check for nodes that are being currently monitored.
+            if (MonitoredNodes.TryGetValue(nodeId, out MonitoredNode2 monitoredNode))
+            {
+                return new NodeHandle {
+                    NodeId = nodeId,
+                    Validated = true,
+                    Node = monitoredNode.Node
+                };
+            }
+
+            // parse the identifier.
+            ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
+
+            if (parsedNodeId != null)
+            {
+                return new NodeHandle {
+                    NodeId = nodeId,
+                    Validated = false,
+                    Node = null,
+                    ParsedNodeId = parsedNodeId
+                };
+            }
+
+            return null;
         }
 
         /// <summary>
         /// Verifies that the specified node exists.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the node cache/handle for the operation.")]
-        protected override NodeState ValidateNode(
+        protected override async ValueTask<NodeState> ValidateNodeAsync(
             ServerSystemContext context,
             NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache)
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
+            if (handle == null)
+            {
+                return null;
+            }
+
             // lookup in cache.
-            NodeState target = FindNodeInCache(context, handle, cache);
+            NodeState target = await FindNodeInCacheAsync(context, handle, cache, cancellationToken).ConfigureAwait(false);
 
             if (target != null)
             {
@@ -280,24 +270,41 @@ namespace Quickstarts.HistoricalAccessServer
                 return handle.Node;
             }
 
-            ParsedNodeId pnd = (ParsedNodeId)handle.ParsedNodeId;
+            ParsedNodeId pnd = handle.ParsedNodeId as ParsedNodeId;
+
+            if (pnd == null)
+            {
+                return null;
+            }
 
             // check for a new node.
-            switch (pnd.RootType)
+            try
             {
-                case NodeTypes.Folder:
+                lock (m_system.SyncRoot)
                 {
-                    target = m_system.GetFolderState(SystemContext, pnd.RootId);
-                    break;
-                }
+                    switch (pnd.RootType)
+                    {
+                        case NodeTypes.Folder:
+                        {
+                            target = m_system.GetFolderState(SystemContext, pnd.RootId);
+                            break;
+                        }
 
-                case NodeTypes.Item:
-                {
-                    ArchiveItemState item = m_system.GetItemState(SystemContext, pnd);
-                    item.LoadConfiguration(context, Server.Telemetry);
-                    target = item;
-                    break;
+                        case NodeTypes.Item:
+                        {
+                            ArchiveItemState item = m_system.GetItemState(SystemContext, pnd);
+                            item.LoadConfiguration(context, Server.Telemetry);
+                            target = item;
+                            break;
+                        }
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                // a node id can parse as an item without a file behind it.
+                m_logger.LogError(e, "Could not load the archive behind {NodeId}.", handle.NodeId);
+                return null;
             }
 
             // root is not valid.
@@ -336,28 +343,32 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Validates the nodes and reads the values from the underlying source.
         /// </summary>
-        protected override void Read(
+        protected override async ValueTask ReadAsync(
             ServerSystemContext context,
             ArrayOf<ReadValueId> nodesToRead,
             IList<DataValue> values,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToValidate,
-            IDictionary<NodeId, NodeState> cache)
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
             for (int ii = 0; ii < nodesToValidate.Count; ii++)
             {
                 NodeHandle handle = nodesToValidate[ii];
 
-                lock (Lock)
+                // validate node.
+                NodeState source = await ValidateNodeAsync(context, handle, cache, cancellationToken).ConfigureAwait(false);
+
+                if (source == null)
                 {
-                    // validate node.
-                    NodeState source = ValidateNode(context, handle, cache);
+                    continue;
+                }
 
-                    if (source == null)
-                    {
-                        continue;
-                    }
+                ReadValueId nodeToRead = nodesToRead[handle.Index];
+                DataValue value = values[handle.Index];
 
+                lock (m_system.SyncRoot)
+                {
                     // check if the node needs to be initialized from disk.
                     ArchiveItemState item = source.GetHierarchyRoot() as ArchiveItemState;
 
@@ -366,88 +377,66 @@ namespace Quickstarts.HistoricalAccessServer
                         item.LoadConfiguration(context, Server.Telemetry);
                     }
 
-                    ReadValueId nodeToRead = nodesToRead[handle.Index];
-                    DataValue value = values[handle.Index];
-
-                    // update the attribute value.
+                    // update the attribute value. the read happens under the archive
+                    // lock so the simulation cannot change the value fields halfway
+                    // through it.
+#pragma warning disable CA1849 // Justification: the lock cannot be held across an await and the node lives in memory, so the synchronous read does not block.
                     errors[handle.Index] = source.ReadAttribute(
                         context,
                         nodeToRead.AttributeId,
                         nodeToRead.ParsedIndexRange,
                         nodeToRead.DataEncoding,
                         ref value);
-
-                    values[handle.Index] = value;
+#pragma warning restore CA1849
                 }
+
+                values[handle.Index] = value;
             }
         }
 
         /// <summary>
         /// Reads the initial value for a monitored item.
         /// </summary>
-        /// <param name="context">The context.</param>
-        /// <param name="handle">The item handle.</param>
-        /// <param name="dataChangeMonitoredItem">The monitored item.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Override preserves existing sample parameter name.")]
+        /// <remarks>
+        /// A monitored item with an aggregate filter whose start time lies in the
+        /// past is primed with the recorded values so the aggregates cover the
+        /// requested window; everything else takes the current value as usual.
+        /// </remarks>
         protected override ServiceResult ReadInitialValue(
             ISystemContext context,
             NodeHandle handle,
-            IDataChangeMonitoredItem2 dataChangeMonitoredItem)
+            IDataChangeMonitoredItem2 monitoredItem)
         {
             ArchiveItemState item = handle.Node as ArchiveItemState;
 
-            if (item == null || dataChangeMonitoredItem.AttributeId != Attributes.Value)
+            if (item == null || monitoredItem.AttributeId != Attributes.Value)
             {
-                return base.ReadInitialValue(context, handle, dataChangeMonitoredItem);
+                return base.ReadInitialValue(context, handle, monitoredItem);
             }
 
-            MonitoredItem monitoredItem = dataChangeMonitoredItem as MonitoredItem;
-            AggregateFilter filter = monitoredItem.Filter as AggregateFilter;
+            MonitoredItem sampledItem = monitoredItem as MonitoredItem;
+            AggregateFilter filter = sampledItem?.Filter as AggregateFilter;
 
             if (filter == null || filter.StartTime >= DateTime.UtcNow.AddMilliseconds(-filter.ProcessingInterval))
             {
-                return base.ReadInitialValue(context, handle, dataChangeMonitoredItem);
+                return base.ReadInitialValue(context, handle, monitoredItem);
             }
-
-            ServiceResult error = StatusCodes.Good;
-            ReadRawModifiedDetails details = new ReadRawModifiedDetails();
-
-            details.StartTime = filter.StartTime;
-            details.EndTime = DateTime.UtcNow;
-            details.ReturnBounds = true;
-            details.IsReadModified = false;
-            details.NumValuesPerNode = 0;
-
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = handle.NodeId;
-            nodeToRead.ParsedIndexRange = NumericRange.Null;
 
             try
             {
-                using HistoryReadRequest request = CreateHistoryReadRequest(
-                    context,
-                    details,
-                    handle,
-                    nodeToRead);
-
-                while (request.Values.Count > 0)
+                foreach (DataValue value in m_historian.ReadRawWindow(SystemContext, item, (DateTime)filter.StartTime, DateTime.UtcNow))
                 {
-                    if (request.Values.Count == 0)
-                    {
-                        break;
-                    }
-
-                    DataValue value = request.Values.First.Value;
-                    request.Values.RemoveFirst();
-                    monitoredItem.QueueValue(value, ServiceResult.Good);
+                    sampledItem.QueueValue(value, ServiceResult.Good);
                 }
+
+                return StatusCodes.Good;
             }
             catch (Exception e)
             {
-                error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error fetching initial values.");
-                monitoredItem.QueueValue(DataValue.Null, error);
+                ServiceResult error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error fetching initial values.");
+                sampledItem.QueueValue(DataValue.Null, error);
+                return error;
             }
-            return error;
         }
 
         /// <summary>
@@ -455,28 +444,21 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
         {
-            lock (Lock)
+            lock (m_system.SyncRoot)
             {
-                NodeState root = handle.Node.GetHierarchyRoot();
-
-                if (root != null)
+                if (handle.Node.GetHierarchyRoot() is ArchiveItemState item)
                 {
-                    ArchiveItemState item = root as ArchiveItemState;
-
-                    if (item != null)
+                    if (m_monitoredItems == null)
                     {
-                        if (m_monitoredItems == null)
-                        {
-                            m_monitoredItems = new Dictionary<string, ArchiveItemState>();
-                        }
+                        m_monitoredItems = new Dictionary<string, ArchiveItemState>();
+                    }
 
-                        m_monitoredItems.TryAdd(item.ArchiveItem.UniquePath, item);
-                        item.SubscribeCount++;
+                    m_monitoredItems.TryAdd(item.ArchiveItem.UniquePath, item);
+                    item.SubscribeCount++;
 
-                        if (m_simulationTimer == null)
-                        {
-                            m_simulationTimer = new Timer(DoSimulation, null, 500, 500);
-                        }
+                    if (m_simulationTimer == null)
+                    {
+                        m_simulationTimer = new Timer(DoSimulation, null, 500, 500);
                     }
                 }
             }
@@ -490,14 +472,23 @@ namespace Quickstarts.HistoricalAccessServer
         /// <param name="samplingInterval">The sampling interval for the monitored item.</param>
         /// <param name="queueSize">The queue size for the monitored item.</param>
         /// <param name="filterToUse">The filter to revise.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Good if the filter is acceptable.</returns>
-        protected override StatusCode ReviseAggregateFilter(
+        protected override ValueTask<StatusCode> ReviseAggregateFilterAsync(
             ServerSystemContext context,
             NodeHandle handle,
             double samplingInterval,
             uint queueSize,
-            ServerAggregateFilter filterToUse)
+            ServerAggregateFilter filterToUse,
+            CancellationToken cancellationToken = default)
         {
+            // a processing interval of zero would keep the start-time alignment
+            // below spinning forever.
+            if (filterToUse.ProcessingInterval <= 0)
+            {
+                filterToUse.ProcessingInterval = Math.Max(samplingInterval, 1000);
+            }
+
             // use the sampling interval to limit the processing interval.
             if (filterToUse.ProcessingInterval < samplingInterval)
             {
@@ -522,8 +513,13 @@ namespace Quickstarts.HistoricalAccessServer
                 filterToUse.AggregateConfiguration.PercentDataBad = 100;
                 filterToUse.AggregateConfiguration.PercentDataGood = 100;
                 filterToUse.Stepped = true;
+
+                return new ValueTask<StatusCode>((StatusCode)StatusCodes.Good);
             }
-            else
+
+            // the item settings this reads are rewritten whenever the item reloads
+            // from its source, so they are read under the archive lock.
+            lock (m_system.SyncRoot)
             {
                 // use the archive acquisition sampling interval to limit the processing interval.
                 if (filterToUse.ProcessingInterval < item.ArchiveItem.SamplingInterval)
@@ -540,208 +536,56 @@ namespace Quickstarts.HistoricalAccessServer
                 filterToUse.Stepped = item.ArchiveItem.Stepped;
 
                 // revise the configration.
-                ReviseAggregateConfiguration(context, item, filterToUse.AggregateConfiguration);
+                m_historian.ReviseAggregateConfiguration(item, filterToUse.AggregateConfiguration);
             }
 
-            return StatusCodes.Good;
-        }
-
-        /// <summary>
-        /// Revises the aggregate configuration.
-        /// </summary>
-        /// <param name="context"></param>
-        /// <param name="item"></param>
-        /// <param name="configurationToUse"></param>
-        private void ReviseAggregateConfiguration(
-            ServerSystemContext context,
-            ArchiveItemState item,
-            AggregateConfiguration configurationToUse)
-        {
-            // set configuration from defaults.
-            if (configurationToUse.UseServerCapabilitiesDefaults)
-            {
-                AggregateConfiguration configuration = item.ArchiveItem.AggregateConfiguration;
-
-                if (configuration == null || configuration.UseServerCapabilitiesDefaults)
-                {
-                    configuration = Server.AggregateManager.GetDefaultConfiguration(NodeId.Null);
-                }
-
-                configurationToUse.UseSlopedExtrapolation = configuration.UseSlopedExtrapolation;
-                configurationToUse.TreatUncertainAsBad = configuration.TreatUncertainAsBad;
-                configurationToUse.PercentDataBad = configuration.PercentDataBad;
-                configurationToUse.PercentDataGood = configuration.PercentDataGood;
-            }
-
-            // override configuration when it does not make sense for the item.
-            configurationToUse.UseServerCapabilitiesDefaults = false;
-
-            if (item.ArchiveItem.Stepped)
-            {
-                configurationToUse.UseSlopedExtrapolation = false;
-            }
+            return new ValueTask<StatusCode>((StatusCode)StatusCodes.Good);
         }
 
         /// <summary>
         /// Called after deleting a MonitoredItem.
         /// </summary>
-        protected override void OnMonitoredItemDeleted(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
+        protected override async ValueTask OnMonitoredItemDeletedAsync(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem, CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            Timer timerToDispose = null;
+
+            lock (m_system.SyncRoot)
             {
-                NodeState root = handle.Node.GetHierarchyRoot();
-
-                if (root != null)
+                if (handle.Node.GetHierarchyRoot() is ArchiveItemState item &&
+                    m_monitoredItems != null &&
+                    m_monitoredItems.TryGetValue(item.ArchiveItem.UniquePath, out ArchiveItemState monitoredItemState))
                 {
-                    ArchiveItemState item = root as ArchiveItemState;
+                    monitoredItemState.SubscribeCount--;
 
-                    if (item != null)
+                    if (monitoredItemState.SubscribeCount == 0)
                     {
-                        ArchiveItemState item2 = root as ArchiveItemState;
+                        m_monitoredItems.Remove(item.ArchiveItem.UniquePath);
+                    }
 
-                        if (m_monitoredItems.TryGetValue(item.ArchiveItem.UniquePath, out item2))
-                        {
-                            item2.SubscribeCount--;
-
-                            if (item2.SubscribeCount == 0)
-                            {
-                                m_monitoredItems.Remove(item.ArchiveItem.UniquePath);
-                            }
-
-                            if (m_monitoredItems.Count == 0)
-                            {
-                                if (m_simulationTimer != null)
-                                {
-                                    m_simulationTimer.Dispose();
-                                    m_simulationTimer = null;
-                                }
-                            }
-                        }
+                    if (m_monitoredItems.Count == 0)
+                    {
+                        timerToDispose = m_simulationTimer;
+                        m_simulationTimer = null;
                     }
                 }
             }
-        }
-        #endregion
 
-        #region Historian Functions
-        /// <summary>
-        /// Reads the raw data for an item.
-        /// </summary>
-        protected override void HistoryReadRawModified(
-            ServerSystemContext context,
-            ReadRawModifiedDetails details,
-            TimestampsToReturn timestampsToReturn,
-            ArrayOf<HistoryReadValueId> nodesToRead,
-            IList<HistoryReadResult> results,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            for (int ii = 0; ii < nodesToRead.Count; ii++)
+            if (timerToDispose != null)
             {
-                NodeHandle handle = nodesToProcess[ii];
-                HistoryReadValueId nodeToRead = nodesToRead[handle.Index];
-                HistoryReadResult result = results[handle.Index];
-
-                HistoryReadRequest request = null;
-
-                try
-                {
-                    // validate node.
-                    NodeState source = ValidateNode(context, handle, cache);
-
-                    if (source == null)
-                    {
-                        continue;
-                    }
-
-                    // load an exising request. an empty continuation point means the client is
-                    // starting a new request: HistoryReadValueId hands out an empty ByteString
-                    // rather than a null one when the client never assigned a continuation point.
-                    if (!nodeToRead.ContinuationPoint.IsNull && nodeToRead.ContinuationPoint.Length > 0)
-                    {
-                        request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
-
-                        if (request == null)
-                        {
-                            errors[handle.Index] = StatusCodes.BadContinuationPointInvalid;
-                            continue;
-                        }
-                    }
-
-                    // create a new request.
-                    else
-                    {
-#pragma warning disable CA2000 // Justification: ownership is transferred to the session continuation points.
-                        request = CreateHistoryReadRequest(
-                            context,
-                            details,
-                            handle,
-                            nodeToRead);
-#pragma warning restore CA2000
-                    }
-
-                    // process values until the max is reached.
-                    HistoryData data = (details.IsReadModified) ? new HistoryModifiedData() : new HistoryData();
-                    HistoryModifiedData modifiedData = data as HistoryModifiedData;
-
-                    while (request.NumValuesPerNode == 0 || data.DataValues.Count < request.NumValuesPerNode)
-                    {
-                        if (request.Values.Count == 0)
-                        {
-                            break;
-                        }
-
-                        DataValue value = request.Values.First.Value;
-                        request.Values.RemoveFirst();
-                        data.DataValues = data.DataValues.AddItem(value);
-
-                        if (modifiedData != null)
-                        {
-                            ModificationInfo modificationInfo = null;
-
-                            if (request.ModificationInfos != null && request.ModificationInfos.Count > 0)
-                            {
-                                modificationInfo = request.ModificationInfos.First.Value;
-                                request.ModificationInfos.RemoveFirst();
-                            }
-
-                            modifiedData.ModificationInfos = modifiedData.ModificationInfos.AddItem(modificationInfo);
-                        }
-                    }
-
-                    errors[handle.Index] = ServiceResult.Good;
-
-                    // check if a continuation point is requred.
-                    if (request.Values.Count > 0)
-                    {
-                        // only set if both end time and start time are specified.
-                        if (details.StartTime != DateTime.MinValue && details.EndTime != DateTime.MinValue)
-                        {
-                            result.ContinuationPoint = SaveContinuationPoint(context, request);
-                        }
-                    }
-
-                    // check if no data returned.
-                    else
-                    {
-                        errors[handle.Index] = StatusCodes.GoodNoData;
-                    }
-
-                    // return the data.
-                    result.HistoryData = new ExtensionObject(data);
-                }
-                catch (Exception e)
-                {
-                    errors[handle.Index] = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error processing request.");
-                }
+                await timerToDispose.DisposeAsync().ConfigureAwait(false);
             }
         }
 
         /// <summary>
-        /// Reads the processed data for an item.
+        /// Refuses aggregates the server has no calculator for.
         /// </summary>
-        protected override void HistoryReadProcessed(
+        /// <remarks>
+        /// The historian provider computes aggregates itself so the stepped flag and
+        /// the aggregate configuration of each archive item are honoured, but a
+        /// provider read has no way to report a per-operation error, so unsupported
+        /// aggregates are refused here before the dispatch.
+        /// </remarks>
+        protected override ValueTask HistoryReadProcessedAsync(
             ServerSystemContext context,
             ReadProcessedDetails details,
             TimestampsToReturn timestampsToReturn,
@@ -749,998 +593,24 @@ namespace Quickstarts.HistoricalAccessServer
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
-            for (int ii = 0; ii < nodesToRead.Count; ii++)
+            List<NodeHandle> supported = new List<NodeHandle>(nodesToProcess.Count);
+
+            foreach (NodeHandle handle in nodesToProcess)
             {
-                NodeHandle handle = nodesToProcess[ii];
-                HistoryReadValueId nodeToRead = nodesToRead[handle.Index];
-                HistoryReadResult result = results[handle.Index];
-
-                HistoryReadRequest request = null;
-
-                try
+                if (!Server.AggregateManager.IsSupported(details.AggregateType[handle.Index]))
                 {
-                    // validate node.
-                    NodeState source = ValidateNode(context, handle, cache);
-
-                    if (source == null)
-                    {
-                        continue;
-                    }
-
-                    // load an exising request. an empty continuation point means the client is
-                    // starting a new request: HistoryReadValueId hands out an empty ByteString
-                    // rather than a null one when the client never assigned a continuation point.
-                    if (!nodeToRead.ContinuationPoint.IsNull && nodeToRead.ContinuationPoint.Length > 0)
-                    {
-                        request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
-
-                        if (request == null)
-                        {
-                            errors[handle.Index] = StatusCodes.BadContinuationPointInvalid;
-                            continue;
-                        }
-                    }
-
-                    // create a new request.
-                    else
-                    {
-                        // validate aggregate type.
-                        if (details.AggregateType.Count <= ii || !Server.AggregateManager.IsSupported(details.AggregateType[ii]))
-                        {
-                            errors[handle.Index] = StatusCodes.BadAggregateNotSupported;
-                            continue;
-                        }
-
-#pragma warning disable CA2000 // Justification: ownership is transferred to the session continuation points.
-                        request = CreateHistoryReadRequest(
-                            context,
-                            details,
-                            handle,
-                            nodeToRead,
-                            details.AggregateType[ii]);
-#pragma warning restore CA2000
-                    }
-
-                    // process values until the max is reached.
-                    HistoryData data = new HistoryData();
-
-                    while (request.NumValuesPerNode == 0 || data.DataValues.Count < request.NumValuesPerNode)
-                    {
-                        if (request.Values.Count == 0)
-                        {
-                            break;
-                        }
-
-                        DataValue value = request.Values.First.Value;
-                        request.Values.RemoveFirst();
-                        data.DataValues = data.DataValues.AddItem(value);
-                    }
-
-                    errors[handle.Index] = ServiceResult.Good;
-
-                    // check if a continuation point is requred.
-                    if (request.Values.Count > 0)
-                    {
-                        result.ContinuationPoint = SaveContinuationPoint(context, request);
-                    }
-
-                    // check if no data returned.
-                    else
-                    {
-                        errors[handle.Index] = StatusCodes.GoodNoData;
-                    }
-
-                    // return the data.
-                    result.HistoryData = new ExtensionObject(data);
-                }
-                catch (Exception e)
-                {
-                    errors[handle.Index] = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error processing request.");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Reads the data at the specified time for an item.
-        /// </summary>
-        protected override void HistoryReadAtTime(
-            ServerSystemContext context,
-            ReadAtTimeDetails details,
-            TimestampsToReturn timestampsToReturn,
-            ArrayOf<HistoryReadValueId> nodesToRead,
-            IList<HistoryReadResult> results,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            for (int ii = 0; ii < nodesToRead.Count; ii++)
-            {
-                NodeHandle handle = nodesToProcess[ii];
-                HistoryReadValueId nodeToRead = nodesToRead[handle.Index];
-                HistoryReadResult result = results[handle.Index];
-
-                HistoryReadRequest request = null;
-
-                try
-                {
-                    // validate node.
-                    NodeState source = ValidateNode(context, handle, cache);
-
-                    if (source == null)
-                    {
-                        continue;
-                    }
-
-                    // load an exising request. an empty continuation point means the client is
-                    // starting a new request: HistoryReadValueId hands out an empty ByteString
-                    // rather than a null one when the client never assigned a continuation point.
-                    if (!nodeToRead.ContinuationPoint.IsNull && nodeToRead.ContinuationPoint.Length > 0)
-                    {
-                        request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
-
-                        if (request == null)
-                        {
-                            errors[handle.Index] = StatusCodes.BadContinuationPointInvalid;
-                            continue;
-                        }
-                    }
-
-                    // create a new request.
-                    else
-                    {
-#pragma warning disable CA2000 // Justification: ownership is transferred to the session continuation points.
-                        request = CreateHistoryReadRequest(
-                            context,
-                            details,
-                            handle,
-                            nodeToRead);
-#pragma warning restore CA2000
-                    }
-
-                    // process values until the max is reached.
-                    HistoryData data = new HistoryData();
-
-                    while (request.NumValuesPerNode == 0 || data.DataValues.Count < request.NumValuesPerNode)
-                    {
-                        if (request.Values.Count == 0)
-                        {
-                            break;
-                        }
-
-                        DataValue value = request.Values.First.Value;
-                        request.Values.RemoveFirst();
-                        data.DataValues = data.DataValues.AddItem(value);
-                    }
-
-                    errors[handle.Index] = ServiceResult.Good;
-
-                    // check if a continuation point is requred.
-                    if (request.Values.Count > 0)
-                    {
-                        result.ContinuationPoint = SaveContinuationPoint(context, request);
-                    }
-
-                    // check if no data returned.
-                    else
-                    {
-                        errors[handle.Index] = StatusCodes.GoodNoData;
-                    }
-
-                    // return the data.
-                    result.HistoryData = new ExtensionObject(data);
-                }
-                catch (Exception e)
-                {
-                    errors[handle.Index] = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error processing request.");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Updates the data history for one or more nodes.
-        /// </summary>
-        protected override void HistoryUpdateData(
-            ServerSystemContext context,
-            ArrayOf<UpdateDataDetails> nodesToUpdate,
-            IList<HistoryUpdateResult> results,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            for (int ii = 0; ii < nodesToProcess.Count; ii++)
-            {
-                NodeHandle handle = nodesToProcess[ii];
-                UpdateDataDetails nodeToUpdate = nodesToUpdate[handle.Index];
-                HistoryUpdateResult result = results[handle.Index];
-
-                try
-                {
-                    // remove not supported.
-                    if (nodeToUpdate.PerformInsertReplace == PerformUpdateType.Remove)
-                    {
-                        continue;
-                    }
-
-                    // validate node.
-                    NodeState source = ValidateNode(context, handle, cache);
-
-                    if (source == null)
-                    {
-                        continue;
-                    }
-
-                    // load the archive.
-                    ArchiveItemState item = handle.Node as ArchiveItemState;
-
-                    if (item == null)
-                    {
-                        continue;
-                    }
-
-                    item.ReloadFromSource(context, Server.Telemetry);
-
-                    // process each item.
-                    for (int jj = 0; jj < nodeToUpdate.UpdateValues.Count; jj++)
-                    {
-                        StatusCode error = item.UpdateHistory(context, nodeToUpdate.UpdateValues[jj], nodeToUpdate.PerformInsertReplace);
-                        result.OperationResults = result.OperationResults.AddItem(error);
-                    }
-
-                    errors[handle.Index] = ServiceResult.Good;
-                }
-                catch (Exception e)
-                {
-                    errors[handle.Index] = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error processing request.");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Updates the data history for one or more nodes.
-        /// </summary>
-        protected override void HistoryUpdateStructureData(
-            ServerSystemContext context,
-            ArrayOf<UpdateStructureDataDetails> nodesToUpdate,
-            IList<HistoryUpdateResult> results,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            for (int ii = 0; ii < nodesToProcess.Count; ii++)
-            {
-                NodeHandle handle = nodesToProcess[ii];
-                UpdateStructureDataDetails nodeToUpdate = nodesToUpdate[handle.Index];
-                HistoryUpdateResult result = results[handle.Index];
-
-                try
-                {
-                    // validate node.
-                    NodeState source = ValidateNode(context, handle, cache);
-
-                    if (source == null)
-                    {
-                        continue;
-                    }
-
-                    // only support annotations.
-                    if (handle.Node.BrowseName != Opc.Ua.BrowseNames.Annotations)
-                    {
-                        continue;
-                    }
-
-                    // load the archive.
-                    ArchiveItemState item = Reload(context, handle);
-
-                    if (item == null)
-                    {
-                        continue;
-                    }
-
-                    // process each item.
-                    for (int jj = 0; jj < nodeToUpdate.UpdateValues.Count; jj++)
-                    {
-                        Annotation annotation = ExtensionObject.ToEncodeable((ExtensionObject)nodeToUpdate.UpdateValues[jj].WrappedValue.AsBoxedObject()) as Annotation;
-
-                        if (annotation == null)
-                        {
-                            result.OperationResults = result.OperationResults.AddItem(StatusCodes.BadTypeMismatch);
-                            continue;
-                        }
-
-                        StatusCode error = item.UpdateAnnotations(
-                            context,
-                            annotation,
-                            nodeToUpdate.UpdateValues[jj],
-                            nodeToUpdate.PerformInsertReplace);
-
-                        result.OperationResults = result.OperationResults.AddItem(error);
-                    }
-
-                    errors[handle.Index] = ServiceResult.Good;
-                }
-                catch (Exception e)
-                {
-                    errors[handle.Index] = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error processing request.");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Deletes the data history for one or more nodes.
-        /// </summary>
-        protected override void HistoryDeleteRawModified(
-            ServerSystemContext context,
-            ArrayOf<DeleteRawModifiedDetails> nodesToUpdate,
-            IList<HistoryUpdateResult> results,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            for (int ii = 0; ii < nodesToProcess.Count; ii++)
-            {
-                NodeHandle handle = nodesToProcess[ii];
-                DeleteRawModifiedDetails nodeToUpdate = nodesToUpdate[handle.Index];
-                HistoryUpdateResult result = results[handle.Index];
-
-                try
-                {
-                    // validate node.
-                    NodeState source = ValidateNode(context, handle, cache);
-
-                    if (source == null)
-                    {
-                        continue;
-                    }
-
-                    // load the archive.
-                    ArchiveItemState item = handle.Node as ArchiveItemState;
-
-                    if (item == null)
-                    {
-                        continue;
-                    }
-
-                    item.ReloadFromSource(context, Server.Telemetry);
-
-                    // delete the history.
-                    item.DeleteHistory(context, (DateTime)nodeToUpdate.StartTime, (DateTime)nodeToUpdate.EndTime, nodeToUpdate.IsDeleteModified);
-                    errors[handle.Index] = ServiceResult.Good;
-                }
-                catch (Exception e)
-                {
-                    errors[handle.Index] = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Error deleting data from archive.");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Deletes the data history for one or more nodes.
-        /// </summary>
-        protected override void HistoryDeleteAtTime(
-            ServerSystemContext context,
-            ArrayOf<DeleteAtTimeDetails> nodesToUpdate,
-            IList<HistoryUpdateResult> results,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            for (int ii = 0; ii < nodesToProcess.Count; ii++)
-            {
-                NodeHandle handle = nodesToProcess[ii];
-                DeleteAtTimeDetails nodeToUpdate = nodesToUpdate[handle.Index];
-                HistoryUpdateResult result = results[handle.Index];
-
-                try
-                {
-                    // validate node.
-                    NodeState source = ValidateNode(context, handle, cache);
-
-                    if (source == null)
-                    {
-                        continue;
-                    }
-
-                    // load the archive.
-                    ArchiveItemState item = handle.Node as ArchiveItemState;
-
-                    if (item == null)
-                    {
-                        continue;
-                    }
-
-                    item.ReloadFromSource(context, Server.Telemetry);
-
-                    // process each item.
-                    for (int jj = 0; jj < nodeToUpdate.ReqTimes.Count; jj++)
-                    {
-                        StatusCode error = item.DeleteHistory(context, (DateTime)nodeToUpdate.ReqTimes[jj]);
-                        result.OperationResults = result.OperationResults.AddItem(error);
-                    }
-
-                    errors[handle.Index] = ServiceResult.Good;
-                }
-                catch (Exception e)
-                {
-                    errors[handle.Index] = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error processing request.");
-                }
-            }
-        }
-
-        #region History Helpers
-        /// <summary>
-        /// Loads the archive item state from the underlying source.
-        /// </summary>
-        private ArchiveItemState Reload(ISystemContext context, NodeHandle handle)
-        {
-            ArchiveItemState item = handle.Node as ArchiveItemState;
-
-            if (item == null)
-            {
-                BaseInstanceState property = handle.Node as BaseInstanceState;
-
-                if (property != null)
-                {
-                    item = property.Parent as ArchiveItemState;
-                }
-            }
-
-            if (item != null)
-            {
-                item.ReloadFromSource(context, Server.Telemetry);
-            }
-
-            return item;
-        }
-
-        /// <summary>
-        /// Creates a new history request.
-        /// </summary>
-        private HistoryReadRequest CreateHistoryReadRequest(
-            ISystemContext context,
-            ReadRawModifiedDetails details,
-            NodeHandle handle,
-            HistoryReadValueId nodeToRead)
-        {
-            bool sizeLimited = (details.StartTime == DateTime.MinValue || details.EndTime == DateTime.MinValue);
-            bool applyIndexRangeOrEncoding = (!nodeToRead.ParsedIndexRange.IsNull || !(nodeToRead.DataEncoding).IsNull);
-            bool returnBounds = !details.IsReadModified && details.ReturnBounds;
-            bool timeFlowsBackward = (details.StartTime == DateTime.MinValue) || (details.EndTime != DateTime.MinValue && details.EndTime < details.StartTime);
-
-            // find the archive item.
-            ArchiveItemState item = Reload(context, handle);
-
-            if (item == null)
-            {
-                throw new ServiceResultException(StatusCodes.BadNotSupported);
-            }
-
-            LinkedList<DataValue> values = new LinkedList<DataValue>();
-            LinkedList<ModificationInfo> modificationInfos = null;
-
-            if (details.IsReadModified)
-            {
-                modificationInfos = new LinkedList<ModificationInfo>();
-            }
-
-            // read history.
-            DataView view = item.ReadHistory((DateTime)details.StartTime, (DateTime)details.EndTime, details.IsReadModified, handle.Node.BrowseName);
-
-            int startBound = -1;
-            int endBound = -1;
-            int ii = (timeFlowsBackward) ? view.Count - 1 : 0;
-
-            while (ii >= 0 && ii < view.Count)
-            {
-                try
-                {
-                    DateTime timestamp = (DateTime)view[ii].Row[0];
-
-                    // check if looking for start of data.
-                    if (values.Count == 0)
-                    {
-                        if (timeFlowsBackward)
-                        {
-                            if ((details.StartTime != DateTime.MinValue && timestamp >= details.StartTime) || (details.StartTime == DateTime.MinValue && timestamp >= details.EndTime))
-                            {
-                                startBound = ii;
-
-                                if (timestamp > details.StartTime)
-                                {
-                                    continue;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (timestamp <= details.StartTime)
-                            {
-                                startBound = ii;
-
-                                if (timestamp < details.StartTime)
-                                {
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-
-                    // check if absolute max values specified.
-                    if (sizeLimited)
-                    {
-                        if (details.NumValuesPerNode > 0 && details.NumValuesPerNode < values.Count)
-                        {
-                            break;
-                        }
-                    }
-
-                    // check for end bound.
-                    if (details.EndTime != DateTime.MinValue && timestamp >= details.EndTime)
-                    {
-                        if (timeFlowsBackward)
-                        {
-                            if (timestamp <= details.EndTime)
-                            {
-                                endBound = ii;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if (timestamp >= details.EndTime)
-                            {
-                                endBound = ii;
-                                break;
-                            }
-                        }
-                    }
-
-                    // check if the start bound needs to be returned.
-                    if (returnBounds && values.Count == 0 && startBound != ii && details.StartTime != DateTime.MinValue)
-                    {
-                        // add start bound.
-                        if (startBound == -1)
-                        {
-                            values.AddLast(new DataValue(Variant.Null, StatusCodes.BadBoundNotFound, details.StartTime, details.StartTime));
-                        }
-                        else
-                        {
-                            values.AddLast(RowToDataValue(context, nodeToRead, view[startBound], applyIndexRangeOrEncoding));
-                        }
-
-                        // check if absolute max values specified.
-                        if (sizeLimited)
-                        {
-                            if (details.NumValuesPerNode > 0 && details.NumValuesPerNode < values.Count)
-                            {
-                                break;
-                            }
-                        }
-                    }
-
-                    // add value.
-                    values.AddLast(RowToDataValue(context, nodeToRead, view[ii], applyIndexRangeOrEncoding));
-
-                    if (modificationInfos != null)
-                    {
-                        modificationInfos.AddLast((ModificationInfo)view[ii].Row[6]);
-                    }
-                }
-                finally
-                {
-                    if (timeFlowsBackward)
-                    {
-                        ii--;
-                    }
-                    else
-                    {
-                        ii++;
-                    }
-                }
-            }
-
-            // add late bound.
-            while (returnBounds && details.EndTime != DateTime.MinValue)
-            {
-                // add start bound.
-                if (values.Count == 0)
-                {
-                    if (startBound == -1)
-                    {
-                        values.AddLast(new DataValue(Variant.Null, StatusCodes.BadBoundNotFound, details.StartTime, details.StartTime));
-                    }
-                    else
-                    {
-                        values.AddLast(RowToDataValue(context, nodeToRead, view[startBound], applyIndexRangeOrEncoding));
-                    }
-                }
-
-                // check if absolute max values specified.
-                if (sizeLimited)
-                {
-                    if (details.NumValuesPerNode > 0 && details.NumValuesPerNode < values.Count)
-                    {
-                        break;
-                    }
-                }
-
-                // add end bound.
-                if (endBound == -1)
-                {
-                    values.AddLast(new DataValue(Variant.Null, StatusCodes.BadBoundNotFound, details.EndTime, details.EndTime));
-                }
-                else
-                {
-                    values.AddLast(RowToDataValue(context, nodeToRead, view[endBound], applyIndexRangeOrEncoding));
-                }
-
-                break;
-            }
-
-            HistoryReadRequest request = new HistoryReadRequest();
-            request.Values = values;
-            request.ModificationInfos = modificationInfos;
-            request.NumValuesPerNode = details.NumValuesPerNode;
-            request.Filter = null;
-            return request;
-        }
-
-        /// <summary>
-        /// Creates a new history request.
-        /// </summary>
-        private HistoryReadRequest CreateHistoryReadRequest(
-            ServerSystemContext context,
-            ReadProcessedDetails details,
-            NodeHandle handle,
-            HistoryReadValueId nodeToRead,
-            NodeId aggregateId)
-        {
-            bool applyIndexRangeOrEncoding = (nodeToRead.ParsedIndexRange != NumericRange.Null || !(nodeToRead.DataEncoding).IsNull);
-            bool timeFlowsBackward = (details.EndTime < details.StartTime);
-
-            ArchiveItemState item = handle.Node as ArchiveItemState;
-
-            if (item == null)
-            {
-                throw new ServiceResultException(StatusCodes.BadNotSupported);
-            }
-
-            item.ReloadFromSource(context, Server.Telemetry);
-
-            LinkedList<DataValue> values = new LinkedList<DataValue>();
-
-            // read history.
-            DataView view = item.ReadHistory((DateTime)details.StartTime, (DateTime)details.EndTime, false);
-
-            int ii = (timeFlowsBackward) ? view.Count - 1 : 0;
-
-            // choose the aggregate configuration.
-            AggregateConfiguration configuration = (AggregateConfiguration)details.AggregateConfiguration.MemberwiseClone();
-            ReviseAggregateConfiguration(context, item, configuration);
-
-            // create the aggregate calculator.
-            IAggregateCalculator calculator = Server.AggregateManager.CreateCalculator(
-                aggregateId,
-                details.StartTime,
-                details.EndTime,
-                details.ProcessingInterval,
-                item.ArchiveItem.Stepped,
-                configuration);
-
-            while (ii >= 0 && ii < view.Count)
-            {
-                try
-                {
-                    DataValue value = (DataValue)view[ii].Row[2];
-                    calculator.QueueRawValue(value);
-
-                    QueueProcessedValues(
-                        context,
-                        calculator,
-                        nodeToRead.ParsedIndexRange,
-                        nodeToRead.DataEncoding,
-                        applyIndexRangeOrEncoding,
-                        false,
-                        values);
-                }
-                finally
-                {
-                    if (timeFlowsBackward)
-                    {
-                        ii--;
-                    }
-                    else
-                    {
-                        ii++;
-                    }
-                }
-            }
-
-            // queue any processed values beyond the end of the data.
-            QueueProcessedValues(
-                context,
-                calculator,
-                nodeToRead.ParsedIndexRange,
-                nodeToRead.DataEncoding,
-                applyIndexRangeOrEncoding,
-                true,
-                values);
-
-            HistoryReadRequest request = new HistoryReadRequest();
-            request.Values = values;
-            request.NumValuesPerNode = 0;
-            request.Filter = null;
-            return request;
-        }
-
-        /// <summary>
-        /// Creates a new history request.
-        /// </summary>
-        private HistoryReadRequest CreateHistoryReadRequest(
-            ServerSystemContext context,
-            ReadAtTimeDetails details,
-            NodeHandle handle,
-            HistoryReadValueId nodeToRead)
-        {
-            bool applyIndexRangeOrEncoding = (!nodeToRead.ParsedIndexRange.IsNull || !(nodeToRead.DataEncoding).IsNull);
-
-            ArchiveItemState item = handle.Node as ArchiveItemState;
-
-            if (item == null)
-            {
-                throw new ServiceResultException(StatusCodes.BadNotSupported);
-            }
-
-            item.ReloadFromSource(context, Server.Telemetry);
-
-            // find the start and end times.
-            DateTime startTime = DateTime.MaxValue;
-            DateTime endTime = DateTime.MinValue;
-
-            for (int ii = 0; ii < details.ReqTimes.Count; ii++)
-            {
-                if (startTime > details.ReqTimes[ii])
-                {
-                    startTime = (DateTime)details.ReqTimes[ii];
-                }
-
-                if (endTime < details.ReqTimes[ii])
-                {
-                    endTime = (DateTime)details.ReqTimes[ii];
-                }
-            }
-
-            DataView view = item.ReadHistory(startTime, endTime, false);
-
-            LinkedList<DataValue> values = new LinkedList<DataValue>();
-
-            for (int ii = 0; ii < details.ReqTimes.Count; ii++)
-            {
-                bool dataBeforeIgnored = false;
-                bool dataAfterIgnored = false;
-
-                // find the value at the time.
-                int index = item.FindValueAtOrBefore(view, (DateTime)details.ReqTimes[ii], !details.UseSimpleBounds, out dataBeforeIgnored);
-
-                if (index < 0)
-                {
-                    values.AddLast(DataValue.FromStatusCode(StatusCodes.BadNoData, details.ReqTimes[ii]));
+                    errors[handle.Index] = StatusCodes.BadAggregateNotSupported;
                     continue;
                 }
 
-                // nothing more to do if a raw value exists.
-                if ((DateTime)view[index].Row[0] == details.ReqTimes[ii])
-                {
-                    values.AddLast((DataValue)view[index].Row[2]);
-                    continue;
-                }
-
-                DataValue before = (DataValue)view[index].Row[2];
-                DataValue value;
-
-                // find the value after the time.
-                int afterIndex = item.FindValueAfter(view, index, !details.UseSimpleBounds, out dataAfterIgnored);
-
-                if (afterIndex < 0)
-                {
-                    // use stepped interpolation if no end bound exists.
-                    value = AggregateCalculator.SteppedInterpolate(details.ReqTimes[ii], before);
-
-                    if (StatusCode.IsNotBad(value.StatusCode) && dataBeforeIgnored)
-                    {
-                        value = new DataValue(value.WrappedValue, value.StatusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
-                    }
-
-                    values.AddLast(value);
-                    continue;
-                }
-
-                // use stepped or slopped interpolation depending on the value.
-                if (item.ArchiveItem.Stepped)
-                {
-                    value = AggregateCalculator.SteppedInterpolate(details.ReqTimes[ii], before);
-
-                    if (StatusCode.IsNotBad(value.StatusCode) && dataBeforeIgnored)
-                    {
-                        value = new DataValue(value.WrappedValue, value.StatusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
-                    }
-                }
-                else
-                {
-                    value = AggregateCalculator.SlopedInterpolate(details.ReqTimes[ii], before, (DataValue)view[afterIndex].Row[2]);
-
-                    if (StatusCode.IsNotBad(value.StatusCode) && (dataBeforeIgnored || dataAfterIgnored))
-                    {
-                        value = new DataValue(value.WrappedValue, value.StatusCode.WithCodeBits(StatusCodes.UncertainDataSubNormal), value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
-                    }
-                }
-
-                values.AddLast(value);
+                supported.Add(handle);
             }
 
-            HistoryReadRequest request = new HistoryReadRequest();
-            request.Values = values;
-            request.NumValuesPerNode = 0;
-            request.Filter = null;
-            return request;
+            return base.HistoryReadProcessedAsync(context, details, timestampsToReturn, nodesToRead, results, errors, supported, cache, cancellationToken);
         }
-
-        /// <summary>
-        /// Extracts and queues any processed values.
-        /// </summary>
-        private void QueueProcessedValues(
-            ServerSystemContext context,
-            IAggregateCalculator calculator,
-            NumericRange indexRange,
-            QualifiedName dataEncoding,
-            bool applyIndexRangeOrEncoding,
-            bool returnPartial,
-            LinkedList<DataValue> values)
-        {
-            while (calculator.TryGetProcessedValue(returnPartial, out DataValue proccessedValue))
-            {
-                // apply any index range or encoding.
-                if (applyIndexRangeOrEncoding)
-                {
-                    Variant rawValue = proccessedValue.WrappedValue;
-                    ServiceResult result = BaseVariableState.ApplyIndexRangeAndDataEncoding(context, indexRange, dataEncoding, ref rawValue);
-
-                    if (ServiceResult.IsGood(result))
-                    {
-                        proccessedValue = new DataValue(rawValue, proccessedValue.StatusCode, proccessedValue.SourceTimestamp, proccessedValue.ServerTimestamp, proccessedValue.SourcePicoseconds, proccessedValue.ServerPicoseconds);
-                    }
-                    else
-                    {
-                        proccessedValue = new DataValue(Variant.Null, result.StatusCode, proccessedValue.SourceTimestamp, proccessedValue.ServerTimestamp, proccessedValue.SourcePicoseconds, proccessedValue.ServerPicoseconds);
-                    }
-                }
-
-                // queue the result.
-                values.AddLast(proccessedValue);
-            }
-        }
-
-        /// <summary>
-        /// Creates a new history request.
-        /// </summary>
-        private DataValue RowToDataValue(
-            ISystemContext context,
-            HistoryReadValueId nodeToRead,
-            DataRowView row,
-            bool applyIndexRangeOrEncoding)
-        {
-            DataValue value = (DataValue)row[2];
-
-            // apply any index range or encoding.
-            if (applyIndexRangeOrEncoding)
-            {
-                Variant rawValue = value.WrappedValue;
-                ServiceResult result = BaseVariableState.ApplyIndexRangeAndDataEncoding(context, nodeToRead.ParsedIndexRange, nodeToRead.DataEncoding, ref rawValue);
-
-                if (ServiceResult.IsGood(result))
-                {
-                    value = new DataValue(rawValue, value.StatusCode, value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
-                }
-                else
-                {
-                    value = new DataValue(Variant.Null, result.StatusCode, value.SourceTimestamp, value.ServerTimestamp, value.SourcePicoseconds, value.ServerPicoseconds);
-                }
-            }
-
-            return value;
-        }
-
-        /// <summary>
-        /// Stores a read history request.
-        /// </summary>
-        private sealed class HistoryReadRequest : IHistoryContinuationPoint
-        {
-            public Guid Id { get; set; }
-            public ByteString ContinuationPoint;
-            public LinkedList<DataValue> Values;
-            public LinkedList<ModificationInfo> ModificationInfos;
-            public uint NumValuesPerNode;
-            public AggregateFilter Filter;
-
-            public void Dispose()
-            {
-            }
-        }
-
-        /// <summary>
-        /// Releases the history continuation point.
-        /// </summary>
-        protected override void HistoryReleaseContinuationPoints(
-            ServerSystemContext context,
-            ArrayOf<HistoryReadValueId> nodesToRead,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            for (int ii = 0; ii < nodesToProcess.Count; ii++)
-            {
-                NodeHandle handle = nodesToProcess[ii];
-                HistoryReadValueId nodeToRead = nodesToRead[handle.Index];
-
-                // find the continuation point.
-                HistoryReadRequest request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
-
-                if (request == null)
-                {
-                    errors[handle.Index] = StatusCodes.BadContinuationPointInvalid;
-                    continue;
-                }
-
-                // all done.
-                errors[handle.Index] = StatusCodes.Good;
-            }
-        }
-
-        /// <summary>
-        /// Loads a history continuation point.
-        /// </summary>
-        private HistoryReadRequest LoadContinuationPoint(
-            ServerSystemContext context,
-            ByteString continuationPoint)
-        {
-            ISession session = context.OperationContext.Session;
-
-            if (session == null)
-            {
-                return null;
-            }
-
-            HistoryReadRequest request = session.ContinuationPoints.RestoreHistory(continuationPoint) as HistoryReadRequest;
-
-            if (request == null)
-            {
-                return null;
-            }
-
-            return request;
-        }
-
-        /// <summary>
-        /// Saves a history continuation point.
-        /// </summary>
-        private ByteString SaveContinuationPoint(
-            ServerSystemContext context,
-            HistoryReadRequest request)
-        {
-            ISession session = context.OperationContext.Session;
-
-            if (session == null)
-            {
-                return default;
-            }
-
-            request.Id = Guid.NewGuid();
-            session.ContinuationPoints.SaveHistory(request);
-            request.ContinuationPoint = request.Id.ToByteArray().ToByteString();
-            return request.ContinuationPoint;
-        }
-        #endregion
         #endregion
 
         #region Private Methods
@@ -1751,7 +621,7 @@ namespace Quickstarts.HistoricalAccessServer
         {
             try
             {
-                lock (Lock)
+                lock (m_system.SyncRoot)
                 {
                     foreach (ArchiveItemState item in m_monitoredItems.Values)
                     {
@@ -1780,8 +650,31 @@ namespace Quickstarts.HistoricalAccessServer
         #region Private Fields
         private UnderlyingSystem m_system;
         private HistoricalAccessServerConfiguration m_configuration;
+        private ArchiveHistorianProvider m_historian;
         private Timer m_simulationTimer;
         private Dictionary<string, ArchiveItemState> m_monitoredItems;
         #endregion
+    }
+
+    /// <summary>
+    /// The factory the server registers to create the node manager on startup.
+    /// </summary>
+    public class HistoricalAccessNodeManagerFactory : IAsyncNodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public ArrayOf<string> NamespacesUris
+            => new ArrayOf<string>(new string[] { Namespaces.HistoricalAccess });
+
+        /// <inheritdoc/>
+        public ValueTask<IAsyncNodeManager> CreateAsync(
+            IServerInternal server,
+            ApplicationConfiguration configuration,
+            CancellationToken cancellationToken = default)
+        {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the master node manager.
+            return new ValueTask<IAsyncNodeManager>(
+                new HistoricalAccessServerNodeManager(server, configuration));
+#pragma warning restore CA2000
+        }
     }
 }

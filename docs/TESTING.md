@@ -290,7 +290,7 @@ What each fixture pins down, in one line:
 | PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
 | DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths |
 | AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area |
-| HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting into the history, and which items are still being collected |
+| HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting and deleting with the modified history remembering it, annotations read and written, and which items are still being collected |
 | HistoricalEvents | The well tree, event history with continuation points, and the two refusals the sample declares |
 | Aggregation | The proxy root published for the configured downstream server |
 | TestData | Static write round trip, simulated values while monitored, and which single variable is archived |
@@ -299,29 +299,28 @@ What each fixture pins down, in one line:
 
 ### Recorded issues
 
-Two expectations are written the way the sample is *meant* to behave and reported as
-**ignored** because they do not hold today, through `KnownIssue.RecordAsync`. Like `s_knownIssues`
+One expectation is written the way the sample is *meant* to behave and reported as
+**ignored** because it does not hold today, through `KnownIssue.RecordAsync`. Like `s_knownIssues`
 in Tier 1, an entry fails the moment it starts passing, so it cannot rot - and that has already
-happened four times. Three were expectations that were wrong about the harness rather than
+happened five times. Three were expectations that were wrong about the harness rather than
 about the sample, one of them caught by CI rather than locally: an entry which held on a
 developer machine and not on a build agent, which is the most useful kind to be told about.
-The fourth was the bargain paying out as designed: the SimpleEvents events arrived with the
-sample's own fields (`CycleId`, `CurrentStep`, `Steps`) empty even though they were on the
-event and the server had accepted the select clauses asking for them, the layer dropping them
-sat below the sample - and the migration of the node manager to `AsyncCustomNodeManager`
-fixed it, at which point the entry failed, the wrapper came off, and the expectation now
-stands as an ordinary assertion.
+The other two were the bargain paying out as designed. The SimpleEvents events arrived with
+the sample's own fields (`CycleId`, `CurrentStep`, `Steps`) empty even though they were on the
+event and the server had accepted the select clauses asking for them; the layer dropping them
+sat below the sample, and the migration of the node manager to `AsyncCustomNodeManager` fixed
+it. The HistoricalAccess archive answered a read at a recorded point in time with a bad value
+even though a raw read returned that point; the binary search behind the read-at-time missed
+exact matches, and the migration onto the SDK's native historian interfaces replaced it. In
+both cases the entry failed, the wrapper came off, and the expectation now stands as an
+ordinary assertion. The same migration fixed the delete the fixture used to describe only in
+prose - deleting a recorded value answered `BadUnexpectedError` and left the item refusing
+every later read, because the handler indexed a column its table does not have - so deleting
+a recorded value now has a test of its own instead of a paragraph.
 
 They are not asserted the other way round on purpose: recording the broken behaviour as
 expected would ask the migration to preserve it.
 
-- **HistoricalAccess** - a read at a recorded point in time returns a bad value. The archive is
-  searched with a binary search over a view sorted by source timestamp, and a bounded raw read
-  whose range starts *before* the first archived value returns nothing rather than the values
-  inside the range, which looks like the same root. Deleting a value which *is* in the archive
-  answers `BadUnexpectedError` and leaves the item refusing every later read, so that one is
-  described here rather than tested - a test for it would take the rest of the fixture down
-  with it.
 - **Aggregation** - the server publishes its proxy root and then answers `BadNotConnected` to
   every browse of it. The refusal is deliberate rather than an error: the node manager hands
   out a downstream session only once its type cache is loaded and its status node reads Good,
@@ -402,9 +401,9 @@ The known issue list in `SampleClientTests` is therefore empty again.
 
 The same unguarded continuation point check existed three times in
 `Workshop/HistoricalAccess/Server/HistoricalAccessNodeManager.cs` - in `HistoryReadRawModified`,
-`HistoryReadProcessed` and `HistoryReadAtTime` - and carries the same guard now. It is latent
-there: the HistoricalAccess client does not read history from its ConnectComplete handler, so
-no test reaches it, which is why it is fixed by inspection rather than by a failing test.
+`HistoryReadProcessed` and `HistoryReadAtTime` - and carried the same guard until the migration
+onto the SDK's native historian interfaces removed those methods altogether: continuation
+points are owned by the SDK's historian dispatcher now.
 
 ## Status / roadmap
 
