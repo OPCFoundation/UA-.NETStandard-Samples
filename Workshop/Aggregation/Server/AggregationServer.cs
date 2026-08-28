@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -46,8 +47,9 @@ namespace AggregationServer
     /// responsible for reading the configuration file, creating the endpoints and dispatching
     /// incoming requests to the appropriate handler.
     ///
-    /// This sub-class specifies non-configurable metadata such as Product Name and initializes
-    /// the AggregationNodeManager which provides access to the data exposed by the Server.
+    /// This sub-class specifies non-configurable metadata such as Product Name and registers
+    /// one AggregationNodeManager per configured downstream endpoint, each of which provides
+    /// access to the data exposed by one aggregated server.
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample public API name matches the workshop namespace.")]
     public partial class AggregationServer : ReverseConnectServer
@@ -62,17 +64,19 @@ namespace AggregationServer
         /// Creates the node managers for the server.
         /// </summary>
         /// <remarks>
-        /// This method allows the sub-class create any additional node managers which it uses. The SDK
-        /// always creates a CoreNodeManager which handles the built-in nodes defined by the specification.
-        /// Any additional NodeManagers are expected to handle application specific nodes.
+        /// The endpoints of the servers to aggregate come from the configuration, which is
+        /// not available before startup, so the node manager factories are registered here
+        /// rather than in the constructor. The base implementation then creates one node
+        /// manager per registered <see cref="IAsyncNodeManagerFactory"/>; only the first
+        /// one publishes the aggregation type model.
         /// </remarks>
-        protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
+        protected override async ValueTask<IMasterNodeManager> CreateMasterNodeManagerAsync(
+            IServerInternal server,
+            ApplicationConfiguration configuration,
+            CancellationToken cancellationToken = default)
         {
             m_logger.LogInformation("Creating the Node Managers.");
 
-            List<INodeManager> nodeManagers = new List<INodeManager>();
-
-            bool ownsTypeModel = true;
             ConfiguredEndpointCollection endpoints = configuration.ParseExtension<ConfiguredEndpointCollection>();
 
             // start the reverse connect host
@@ -91,18 +95,27 @@ namespace AggregationServer
                 // start the server even if no endpoint is configured, because
                 // app config can change during operation  and the manager object
                 // is needed
-                reverseConnectManager.StartServiceAsync(configuration, CancellationToken.None).GetAwaiter().GetResult();
+                await reverseConnectManager.StartServiceAsync(configuration, cancellationToken).ConfigureAwait(false);
             }
 
+            // a restarted server registers a fresh factory set for the current configuration.
+            foreach (AggregationNodeManagerFactory factory in m_aggregationFactories)
+            {
+                RemoveNodeManager(factory);
+            }
+            m_aggregationFactories.Clear();
+
+            bool ownsTypeModel = true;
             foreach (ConfiguredEndpoint endpoint in endpoints.Endpoints)
             {
-                nodeManagers.Add(new AggregationNodeManager(server, configuration, endpoint,
-                    reverseConnectManager, ownsTypeModel));
+                var factory = new AggregationNodeManagerFactory(endpoint, reverseConnectManager, ownsTypeModel);
+                m_aggregationFactories.Add(factory);
+                AddNodeManager(factory);
                 ownsTypeModel = false;
             }
 
-            // create master node manager.
-            return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
+            // create master node manager from the registered factories.
+            return await base.CreateMasterNodeManagerAsync(server, configuration, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -126,6 +139,10 @@ namespace AggregationServer
 
             return properties;
         }
+        #endregion
+
+        #region Private Fields
+        private readonly List<AggregationNodeManagerFactory> m_aggregationFactories = new List<AggregationNodeManagerFactory>();
         #endregion
     }
 }

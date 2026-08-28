@@ -31,6 +31,12 @@ namespace Opc.Ua.Samples.Tests
     /// server appears under a root of the aggregating one, with a node id of its own, and
     /// reading or writing it reaches the real thing. The namespace mapping between the two
     /// servers is what makes that work and is the easiest part to break.
+    ///
+    /// The proxy root exists from the start, but everything behind it needs the session
+    /// the aggregating server opens downstream, and it schedules the first connection
+    /// attempt a few seconds after startup. Every test which goes through the proxy
+    /// therefore waits for the pass through to come up instead of asserting on the first
+    /// answer.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]
@@ -48,6 +54,7 @@ namespace Opc.Ua.Samples.Tests
         private TestClient m_aggregatingClient;
         private NodeId m_proxyRoot;
         private string m_setupFailure;
+        private IReadOnlyList<string> m_passThroughNames;
 
         [OneTimeSetUp]
         public async Task StartBothServersAsync()
@@ -56,7 +63,10 @@ namespace Opc.Ua.Samples.Tests
 
             m_aggregating = await StartAsync(
                 AggregatingSample,
-                configuration => PointAtDownstream(configuration, m_downstream.EndpointUrl))
+                configuration => PointAtDownstream(
+                    configuration,
+                    m_downstream.EndpointUrl,
+                    m_downstream.Configuration.ApplicationUri))
                 .ConfigureAwait(false);
 
             m_downstreamClient = await TestClient
@@ -91,7 +101,7 @@ namespace Opc.Ua.Samples.Tests
                             : ExpandedNodeId.ToNodeId(root.NodeId, Aggregating.NamespaceUris);
                     },
                     nodeId => !nodeId.IsNull,
-                    "the aggregation server to connect downstream and publish its proxy root",
+                    "the aggregation server to publish its proxy root",
                     timeout: TimeSpan.FromSeconds(45)).ConfigureAwait(false);
 
                 DataValue rootName = await SessionOps
@@ -121,6 +131,76 @@ namespace Opc.Ua.Samples.Tests
                 m_setupFailure,
                 Is.Null,
                 $"The aggregation server never published its proxy root: {m_setupFailure}");
+        }
+
+        /// <summary>
+        /// Waits until the aggregating server has connected downstream and serves the
+        /// address space of the other server through its proxy root.
+        /// </summary>
+        /// <remarks>
+        /// The aggregating server refuses a downstream session until its metadata update
+        /// has connected and loaded the remote type tree, and it makes its first attempt
+        /// five seconds after startup. The wait is done once and the result kept: the
+        /// tests run one after the other and the connection stays up once it is made.
+        /// </remarks>
+        private async Task<IReadOnlyList<string>> RequirePassThroughAsync(CancellationToken ct)
+        {
+            RequireProxyRoot();
+
+            if (m_passThroughNames != null)
+            {
+                return m_passThroughNames;
+            }
+
+            m_passThroughNames = await Poll.UntilNoThrowAsync(
+                async token => await SessionOps
+                    .BrowseNamesAsync(Aggregating, m_proxyRoot, token)
+                    .ConfigureAwait(false),
+                names => names.Count > 0,
+                "the aggregation server to connect downstream and serve the proxied address space",
+                timeout: TimeSpan.FromSeconds(45)).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Through the proxy: {string.Join(", ", m_passThroughNames)}")
+                .ConfigureAwait(false);
+
+            return m_passThroughNames;
+        }
+
+        /// <summary>
+        /// Follows a chain of browse names downward from a starting node.
+        /// </summary>
+        /// <remarks>
+        /// Matching on the name alone is deliberate: through the proxy the same node
+        /// carries the namespace index the aggregating server mapped it to, which is not
+        /// the index it has on the downstream server.
+        /// </remarks>
+        private static async Task<NodeId> WalkAsync(
+            ISession session,
+            NodeId start,
+            CancellationToken ct,
+            params string[] names)
+        {
+            NodeId current = start;
+
+            foreach (string name in names)
+            {
+                IReadOnlyList<ReferenceDescription> children = await SessionOps
+                    .BrowseAsync(session, current, ct)
+                    .ConfigureAwait(false);
+
+                ReferenceDescription child = children.FirstOrDefault(candidate =>
+                    candidate.BrowseName.Name == name);
+
+                if (child == null)
+                {
+                    return NodeId.Null;
+                }
+
+                current = ExpandedNodeId.ToNodeId(child.NodeId, session.NamespaceUris);
+            }
+
+            return current;
         }
 
         [OneTimeTearDown]
@@ -205,62 +285,127 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// Everything past the proxy root ought to reach the downstream server, and today
-        /// nothing does.
+        /// Everything the downstream server serves is visible through the proxy root.
         /// </summary>
         /// <remarks>
-        /// The aggregating server publishes its proxy root, which
-        /// ProxyRootIsPublishedForTheConfiguredServer checks, and then answers
-        /// BadNotConnected to every browse of it. The downstream server is running and
-        /// serving - the fixture holds an ordinary session to it and reads from it, which
-        /// DownstreamServerIsServingItsOwnAddressSpace asserts - so the session the node
-        /// manager is supposed to open to it never comes up.
-        ///
-        /// The refusal is deliberate rather than an error: the node manager hands out a
-        /// downstream session only once its type cache is loaded and its status node reads
-        /// Good, and both of those are set by the metadata update it schedules five seconds
-        /// after start. That update is what never finishes. The proxy root is still called
-        /// "Root" rather than the name of the downstream server, and renaming it is the
-        /// first thing the metadata update does, so it does not get far.
-        ///
-        /// Everything this sample exists for is behind that browse: the address space of
-        /// the other server, reading and writing through it, and forwarding subscriptions.
-        /// None of it can be covered until the connection is made, so the whole of it is
-        /// recorded here as one expectation rather than as tests which would all fail for
-        /// the same reason.
+        /// This is the pass through the sample exists for. The browse of the proxy root is
+        /// forwarded to the downstream server and every result mapped back into the
+        /// namespaces of the aggregating one; the Server object is the one node which
+        /// stays local on both sides.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
-        public Task DownstreamAddressSpaceIsReachableThroughTheProxy(CancellationToken ct)
+        public async Task DownstreamAddressSpaceIsReachableThroughTheProxy(CancellationToken ct)
         {
-            return KnownIssue.RecordAsync(
-                async () => {
-                    RequireProxyRoot();
+            IReadOnlyList<string> throughTheProxy = await RequirePassThroughAsync(ct).ConfigureAwait(false);
 
-                    IReadOnlyList<string> throughTheProxy = await SessionOps
-                        .BrowseNamesAsync(Aggregating, m_proxyRoot, ct)
-                        .ConfigureAwait(false);
+            IReadOnlyList<string> directly = await SessionOps
+                .BrowseNamesAsync(Downstream, ObjectIds.ObjectsFolder, ct)
+                .ConfigureAwait(false);
 
-                    IReadOnlyList<string> directly = await SessionOps
-                        .BrowseNamesAsync(Downstream, ObjectIds.ObjectsFolder, ct)
-                        .ConfigureAwait(false);
+            Assert.That(
+                throughTheProxy,
+                Is.SupersetOf(directly.Where(name => name != "Server")),
+                "Everything the downstream server serves has to be visible through the proxy.");
+        }
 
-                    Assert.That(
-                        throughTheProxy,
-                        Is.SupersetOf(directly.Where(name => name != "Server")),
-                        "Everything the downstream server serves has to be visible through the proxy.");
-                },
-                "the aggregating server answers BadNotConnected to a browse of its proxy root. " +
-                "It refuses a downstream session until its metadata update has loaded the type " +
-                "cache, and that update never finishes - the root still carries its placeholder " +
-                "name. The downstream server is up: the fixture reads from it directly.");
+        /// <summary>
+        /// Reading a node through the proxy returns what the downstream server holds.
+        /// </summary>
+        /// <remarks>
+        /// The static scalar of the reference server keeps whatever value it was given, so
+        /// the read through the proxy and the direct read have to agree - which proves the
+        /// read was forwarded rather than answered from a copy.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task DownstreamValueIsReadableThroughTheProxy(CancellationToken ct)
+        {
+            await RequirePassThroughAsync(ct).ConfigureAwait(false);
+
+            string[] path = { "CTT", "Scalar", "Scalar_Static", "Scalar_Static_Int32" };
+
+            NodeId proxied = await WalkAsync(Aggregating, m_proxyRoot, ct, path).ConfigureAwait(false);
+            NodeId direct = await WalkAsync(Downstream, ObjectIds.ObjectsFolder, ct, path).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(proxied.IsNull, Is.False, "The static scalar has to be reachable through the proxy.");
+                Assert.That(direct.IsNull, Is.False, "The static scalar has to exist on the downstream server.");
+            });
+
+            DataValue throughTheProxy = await SessionOps
+                .ReadValueAsync(Aggregating, proxied, ct)
+                .ConfigureAwait(false);
+
+            DataValue directly = await SessionOps
+                .ReadValueAsync(Downstream, direct, ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Read {throughTheProxy.WrappedValue} through the proxy, {directly.WrappedValue} directly")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    StatusCode.IsGood(throughTheProxy.StatusCode),
+                    Is.True,
+                    $"The read through the proxy failed: {throughTheProxy.StatusCode}");
+
+                Assert.That(
+                    throughTheProxy.WrappedValue,
+                    Is.EqualTo(directly.WrappedValue),
+                    "The proxy has to hand back the value the downstream server holds.");
+            });
+        }
+
+        /// <summary>
+        /// A subscription made on the aggregating server is forwarded downstream and its
+        /// notifications come back through.
+        /// </summary>
+        /// <remarks>
+        /// The dynamic scalar of the reference server changes on its own once a second, so
+        /// notifications arriving through the proxy prove the whole chain: the monitored
+        /// item was forwarded to the downstream server, its notifications were mapped back
+        /// and queued on the item of the aggregating server's own subscription.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task DownstreamValueChangesAreForwardedToSubscribers(CancellationToken ct)
+        {
+            await RequirePassThroughAsync(ct).ConfigureAwait(false);
+
+            NodeId proxied = await WalkAsync(
+                Aggregating,
+                m_proxyRoot,
+                ct,
+                "CTT", "Scalar", "Scalar_Simulation", "Scalar_Simulation_Int32").ConfigureAwait(false);
+
+            Assert.That(proxied.IsNull, Is.False, "The simulated scalar has to be reachable through the proxy.");
+
+            await using DataChangeCapture capture = await DataChangeCapture
+                .CreateAsync(Aggregating, proxied, ct)
+                .ConfigureAwait(false);
+
+            IReadOnlyList<DataValue> changes = await capture
+                .CollectDistinctAsync(2, TimeSpan.FromSeconds(30), ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Received {changes.Count} distinct values through the proxy: " +
+                    string.Join(", ", changes.Select(change => change.WrappedValue)))
+                .ConfigureAwait(false);
+
+            Assert.That(
+                changes.Count,
+                Is.GreaterThanOrEqualTo(2),
+                "The simulation has to keep producing values through the proxy.");
         }
 
         /// <summary>
         /// The downstream server the fixture started really is serving.
         /// </summary>
         /// <remarks>
-        /// Here so that the recorded issue above cannot be blamed on the downstream server
+        /// Here so that a pass-through failure cannot be blamed on the downstream server
         /// being absent, which is the first thing anybody reading it will wonder.
         /// </remarks>
         [Test]
@@ -313,9 +458,15 @@ namespace Opc.Ua.Samples.Tests
         /// <remarks>
         /// The shipped configuration names a server on port 61210 which nothing starts, and
         /// asks for a secured channel. An unsecured one is used here so that the two
-        /// throwaway certificates the fixture creates do not have to trust each other.
+        /// throwaway certificates the fixture creates do not have to trust each other. The
+        /// application uri has to be the real one of the downstream server: the session the
+        /// aggregating server opens names it as the server uri, and the downstream server
+        /// rejects a session naming a uri which is not its own (BadServerUriInvalid).
         /// </remarks>
-        private static void PointAtDownstream(ApplicationConfiguration configuration, string downstreamUrl)
+        private static void PointAtDownstream(
+            ApplicationConfiguration configuration,
+            string downstreamUrl,
+            string downstreamApplicationUri)
         {
             var endpoints = new ConfiguredEndpointCollection();
 
@@ -325,7 +476,7 @@ namespace Opc.Ua.Samples.Tests
                 SecurityPolicyUri = SecurityPolicies.None,
                 TransportProfileUri = Profiles.UaTcpTransport,
                 Server = new ApplicationDescription {
-                    ApplicationUri = downstreamUrl,
+                    ApplicationUri = downstreamApplicationUri,
                     ApplicationType = ApplicationType.Server,
                     DiscoveryUrls = new[] { downstreamUrl }.ToArrayOf(),
                 },
