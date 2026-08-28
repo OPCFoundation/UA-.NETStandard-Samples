@@ -1,8 +1,8 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,21 +29,38 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
 using System.Threading;
-using System.Reflection;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.DataAccessServer
 {
     /// <summary>
+    /// The factory the server registers to create the node manager.
+    /// </summary>
+    public class DataAccessServerNodeManagerFactory : IAsyncNodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public ValueTask<IAsyncNodeManager> CreateAsync(
+            IServerInternal server,
+            ApplicationConfiguration configuration,
+            CancellationToken cancellationToken = default)
+        {
+#pragma warning disable CA2000 // Justification: ownership of the node manager transfers to the caller.
+            return new ValueTask<IAsyncNodeManager>(
+                new DataAccessServerNodeManager(server, configuration));
+#pragma warning restore CA2000
+        }
+
+        /// <inheritdoc/>
+        public ArrayOf<string> NamespacesUris => [Namespaces.DataAccess];
+    }
+
+    /// <summary>
     /// A node manager for a server that exposes several variables.
     /// </summary>
-    public class DataAccessServerNodeManager : QuickstartNodeManager
+    public class DataAccessServerNodeManager : AsyncCustomNodeManager
     {
         #region Constructors
         /// <summary>
@@ -51,24 +68,18 @@ namespace Quickstarts.DataAccessServer
         /// </summary>
         public DataAccessServerNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         :
-            base(server, configuration, Namespaces.DataAccess)
+            base(
+                server,
+                configuration,
+                server.Telemetry.CreateLogger<DataAccessServerNodeManager>(),
+                Namespaces.DataAccess)
         {
             this.AliasRoot = "DA";
 
             SystemContext.SystemHandle = m_system = new UnderlyingSystem(server.Telemetry);
-            SystemContext.NodeIdFactory = this;
-
-            // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<DataAccessServerConfiguration>();
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new DataAccessServerConfiguration();
-            }
 
             // create the table to store the cached blocks.
-            m_blocks = new Dictionary<NodeId, BlockState>();
+            m_blocks = new NodeIdDictionary<BlockState>();
         }
         #endregion
 
@@ -96,7 +107,7 @@ namespace Quickstarts.DataAccessServer
         /// <returns>The new NodeId.</returns>
         /// <remarks>
         /// This method is called by the NodeState.Create() method which initializes a Node from
-        /// the type model. During initialization a number of child nodes are created and need to 
+        /// the type model. During initialization a number of child nodes are created and need to
         /// have NodeIds assigned to them. This implementation constructs NodeIds by constructing
         /// strings. Other implementations could assign unique integers or Guids and save the new
         /// Node in a dictionary for later lookup.
@@ -107,124 +118,137 @@ namespace Quickstarts.DataAccessServer
         }
         #endregion
 
-        #region INodeManager Members
+        #region IAsyncNodeManager Members
         /// <summary>
         /// Does any initialization required before the address space can be used.
         /// </summary>
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        public override async ValueTask CreateAddressSpaceAsync(
+            IDictionary<NodeId, IList<IReference>> externalReferences,
+            CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
+
+            // find the top level segments and link them to the ObjectsFolder.
+            IList<UnderlyingSystemSegment> segments = m_system.FindSegments(null);
+
+            for (int ii = 0; ii < segments.Count; ii++)
             {
-                // find the top level segments and link them to the ObjectsFolder.
-                IList<UnderlyingSystemSegment> segments = m_system.FindSegments(null);
+                // Top level areas need a reference from the Server object.
+                // These references are added to a list that is returned to the caller.
+                // The caller will update the Objects folder node.
+                IList<IReference> references = null;
 
-                for (int ii = 0; ii < segments.Count; ii++)
+                if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out references))
                 {
-                    // Top level areas need a reference from the Server object. 
-                    // These references are added to a list that is returned to the caller.
-                    // The caller will update the Objects folder node.
-                    IList<IReference> references = null;
-
-                    if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out references))
-                    {
-                        externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
-                    }
-
-                    // construct the NodeId of a segment.
-                    NodeId segmentId = ModelUtils.ConstructIdForSegment(segments[ii].Id, NamespaceIndex);
-
-                    // add an organizes reference from the ObjectsFolder to the area.
-                    references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, segmentId));
+                    externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
                 }
 
-                // start the simulation.
-                m_system.StartSimulation(Server.Telemetry);
+                // construct the NodeId of a segment.
+                NodeId segmentId = ModelUtils.ConstructIdForSegment(segments[ii].Id, NamespaceIndex);
+
+                // add an organizes reference from the ObjectsFolder to the area.
+                references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, segmentId));
             }
+
+            // start the simulation.
+            m_system.StartSimulation(Server.Telemetry);
         }
 
         /// <summary>
         /// Frees any resources allocated for the address space.
         /// </summary>
-        public override void DeleteAddressSpace()
+        public override async ValueTask DeleteAddressSpaceAsync(CancellationToken cancellationToken = default)
         {
-            lock (Lock)
-            {
-                m_system.StopSimulation();
-                m_blocks.Clear();
-            }
+            m_system.StopSimulation();
+            m_blocks.Clear();
+
+            await base.DeleteAddressSpaceAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Returns a unique handle for the node.
         /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
+        protected override ValueTask<NodeHandle> GetManagerHandleAsync(
+            ServerSystemContext context,
+            NodeId nodeId,
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            // quickly exclude nodes that are not in the namespace.
+            if (!IsNodeIdInNamespace(nodeId))
             {
-                // quickly exclude nodes that are not in the namespace.
-                if (!IsNodeIdInNamespace(nodeId))
-                {
-                    return null;
-                }
-
-                // check for check for nodes that are being currently monitored.
-                MonitoredNode monitoredNode = null;
-
-                if (MonitoredNodes.TryGetValue(nodeId, out monitoredNode))
-                {
-                    NodeHandle handle = new NodeHandle();
-
-                    handle.NodeId = nodeId;
-                    handle.Validated = true;
-                    handle.Node = monitoredNode.Node;
-
-                    return handle;
-                }
-
-                if (nodeId.IdType != IdType.String)
-                {
-                    NodeState node = null;
-
-                    if (PredefinedNodes.TryGetValue(nodeId, out node))
-                    {
-                        NodeHandle handle = new NodeHandle();
-
-                        handle.NodeId = nodeId;
-                        handle.Node = node;
-                        handle.Validated = true;
-
-                        return handle;
-                    }
-                }
-
-                // parse the identifier.
-                ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
-
-                if (parsedNodeId != null)
-                {
-                    NodeHandle handle = new NodeHandle();
-
-                    handle.NodeId = nodeId;
-                    handle.Validated = false;
-                    handle.Node = null;
-                    handle.ParsedNodeId = parsedNodeId;
-
-                    return handle;
-                }
-
-                return null;
+                return new ValueTask<NodeHandle>();
             }
+
+            // check for nodes that are being currently monitored.
+            MonitoredNode2 monitoredNode = null;
+
+            if (MonitoredNodes.TryGetValue(nodeId, out monitoredNode))
+            {
+                NodeHandle handle = new NodeHandle();
+
+                handle.NodeId = nodeId;
+                handle.Validated = true;
+                handle.Node = monitoredNode.Node;
+
+                return new ValueTask<NodeHandle>(handle);
+            }
+
+            if (nodeId.IdType != IdType.String)
+            {
+                NodeState node = null;
+
+                if (PredefinedNodes.TryGetValue(nodeId, out node))
+                {
+                    NodeHandle handle = new NodeHandle();
+
+                    handle.NodeId = nodeId;
+                    handle.Node = node;
+                    handle.Validated = true;
+
+                    return new ValueTask<NodeHandle>(handle);
+                }
+            }
+
+            // parse the identifier.
+            ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
+
+            if (parsedNodeId != null)
+            {
+                NodeHandle handle = new NodeHandle();
+
+                handle.NodeId = nodeId;
+                handle.Validated = false;
+                handle.Node = null;
+                handle.ParsedNodeId = parsedNodeId;
+
+                return new ValueTask<NodeHandle>(handle);
+            }
+
+            return new ValueTask<NodeHandle>();
         }
 
         /// <summary>
         /// Verifies that the specified node exists.
         /// </summary>
-        protected override NodeState ValidateNode(
+        protected override ValueTask<NodeState> ValidateNodeAsync(
+            ServerSystemContext context,
+            NodeHandle handle,
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
+        {
+            return new ValueTask<NodeState>(ValidateNode(context, handle, cache));
+        }
+
+        /// <summary>
+        /// Verifies that the specified node exists.
+        /// </summary>
+        private NodeState ValidateNode(
             ServerSystemContext context,
             NodeHandle handle,
             IDictionary<NodeId, NodeState> cache)
@@ -265,7 +289,9 @@ namespace Quickstarts.DataAccessServer
             try
             {
                 // check if the node id has been parsed.
-                if (handle.ParsedNodeId == null)
+                ParsedNodeId parsedNodeId = handle.ParsedNodeId as ParsedNodeId;
+
+                if (parsedNodeId == null)
                 {
                     return null;
                 }
@@ -273,9 +299,9 @@ namespace Quickstarts.DataAccessServer
                 NodeState root = null;
 
                 // validate a segment.
-                if (handle.ParsedNodeId.RootType == ModelUtils.Segment)
+                if (parsedNodeId.RootType == ModelUtils.Segment)
                 {
-                    UnderlyingSystemSegment segment = m_system.FindSegment(handle.ParsedNodeId.RootId);
+                    UnderlyingSystemSegment segment = m_system.FindSegment(parsedNodeId.RootId);
 
                     // segment does not exist.
                     if (segment == null)
@@ -292,10 +318,10 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 // validate segment.
-                else if (handle.ParsedNodeId.RootType == ModelUtils.Block)
+                else if (parsedNodeId.RootType == ModelUtils.Block)
                 {
                     // validate the block.
-                    UnderlyingSystemBlock block = m_system.FindBlock(handle.ParsedNodeId.RootId);
+                    UnderlyingSystemBlock block = m_system.FindBlock(parsedNodeId.RootId);
 
                     // block does not exist.
                     if (block == null)
@@ -305,7 +331,7 @@ namespace Quickstarts.DataAccessServer
 
                     NodeId rootId = ModelUtils.ConstructIdForBlock(block.Id, NamespaceIndex);
 
-                    // check for check for blocks that are being currently monitored.
+                    // check for blocks that are being currently monitored.
                     BlockState node = null;
 
                     if (m_blocks.TryGetValue(rootId, out node))
@@ -329,7 +355,7 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 // all done if no components to validate.
-                if (String.IsNullOrEmpty(handle.ParsedNodeId.ComponentPath))
+                if (String.IsNullOrEmpty(parsedNodeId.ComponentPath))
                 {
                     handle.Validated = true;
                     handle.Node = target = root;
@@ -337,7 +363,7 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 // validate component.
-                NodeState component = root.FindChildBySymbolicName(context, handle.ParsedNodeId.ComponentPath);
+                NodeState component = root.FindChildBySymbolicName(context, parsedNodeId.ComponentPath);
 
                 // component does not exist.
                 if (component == null)
@@ -368,7 +394,7 @@ namespace Quickstarts.DataAccessServer
         /// <param name="context">The context.</param>
         /// <param name="handle">The handle for the node.</param>
         /// <param name="monitoredItem">The monitored item.</param>
-        protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, MonitoredItem monitoredItem)
+        protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
         {
             BlockState block = handle.Node.GetHierarchyRoot() as BlockState;
 
@@ -387,7 +413,12 @@ namespace Quickstarts.DataAccessServer
         /// <param name="context">The context.</param>
         /// <param name="handle">The handle for the node.</param>
         /// <param name="monitoredItem">The monitored item.</param>
-        protected override void OnMonitoredItemDeleted(ServerSystemContext context, NodeHandle handle, MonitoredItem monitoredItem)
+        /// <param name="cancellationToken">The cancellation token.</param>
+        protected override ValueTask OnMonitoredItemDeletedAsync(
+            ServerSystemContext context,
+            NodeHandle handle,
+            ISampledDataChangeMonitoredItem monitoredItem,
+            CancellationToken cancellationToken = default)
         {
             BlockState block = handle.Node.GetHierarchyRoot() as BlockState;
 
@@ -396,16 +427,17 @@ namespace Quickstarts.DataAccessServer
                 if (!block.StopMonitoring(context))
                 {
                     // can remove the block since all monitored items for the block are gone.
-                    m_blocks.Remove(block.NodeId);
+                    m_blocks.TryRemove(block.NodeId, out _);
                 }
             }
+
+            return default;
         }
         #endregion
 
         #region Private Fields
         private UnderlyingSystem m_system;
-        private DataAccessServerConfiguration m_configuration;
-        private Dictionary<NodeId, BlockState> m_blocks;
+        private NodeIdDictionary<BlockState> m_blocks;
         #endregion
     }
 }

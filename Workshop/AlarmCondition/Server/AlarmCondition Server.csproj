@@ -27,7 +27,6 @@
     <ItemGroup>
         <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
         <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
-        <ProjectReference Include="..\..\Common\Quickstart Library.csproj" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">

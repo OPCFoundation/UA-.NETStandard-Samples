@@ -100,6 +100,11 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// The id the server gave the subscription, as needed by a ConditionRefresh call.
+        /// </summary>
+        public uint SubscriptionId => m_subscription.Id;
+
+        /// <summary>
         /// Subscribes to the events of a notifier.
         /// </summary>
         /// <param name="session">The session to subscribe on.</param>
