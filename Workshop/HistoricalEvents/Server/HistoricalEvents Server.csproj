@@ -18,19 +18,17 @@
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <Content Include="Model\ModelDesign.csv" />
-    <Content Include="Model\ModelDesign.xml" />
+    <AdditionalFiles Include="Model\ModelDesign.xml" />
+    <AdditionalFiles Include="Model\ModelDesign.csv" />
     <Content Include="HistoricalEventsServer.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
     <Content Include="BuildDesign.bat" />
-    <EmbeddedResource Include="Model\Quickstarts.HistoricalEvents.PredefinedNodes.uanodes" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
     <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
-    <ProjectReference Include="..\..\Common\Quickstart Library.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">

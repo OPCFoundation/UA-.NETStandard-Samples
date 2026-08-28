@@ -29,143 +29,74 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
-using System.Threading;
-using System.Reflection;
 using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
-using Microsoft.Extensions.Logging;
+using Opc.Ua.Server.Fluent;
 
 namespace Quickstarts.HistoricalEvents.Server
 {
     /// <summary>
-    /// A node manager for a server that exposes several variables.
+    /// A node manager for a server that keeps a history of events and serves it
+    /// through the history services.
     /// </summary>
-    public class HistoricalEventsNodeManager : QuickstartNodeManager
+    /// <remarks>
+    /// The <c>[NodeManager]</c> attribute opts this partial class in to source
+    /// generation: the generator emits a sibling partial which derives from
+    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
+    /// <c>Model\ModelDesign.xml</c>, and calls <see cref="Configure"/> once the
+    /// address space is in place. It also emits the
+    /// <c>HistoricalEventsNodeManagerFactory</c> the server registers to create
+    /// this node manager. The history services below override the async history
+    /// interface of the base class.
+    /// </remarks>
+    [NodeManager]
+    public partial class HistoricalEventsNodeManager
     {
-        #region Constructors
+        #region Configure
         /// <summary>
-        /// Initializes the node manager.
-        /// </summary>
-        public HistoricalEventsNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        :
-            base(server, configuration)
-        {
-            SystemContext.NodeIdFactory = this;
-
-            // set one namespace for the type model and one names for dynamically created nodes.
-            string[] namespaceUrls = new string[1];
-            namespaceUrls[0] = Namespaces.HistoricalEvents;
-            SetNamespaces(namespaceUrls);
-
-            // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<HistoricalEventsServerConfiguration>();
-
-            m_logger = server.Telemetry.CreateLogger<HistoricalEventsNodeManager>();
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new HistoricalEventsServerConfiguration();
-            }
-
-            // initilize the report generator.
-            m_generator = new ReportGenerator();
-            m_generator.Initialize();
-        }
-        #endregion
-
-        #region IDisposable Members
-        /// <summary>
-        /// An overrideable version of the Dispose.
-        /// </summary>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (m_simulationTimer != null)
-                {
-                    m_simulationTimer.Dispose();
-                    m_simulationTimer = null;
-                }
-
-                m_generator?.Dispose();
-                m_generator = null;
-            }
-
-            base.Dispose(disposing);
-        }
-        #endregion
-
-        #region INodeIdFactory Members
-        /// <summary>
-        /// Creates the NodeId for the specified node.
-        /// </summary>
-        public override NodeId New(ISystemContext context, NodeState node)
-        {
-            return node.NodeId;
-        }
-        #endregion
-
-        #region Overridden Methods
-        /// <summary>
-        /// Loads a node set from a file or resource and addes them to the set of predefined nodes.
-        /// </summary>
-        protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
-        {
-            NodeStateCollection predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(context,
-                "Quickstarts.HistoricalEvents.Server.Model.Quickstarts.HistoricalEvents.PredefinedNodes.uanodes",
-                typeof(HistoricalEventsNodeManager).GetTypeInfo().Assembly,
-                true);
-            return predefinedNodes;
-        }
-        #endregion
-
-        #region INodeManager Members
-        /// <summary>
-        /// Does any initialization required before the address space can be used.
+        /// Builds the dynamic part of the address space and wires the behaviour of
+        /// the sample once the predefined nodes are in place.
         /// </summary>
         /// <remarks>
-        /// The externalReferences is an out parameter that allows the node manager to link to nodes
-        /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.
+        /// The platforms folder comes from the model, which also declares it as an
+        /// event notifier below the server object, so the base class has already
+        /// registered it as a root notifier while the predefined nodes were loaded.
+        /// The history bits are added here because the model cannot express them.
         /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        partial void Configure(INodeManagerBuilder builder)
         {
-            lock (Lock)
+            // initialize the report generator that owns the event history.
+            m_generator = new ReportGenerator();
+            m_generator.Initialize();
+
+            BaseObjectState platforms = FindPredefinedNode<BaseObjectState>(new NodeId(Objects.Plaforms, NamespaceIndex));
+            platforms.EventNotifier = EventNotifiers.SubscribeToEvents | EventNotifiers.HistoryRead | EventNotifiers.HistoryWrite;
+
+            foreach (string areaName in m_generator.GetAreas())
             {
-                LoadPredefinedNodes(SystemContext, externalReferences);
-
-                BaseObjectState platforms = (BaseObjectState)FindPredefinedNode(new NodeId(Objects.Plaforms, NamespaceIndex), typeof(BaseObjectState));
-                platforms.EventNotifier = EventNotifiers.SubscribeToEvents | EventNotifiers.HistoryRead | EventNotifiers.HistoryWrite;
-                base.AddRootNotifier(platforms);
-
-                foreach (string areaName in m_generator.GetAreas())
-                {
 #pragma warning disable CA2000 // Justification: ownership is transferred to the predefined node collection.
-                    BaseObjectState area = CreateArea(SystemContext, platforms, areaName);
+                BaseObjectState area = CreateArea(SystemContext, platforms, areaName);
 #pragma warning restore CA2000
 
-                    foreach (ReportGenerator.WellInfo well in m_generator.GetWells(areaName))
-                    {
-                        CreateWell(SystemContext, area, well.Id, well.Name);
-                    }
+                foreach (ReportGenerator.WellInfo well in m_generator.GetWells(areaName))
+                {
+                    CreateWell(SystemContext, area, well.Id, well.Name);
                 }
-
-                // start the simulation.
-                m_simulationTimer = new Timer(this.DoSimulation, null, 10000, 10000);
             }
+
+            // start a simulation that reports new events on the wells. the loop is
+            // owned by the node manager and stops when the node manager is disposed.
+            builder.Simulation(TimeSpan.FromSeconds(10))
+                .OnTick((context, elapsed, cancellationToken) => DoSimulationAsync(cancellationToken));
         }
 
         /// <summary>
         /// Creates a new area.
         /// </summary>
-        private BaseObjectState CreateArea(ServerSystemContext context, BaseObjectState platforms, string areaName)
+        private FolderState CreateArea(ServerSystemContext context, BaseObjectState platforms, string areaName)
         {
             FolderState area = new FolderState(null);
 
@@ -178,7 +109,7 @@ namespace Quickstarts.HistoricalEvents.Server
             platforms.AddNotifier(SystemContext, Opc.Ua.ReferenceTypeIds.HasNotifier, false, area);
             area.AddNotifier(SystemContext, Opc.Ua.ReferenceTypeIds.HasNotifier, true, platforms);
 
-            AddPredefinedNode(SystemContext, area);
+            AddPredefinedNodeSynchronously(area);
 
             return area;
         }
@@ -201,77 +132,23 @@ namespace Quickstarts.HistoricalEvents.Server
             area.AddNotifier(SystemContext, Opc.Ua.ReferenceTypeIds.HasNotifier, false, well);
             well.AddNotifier(SystemContext, Opc.Ua.ReferenceTypeIds.HasNotifier, true, area);
 
-            AddPredefinedNode(SystemContext, well);
+            AddPredefinedNodeSynchronously(well);
         }
+        #endregion
 
+        #region IDisposable Members
         /// <summary>
-        /// Frees any resources allocated for the address space.
+        /// An overrideable version of the Dispose.
         /// </summary>
-        public override void DeleteAddressSpace()
+        protected override void Dispose(bool disposing)
         {
-            lock (Lock)
+            if (disposing)
             {
-                base.DeleteAddressSpace();
-            }
-        }
-
-        /// <summary>
-        /// Returns a unique handle for the node.
-        /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
-        {
-            lock (Lock)
-            {
-                // quickly exclude nodes that are not in the namespace.
-                if (!IsNodeIdInNamespace(nodeId))
-                {
-                    return null;
-                }
-
-                // check for predefined nodes.
-                if (PredefinedNodes != null)
-                {
-                    NodeState node = null;
-
-                    if (PredefinedNodes.TryGetValue(nodeId, out node))
-                    {
-                        NodeHandle handle = new NodeHandle();
-
-                        handle.NodeId = nodeId;
-                        handle.Validated = true;
-                        handle.Node = node;
-
-                        return handle;
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Verifies that the specified node exists.
-        /// </summary>
-        protected override NodeState ValidateNode(
-            ServerSystemContext context,
-            NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            // not valid if no root.
-            if (handle == null)
-            {
-                return null;
+                m_generator?.Dispose();
+                m_generator = null;
             }
 
-            // check if previously validated.
-            if (handle.Validated)
-            {
-                return handle.Node;
-            }
-
-            // TBD
-
-            return null;
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -279,7 +156,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Reads history events.
         /// </summary>
-        protected override void HistoryReadEvents(
+        protected override ValueTask HistoryReadEventsAsync(
             ServerSystemContext context,
             ReadEventDetails details,
             TimestampsToReturn timestampsToReturn,
@@ -287,7 +164,8 @@ namespace Quickstarts.HistoricalEvents.Server
             IList<HistoryReadResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
             for (int ii = 0; ii < nodesToProcess.Count; ii++)
             {
@@ -370,18 +248,21 @@ namespace Quickstarts.HistoricalEvents.Server
                 // return the data.
                 result.HistoryData = new ExtensionObject(events);
             }
+
+            return default;
         }
 
         /// <summary>
         /// Updates or inserts events.
         /// </summary>
-        protected override void HistoryUpdateEvents(
+        protected override ValueTask HistoryUpdateEventsAsync(
             ServerSystemContext context,
-            IList<UpdateEventDetails> nodesToUpdate,
+            ArrayOf<UpdateEventDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
             for (int ii = 0; ii < nodesToProcess.Count; ii++)
             {
@@ -402,18 +283,21 @@ namespace Quickstarts.HistoricalEvents.Server
                 // all done.
                 errors[handle.Index] = StatusCodes.BadNotImplemented;
             }
+
+            return default;
         }
 
         /// <summary>
         /// Deletes history events.
         /// </summary>
-        protected override void HistoryDeleteEvents(
+        protected override ValueTask HistoryDeleteEventsAsync(
             ServerSystemContext context,
-            IList<DeleteEventDetails> nodesToUpdate,
+            ArrayOf<DeleteEventDetails> nodesToUpdate,
             IList<HistoryUpdateResult> results,
             IList<ServiceResult> errors,
             List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
             for (int ii = 0; ii < nodesToProcess.Count; ii++)
             {
@@ -470,6 +354,40 @@ namespace Quickstarts.HistoricalEvents.Server
                 // all done.
                 errors[handle.Index] = ServiceResult.Good;
             }
+
+            return default;
+        }
+
+        /// <summary>
+        /// Releases the history continuation point.
+        /// </summary>
+        protected override ValueTask HistoryReleaseContinuationPointsAsync(
+            ServerSystemContext context,
+            ArrayOf<HistoryReadValueId> nodesToRead,
+            IList<ServiceResult> errors,
+            List<NodeHandle> nodesToProcess,
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
+        {
+            for (int ii = 0; ii < nodesToProcess.Count; ii++)
+            {
+                NodeHandle handle = nodesToProcess[ii];
+                HistoryReadValueId nodeToRead = nodesToRead[handle.Index];
+
+                // find the continuation point.
+                HistoryReadRequest request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
+
+                if (request == null)
+                {
+                    errors[handle.Index] = StatusCodes.BadContinuationPointInvalid;
+                    continue;
+                }
+
+                // all done.
+                errors[handle.Index] = StatusCodes.Good;
+            }
+
+            return default;
         }
 
         #region History Helpers
@@ -615,35 +533,6 @@ namespace Quickstarts.HistoricalEvents.Server
         }
 
         /// <summary>
-        /// Releases the history continuation point.
-        /// </summary>
-        protected override void HistoryReleaseContinuationPoints(
-            ServerSystemContext context,
-            ArrayOf<HistoryReadValueId> nodesToRead,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            for (int ii = 0; ii < nodesToProcess.Count; ii++)
-            {
-                NodeHandle handle = nodesToProcess[ii];
-                HistoryReadValueId nodeToRead = nodesToRead[handle.Index];
-
-                // find the continuation point.
-                HistoryReadRequest request = LoadContinuationPoint(context, nodeToRead.ContinuationPoint);
-
-                if (request == null)
-                {
-                    errors[handle.Index] = StatusCodes.BadContinuationPointInvalid;
-                    continue;
-                }
-
-                // all done.
-                errors[handle.Index] = StatusCodes.Good;
-            }
-        }
-
-        /// <summary>
         /// Loads a history continuation point.
         /// </summary>
         private HistoryReadRequest LoadContinuationPoint(
@@ -693,48 +582,41 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Does the simulation.
         /// </summary>
-        /// <param name="state">The state.</param>
-        private void DoSimulation(object state)
+        /// <remarks>
+        /// Exceptions do not need to be caught here: the simulation loop logs a
+        /// handler failure and carries on with the next tick.
+        /// </remarks>
+        private async ValueTask DoSimulationAsync(CancellationToken cancellationToken)
         {
-            try
             {
+                DataRow row = m_generator.GenerateFluidLevelTestReport();
+                BaseObjectState well = FindPredefinedNode<BaseObjectState>(new NodeId((string)row[BrowseNames.UidWell], NamespaceIndex));
+
+                if (well != null && well.AreEventsMonitored)
                 {
-                    DataRow row = m_generator.GenerateFluidLevelTestReport();
-                    BaseObjectState well = (BaseObjectState)FindPredefinedNode(new NodeId((string)row[BrowseNames.UidWell], NamespaceIndex), typeof(BaseObjectState));
-
-                    if (well != null && well.AreEventsMonitored)
-                    {
-#pragma warning disable CA2000 // Justification: ownership is transferred to ReportEvent.
-                        BaseEventState e = m_generator.GetFluidLevelTestReport(SystemContext, NamespaceIndex, row);
+#pragma warning disable CA2000 // Justification: ownership is transferred to ReportEventAsync.
+                    BaseEventState e = m_generator.GetFluidLevelTestReport(SystemContext, NamespaceIndex, row);
 #pragma warning restore CA2000
-                        well.ReportEvent(SystemContext, e);
-                    }
-                }
-
-                {
-                    DataRow row = m_generator.GenerateInjectionTestReport();
-                    BaseObjectState well = (BaseObjectState)FindPredefinedNode(new NodeId((string)row[BrowseNames.UidWell], NamespaceIndex), typeof(BaseObjectState));
-
-                    if (well != null && well.AreEventsMonitored)
-                    {
-#pragma warning disable CA2000 // Justification: ownership is transferred to ReportEvent.
-                        BaseEventState e = m_generator.GetInjectionTestReport(SystemContext, NamespaceIndex, row);
-#pragma warning restore CA2000
-                        well.ReportEvent(SystemContext, e);
-                    }
+                    await well.ReportEventAsync(SystemContext, e, cancellationToken).ConfigureAwait(false);
                 }
             }
-            catch (Exception e)
+
             {
-                m_logger.LogError(e, "Unexpected error during simulation.");
+                DataRow row = m_generator.GenerateInjectionTestReport();
+                BaseObjectState well = FindPredefinedNode<BaseObjectState>(new NodeId((string)row[BrowseNames.UidWell], NamespaceIndex));
+
+                if (well != null && well.AreEventsMonitored)
+                {
+#pragma warning disable CA2000 // Justification: ownership is transferred to ReportEventAsync.
+                    BaseEventState e = m_generator.GetInjectionTestReport(SystemContext, NamespaceIndex, row);
+#pragma warning restore CA2000
+                    await well.ReportEventAsync(SystemContext, e, cancellationToken).ConfigureAwait(false);
+                }
             }
         }
         #endregion
 
         #region Private Fields
-        private HistoricalEventsServerConfiguration m_configuration;
-        private ILogger m_logger;
-        private Timer m_simulationTimer;
         private ReportGenerator m_generator;
         #endregion
     }

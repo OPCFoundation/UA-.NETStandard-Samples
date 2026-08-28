@@ -299,24 +299,22 @@ What each fixture pins down, in one line:
 
 ### Recorded issues
 
-Three expectations are written the way the sample is *meant* to behave and reported as
+Two expectations are written the way the sample is *meant* to behave and reported as
 **ignored** because they do not hold today, through `KnownIssue.RecordAsync`. Like `s_knownIssues`
 in Tier 1, an entry fails the moment it starts passing, so it cannot rot - and that has already
-happened three times, every time because the expectation was wrong about the harness rather
-than about the sample. The third was caught by CI rather than locally: an entry which held on
-a developer machine and not on a build agent, which is the most useful kind to be told about.
+happened four times. Three were expectations that were wrong about the harness rather than
+about the sample, one of them caught by CI rather than locally: an entry which held on a
+developer machine and not on a build agent, which is the most useful kind to be told about.
+The fourth was the bargain paying out as designed: the SimpleEvents events arrived with the
+sample's own fields (`CycleId`, `CurrentStep`, `Steps`) empty even though they were on the
+event and the server had accepted the select clauses asking for them, the layer dropping them
+sat below the sample - and the migration of the node manager to `AsyncCustomNodeManager`
+fixed it, at which point the entry failed, the wrapper came off, and the expectation now
+stands as an ordinary assertion.
 
 They are not asserted the other way round on purpose: recording the broken behaviour as
 expected would ask the migration to preserve it.
 
-- **SimpleEvents** - events arrive with the sample's own fields (`CycleId`, `CurrentStep`,
-  `Steps`) empty. This is no longer the node manager building the event wrongly, which it was:
-  the event is now created from its type model, so the fields exist, carry their browse names
-  and hold their values, and asking the event object itself to resolve `2:CycleId` through the
-  very method the server uses to apply an event filter returns the value. The server accepts
-  the select clauses - the filter result for the monitored item is empty - and then delivers a
-  null for each of them. Whatever drops them sits below the sample; the standard fields of the
-  same event, selected the same way, arrive normally.
 - **HistoricalAccess** - a read at a recorded point in time returns a bad value. The archive is
   searched with a binary search over a view sorted by source timestamp, and a bounded raw read
   whose range starts *before* the first archived value returns nothing rather than the values
@@ -423,7 +421,7 @@ Writing Tier 1.5 found four defects which are fixed rather than recorded:
 | `Workshop/Methods/Server/MethodsNodeManager.cs` | The `Start` method could not be called. Its `InputArguments` and `OutputArguments` were declared with a hand-written `IVariantBuilder` whose `WithValue` stored the arguments through `Variant.FromStructure` and whose `GetValue` could not read that back, so it returned an empty array. Reading the property over a session worked - the encoding is fine - but the server read the declaration back to validate a call, saw zero declared arguments, and answered `BadTooManyArguments` to any call carrying any. Both properties now use the SDK's own `StructureBuilder<Argument>`, which is what a structure property is meant to be built with; the local builder is gone |
 | `Workshop/DataAccess/Server/Model/BlockState.cs` | Browsing a block returned no references at all, so a client could not discover its tags - which is most of what the sample demonstrates. A block is built for the duration of an operation and never lives in the address space, so nothing populates a browser for it with its children; `SegmentState` already does this for itself and `BlockState` did not. It also had no `TypeDefinitionId`, so it did not even report what kind of object it was |
 | `Workshop/HistoricalAccess/Server/UnderlyingSystem/UnderlyingSystem.cs` | Nothing written to the history was ever stored. Every operation was handed a freshly constructed archive item which loaded its own copy of the data from the resource it came from, so a write went into a copy that was then thrown away and the next read loaded the file again. Both halves reported success. Archive items are now kept, which is also what lets the simulation's appends survive |
-| `Workshop/SimpleEvents/Server/SimpleEventsNodeManager.cs` | The events were built as empty shells: a freshly constructed event has none of the fields its type declares, and the code filled them in with `SetChildValue`, which only writes a field that is already there. The event is now created from its type model first, so the fields exist and carry their browse names. This is not enough to make them reach a client - see the recorded issue above - but it is the half of it which belongs to the sample |
+| `Workshop/SimpleEvents/Server/SimpleEventsNodeManager.cs` | The events were built as empty shells: a freshly constructed event has none of the fields its type declares, and the code filled them in with `SetChildValue`, which only writes a field that is already there. The event is now created from its type model first, so the fields exist and carry their browse names. This was not yet enough to make them reach a client, but it was the half of it which belonged to the sample; the other half sat below it and went with the migration of the node manager to `AsyncCustomNodeManager`, as recorded under [Recorded issues](#recorded-issues) |
 
 A stale duplicate was removed at the same time: `Workshop/DataAccess/Server/Namespaces.cs`
 declared `Quickstarts.EmptyServer.Namespaces` inside the DataAccess assembly, so any project

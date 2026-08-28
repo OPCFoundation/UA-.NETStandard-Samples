@@ -37,7 +37,12 @@ namespace Quickstarts.SimpleEvents.Server
     /// <summary>
     /// Stores the configuration the data access node manager.
     /// </summary>
-    [DataType(Namespace = Namespaces.SimpleEvents)]
+    /// <remarks>
+    /// The namespace is spelled out because the Namespaces constants are produced by the
+    /// model source generator in this same compilation, and one source generator cannot
+    /// consume the output of another.
+    /// </remarks>
+    [DataType(Namespace = "http://opcfoundation.org/Quickstarts/SimpleEvents")]
     public sealed partial class SimpleEventsServerConfiguration
     {
         #region Constructors

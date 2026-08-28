@@ -14,6 +14,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
+using ReportBrowseNames = Quickstarts.HistoricalEvents.BrowseNames;
+using ReportObjectTypes = Quickstarts.HistoricalEvents.ObjectTypes;
+
 namespace Opc.Ua.Samples.Tests
 {
     /// <summary>
@@ -28,7 +31,8 @@ namespace Opc.Ua.Samples.Tests
     /// keeping: a client which is told "not implemented" can fall back, one which gets an
     /// unexpected error cannot.
     ///
-    /// This node manager is built on the local QuickstartNodeManager fork.
+    /// This node manager is source generated from the sample's model design and overrides
+    /// the async history interface of AsyncCustomNodeManager.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]
@@ -101,6 +105,52 @@ namespace Opc.Ua.Samples.Tests
                     flags & EventNotifiers.HistoryRead,
                     Is.Not.Zero,
                     "The platforms object has to offer its event history.");
+            });
+        }
+
+        /// <summary>
+        /// The generated reports also arrive as live events on the well hierarchy.
+        /// </summary>
+        /// <remarks>
+        /// The wells report through the notifier chain the node manager builds - well to
+        /// area to platforms - and the platforms folder reaches the server object because
+        /// the model declares it as a notifier below it. The simulation only reports on
+        /// monitored wells and ticks every ten seconds, so the wait spans two ticks.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task GeneratedReportsAreReportedLive(CancellationToken ct)
+        {
+            NodeId platforms = await ResolvePlatformsAsync(ct).ConfigureAwait(false);
+
+            ushort ns = NamespaceIndex(Quickstarts.HistoricalEvents.Namespaces.HistoricalEvents);
+            NodeId reportType = new(ReportObjectTypes.WellTestReportType, ns);
+
+            await using EventCapture capture = await EventCapture.CreateAsync(
+                Session,
+                platforms,
+                ct,
+                reportType,
+                [new QualifiedName(ReportBrowseNames.UidWell, ns)]).ConfigureAwait(false);
+
+            CapturedEvent reported = await capture.WaitAsync(
+                candidate => candidate.Field(ReportBrowseNames.UidWell).AsBoxedObject() != null,
+                TimeSpan.FromSeconds(25),
+                "a well test report carrying the well it belongs to",
+                ct).ConfigureAwait(false);
+
+            await TestContext.Out.WriteLineAsync($"Event: {reported}").ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    reported.SourceName,
+                    Is.Not.Null.And.Not.Empty,
+                    "The report names the well it came from as its source.");
+
+                Assert.That(
+                    reported.Field(ReportBrowseNames.UidWell).AsBoxedObject() as string,
+                    Does.StartWith("Well_"),
+                    "The report carries the sample's own well identifier field.");
             });
         }
 

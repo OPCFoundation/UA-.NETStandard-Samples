@@ -482,7 +482,7 @@ namespace Quickstarts.HistoricalEvents.Client
             HistoryReadResponse response = await m_session.HistoryReadAsync(
                 null,
                 new ExtensionObject(details),
-                TimestampsToReturn.Neither,
+                TimestampsToReturn.Source,
                 false,
                 nodesToRead,
                 ct);
@@ -509,7 +509,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 response = await m_session.HistoryReadAsync(
                     null,
                     new ExtensionObject(details),
-                    TimestampsToReturn.Neither,
+                    TimestampsToReturn.Source,
                     true,
                     nodesToRead,
                     ct);

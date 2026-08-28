@@ -18,14 +18,13 @@
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <Content Include="ModelDesign.csv" />
-    <Content Include="ModelDesign.xml" />
+    <AdditionalFiles Include="ModelDesign.xml" />
+    <AdditionalFiles Include="ModelDesign.csv" />
     <Content Include="SimpleEventsServer.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
     <Content Include="BuildDesign.bat" />
-    <EmbeddedResource Include="Quickstarts.SimpleEvents.PredefinedNodes.uanodes" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
