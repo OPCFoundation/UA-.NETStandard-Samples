@@ -100,18 +100,11 @@ namespace Quickstarts.Boiler.Server
             // find the typed Boiler1 node that was created when the model was loaded.
             m_boiler1 = FindPredefinedNode<BoilerState>(new NodeId(Objects.Boiler1, NamespaceIndexes[0]));
 
-            // create a second boiler node.
-#pragma warning disable CA2000 // Justification: ownership is transferred to the predefined node collection.
-            m_boiler2 = new BoilerState(null);
-#pragma warning restore CA2000
-
-            // initialize it from the type model and assign unique node ids.
-            m_boiler2.Create(
-                SystemContext,
-                NodeId.Null,
-                new QualifiedName("Boiler #2", NamespaceIndexes[1]),
-                LocalizedText.Null,
-                true);
+            // create a second boiler from the type model. the source generated factory
+            // builds the children the type declares and, because a browse name is
+            // passed, assigns unique node ids through New.
+            m_boiler2 = SystemContext.CreateInstanceOfBoilerType(
+                browseName: new QualifiedName("Boiler #2", NamespaceIndexes[1]));
 
             // store it and all of its children in the pre-defined nodes dictionary for easy look up.
             AddPredefinedNodeSynchronously(m_boiler2);
