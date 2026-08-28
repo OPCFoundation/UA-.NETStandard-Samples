@@ -58,12 +58,24 @@ namespace Quickstarts.Views.Server
         /// <summary>
         /// Creates the NodeId for the specified node.
         /// </summary>
+        /// <remarks>
+        /// The boilers the sample creates from the type model get parsed node ids:
+        /// a root instance's id is built from its own name, and every child derives
+        /// its id from its parent's, so the whole subtree carries stable, readable
+        /// string ids. The predefined nodes of the model never pass through here -
+        /// they keep the ids the model assigns.
+        /// </remarks>
         public override NodeId New(ISystemContext context, NodeState node)
         {
             BaseInstanceState instance = node as BaseInstanceState;
 
-            if (instance != null && instance.Parent != null)
+            if (instance != null)
             {
+                if (instance.Parent == null)
+                {
+                    return new ParsedNodeId() { NamespaceIndex = NamespaceIndex, RootId = instance.SymbolicName }.Construct();
+                }
+
                 ParsedNodeId pnd = ParsedNodeId.Parse(instance.Parent.NodeId);
 
                 if (pnd != null)
@@ -162,22 +174,13 @@ namespace Quickstarts.Views.Server
         /// Creates a boiler below the plant folder.
         /// </summary>
         /// <remarks>
-        /// The boiler root gets a parsed node id, so the <see cref="New"/> overload
-        /// above derives the ids of the children the type model instantiates from it.
+        /// The generated factory instantiates the subtree the type model declares
+        /// and lets the <see cref="New"/> override above assign the parsed node ids.
         /// </remarks>
         private void CreateBoiler(NodeState root, string name)
         {
-#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
-            Quickstarts.Views.BoilerState boiler = new Quickstarts.Views.BoilerState(null);
-#pragma warning restore CA2000
-            ParsedNodeId pnd = new ParsedNodeId() { NamespaceIndex = NamespaceIndex, RootId = name };
-
-            boiler.Create(
-                SystemContext,
-                pnd.Construct(),
-                new QualifiedName(name, NamespaceIndex),
-                LocalizedText.Null,
-                true);
+            Quickstarts.Views.BoilerState boiler = SystemContext.CreateInstanceOfBoilerType(
+                browseName: new QualifiedName(name, NamespaceIndex));
 
             boiler.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, root.NodeId);
             root.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, boiler.NodeId);
