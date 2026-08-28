@@ -35,37 +35,34 @@ In case of an issue the Opc.Ua.ModelCompiler will show and error dialog, otherwi
 
 ### Use information model
 
-Extend the [DataTypesServer](./Server/DataTypesServer.cs):
-
-```csharp
-// in CreateMasterNodeManager method
-server.Factory.AddEncodeableTypes(typeof(MyNamespace.Data.Types.MyDataType).Assembly);
-```
-
 Extend the [DataTypesNodeManager](./Server/DataTypesNodeManager.cs):
 
 ```csharp
-// in constructor - add additional namespaces
+// in the constructor - add the namespaces of the new model to the base call,
+// and register its encodeable types
 
-SetNamespaces(
-   Quickstarts.DataTypes.Namespaces.DataTypes,
-   Quickstarts.DataTypes.Types.Namespaces.DataTypes,
-   Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances,
-   MyNamespace.DataTypes.Namespaces.DataTypes,
-   MyNamespace.DataTypes.Types.Namespaces.DataTypes,
-   MyNamespace.DataTypes.Instances.Namespaces.DataTypeInstances);
+public DataTypesNodeManager(IServerInternal server, ApplicationConfiguration configuration)
+:
+    base(server, configuration,
+        Quickstarts.DataTypes.Namespaces.DataTypes,
+        Quickstarts.DataTypes.Types.Namespaces.DataTypes,
+        Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances,
+        MyNamespace.DataTypes.Types.Namespaces.DataTypes)
+{
+    Server.Factory.AddEncodeableTypes(typeof(MyNamespace.DataTypes.Types.MyDataType).Assembly);
+    ...
+}
 
-// in LoadPredefinedNodes
+// in LoadPredefinedNodesAsync
 
-predefinedNodes.LoadFromBinaryResource(context, 
+predefinedNodes.LoadFromBinaryResource(context,
       "MyNamespace.DataTypes.Types.MyNamespace.DataTypes.Types.PredefinedNodes.uanodes",
       typeof(MyNamespace.DataTypes.Types.MyDataType).Assembly,
       true);
-predefinedNodes.LoadFromBinaryResource(context,
-      "MyNamespace.DataTypes.Instances.MyNamespace.DataTypes.Instances.PredefinedNodes.uanodes",
-      typeof(MyNamespace.DataTypes.Types.MyDataType).GetTypeInfo().Assembly,
-      true);
 ```
+
+The factory in the same file announces the namespaces the node manager serves, so
+new namespaces are added to its `NamespacesUris` property as well.
 
 Compile and run the DataTypes server, you should be able to connect with any OPC UA client (e.g. DataTypes Client) and to browse your own data types.
 
