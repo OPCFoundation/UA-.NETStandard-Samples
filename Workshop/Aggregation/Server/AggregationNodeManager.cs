@@ -957,7 +957,10 @@ namespace AggregationServer
             {
                 MonitoredItem monitoredItem = monitoredItems[ii] as MonitoredItem;
 
-                if (!IsOwnMonitoredItem(monitoredItem))
+                // the list spans the whole service call, so it also carries the items
+                // other node managers created. Only forward the ones this instance
+                // created, which the base class tracks by their id.
+                if (monitoredItem == null || !MonitoredItems.ContainsKey(monitoredItem.Id))
                 {
                     continue;
                 }
@@ -1053,9 +1056,11 @@ namespace AggregationServer
 
                     for (int ii = 0; ii < monitoredItems.Count; ii++)
                     {
+                        // the base class only passes the items this node manager
+                        // processed, so no ownership check is needed here.
                         MonitoredItem monitoredItem = monitoredItems[ii] as MonitoredItem;
 
-                        if (!IsOwnMonitoredItem(monitoredItem))
+                        if (monitoredItem == null)
                         {
                             continue;
                         }
@@ -1139,9 +1144,11 @@ namespace AggregationServer
 
                     for (int ii = 0; ii < monitoredItems.Count; ii++)
                     {
+                        // the base class only passes the items this node manager
+                        // processed, so no ownership check is needed here.
                         MonitoredItem monitoredItem = monitoredItems[ii] as MonitoredItem;
 
-                        if (!IsOwnMonitoredItem(monitoredItem))
+                        if (monitoredItem == null)
                         {
                             continue;
                         }
@@ -1213,9 +1220,11 @@ namespace AggregationServer
 
                     for (int ii = 0; ii < monitoredItems.Count; ii++)
                     {
+                        // the base class only passes the items this node manager
+                        // processed, so no ownership check is needed here.
                         MonitoredItem monitoredItem = monitoredItems[ii] as MonitoredItem;
 
-                        if (!IsOwnMonitoredItem(monitoredItem))
+                        if (monitoredItem == null)
                         {
                             continue;
                         }
@@ -1822,32 +1831,6 @@ namespace AggregationServer
             await subscription.CreateAsync(cancellationToken).ConfigureAwait(false);
 
             return subscription;
-        }
-
-        /// <summary>
-        /// Determines whether a monitored item was created by this node manager.
-        /// </summary>
-        /// <remarks>
-        /// The base class hands the monitored items the synchronous facade of the
-        /// node manager wrapped in an async adapter rather than the node manager
-        /// itself, so a reference comparison against <c>this</c> is not enough.
-        /// </remarks>
-        private bool IsOwnMonitoredItem(MonitoredItem monitoredItem)
-        {
-            if (monitoredItem == null)
-            {
-                return false;
-            }
-
-            object nodeManager = monitoredItem.NodeManager;
-
-            if (ReferenceEquals(nodeManager, this) || ReferenceEquals(nodeManager, SyncNodeManager))
-            {
-                return true;
-            }
-
-            return nodeManager is AsyncNodeManagerAdapter adapter &&
-                ReferenceEquals(adapter.SyncNodeManager, SyncNodeManager);
         }
 
         /// <summary>
