@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 using System.IO;
 using Opc.Ua;
@@ -41,11 +42,12 @@ namespace TestData
 {
     public interface ITestDataSystemCallback
     {
-        void OnDataChange(
+        ValueTask OnDataChangeAsync(
             BaseVariableState variable,
             object value,
             StatusCode statusCode,
-            DateTime timestamp);
+            DateTime timestamp,
+            CancellationToken cancellationToken = default);
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Sample code preserves existing public API and behavior.")]
@@ -124,16 +126,20 @@ namespace TestData
         }
 
         /// <summary>
-        /// Returns the history file for the variable.
+        /// Returns true if the variable is archived.
         /// </summary>
-        public IHistoryDataSource GetHistoryFile(BaseVariableState variable)
+        public bool IsHistoryArchived(NodeId nodeId)
         {
-            if (variable == null)
-            {
-                return null;
-            }
+            return m_historyArchive.IsArchived(nodeId);
+        }
 
-            return m_historyArchive.GetHistoryFile(variable.NodeId);
+        /// <summary>
+        /// Returns a snapshot of the archived samples for the variable, sorted by
+        /// source timestamp, or null if the variable is not archived.
+        /// </summary>
+        public IReadOnlyList<DataValue> ReadHistoryValues(NodeId nodeId)
+        {
+            return m_historyArchive.ReadRawValues(nodeId);
         }
 
         /// <summary>
@@ -769,44 +775,51 @@ namespace TestData
             }
         }
 
-        void DoSample(object state)
+        async void DoSample(object state)
         {
-            if (m_logger.IsEnabled(LogLevel.Trace))
+            try
             {
-                m_logger.LogTrace("DoSample HiRes={HiResNow:ss.ffff} Now={Now:ss.ffff}", DateTime.UtcNow, DateTime.UtcNow);
-            }
-
-            Queue<Sample> samples = new Queue<Sample>();
-
-            lock (m_lock)
-            {
-                if (m_monitoredNodes == null)
+                if (m_logger.IsEnabled(LogLevel.Trace))
                 {
-                    return;
+                    m_logger.LogTrace("DoSample HiRes={HiResNow:ss.ffff} Now={Now:ss.ffff}", DateTime.UtcNow, DateTime.UtcNow);
                 }
 
-                foreach (BaseVariableState variable in m_monitoredNodes.Values)
+                Queue<Sample> samples = new Queue<Sample>();
+
+                lock (m_lock)
                 {
-                    Sample sample = new Sample();
+                    if (m_monitoredNodes == null)
+                    {
+                        return;
+                    }
 
-                    sample.Variable = variable;
-                    sample.Value = ReadValue(sample.Variable);
-                    sample.StatusCode = StatusCodes.Good;
-                    sample.Timestamp = DateTime.UtcNow;
+                    foreach (BaseVariableState variable in m_monitoredNodes.Values)
+                    {
+                        Sample sample = new Sample();
 
-                    samples.Enqueue(sample);
+                        sample.Variable = variable;
+                        sample.Value = ReadValue(sample.Variable);
+                        sample.StatusCode = StatusCodes.Good;
+                        sample.Timestamp = DateTime.UtcNow;
+
+                        samples.Enqueue(sample);
+                    }
+                }
+
+                while (samples.Count > 0)
+                {
+                    Sample sample = samples.Dequeue();
+
+                    await m_callback.OnDataChangeAsync(
+                        sample.Variable,
+                        sample.Value,
+                        sample.StatusCode,
+                        sample.Timestamp).ConfigureAwait(false);
                 }
             }
-
-            while (samples.Count > 0)
+            catch (Exception e)
             {
-                Sample sample = samples.Dequeue();
-
-                m_callback.OnDataChange(
-                    sample.Variable,
-                    sample.Value,
-                    sample.StatusCode,
-                    sample.Timestamp);
+                m_logger.LogError(e, "Unexpected error pushing samples to the monitored variables.");
             }
         }
 

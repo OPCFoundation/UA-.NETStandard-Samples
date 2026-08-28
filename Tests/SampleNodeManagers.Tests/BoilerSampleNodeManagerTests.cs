@@ -109,46 +109,51 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// The simulation of the boiler is started by the node manager itself.
+        /// The simulations of both boilers are started by the node manager itself.
         /// </summary>
         /// <remarks>
-        /// Nobody calls the start method from outside: the node manager calls it on the
+        /// Nobody calls the start method from outside: the node manager calls it on each
         /// boiler's state machine while it builds the address space, so a client which
-        /// connects and simply watches sees the values move.
+        /// connects and simply watches sees the values move. Boiler #1 comes out of the
+        /// type model and Boiler #2 is created dynamically, so the two reach their state
+        /// machines over different construction paths.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
         public async Task SimulationIsRunningWithoutAClientStartingIt(CancellationToken ct)
         {
-            NodeId boiler = await PathAsync(ct, "Boilers", "Boiler #2").ConfigureAwait(false);
+            foreach (string name in new[] { "Boiler #1", "Boiler #2" })
+            {
+                NodeId boiler = await PathAsync(ct, "Boilers", name).ConfigureAwait(false);
 
-            IReadOnlyList<string> parts = await BrowseNamesAsync(boiler, ct).ConfigureAwait(false);
+                IReadOnlyList<string> parts = await BrowseNamesAsync(boiler, ct).ConfigureAwait(false);
 
-            Assert.That(
-                parts,
-                Does.Contain("Simulation"),
-                "The boiler carries the state machine which drives it.");
+                Assert.That(
+                    parts,
+                    Does.Contain("Simulation"),
+                    $"{name} carries the state machine which drives it.");
 
-            NodeId simulation = await ChildAsync(boiler, "Simulation", ct).ConfigureAwait(false);
-            NodeId currentState = await ChildAsync(simulation, "CurrentState", ct).ConfigureAwait(false);
+                NodeId simulation = await ChildAsync(boiler, "Simulation", ct).ConfigureAwait(false);
+                NodeId currentState = await ChildAsync(simulation, "CurrentState", ct).ConfigureAwait(false);
 
-            DataValue state = await SessionOps
-                .ReadValueAsync(Session, currentState, ct)
-                .ConfigureAwait(false);
+                DataValue state = await SessionOps
+                    .ReadValueAsync(Session, currentState, ct)
+                    .ConfigureAwait(false);
 
-            await TestContext.Out
-                .WriteLineAsync($"The simulation reports itself as {state.WrappedValue} ({state.StatusCode})")
-                .ConfigureAwait(false);
+                await TestContext.Out
+                    .WriteLineAsync($"The simulation of {name} reports itself as {state.WrappedValue} ({state.StatusCode})")
+                    .ConfigureAwait(false);
 
-            Assert.That(
-                StatusCode.IsGood(state.StatusCode),
-                Is.True,
-                $"Reading the state of the simulation failed: {state.StatusCode}");
+                Assert.That(
+                    StatusCode.IsGood(state.StatusCode),
+                    Is.True,
+                    $"Reading the state of the simulation of {name} failed: {state.StatusCode}");
 
-            Assert.That(
-                ((LocalizedText)state.WrappedValue.AsBoxedObject()).Text,
-                Is.EqualTo("Running"),
-                "The node manager starts the simulation itself, so it has to be running.");
+                Assert.That(
+                    ((LocalizedText)state.WrappedValue.AsBoxedObject()).Text,
+                    Is.EqualTo("Running"),
+                    $"The node manager starts the simulation of {name} itself, so it has to be running.");
+            }
         }
     }
 }

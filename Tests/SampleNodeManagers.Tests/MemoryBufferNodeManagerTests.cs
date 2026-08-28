@@ -27,9 +27,6 @@ namespace Opc.Ua.Samples.Tests
     /// the monitored item itself, it refuses everything the standard machinery would have
     /// handled - filters, index ranges and data encodings - and those refusals are part of
     /// what the sample promises.
-    ///
-    /// This node manager is one of the two built on the local SampleNodeManager fork, so
-    /// these tests are also the coverage for that base class.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]
@@ -43,8 +40,14 @@ namespace Opc.Ua.Samples.Tests
         private const string InstanceNamespace = "http://samples.org/UA/MemoryBuffer/Instance";
 
         /// <summary>
-        /// The buffers the configuration declares are served.
+        /// The buffers the configuration declares are served, and a buffer browses
+        /// into its tags.
         /// </summary>
+        /// <remarks>
+        /// The tags are not nodes: the buffer carries its own browser which synthesizes
+        /// one reference per element, so browsing a buffer is the sample's machinery at
+        /// work rather than the server's.
+        /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
         public async Task ConfiguredBuffersAreExposed(CancellationToken ct)
@@ -60,6 +63,19 @@ namespace Opc.Ua.Samples.Tests
                 names,
                 Does.Contain("UInt32").And.Contain("Double"),
                 "The sample configuration declares an unsigned integer and a double buffer.");
+
+            NodeId buffer = await ChildAsync(buffers, "UInt32", ct).ConfigureAwait(false);
+
+            IReadOnlyList<string> tags = await BrowseNamesAsync(buffer, ct).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"The UInt32 buffer browses into {tags.Count} entries.")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                tags,
+                Does.Contain("00000000").And.Contain("00000004"),
+                "The buffer synthesizes one tag per element, named after its offset.");
         }
 
         /// <summary>
