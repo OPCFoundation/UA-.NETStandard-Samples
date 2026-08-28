@@ -1,8 +1,8 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,72 +29,28 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
 using System.Threading;
-using System.Reflection;
+using System.Threading.Tasks;
 using Opc.Ua;
-using Opc.Ua.Server;
-using Microsoft.Extensions.Logging;
+using Opc.Ua.Server.Fluent;
 
 namespace Quickstarts.Boiler.Server
 {
     /// <summary>
     /// A node manager for a server that exposes several variables.
     /// </summary>
-    public class BoilerNodeManager : CustomNodeManager2
+    /// <remarks>
+    /// The <c>[NodeManager]</c> attribute opts this partial class in to source
+    /// generation: the generator emits a sibling partial which derives from
+    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
+    /// <c>ModelDesign.xml</c> - Boiler #1 comes out of it as a typed
+    /// <see cref="BoilerState"/> - and calls <see cref="Configure"/> once the
+    /// address space is in place. It also emits the <c>BoilerNodeManagerFactory</c>
+    /// the server registers to create this node manager.
+    /// </remarks>
+    [NodeManager]
+    public partial class BoilerNodeManager
     {
-        #region Constructors
-        /// <summary>
-        /// Initializes the node manager.
-        /// </summary>
-        public BoilerNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        :
-            base(server, configuration)
-        {
-            SystemContext.NodeIdFactory = this;
-
-            // set one namespace for the type model and one names for dynamically created nodes.
-            string[] namespaceUrls = new string[2];
-            namespaceUrls[0] = Namespaces.Boiler;
-            namespaceUrls[1] = Namespaces.Boiler + "/Instance";
-            SetNamespaces(namespaceUrls);
-
-            // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<BoilerServerConfiguration>();
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new BoilerServerConfiguration();
-            }
-        }
-        #endregion
-
-        #region IDisposable Members
-        /// <summary>
-        /// An overrideable version of the Dispose.
-        /// </summary>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (m_simulationTimer != null)
-                {
-                    m_simulationTimer.Dispose();
-                    m_simulationTimer = null;
-                }
-
-                m_boiler1 = null;
-                m_boiler2 = null;
-            }
-
-            base.Dispose(disposing);
-        }
-        #endregion
-
         #region INodeIdFactory Members
         /// <summary>
         /// Creates the NodeId for the specified node.
@@ -108,176 +64,86 @@ namespace Quickstarts.Boiler.Server
 
         #region Overridden Methods
         /// <summary>
-        /// Loads a node set from a file or resource and addes them to the set of predefined nodes.
+        /// Loads the predefined nodes of the model and builds the second boiler.
         /// </summary>
-        protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
+        protected override async ValueTask LoadPredefinedNodesAsync(
+            ISystemContext context,
+            IDictionary<NodeId, IList<IReference>> externalReferences,
+            CancellationToken cancellationToken = default)
         {
-            NodeStateCollection predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(context,
-                "Quickstarts.Boiler.Server.Quickstarts.Boiler.PredefinedNodes.uanodes",
-                typeof(BoilerNodeManager).GetTypeInfo().Assembly,
+            // the generated constructor only registers the namespace of the type
+            // model; add a second namespace for the dynamically created nodes. the
+            // master node manager built its routing table when this node manager
+            // reported one namespace, so the new namespace is registered with it too.
+            SetNamespaces(Namespaces.Boiler, Namespaces.Boiler + "/Instance");
+            Server.NodeManager.RegisterNamespaceManager(Namespaces.Boiler + "/Instance", this);
+
+            await base.LoadPredefinedNodesAsync(context, externalReferences, cancellationToken).ConfigureAwait(false);
+
+            // find the typed Boiler1 node that was created when the model was loaded.
+            m_boiler1 = FindPredefinedNode<BoilerState>(new NodeId(Objects.Boiler1, NamespaceIndexes[0]));
+
+            // create a second boiler node.
+#pragma warning disable CA2000 // Justification: ownership is transferred to the predefined node collection.
+            m_boiler2 = new BoilerState(null);
+#pragma warning restore CA2000
+
+            // initialize it from the type model and assign unique node ids.
+            m_boiler2.Create(
+                SystemContext,
+                NodeId.Null,
+                new QualifiedName("Boiler #2", NamespaceIndexes[1]),
+                LocalizedText.Null,
                 true);
-            return predefinedNodes;
+
+            // store it and all of its children in the pre-defined nodes dictionary for easy look up.
+            await AddPredefinedNodeAsync(context, m_boiler2, cancellationToken).ConfigureAwait(false);
+
+            // link it below the Objects folder, which another node manager owns.
+            AddExternalReference(
+                Opc.Ua.ObjectIds.ObjectsFolder,
+                Opc.Ua.ReferenceTypeIds.Organizes,
+                false,
+                m_boiler2.NodeId,
+                externalReferences);
         }
         #endregion
 
-        #region INodeManager Members
+        #region Configure
         /// <summary>
-        /// Does any initialization required before the address space can be used.
+        /// Wires the behaviour of the sample once the address space exists.
         /// </summary>
-        /// <remarks>
-        /// The externalReferences is an out parameter that allows the node manager to link to nodes
-        /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
-        /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        partial void Configure(INodeManagerBuilder builder)
         {
-            lock (Lock)
-            {
-                LoadPredefinedNodes(SystemContext, externalReferences);
-
-                // find the untyped Boiler1 node that was created when the model was loaded.
-                BaseObjectState passiveNode = (BaseObjectState)FindPredefinedNode<BaseObjectState>(new NodeId(Objects.Boiler1, NamespaceIndexes[0]));
-
-                // convert the untyped node to a typed node that can be manipulated within the server.
-                m_boiler1 = new BoilerState(null);
-                m_boiler1.Create(SystemContext, passiveNode);
-
-                // replaces the untyped predefined nodes with their strongly typed versions.
-                AddPredefinedNode(SystemContext, m_boiler1);
-
-                // create a boiler node.
-                m_boiler2 = new BoilerState(null);
-
-                // initialize it from the type model and assign unique node ids.
-                m_boiler2.Create(
-                    SystemContext,
-                    NodeId.Null,
-                    new QualifiedName("Boiler #2", NamespaceIndexes[1]),
-                    LocalizedText.Null,
-                    true);
-
-                // link root to objects folder.
-                IList<IReference> references = null;
-
-                if (!externalReferences.TryGetValue(Opc.Ua.ObjectIds.ObjectsFolder, out references))
-                {
-                    externalReferences[Opc.Ua.ObjectIds.ObjectsFolder] = references = new List<IReference>();
-                }
-
-                references.Add(new NodeStateReference(Opc.Ua.ReferenceTypeIds.Organizes, false, m_boiler2.NodeId));
-
-                // store it and all of its children in the pre-defined nodes dictionary for easy look up.
-                AddPredefinedNode(SystemContext, m_boiler2);
-
-                // start a simulation that changes the values of the nodes.
-                m_simulationTimer = new Timer(DoSimulation, null, 1000, 1000);
-            }
-        }
-
-        /// <summary>
-        /// Frees any resources allocated for the address space.
-        /// </summary>
-        public override void DeleteAddressSpace()
-        {
-            lock (Lock)
-            {
-                base.DeleteAddressSpace();
-            }
-        }
-
-        /// <summary>
-        /// Returns a unique handle for the node.
-        /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
-        {
-            lock (Lock)
-            {
-                // quickly exclude nodes that are not in the namespace.
-                if (!IsNodeIdInNamespace(nodeId))
-                {
-                    return null;
-                }
-
-                // check for predefined nodes.
-                if (PredefinedNodes != null)
-                {
-                    NodeState node = null;
-
-                    if (PredefinedNodes.TryGetValue(nodeId, out node))
-                    {
-                        NodeHandle handle = new NodeHandle();
-
-                        handle.NodeId = nodeId;
-                        handle.Validated = true;
-                        handle.Node = node;
-
-                        return handle;
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Verifies that the specified node exists.
-        /// </summary>
-        protected override NodeState ValidateNode(
-            ServerSystemContext context,
-            NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            // not valid if no root.
-            if (handle == null)
-            {
-                return null;
-            }
-
-            // check if previously validated.
-            if (handle.Validated)
-            {
-                return handle.Node;
-            }
-
-            // TBD
-
-            return null;
+            // start a simulation that changes the values of the nodes. the loop is
+            // owned by the node manager and stops when the node manager is disposed.
+            builder.Simulation(TimeSpan.FromSeconds(1))
+                .OnTick((context, elapsed) => DoSimulation());
         }
         #endregion
 
-        #region Overridden Methods
+        #region Private Methods
         /// <summary>
         /// Does the simulation.
         /// </summary>
-        /// <param name="state">The state.</param>
-        private void DoSimulation(object state)
+        private void DoSimulation()
         {
-            try
-            {
-                double value1 = m_boiler1.Drum.LevelIndicator.Output.Value;
-                value1 = ((int)(++value1)) % 100;
-                m_boiler1.Drum.LevelIndicator.Output.Value = value1;
-                m_boiler1.ClearChangeMasks(SystemContext, true);
+            double value1 = m_boiler1.Drum.LevelIndicator.Output.Value;
+            value1 = ((int)(++value1)) % 100;
+            m_boiler1.Drum.LevelIndicator.Output.Value = value1;
+            m_boiler1.ClearChangeMasks(SystemContext, true);
 
-                double value2 = m_boiler2.Drum.LevelIndicator.Output.Value;
-                value2 = ((int)(++value2)) % 20;
-                m_boiler2.Drum.LevelIndicator.Output.Value = value2;
-                m_boiler2.ClearChangeMasks(SystemContext, true);
-            }
-            catch (Exception e)
-            {
-                m_logger.LogError(e, "Unexpected error during simulation.");
-            }
+            double value2 = m_boiler2.Drum.LevelIndicator.Output.Value;
+            value2 = ((int)(++value2)) % 20;
+            m_boiler2.Drum.LevelIndicator.Output.Value = value2;
+            m_boiler2.ClearChangeMasks(SystemContext, true);
         }
         #endregion
 
         #region Private Fields
-        private BoilerServerConfiguration m_configuration;
         private BoilerState m_boiler1;
         private BoilerState m_boiler2;
         private uint m_nodeIdCounter;
-        private Timer m_simulationTimer;
         #endregion
     }
 }
