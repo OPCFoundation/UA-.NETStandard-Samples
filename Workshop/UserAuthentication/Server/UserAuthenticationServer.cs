@@ -51,7 +51,7 @@ namespace Quickstarts.UserAuthenticationServer
     /// responsible for reading the configuration file, creating the endpoints and dispatching
     /// incoming requests to the appropriate handler.
     ///
-    /// This sub-class specifies non-configurable metadata such as Product Name and initializes
+    /// This sub-class specifies non-configurable metadata such as Product Name and registers
     /// the UserAuthenticationNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample server type name intentionally mirrors the namespace.")]
@@ -59,6 +59,9 @@ namespace Quickstarts.UserAuthenticationServer
     {
         public UserAuthenticationServer(ITelemetryContext telemetry) : base(telemetry)
         {
+            // register the node manager factory. the server creates the node manager
+            // from it while it builds the master node manager on startup.
+            AddNodeManager(new UserAuthenticationNodeManagerFactory());
         }
 
         #region Overridden UserAuthentication
@@ -90,27 +93,6 @@ namespace Quickstarts.UserAuthenticationServer
             // Register authenticators for user identity changes.
             server.IdentityRegistry.Register(new UserNamePasswordAuthenticator(AuthenticateUserNameAsync));
             server.IdentityRegistry.Register(new X509Authenticator(AuthenticateX509Async));
-        }
-
-        /// <summary>
-        /// Creates the node managers for the server.
-        /// </summary>
-        /// <remarks>
-        /// This method allows the sub-class create any additional node managers which it uses. The SDK
-        /// always creates a CoreNodeManager which handles the built-in nodes defined by the specification.
-        /// Any additional NodeManagers are expected to handle application specific nodes.
-        /// </remarks>
-        protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        {
-            m_logger.LogInformation("Creating the Node Managers.");
-
-            List<INodeManager> nodeManagers = new List<INodeManager>();
-
-            // create the custom node managers.
-            nodeManagers.Add(new UserAuthenticationNodeManager(server, configuration));
-
-            // create master node manager.
-            return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
         }
 
         /// <summary>
@@ -277,27 +259,27 @@ namespace Quickstarts.UserAuthenticationServer
                     throw new InvalidOperationException("No certificate validator configured.");
                 }
 
-                // Mimic X509CertificateValidator.PeerTrust by requiring the user certificate to
-                // exist in the Windows TrustedPeople store (CurrentUser or LocalMachine).
-                bool trusted = false;
-
-                foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
-                {
-                    using var store = new X509Store(StoreName.TrustedPeople, location);
-                    store.Open(OpenFlags.ReadOnly);
+                // Mimic X509CertificateValidator.PeerTrust by requiring the user certificate to
+                // exist in the Windows TrustedPeople store (CurrentUser or LocalMachine).
+                bool trusted = false;
 
-                    if (store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, validOnly: false).Count > 0)
+                foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
+                {
+                    using var store = new X509Store(StoreName.TrustedPeople, location);
+                    store.Open(OpenFlags.ReadOnly);
+
+                    if (store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, validOnly: false).Count > 0)
                     {
-                        trusted = true;
-                        break;
+                        trusted = true;
+                        break;
                     }
                 }
-
-                if (!trusted)
-                {
-                    throw new CryptographicException(
-                        "The user certificate is not present in the TrustedPeople store.");
-                }
+
+                if (!trusted)
+                {
+                    throw new CryptographicException(
+                        "The user certificate is not present in the TrustedPeople store.");
+                }
             }
             catch (Exception e)
             {

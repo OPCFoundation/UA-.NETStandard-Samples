@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,21 +29,39 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
 using System.IO;
 using System.Threading;
-using System.Reflection;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.UserAuthenticationServer
 {
     /// <summary>
+    /// The factory the server registers to create the node manager.
+    /// </summary>
+    public class UserAuthenticationNodeManagerFactory : IAsyncNodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public ValueTask<IAsyncNodeManager> CreateAsync(
+            IServerInternal server,
+            ApplicationConfiguration configuration,
+            CancellationToken cancellationToken = default)
+        {
+#pragma warning disable CA2000 // Justification: ownership of the node manager transfers to the caller.
+            return new ValueTask<IAsyncNodeManager>(
+                new UserAuthenticationNodeManager(server, configuration));
+#pragma warning restore CA2000
+        }
+
+        /// <inheritdoc/>
+        public ArrayOf<string> NamespacesUris => [Namespaces.UserAuthentication];
+    }
+
+    /// <summary>
     /// A node manager for a server that exposes several variables.
     /// </summary>
-    public class UserAuthenticationNodeManager : CustomNodeManager2
+    public class UserAuthenticationNodeManager : AsyncCustomNodeManager
     {
         #region Constructors
         /// <summary>
@@ -51,107 +69,79 @@ namespace Quickstarts.UserAuthenticationServer
         /// </summary>
         public UserAuthenticationNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         :
-            base(server, Namespaces.UserAuthentication)
+            base(server, configuration, Namespaces.UserAuthentication)
         {
-            SystemContext.NodeIdFactory = this;
-
-            // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<UserAuthenticationServerConfiguration>();
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new UserAuthenticationServerConfiguration();
-            }
         }
         #endregion
 
-        #region IDisposable Members
-        /// <summary>
-        /// An overrideable version of the Dispose.
-        /// </summary>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // TBD
-            }
-
-            base.Dispose(disposing);
-        }
-        #endregion
-
-        #region INodeIdFactory Members
-        /// <summary>
-        /// Creates the NodeId for the specified node.
-        /// </summary>
-        public override NodeId New(ISystemContext context, NodeState node)
-        {
-            return node.NodeId;
-        }
-        #endregion
-
-        #region INodeManager Members
+        #region IAsyncNodeManager Members
         /// <summary>
         /// Does any initialization required before the address space can be used.
         /// </summary>
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        public override async ValueTask CreateAddressSpaceAsync(
+            IDictionary<NodeId, IList<IReference>> externalReferences,
+            CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
+
+            // create a object to represent the process being controlled.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
+            BaseObjectState process = new BaseObjectState(null);
+#pragma warning restore CA2000
+
+            process.NodeId = new NodeId(1, NamespaceIndex);
+            process.BrowseName = new QualifiedName("My Process", NamespaceIndex);
+            process.DisplayName = new LocalizedText(process.BrowseName.Name);
+            process.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
+
+            // ensure the process object can be found via the server object.
+            IList<IReference> references = null;
+
+            if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out references))
             {
-                // create a object to represent the process being controlled.
-#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
-                BaseObjectState process = new BaseObjectState(null);
-#pragma warning restore CA2000
-
-                process.NodeId = new NodeId(1, NamespaceIndex);
-                process.BrowseName = new QualifiedName("My Process", NamespaceIndex);
-                process.DisplayName = new LocalizedText(process.BrowseName.Name);
-                process.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
-
-                // ensure the process object can be found via the server object. 
-                IList<IReference> references = null;
-
-                if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out references))
-                {
-                    externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
-                }
-
-                process.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
-                references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, process.NodeId));
-
-                // a property to report the process state.
-#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
-                PropertyState<string> state = PropertyState<string>.With<VariantBuilder>(process);
-#pragma warning restore CA2000
-
-                state.NodeId = new NodeId(2, NamespaceIndex);
-                state.BrowseName = new QualifiedName("LogFilePath", NamespaceIndex);
-                state.DisplayName = new LocalizedText(state.BrowseName.Name);
-                state.TypeDefinitionId = VariableTypeIds.PropertyType;
-                state.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-                state.DataType = DataTypeIds.String;
-                state.ValueRank = ValueRanks.Scalar;
-                state.AccessLevel = AccessLevels.CurrentReadOrWrite;
-                state.UserAccessLevel = AccessLevels.CurrentRead;
-                state.Value = ".\\Log.txt";
-
-                process.AddChild(state);
-
-                state.OnReadUserAccessLevel = OnReadUserAccessLevel;
-                state.OnSimpleWriteValue = OnWriteValue;
-
-                // save in dictionary. 
-                AddPredefinedNode(SystemContext, process);
+                externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
             }
+
+            process.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
+            references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, process.NodeId));
+
+            // a property to report the process state.
+#pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
+            PropertyState<string> state = PropertyState<string>.With<VariantBuilder>(process);
+#pragma warning restore CA2000
+
+            state.NodeId = new NodeId(2, NamespaceIndex);
+            state.BrowseName = new QualifiedName("LogFilePath", NamespaceIndex);
+            state.DisplayName = new LocalizedText(state.BrowseName.Name);
+            state.TypeDefinitionId = VariableTypeIds.PropertyType;
+            state.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+            state.DataType = DataTypeIds.String;
+            state.ValueRank = ValueRanks.Scalar;
+            state.AccessLevel = AccessLevels.CurrentReadOrWrite;
+            state.UserAccessLevel = AccessLevels.CurrentRead;
+            state.Value = ".\\Log.txt";
+
+            process.AddChild(state);
+
+            // the user access level is answered per session, the write callback
+            // enforces the same identity check again before it touches the file system.
+            state.OnReadUserAccessLevel = OnReadUserAccessLevel;
+            state.OnSimpleWriteValueAsync = OnWriteValueAsync;
+
+            // save in dictionary.
+            await AddPredefinedNodeAsync(SystemContext, process, cancellationToken).ConfigureAwait(false);
         }
 
-        public ServiceResult OnWriteValue(ISystemContext context, NodeState node, ref Variant value)
+        public async ValueTask<AttributeWriteResult> OnWriteValueAsync(
+            ISystemContext context,
+            NodeState node,
+            Variant value,
+            CancellationToken cancellationToken)
         {
             UserTokenType? tokenType = (context as ISessionSystemContext)?.UserIdentity?.TokenType;
 
@@ -162,10 +152,12 @@ namespace Quickstarts.UserAuthenticationServer
                     "en-US",
                     "User cannot change value.");
 
-                return new ServiceResult(StatusCodes.BadUserAccessDenied, new LocalizedText(info));
+                return new AttributeWriteResult(
+                    new ServiceResult(StatusCodes.BadUserAccessDenied, new LocalizedText(info)));
             }
 
-            // attempt to update file system.
+            // attempt to update file system. on success the framework stores the
+            // written value in the variable, mirroring the synchronous write path.
             try
             {
                 string filePath = value.AsBoxedObject() as string;
@@ -185,20 +177,23 @@ namespace Quickstarts.UserAuthenticationServer
                 {
                     FileInfo file = new FileInfo(filePath);
 
-                    using (StreamWriter writer = file.CreateText())
+                    StreamWriter writer = file.CreateText();
+
+                    await using (writer.ConfigureAwait(false))
                     {
-                        writer.WriteLine(System.Security.Principal.WindowsIdentity.GetCurrent().Name);
+                        await writer.WriteLineAsync(
+                            System.Security.Principal.WindowsIdentity.GetCurrent().Name.AsMemory(),
+                            cancellationToken).ConfigureAwait(false);
                     }
                 }
-
-                value = new Variant(filePath);
             }
             catch (Exception e)
             {
-                return ServiceResult.Create(e, StatusCodes.BadUserAccessDenied, "Could not update file system.");
+                return new AttributeWriteResult(
+                    ServiceResult.Create(e, StatusCodes.BadUserAccessDenied, "Could not update file system."));
             }
 
-            return ServiceResult.Good;
+            return new AttributeWriteResult(ServiceResult.Good);
         }
 
         public ServiceResult OnReadUserAccessLevel(ISystemContext context, NodeState node, ref byte value)
@@ -216,79 +211,6 @@ namespace Quickstarts.UserAuthenticationServer
 
             return ServiceResult.Good;
         }
-
-        /// <summary>
-        /// Frees any resources allocated for the address space.
-        /// </summary>
-        public override void DeleteAddressSpace()
-        {
-            lock (Lock)
-            {
-                // TBD
-            }
-        }
-
-        /// <summary>
-        /// Returns a unique handle for the node.
-        /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
-        {
-            lock (Lock)
-            {
-                // quickly exclude nodes that are not in the namespace. 
-                if (!IsNodeIdInNamespace(nodeId))
-                {
-                    return null;
-                }
-
-                NodeState node = null;
-
-                if (!PredefinedNodes.TryGetValue(nodeId, out node))
-                {
-                    return null;
-                }
-
-                NodeHandle handle = new NodeHandle();
-
-                handle.NodeId = nodeId;
-                handle.Node = node;
-                handle.Validated = true;
-
-                return handle;
-            }
-        }
-
-        /// <summary>
-        /// Verifies that the specified node exists.
-        /// </summary>
-        protected override NodeState ValidateNode(
-            ServerSystemContext context,
-            NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            // not valid if no root.
-            if (handle == null)
-            {
-                return null;
-            }
-
-            // check if previously validated.
-            if (handle.Validated)
-            {
-                return handle.Node;
-            }
-
-            // TBD
-
-            return null;
-        }
-        #endregion
-
-        #region Overridden UserAuthentication
-        #endregion
-
-        #region Private Fields
-        private UserAuthenticationServerConfiguration m_configuration;
         #endregion
     }
 }
