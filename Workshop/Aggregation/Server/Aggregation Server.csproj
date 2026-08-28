@@ -26,12 +26,17 @@
     <Content Include="Quickstarts.AggregationServer.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <EmbeddedResource Include="Model\AggregationModel.PredefinedNodes.uanodes" />
     <Content Include="Model\ModelDesign.csv" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="Model\ModelDesign.xml" />
     <AdditionalFiles Include="Model\ModelDesign.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the generated node manager lives in the AggregationServer namespace but the
+         generated model node set extension lives in AggregationModel; the bridge has
+         to be a global using because the generated code cannot be edited -->
+    <Using Include="AggregationModel" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
