@@ -28,9 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -44,7 +41,7 @@ namespace Quickstarts.DataAccessServer
     /// responsible for reading the configuration file, creating the endpoints and dispatching
     /// incoming requests to the appropriate handler.
     /// 
-    /// This sub-class specifies non-configurable metadata such as Product Name and initializes
+    /// This sub-class specifies non-configurable metadata such as Product Name and registers
     /// the DataAccessServerNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample public API name matches the workshop namespace.")]
@@ -52,6 +49,9 @@ namespace Quickstarts.DataAccessServer
     {
         public DataAccessServer(ITelemetryContext telemetry) : base(telemetry)
         {
+            // register the node manager factory. the server creates the node manager
+            // from it while it builds the master node manager on startup.
+            AddNodeManager(new DataAccessServerNodeManagerFactory());
         }
 
         #region Public Interface
@@ -65,28 +65,6 @@ namespace Quickstarts.DataAccessServer
         #endregion
 
         #region Overridden Methods
-        /// <summary>
-        /// Creates the node managers for the server.
-        /// </summary>
-        /// <remarks>
-        /// This method allows the sub-class create any additional node managers which it uses. The SDK
-        /// always creates a CoreNodeManager which handles the built-in nodes defined by the specification.
-        /// Any additional NodeManagers are expected to handle application specific nodes.
-        /// </remarks>
-        protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        {
-            ILogger logger = server.Telemetry.CreateLogger<DataAccessServer>();
-            logger.LogInformation("Creating the Node Managers.");
-
-            List<INodeManager> nodeManagers = new List<INodeManager>();
-
-            // create the custom node managers.
-            nodeManagers.Add(new DataAccessServerNodeManager(server, configuration));
-
-            // create master node manager.
-            return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
-        }
-
         /// <summary>
         /// Loads the non-configurable properties for the application.
         /// </summary>

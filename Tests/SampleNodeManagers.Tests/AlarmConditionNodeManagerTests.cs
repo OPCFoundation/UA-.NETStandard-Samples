@@ -33,7 +33,9 @@ namespace Opc.Ua.Samples.Tests
     /// is a graph rather than a hierarchy. A migration which turns it back into a tree
     /// would be caught by SourceIsSharedBetweenAreas.
     ///
-    /// This is one of the three samples built on the local QuickstartNodeManager fork.
+    /// The node manager is built directly on the AsyncCustomNodeManager of the SDK; the
+    /// areas and sources exist only as entries in its dictionaries until a node id names
+    /// them.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]
@@ -250,6 +252,69 @@ namespace Opc.Ua.Samples.Tests
                 alarm.EventType.IsNull,
                 Is.False,
                 "An event which reaches a client has to name its type.");
+        }
+
+        /// <summary>
+        /// A condition refresh replays the retained conditions between its markers.
+        /// </summary>
+        /// <remarks>
+        /// Every source creates a dialog condition which stays retained because nothing in
+        /// this fixture ever answers it, so a refresh must always replay one dialog per
+        /// configured source between the RefreshStart and RefreshEnd events. This is how an
+        /// alarm client synchronizes its condition list after connecting, and the half of
+        /// the event path which runs through ConditionRefreshAsync.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ConditionRefreshReplaysRetainedConditions(CancellationToken ct)
+        {
+            await using EventCapture capture = await EventCapture
+                .CreateAsync(Session, ObjectIds.Server, ct)
+                .ConfigureAwait(false);
+
+            CallMethodResult result = await SessionOps.CallAsync(
+                Session,
+                ObjectTypeIds.ConditionType,
+                MethodIds.ConditionType_ConditionRefresh,
+                ct,
+                Variant.From(capture.SubscriptionId)).ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(result.StatusCode),
+                Is.True,
+                $"The ConditionRefresh call failed: {result.StatusCode}");
+
+            await capture.WaitAsync(
+                candidate => candidate.EventType == ObjectTypeIds.RefreshStartEventType,
+                TimeSpan.FromSeconds(30),
+                "the refresh start marker",
+                ct).ConfigureAwait(false);
+
+            // everything between the markers is the refresh; live alarms may interleave,
+            // so only the dialogs are counted, and they identify their source by name
+            var betweenMarkers = new List<CapturedEvent>();
+            CapturedEvent next;
+
+            while ((next = await capture.NextAsync(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false)).EventType
+                != ObjectTypeIds.RefreshEndEventType)
+            {
+                betweenMarkers.Add(next);
+            }
+
+            await ReportAsync(
+                "Events replayed by the refresh",
+                betweenMarkers.Select(replayed => replayed.ToString())).ConfigureAwait(false);
+
+            var dialogs = betweenMarkers
+                .Where(replayed => replayed.EventType == ObjectTypeIds.DialogConditionType
+                    && replayed.SourceName != null)
+                .Select(replayed => replayed.SourceName)
+                .ToHashSet(StringComparer.Ordinal);
+
+            Assert.That(
+                dialogs,
+                Is.SupersetOf(new[] { "EastTank", "NorthMotor", "WestTank", "SouthMotor" }),
+                "The refresh has to replay the retained dialog condition of every configured source.");
         }
 
         /// <summary>

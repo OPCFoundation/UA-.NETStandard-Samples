@@ -266,7 +266,7 @@ not parking. Both lists are currently empty.
 
 ## What Tier 1.5 checks today
 
-86 test cases across 16 fixtures, about 1.5 minutes. One fixture per node manager, each
+88 test cases across 16 fixtures, about 1.5 minutes. One fixture per node manager, each
 starting its sample server once and driving it through an ordinary OPC UA session.
 
 **Everything is observed through the services a client would use.** No test reaches into a
@@ -288,14 +288,22 @@ What each fixture pins down, in one line:
 | Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
 | UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session |
 | PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
-| DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths |
-| AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area |
+| DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths, a set point written through to the underlying system |
+| AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area, a condition refresh replaying the retained dialogs |
 | HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting into the history, and which items are still being collected |
 | HistoricalEvents | The well tree, event history with continuation points, and the two refusals the sample declares |
 | Aggregation | The proxy root for the configured downstream server, and the pass through behind it: browsing the other server's address space, reading a static value, and a subscription forwarded downstream with its notifications coming back |
 | TestData | Static write round trip, simulated values while monitored, and which single variable is archived |
 | MemoryBuffer | Tags synthesized from node ids, and the three creation refusals the custom monitored item makes |
 | Boiler (sample server) | Display names renamed after the unit, and the state machine started by the node manager itself |
+
+The condition refresh test earned its keep on arrival: the dialog condition every alarm
+source creates was never replayed by a refresh. `SetEnableState` in the 2.0 stack
+re-evaluates `Retain` when a condition is enabled, a dialog is not considered interesting on
+its own, and the sample had set `Retain` to true just *before* enabling - so the flag was
+silently cleared and a client connecting after startup could never learn that a response was
+wanted. `Workshop/AlarmCondition/Server/Model/SourceState.cs` now sets the retain state after
+enabling, and the refresh replays one dialog per source until somebody answers it.
 
 ### Recorded issues
 
