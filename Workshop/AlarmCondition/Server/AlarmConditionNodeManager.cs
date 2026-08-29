@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,8 +29,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
@@ -38,15 +38,36 @@ using Opc.Ua.Server;
 namespace Quickstarts.AlarmConditionServer
 {
     /// <summary>
+    /// The factory the server registers to create the node manager.
+    /// </summary>
+    public class AlarmConditionServerNodeManagerFactory : IAsyncNodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public ValueTask<IAsyncNodeManager> CreateAsync(
+            IServerInternal server,
+            ApplicationConfiguration configuration,
+            CancellationToken cancellationToken = default)
+        {
+#pragma warning disable CA2000 // Justification: ownership of the node manager transfers to the caller.
+            return new ValueTask<IAsyncNodeManager>(
+                new AlarmConditionServerNodeManager(server, configuration));
+#pragma warning restore CA2000
+        }
+
+        /// <inheritdoc/>
+        public ArrayOf<string> NamespacesUris => [Namespaces.AlarmCondition];
+    }
+
+    /// <summary>
     /// A node manager for a simple server that exposes several Areas, Sources and Conditions.
     /// </summary>
     /// <remarks>
     /// This node manager presumes that the information model consists of a hierachy of predefined
-    /// Areas with a number of Sources contained within them. Each individual Source is 
+    /// Areas with a number of Sources contained within them. Each individual Source is
     /// identified by a fully qualified path. The underlying system knows how to access the source
     /// configuration when it is provided the fully qualified path.
     /// </remarks>
-    public class AlarmConditionServerNodeManager : QuickstartNodeManager
+    public class AlarmConditionServerNodeManager : AsyncCustomNodeManager
     {
         #region Constructors
         /// <summary>
@@ -54,15 +75,16 @@ namespace Quickstarts.AlarmConditionServer
         /// </summary>
         public AlarmConditionServerNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         :
-            base(server, configuration, Namespaces.AlarmCondition)
+            base(
+                server,
+                configuration,
+                server.Telemetry.CreateLogger<AlarmConditionServerNodeManager>(),
+                Namespaces.AlarmCondition)
         {
             SystemContext.SystemHandle = m_system = new UnderlyingSystem(server.Telemetry);
-            SystemContext.NodeIdFactory = this;
 
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<AlarmConditionServerConfiguration>();
-
-            m_logger = server.Telemetry.CreateLogger<AlarmConditionServerNodeManager>();
 
             // use suitable defaults if no configuration exists.
             if (m_configuration == null)
@@ -108,7 +130,7 @@ namespace Quickstarts.AlarmConditionServer
         /// <returns>The new NodeId.</returns>
         /// <remarks>
         /// This method is called by the NodeState.Create() method which initializes a Node from
-        /// the type model. During initialization a number of child nodes are created and need to 
+        /// the type model. During initialization a number of child nodes are created and need to
         /// have NodeIds assigned to them. This implementation constructs NodeIds by constructing
         /// strings. Other implementations could assign unique integers or Guids and save the new
         /// Node in a dictionary for later lookup.
@@ -119,53 +141,54 @@ namespace Quickstarts.AlarmConditionServer
         }
         #endregion
 
-        #region INodeManager Members
+        #region IAsyncNodeManager Members
         /// <summary>
         /// Does any initialization required before the address space can be used.
         /// </summary>
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        public override async ValueTask CreateAddressSpaceAsync(
+            IDictionary<NodeId, IList<IReference>> externalReferences,
+            CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
+
+            if (m_configuration.Areas != null)
             {
-                if (m_configuration.Areas != null)
+                // Top level areas need a reference from the Server object.
+                // These references are added to a list that is returned to the caller.
+                // The caller will update the Objects folder node.
+                IList<IReference> references = null;
+
+                if (!externalReferences.TryGetValue(ObjectIds.Server, out references))
                 {
-                    // Top level areas need a reference from the Server object. 
-                    // These references are added to a list that is returned to the caller.
-                    // The caller will update the Objects folder node.
-                    IList<IReference> references = null;
-
-                    if (!externalReferences.TryGetValue(ObjectIds.Server, out references))
-                    {
-                        externalReferences[ObjectIds.Server] = references = new List<IReference>();
-                    }
-
-                    for (int ii = 0; ii < m_configuration.Areas.Count; ii++)
-                    {
-                        // recursively process each area.
-                        AreaState area = CreateAndIndexAreas(null, m_configuration.Areas[ii]);
-                        AddRootNotifier(area);
-
-                        // add an organizes reference from the ObjectsFolder to the area.
-                        references.Add(new NodeStateReference(ReferenceTypeIds.HasNotifier, false, area.NodeId));
-                    }
+                    externalReferences[ObjectIds.Server] = references = new List<IReference>();
                 }
 
-                // start the simulation.
-                m_system.StartSimulation();
-                m_simulationTimer = new Timer(OnRaiseSystemEvents, null, 1000, 1000);
+                for (int ii = 0; ii < m_configuration.Areas.Count; ii++)
+                {
+                    // recursively process each area.
+                    AreaState area = CreateAndIndexAreas(null, m_configuration.Areas[ii]);
+                    await AddRootNotifierAsync(area, cancellationToken).ConfigureAwait(false);
+
+                    // add an organizes reference from the ObjectsFolder to the area.
+                    references.Add(new NodeStateReference(ReferenceTypeIds.HasNotifier, false, area.NodeId));
+                }
             }
+
+            // start the simulation.
+            m_system.StartSimulation();
+            m_simulationTimer = new Timer(OnRaiseSystemEvents, null, 1000, 1000);
         }
 
-        private void OnRaiseSystemEvents(object state)
+        private async void OnRaiseSystemEvents(object state)
         {
             try
             {
-#pragma warning disable CA2000 // Justification: Event state ownership is transferred to Server.ReportEvent.
+#pragma warning disable CA2000 // Justification: Event state ownership is transferred to Server.ReportEventAsync.
                 SystemEventState e = new SystemEventState(null);
 #pragma warning restore CA2000
 
@@ -178,9 +201,9 @@ namespace Quickstarts.AlarmConditionServer
                 e.SetChildValue(SystemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
                 e.SetChildValue(SystemContext, BrowseNames.SourceName, "Internal", false);
 
-                Server.ReportEvent(e);
+                await Server.ReportEventAsync(SystemContext, e).ConfigureAwait(false);
 
-#pragma warning disable CA2000 // Justification: Event state ownership is transferred to Server.ReportEvent.
+#pragma warning disable CA2000 // Justification: Event state ownership is transferred to Server.ReportEventAsync.
                 AuditEventState ae = new AuditEventState(null);
 #pragma warning restore CA2000
 
@@ -195,7 +218,7 @@ namespace Quickstarts.AlarmConditionServer
                 ae.SetChildValue(SystemContext, BrowseNames.SourceNode, ObjectIds.Server, false);
                 ae.SetChildValue(SystemContext, BrowseNames.SourceName, "Internal", false);
 
-                Server.ReportEvent(ae);
+                await Server.ReportEventAsync(SystemContext, ae).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -249,7 +272,7 @@ namespace Quickstarts.AlarmConditionServer
 
                     // HasEventSource and HasNotifier control the propagation of event notifications so
                     // they are not like other references. These calls set up a link between the source
-                    // and area that will cause events produced by the source to be automatically 
+                    // and area that will cause events produced by the source to be automatically
                     // propagated to the area.
                     source.AddNotifier(SystemContext, ReferenceTypeIds.HasEventSource, true, area);
                     area.AddNotifier(SystemContext, ReferenceTypeIds.HasEventSource, false, source);
@@ -263,66 +286,78 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Frees any resources allocated for the address space.
         /// </summary>
-        public override void DeleteAddressSpace()
+        public override async ValueTask DeleteAddressSpaceAsync(CancellationToken cancellationToken = default)
         {
-            lock (Lock)
-            {
-                m_system.StopSimulation();
-                m_areas.Clear();
-                m_sources.Clear();
-            }
+            m_system.StopSimulation();
+            m_areas.Clear();
+            m_sources.Clear();
+
+            await base.DeleteAddressSpaceAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Returns a unique handle for the node.
         /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
+        protected override ValueTask<NodeHandle> GetManagerHandleAsync(
+            ServerSystemContext context,
+            NodeId nodeId,
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            // quickly exclude nodes that are not in the namespace.
+            if (!IsNodeIdInNamespace(nodeId))
             {
-                // quickly exclude nodes that are not in the namespace.
-                if (!IsNodeIdInNamespace(nodeId))
-                {
-                    return null;
-                }
-
-                // check for check for nodes that are being currently monitored.
-                MonitoredNode monitoredNode = null;
-
-                if (MonitoredNodes.TryGetValue(nodeId, out monitoredNode))
-                {
-                    NodeHandle handle = new NodeHandle();
-
-                    handle.NodeId = nodeId;
-                    handle.Validated = true;
-                    handle.Node = monitoredNode.Node;
-
-                    return handle;
-                }
-
-                // parse the identifier.
-                ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
-
-                if (parsedNodeId != null)
-                {
-                    NodeHandle handle = new NodeHandle();
-
-                    handle.NodeId = nodeId;
-                    handle.Validated = false;
-                    handle.Node = null;
-                    handle.ParsedNodeId = parsedNodeId;
-
-                    return handle;
-                }
-
-                return null;
+                return new ValueTask<NodeHandle>();
             }
+
+            // check for nodes that are being currently monitored.
+            MonitoredNode2 monitoredNode = null;
+
+            if (MonitoredNodes.TryGetValue(nodeId, out monitoredNode))
+            {
+                NodeHandle handle = new NodeHandle();
+
+                handle.NodeId = nodeId;
+                handle.Validated = true;
+                handle.Node = monitoredNode.Node;
+
+                return new ValueTask<NodeHandle>(handle);
+            }
+
+            // parse the identifier.
+            ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
+
+            if (parsedNodeId != null)
+            {
+                NodeHandle handle = new NodeHandle();
+
+                handle.NodeId = nodeId;
+                handle.Validated = false;
+                handle.Node = null;
+                handle.ParsedNodeId = parsedNodeId;
+
+                return new ValueTask<NodeHandle>(handle);
+            }
+
+            return new ValueTask<NodeHandle>();
         }
 
         /// <summary>
         /// Verifies that the specified node exists.
         /// </summary>
-        protected override NodeState ValidateNode(
+        protected override ValueTask<NodeState> ValidateNodeAsync(
+            ServerSystemContext context,
+            NodeHandle handle,
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
+        {
+            return new ValueTask<NodeState>(ValidateNode(context, handle, cache));
+        }
+
+        /// <summary>
+        /// Verifies that the specified node exists.
+        /// </summary>
+        private NodeState ValidateNode(
             ServerSystemContext context,
             NodeHandle handle,
             IDictionary<NodeId, NodeState> cache)
@@ -363,7 +398,9 @@ namespace Quickstarts.AlarmConditionServer
             try
             {
                 // check if the node id has been parsed.
-                if (handle.ParsedNodeId == null)
+                ParsedNodeId parsedNodeId = handle.ParsedNodeId as ParsedNodeId;
+
+                if (parsedNodeId == null)
                 {
                     return null;
                 }
@@ -371,11 +408,11 @@ namespace Quickstarts.AlarmConditionServer
                 NodeState root = null;
 
                 // validate area.
-                if (handle.ParsedNodeId.RootType == ModelUtils.Area)
+                if (parsedNodeId.RootType == ModelUtils.Area)
                 {
                     AreaState area = null;
 
-                    if (!m_areas.TryGetValue(handle.ParsedNodeId.RootId, out area))
+                    if (!m_areas.TryGetValue(parsedNodeId.RootId, out area))
                     {
                         return null;
                     }
@@ -384,11 +421,11 @@ namespace Quickstarts.AlarmConditionServer
                 }
 
                 // validate soucre.
-                else if (handle.ParsedNodeId.RootType == ModelUtils.Source)
+                else if (parsedNodeId.RootType == ModelUtils.Source)
                 {
                     SourceState source = null;
 
-                    if (!m_sources.TryGetValue(handle.ParsedNodeId.RootId, out source))
+                    if (!m_sources.TryGetValue(parsedNodeId.RootId, out source))
                     {
                         return null;
                     }
@@ -403,7 +440,7 @@ namespace Quickstarts.AlarmConditionServer
                 }
 
                 // all done if no components to validate.
-                if (String.IsNullOrEmpty(handle.ParsedNodeId.ComponentPath))
+                if (String.IsNullOrEmpty(parsedNodeId.ComponentPath))
                 {
                     handle.Validated = true;
                     handle.Node = target = root;
@@ -411,7 +448,7 @@ namespace Quickstarts.AlarmConditionServer
                 }
 
                 // validate component.
-                NodeState component = root.FindChildBySymbolicName(context, handle.ParsedNodeId.ComponentPath);
+                NodeState component = root.FindChildBySymbolicName(context, parsedNodeId.ComponentPath);
 
                 // component does not exist.
                 if (component == null)
@@ -438,7 +475,6 @@ namespace Quickstarts.AlarmConditionServer
         #region Private Fields
         private UnderlyingSystem m_system;
         private AlarmConditionServerConfiguration m_configuration;
-        private ILogger m_logger;
         private Dictionary<string, AreaState> m_areas;
         private Dictionary<string, SourceState> m_sources;
         private Timer m_simulationTimer;

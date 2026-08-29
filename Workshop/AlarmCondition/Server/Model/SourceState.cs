@@ -29,6 +29,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 
 namespace Quickstarts.AlarmConditionServer
@@ -43,7 +46,7 @@ namespace Quickstarts.AlarmConditionServer
         /// Initializes the area.
         /// </summary>
         public SourceState(
-            QuickstartNodeManager nodeManager,
+            AlarmConditionServerNodeManager nodeManager,
             NodeId nodeId,
             string sourcePath)
         :
@@ -53,6 +56,7 @@ namespace Quickstarts.AlarmConditionServer
 
             // save the node manager that owns the source.
             m_nodeManager = nodeManager;
+            m_logger = nodeManager.Server.Telemetry.CreateLogger<SourceState>();
 
             // create the source with the underlying system.
             m_source = ((UnderlyingSystem)nodeManager.SystemContext.SystemHandle).CreateSource(sourcePath, OnAlarmChanged);
@@ -100,53 +104,57 @@ namespace Quickstarts.AlarmConditionServer
                 }
             }
 
-            // report the dialog.
-            if (m_dialog != null)
+            // the refresh can run concurrently with alarm changes reported by the underlying system.
+            lock (m_lock)
             {
-                // do not refresh dialogs that are not active.
-                if (m_dialog.Retain.Value)
+                // report the dialog.
+                if (m_dialog != null)
                 {
+                    // do not refresh dialogs that are not active.
+                    if (m_dialog.Retain.Value)
+                    {
+                        // create a snapshot.
+                        InstanceStateSnapshot e = new InstanceStateSnapshot();
+                        e.Initialize(context, m_dialog);
+
+                        // set the handle of the snapshot to check for duplicates.
+                        e.Handle = this;
+
+                        events.Add(e);
+                    }
+                }
+
+                // the alarm objects act as a cache for the last known state and are used to generate refresh events.
+                foreach (AlarmConditionState alarm in m_alarms.Values)
+                {
+                    // do not refresh alarms that are not in an interesting state.
+                    if (!alarm.Retain.Value)
+                    {
+                        continue;
+                    }
+
                     // create a snapshot.
                     InstanceStateSnapshot e = new InstanceStateSnapshot();
-                    e.Initialize(context, m_dialog);
+                    e.Initialize(context, alarm);
 
                     // set the handle of the snapshot to check for duplicates.
                     e.Handle = this;
 
                     events.Add(e);
                 }
-            }
 
-            // the alarm objects act as a cache for the last known state and are used to generate refresh events.
-            foreach (AlarmConditionState alarm in m_alarms.Values)
-            {
-                // do not refresh alarms that are not in an interesting state.
-                if (!alarm.Retain.Value)
+                // report any active branches.
+                foreach (AlarmConditionState alarm in m_branches.Values)
                 {
-                    continue;
+                    // create a snapshot.
+                    InstanceStateSnapshot e = new InstanceStateSnapshot();
+                    e.Initialize(context, alarm);
+
+                    // set the handle of the snapshot to check for duplicates.
+                    e.Handle = this;
+
+                    events.Add(e);
                 }
-
-                // create a snapshot.
-                InstanceStateSnapshot e = new InstanceStateSnapshot();
-                e.Initialize(context, alarm);
-
-                // set the handle of the snapshot to check for duplicates.
-                e.Handle = this;
-
-                events.Add(e);
-            }
-
-            // report any active branches.
-            foreach (AlarmConditionState alarm in m_branches.Values)
-            {
-                // create a snapshot.
-                InstanceStateSnapshot e = new InstanceStateSnapshot();
-                e.Initialize(context, alarm);
-
-                // set the handle of the snapshot to check for duplicates.
-                e.Handle = this;
-
-                events.Add(e);
             }
         }
         #endregion
@@ -155,47 +163,61 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Called when the state of an alarm for the source has changed.
         /// </summary>
-        private void OnAlarmChanged(UnderlyingSystemAlarm alarm)
+        /// <remarks>
+        /// The underlying system reports the change on its own thread. The alarm state is
+        /// updated under the source lock and the resulting event is reported through the
+        /// asynchronous event path of the node state.
+        /// </remarks>
+        private async void OnAlarmChanged(UnderlyingSystemAlarm alarm)
         {
-            lock (m_nodeManager.Lock)
+            try
             {
-                // ignore archived alarms for now.
-                if (alarm.RecordNumber != 0)
-                {
-                    NodeId branchId = new NodeId(alarm.RecordNumber, this.NodeId.NamespaceIndex);
-
-                    // find the alarm branch.
-                    AlarmConditionState branch = null;
-
-                    if (!m_branches.TryGetValue(branchId, out branch))
-                    {
-                        m_branches[branchId] = branch = CreateAlarm(alarm, branchId);
-                    }
-
-                    // map the system information to the UA defined alarm.
-                    UpdateAlarm(branch, alarm);
-                    ReportChanges(branch);
-
-                    // delete the branch.
-                    if ((alarm.State & UnderlyingSystemAlarmStates.Deleted) != 0)
-                    {
-                        m_branches.Remove(branchId);
-                    }
-
-                    return;
-                }
-
-                // find the alarm node.
                 AlarmConditionState node = null;
 
-                if (!m_alarms.TryGetValue(alarm.Name, out node))
+                lock (m_lock)
                 {
-                    m_alarms[alarm.Name] = node = CreateAlarm(alarm, NodeId.Null);
+                    // ignore archived alarms for now.
+                    if (alarm.RecordNumber != 0)
+                    {
+                        NodeId branchId = new NodeId(alarm.RecordNumber, this.NodeId.NamespaceIndex);
+
+                        // find the alarm branch.
+                        AlarmConditionState branch = null;
+
+                        if (!m_branches.TryGetValue(branchId, out branch))
+                        {
+                            m_branches[branchId] = branch = CreateAlarm(alarm, branchId);
+                        }
+
+                        // map the system information to the UA defined alarm.
+                        UpdateAlarm(branch, alarm);
+
+                        // delete the branch.
+                        if ((alarm.State & UnderlyingSystemAlarmStates.Deleted) != 0)
+                        {
+                            m_branches.Remove(branchId);
+                        }
+
+                        node = branch;
+                    }
+                    else
+                    {
+                        // find the alarm node.
+                        if (!m_alarms.TryGetValue(alarm.Name, out node))
+                        {
+                            m_alarms[alarm.Name] = node = CreateAlarm(alarm, NodeId.Null);
+                        }
+
+                        // map the system information to the UA defined alarm.
+                        UpdateAlarm(node, alarm);
+                    }
                 }
 
-                // map the system information to the UA defined alarm.
-                UpdateAlarm(node, alarm);
-                ReportChanges(node);
+                await ReportChangesAsync(node).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Unexpected error reporting a change to an alarm for source {SourceName}.", SymbolicName);
             }
         }
 
@@ -240,10 +262,15 @@ namespace Quickstarts.AlarmConditionServer
             node.Time.Value = DateTime.UtcNow;
             node.ReceiveTime.Value = node.Time.Value;
             node.Message.Value = new LocalizedText("The dialog was activated");
-            node.Retain.Value = true;
 
             node.SetEnableState(context, true);
             node.SetSeverity(context, EventSeverity.Low);
+
+            // enabling re-evaluates the retain state, and the dialog condition of the SDK
+            // does not consider an active dialog interesting on its own. the dialog has to
+            // stay retained until it is answered, so that a condition refresh replays it,
+            // which is how a client which connects later learns that a response is wanted.
+            node.Retain.Value = true;
 
             // initialize the dialog information.
             node.Prompt.Value = new LocalizedText("Please specify a new state for the source.");
@@ -405,7 +432,7 @@ namespace Quickstarts.AlarmConditionServer
         }
 
         /// <summary>
-        /// Updates the alarm with a new state.
+        /// Updates the alarm with a new state. The caller must hold the source lock.
         /// </summary>
         /// <param name="node">The node.</param>
         /// <param name="alarm">The alarm.</param>
@@ -596,10 +623,14 @@ namespace Quickstarts.AlarmConditionServer
             bool oneShot,
             double shelvingTime)
         {
-            alarm.SetShelvingState(context, shelving, oneShot, shelvingTime);
-            alarm.Message.Value = new LocalizedText("The alarm shelved.");
+            lock (m_lock)
+            {
+                alarm.SetShelvingState(context, shelving, oneShot, shelvingTime);
+                alarm.Message.Value = new LocalizedText("The alarm shelved.");
 
-            UpdateAlarm(alarm, null);
+                UpdateAlarm(alarm, null);
+            }
+
             ReportChanges(alarm);
 
             return ServiceResult.Good;
@@ -612,11 +643,15 @@ namespace Quickstarts.AlarmConditionServer
             ISystemContext context,
             AlarmConditionState alarm)
         {
-            // update the alarm state and produce and event.
-            alarm.SetShelvingState(context, false, false, 0);
-            alarm.Message.Value = new LocalizedText("The timed shelving period expired.");
+            lock (m_lock)
+            {
+                // update the alarm state and produce and event.
+                alarm.SetShelvingState(context, false, false, 0);
+                alarm.Message.Value = new LocalizedText("The timed shelving period expired.");
 
-            UpdateAlarm(alarm, null);
+                UpdateAlarm(alarm, null);
+            }
+
             ReportChanges(alarm);
 
             return ServiceResult.Good;
@@ -642,19 +677,46 @@ namespace Quickstarts.AlarmConditionServer
                 m_source.SetOfflineState(true);
             }
 
-            // other responses mean do nothing.
-            dialog.SetResponse(context, selectedResponse);
+            lock (m_lock)
+            {
+                // other responses mean do nothing.
+                dialog.SetResponse(context, selectedResponse);
 
-            // dialog no longer interesting once it is deactivated.
-            dialog.Message.Value = new LocalizedText("The dialog was deactivated");
-            dialog.Retain.Value = false;
+                // dialog no longer interesting once it is deactivated.
+                dialog.Message.Value = new LocalizedText("The dialog was deactivated");
+                dialog.Retain.Value = false;
+            }
 
             return ServiceResult.Good;
         }
 
         /// <summary>
+        /// Reports the changes to the alarm through the asynchronous event path.
+        /// </summary>
+        private async Task ReportChangesAsync(AlarmConditionState alarm, CancellationToken cancellationToken = default)
+        {
+            // report changes to node attributes.
+            await alarm.ClearChangeMasksAsync(m_nodeManager.SystemContext, true, cancellationToken).ConfigureAwait(false);
+
+            // check if events are being monitored for the source.
+            if (this.AreEventsMonitored)
+            {
+                // create a snapshot.
+                InstanceStateSnapshot e = new InstanceStateSnapshot();
+                e.Initialize(m_nodeManager.SystemContext, alarm);
+
+                // report the event.
+                await alarm.ReportEventAsync(m_nodeManager.SystemContext, e, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
         /// Reports the changes to the alarm.
         /// </summary>
+        /// <remarks>
+        /// The shelving handlers are synchronous delegates, so they use this synchronous
+        /// bridge; it still drives the asynchronous notification sinks of the node state.
+        /// </remarks>
         private void ReportChanges(AlarmConditionState alarm)
         {
             // report changes to node attributes.
@@ -686,9 +748,12 @@ namespace Quickstarts.AlarmConditionServer
 
             AlarmConditionState alarm = null;
 
-            if (!m_events.TryGetValue(Utils.ToHexString(eventId.ToArray()), out alarm))
+            lock (m_lock)
             {
-                return null;
+                if (!m_events.TryGetValue(Utils.ToHexString(eventId.ToArray()), out alarm))
+                {
+                    return null;
+                }
             }
 
             return alarm;
@@ -731,7 +796,9 @@ namespace Quickstarts.AlarmConditionServer
         #endregion    
 
         #region Private Fields
-        private QuickstartNodeManager m_nodeManager;
+        private readonly Lock m_lock = new();
+        private AlarmConditionServerNodeManager m_nodeManager;
+        private ILogger m_logger;
         private UnderlyingSystemSource m_source;
         private Dictionary<string, AlarmConditionState> m_alarms;
         private Dictionary<string, AlarmConditionState> m_events;
