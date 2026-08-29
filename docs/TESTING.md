@@ -288,6 +288,9 @@ What each fixture pins down, in one line:
 | Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
 | UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session |
 | PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
+| DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths |
+| AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area |
+| HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting and deleting with the modified history remembering it, annotations read and written, and which items are still being collected |
 | DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths, a set point written through to the underlying system |
 | AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area, a condition refresh replaying the retained dialogs |
 | HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting into the history, and which items are still being collected |
@@ -307,39 +310,42 @@ enabling, and the refresh replays one dialog per source until somebody answers i
 
 ### Recorded issues
 
-One expectation is written the way the sample is *meant* to behave and reported as
-**ignored** because it does not hold today, through `KnownIssue.RecordAsync`. Like `s_knownIssues`
-in Tier 1, an entry fails the moment it starts passing, so it cannot rot - and that has already
-happened five times. Three were expectations that were wrong about the harness rather than
-about the sample, one of them caught by CI rather than locally: an entry which held on a
-developer machine and not on a build agent, which is the most useful kind to be told about.
-The fourth was the bargain paying out as designed: the SimpleEvents events arrived with the
-sample's own fields (`CycleId`, `CurrentStep`, `Steps`) empty even though they were on the
-event and the server had accepted the select clauses asking for them, the layer dropping them
-sat below the sample - and the migration of the node manager to `AsyncCustomNodeManager`
-fixed it, at which point the entry failed, the wrapper came off, and the expectation now
-stands as an ordinary assertion.
+Nothing is recorded as a known issue right now: the last two entries paid out when their
+node managers were migrated. The mechanism stays, because it is what made that happen. An
+expectation written the way the sample is *meant* to behave is reported as **ignored**
+through `KnownIssue.RecordAsync`, and - like `s_knownIssues` in Tier 1 - an entry fails the
+moment it starts passing, so it cannot rot. That has already happened six times. Three were
+expectations that were wrong about the harness rather than about the sample, one of them
+caught by CI rather than locally: an entry which held on a developer machine and not on a
+build agent, which is the most useful kind to be told about. The other three were the
+bargain paying out as designed.
 
-The fifth was the aggregation pass through, and it was two mistakes stacked: the fixture
-handed the aggregating server a fabricated downstream `ApplicationDescription` whose
-`ApplicationUri` was the endpoint url, and the downstream server rejects a session naming a
-server uri which is not its own (`BadServerUriInvalid`) - so the metadata session could never
-be created and the entry blamed the update for "never finishing". The recorded expectation
-also asserted on the first browse, seconds before the node manager makes its first connection
-attempt. The migration of the node manager to `AsyncCustomNodeManager` and the corrected
-fixture turned the entry into three ordinary assertions - browse, read and subscription
-through the proxy - each waiting for the pass through to come up first.
+The SimpleEvents events arrived with the sample's own fields (`CycleId`, `CurrentStep`,
+`Steps`) empty even though they were on the event and the server had accepted the select
+clauses asking for them; the layer dropping them sat below the sample, and the migration of
+the node manager to `AsyncCustomNodeManager` fixed it.
 
-It is not asserted the other way round on purpose: recording the broken behaviour as
-expected would ask the migration to preserve it.
+The HistoricalAccess archive answered a read at a recorded point in time with a bad value
+even though a raw read returned that point; the binary search behind the read-at-time missed
+exact matches, and the migration onto the SDK's native historian interfaces replaced it. The
+same migration fixed the delete the fixture used to describe only in prose - deleting a
+recorded value answered `BadUnexpectedError` and left the item refusing every later read,
+because the handler indexed a column its table does not have - so deleting a recorded value
+now has a test of its own instead of a paragraph.
 
-- **HistoricalAccess** - a read at a recorded point in time returns a bad value. The archive is
-  searched with a binary search over a view sorted by source timestamp, and a bounded raw read
-  whose range starts *before* the first archived value returns nothing rather than the values
-  inside the range, which looks like the same root. Deleting a value which *is* in the archive
-  answers `BadUnexpectedError` and leaves the item refusing every later read, so that one is
-  described here rather than tested - a test for it would take the rest of the fixture down
-  with it.
+The aggregation pass through was two mistakes stacked: the fixture handed the aggregating
+server a fabricated downstream `ApplicationDescription` whose `ApplicationUri` was the
+endpoint url, and the downstream server rejects a session naming a server uri which is not
+its own (`BadServerUriInvalid`) - so the metadata session could never be created and the
+entry blamed the update for "never finishing". The recorded expectation also asserted on the
+first browse, seconds before the node manager makes its first connection attempt. The
+migration of the node manager to `AsyncCustomNodeManager` and the corrected fixture turned
+the entry into three ordinary assertions - browse, read and subscription through the proxy -
+each waiting for the pass through to come up first.
+
+In every case the entry failed, the wrapper came off, and the expectation now stands as an
+ordinary assertion. Entries are not asserted the other way round on purpose: recording the
+broken behaviour as expected would ask a migration to preserve it.
 
 One further test, `AuthenticatedUserMayWriteAndTheLogFileAppears`, is skipped unless
 `OPCUA_SAMPLES_TEST_USER` and `OPCUA_SAMPLES_TEST_PASSWORD` name a real local Windows account.
@@ -411,9 +417,9 @@ The known issue list in `SampleClientTests` is therefore empty again.
 
 The same unguarded continuation point check existed three times in
 `Workshop/HistoricalAccess/Server/HistoricalAccessNodeManager.cs` - in `HistoryReadRawModified`,
-`HistoryReadProcessed` and `HistoryReadAtTime` - and carries the same guard now. It is latent
-there: the HistoricalAccess client does not read history from its ConnectComplete handler, so
-no test reaches it, which is why it is fixed by inspection rather than by a failing test.
+`HistoryReadProcessed` and `HistoryReadAtTime` - and carried the same guard until the migration
+onto the SDK's native historian interfaces removed those methods altogether: continuation
+points are owned by the SDK's historian dispatcher now.
 
 ## Status / roadmap
 

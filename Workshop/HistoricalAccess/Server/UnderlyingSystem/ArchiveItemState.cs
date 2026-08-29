@@ -29,8 +29,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.IO;
 using System.Data;
 using Opc.Ua;
 using Opc.Ua.Server;
@@ -229,17 +227,13 @@ namespace Quickstarts.HistoricalAccessServer
                 }
             }
 
-            string filter = String.Format(System.Globalization.CultureInfo.InvariantCulture, "SourceTimestamp = #{0}#", value.SourceTimestamp);
-
-            using DataView view = new DataView(
-                m_archiveItem.DataSet.Tables[0],
-                filter,
-                null,
-                DataViewRowState.CurrentRows);
+            // the sorted view compares full ticks, unlike a row filter whose date
+            // literal is only precise to the second.
+            DataRowView[] matches = m_archiveItem.DataSet.Tables[0].DefaultView.FindRows((DateTime)value.SourceTimestamp);
 
             DataRow row = null;
 
-            for (int ii = 0; ii < view.Count;)
+            if (matches.Length > 0)
             {
                 if (performUpdateType == PerformUpdateType.Insert)
                 {
@@ -247,21 +241,10 @@ namespace Quickstarts.HistoricalAccessServer
                 }
 
                 // add record indicating it was replaced.
-                DataRow modifiedRow = m_archiveItem.DataSet.Tables[1].NewRow();
-
-                modifiedRow[0] = view[ii].Row[0];
-                modifiedRow[1] = view[ii].Row[1];
-                modifiedRow[2] = view[ii].Row[2];
-                modifiedRow[3] = view[ii].Row[3];
-                modifiedRow[4] = view[ii].Row[4];
-                modifiedRow[5] = HistoryUpdateType.Replace;
-                modifiedRow[6] = GetModificationInfo(context, HistoryUpdateType.Replace);
-
-                m_archiveItem.DataSet.Tables[1].Rows.Add(modifiedRow);
+                AddModificationRecord(context, matches[0].Row, HistoryUpdateType.Replace);
 
                 replaced = true;
-                row = view[ii].Row;
-                break;
+                row = matches[0].Row;
             }
 
             // add record indicating it was inserted.
@@ -325,47 +308,40 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <summary>
-        /// Updates the history.
+        /// Updates the annotation history.
         /// </summary>
-        public uint UpdateAnnotations(ServerSystemContext context, Annotation annotation, DataValue value, PerformUpdateType performUpdateType)
+        /// <remarks>
+        /// The annotation time is the storage key. Two users may annotate the same
+        /// instant, so an existing record is only replaced when the user matches.
+        /// </remarks>
+        public uint UpdateAnnotations(Annotation annotation, PerformUpdateType performUpdateType)
         {
             bool replaced = false;
-
-            string filter = String.Format(System.Globalization.CultureInfo.InvariantCulture, "SourceTimestamp = #{0}#", value.SourceTimestamp);
-
-            using DataView view = new DataView(
-                m_archiveItem.DataSet.Tables[2],
-                filter,
-                null,
-                DataViewRowState.CurrentRows);
+            DateTime annotationTime = (DateTime)annotation.AnnotationTime;
 
             DataRow row = null;
 
-            for (int ii = 0; ii < view.Count; ii++)
+            foreach (DataRowView existing in m_archiveItem.DataSet.Tables[2].DefaultView.FindRows(annotationTime))
             {
-                Annotation current = (Annotation)view[ii].Row[5];
+                Annotation current = (Annotation)existing.Row[5];
 
                 replaced = (current.UserName == annotation.UserName);
 
-                if (performUpdateType == PerformUpdateType.Insert)
+                if (replaced)
                 {
-                    if (replaced)
+                    if (performUpdateType == PerformUpdateType.Insert)
                     {
                         return StatusCodes.BadEntryExists.Code;
                     }
-                }
 
-                if (replaced)
-                {
-                    row = view[ii].Row;
+                    row = existing.Row;
                     break;
                 }
             }
 
-            // add record indicating it was inserted.
             if (!replaced)
             {
-                if (performUpdateType == PerformUpdateType.Replace || performUpdateType == PerformUpdateType.Remove)
+                if (performUpdateType == PerformUpdateType.Replace)
                 {
                     return StatusCodes.BadNoEntryExists.Code;
                 }
@@ -374,23 +350,44 @@ namespace Quickstarts.HistoricalAccessServer
             }
 
             // add/update new record.
-            if (performUpdateType != PerformUpdateType.Remove)
-            {
-                row[0] = (DateTime)value.SourceTimestamp;
-                row[1] = (DateTime)value.ServerTimestamp;
-                row[2] = new DataValue(new ExtensionObject(annotation), StatusCodes.Good, value.SourceTimestamp, value.ServerTimestamp);
-                row[3] = BuiltInType.ExtensionObject;
-                row[4] = ValueRanks.Scalar;
-                row[5] = annotation;
+            row[0] = annotationTime;
+            row[1] = annotationTime;
+            row[2] = new DataValue(new ExtensionObject(annotation), StatusCodes.Good, annotationTime, annotationTime);
+            row[3] = BuiltInType.ExtensionObject;
+            row[4] = ValueRanks.Scalar;
+            row[5] = annotation;
 
-                if (!replaced)
-                {
-                    m_archiveItem.DataSet.Tables[2].Rows.Add(row);
-                }
+            if (!replaced)
+            {
+                m_archiveItem.DataSet.Tables[2].Rows.Add(row);
             }
 
-            // delete record.
-            else
+            // accept all changes.
+            m_archiveItem.DataSet.AcceptChanges();
+
+            return StatusCodes.Good.Code;
+        }
+
+        /// <summary>
+        /// Deletes the annotations recorded at the specified annotation time.
+        /// </summary>
+        public uint DeleteAnnotations(DateTime annotationTime)
+        {
+            DataRowView[] matches = m_archiveItem.DataSet.Tables[2].DefaultView.FindRows(annotationTime);
+
+            if (matches.Length == 0)
+            {
+                return StatusCodes.BadNoEntryExists.Code;
+            }
+
+            List<DataRow> rowsToDelete = new List<DataRow>();
+
+            foreach (DataRowView match in matches)
+            {
+                rowsToDelete.Add(match.Row);
+            }
+
+            foreach (DataRow row in rowsToDelete)
             {
                 row.Delete();
             }
@@ -402,85 +399,33 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <summary>
-        /// Selects the table to use.
-        /// </summary>
-        private DataTable SelectTable(QualifiedName propertyName)
-        {
-            if (propertyName.IsNull || propertyName.Name == null)
-            {
-                return m_archiveItem.DataSet.Tables[0];
-            }
-
-            switch (propertyName.Name)
-            {
-                case Opc.Ua.BrowseNames.Annotations:
-                {
-                    return m_archiveItem.DataSet.Tables[2];
-                }
-            }
-
-            return m_archiveItem.DataSet.Tables[0];
-        }
-
-        /// <summary>
-        /// Deletes a value from the history.
+        /// Deletes the value recorded at the specified source timestamp.
         /// </summary>
         public uint DeleteHistory(ServerSystemContext context, DateTime sourceTimestamp)
         {
-            bool deleted = false;
+            DataRowView[] matches = m_archiveItem.DataSet.Tables[0].DefaultView.FindRows(sourceTimestamp);
 
-            string filter = String.Format(System.Globalization.CultureInfo.InvariantCulture, "SourceTimestamp = #{0}#", sourceTimestamp);
-
-            using DataView view = new DataView(
-                m_archiveItem.DataSet.Tables[0],
-                filter,
-                null,
-                DataViewRowState.CurrentRows);
-
-            for (int ii = 0; ii < view.Count; ii++)
-            {
-                int updateType = (int)view[ii].Row[5];
-
-                if (updateType == 0)
-                {
-                    view[ii].Row[5] = HistoryUpdateType.Delete;
-                    view[ii].Row[6] = GetModificationInfo(context, HistoryUpdateType.Delete);
-                    deleted = true;
-                }
-            }
-
-            if (!deleted)
+            if (matches.Length == 0)
             {
                 return StatusCodes.BadNoEntryExists.Code;
             }
 
-            return StatusCodes.Good.Code;
-        }
+            List<DataRow> rowsToDelete = new List<DataRow>();
 
-        /// <summary>
-        /// Deletes a property value from the history.
-        /// </summary>
-        public uint DeleteAnnotationHistory(SystemContext context, QualifiedName propertyName, DateTime sourceTimestamp)
-        {
-            bool deleted = false;
-
-            string filter = String.Format(System.Globalization.CultureInfo.InvariantCulture, "SourceTimestamp = #{0}#", sourceTimestamp);
-
-            using DataView view = new DataView(
-                SelectTable(propertyName),
-                filter,
-                null,
-                DataViewRowState.CurrentRows);
-
-            for (int ii = 0; ii < view.Count; ii++)
+            foreach (DataRowView match in matches)
             {
-                int updateType = (int)view[ii].Row[5];
+                // record the deleted value in the modified history.
+                AddModificationRecord(context, match.Row, HistoryUpdateType.Delete);
+                rowsToDelete.Add(match.Row);
             }
 
-            if (!deleted)
+            foreach (DataRow row in rowsToDelete)
             {
-                return StatusCodes.BadNoEntryExists.Code;
+                row.Delete();
             }
+
+            // commit all changes.
+            m_archiveItem.DataSet.AcceptChanges();
 
             return StatusCodes.Good.Code;
         }
@@ -498,44 +443,28 @@ namespace Quickstarts.HistoricalAccessServer
                 endTime = temp;
             }
 
-            string filter = String.Format(
-                System.Globalization.CultureInfo.InvariantCulture,
-                "SourceTimestamp >= #{0}# AND SourceTimestamp < #{1}#",
-                startTime,
-                endTime);
-
             // select the table.
-            DataTable table = m_archiveItem.DataSet.Tables[0];
+            DataView view = isModified
+                ? m_archiveItem.DataSet.Tables[1].DefaultView
+                : m_archiveItem.DataSet.Tables[0].DefaultView;
 
-            if (isModified)
-            {
-                table = m_archiveItem.DataSet.Tables[1];
-            }
-
-            // delete the values.
-            using DataView view = new DataView(
-                table,
-                filter,
-                null,
-                DataViewRowState.CurrentRows);
-
+            // collect the values to delete; the timestamps are compared with full
+            // ticks, unlike a row filter whose date literals are only precise to
+            // the second.
             List<DataRow> rowsToDelete = new List<DataRow>();
 
             for (int ii = 0; ii < view.Count; ii++)
             {
+                DateTime timestamp = (DateTime)view[ii].Row[0];
+
+                if (timestamp < startTime || timestamp >= endTime)
+                {
+                    continue;
+                }
+
                 if (!isModified)
                 {
-                    DataRow modifiedRow = m_archiveItem.DataSet.Tables[1].NewRow();
-
-                    modifiedRow[0] = view[ii].Row[0];
-                    modifiedRow[1] = view[ii].Row[1];
-                    modifiedRow[2] = view[ii].Row[2];
-                    modifiedRow[3] = view[ii].Row[3];
-                    modifiedRow[4] = view[ii].Row[4];
-                    modifiedRow[5] = HistoryUpdateType.Delete;
-                    modifiedRow[6] = GetModificationInfo(context, HistoryUpdateType.Delete);
-
-                    m_archiveItem.DataSet.Tables[1].Rows.Add(modifiedRow);
+                    AddModificationRecord(context, view[ii].Row, HistoryUpdateType.Delete);
                 }
 
                 rowsToDelete.Add(view[ii].Row);
@@ -551,6 +480,24 @@ namespace Quickstarts.HistoricalAccessServer
             m_archiveItem.DataSet.AcceptChanges();
 
             return StatusCodes.Good.Code;
+        }
+
+        /// <summary>
+        /// Mirrors a row of the current data into the modified history.
+        /// </summary>
+        private void AddModificationRecord(ServerSystemContext context, DataRow source, HistoryUpdateType updateType)
+        {
+            DataRow modifiedRow = m_archiveItem.DataSet.Tables[1].NewRow();
+
+            modifiedRow[0] = source[0];
+            modifiedRow[1] = source[1];
+            modifiedRow[2] = source[2];
+            modifiedRow[3] = source[3];
+            modifiedRow[4] = source[4];
+            modifiedRow[5] = updateType;
+            modifiedRow[6] = GetModificationInfo(context, updateType);
+
+            m_archiveItem.DataSet.Tables[1].Rows.Add(modifiedRow);
         }
 
         /// <summary>
@@ -600,81 +547,57 @@ namespace Quickstarts.HistoricalAccessServer
         {
             dataIgnored = false;
 
-            if (view.Count <= 0)
+            // find the last value at or before the timestamp; the view is sorted
+            // by source timestamp.
+            int min = 0;
+            int max = view.Count - 1;
+            int position = -1;
+
+            while (min <= max)
             {
-                return -1;
+                int middle = min + ((max - min) / 2);
+
+                if ((DateTime)view[middle].Row[0] <= timestamp)
+                {
+                    position = middle;
+                    min = middle + 1;
+                }
+                else
+                {
+                    max = middle - 1;
+                }
             }
 
-            int min = 0;
-            int max = view.Count;
-            int position = (max - min) / 2;
-
-            while (position >= 0 && position < view.Count)
+            // step to the first row of a group sharing one timestamp, and past bad
+            // values when the caller asked for that. a row at the requested time
+            // itself is always returned - the recorded value answers, whatever its
+            // status says.
+            while (position >= 0)
             {
                 DateTime current = (DateTime)view[position].Row[0];
 
-                // check for exact match.
-                if (current == timestamp)
+                while (position > 0 && (DateTime)view[position - 1].Row[0] == current)
                 {
-                    // skip the first timestamp.
-                    while (position > 0 && (DateTime)view[position - 1].Row[0] == timestamp)
-                    {
-                        position--;
-                    }
-
-                    return position;
+                    position--;
                 }
 
-                // move up.
-                if (current < timestamp)
+                if (current == timestamp || !ignoreBad)
                 {
-                    min = position + 1;
+                    break;
                 }
 
-                // move down.
-                if (current > timestamp)
+                DataValue value = (DataValue)view[position].Row[2];
+
+                if (!StatusCode.IsBad(value.StatusCode))
                 {
-                    max = position - 1;
+                    break;
                 }
 
-                // not found.
-                if (max < min)
-                {
-                    // find the value before.
-                    while (position >= 0)
-                    {
-                        timestamp = (DateTime)view[position].Row[0];
-
-                        // skip the first timestamp in group.
-                        while (position > 0 && (DateTime)view[position - 1].Row[0] == timestamp)
-                        {
-                            position--;
-                        }
-
-                        // ignore bad data.
-                        if (ignoreBad)
-                        {
-                            DataValue value = (DataValue)view[position].Row[2];
-
-                            if (StatusCode.IsBad(value.StatusCode))
-                            {
-                                position--;
-                                dataIgnored = true;
-                                continue;
-                            }
-                        }
-
-                        break;
-                    }
-
-                    // return the position.
-                    return position;
-                }
-
-                position = min + (max - min) / 2;
+                position--;
+                dataIgnored = true;
             }
 
-            return -1;
+            return position;
         }
 
         /// <summary>
