@@ -32,7 +32,7 @@ using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Server;
 
-namespace Quickstarts.ViewsServer
+namespace Quickstarts.Views.Server
 {
     /// <summary>
     /// Stores the configuration the data access node manager.
