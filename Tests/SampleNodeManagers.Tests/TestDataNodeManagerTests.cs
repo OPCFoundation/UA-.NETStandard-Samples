@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -22,10 +23,10 @@ namespace Opc.Ua.Samples.Tests
     /// static and a simulated flavour, and archives one of them.
     /// </summary>
     /// <remarks>
-    /// The node manager loads a large type model and then upgrades the passive nodes it
-    /// finds into typed ones, which is the part a migration is most likely to change. The
-    /// simulated variables are driven by a system object which only samples while somebody
-    /// is monitoring them, so a subscription is the only way to see that working.
+    /// The node manager loads a large type model as typed nodes, which is the part a
+    /// migration is most likely to change. The simulated variables are driven by a system
+    /// object which only samples while somebody is monitoring them, so a subscription is
+    /// the only way to see that working.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]
@@ -145,10 +146,6 @@ namespace Opc.Ua.Samples.Tests
         /// The node manager turns archiving on for the simulated integer while it builds
         /// the address space, and leaves every other variable alone. Which variable it
         /// picks is arbitrary, but that it picks one and only one is the behaviour.
-        ///
-        /// What was recorded is not read back here: the sample server refuses a history
-        /// read to an anonymous session with BadUserAccessDenied, which is its user
-        /// impersonation working rather than the node manager failing.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
@@ -207,6 +204,62 @@ namespace Opc.Ua.Samples.Tests
                     & AccessLevels.HistoryRead,
                 Is.Not.Zero,
                 "The archived variable has to say that its history can be read.");
+        }
+
+        /// <summary>
+        /// The archive of the simulated integer can be read back.
+        /// </summary>
+        /// <remarks>
+        /// The archive is seeded with a sample every ten seconds reaching back hours, so
+        /// a read over the last hour has plenty to return without waiting for anything.
+        /// The read runs on its own authenticated session because that is how a client
+        /// entitled to the archive would connect; the sample accepts any user name with a
+        /// non-empty password.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ArchivedIntegerServesItsHistory(CancellationToken ct)
+        {
+            NodeId archived = await PathAsync(ct, "Data", "Dynamic", "Scalar", "Int32Value")
+                .ConfigureAwait(false);
+
+            await using TestClient reader = await TestClient
+                .ConnectAsync(
+                    EndpointUrl,
+                    "history reader",
+                    new UserIdentity("history reader", Encoding.UTF8.GetBytes("history")),
+                    ct)
+                .ConfigureAwait(false);
+
+            DateTime endTime = DateTime.UtcNow;
+            DateTime startTime = endTime.AddHours(-1);
+
+            IReadOnlyList<DataValue> values = await HistoryOps
+                .ReadAllRawAsync(reader.Session, archived, startTime, endTime, 100, ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"The archive returned {values.Count} samples for the last hour.")
+                .ConfigureAwait(false);
+
+            Assert.That(values, Is.Not.Empty, "The archive holds samples for the last hour.");
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    values.Select(value => value.StatusCode),
+                    Is.All.Matches<StatusCode>(StatusCode.IsGood),
+                    "The archived samples are good values.");
+
+                Assert.That(
+                    values.Select(value => (DateTime)value.SourceTimestamp),
+                    Is.Ordered.Ascending,
+                    "A forward read returns the samples in the order they were recorded.");
+
+                Assert.That(
+                    values.Select(value => (DateTime)value.SourceTimestamp),
+                    Is.All.InRange(startTime, endTime),
+                    "Every sample lies inside the requested window.");
+            });
         }
     }
 }

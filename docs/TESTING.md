@@ -296,9 +296,9 @@ What each fixture pins down, in one line:
 | HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting into the history, and which items are still being collected |
 | HistoricalEvents | The well tree, event history with continuation points, and the two refusals the sample declares |
 | Aggregation | The proxy root for the configured downstream server, and the pass through behind it: browsing the other server's address space, reading a static value, and a subscription forwarded downstream with its notifications coming back |
-| TestData | Static write round trip, simulated values while monitored, and which single variable is archived |
-| MemoryBuffer | Tags synthesized from node ids, and the three creation refusals the custom monitored item makes |
-| Boiler (sample server) | Display names renamed after the unit, and the state machine started by the node manager itself |
+| TestData | Static write round trip, simulated values while monitored, which single variable is archived, and the archive read back over an authenticated session |
+| MemoryBuffer | Tags synthesized from node ids, a buffer browsing into its tags, and the three creation refusals the custom monitored item makes |
+| Boiler (sample server) | Display names renamed after the unit, and the state machines of both boilers started by the node manager itself |
 
 The condition refresh test earned its keep on arrival: the dialog condition every alarm
 source creates was never replayed by a refresh. `SetEnableState` in the 2.0 stack
@@ -410,7 +410,7 @@ hung. Two defects, both in the sample's own server, were behind it:
 
 | Where | What was wrong |
 |-------|----------------|
-| `Workshop/HistoricalEvents/Server/HistoricalEventsNodeManager.cs` | `HistoryReadEvents` treated any non null `HistoryReadValueId.ContinuationPoint` as a continuation point to restore. `ContinuationPoint` is a `ByteString` now and a freshly created `HistoryReadValueId` carries an *empty* one rather than a null one, so the very first history read of a session looked like a continuation of a request the server had never issued and answered `BadContinuationPointInvalid`. An empty continuation point has to be read as "no continuation point", which is what `Samples/Opc.Ua.Sample/TestData/TestDataNodeManager.cs` already does |
+| `Workshop/HistoricalEvents/Server/HistoricalEventsNodeManager.cs` | `HistoryReadEvents` treated any non null `HistoryReadValueId.ContinuationPoint` as a continuation point to restore. `ContinuationPoint` is a `ByteString` now and a freshly created `HistoryReadValueId` carries an *empty* one rather than a null one, so the very first history read of a session looked like a continuation of a request the server had never issued and answered `BadContinuationPointInvalid`. An empty continuation point has to be read as "no continuation point", which is what the sample server's TestData node manager did at the time (its history reads run on the SDK's native historian since the `Opc.Ua.Sample` migration) |
 | `Workshop/HistoricalEvents/Server/ReportGenerator.cs` | the `DataView` row filter it builds wrote its `#...#` date literals with `DateTime.ToString()`, so in the current culture. The `System.Data` expression parser reads them with the invariant culture, so on a machine that is not formatting dates the invariant way - a German Windows, for instance - the history read threw `FormatException` and the client saw `BadUnexpectedError` |
 
 The known issue list in `SampleClientTests` is therefore empty again.

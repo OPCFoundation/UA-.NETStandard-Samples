@@ -75,13 +75,25 @@ namespace TestData
 
         #region Public Interface
         /// <summary>
-        /// Returns an object that can be used to browse the archive.
+        /// Returns true if a record exists for the node.
         /// </summary>
-        public HistoryFile GetHistoryFile(NodeId nodeId)
+        public bool IsArchived(NodeId nodeId)
         {
             lock (m_lock)
             {
-                if (m_records == null)
+                return m_records != null && nodeId != null && m_records.ContainsKey(nodeId);
+            }
+        }
+
+        /// <summary>
+        /// Returns a snapshot of the archived samples for the node, sorted by
+        /// source timestamp, or null if the node is not archived.
+        /// </summary>
+        public IReadOnlyList<DataValue> ReadRawValues(NodeId nodeId)
+        {
+            lock (m_lock)
+            {
+                if (m_records == null || nodeId == null)
                 {
                     return null;
                 }
@@ -93,7 +105,14 @@ namespace TestData
                     return null;
                 }
 
-                return new HistoryFile(m_lock, record.RawData);
+                var values = new List<DataValue>(record.RawData.Count);
+
+                foreach (HistoryEntry entry in record.RawData)
+                {
+                    values.Add(entry.Value);
+                }
+
+                return values;
             }
         }
 

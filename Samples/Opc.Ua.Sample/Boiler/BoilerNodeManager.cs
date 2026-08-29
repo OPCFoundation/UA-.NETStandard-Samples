@@ -30,65 +30,25 @@
 using System;
 using System.Collections.Generic;
 using Opc.Ua;
-using Opc.Ua.Sample;
-using System.Reflection;
-using Opc.Ua.Server;
+using Opc.Ua.Server.Fluent;
 
 namespace Boiler
 {
     /// <summary>
-    /// The factory class to create the boiler node manager.
+    /// A node manager for the boilers exposed by the server.
     /// </summary>
-    public class BoilerNodeManagerFactory : INodeManagerFactory
+    /// <remarks>
+    /// The <c>[NodeManager]</c> attribute opts this partial class in to source
+    /// generation: the generator emits a sibling partial which derives from
+    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
+    /// <c>BoilerDesign.xml</c> - Boiler #1 comes out of it as a typed
+    /// <see cref="BoilerState"/> - and calls <see cref="Configure"/> once the
+    /// address space is in place. It also emits the <c>BoilerNodeManagerFactory</c>
+    /// the server registers to create this node manager.
+    /// </remarks>
+    [NodeManager(NamespaceUri = "http://opcfoundation.org/UA/Boiler/")]
+    public partial class BoilerNodeManager
     {
-        /// <inheritdoc/>
-        public INodeManager Create(IServerInternal server, ApplicationConfiguration configuration)
-        {
-            return new BoilerNodeManager(server, configuration, NamespacesUris.ToArray());
-        }
-
-        /// <inheritdoc/>
-        public ArrayOf<string> NamespacesUris
-        {
-            get
-            {
-                var nameSpaces = new List<string> {
-                    Namespaces.Boiler,
-                    Namespaces.Boiler + "Instance"
-                };
-                return nameSpaces;
-            }
-        }
-    }
-
-    /// <summary>
-    /// A node manager for the boiler exposed by the server.
-    /// </summary>
-    public class BoilerNodeManager : SampleNodeManager
-    {
-        #region Constructors
-        /// <summary>
-        /// Initializes the node manager.
-        /// </summary>
-        public BoilerNodeManager(
-            IServerInternal server,
-            ApplicationConfiguration configuration,
-            string[] namespaceUris)
-        :
-            base(server)
-        {
-            NamespaceUris = namespaceUris;
-
-            m_typeNamespaceIndex = Server.NamespaceUris.GetIndexOrAppend(namespaceUris[0]);
-            m_namespaceIndex = Server.NamespaceUris.GetIndexOrAppend(namespaceUris[1]);
-
-            AddEncodeableNodeManagerTypes(typeof(BoilerNodeManager).Assembly, typeof(BoilerNodeManager).Namespace);
-
-            m_lastUsedId = 0;
-            m_boilers = new List<BoilerState>();
-        }
-        #endregion
-
         #region INodeIdFactory Members
         /// <summary>
         /// Creates the NodeId for the specified node.
@@ -99,52 +59,62 @@ namespace Boiler
         public override NodeId New(ISystemContext context, NodeState node)
         {
             uint id = Utils.IncrementIdentifier(ref m_lastUsedId);
-            return new NodeId(id, m_namespaceIndex);
+            return new NodeId(id, NamespaceIndexes[1]);
         }
         #endregion
 
-        #region INodeManager Members
+        #region Configure
         /// <summary>
-        /// Does any initialization required before the address space can be used.
+        /// Builds the dynamic part of the address space and wires the behaviour of
+        /// the sample once the predefined nodes are in place.
         /// </summary>
-        /// <remarks>
-        /// The externalReferences is an out parameter that allows the node manager to link to nodes
-        /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.
-        /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        partial void Configure(INodeManagerBuilder builder)
         {
-            lock (Lock)
-            {
-                base.CreateAddressSpace(externalReferences);
-                CreateBoiler(SystemContext, 2);
-            }
-        }
+            // the generated constructor only registers the namespace of the type
+            // model; add a second namespace for the dynamically created nodes. the
+            // master node manager built its routing table when this node manager
+            // reported one namespace, so the new namespace is registered with it too.
+            SetNamespaces(Namespaces.Boiler, Namespaces.Boiler + "Instance");
+            Server.NodeManager.RegisterNamespaceManager(Namespaces.Boiler + "Instance", this);
 
+            m_boilers = new List<BoilerState>();
+
+            // the boiler the type model declares came out of the generated load as
+            // a typed node; its simulation used to be started when the passive node
+            // was replaced by the typed one, which the generated load made obsolete.
+            BoilerState boiler1 = FindPredefinedNode<BoilerState>(
+                new NodeId(Objects.Boilers_Boiler1, NamespaceIndexes[0]));
+
+            m_boilers.Add(boiler1);
+
+            StartSimulation(boiler1);
+
+            // create a second boiler dynamically.
+            CreateBoiler(2);
+        }
+        #endregion
+
+        #region Private Methods
         /// <summary>
         /// Creates a boiler and adds it to the address space.
         /// </summary>
-        /// <param name="context">The context to use.</param>
         /// <param name="unitNumber">The unit number for the boiler.</param>
-        private void CreateBoiler(ServerSystemContext context, int unitNumber)
+        private void CreateBoiler(int unitNumber)
         {
-            BoilerState boiler = new BoilerState(null);
-
             string name = Utils.Format("Boiler #{0}", unitNumber);
 
+            // create a boiler from the type model with unique node ids assigned
+            // through New. the typed create also runs the OnAfterCreate hooks the
+            // sample uses to wire the state machine of the simulation, which the
+            // source generated instance factory would skip.
+            BoilerState boiler = new BoilerState(null);
+
             boiler.Create(
-                context,
+                SystemContext,
                 default,
-                new QualifiedName(name, m_namespaceIndex),
+                new QualifiedName(name, NamespaceIndexes[1]),
                 default,
                 true);
-
-            NodeState folder = (NodeState)FindPredefinedNode(
-                ExpandedNodeId.ToNodeId(ObjectIds.Boilers, Server.NamespaceUris),
-                typeof(NodeState));
-
-            folder.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, boiler.NodeId);
-            boiler.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, folder.NodeId);
 
             string unitLabel = Utils.Format("{0}0", unitNumber);
 
@@ -155,16 +125,31 @@ namespace Boiler
             UpdateDisplayName(boiler.FlowController, unitLabel);
             UpdateDisplayName(boiler.CustomController, unitLabel);
 
+            // link it below the boilers folder the type model declares.
+            NodeState folder = FindPredefinedNode<NodeState>(
+                new NodeId(Objects.Boilers, NamespaceIndexes[0]));
+
+            folder.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, boiler.NodeId);
+            boiler.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, folder.NodeId);
+
             m_boilers.Add(boiler);
 
-            AddPredefinedNode(context, boiler);
+            // store it and all of its children in the pre-defined nodes dictionary for easy look up.
+            AddPredefinedNodeSynchronously(boiler);
 
-            // Autostart boiler simulation state machine
+            StartSimulation(boiler);
+        }
+
+        /// <summary>
+        /// Autostarts the boiler simulation state machine.
+        /// </summary>
+        private void StartSimulation(BoilerState boiler)
+        {
             MethodState start = boiler.Simulation.Start;
             ArrayOf<Variant> inputArguments = ArrayOf<Variant>.Empty;
             List<Variant> outputArguments = new List<Variant>();
             List<ServiceResult> errors = new List<ServiceResult>();
-            start.Call(context, boiler.NodeId, inputArguments, errors, outputArguments);
+            start.Call(SystemContext, boiler.NodeId, inputArguments, errors, outputArguments);
         }
 
         /// <summary>
@@ -191,126 +176,9 @@ namespace Boiler
 
             instance.DisplayName = displayName;
         }
-
-        /// <summary>
-        /// Loads a node set from a file or resource and addes them to the set of predefined nodes.
-        /// </summary>
-        protected override NodeStateCollection LoadPredefinedNodes(ISystemContext context)
-        {
-            NodeStateCollection predefinedNodes = new NodeStateCollection();
-            predefinedNodes.LoadFromBinaryResource(context, "Opc.Ua.Sample.Boiler.Boiler.PredefinedNodes.uanodes", this.GetType().GetTypeInfo().Assembly, true);
-            return predefinedNodes;
-        }
-
-        /// <summary>
-        /// Replaces the generic node with a node specific to the model.
-        /// </summary>
-        protected override NodeState AddBehaviourToPredefinedNode(ISystemContext context, NodeState predefinedNode)
-        {
-            BaseObjectState passiveNode = predefinedNode as BaseObjectState;
-
-            if (passiveNode == null)
-            {
-                return predefinedNode;
-            }
-
-            NodeId typeId = passiveNode.TypeDefinitionId;
-
-            if (!IsNodeIdInNamespace(typeId) || typeId.IdType != IdType.Numeric)
-            {
-                return predefinedNode;
-            }
-
-            if (!typeId.TryGetValue(out uint numericTypeId))
-            {
-                return predefinedNode;
-            }
-
-            switch (numericTypeId)
-            {
-                case ObjectTypes.BoilerType:
-                {
-                    if (passiveNode is BoilerState)
-                    {
-                        break;
-                    }
-
-                    BoilerState activeNode = new BoilerState(passiveNode.Parent);
-                    activeNode.Create(context, passiveNode);
-
-                    // replace the node in the parent.
-                    if (passiveNode.Parent != null)
-                    {
-                        passiveNode.Parent.ReplaceChild(context, activeNode);
-                    }
-
-                    // Autostart boiler simulation state machine
-                    MethodState start = activeNode.Simulation.Start;
-                    ArrayOf<Variant> inputArguments = ArrayOf<Variant>.Empty;
-                    List<Variant> outputArguments = new List<Variant>();
-                    List<ServiceResult> errors = new List<ServiceResult>();
-                    start.Call(context, activeNode.NodeId, inputArguments, errors, outputArguments);
-
-                    return activeNode;
-                }
-            }
-
-            return predefinedNode;
-        }
-
-        /// <summary>
-        /// Does any processing after a monitored item is created.
-        /// </summary>
-        protected override void OnCreateMonitoredItem(
-            ISystemContext systemContext,
-            MonitoredItemCreateRequest itemToCreate,
-            MonitoredNode monitoredNode,
-            DataChangeMonitoredItem monitoredItem)
-        {
-            // TBD
-        }
-
-        /// <summary>
-        /// Does any processing after a monitored item is created.
-        /// </summary>
-        protected override void OnModifyMonitoredItem(
-            ISystemContext systemContext,
-            MonitoredItemModifyRequest itemToModify,
-            MonitoredNode monitoredNode,
-            DataChangeMonitoredItem monitoredItem,
-            double previousSamplingInterval)
-        {
-            // TBD
-        }
-
-        /// <summary>
-        /// Does any processing after a monitored item is deleted.
-        /// </summary>
-        protected override void OnDeleteMonitoredItem(
-            ISystemContext systemContext,
-            MonitoredNode monitoredNode,
-            DataChangeMonitoredItem monitoredItem)
-        {
-            // TBD
-        }
-
-        /// <summary>
-        /// Does any processing after a monitored item is created.
-        /// </summary>
-        protected override void OnSetMonitoringMode(
-            ISystemContext systemContext,
-            MonitoredNode monitoredNode,
-            DataChangeMonitoredItem monitoredItem,
-            MonitoringMode previousMode,
-            MonitoringMode currentMode)
-        {
-            // TBD
-        }
         #endregion
 
         #region Private Fields
-        private ushort m_namespaceIndex;
-        private ushort m_typeNamespaceIndex;
         private uint m_lastUsedId;
         private List<BoilerState> m_boilers;
         #endregion
