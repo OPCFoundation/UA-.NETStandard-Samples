@@ -34,6 +34,8 @@ using System.Xml;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Quickstarts.DataTypes.Instances;
+using Quickstarts.DataTypes.Types;
 
 
 namespace Quickstarts.DataTypes
@@ -69,8 +71,12 @@ namespace Quickstarts.DataTypes
             ILogger logger = server.Telemetry.CreateLogger<DataTypesServer>();
             logger.LogInformation("Creating the Node Managers.");
 
-            // add the types defined in the quickstart information model library to the factory.
-            server.Factory.AddEncodeableTypes(typeof(Quickstarts.DataTypes.Types.VehicleType).Assembly);
+            // add the types defined in the quickstart information model to the factory. The
+            // vehicle types of the library are source generated from its model design, so
+            // they come with a registration extension of their own. The instance model is
+            // still built by the ModelCompiler - see Instances\README.md - and its types are
+            // picked up by reflection.
+            server.Factory.Builder.AddQuickstartsDataTypesTypes().Commit();
             server.Factory.AddEncodeableTypes(this.GetType().Assembly);
 
             List<INodeManager> nodeManagers = new List<INodeManager>();

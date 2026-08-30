@@ -32,10 +32,4 @@
       <Version>2.0.0-preview.2</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="TutorialModel.DataTypes.cs" />
-    <Compile Remove="TutorialModel.Constants.cs" />
-    <Compile Remove="AggregationModel.DataTypes.cs" />
-    <Compile Remove="AggregationModel.Constants.cs" />
-  </ItemGroup>
 </Project>
