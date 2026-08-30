@@ -17,6 +17,9 @@ jobs:
   variables:
     DOTNET_CLI_TELEMETRY_OPTOUT: true
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+    # see ci.yml: authenticates the OPC Foundation GitHub Packages feed with
+    # the GITHUB_PACKAGES_TOKEN secret pipeline variable.
+    GitHubPackagesEndpoints: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
   steps:
   - task: NuGetAuthenticate@1
   - task: UseDotNet@2
@@ -26,6 +29,8 @@ jobs:
       version: '10.0.x'
   - task: DotNetCoreCLI@2
     displayName: Restore Tests
+    env:
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
     inputs:
       command: restore
       projects: 'Tests/**/*.csproj'

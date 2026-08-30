@@ -179,21 +179,18 @@ namespace AggregationServer
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
 
-            // the generic host owns the configuration, the certificate and the
-            // lifetime of the server. A console sample logs to the console as well as
+            // the generic host owns the logging and the lifetime of the sample; the
+            // server is hosted by the stack, its configuration is loaded straight from
+            // the configuration file. A console sample logs to the console as well as
             // to the file the configuration names.
             HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
 
             builder.Logging.AddSampleConsole();
 
             builder.Services
-                .AddSampleApplication(options => {
-                    options.ApplicationName = "Quickstart Aggregation Server";
-                    options.ApplicationType = ApplicationType.Server;
-                    options.ConfigSectionName = "Quickstarts.AggregationServer";
-                    options.ConfigureConfiguration = RejectUntrustedCertificatesLoudly;
-                })
-                .AddSampleServer<AggregationServer>();
+                .AddSampleServer<AggregationServer>(
+                    "Quickstarts.AggregationServer.Config.xml",
+                    RejectUntrustedCertificatesLoudly);
 
             host = builder.Build();
             m_telemetry = host.Services.GetRequiredService<ITelemetryContext>();

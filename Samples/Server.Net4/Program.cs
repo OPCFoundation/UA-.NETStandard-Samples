@@ -58,7 +58,7 @@ namespace Opc.Ua.Sample
                     .AddSampleApplication(options => {
                         options.ApplicationName = "UA Sample Server";
                         options.ApplicationType = ApplicationType.Server;
-                        options.ConfigSectionName = "Opc.Ua.SampleServer";
+                        options.ConfigurationFile = "Opc.Ua.SampleServer.Config.xml";
                     })
                     .AddSampleServer<SampleServer>(),
                 ExceptionDlg.Show);

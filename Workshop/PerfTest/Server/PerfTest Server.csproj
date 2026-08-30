@@ -29,12 +29,12 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
 
     <PackageReference
       Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
-      Version="2.0.0-preview.2"
+      Version="$(OpcUaNetStandardVersion)"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
   </ItemGroup>

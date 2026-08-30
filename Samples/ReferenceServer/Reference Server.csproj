@@ -28,13 +28,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Quickstarts.Servers">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup Label="Compile items now included by globbing that were not in the original project file">

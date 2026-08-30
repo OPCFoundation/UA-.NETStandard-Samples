@@ -61,7 +61,7 @@ namespace Opc.Ua.Gds.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Opc.Ua.GdsClient";
+                        options.ConfigurationFile = "Opc.Ua.GdsClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

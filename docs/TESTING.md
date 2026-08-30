@@ -95,9 +95,10 @@ Tests redirect every store to a per-run temp directory and set
 `AutoAcceptUntrustedCertificates` on both sides, so a test run neither depends on nor pollutes
 machine state.
 
-**Configuration loading.** Tests load config files by explicit path rather than through
-`ConfigSectionName`. Under a test host the entry assembly is `testhost.exe`, so the
-`<app>.exe.config` lookup the samples rely on cannot resolve.
+**Configuration loading.** Tests load config files by explicit repository path. The samples
+name their `*.Config.xml` relative to the executable - directly in their service
+registrations since the move to the dependency-injection configuration loading - which under
+a test host would resolve against `testhost.exe`.
 
 **Modal dialogs are the enemy.** Sample clients funnel errors into a modal `ExceptionDlg`,
 which in CI hangs forever. The Tier 2 harness runs a watchdog that scans `Application.OpenForms`,

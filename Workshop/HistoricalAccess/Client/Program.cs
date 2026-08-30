@@ -59,7 +59,7 @@ namespace Quickstarts.HistoricalAccess.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "HistoricalAccessClient";
+                        options.ConfigurationFile = "HistoricalAccessClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

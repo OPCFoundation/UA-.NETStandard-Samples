@@ -27,6 +27,13 @@ jobs:
     matrix: $[dependencies.buildprep.outputs['buildmatrix.jobMatrix'] ]
   pool:
     vmImage: $(poolImage)
+  variables:
+    # Restores the OPC UA preview packages from the OPC Foundation GitHub
+    # Packages feed, which requires authentication even though it is public.
+    # GITHUB_PACKAGES_TOKEN is a secret pipeline variable holding a GitHub
+    # personal access token with the read:packages scope; the credential
+    # provider installed by NuGetAuthenticate reads this endpoint list.
+    GitHubPackagesEndpoints: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
   steps:
   - task: NuGetAuthenticate@1
   - task: NuGetToolInstaller@1
@@ -39,6 +46,8 @@ jobs:
       version: '10.0.x'
   - task: DotNetCoreCLI@2
     displayName: Release Restore
+    env:
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
     inputs:
       command: restore
       projects: '**/NetCore*.csproj'
@@ -54,6 +63,8 @@ jobs:
       arguments: '--no-restore --configuration Release ${{ parameters.buildoption }}'
   - task: DotNetCoreCLI@2
     displayName: Debug Restore
+    env:
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
     inputs:
       command: restore
       projects: '**/NetCore*.csproj'

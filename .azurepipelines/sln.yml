@@ -3,9 +3,13 @@
 #
 jobs:
 - job: buildallsln
-  displayName: Build Solutions 
+  displayName: Build Solutions
   pool:
     vmImage: 'windows-2025-vs2026'
+  variables:
+    # see ci.yml: authenticates the OPC Foundation GitHub Packages feed with
+    # the GITHUB_PACKAGES_TOKEN secret pipeline variable.
+    GitHubPackagesEndpoints: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
   steps:
   - task: NuGetAuthenticate@1
   - task: UseDotNet@2
@@ -18,6 +22,8 @@ jobs:
       versionSpec: '>=7.0.x'
   - task: NuGetCommand@2
     displayName: Restore Release
+    env:
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
     inputs:
       command: restore
       restoreSolution: '**/*.sln'
@@ -34,6 +40,8 @@ jobs:
       msbuildArguments: 
   - task: NuGetCommand@2
     displayName: Restore Debug
+    env:
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
     inputs:
       command: restore
       restoreSolution: '**/*.sln'

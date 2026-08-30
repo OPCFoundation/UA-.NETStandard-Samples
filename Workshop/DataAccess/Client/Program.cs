@@ -59,7 +59,7 @@ namespace Quickstarts.DataAccessClient
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "DataAccessClient";
+                        options.ConfigurationFile = "DataAccessClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

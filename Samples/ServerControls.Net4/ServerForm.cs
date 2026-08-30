@@ -39,6 +39,7 @@ using Opc.Ua;
 using Opc.Ua.Configuration;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Server.Controls
@@ -81,6 +82,21 @@ namespace Opc.Ua.Server.Controls
             this.Icon = TrayIcon.Icon = ServerUtils.GetAppIcon();
         }
 
+
+        /// <summary>
+        /// Creates the form for a sample whose server is hosted by the stack: the
+        /// running server and the configuration it was started with come from the
+        /// container. The samples pass this method to their Windows Forms host.
+        /// </summary>
+        /// <param name="provider">The container of the sample.</param>
+        public static Form Create(IServiceProvider provider)
+        {
+            return new ServerForm(
+                provider.GetRequiredService<StandardServer>(),
+                provider.GetRequiredService<ApplicationConfiguration>(),
+                provider.GetRequiredService<ITelemetryContext>(),
+                showCertificateValidationDialog: false);
+        }
 
         /// <summary>
         /// Creates a form which displays the status for a UA server.

@@ -60,7 +60,7 @@ namespace Quickstarts.ReferenceClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ApplicationName = "UA Reference Client";
-                        options.ConfigSectionName = "Quickstarts.ReferenceClient";
+                        options.ConfigurationFile = "Quickstarts.ReferenceClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }
