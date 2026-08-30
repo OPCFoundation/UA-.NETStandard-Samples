@@ -36,6 +36,10 @@ using Opc.Ua.Client;
 
 namespace Opc.Ua.Client.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the enclosing
+    // Opc.Ua.Client namespace, which wins over a using directive at the top of the file.
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
     /// <summary>
     /// Prompts the user to edit a value.
     /// </summary>
@@ -60,27 +64,45 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the monitored item.
         /// </summary>
-        public bool ShowDialog(Subscription subscription)
+        /// <remarks>
+        /// The V2 subscription engine takes the settings of a subscription through an options
+        /// monitor and applies a change as soon as the monitor is reconfigured, so this replaces
+        /// the classic edit-then-ModifyAsync pair the dialog used to be half of.
+        /// </remarks>
+        public bool ShowDialog(OptionsMonitor<SubscriptionOptions> options, ITelemetryContext telemetry)
         {
-            m_telemetry = subscription.Session.MessageContext.Telemetry;
-            PublishingIntervalUP.Value = subscription.PublishingInterval;
-            KeepAliveCountUP.Value = subscription.KeepAliveCount;
-            LifetimeCountUP.Value = subscription.LifetimeCount;
-            MaxNotificationsPerPublishUP.Value = subscription.MaxNotificationsPerPublish;
-            PriorityTB.Value = subscription.Priority;
-            PublishingEnabledCK.Checked = subscription.PublishingEnabled;
+            ArgumentNullException.ThrowIfNull(options);
+
+            m_telemetry = telemetry;
+            SubscriptionOptions settings = options.CurrentValue;
+
+            PublishingIntervalUP.Value = (decimal)settings.PublishingInterval.TotalMilliseconds;
+            KeepAliveCountUP.Value = settings.KeepAliveCount;
+            LifetimeCountUP.Value = settings.LifetimeCount;
+            MaxNotificationsPerPublishUP.Value = settings.MaxNotificationsPerPublish;
+            PriorityTB.Value = settings.Priority;
+            PublishingEnabledCK.Checked = settings.PublishingEnabled;
 
             if (base.ShowDialog() != DialogResult.OK)
             {
                 return false;
             }
 
-            subscription.PublishingInterval = (int)PublishingIntervalUP.Value;
-            subscription.KeepAliveCount = (uint)KeepAliveCountUP.Value;
-            subscription.LifetimeCount = (uint)LifetimeCountUP.Value;
-            subscription.MaxNotificationsPerPublish = (uint)MaxNotificationsPerPublishUP.Value;
-            subscription.Priority = (byte)PriorityTB.Value;
-            subscription.PublishingEnabled = PublishingEnabledCK.Checked;
+            var publishingInterval = TimeSpan.FromMilliseconds((double)PublishingIntervalUP.Value);
+            uint keepAliveCount = (uint)KeepAliveCountUP.Value;
+            uint lifetimeCount = (uint)LifetimeCountUP.Value;
+            uint maxNotificationsPerPublish = (uint)MaxNotificationsPerPublishUP.Value;
+            byte priority = (byte)PriorityTB.Value;
+            bool publishingEnabled = PublishingEnabledCK.Checked;
+
+            options.Configure(current => current with {
+                PublishingInterval = publishingInterval,
+                KeepAliveCount = keepAliveCount,
+                LifetimeCount = lifetimeCount,
+                MaxNotificationsPerPublish = maxNotificationsPerPublish,
+                Priority = priority,
+                PublishingEnabled = publishingEnabled,
+            });
 
             return true;
         }

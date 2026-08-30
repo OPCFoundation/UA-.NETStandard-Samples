@@ -365,7 +365,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-16 test cases, about 50 seconds, Windows only. For each WinForms sample client the test
+17 test cases, about a minute, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 
@@ -378,6 +378,14 @@ loop - but without ever showing a window:
   the proof that the sample's own logic ran, not just the shared control
 - disconnects and asserts the session was released
 
+`SubscribeControlTests` covers what a connect alone does not: it drives the subscription
+wizard of the shared `SubscribeDataListViewCtrl` against the Reference server the way a user
+would - create the subscription, add `Server_ServerStatus_CurrentTime`, step to apply and then
+to view - and waits for a data change to land in the grid. It asserts the connect control
+handed out a `ManagedSession`, so a silent fall back to the raw session and its hand rolled
+reconnect fails a test, and it is the only case which proves that the V2 notification handler
+of a control actually reaches the user interface.
+
 The **dialog watchdog** is what makes this safe: the sample clients report errors through a
 modal `ExceptionDlg`, which in an unattended run would wait forever for a click. A timer on
 the UI thread closes any modal form, keeps its text, and the harness fails the test with it.
@@ -387,7 +395,7 @@ The fixture is `[Category("RequiresDesktop")]` because it needs a window station
 the `Test Samples` job is on a Windows agent and filters nothing out. The category is there so
 the suite can still be run where no window station exists - `--filter "TestCategory!=RequiresDesktop"`.
 
-All 16 cases pass. Two samples did not, and both were fixed rather than parked.
+All 17 cases pass. Two samples did not, and both were fixed rather than parked.
 
 The **AlarmCondition client** connected and then filled a modal dialog with a
 `NullReferenceException` followed by `An item with the same key has already been added.

@@ -34,6 +34,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Client.Subscriptions.MonitoredItems;
+
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1016:Mark assemblies with assembly version", Justification = "Sample project keeps existing assembly version metadata.")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1824:Mark assemblies with NeutralResourcesLanguageAttribute", Justification = "Sample project keeps existing resource metadata.")]
@@ -1254,6 +1258,92 @@ namespace Opc.Ua.Client.Controls
             }
 
             return -1;
+        }
+        #endregion
+
+        #region Subscriptions
+        /// <summary>
+        /// Adds a subscription driven by the V2 subscription engine to the session.
+        /// </summary>
+        /// <param name="session">The session, which has to run the V2 subscription engine.</param>
+        /// <param name="handler">The handler which receives the notifications.</param>
+        /// <param name="options">The options of the subscription. The caller keeps the monitor
+        /// so it can reconfigure the subscription later on.</param>
+        public static ISubscription AddSubscription(
+            ISession session,
+            ISubscriptionNotificationHandler handler,
+            IOptionsMonitor<Opc.Ua.Client.Subscriptions.SubscriptionOptions> options)
+        {
+            ArgumentNullException.ThrowIfNull(session);
+
+            if (!session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                throw new ServiceResultException(
+                    StatusCodes.BadNotSupported,
+                    "The session does not use the V2 subscription engine. Create it with a " +
+                    "ManagedSessionFactory or a session factory configured with the " +
+                    "DefaultSubscriptionEngineFactory.");
+            }
+
+            return manager.Add(handler, options);
+        }
+
+        /// <summary>
+        /// The options a control uses for a subscription it creates itself.
+        /// </summary>
+        public static Opc.Ua.Client.Subscriptions.SubscriptionOptions DefaultSubscriptionOptions => new Opc.Ua.Client.Subscriptions.SubscriptionOptions {
+            PublishingInterval = TimeSpan.FromSeconds(1),
+            KeepAliveCount = 10,
+            LifetimeCount = 100,
+            MaxNotificationsPerPublish = 1000,
+            PublishingEnabled = true,
+        };
+
+        /// <summary>
+        /// Waits until the V2 engine has applied the pending monitored item changes.
+        /// </summary>
+        /// <remarks>
+        /// The V2 engine applies added, modified and removed items on its own worker instead of
+        /// on an explicit ApplyChanges call, so a wizard which wants to show the operation
+        /// results of a step has to wait for that worker to catch up first.
+        /// </remarks>
+        /// <param name="subscription">The subscription to wait for.</param>
+        /// <param name="timeout">How long to wait before giving up and showing what there is.</param>
+        /// <param name="ct">Cancellation token to use to cancel operation.</param>
+        public static async Task WaitForPendingChangesAsync(
+            ISubscription subscription,
+            TimeSpan timeout,
+            CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(subscription);
+
+            DateTime deadline = DateTime.UtcNow.Add(timeout);
+
+            while (HasPendingChanges(subscription))
+            {
+                if (DateTime.UtcNow >= deadline)
+                {
+                    return;
+                }
+
+                await Task.Delay(50, ct).ConfigureAwait(true);
+            }
+        }
+
+        /// <summary>
+        /// Returns true while the V2 engine still has monitored item changes to apply.
+        /// </summary>
+        private static bool HasPendingChanges(ISubscription subscription)
+        {
+            foreach (IMonitoredItem monitoredItem in subscription.MonitoredItems.Items)
+            {
+                if (monitoredItem is IMonitoredItemApplyState applyState && applyState.HasPendingChanges)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
         #endregion
     }

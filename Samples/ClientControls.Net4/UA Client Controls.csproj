@@ -220,14 +220,10 @@
     <Compile Remove="Common\SelectNodeCtrl.cs" />
     <Compile Remove="Common\SelectLocaleDlg.Designer.cs" />
     <Compile Remove="Common\SelectLocaleDlg.cs" />
-    <Compile Remove="Common\HistoryDataListView.Designer.cs" />
-    <Compile Remove="Common\HistoryDataListView.cs" />
     <Compile Remove="Common\EditComplexValueDlg.Designer.cs" />
     <Compile Remove="Common\EditComplexValueDlg.cs" />
     <Compile Remove="Common\EditAnnotationDlg.Designer.cs" />
     <Compile Remove="Common\EditAnnotationDlg.cs" />
-    <Compile Remove="Common\ConnectServerCtrl.Designer.cs" />
-    <Compile Remove="Common\ConnectServerCtrl.cs" />
     <Compile Remove="Common\BrowseNodeCtrl.Designer.cs" />
     <Compile Remove="Common\BrowseNodeCtrl.cs" />
   </ItemGroup>

@@ -108,18 +108,18 @@ namespace Opc.Ua.Samples.Tests
         /// Reads a control of the form by its designer name, to check what the sample enabled
         /// or filled in after connecting.
         /// </summary>
-        public static Control FindControl(Form form, string name)
+        public static Control FindControl(Control parent, string name)
         {
-            if (form == null)
+            if (parent == null)
             {
-                throw new ArgumentNullException(nameof(form));
+                throw new ArgumentNullException(nameof(parent));
             }
 
-            for (Type type = form.GetType(); type != null; type = type.BaseType)
+            for (Type type = parent.GetType(); type != null; type = type.BaseType)
             {
                 FieldInfo field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
 
-                if (field?.GetValue(form) is Control control)
+                if (field?.GetValue(parent) is Control control)
                 {
                     return control;
                 }
