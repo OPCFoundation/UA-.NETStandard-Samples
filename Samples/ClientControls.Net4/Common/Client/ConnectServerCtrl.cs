@@ -61,9 +61,6 @@ namespace Opc.Ua.Client.Controls
         private ILogger m_logger;
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
-        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
-        private SessionReconnectHandler m_reconnectHandler;
-        #pragma warning restore CA2213
         private Func<Opc.Ua.Security.Certificates.Certificate, ServiceResult, bool> m_CertificateValidation;
         private EventHandler m_ReconnectComplete;
         private EventHandler m_ReconnectStarting;
@@ -232,6 +229,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// The number of seconds between reconnect attempts (0 means reconnect is disabled).
         /// </summary>
+        /// <remarks>
+        /// Kept for source compatibility. The reconnect is now driven by the reconnect policy
+        /// of the <see cref="ManagedSession"/> the control creates, which this value no longer
+        /// feeds into.
+        /// </remarks>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int ReconnectPeriod { get; set; } = DefaultReconnectPeriod;
 
@@ -339,13 +341,12 @@ namespace Opc.Ua.Client.Controls
             EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             ConfiguredEndpoint endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            m_session = await new DefaultSessionFactory(telemetry).CreateAsync(m_configuration, connection, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout, UserIdentity, PreferredLocales, ct);
+            // the managed session brings its own connection state machine and reconnect policy,
+            // so no SessionReconnectHandler is wired up here.
+            m_session = await new ManagedSessionFactory(telemetry).CreateAsync(m_configuration, connection, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout, UserIdentity, PreferredLocales, ct);
 
-            // set up keep alive callback.
-            m_session.KeepAlive += Session_KeepAlive;
-
-            // set up reconnect handler.
-            m_reconnectHandler = new SessionReconnectHandler(telemetry, true, DefaultReconnectPeriodExponentialBackOff * 1000);
+            // set up keep alive and connection state callbacks.
+            AttachSession();
 
             // raise an event.
             DoConnectComplete(null);
@@ -388,13 +389,12 @@ namespace Opc.Ua.Client.Controls
             var endpointConfiguration = EndpointConfiguration.Create(m_configuration);
             var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            m_session = await new DefaultSessionFactory(telemetry).CreateAsync(m_configuration, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout == 0 ? DefaultSessionTimeout : sessionTimeout, UserIdentity, PreferredLocales, ct);
+            // the managed session brings its own connection state machine and reconnect policy,
+            // so no SessionReconnectHandler is wired up here.
+            m_session = await new ManagedSessionFactory(telemetry).CreateAsync(m_configuration, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout == 0 ? DefaultSessionTimeout : sessionTimeout, UserIdentity, PreferredLocales, ct);
 
-            // set up keep alive callback.
-            m_session.KeepAlive += new KeepAliveEventHandler(Session_KeepAlive);
-
-            // set up reconnect handler.
-            m_reconnectHandler = new SessionReconnectHandler(telemetry, true, DefaultReconnectPeriodExponentialBackOff * 1000);
+            // set up keep alive and connection state callbacks.
+            AttachSession();
 
             // raise an event.
             DoConnectComplete(null);
@@ -501,17 +501,11 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task InternalDisconnectAsync(CancellationToken ct = default)
         {
-            // stop any reconnect operation.
-            if (m_reconnectHandler != null)
-            {
-                m_reconnectHandler.Dispose();
-                m_reconnectHandler = null;
-            }
-
-            // disconnect any existing session.
+            // disconnect any existing session. Closing the managed session also stops its
+            // connection state machine, so there is no separate reconnect handler to cancel.
             if (m_session != null)
             {
-                m_session.KeepAlive -= Session_KeepAlive;
+                DetachSession();
                 await m_session.CloseAsync(10000, ct);
                 m_session = null;
             }
@@ -548,6 +542,32 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Methods
+        /// <summary>
+        /// Subscribes to the session events the control reports on.
+        /// </summary>
+        private void AttachSession()
+        {
+            m_session.KeepAlive += Session_KeepAlive;
+
+            if (m_session is ManagedSession managedSession)
+            {
+                managedSession.ConnectionStateChanged += Session_ConnectionStateChanged;
+            }
+        }
+
+        /// <summary>
+        /// Unsubscribes from the session events the control reports on.
+        /// </summary>
+        private void DetachSession()
+        {
+            m_session.KeepAlive -= Session_KeepAlive;
+
+            if (m_session is ManagedSession managedSession)
+            {
+                managedSession.ConnectionStateChanged -= Session_ConnectionStateChanged;
+            }
+        }
+
         /// <summary>
         /// Raises the connect complete event on the main GUI thread.
         /// </summary>
@@ -641,23 +661,10 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                // start reconnect sequence on communication error.
+                // the managed session starts the reconnect sequence itself, this only reports it.
                 if (ServiceResult.IsBad(e.Status))
                 {
-                    if (ReconnectPeriod <= 0)
-                    {
-                        UpdateStatus(true, e.CurrentTime, "Communication Error ({0})", e.Status);
-                        return;
-                    }
-
-                    UpdateStatus(true, e.CurrentTime, "Reconnecting in {0}s", ReconnectPeriod);
-
-                    var state = m_reconnectHandler.BeginReconnect(m_session, ReconnectPeriod * 1000, Server_ReconnectComplete);
-                    if (state == SessionReconnectHandler.ReconnectState.Triggered)
-                    {
-                        m_ReconnectStarting?.Invoke(this, e);
-                    }
-
+                    UpdateStatus(true, e.CurrentTime, "Communication Error ({0})", e.Status);
                     return;
                 }
 
@@ -717,39 +724,59 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Handles a reconnect event complete from the reconnect handler.
+        /// Handles the connection state changes reported by the managed session.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        /// <remarks>
+        /// The managed session keeps the same <see cref="ISession"/> instance across a
+        /// reconnect, so the control only has to report the transitions - there is no
+        /// session to swap out as there was with the SessionReconnectHandler.
+        /// </remarks>
+        private void Session_ConnectionStateChanged(object sender, ConnectionStateChangedEventArgs e)
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new EventHandler(Server_ReconnectComplete), sender, e);
+                this.BeginInvoke(new EventHandler<ConnectionStateChangedEventArgs>(Session_ConnectionStateChanged), sender, e);
                 return;
             }
 
             try
             {
-                // ignore callbacks from discarded objects.
-                if (!Object.ReferenceEquals(sender, m_reconnectHandler))
+                // ignore callbacks from discarded sessions. The event may be raised by the
+                // session or by the connection state machine behind it, so only a sender which
+                // is a session is worth comparing.
+                if (m_session == null || (sender is ISession sessionOfEvent && !Object.ReferenceEquals(sessionOfEvent, m_session)))
                 {
                     return;
                 }
 
-                // only apply session if reconnect was required
-                if (m_reconnectHandler.Session != null)
+                switch (e.NewState)
                 {
-                    if (!ReferenceEquals(m_session, m_reconnectHandler.Session))
+                    case ConnectionState.Reconnecting:
+                    case ConnectionState.Failover:
                     {
-                        var session = m_session;
-                        session.KeepAlive -= Session_KeepAlive;
-                        m_session = m_reconnectHandler.Session as Session;
-                        m_session.KeepAlive += Session_KeepAlive;
-                        session.Dispose();
+                        UpdateStatus(true, DateTime.UtcNow, "Reconnecting (attempt {0})", e.ReconnectAttempt);
+                        m_ReconnectStarting?.Invoke(this, e);
+                        break;
+                    }
+
+                    case ConnectionState.Connected:
+                    {
+                        UpdateStatus(false, DateTime.UtcNow, "Connected [{0}]", m_session.Endpoint.EndpointUrl);
+
+                        if (e.PreviousState is ConnectionState.Reconnecting or ConnectionState.Failover)
+                        {
+                            m_ReconnectComplete?.Invoke(this, e);
+                        }
+
+                        break;
+                    }
+
+                    case ConnectionState.Disconnected:
+                    {
+                        UpdateStatus(true, DateTime.UtcNow, "Disconnected ({0})", e.Error);
+                        break;
                     }
                 }
-
-                // raise any additional notifications.
-                m_ReconnectComplete?.Invoke(this, e);
             }
             catch (Exception exception)
             {

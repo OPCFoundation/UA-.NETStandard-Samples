@@ -38,15 +38,26 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Client.Subscriptions.MonitoredItems;
 
 namespace Opc.Ua.Client.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the enclosing
+    // Opc.Ua.Client namespace, which wins over a using directive at the top of the file.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
     public partial class HistoryDataListView : UserControl
     {
+        /// <summary>
+        /// How long the control waits for the subscription engine to apply a monitored item change.
+        /// </summary>
+        private static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(10);
+
         #region Constructors
         /// <summary>
         /// Constructs a new instance.
@@ -54,6 +65,7 @@ namespace Opc.Ua.Client.Controls
         public HistoryDataListView()
         {
             InitializeComponent();
+            m_callbacks.DataChangeCallback = OnDataChanges;
             ResultsDV.AutoGenerateColumns = false;
             LeftPN.Enabled = false;
 
@@ -226,9 +238,11 @@ namespace Opc.Ua.Client.Controls
         #region Private Fields
         private ISession m_session;
         private ITelemetryContext m_telemetry;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
-        private Subscription m_subscription;
-        private MonitoredItem m_monitoredItem;
+        private ISubscription m_subscription;
+        private IMonitoredItem m_monitoredItem;
+        private OptionsMonitor<MonitoredItemOptions> m_monitoredItemOptions;
+        private readonly SubscriptionCallbacks m_callbacks = new SubscriptionCallbacks();
+        private int m_nextItemId;
         private NodeId m_nodeId;
         #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
@@ -531,28 +545,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the control after the session has reconnected.
         /// </summary>
+        /// <remarks>
+        /// The V2 subscription engine keeps the subscription and its monitored items alive
+        /// across a reconnect, so there is nothing left to look up here.
+        /// </remarks>
         public void SessionReconnected(ISession session)
         {
             m_session = session;
-
-            if (m_session != null)
-            {
-                foreach (Subscription subscription in m_session.Subscriptions)
-                {
-                    if (Object.ReferenceEquals(subscription.Handle, this))
-                    {
-                        m_subscription = subscription;
-
-                        foreach (MonitoredItem monitoredItem in subscription.MonitoredItems)
-                        {
-                            m_monitoredItem = monitoredItem;
-                            break;
-                        }
-
-                        break;
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -616,16 +615,14 @@ namespace Opc.Ua.Client.Controls
 
             if (m_subscription != null)
             {
-                MonitoredItem monitoredItem = new MonitoredItem(m_monitoredItem);
-                monitoredItem.StartNodeId = nodeId;
+                // the node a monitored item watches cannot be modified, so the item is
+                // replaced by one for the new node.
+                MonitoredItemOptions options = m_monitoredItemOptions.CurrentValue with { StartNodeId = nodeId };
 
-                m_subscription.AddItem(monitoredItem);
-                m_subscription.RemoveItem(m_monitoredItem);
-                m_monitoredItem = monitoredItem;
+                m_subscription.MonitoredItems.TryRemove(m_monitoredItem.ClientHandle);
+                AddMonitoredItem(options);
 
-                monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
-
-                await m_subscription.ApplyChangesAsync(ct);
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
                 SubscriptionStateChanged();
             }
         }
@@ -1073,25 +1070,19 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            m_subscription = new Subscription(m_telemetry);
-            m_subscription.Handle = this;
-            m_subscription.DisplayName = null;
-            m_subscription.PublishingInterval = 1000;
-            m_subscription.KeepAliveCount = 10;
-            m_subscription.LifetimeCount = 100;
-            m_subscription.MaxNotificationsPerPublish = 1000;
-            m_subscription.PublishingEnabled = true;
-            m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
+            m_subscription = ClientUtils.AddSubscription(
+                m_session,
+                m_callbacks,
+                new OptionsMonitor<Opc.Ua.Client.Subscriptions.SubscriptionOptions>(ClientUtils.DefaultSubscriptionOptions));
 
-            m_session.AddSubscription(m_subscription);
-            await m_subscription.CreateAsync(ct);
-
-            m_monitoredItem = new MonitoredItem(m_telemetry);
-            m_monitoredItem.StartNodeId = m_nodeId;
-            m_monitoredItem.AttributeId = Attributes.Value;
-            m_monitoredItem.SamplingInterval = (int)SamplingIntervalNP.Value;
-            m_monitoredItem.QueueSize = 1000;
-            m_monitoredItem.DiscardOldest = true;
+            var options = new MonitoredItemOptions {
+                StartNodeId = m_nodeId,
+                AttributeId = Attributes.Value,
+                SamplingInterval = TimeSpan.FromMilliseconds((double)SamplingIntervalNP.Value),
+                QueueSize = 1000,
+                DiscardOldest = true,
+                TimestampsToReturn = TimestampsToReturn.Both,
+            };
 
             // specify aggregate filter.
             if (AggregateCB.SelectedItem != null)
@@ -1112,15 +1103,29 @@ namespace Opc.Ua.Client.Controls
 
                 if (!filter.AggregateType.IsNull)
                 {
-                    m_monitoredItem.Filter = filter;
+                    options = options with { Filter = filter };
                 }
             }
 
-            m_monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+            AddMonitoredItem(options);
 
-            m_subscription.AddItem(m_monitoredItem);
-            await m_subscription.ApplyChangesAsync(ct);
+            await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
             SubscriptionStateChanged();
+        }
+
+        /// <summary>
+        /// Adds the monitored item which watches the current node to the subscription.
+        /// </summary>
+        private void AddMonitoredItem(MonitoredItemOptions options)
+        {
+            m_monitoredItemOptions = new OptionsMonitor<MonitoredItemOptions>(options);
+
+            // the name has to be unique within the subscription, and an item which was just
+            // removed may not have been reaped yet, so every item gets its own name.
+            m_subscription.MonitoredItems.TryAdd(
+                Utils.Format("Value{0}", ++m_nextItemId),
+                m_monitoredItemOptions,
+                out m_monitoredItem);
         }
 
         /// <summary>
@@ -1130,10 +1135,12 @@ namespace Opc.Ua.Client.Controls
         {
             if (m_subscription != null)
             {
-                await m_subscription.DeleteAsync(true, ct);
-                _ = await m_session.RemoveSubscriptionAsync(m_subscription, ct);
+                // disposing the subscription deletes it on the server and drops it from the
+                // subscription manager of the session.
+                await m_subscription.DisposeAsync();
                 m_subscription = null;
                 m_monitoredItem = null;
+                m_monitoredItemOptions = null;
             }
 
             SubscriptionStateChanged();
@@ -1146,9 +1153,9 @@ namespace Opc.Ua.Client.Controls
         {
             if (m_monitoredItem != null)
             {
-                if (ServiceResult.IsBad(m_monitoredItem.Status.Error))
+                if (ServiceResult.IsBad(m_monitoredItem.Error))
                 {
-                    StatusTB.Text = m_monitoredItem.Status.Error.ToString();
+                    StatusTB.Text = m_monitoredItem.Error.ToString();
                     return;
                 }
 
@@ -1209,29 +1216,31 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the display with a new value for a monitored variable.
         /// </summary>
-        private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private void OnDataChanges(ISubscription subscription, uint sequenceNumber, DateTime publishTime, DataValueChange[] changes, PublishState publishStateMask)
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_Notification), monitoredItem, e);
+                this.BeginInvoke(new Action<ISubscription, uint, DateTime, DataValueChange[], PublishState>(OnDataChanges), subscription, sequenceNumber, publishTime, changes, publishStateMask);
                 return;
             }
 
             try
             {
-                if (!Object.ReferenceEquals(monitoredItem.Subscription, m_subscription))
+                if (!Object.ReferenceEquals(subscription, m_subscription))
                 {
                     return;
                 }
 
-                MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
-
-                if (notification == null)
+                foreach (DataValueChange change in changes)
                 {
-                    return;
+                    if (!Object.ReferenceEquals(change.MonitoredItem, m_monitoredItem))
+                    {
+                        continue;
+                    }
+
+                    AddValue(change.Value, null);
                 }
 
-                AddValue(notification.Value, null);
                 m_dataset.AcceptChanges();
 
                 if (ResultsDV.Rows.Count > 0)

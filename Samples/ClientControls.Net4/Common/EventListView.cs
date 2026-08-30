@@ -36,31 +36,46 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Client.Subscriptions.MonitoredItems;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Opc.Ua.Client.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the enclosing
+    // Opc.Ua.Client namespace, which wins over a using directive at the top of the file.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
     /// <summary>
     /// A control which displays a list of events.
     /// </summary>
     public partial class EventListView : UserControl
     {
         /// <summary>
+        /// How long the control waits for the subscription engine to apply a monitored item change.
+        /// </summary>
+        private static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(10);
+
+        /// <summary>
         /// Initializes the object.
         /// </summary>
         public EventListView()
         {
             InitializeComponent();
+            m_callbacks.EventCallback = OnEvents;
         }
 
         #region Private Methods
-        private Session m_session;
+        private ISession m_session;
         private ITelemetryContext m_telemetry;
-        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
-        private Subscription m_subscription;
+        #pragma warning disable CA2213 // Justification: the subscription is deleted in DeleteSubscriptionAsync, which the owner drives.
+        private ISubscription m_subscription;
         #pragma warning restore CA2213
-        private MonitoredItem m_monitoredItem;
+        private IMonitoredItem m_monitoredItem;
+        private OptionsMonitor<MonitoredItemOptions> m_monitoredItemOptions;
+        private readonly SubscriptionCallbacks m_callbacks = new SubscriptionCallbacks();
+        private int m_nextItemId;
         private FilterDeclaration m_filter;
         private NodeId m_areaId;
         private bool m_isSubscribed;
@@ -131,7 +146,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Changes the session.
         /// </summary>
-        public async Task ChangeSessionAsync(Session session, bool fetchRecent, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task ChangeSessionAsync(ISession session, bool fetchRecent, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (Object.ReferenceEquals(session, m_session))
             {
@@ -162,28 +177,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the control after the session has reconnected.
         /// </summary>
-        public void SessionReconnected(Session session)
+        /// <remarks>
+        /// The V2 subscription engine keeps the subscription and its monitored items alive
+        /// across a reconnect, so there is nothing left to look up here.
+        /// </remarks>
+        public void SessionReconnected(ISession session)
         {
             m_session = session;
-
-            if (m_isSubscribed)
-            {
-                foreach (Subscription subscription in m_session.Subscriptions)
-                {
-                    if (Object.ReferenceEquals(subscription.Handle, this))
-                    {
-                        m_subscription = subscription;
-
-                        foreach (MonitoredItem monitoredItem in subscription.MonitoredItems)
-                        {
-                            m_monitoredItem = monitoredItem;
-                            break;
-                        }
-
-                        break;
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -201,16 +201,14 @@ namespace Opc.Ua.Client.Controls
 
             if (m_subscription != null)
             {
-                MonitoredItem monitoredItem = new MonitoredItem(m_monitoredItem);
-                monitoredItem.StartNodeId = areaId;
+                // the node a monitored item watches cannot be modified, so the item is
+                // replaced by one for the new area.
+                MonitoredItemOptions options = m_monitoredItemOptions.CurrentValue with { StartNodeId = areaId };
 
-                m_subscription.AddItem(monitoredItem);
-                m_subscription.RemoveItem(m_monitoredItem);
-                m_monitoredItem = monitoredItem;
+                m_subscription.MonitoredItems.TryRemove(m_monitoredItem.ClientHandle);
+                AddMonitoredItem(options);
 
-                monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
-
-                await m_subscription.ApplyChangesAsync(ct);
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
             }
         }
 
@@ -262,10 +260,11 @@ namespace Opc.Ua.Client.Controls
             }
 
             // update subscription.
-            if (m_subscription != null && m_filter != null)
+            if (m_monitoredItemOptions != null && m_filter != null)
             {
-                m_monitoredItem.Filter = m_filter.GetFilter();
-                await m_subscription.ApplyChangesAsync(ct);
+                EventFilter eventFilter = m_filter.GetFilter();
+                m_monitoredItemOptions.Configure(options => options with { Filter = eventFilter });
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
             }
         }
 
@@ -332,32 +331,39 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task CreateSubscriptionAsync(CancellationToken ct = default)
         {
-            m_subscription = new Subscription(m_telemetry);
-            m_subscription.Handle = this;
-            m_subscription.DisplayName = null;
-            m_subscription.PublishingInterval = 1000;
-            m_subscription.KeepAliveCount = 10;
-            m_subscription.LifetimeCount = 100;
-            m_subscription.MaxNotificationsPerPublish = 1000;
-            m_subscription.PublishingEnabled = true;
-            m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
+            m_subscription = ClientUtils.AddSubscription(
+                m_session,
+                m_callbacks,
+                new OptionsMonitor<Opc.Ua.Client.Subscriptions.SubscriptionOptions>(ClientUtils.DefaultSubscriptionOptions));
 
-            m_session.AddSubscription(m_subscription);
-            await m_subscription.CreateAsync(ct);
-
-            m_monitoredItem = new MonitoredItem(m_telemetry);
-            m_monitoredItem.StartNodeId = m_areaId;
-            m_monitoredItem.AttributeId = Attributes.EventNotifier;
-            m_monitoredItem.SamplingInterval = 0;
-            m_monitoredItem.QueueSize = 1000;
-            m_monitoredItem.DiscardOldest = true;
-
+            // builds the columns for the current filter. There is no item to reconfigure yet,
+            // so the filter has to go into the options the item is created with below.
             await ChangeFilterAsync(m_filter, false, ct);
 
-            m_monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
+            AddMonitoredItem(new MonitoredItemOptions {
+                StartNodeId = m_areaId,
+                AttributeId = Attributes.EventNotifier,
+                SamplingInterval = TimeSpan.Zero,
+                QueueSize = 1000,
+                DiscardOldest = true,
+                TimestampsToReturn = TimestampsToReturn.Both,
+                Filter = m_filter?.GetFilter(),
+            });
+        }
 
-            m_subscription.AddItem(m_monitoredItem);
-            await m_subscription.ApplyChangesAsync(ct);
+        /// <summary>
+        /// Adds the monitored item which watches the current area to the subscription.
+        /// </summary>
+        private void AddMonitoredItem(MonitoredItemOptions options)
+        {
+            m_monitoredItemOptions = new OptionsMonitor<MonitoredItemOptions>(options);
+
+            // the name has to be unique within the subscription, and an item which was just
+            // removed may not have been reaped yet, so every item gets its own name.
+            m_subscription.MonitoredItems.TryAdd(
+                Utils.Format("Events{0}", ++m_nextItemId),
+                m_monitoredItemOptions,
+                out m_monitoredItem);
         }
 
         /// <summary>
@@ -367,10 +373,12 @@ namespace Opc.Ua.Client.Controls
         {
             if (m_subscription != null)
             {
-                await m_subscription.DeleteAsync(true, ct);
-                await m_session.RemoveSubscriptionAsync(m_subscription, ct);
+                // disposing the subscription deletes it on the server and drops it from the
+                // subscription manager of the session.
+                await m_subscription.DisposeAsync();
                 m_subscription = null;
                 m_monitoredItem = null;
+                m_monitoredItemOptions = null;
             }
         }
 
@@ -488,57 +496,54 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the display with a new value for a monitored variable.
         /// </summary>
-        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private async void OnEvents(ISubscription subscription, uint sequenceNumber, DateTime publishTime, EventNotification[] notifications, PublishState publishStateMask)
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync), monitoredItem, e);
+                this.BeginInvoke(new Action<ISubscription, uint, DateTime, EventNotification[], PublishState>(OnEvents), subscription, sequenceNumber, publishTime, notifications, publishStateMask);
                 return;
             }
 
             try
             {
-                // check for valid notification.
-                EventFieldList notification = e.NotificationValue as EventFieldList;
-
-                if (notification == null)
+                foreach (EventNotification notification in notifications)
                 {
-                    return;
-                }
-
-                // check if monitored item has changed.
-                if (!Object.ReferenceEquals(m_monitoredItem, monitoredItem))
-                {
-                    return;
-                }
-
-                // check if the filter has changed.
-                if (notification.EventFields.Count != m_filter.Fields.Count + 1)
-                {
-                    return;
-                }
-
-                if (m_displayConditions)
-                {
-                    NodeId eventTypeId = m_filter.GetValue<NodeId>(new QualifiedName(Opc.Ua.BrowseNames.EventType), new List<Variant>(notification.EventFields.ToArray()), NodeId.Null);
-
-                    if (eventTypeId == Opc.Ua.ObjectTypeIds.RefreshStartEventType)
+                    // check if monitored item has changed.
+                    if (!Object.ReferenceEquals(m_monitoredItem, notification.MonitoredItem))
                     {
-                        EventsLV.Items.Clear();
+                        continue;
                     }
 
-                    if (eventTypeId == Opc.Ua.ObjectTypeIds.RefreshEndEventType)
+                    // check if the filter has changed.
+                    if (notification.Fields.Count != m_filter.Fields.Count + 1)
                     {
-                        return;
+                        continue;
                     }
-                }
 
-                // create an item and add to top of list.
-                ListViewItem item = await CreateListItemAsync(m_filter, new List<Variant>(notification.EventFields.ToArray()));
+                    var fields = new List<Variant>(notification.Fields.ToArray());
 
-                if (item.ListView == null)
-                {
-                    EventsLV.Items.Insert(0, item);
+                    if (m_displayConditions)
+                    {
+                        NodeId eventTypeId = m_filter.GetValue<NodeId>(new QualifiedName(Opc.Ua.BrowseNames.EventType), fields, NodeId.Null);
+
+                        if (eventTypeId == Opc.Ua.ObjectTypeIds.RefreshStartEventType)
+                        {
+                            EventsLV.Items.Clear();
+                        }
+
+                        if (eventTypeId == Opc.Ua.ObjectTypeIds.RefreshEndEventType)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // create an item and add to top of list.
+                    ListViewItem item = await CreateListItemAsync(m_filter, fields);
+
+                    if (item.ListView == null)
+                    {
+                        EventsLV.Items.Insert(0, item);
+                    }
                 }
 
                 // adjust the width of the columns.
