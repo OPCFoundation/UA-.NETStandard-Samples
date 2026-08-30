@@ -383,8 +383,14 @@ wizard of the shared `SubscribeDataListViewCtrl` against the Reference server th
 would - create the subscription, add `Server_ServerStatus_CurrentTime`, step to apply and then
 to view - and waits for a data change to land in the grid. It asserts the connect control
 handed out a `ManagedSession`, so a silent fall back to the raw session and its hand rolled
-reconnect fails a test, and it is the only case which proves that the V2 notification handler
-of a control actually reaches the user interface.
+reconnect fails a test, and it proves that the V2 notification handler of a control actually
+reaches the user interface.
+
+`SampleControlsSubscribeTests` does the same for the UA Sample Client controls in
+`Controls.Net4`: it opens a managed session the way `SessionOpenDlg` does, creates a
+`SubscriptionHandle` on the V2 engine, shows the (modeless) `SubscriptionDlg`, adds
+`Server_ServerStatus_CurrentTime` through the `MonitoredItemConfigCtrl` grid, applies, and
+waits for a data change to land in the `DataChangeNotificationListCtrl` of the dialog.
 
 The **dialog watchdog** is what makes this safe: the sample clients report errors through a
 modal `ExceptionDlg`, which in an unattended run would wait forever for a click. A timer on

@@ -54,7 +54,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private ILocalNode m_selectedType;
         #endregion
 
@@ -63,7 +63,7 @@ namespace Opc.Ua.Sample.Controls
         /// Displays the dialog.
         /// </summary>
         public async Task ShowAsync(
-            Session session,
+            ISession session,
             NodeId typeId,
             CancellationToken ct = default)
         {

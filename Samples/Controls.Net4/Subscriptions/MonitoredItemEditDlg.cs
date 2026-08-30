@@ -42,6 +42,10 @@ using Opc.Ua.Client.Controls;
 
 namespace Opc.Ua.Sample.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the
+    // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
     public partial class MonitoredItemEditDlg : Form
     {
         public MonitoredItemEditDlg()
@@ -62,20 +66,25 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private Session m_session;
+        private ISession m_session;
 
         /// <summary>
-        /// Prompts the user to specify the browse options.
+        /// Prompts the user to specify the settings for a monitored item.
         /// </summary>
-        public bool ShowDialog(Session session, MonitoredItem monitoredItem, ITelemetryContext telemetry)
+        public bool ShowDialog(ISession session, MonitoredItemHandle monitoredItem, ITelemetryContext telemetry)
         {
             return ShowDialog(session, monitoredItem, false, telemetry);
         }
 
         /// <summary>
-        /// Prompts the user to specify the browse options.
+        /// Prompts the user to specify the settings for a monitored item.
         /// </summary>
-        public bool ShowDialog(Session session, MonitoredItem monitoredItem, bool editMonitoredItem, ITelemetryContext telemetry)
+        /// <remarks>
+        /// Reconfiguring the options monitor of the handle is the modify request: for an item
+        /// which already exists the V2 engine applies the new settings on its own worker, and
+        /// for one which does not it uses them when it is created.
+        /// </remarks>
+        public bool ShowDialog(ISession session, MonitoredItemHandle monitoredItem, bool editMonitoredItem, ITelemetryContext telemetry)
         {
             if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
@@ -84,50 +93,39 @@ namespace Opc.Ua.Sample.Controls
             NodeIdCTRL.Telemetry = telemetry;
             NodeIdCTRL.Browser = new Browser(session);
 
+            // the V2 engine identifies the monitored node by its node id, relative paths are
+            // not part of the item options.
+            RelativePathTB.Enabled = false;
+
             if (editMonitoredItem)
             {
                 // Disable the not changeable values
                 NodeIdCTRL.Enabled = false;
-                RelativePathTB.Enabled = false;
                 NodeClassCB.Enabled = false;
                 AttributeIdCB.Enabled = false;
                 IndexRangeTB.Enabled = false;
                 EncodingCB.Enabled = false;
                 MonitoringModeCB.Enabled = false;
-
-                DisplayNameTB.Text = monitoredItem.DisplayName;
-            }
-            else
-            {
-                uint monitoredItemsCount = 0;
-
-                if (session != null && session.SubscriptionCount >= 1)
-                {
-                    foreach (Subscription subscription in session.Subscriptions)
-                    {
-                        monitoredItemsCount += subscription.MonitoredItemCount;
-                    }
-                }
-
-                DisplayNameTB.Text = String.Format("MonitoredItem {0}", monitoredItemsCount + 1);
             }
 
-            NodeIdCTRL.Identifier = monitoredItem.StartNodeId;
-            RelativePathTB.Text = monitoredItem.RelativePath;
+            MonitoredItemOptions settings = monitoredItem.Settings;
+
+            DisplayNameTB.Text = monitoredItem.DisplayName;
+            NodeIdCTRL.Identifier = settings.StartNodeId;
             NodeClassCB.SelectedItem = monitoredItem.NodeClass;
-            AttributeIdCB.SelectedItem = Attributes.GetBrowseName(monitoredItem.AttributeId);
-            IndexRangeTB.Text = monitoredItem.IndexRange;
-            EncodingCB.Text = (!monitoredItem.Encoding.IsNull) ? monitoredItem.Encoding.Name : null;
-            MonitoringModeCB.SelectedItem = monitoredItem.MonitoringMode;
+            AttributeIdCB.SelectedItem = Attributes.GetBrowseName(settings.AttributeId);
+            IndexRangeTB.Text = settings.IndexRange;
+            EncodingCB.Text = (settings.Encoding.HasValue && !settings.Encoding.Value.IsNull) ? settings.Encoding.Value.Name : null;
+            MonitoringModeCB.SelectedItem = settings.MonitoringMode;
             SamplingIntervalNC.Value = 1000;
-            DisableOldestCK.Checked = monitoredItem.DiscardOldest;
+            DisableOldestCK.Checked = settings.DiscardOldest;
 
-            if (monitoredItem.SamplingInterval >= 0)
+            if (settings.SamplingInterval >= TimeSpan.Zero)
             {
-                SamplingIntervalNC.Value = (decimal)monitoredItem.SamplingInterval;
+                SamplingIntervalNC.Value = (decimal)settings.SamplingInterval.TotalMilliseconds;
             }
 
-            QueueSizeNC.Value = monitoredItem.QueueSize;
+            QueueSizeNC.Value = settings.QueueSize;
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -136,19 +134,26 @@ namespace Opc.Ua.Sample.Controls
 
             monitoredItem.DisplayName = DisplayNameTB.Text;
             monitoredItem.NodeClass = (NodeClass)NodeClassCB.SelectedItem;
-            monitoredItem.StartNodeId = NodeIdCTRL.Identifier;
-            monitoredItem.RelativePath = RelativePathTB.Text;
-            monitoredItem.AttributeId = Attributes.GetIdentifier((string)AttributeIdCB.SelectedItem);
-            monitoredItem.IndexRange = IndexRangeTB.Text;
-            monitoredItem.MonitoringMode = (MonitoringMode)MonitoringModeCB.SelectedItem;
-            monitoredItem.SamplingInterval = (int)SamplingIntervalNC.Value;
-            monitoredItem.QueueSize = (uint)QueueSizeNC.Value;
-            monitoredItem.DiscardOldest = DisableOldestCK.Checked;
 
-            if (!String.IsNullOrEmpty(EncodingCB.Text))
-            {
-                monitoredItem.Encoding = new QualifiedName(EncodingCB.Text);
-            }
+            NodeId startNodeId = NodeIdCTRL.Identifier;
+            uint attributeId = Attributes.GetIdentifier((string)AttributeIdCB.SelectedItem);
+            string indexRange = IndexRangeTB.Text;
+            MonitoringMode monitoringMode = (MonitoringMode)MonitoringModeCB.SelectedItem;
+            TimeSpan samplingInterval = TimeSpan.FromMilliseconds((double)SamplingIntervalNC.Value);
+            uint queueSize = (uint)QueueSizeNC.Value;
+            bool discardOldest = DisableOldestCK.Checked;
+            QualifiedName? encoding = (!String.IsNullOrEmpty(EncodingCB.Text)) ? new QualifiedName(EncodingCB.Text) : null;
+
+            monitoredItem.Configure(options => options with {
+                StartNodeId = startNodeId,
+                AttributeId = attributeId,
+                IndexRange = indexRange,
+                MonitoringMode = monitoringMode,
+                SamplingInterval = samplingInterval,
+                QueueSize = queueSize,
+                DiscardOldest = discardOldest,
+                Encoding = encoding ?? options.Encoding,
+            });
 
             return true;
         }
@@ -162,18 +167,6 @@ namespace Opc.Ua.Sample.Controls
             catch (Exception)
             {
                 MessageBox.Show("Please enter a valid node id.", this.Text);
-            }
-
-            try
-            {
-                if (!String.IsNullOrEmpty(RelativePathTB.Text))
-                {
-                    RelativePath relativePath = RelativePath.Parse(RelativePathTB.Text, m_session.TypeTree);
-                }
-            }
-            catch (Exception)
-            {
-                MessageBox.Show("Please enter a valid relative path.", this.Text);
             }
 
             try

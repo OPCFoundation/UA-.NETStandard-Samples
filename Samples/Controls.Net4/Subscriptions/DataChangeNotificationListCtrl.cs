@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -53,8 +54,18 @@ namespace Opc.Ua.Sample.Controls
         #region Private Fields
         private int m_maxChangeCount = 20;
         private bool m_showHistory = false;
-        private Subscription m_subscription;
-        private MonitoredItem m_monitoredItem;
+        private SubscriptionHandle m_subscription;
+        private MonitoredItemHandle m_monitoredItem;
+        private bool m_publishingStopped;
+
+        /// <summary>
+        /// A data change displayed in the control.
+        /// </summary>
+        private sealed class ItemNotification
+        {
+            public MonitoredItemHandle MonitoredItem;
+            public DataValue Value;
+        }
 
         /// <summary>
 		/// The columns to display in the control.
@@ -101,87 +112,49 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Sets the nodes in the control.
+        /// Sets the subscription (and optionally the single item) displayed in the control.
         /// </summary>
-        public async void InitializeAsync(Subscription subscription, MonitoredItem monitoredItem, CancellationToken ct = default)
+        /// <remarks>
+        /// The V2 engine keeps no notification cache, so the control starts empty and fills
+        /// itself from the notifications the owner forwards.
+        /// </remarks>
+        public void Initialize(SubscriptionHandle subscription, MonitoredItemHandle monitoredItem)
         {
-            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
-
             Clear();
 
-            // start receiving notifications from the new subscription.
             m_subscription = subscription;
             m_monitoredItem = monitoredItem;
-            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
+            m_publishingStopped = false;
             Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
-            #pragma warning restore CA1508
 
-            // get the events.
-            List<MonitoredItemNotification> changes = new List<MonitoredItemNotification>();
-
-            foreach (NotificationMessage notification in m_subscription.Notifications)
-            {
-                foreach (MonitoredItemNotification change in notification.GetDataChanges(false))
-                {
-                    if (m_monitoredItem != null)
-                    {
-                        if (m_monitoredItem.ClientHandle != change.ClientHandle)
-                        {
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        if (m_subscription.FindItemByClientHandle(change.ClientHandle) == null)
-                        {
-                            continue;
-                        }
-                    }
-
-                    changes.Add(change);
-
-                    if (changes.Count >= MaxChangeCount)
-                    {
-                        break;
-                    }
-                }
-
-                if (changes.Count >= MaxChangeCount)
-                {
-                    break;
-                }
-            }
-
-            await UpdateChangesAsync(changes, 0, ct);
             AdjustColumns();
         }
 
         /// <summary>
-        /// Processes a new notification.
+        /// Processes the data changes of a notification.
         /// </summary>
-        public async Task NotificationReceivedAsync(NotificationEventArgs e, CancellationToken ct = default)
+        public async Task NotificationReceivedAsync(DataValueChange[] notifications, PublishState publishStateMask, CancellationToken ct = default)
         {
+            m_publishingStopped = (publishStateMask & PublishState.Stopped) != 0;
+
             // get the changes.
-            List<MonitoredItemNotification> changes = new List<MonitoredItemNotification>();
+            List<ItemNotification> changes = new List<ItemNotification>();
 
-            foreach (MonitoredItemNotification change in e.NotificationMessage.GetDataChanges(false))
+            foreach (DataValueChange notification in notifications)
             {
-                if (m_monitoredItem != null)
+                MonitoredItemHandle handle = m_subscription?.FindItem(notification.MonitoredItem);
+
+                if (handle == null)
                 {
-                    if (m_monitoredItem.ClientHandle != change.ClientHandle)
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    if (m_subscription.FindItemByClientHandle(change.ClientHandle) == null)
-                    {
-                        continue;
-                    }
+                    continue;
                 }
 
-                changes.Add(change);
+                if (m_monitoredItem != null && !Object.ReferenceEquals(handle, m_monitoredItem))
+                {
+                    continue;
+                }
+
+                changes.Add(new ItemNotification { MonitoredItem = handle, Value = notification.Value });
             }
 
             // check if nothing more to do.
@@ -197,19 +170,11 @@ namespace Opc.Ua.Sample.Controls
                 // fill in earlier changes.
                 foreach (ListViewItem listItem in ItemsLV.Items)
                 {
-                    MonitoredItemNotification change = listItem.Tag as MonitoredItemNotification;
+                    ItemNotification change = listItem.Tag as ItemNotification;
 
                     if (change == null)
                     {
                         continue;
-                    }
-
-                    if (m_monitoredItem != null)
-                    {
-                        if (m_monitoredItem.ClientHandle != change.ClientHandle)
-                        {
-                            continue;
-                        }
                     }
 
                     changes.Add(change);
@@ -219,9 +184,6 @@ namespace Opc.Ua.Sample.Controls
                         break;
                     }
                 }
-
-                // ensure the newest changes appear first.
-                changes.Reverse();
             }
 
             await UpdateChangesAsync(changes, offset, ct);
@@ -229,101 +191,47 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Processes a new notification.
-        /// </summary>
-        public async Task NotificationReceivedAsync(MonitoredItemNotificationEventArgs e, CancellationToken ct = default)
-        {
-            MonitoredItemNotification change = e.NotificationValue as MonitoredItemNotification;
-
-            if (change == null)
-            {
-                return;
-            }
-
-            if (m_monitoredItem != null)
-            {
-                if (m_monitoredItem.ClientHandle != change.ClientHandle)
-                {
-                    return;
-                }
-            }
-
-            // add new change.
-            List<MonitoredItemNotification> changes = new List<MonitoredItemNotification>();
-            changes.Add(change);
-
-            // fill in earlier changes.
-            if (m_showHistory)
-            {
-                foreach (ListViewItem listItem in ItemsLV.Items)
-                {
-                    change = listItem.Tag as MonitoredItemNotification;
-
-                    if (change == null)
-                    {
-                        continue;
-                    }
-
-                    if (m_monitoredItem != null)
-                    {
-                        if (m_monitoredItem.ClientHandle != change.ClientHandle)
-                        {
-                            continue;
-                        }
-                    }
-
-                    changes.Add(change);
-
-                    if (changes.Count >= MaxChangeCount)
-                    {
-                        break;
-                    }
-                }
-            }
-
-            await UpdateChangesAsync(changes, 1, ct);
-            AdjustColumns();
-        }
-
-        /// <summary>
         /// Processes a change to the subscription.
         /// </summary>
-        public void SubscriptionChanged(SubscriptionStateChangedEventArgs e)
+        public void SubscriptionChanged()
         {
-            if ((e.Status & SubscriptionChangeMask.ItemsDeleted) != 0)
+            // collect changes for items that have been deleted.
+            List<ListViewItem> itemsToRemove = new List<ListViewItem>();
+
+            foreach (ListViewItem listItem in ItemsLV.Items)
             {
-                // collect events for items that have been deleted.
-                List<ListViewItem> itemsToRemove = new List<ListViewItem>();
+                ItemNotification change = listItem.Tag as ItemNotification;
 
-                foreach (ListViewItem listItem in ItemsLV.Items)
+                if (change != null && m_subscription != null && !m_subscription.Items.Contains(change.MonitoredItem))
                 {
-                    MonitoredItemNotification change = listItem.Tag as MonitoredItemNotification;
-
-                    if (change != null)
-                    {
-                        if (m_subscription.FindItemByClientHandle(change.ClientHandle) == null)
-                        {
-                            itemsToRemove.Add(listItem);
-                        }
-                    }
+                    itemsToRemove.Add(listItem);
                 }
+            }
 
-                // remove events for items that have been deleted.
-                foreach (ListViewItem listItem in itemsToRemove)
-                {
-                    listItem.Remove();
-                }
+            // remove changes for items that have been deleted.
+            foreach (ListViewItem listItem in itemsToRemove)
+            {
+                listItem.Remove();
             }
         }
 
         /// <summary>
         /// Updates the display after the publish status for the subscription changes.
         /// </summary>
-        public async Task PublishStatusChangedAsync(CancellationToken ct = default)
+        public async Task PublishStatusChangedAsync(PublishState publishStateMask, CancellationToken ct = default)
         {
+            if ((publishStateMask & PublishState.Stopped) != 0)
+            {
+                m_publishingStopped = true;
+            }
+            else if ((publishStateMask & PublishState.Recovered) != 0)
+            {
+                m_publishingStopped = false;
+            }
+
             foreach (ListViewItem listItem in ItemsLV.Items)
             {
-                MonitoredItemNotification change = listItem.Tag as MonitoredItemNotification;
+                ItemNotification change = listItem.Tag as ItemNotification;
 
                 if (change != null)
                 {
@@ -351,9 +259,9 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Updates the events displayed in the control.
+        /// Updates the changes displayed in the control.
         /// </summary>
-        private async Task UpdateChangesAsync(IList<MonitoredItemNotification> changes, int offset, CancellationToken ct = default)
+        private async Task UpdateChangesAsync(IList<ItemNotification> changes, int offset, CancellationToken ct = default)
         {
             // save selected indexes.
             List<int> indexes = new List<int>(ItemsLV.SelectedIndices.Count);
@@ -368,7 +276,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 BeginUpdate();
 
-                foreach (MonitoredItemNotification change in changes)
+                foreach (ItemNotification change in changes)
                 {
                     AddItem(change);
                 }
@@ -390,9 +298,9 @@ namespace Opc.Ua.Sample.Controls
 
                     foreach (ListViewItem listItem in ItemsLV.Items)
                     {
-                        MonitoredItemNotification change = listItem.Tag as MonitoredItemNotification;
+                        ItemNotification change = listItem.Tag as ItemNotification;
 
-                        if (change != null && change.ClientHandle == changes[ii].ClientHandle)
+                        if (change != null && Object.ReferenceEquals(change.MonitoredItem, changes[ii].MonitoredItem))
                         {
                             await UpdateItemAsync(listItem, changes[ii], ct);
                             found = true;
@@ -423,7 +331,7 @@ namespace Opc.Ua.Sample.Controls
         /// <see cref="BaseListCtrl.UpdateItemAsync" />
         protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-            MonitoredItemNotification change = item as MonitoredItemNotification;
+            ItemNotification change = item as ItemNotification;
 
             if (change == null)
             {
@@ -432,28 +340,12 @@ namespace Opc.Ua.Sample.Controls
             }
 
             // fill in the columns.
-            listItem.SubItems[0].Text = String.Format("[{0}]", change.ClientHandle);
-
-            MonitoredItem monitoredItem = null;
-
-            if (m_subscription != null)
-            {
-                monitoredItem = m_subscription.FindItemByClientHandle(change.ClientHandle);
-            }
-
-            if (monitoredItem != null)
-            {
-                listItem.SubItems[1].Text = String.Format("{0}", monitoredItem.DisplayName);
-            }
-            else
-            {
-                listItem.SubItems[1].Text = "(unknown)";
-            }
-
+            listItem.SubItems[0].Text = String.Format("[{0}]", (change.MonitoredItem.Item != null) ? change.MonitoredItem.Item.ServerId : 0);
+            listItem.SubItems[1].Text = String.Format("{0}", change.MonitoredItem.DisplayName);
             listItem.SubItems[2].Text = String.Format("{0}", change.Value.WrappedValue);
 
-            // check of publishing has stopped for some reason.
-            if (m_subscription.PublishingStopped)
+            // check if publishing has stopped for some reason.
+            if (m_publishingStopped)
             {
                 listItem.SubItems[3].Text = String.Format("{0}", (StatusCode)StatusCodes.UncertainNoCommunicationLastUsableValue);
             }
@@ -464,9 +356,7 @@ namespace Opc.Ua.Sample.Controls
 
             DateTime time = change.Value.SourceTimestamp.ToDateTime();
 
-            #pragma warning disable CS8073 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (time != null && time != DateTime.MinValue)
-            #pragma warning restore CS8073
+            if (time != DateTime.MinValue)
             {
                 listItem.SubItems[4].Text = String.Format("{0:HH:mm:ss.fff}", time.ToLocalTime());
             }
@@ -477,9 +367,7 @@ namespace Opc.Ua.Sample.Controls
 
             time = change.Value.ServerTimestamp.ToDateTime();
 
-            #pragma warning disable CS8073 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (time != null && time != DateTime.MinValue)
-            #pragma warning restore CS8073
+            if (time != DateTime.MinValue)
             {
                 listItem.SubItems[5].Text = String.Format("{0:HH:mm:ss.fff}", time.ToLocalTime());
             }
@@ -489,7 +377,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             listItem.Tag = change;
-            listItem.ForeColor = (m_subscription.PublishingStopped) ? Color.Red : Color.Empty;
+            listItem.ForeColor = (m_publishingStopped) ? Color.Red : Color.Empty;
         }
         #endregion
 
@@ -498,7 +386,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                MonitoredItemNotification change = SelectedTag as MonitoredItemNotification;
+                ItemNotification change = SelectedTag as ItemNotification;
 
                 if (change == null)
                 {
@@ -506,7 +394,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                new ComplexValueEditDlg().ShowDialog(change, Telemetry);
+                new ComplexValueEditDlg().ShowDialog(change.Value, Telemetry);
                 #pragma warning restore CA2000
             }
             catch (Exception exception)

@@ -37,6 +37,7 @@
     <ProjectReference Include="..\..\Workshop\UserAuthentication\Client\UserAuthentication Client.csproj" />
     <ProjectReference Include="..\..\Workshop\Views\Client\Views Client.csproj" />
     <ProjectReference Include="..\..\Samples\ReferenceClient\Reference Client.csproj" />
+    <ProjectReference Include="..\..\Samples\Controls.Net4\UA Sample Controls.csproj" />
   </ItemGroup>
 
 </Project>

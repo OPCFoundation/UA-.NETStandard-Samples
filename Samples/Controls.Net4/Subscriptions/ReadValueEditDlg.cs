@@ -56,7 +56,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(Session session, ReadValueId valueId, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, ReadValueId valueId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (valueId == null) throw new ArgumentNullException(nameof(valueId));

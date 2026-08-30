@@ -60,7 +60,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public NodeId ShowDialog(Session session, NodeId value, ITelemetryContext telemetry)
+        public NodeId ShowDialog(ISession session, NodeId value, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -80,7 +80,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ExpandedNodeId ShowDialog(Session session, ExpandedNodeId value, ITelemetryContext telemetry)
+        public ExpandedNodeId ShowDialog(ISession session, ExpandedNodeId value, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

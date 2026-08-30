@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -82,7 +82,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, IList<WriteValue> values, ITelemetryContext telemetry)
+        public void Initialize(ISession session, IList<WriteValue> values, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

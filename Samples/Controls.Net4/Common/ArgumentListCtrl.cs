@@ -51,7 +51,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -78,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task<bool> UpdateAsync(Session session, NodeId methodId, bool inputArgs, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> UpdateAsync(ISession session, NodeId methodId, bool inputArgs, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (methodId.IsNull) throw new ArgumentNullException(nameof(methodId));

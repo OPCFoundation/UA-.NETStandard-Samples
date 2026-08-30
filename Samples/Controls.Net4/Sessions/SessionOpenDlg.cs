@@ -53,7 +53,10 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ApplicationConfiguration m_configuration;
+        private ConfiguredEndpoint m_endpoint;
+        private ITelemetryContext m_telemetry;
+        private ISession m_session;
         private const string m_BrowseCertificates = "<Browse...>";
         private static uint m_Counter = 0;
         private IList<string> m_preferredLocales;
@@ -63,21 +66,33 @@ namespace Opc.Ua.Sample.Controls
 
         #region Public Interface
         /// <summary>
-        /// Displays the dialog.
+        /// Displays the dialog and creates the session when the user accepts it.
         /// </summary>
+        /// <remarks>
+        /// The session is created with a <see cref="ManagedSessionFactory"/>, so the returned
+        /// session runs the V2 subscription engine and reconnects on its own.
+        /// </remarks>
+        /// <returns>The open session, or null if the user cancelled the dialog.</returns>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public bool ShowDialog(Session session, IList<string> preferredLocales)
+        public ISession ShowDialog(ApplicationConfiguration configuration, ConfiguredEndpoint endpoint, IList<string> preferredLocales, ITelemetryContext telemetry)
         {
-            if (session == null) throw new ArgumentNullException(nameof(session));
+            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (endpoint == null) throw new ArgumentNullException(nameof(endpoint));
 
-            m_session = session;
+            m_configuration = configuration;
+            m_endpoint = endpoint;
             m_preferredLocales = preferredLocales;
+            m_telemetry = telemetry;
+            m_session = null;
 
             UserIdentityTypeCB.Items.Clear();
 
-            foreach (UserTokenPolicy policy in session.Endpoint.UserIdentityTokens)
+            foreach (UserTokenPolicy policy in endpoint.Description.UserIdentityTokens)
             {
-                UserIdentityTypeCB.Items.Add(policy.TokenType);
+                if (!UserIdentityTypeCB.Items.Contains(policy.TokenType))
+                {
+                    UserIdentityTypeCB.Items.Add(policy.TokenType);
+                }
             }
 
             if (UserIdentityTypeCB.Items.Count == 0)
@@ -87,24 +102,14 @@ namespace Opc.Ua.Sample.Controls
 
             UserIdentityTypeCB.SelectedIndex = 0;
 
-            SessionNameTB.Text = session.SessionName;
-
-            if (String.IsNullOrEmpty(SessionNameTB.Text))
-            {
-                SessionNameTB.Text = Utils.Format("MySession {0}", Utils.IncrementIdentifier(ref m_Counter));
-            }
-
-            if (session.Identity != null)
-            {
-                UserIdentityTypeCB.SelectedItem = session.Identity.TokenType;
-            }
+            SessionNameTB.Text = Utils.Format("MySession {0}", Utils.IncrementIdentifier(ref m_Counter));
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return false;
+                return null;
             }
 
-            return true;
+            return m_session;
         }
         #endregion
 
@@ -128,19 +133,10 @@ namespace Opc.Ua.Sample.Controls
                     UserNameCB.Items.Add(m_BrowseCertificates);
                     UserNameCB.SelectedIndex = 0;
                 }
-
-                // populate list.
-                foreach (IUserIdentity identity in m_session.IdentityHistory)
-                {
-                    if (identity.TokenType == tokenType)
-                    {
-                        UserNameCB.Items.Add(identity.DisplayName);
-                    }
-                }
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -186,7 +182,7 @@ namespace Opc.Ua.Sample.Controls
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -258,7 +254,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (!String.IsNullOrEmpty(username) || !String.IsNullOrEmpty(PasswordTB.Text))
                     {
-                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
+                        #pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the created session.
                         identity = new UserIdentity(username, Encoding.UTF8.GetBytes(PasswordTB.Text));
                         #pragma warning restore CA2000
                     }
@@ -277,21 +273,21 @@ namespace Opc.Ua.Sample.Controls
                         return;
                     }
 
-                    #pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the active session.
+                    #pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the created session.
                     identity = new UserIdentity(new X509IdentityToken { CertificateData = m_userCertificate.RawData.ToByteString() });
                     #pragma warning restore CA2000
                 }
 
                 Cursor = Cursors.WaitCursor;
 
-                Task.Run(() => OpenAsync(m_session, SessionNameTB.Text, identity, m_preferredLocales, m_checkDomain));
+                Task.Run(() => OpenAsync(SessionNameTB.Text, identity, m_checkDomain));
 
                 CancelBTN.Enabled = false;
                 OkBTN.Enabled = false;
             }
             catch (Exception exception)
             {
-                GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
 
@@ -339,19 +335,22 @@ namespace Opc.Ua.Sample.Controls
                             return;
                         }
 
-                        DialogResult = DialogResult.OK;
                         return;
                     }
                 }
 
-                if (e != null)
+                if (e is Exception exception)
                 {
-                    GuiUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, MethodBase.GetCurrentMethod(), (Exception)e);
+                    // leave the dialog open so the user can retry with other settings.
+                    GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+                    return;
                 }
 
-                if (m_session.Connected && m_session.SessionTimeout < 1000)
+                m_session = e as ISession;
+
+                if (m_session != null && m_session.Connected && m_session.SessionTimeout < 1000)
                 {
-                    DialogResult result = MessageBox.Show(
+                    MessageBox.Show(
                         "Warning: the session time out might be too small: " + m_session.SessionTimeout,
                         "Session revised timeout",
                         MessageBoxButtons.OK,
@@ -368,19 +367,32 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Asynchronously open the session.
+        /// Asynchronously creates and opens the session.
         /// </summary>
-        private async Task OpenAsync(Session session, string sessionName, IUserIdentity identity, IList<string> preferredLocales, bool? checkDomain, CancellationToken ct = default)
+        /// <remarks>
+        /// The managed session factory discovers the endpoint, creates the secure channel and
+        /// opens the session in one step, which replaces the channel the control used to build
+        /// by hand before handing it to a raw session.
+        /// </remarks>
+        private async Task OpenAsync(string sessionName, IUserIdentity identity, bool checkDomain, CancellationToken ct = default)
         {
             try
             {
-                // open the session.
-                await session.OpenAsync(sessionName, (uint)session.SessionTimeout, identity, preferredLocales.ToArray(), checkDomain ?? true, false, ct);
+                ISession session = await new ManagedSessionFactory(m_telemetry).CreateAsync(
+                    m_configuration,
+                    m_endpoint,
+                    false,
+                    checkDomain,
+                    sessionName,
+                    (uint)m_configuration.ClientConfiguration.DefaultSessionTimeout,
+                    identity,
+                    m_preferredLocales?.ToArray(),
+                    ct);
 
-                var typeSystemLoader = new ComplexTypeSystemFactory(session.MessageContext.Telemetry).Create(session);
+                var typeSystemLoader = new ComplexTypeSystemFactory(m_telemetry).Create(session);
                 _ = await typeSystemLoader.LoadAsync(ct: ct);
 
-                OpenComplete(null);
+                OpenComplete(session);
             }
             catch (Exception exception)
             {

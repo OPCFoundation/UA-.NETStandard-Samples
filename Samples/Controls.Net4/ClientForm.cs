@@ -46,10 +46,7 @@ namespace Opc.Ua.Sample.Controls
     public partial class ClientForm : Form
     {
         #region Private Fields
-        private Session m_session;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample code preserves existing public API and behavior.")]
-        private SessionReconnectHandler m_reconnectHandler;
-        private int m_reconnectPeriod = 10;
+        private ISession m_session;
         private ApplicationInstance m_application;
         private Opc.Ua.Server.StandardServer m_server;
         private ConfiguredEndpointCollection m_endpoints;
@@ -176,14 +173,9 @@ namespace Opc.Ua.Sample.Controls
         {
             if (m_session != null)
             {
-                // stop any reconnect operation.
-                if (m_reconnectHandler != null)
-                {
-                    m_reconnectHandler.Dispose();
-                    m_reconnectHandler = null;
-                }
-
-                m_session.KeepAlive -= StandardClient_KeepAlive;
+                // closing the managed session also stops its connection state machine, so
+                // there is no separate reconnect handler to cancel.
+                DetachSession(m_session);
 
                 await m_session.CloseAsync(ct);
                 m_session = null;
@@ -195,7 +187,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Provides a user defined method.
         /// </summary>
-        protected virtual void DoTest(Session session)
+        protected virtual void DoTest(ISession session)
         {
             MessageBox.Show("A handy place to put test code.");
         }
@@ -235,21 +227,42 @@ namespace Opc.Ua.Sample.Controls
                 return;
             }
 
-            Session session = await SessionsCTRL.ConnectAsync(endpoint, telemetry, ct);
+            ISession session = await SessionsCTRL.ConnectAsync(endpoint, telemetry, ct);
 
             if (session != null)
             {
-                // stop any reconnect operation.
-                m_reconnectHandler?.CancelReconnect();
-                m_reconnectHandler?.Dispose();
-
-                m_reconnectHandler = new SessionReconnectHandler(telemetry, true);
-                session.TransferSubscriptionsOnReconnect = true;
-
+                // the managed session brings its own connection state machine and reconnect
+                // policy, so no SessionReconnectHandler is wired up here.
                 m_session = session;
-                m_session.KeepAlive += new KeepAliveEventHandler(StandardClient_KeepAlive);
+                AttachSession(m_session);
                 await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, m_telemetry, ct);
                 StandardClient_KeepAlive(m_session, null);
+            }
+        }
+
+        /// <summary>
+        /// Subscribes to the session events the form reports on.
+        /// </summary>
+        private void AttachSession(ISession session)
+        {
+            session.KeepAlive += StandardClient_KeepAlive;
+
+            if (session is ManagedSession managedSession)
+            {
+                managedSession.ConnectionStateChanged += Session_ConnectionStateChanged;
+            }
+        }
+
+        /// <summary>
+        /// Unsubscribes from the session events the form reports on.
+        /// </summary>
+        private void DetachSession(ISession session)
+        {
+            session.KeepAlive -= StandardClient_KeepAlive;
+
+            if (session is ManagedSession managedSession)
+            {
+                managedSession.ConnectionStateChanged -= Session_ConnectionStateChanged;
             }
         }
 
@@ -299,17 +312,12 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    var state = SessionReconnectHandler.ReconnectState.Ready;
-                    if (m_reconnectPeriod > 0)
-                    {
-                        state = m_reconnectHandler.BeginReconnect(m_session, m_reconnectPeriod * 1000, StandardClient_Server_ReconnectComplete);
-                    }
-
+                    // the managed session starts the reconnect sequence itself, this only
+                    // reports the communication error.
                     ServerStatusLB.Text = String.Format(
-                        "{0} {1}/{2}/{3}", e.Status,
+                        "{0} {1}/{2}", e.Status,
                         m_session.OutstandingRequestCount,
-                        m_session.DefunctRequestCount,
-                        state);
+                        m_session.DefunctRequestCount);
 
                     ServerStatusLB.ForeColor = Color.Red;
                     ServerStatusLB.Font = new Font(ServerStatusLB.Font, FontStyle.Bold);
@@ -317,39 +325,63 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void StandardClient_Server_ReconnectComplete(object sender, EventArgs e)
+        /// <summary>
+        /// Handles the connection state changes reported by the managed session.
+        /// </summary>
+        /// <remarks>
+        /// The managed session keeps the same <see cref="ISession"/> instance and its V2
+        /// subscriptions across a reconnect, so the form only has to refresh the display -
+        /// there is no session to swap out as there was with the SessionReconnectHandler.
+        /// </remarks>
+        private void Session_ConnectionStateChanged(object sender, ConnectionStateChangedEventArgs e)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new EventHandler(StandardClient_Server_ReconnectComplete), sender, e);
+                BeginInvoke(new EventHandler<ConnectionStateChangedEventArgs>(Session_ConnectionStateChanged), sender, e);
                 return;
             }
 
             try
             {
-                // ignore callbacks from discarded objects.
-                if (!Object.ReferenceEquals(sender, m_reconnectHandler))
+                // ignore callbacks from discarded sessions. The event may be raised by the
+                // session or by the connection state machine behind it, so only a sender which
+                // is a session is worth comparing.
+                if (m_session == null || (sender is ISession sessionOfEvent && !Object.ReferenceEquals(sessionOfEvent, m_session)))
                 {
                     return;
                 }
 
-                if (m_reconnectHandler.Session != null)
+                switch (e.NewState)
                 {
-                    if (!ReferenceEquals(m_session, m_reconnectHandler.Session))
+                    case ConnectionState.Reconnecting:
+                    case ConnectionState.Failover:
                     {
-                        var session = m_session;
-                        session.KeepAlive -= StandardClient_KeepAlive;
-                        m_session = m_reconnectHandler.Session as Session;
-                        m_session.KeepAlive += StandardClient_KeepAlive;
-                        session?.Dispose();
+                        ServerStatusLB.Text = String.Format("Reconnecting (attempt {0})", e.ReconnectAttempt);
+                        ServerStatusLB.ForeColor = Color.Red;
+                        ServerStatusLB.Font = new Font(ServerStatusLB.Font, FontStyle.Bold);
+                        break;
+                    }
+
+                    case ConnectionState.Connected:
+                    {
+                        if (e.PreviousState is ConnectionState.Reconnecting or ConnectionState.Failover)
+                        {
+                            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, m_telemetry);
+                            SessionsCTRL.Reload(m_session);
+                        }
+
+                        StandardClient_KeepAlive(m_session, null);
+                        break;
+                    }
+
+                    case ConnectionState.Disconnected:
+                    {
+                        ServerStatusLB.Text = String.Format("Disconnected ({0})", e.Error);
+                        ServerStatusLB.ForeColor = Color.Red;
+                        ServerStatusLB.Font = new Font(ServerStatusLB.Font, FontStyle.Bold);
+                        break;
                     }
                 }
-
-                BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, m_telemetry);
-
-                SessionsCTRL.Reload(m_session);
-
-                StandardClient_KeepAlive(m_session, null);
             }
             catch (Exception exception)
             {
