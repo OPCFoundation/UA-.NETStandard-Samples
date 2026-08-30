@@ -27,13 +27,6 @@ jobs:
     matrix: $[dependencies.buildprep.outputs['buildmatrix.jobMatrix'] ]
   pool:
     vmImage: $(poolImage)
-  variables:
-    # Restores the OPC UA preview packages from the OPC Foundation GitHub
-    # Packages feed, which requires authentication even though it is public.
-    # GITHUB_PACKAGES_TOKEN is a secret pipeline variable holding a GitHub
-    # personal access token with the read:packages scope; the credential
-    # provider installed by NuGetAuthenticate reads this endpoint list.
-    GitHubPackagesEndpoints: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
   steps:
   - task: NuGetAuthenticate@1
   - task: NuGetToolInstaller@1
@@ -44,10 +37,27 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '10.0.x'
+  # The OPC UA preview packages come from the OPC Foundation GitHub Packages
+  # feed, which requires authentication even though it is public.
+  # GITHUB_PACKAGES_TOKEN is a secret pipeline variable holding a GitHub
+  # personal access token with the read:packages scope; the credential
+  # provider installed by NuGetAuthenticate reads the endpoint list mapped
+  # into the restore steps below. This probe turns a missing or rejected
+  # token into one readable error instead of a wall of 401s.
+  - bash: |
+      status=$(curl -s -o /dev/null -w "%{http_code}" -u "opcfoundation:$GITHUB_PACKAGES_TOKEN" https://nuget.pkg.github.com/OPCFoundation/index.json)
+      if [ "$status" != "200" ]; then
+        echo "##vso[task.logissue type=error]The OPC Foundation GitHub Packages feed rejected the GITHUB_PACKAGES_TOKEN secret pipeline variable (HTTP $status). Create the variable with a GitHub personal access token that has the read:packages scope, see 'Preview NuGet feed' in README.md."
+        exit 1
+      fi
+      echo "GitHub Packages feed authentication OK."
+    displayName: Require GitHub Packages token
+    env:
+      GITHUB_PACKAGES_TOKEN: $(GITHUB_PACKAGES_TOKEN)
   - task: DotNetCoreCLI@2
     displayName: Release Restore
     env:
-      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
     inputs:
       command: restore
       projects: '**/NetCore*.csproj'
@@ -64,7 +74,7 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Debug Restore
     env:
-      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
     inputs:
       command: restore
       projects: '**/NetCore*.csproj'

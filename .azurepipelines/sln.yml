@@ -6,10 +6,6 @@ jobs:
   displayName: Build Solutions
   pool:
     vmImage: 'windows-2025-vs2026'
-  variables:
-    # see ci.yml: authenticates the OPC Foundation GitHub Packages feed with
-    # the GITHUB_PACKAGES_TOKEN secret pipeline variable.
-    GitHubPackagesEndpoints: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
   steps:
   - task: NuGetAuthenticate@1
   - task: UseDotNet@2
@@ -20,10 +16,23 @@ jobs:
   - task: NuGetToolInstaller@1
     inputs:
       versionSpec: '>=7.0.x'
+  # see ci.yml: authenticates the OPC Foundation GitHub Packages feed with the
+  # GITHUB_PACKAGES_TOKEN secret pipeline variable, and fails fast with one
+  # readable error when the token is missing or rejected.
+  - bash: |
+      status=$(curl -s -o /dev/null -w "%{http_code}" -u "opcfoundation:$GITHUB_PACKAGES_TOKEN" https://nuget.pkg.github.com/OPCFoundation/index.json)
+      if [ "$status" != "200" ]; then
+        echo "##vso[task.logissue type=error]The OPC Foundation GitHub Packages feed rejected the GITHUB_PACKAGES_TOKEN secret pipeline variable (HTTP $status). Create the variable with a GitHub personal access token that has the read:packages scope, see 'Preview NuGet feed' in README.md."
+        exit 1
+      fi
+      echo "GitHub Packages feed authentication OK."
+    displayName: Require GitHub Packages token
+    env:
+      GITHUB_PACKAGES_TOKEN: $(GITHUB_PACKAGES_TOKEN)
   - task: NuGetCommand@2
     displayName: Restore Release
     env:
-      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
     inputs:
       command: restore
       restoreSolution: '**/*.sln'
@@ -41,7 +50,7 @@ jobs:
   - task: NuGetCommand@2
     displayName: Restore Debug
     env:
-      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: $(GitHubPackagesEndpoints)
+      VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials":[{"endpoint":"https://nuget.pkg.github.com/OPCFoundation/index.json","username":"opcfoundation","password":"$(GITHUB_PACKAGES_TOKEN)"}]}'
     inputs:
       command: restore
       restoreSolution: '**/*.sln'
