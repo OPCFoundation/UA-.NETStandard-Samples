@@ -39,6 +39,14 @@
     <ProjectReference Include="..\..\Samples\ReferenceClient\Reference Client.csproj" />
     <ProjectReference Include="..\..\Samples\Client.Net4\UA Sample Client.csproj" />
     <ProjectReference Include="..\..\Samples\Controls.Net4\UA Sample Controls.csproj" />
+    <ProjectReference Include="..\..\Samples\GDS\Client\GlobalDiscoveryClient.csproj" />
+  </ItemGroup>
+
+  <!-- the global discovery client needs a global discovery server to talk to, and that one
+       is a console sample: it is started as the process it is, so it only has to be built. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Samples\GDS\ConsoleServer\NetCoreGlobalDiscoveryServer.csproj"
+                      ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
 </Project>

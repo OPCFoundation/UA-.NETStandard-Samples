@@ -365,7 +365,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-26 test cases, about a minute, Windows only. For each WinForms sample client the test
+27 test cases, about a minute, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 
@@ -436,6 +436,34 @@ is a declared gap in `SampleClientFactories`. Its own fixture builds `SampleClie
 an endpoint, calls the form's `ConnectAsync` and lets the watchdog click OK on the session
 dialog, then asserts the sample opened a `ManagedSession` running the V2 subscription engine
 and filled its browse tree.
+
+`GdsClientTests` covers the other declared gap, the **Global Discovery Client**. It hosts no
+connect control either, and it is the only sample client which needs two servers: the global
+discovery server it registers with, and the server whose certificates it manages. The fixture
+starts the console GDS as the process it is and the Reference server in process, then composes
+the sample the way `Program.cs` does - `AddGlobalDiscoveryClient()` into a `ServiceCollection`
+and `ActivatorUtilities.CreateInstance<MainForm>` out of it, so the wiring under test is the
+sample's own and not a second copy of it written in the test - and drives the two clients the
+form was given the way its own `SelectGdsDialog` and `SelectServerDialog` do: set the
+credentials, then connect. It asserts
+that both are `ManagedSession`s running the V2 subscription engine, registers the client with
+the directory and reads its own registration back before unregistering it again, and finally
+waits for the **server status panel to fill itself**. That last one is the assertion the
+migration is about: the status used to arrive through `ServerPushConfigurationClient.ServerStatusChanged`,
+which the SDK declares but never raises ([UA-.NETStandard#4346](https://github.com/OPCFoundation/UA-.NETStandard/issues/4346)),
+so the panel sat at its `---` placeholders for the whole session; it now monitors
+`Server_ServerStatus` through the V2 engine.
+
+> The GDS client manages servers it has no trust relationship with yet, so it shows the
+> certificate of every server it meets and asks the user to accept it. Its own `AcceptError`
+> hook *replaces* the `AutoAcceptUntrustedCertificates` of the test PKI - the callback wins
+> over the flag - so the test answers the dialog with `watchdog.Accept<UntrustedCertificateDialog>`
+> rather than suppressing it. Rejecting it is worth knowing about: a `ManagedSession` whose
+> *initial* connect fails goes to `Reconnecting`, and its reconnect handler has no inner
+> session to reconnect, so it reports success and the session comes back `Connected` with
+> nothing behind it. Every call then fails with `BadNotConnected`, which reads like a
+> different defect entirely — reported as
+> [UA-.NETStandard#4347](https://github.com/OPCFoundation/UA-.NETStandard/issues/4347).
 
 The **dialog watchdog** is what makes this safe: the sample clients report errors through a
 modal `ExceptionDlg`, which in an unattended run would wait forever for a click. A timer on
