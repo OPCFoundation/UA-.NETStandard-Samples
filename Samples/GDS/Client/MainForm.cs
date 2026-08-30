@@ -44,7 +44,22 @@ namespace Opc.Ua.Gds.Client
 {
     public partial class MainForm : Form
     {
-        public MainForm(ApplicationInstance application, ITelemetryContext telemetry)
+        /// <summary>
+        /// Builds the main form from the clients the container composed.
+        /// </summary>
+        /// <remarks>
+        /// The three clients are registered by the stack itself, through the
+        /// <c>AddGdsClient</c> of the GDS client library - see
+        /// <see cref="GdsClientServiceCollectionExtensions.AddGlobalDiscoveryClient"/>. That is
+        /// what decides they run on a <see cref="ManagedSession"/>; the form only uses them,
+        /// and the container owns their lifetime.
+        /// </remarks>
+        public MainForm(
+            ApplicationInstance application,
+            ITelemetryContext telemetry,
+            GlobalDiscoveryServerClient gds,
+            ServerPushConfigurationClient server,
+            LocalDiscoveryServerClient lds)
         {
             InitializeComponent();
             Icon = ClientUtils.GetAppIcon();
@@ -60,14 +75,13 @@ namespace Opc.Ua.Gds.Client
 
             m_filters = new QueryServersFilter();
             m_identity = new UserIdentity();
-            m_gds = new GlobalDiscoveryServerClient(m_application.ApplicationConfiguration);
+
+            m_gds = gds;
             m_gds.KeepAlive += GdsServer_KeepAlive;
-            m_gds.ServerStatusChanged += GdsServer_StatusNotification;
-            m_lds = new LocalDiscoveryServerClient(m_application.ApplicationConfiguration);
-            m_server = new ServerPushConfigurationClient(m_application.ApplicationConfiguration);
+            m_lds = lds;
+            m_server = server;
             m_server.AdminCredentialsRequired += Server_AdminCredentialsRequired;
             m_server.KeepAlive += Server_KeepAlive;
-            m_server.ServerStatusChanged += Server_StatusNotification;
             m_server.ConnectionStatusChanged += Server_ConnectionStatusChangedAsync;
 
             RegistrationPanel.InitializeAsync(m_gds, m_server, null, m_configuration, m_telemetry).GetAwaiter().GetResult();
@@ -122,11 +136,9 @@ namespace Opc.Ua.Gds.Client
         #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private UserIdentity m_identity;
         #pragma warning restore CA2213
-        #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
+        #pragma warning disable CA2213 // Justification: the container owns these clients, the form only borrows them.
         private GlobalDiscoveryServerClient m_gds;
-        #pragma warning restore CA2213
         private LocalDiscoveryServerClient m_lds;
-        #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private ServerPushConfigurationClient m_server;
         #pragma warning restore CA2213
         private RegisteredApplication m_registeredApplication;
@@ -293,44 +305,6 @@ namespace Opc.Ua.Gds.Client
 
                 await ServerStatusPanel.InitializeAsync(m_server, m_telemetry);
                 await CertificatePanel.InitializeAsync(m_configuration, m_gds, m_server, m_registeredApplication, false, m_telemetry);
-            }
-            catch (Exception exception)
-            {
-                ExceptionDlg.Show(m_telemetry, this.Text, exception);
-            }
-        }
-
-        private void GdsServer_StatusNotification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
-        {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new MonitoredItemNotificationEventHandler(GdsServer_StatusNotification), monitoredItem, e);
-                return;
-            }
-
-            try
-            {
-                MonitoredItemNotification notification = (MonitoredItemNotification)e.NotificationValue;
-                ServerStatusPanel.SetServerStatus(notification.Value.GetValue<ServerStatusDataType>(null));
-            }
-            catch (Exception exception)
-            {
-                ExceptionDlg.Show(m_telemetry, this.Text, exception);
-            }
-        }
-
-        private void Server_StatusNotification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
-        {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new MonitoredItemNotificationEventHandler(Server_StatusNotification), monitoredItem, e);
-                return;
-            }
-
-            try
-            {
-                MonitoredItemNotification notification = (MonitoredItemNotification)e.NotificationValue;
-                ServerStatusPanel.SetServerStatus(notification.Value.GetValue<ServerStatusDataType>(null));
             }
             catch (Exception exception)
             {

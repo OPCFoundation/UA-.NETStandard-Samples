@@ -122,8 +122,9 @@ namespace Opc.Ua.Samples.Tests
         {
             // the UA Sample Client has no shared connect control and opens its session
             // through a modal dialog, so it cannot be driven by the loop above - it has its
-            // own fixture in SampleClientFormTests instead. The GDS and aggregation clients
-            // need more than one server and follow in phase 4 of docs/TESTING.md
+            // own fixture in SampleClientFormTests instead. The GDS client hosts no connect
+            // control either and needs two servers, so it has one in GdsClientTests. The
+            // aggregation client also needs more than one server and is still open.
             string[] expectedGaps = ["Aggregation", "Gds", "Sample"];
 
             IEnumerable<string> uncovered = SampleCatalog.Clients
