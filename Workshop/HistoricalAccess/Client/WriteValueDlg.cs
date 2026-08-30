@@ -58,7 +58,7 @@ namespace Quickstarts.HistoricalAccess.Client
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private ITelemetryContext m_telemetry;
         private NodeId m_nodeId;
         private uint m_attributeId;
@@ -74,7 +74,7 @@ namespace Quickstarts.HistoricalAccess.Client
         /// <param name="attributeId">The attribute being written.</param>
         /// <param name="ct">The token to cancel the request</param>
         /// <returns>True if successful. False if the operation was cancelled.</returns>
-        public async Task<bool> ShowDialogAsync(Session session, NodeId nodeId, uint attributeId, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, NodeId nodeId, uint attributeId, CancellationToken ct = default)
         {
             m_session = session;
             m_telemetry = session?.MessageContext?.Telemetry;

@@ -55,13 +55,13 @@ namespace AggregationClient
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_nodeId;
         private ReferenceDescription m_reference;
         #endregion
 
         #region Public Interface
-        public async Task<ReferenceDescription> ShowDialogAsync(Session session, NodeId nodeId, CancellationToken ct = default)
+        public async Task<ReferenceDescription> ShowDialogAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
         {
             m_session = session;
 
@@ -83,7 +83,7 @@ namespace AggregationClient
         /// <summary>
         /// Updates the list of references.
         /// </summary>
-        private async Task UpdateListAsync(Session session, NodeId nodeId, CancellationToken ct = default)
+        private async Task UpdateListAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
         {
             m_nodeId = nodeId;
             ReferencesLV.Items.Clear();
@@ -94,7 +94,7 @@ namespace AggregationClient
         /// <summary>
         /// Fetches the references for the node.
         /// </summary>
-        private async Task<List<ReferenceDescription>> BrowseAsync(Session session, NodeId nodeId, CancellationToken ct = default)
+        private async Task<List<ReferenceDescription>> BrowseAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
         {
             List<ReferenceDescription> references = new List<ReferenceDescription>();
 
@@ -176,7 +176,7 @@ namespace AggregationClient
         /// <summary>
         /// Displays the references in the control.
         /// </summary>
-        private async Task DisplayReferencesAsync(Session session, List<ReferenceDescription> references, CancellationToken ct = default)
+        private async Task DisplayReferencesAsync(ISession session, List<ReferenceDescription> references, CancellationToken ct = default)
         {
             ReferencesLV.Items.Clear();
 
