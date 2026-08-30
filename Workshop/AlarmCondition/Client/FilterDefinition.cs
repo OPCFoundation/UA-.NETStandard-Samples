@@ -144,19 +144,27 @@ namespace Quickstarts.AlarmConditionClient
 
             selectClauses.Add(operand);
 
+            // the requested event types share most of their supertype chain - every
+            // condition type descends from BaseEventType through ConditionType - and each
+            // type in that chain carries a subtree of its own. One table of visited nodes
+            // for the whole call therefore browses each of those subtrees once instead of
+            // once per requested type. The fields are unaffected: they are keyed by browse
+            // path, and a node reached again through the same path adds nothing.
+            var foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
+
             // add the fields for the selected EventTypes.
             if (eventTypeIds != null)
             {
                 for (int ii = 0; ii < eventTypeIds.Length; ii++)
                 {
-                    await CollectFieldsAsync(session, eventTypeIds[ii], selectClauses, ct);
+                    await CollectFieldsAsync(session, eventTypeIds[ii], selectClauses, foundNodes, ct);
                 }
             }
 
             // use BaseEventType as the default if no EventTypes specified.
             else
             {
-                await CollectFieldsAsync(session, ObjectTypeIds.BaseEventType, selectClauses, ct);
+                await CollectFieldsAsync(session, ObjectTypeIds.BaseEventType, selectClauses, foundNodes, ct);
             }
 
             return selectClauses;
@@ -273,8 +281,14 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="session">The session.</param>
         /// <param name="eventTypeId">The event type id.</param>
         /// <param name="eventFields">The event fields.</param>
+        /// <param name="foundNodes">The table of nodes already browsed, shared by the whole call.</param>
         /// <param name="ct">The token to cancel the request</param>
-        private async Task CollectFieldsAsync(ISession session, NodeId eventTypeId, List<SimpleAttributeOperand> eventFields, CancellationToken ct = default)
+        private async Task CollectFieldsAsync(
+            ISession session,
+            NodeId eventTypeId,
+            List<SimpleAttributeOperand> eventFields,
+            Dictionary<NodeId, List<QualifiedName>> foundNodes,
+            CancellationToken ct = default)
         {
             // get the supertypes.
             List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
@@ -285,7 +299,6 @@ namespace Quickstarts.AlarmConditionClient
             }
 
             // process the types starting from the top of the tree.
-            Dictionary<NodeId, List<QualifiedName>> foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
             List<QualifiedName> parentPath = new List<QualifiedName>();
 
             for (int ii = supertypes.Count - 1; ii >= 0; ii--)
