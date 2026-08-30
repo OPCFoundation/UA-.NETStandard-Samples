@@ -34,13 +34,29 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Microsoft.Extensions.Logging;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Client.Subscriptions.Streaming;
 
 namespace Quickstarts.AlarmConditionClient
 {
+    // the V2 subscription engine reuses a name the classic engine has in Opc.Ua.Client.
+    // the V2 subscription engine reuses a name the classic engine has in Opc.Ua.Client.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
     /// <summary>
     /// A form which displays the audit events produced by the server.
     /// </summary>
+    /// <remarks>
+    /// This window watches the audit trail for as long as it is open, which is what the
+    /// streaming API of the V2 subscription engine is for: <see cref="IStreamingSubscription"/>
+    /// hands the notifications out as an <see cref="IAsyncEnumerable{T}"/>, creates the
+    /// monitored item when the enumeration starts and removes it again when it ends. The
+    /// callback based <see cref="ISubscriptionNotificationHandler"/> the main form uses is the
+    /// better fit there, because that subscription lives as long as the session and has to
+    /// serve condition refreshes.
+    /// </remarks>
     public partial class AuditEventForm : Form
     {
         #region Constructors
@@ -56,14 +72,14 @@ namespace Quickstarts.AlarmConditionClient
         /// Initializes a new instance of the <see cref="AuditEventForm"/> class.
         /// </summary>
         /// <param name="session">The session.</param>
-        /// <param name="subscription">The subscription.</param>
+        /// <param name="telemetry">The telemetry context the window logs with.</param>
         /// <param name="ct">The cancellation token.</param>
-        public async Task InitializeAsync(ISession session, Subscription subscription, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task InitializeAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             InitializeComponent();
 
             m_session = session;
-            m_subscription = subscription;
+            m_telemetry = telemetry;
 
             // a table used to track event types.
             m_eventTypeMappings = new Dictionary<NodeId, NodeId>();
@@ -79,17 +95,20 @@ namespace Quickstarts.AlarmConditionClient
             // find the fields of interest.
             m_filter.SelectClauses = await m_filter.ConstructSelectClausesAsync(m_session, ct, ObjectTypeIds.AuditUpdateMethodEventType);
 
-            // declate callback.
-            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
+            // the streaming subscription belongs to this window, so closing the window is what
+            // deletes it on the server again.
+            if (!m_session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                throw new ServiceResultException(
+                    StatusCodes.BadNotSupported,
+                    "The session does not use the V2 subscription engine.");
+            }
 
-            // create a monitored item based on the current filter settings.
-            m_monitoredItem = m_filter.CreateMonitoredItem(m_session, telemetry);
+            m_streaming = new StreamingSubscription(manager, ClientUtils.DefaultSubscriptionOptions);
 
-            // set up callback for notifications.
-            m_monitoredItem.Notification += m_MonitoredItem_Notification;
-
-            m_subscription.AddItem(m_monitoredItem);
-            await m_subscription.ApplyChangesAsync(ct);
+            // start pumping the audit events into the list. The underlying subscription and
+            // its monitored item are created when the enumeration starts.
+            m_pump = PumpAuditEventsAsync(m_cts.Token);
         }
         #endregion
 
@@ -98,58 +117,101 @@ namespace Quickstarts.AlarmConditionClient
         /// Handles a server reconnect event.
         /// </summary>
         /// <param name="session">The new session.</param>
-        /// <param name="subscription">The new subscription.</param>
-        public void ReconnectComplete(ISession session, Subscription subscription)
+        /// <remarks>
+        /// The streaming subscription belongs to the subscription manager of the session and
+        /// survives the reconnect together with its monitored item, so the stream keeps
+        /// running and there is nothing to re-create here.
+        /// </remarks>
+        public void ReconnectComplete(ISession session)
         {
             m_session = session;
-            m_subscription = subscription;
-
-            foreach (MonitoredItem monitoredItem in m_subscription.MonitoredItems)
-            {
-                if (Object.ReferenceEquals(monitoredItem.Handle, m_filter))
-                {
-                    m_monitoredItem = monitoredItem;
-                    break;
-                }
-            }
         }
         #endregion
 
         #region Private Fields
         private ISession m_session;
-        private Subscription m_subscription;
-        private MonitoredItem m_monitoredItem;
+        private ITelemetryContext m_telemetry;
+#pragma warning disable CA2213 // Justification: disposed asynchronously by AuditEventForm_FormClosing.
+        private StreamingSubscription m_streaming;
+#pragma warning restore CA2213
+#pragma warning disable CA2213 // Justification: disposed by AuditEventForm_FormClosing.
+        private readonly CancellationTokenSource m_cts = new CancellationTokenSource();
+#pragma warning restore CA2213
+        private Task m_pump;
+        private EventFilter m_eventFilter;
         private FilterDefinition m_filter;
         private Dictionary<NodeId, NodeId> m_eventTypeMappings;
-        private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
         #endregion
 
         #region Private Methods
+        /// <summary>
+        /// Reads the audit events off the streaming subscription until the window is closed.
+        /// </summary>
+        /// <remarks>
+        /// Each notification arrives on the enumeration instead of on a callback, so the
+        /// window drives the loop and cancelling the token both ends the loop and removes the
+        /// monitored item.
+        /// </remarks>
+        private async Task PumpAuditEventsAsync(CancellationToken ct)
+        {
+            MonitoredItemOptions options = m_filter.CreateMonitoredItemOptions(m_session);
+
+            // the fields of a notification line up with the select clauses of this filter, so
+            // the form keeps it: the engine does not report the filter of an item back.
+            m_eventFilter = (EventFilter)options.Filter;
+
+            try
+            {
+                await foreach (EventNotification notification in m_streaming
+                    .SubscribeEventsAsync(m_filter.AreaId, m_eventFilter, options, ct)
+                    .ConfigureAwait(false))
+                {
+                    if (ct.IsCancellationRequested || IsDisposed)
+                    {
+                        return;
+                    }
+
+                    // the enumeration runs on a publish worker, so the display is updated on
+                    // the UI thread. Without a window there is nothing to update, and the
+                    // enumeration keeps running rather than ending for good.
+                    if (!IsHandleCreated)
+                    {
+                        continue;
+                    }
+
+                    BeginInvoke(new Action<EventNotification>(DisplayAuditEventAsync), notification);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // the window was closed.
+            }
+            catch (Exception exception)
+            {
+                // the pump runs on a publish worker, so the error is logged instead of shown.
+                m_telemetry?.CreateLogger<AuditEventForm>()
+                    .LogError(exception, "Failed to read the audit events.");
+            }
+        }
         #endregion
 
         #region Event Handlers
         /// <summary>
-        /// Updates the display with a new value for a monitored variable.
+        /// Updates the display with an audit event read off the stream.
         /// </summary>
-        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private async void DisplayAuditEventAsync(EventNotification eventNotification)
         {
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync), monitoredItem, e);
-                return;
-            }
-
             try
             {
-                EventFieldList notification = e.NotificationValue as EventFieldList;
-
-                if (notification == null)
-                {
-                    return;
-                }
+                // the engine reports the fields of an event, which line up with the select
+                // clauses of the filter the item was created with.
+                var notification = new EventFieldList {
+                    ClientHandle = eventNotification.MonitoredItem?.ClientHandle ?? 0,
+                    EventFields = eventNotification.Fields,
+                };
 
                 // check the type of event.
-                NodeId eventTypeId = FormUtils.FindEventType(monitoredItem, notification);
+                NodeId eventTypeId = FormUtils.FindEventType(m_eventFilter, notification);
 
                 // ignore unknown events.
                 if ((eventTypeId).IsNull)
@@ -160,7 +222,7 @@ namespace Quickstarts.AlarmConditionClient
                 // construct the audit object.
                 AuditUpdateMethodEventState audit = await FormUtils.ConstructEventAsync(
                     m_session,
-                    monitoredItem,
+                    m_eventFilter,
                     notification,
                     m_eventTypeMappings) as AuditUpdateMethodEventState;
 
@@ -287,7 +349,7 @@ namespace Quickstarts.AlarmConditionClient
                 AuditUpdateMethodEventState audit = (AuditUpdateMethodEventState)EventsLV.SelectedItems[0].Tag;
                 using (var dialog = new ViewEventDetailsDlg())
                 {
-                    dialog.ShowDialog(m_monitoredItem, audit.Handle as EventFieldList);
+                    dialog.ShowDialog(m_eventFilter, audit.Handle as EventFieldList);
                 }
             }
             catch (Exception exception)
@@ -320,14 +382,30 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="e">The <see cref="System.Windows.Forms.FormClosingEventArgs"/> instance containing the event data.</param>
         private void AuditEventForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            StreamingSubscription streaming = m_streaming;
+
+            m_streaming = null;
+            m_pump = null;
+
             try
             {
-                m_monitoredItem.Notification -= m_MonitoredItem_Notification;
-                m_subscription.RemoveItem(m_monitoredItem);
+                // cancelling the token ends the enumeration, which removes the monitored item,
+                // and disposing the streaming subscription deletes it on the server.
+                m_cts.Cancel();
+
+                streaming?.DisposeAsync().AsTask().GetAwaiter().GetResult();
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                // the main form also closes this window when the session goes away, and then
+                // the subscription cannot be deleted on the server any more. That is not
+                // worth a dialog on the way out.
+                m_telemetry?.CreateLogger<AuditEventForm>()
+                    .LogError(exception, "Failed to delete the audit event subscription.");
+            }
+            finally
+            {
+                m_cts.Dispose();
             }
         }
         #endregion

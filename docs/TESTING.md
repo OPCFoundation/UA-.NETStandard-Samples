@@ -365,7 +365,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-21 test cases, about a minute, Windows only. For each WinForms sample client the test
+27 test cases, about a minute, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 
@@ -385,6 +385,27 @@ to view - and waits for a data change to land in the grid. It asserts the connec
 handed out a `ManagedSession`, so a silent fall back to the raw session and its hand rolled
 reconnect fails a test, and it proves that the V2 notification handler of a control actually
 reaches the user interface.
+
+`WorkshopClientSubscriptionTests` asks the same question of the Workshop clients that
+subscribe, and asks it of the sample itself rather than of a shared control. Six clients
+connect to their own server and the test waits for a notification to reach the place the
+sample displays it: the drum level of the Boiler client, the process state of the Methods
+client, the value column of the DataAccess client's monitored item list, a condition in the
+AlarmCondition client, an event in the SimpleEvents client and a live event in the
+HistoricalEvents client. That covers both halves of the V2 engine - the callback based
+`ISubscriptionNotificationHandler` for the first four, the streaming `IStreamingSubscription`
+for the last two - and the AlarmCondition case also opens the audit event window, whose whole
+job is a streaming subscription that starts when it opens and ends when it closes.
+
+This is the part a connect test cannot reach: the handler is fixed when the subscription is
+created, an item is identified by name rather than by a mutable object, and the callback
+arrives on a publish worker. All three can be wired up wrongly and still connect perfectly,
+leaving nothing but an empty window. Writing it found two defects, both fixed:
+
+| Where | What was wrong |
+|-------|----------------|
+| `Workshop/HistoricalEvents/Client/EventListView.cs` | Every event the list was given threw `InvalidCastException` into a modal dialog: it unboxed a `DateTime` event field with `(DateTime)Variant.AsBoxedObject()`, and the 2.0 stack boxes one as `DateTimeUtc`. The same method renders the event *history*, so the sample's only two displays were both dead since the 2.0 migration |
+| `Workshop/AlarmCondition/Client/AuditEventForm.cs` | Closing the audit window threw `BadNotConnected` out of its own error handler. The main form closes that window when the session goes away, so the subscription can no longer be deleted on the server - and the handler for that failure asked the closed session for its telemetry context. The window keeps the telemetry context it was created with and logs the failure instead of showing it |
 
 `SampleControlsSubscribeTests` does the same for the UA Sample Client controls in
 `Controls.Net4`: it opens a managed session the way `SessionOpenDlg` does, creates a
@@ -456,7 +477,7 @@ The fixture is `[Category("RequiresDesktop")]` because it needs a window station
 the `Test Samples` job is on a Windows agent and filters nothing out. The category is there so
 the suite can still be run where no window station exists - `--filter "TestCategory!=RequiresDesktop"`.
 
-All 17 cases pass. Two samples did not, and both were fixed rather than parked.
+All 26 cases pass. Two samples did not, and both were fixed rather than parked.
 
 The **AlarmCondition client** connected and then filled a modal dialog with a
 `NullReferenceException` followed by `An item with the same key has already been added.

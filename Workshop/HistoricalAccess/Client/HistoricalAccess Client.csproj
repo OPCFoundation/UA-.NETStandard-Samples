@@ -31,11 +31,4 @@
       <Version>2.0.0-preview.2</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="HistoryDataListView.Designer.cs" />
-    <Compile Remove="HistoryDataListView.cs" />
-  </ItemGroup>
-  <ItemGroup Label="EmbeddedResource items now included by globbing that were not in the original project file">
-    <EmbeddedResource Remove="HistoryDataListView.resx" />
-  </ItemGroup>
 </Project>

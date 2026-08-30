@@ -34,11 +34,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Subscriptions;
 
 namespace Quickstarts.PerfTestClient
 {
+    // the V2 subscription engine reuses names the classic engine has in Opc.Ua.Client, and
+    // Opc.Ua itself has a server side IMonitoredItem, so the client types are aliased.
+    using IMonitoredItem = Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItem;
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Subscription lifetime is managed by StartAsync and StopAsync in this sample.")]
-    internal sealed class Tester
+    internal sealed class Tester : ISubscriptionNotificationHandler
     {
         // gets or sets the update rate.
         public int SamplingRate
@@ -147,50 +154,104 @@ namespace Quickstarts.PerfTestClient
         /// <param name="session">The session.</param>
         public async Task StartAsync(ISession session, ITelemetryContext telemetry)
         {
-            m_NotificationEventHandler = new NotificationEventHandler(Session_Notification);
-            session.Notification += m_NotificationEventHandler;
+            ArgumentNullException.ThrowIfNull(session);
 
-            Subscription subscription = m_subscription = new Subscription(telemetry);
+            if (!session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                throw new ServiceResultException(
+                    StatusCodes.BadNotSupported,
+                    "The session does not use the V2 subscription engine.");
+            }
 
-            subscription.PublishingInterval = m_samplingRate;
-            subscription.KeepAliveCount = 10;
-            subscription.LifetimeCount = 100;
-            subscription.MaxNotificationsPerPublish = 50000;
-            subscription.PublishingEnabled = false;
-            subscription.TimestampsToReturn = TimestampsToReturn.Neither;
-            subscription.Priority = 1;
-            subscription.DisableMonitoredItemCache = true;
+            // the test measures how fast the notifications arrive, so it takes them straight
+            // off the engine: the tester itself is the notification handler.
+            m_options = new OptionsMonitor<SubscriptionOptions>(new SubscriptionOptions {
+                PublishingInterval = TimeSpan.FromMilliseconds(m_samplingRate),
+                KeepAliveCount = 10,
+                LifetimeCount = 100,
+                MaxNotificationsPerPublish = 50000,
+                PublishingEnabled = false,
+                Priority = 1,
+            });
 
-            session.AddSubscription(subscription);
-            await subscription.CreateAsync();
+            ISubscription subscription = m_subscription = manager.Add(this, m_options);
 
             DateTime start = DateTime.UtcNow;
 
+            var indexes = new Dictionary<uint, int>();
+
             for (int ii = 0; ii < m_itemCount; ii++)
             {
-                MonitoredItem monitoredItem = new MonitoredItem((uint)ii, telemetry);
+                var options = new OptionsMonitor<MonitoredItemOptions>(new MonitoredItemOptions {
+                    StartNodeId = new NodeId((uint)((1 << 24) + ii), 2),
+                    AttributeId = Attributes.Value,
+                    TimestampsToReturn = TimestampsToReturn.Neither,
+                    SamplingInterval = TimeSpan.FromMilliseconds(-1),
+                    QueueSize = 0,
+                    DiscardOldest = true,
+                    MonitoringMode = MonitoringMode.Reporting,
+                });
 
-                monitoredItem.StartNodeId = new NodeId((uint)((1 << 24) + ii), 2);
-                monitoredItem.AttributeId = Attributes.Value;
-                monitoredItem.SamplingInterval = -1;
-                monitoredItem.Filter = null;
-                monitoredItem.QueueSize = 0;
-                monitoredItem.DiscardOldest = true;
-                monitoredItem.MonitoringMode = MonitoringMode.Reporting;
-
-                subscription.AddItem(monitoredItem);
+                if (subscription.MonitoredItems.TryAdd(
+                    Utils.Format("Item{0}", ii),
+                    options,
+                    out IMonitoredItem monitoredItem))
+                {
+                    // the engine assigns the client handle, so the test keeps the mapping it
+                    // used to get by constructing the item with the index as its handle.
+                    indexes[monitoredItem.ClientHandle] = ii;
+                }
             }
 
-            await subscription.ApplyChangesAsync();
+            // the engine applies the added items on its own worker, so the time it takes for
+            // them to exist on the server is the time until nothing is pending any more.
+            await WaitForPendingChangesAsync(subscription);
             DateTime end = DateTime.UtcNow;
+
+            lock (m_lock)
+            {
+                m_itemIndexes = indexes;
+            }
 
             ReportMessage("Time to add {1} items {0}ms.", (end - start).TotalMilliseconds, m_itemCount);
 
+            // reconfiguring the options monitor is what modifies the subscription; there is no
+            // SetPublishingMode call in the V2 engine.
             start = DateTime.UtcNow;
-            await subscription.SetPublishingModeAsync(true);
+            m_options.Configure(options => options with { PublishingEnabled = true });
             end = DateTime.UtcNow;
 
             ReportMessage("Time to emable publishing {0}ms.", (end - start).TotalMilliseconds);
+        }
+
+        /// <summary>
+        /// Waits until the engine has applied the pending monitored item changes.
+        /// </summary>
+        private static async Task WaitForPendingChangesAsync(ISubscription subscription, CancellationToken ct = default)
+        {
+            DateTime deadline = DateTime.UtcNow.AddSeconds(30);
+
+            while (DateTime.UtcNow < deadline)
+            {
+                bool pending = false;
+
+                foreach (IMonitoredItem monitoredItem in subscription.MonitoredItems.Items)
+                {
+                    if (monitoredItem is Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItemApplyState state &&
+                        state.HasPendingChanges)
+                    {
+                        pending = true;
+                        break;
+                    }
+                }
+
+                if (!pending)
+                {
+                    return;
+                }
+
+                await Task.Delay(10, ct);
+            }
         }
 
         /// <summary>
@@ -198,21 +259,21 @@ namespace Quickstarts.PerfTestClient
         /// </summary>
         public async Task StopAsync(CancellationToken ct = default)
         {
-            Subscription subscription = null;
+            ISubscription subscription = null;
+
             lock (m_lock)
             {
-                if (m_subscription != null && m_subscription.Session != null)
-                {
-                    if (m_NotificationEventHandler != null)
-                    {
-                        m_subscription.Session.Notification -= m_NotificationEventHandler;
-                    }
-
-                    subscription = m_subscription;
-                    m_subscription = null;
-                }
+                subscription = m_subscription;
+                m_subscription = null;
+                m_itemIndexes = null;
             }
-            await subscription.DeleteAsync(true, ct);
+
+            if (subscription != null)
+            {
+                // disposing the subscription deletes it on the server and drops it from the
+                // subscription manager, which also stops the notifications.
+                await subscription.DisposeAsync();
+            }
         }
 
         void ReportMessage(string message, params object[] args)
@@ -235,7 +296,21 @@ namespace Quickstarts.PerfTestClient
             }
         }
 
-        void Session_Notification(ISession session, NotificationEventArgs e)
+        /// <summary>
+        /// Counts one publish response worth of data changes.
+        /// </summary>
+        /// <remarks>
+        /// The engine hands the decoded values of the whole notification over, which is what
+        /// the test used to decode out of the raw notification message itself. The buffer
+        /// belongs to the engine, so nothing is kept beyond this call.
+        /// </remarks>
+        ValueTask ISubscriptionNotificationHandler.OnDataChangeNotificationAsync(
+            ISubscription subscription,
+            uint sequenceNumber,
+            DateTime publishTime,
+            ReadOnlyMemory<DataValueChange> notification,
+            PublishState publishStateMask,
+            IReadOnlyList<string> stringTable)
         {
             lock (m_lock)
             {
@@ -249,35 +324,58 @@ namespace Quickstarts.PerfTestClient
                 m_messageCount++;
                 m_lastMessageTime = DateTime.UtcNow;
 
-                int count = 0;
+                ReadOnlySpan<DataValueChange> changes = notification.Span;
 
-                for (int ii = 0; ii < e.NotificationMessage.NotificationData.Count; ii++)
+                for (int ii = 0; ii < changes.Length; ii++)
                 {
-                    DataChangeNotification notification = e.NotificationMessage.NotificationData[ii].TryGetValue<DataChangeNotification>(out var decodedNotification, ServiceMessageContext.CreateEmpty(null))
-                        ? decodedNotification
-                        : null;
+                    m_totalItemUpdateCount++;
 
-                    if (notification == null)
+                    if (changes[ii].MonitoredItem == null || m_itemIndexes == null)
                     {
                         continue;
                     }
 
-                    for (int jj = 0; jj < notification.MonitoredItems.Count; jj++)
+                    if (m_itemIndexes.TryGetValue(changes[ii].MonitoredItem.ClientHandle, out int index) &&
+                        index >= 0 && index < m_itemUpdateCounts.Length)
                     {
-                        count++;
-                        int clientHandle = (int)notification.MonitoredItems[jj].ClientHandle;
-
-                        m_totalItemUpdateCount++;
-
-                        if (clientHandle >= 0 && clientHandle < m_itemUpdateCounts.Length)
-                        {
-                            m_itemUpdateCounts[clientHandle]++;
-                        }
+                        m_itemUpdateCounts[index]++;
                     }
                 }
-
-                // ReportMessage("OnDataChange. Time={0} ({3}), Count={1}/{2}", DateTime.UtcNow.ToString("mm:ss.fff"), count, m_totalItemUpdateCount, (m_lastMessageTime - m_firstMessageTime).TotalMilliseconds);
             }
+
+            return default;
+        }
+
+        /// <inheritdoc/>
+        ValueTask ISubscriptionNotificationHandler.OnEventDataNotificationAsync(
+            ISubscription subscription,
+            uint sequenceNumber,
+            DateTime publishTime,
+            ReadOnlyMemory<EventNotification> notification,
+            PublishState publishStateMask,
+            IReadOnlyList<string> stringTable)
+        {
+            return default;
+        }
+
+        /// <inheritdoc/>
+        ValueTask ISubscriptionNotificationHandler.OnKeepAliveNotificationAsync(
+            ISubscription subscription,
+            uint sequenceNumber,
+            DateTime publishTime,
+            PublishState publishStateMask)
+        {
+            return default;
+        }
+
+        /// <inheritdoc/>
+        ValueTask ISubscriptionNotificationHandler.OnSubscriptionStateChangedAsync(
+            ISubscription subscription,
+            Opc.Ua.Client.Subscriptions.SubscriptionState state,
+            PublishState publishStateMask,
+            CancellationToken ct)
+        {
+            return default;
         }
 
         private object m_lock = new object();
@@ -289,7 +387,12 @@ namespace Quickstarts.PerfTestClient
         private DateTime m_firstMessageTime;
         private DateTime m_lastMessageTime;
         private int[] m_itemUpdateCounts;
-        private Subscription m_subscription;
-        private NotificationEventHandler m_NotificationEventHandler;
+        private ISubscription m_subscription;
+        private OptionsMonitor<SubscriptionOptions> m_options;
+
+        /// <summary>
+        /// The index of each item by the client handle the engine assigned to it.
+        /// </summary>
+        private Dictionary<uint, int> m_itemIndexes;
     }
 }

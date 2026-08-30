@@ -37,11 +37,18 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace Quickstarts.AlarmConditionClient
 {
+    // the V2 subscription engine reuses names the classic engine has in Opc.Ua.Client, and
+    // Opc.Ua itself has a server side IMonitoredItem, so the client types are aliased.
+    using IMonitoredItem = Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItem;
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
     /// <summary>
     /// A form which displays the condition events produced by the server.
     /// </summary>
@@ -82,8 +89,9 @@ namespace Quickstarts.AlarmConditionClient
             m_filter.IgnoreSuppressedOrShelved = true;
             m_filter.EventTypes = new NodeId[] { ObjectTypeIds.ConditionType };
 
-            // declate callback.
-            m_MonitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
+            // the V2 engine takes the notification handler when the subscription is created,
+            // so the form owns one for its whole lifetime and points it at its own methods.
+            m_callbacks.EventCallback = OnEvents;
 
             // initialize controls.
             Conditions_Severity_AllMI.Checked = true;
@@ -108,15 +116,22 @@ namespace Quickstarts.AlarmConditionClient
         }
 
         #region Private Fields
+        /// <summary>
+        /// How long the form waits for the subscription engine to apply the item changes.
+        /// </summary>
+        private static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(10);
+
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
-#pragma warning disable CA2213 // Justification: Subscription lifetime is managed by session disconnect logic.
-        private Subscription m_subscription;
+#pragma warning disable CA2213 // Justification: disposed asynchronously by DeleteSubscriptionAsync.
+        private ISubscription m_subscription;
 #pragma warning restore CA2213
-        private MonitoredItem m_monitoredItem;
+        private readonly SubscriptionCallbacks m_callbacks = new SubscriptionCallbacks();
+        private MonitoredItemHandle m_monitoredItem;
+        private EventFilter m_eventFilter;
+        private int m_nextItemId;
         private FilterDefinition m_filter;
         private Dictionary<NodeId, NodeId> m_eventTypeMappings;
-        private MonitoredItemNotificationEventHandler m_MonitoredItem_Notification;
 #pragma warning disable CA2213 // Justification: Audit event form is closed by existing UI disconnect logic.
         private AuditEventForm m_auditEventForm;
 #pragma warning restore CA2213
@@ -146,10 +161,11 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await DeleteSubscriptionAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -185,6 +201,9 @@ namespace Quickstarts.AlarmConditionClient
                 // check for disconnect.
                 if (m_session == null)
                 {
+                    m_subscription = null;
+                    m_monitoredItem = null;
+
                     if (m_auditEventForm != null)
                     {
                         m_auditEventForm.Close();
@@ -202,19 +221,11 @@ namespace Quickstarts.AlarmConditionClient
                     m_connectedOnce = true;
                 }
 
-                // create the default subscription.
-                m_subscription = new Subscription(m_telemetry);
+                // create the default subscription. The V2 engine takes the settings through an
+                // options monitor and creates the subscription on the server on its own worker.
+                var options = new OptionsMonitor<SubscriptionOptions>(ClientUtils.DefaultSubscriptionOptions);
 
-                m_subscription.DisplayName = null;
-                m_subscription.PublishingInterval = 1000;
-                m_subscription.KeepAliveCount = 10;
-                m_subscription.LifetimeCount = 100;
-                m_subscription.MaxNotificationsPerPublish = 1000;
-                m_subscription.PublishingEnabled = true;
-                m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
-
-                m_session.AddSubscription(m_subscription);
-                await m_subscription.CreateAsync();
+                m_subscription = ClientUtils.AddSubscription(m_session, m_callbacks, options);
 
                 // must specify the fields that the form is interested in.
                 m_filter.SelectClauses = await m_filter.ConstructSelectClausesAsync(
@@ -227,13 +238,9 @@ namespace Quickstarts.AlarmConditionClient
                     ObjectTypeIds.NonExclusiveLimitAlarmType);
 
                 // create a monitored item based on the current filter settings.
-                m_monitoredItem = m_filter.CreateMonitoredItem(m_session, m_telemetry);
+                m_monitoredItem = AddEventItem();
 
-                // set up callback for notifications.
-                m_monitoredItem.Notification += m_MonitoredItem_Notification;
-
-                m_subscription.AddItem(m_monitoredItem);
-                await m_subscription.ApplyChangesAsync();
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
 
                 // send an initial refresh.
                 Conditions_RefreshMI_ClickAsync(sender, e);
@@ -270,28 +277,14 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
+                // a V2 subscription belongs to the subscription manager of the session and
+                // survives the reconnect together with its monitored items, so neither the
+                // subscription nor the item has to be replaced here.
                 m_session = ConnectServerCTRL.Session;
-
-                // replace the subscription.
-                foreach (Subscription subscription in m_session.Subscriptions)
-                {
-                    m_subscription = subscription;
-                    break;
-                }
-
-                // replace the monitored item.
-                foreach (MonitoredItem monitoredItem in m_subscription.MonitoredItems)
-                {
-                    if (Object.ReferenceEquals(monitoredItem.Handle, m_filter))
-                    {
-                        m_monitoredItem = monitoredItem;
-                        break;
-                    }
-                }
 
                 if (m_auditEventForm != null)
                 {
-                    m_auditEventForm.ReconnectComplete(m_session, m_subscription);
+                    m_auditEventForm.ReconnectComplete(m_session);
                 }
 
                 // send a refresh.
@@ -311,11 +304,57 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            DeleteSubscriptionAsync().GetAwaiter().GetResult();
             ConnectServerCTRL.Disconnect();
+        }
+
+        /// <summary>
+        /// Deletes the subscription on the server and drops it from the subscription manager.
+        /// </summary>
+        /// <remarks>
+        /// Done before the session is closed: closing a session which still carries a
+        /// subscription waits for the publish pipeline to drain.
+        /// </remarks>
+        private async Task DeleteSubscriptionAsync()
+        {
+            ISubscription subscription = m_subscription;
+
+            m_subscription = null;
+            m_monitoredItem = null;
+
+            if (subscription != null)
+            {
+                await subscription.DisposeAsync();
+            }
         }
         #endregion
 
         #region Condition Methods
+        /// <summary>
+        /// Adds a monitored item for the current filter settings to the subscription.
+        /// </summary>
+        /// <remarks>
+        /// The V2 engine identifies an item by a name which is unique within its subscription,
+        /// and adding it to the collection is the create request.
+        /// </remarks>
+        private MonitoredItemHandle AddEventItem()
+        {
+            MonitoredItemOptions options = m_filter.CreateMonitoredItemOptions(m_session);
+
+            // the fields of a notification line up with the select clauses of this filter, so
+            // the form keeps it: the engine does not report the filter of an item back.
+            m_eventFilter = (EventFilter)options.Filter;
+
+            var handle = new MonitoredItemHandle(Utils.Format("Events{0}", ++m_nextItemId), options) {
+                NodeClass = NodeClass.Object,
+            };
+
+            m_subscription.MonitoredItems.TryAdd(handle.Name, handle.Options, out IMonitoredItem item);
+            handle.Item = item;
+
+            return handle;
+        }
+
         /// <summary>
         /// Updates the filter.
         /// </summary>
@@ -325,19 +364,18 @@ namespace Quickstarts.AlarmConditionClient
             {
                 // changing the filter changes the fields requested. this makes it
                 // impossible to process notifications sent before the change.
-                // to avoid this problem we create a new item and remove the old one.
-                MonitoredItem monitoredItem = m_filter.CreateMonitoredItem(m_session, m_telemetry);
+                // to avoid this problem we create a new item and remove the old one - the
+                // event filter of an item cannot be modified after it was created anyway.
+                MonitoredItemHandle previous = m_monitoredItem;
 
-                // set up callback for notifications.
-                monitoredItem.Notification += m_MonitoredItem_Notification;
+                m_monitoredItem = AddEventItem();
 
-                m_subscription.AddItem(monitoredItem);
-                m_subscription.RemoveItem(m_monitoredItem);
-                await m_subscription.ApplyChangesAsync(ct);
+                if (previous?.Item != null)
+                {
+                    m_subscription.MonitoredItems.TryRemove(previous.Item.ClientHandle);
+                }
 
-                // replace monitored item.
-                m_monitoredItem.Notification -= m_MonitoredItem_Notification;
-                m_monitoredItem = monitoredItem;
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
 
                 // send a refresh since previously filtered conditions may be now available.
                 Conditions_RefreshMI_ClickAsync(this, null);
@@ -606,27 +644,66 @@ namespace Quickstarts.AlarmConditionClient
 
         #region Event Handlers
         /// <summary>
-        /// Updates the display with a new value for a monitored variable.
+        /// Updates the display with the events the server reported.
         /// </summary>
-        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        /// <remarks>
+        /// The V2 engine calls this on a publish worker instead of on the UI thread, and it
+        /// reports the whole notification instead of one event at a time.
+        /// </remarks>
+        private void OnEvents(
+            ISubscription subscription,
+            uint sequenceNumber,
+            DateTime publishTime,
+            EventNotification[] notifications,
+            PublishState publishState)
         {
-            if (this.InvokeRequired)
+            if (!IsHandleCreated || IsDisposed)
             {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync), monitoredItem, e);
                 return;
             }
 
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(
+                    () => OnEvents(subscription, sequenceNumber, publishTime, notifications, publishState)));
+                return;
+            }
+
+            DisplayEventsAsync(notifications);
+        }
+
+        /// <summary>
+        /// Updates the display with the events of one notification, one at a time.
+        /// </summary>
+        /// <remarks>
+        /// A later event of a condition updates the entry an earlier one created, and
+        /// processing an event awaits, so the events of a notification are awaited in turn
+        /// rather than all started at once.
+        /// </remarks>
+        private async void DisplayEventsAsync(EventNotification[] notifications)
+        {
+            foreach (EventNotification notification in notifications)
+            {
+                await ProcessEventAsync(notification);
+            }
+        }
+
+        /// <summary>
+        /// Updates the display with a single event notification.
+        /// </summary>
+        private async Task ProcessEventAsync(EventNotification eventNotification)
+        {
             try
             {
-                EventFieldList notification = e.NotificationValue as EventFieldList;
-
-                if (notification == null)
-                {
-                    return;
-                }
+                // the engine reports the fields of an event, which line up with the select
+                // clauses of the filter the item was created with.
+                var notification = new EventFieldList {
+                    ClientHandle = eventNotification.MonitoredItem?.ClientHandle ?? 0,
+                    EventFields = eventNotification.Fields,
+                };
 
                 // check the type of event.
-                NodeId eventTypeId = FormUtils.FindEventType(monitoredItem, notification);
+                NodeId eventTypeId = FormUtils.FindEventType(m_eventFilter, notification);
 
                 // ignore unknown events.
                 if ((eventTypeId).IsNull)
@@ -650,7 +727,7 @@ namespace Quickstarts.AlarmConditionClient
                 // construct the condition object.
                 ConditionState condition = await FormUtils.ConstructEventAsync(
                     m_session,
-                    monitoredItem,
+                    m_eventFilter,
                     notification,
                     m_eventTypeMappings) as ConditionState;
 
@@ -836,29 +913,11 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                CallMethodRequest request = new CallMethodRequest();
-
-                request.ObjectId = ObjectTypeIds.ConditionType;
-                request.MethodId = MethodIds.ConditionType_ConditionRefresh;
-                AddInputArgument(request, new Variant(m_subscription.Id));
-
-                List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
-                methodsToCall.Add(request);
-
-                CallResponse response = await m_session.CallAsync(
-                    null,
-                    methodsToCall,
-                    default);
-
-                List<CallMethodResult> results = response.Results.ToList();
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                ClientBase.ValidateResponse(results, methodsToCall);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
-
-                if (StatusCode.IsBad(results[0].StatusCode))
+                // the server id of a V2 subscription is not public, and it does not have to
+                // be: the engine calls ConditionRefresh for the subscription itself.
+                if (m_subscription != null)
                 {
-                    throw ServiceResultException.Create((uint)results[0].StatusCode, "Unexpected error calling RefreshConditions.");
+                    await m_subscription.ConditionRefreshAsync();
                 }
             }
             catch (Exception exception)
@@ -1085,7 +1144,7 @@ namespace Quickstarts.AlarmConditionClient
                 ConditionState condition = (ConditionState)ConditionsLV.SelectedItems[0].Tag;
                 using (var dialog = new ViewEventDetailsDlg())
                 {
-                    dialog.ShowDialog(m_monitoredItem, condition.Handle as EventFieldList);
+                    dialog.ShowDialog(m_eventFilter, condition.Handle as EventFieldList);
                 }
             }
             catch (Exception exception)
@@ -1213,7 +1272,7 @@ namespace Quickstarts.AlarmConditionClient
                 if (m_auditEventForm == null)
                 {
                     m_auditEventForm = new AuditEventForm();
-                    await m_auditEventForm.InitializeAsync(m_session, m_subscription, m_telemetry);
+                    await m_auditEventForm.InitializeAsync(m_session, m_telemetry);
 
                     m_auditEventForm.FormClosing += new FormClosingEventHandler(AuditEventForm_FormClosing);
                 }

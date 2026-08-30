@@ -57,15 +57,13 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// Shows all fields for the current condition.
         /// </summary>
-        public bool ShowDialog(MonitoredItem monitoredItem, EventFieldList eventFields)
+        public bool ShowDialog(EventFilter filter, EventFieldList eventFields)
         {
             // build a sorted list of non-null fields.
             List<string> fieldNames = new List<string>();
             List<Variant> fieldValues = new List<Variant>();
 
-            // use the filter from the monitored item to determine what is in each field.
-            EventFilter filter = monitoredItem.Status.Filter as EventFilter;
-
+            // the filter the item was created with determines what is in each field.
             if (filter != null)
             {
                 if (eventFields.EventFields[0].AsBoxedObject() != null)
