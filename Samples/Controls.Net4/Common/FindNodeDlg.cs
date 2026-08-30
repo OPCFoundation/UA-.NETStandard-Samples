@@ -50,12 +50,12 @@ namespace Opc.Ua.Sample.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
 
-        private Session m_session;
+        private ISession m_session;
 
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public IList<NodeId> ShowDialog(Session session, NodeId startNodeId)
+        public IList<NodeId> ShowDialog(ISession session, NodeId startNodeId)
         {
             m_session = session;
 

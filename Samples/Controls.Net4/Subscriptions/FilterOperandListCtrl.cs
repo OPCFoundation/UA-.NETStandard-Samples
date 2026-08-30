@@ -51,7 +51,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private IList<ContentFilterElement> m_elements;
         private int m_index;
 
@@ -78,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, IList<ContentFilterElement> elements, int index, ITelemetryContext telemetry)
+        public void Initialize(ISession session, IList<ContentFilterElement> elements, int index, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

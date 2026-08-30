@@ -55,14 +55,14 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Session session, IList<ReadValueId> valueIds, ITelemetryContext telemetry)
+        public void Show(ISession session, IList<ReadValueId> valueIds, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_nodeId;
         private bool m_readOnly;
 
@@ -90,7 +90,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task InitializeAsync(Session session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task InitializeAsync(ISession session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

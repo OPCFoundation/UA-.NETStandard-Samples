@@ -49,7 +49,7 @@ namespace Opc.Ua.Sample
             QueryTypeCB.Items.Add("Read Raw or Modified");
         }
 
-        private Session m_session;
+        private ISession m_session;
         private ReadRawModifiedDetails m_details;
 
         #region Private Methods
@@ -60,7 +60,7 @@ namespace Opc.Ua.Sample
         /// <param name="details"></param>
         /// <param name="nodes"></param>
         public void Initialize(
-            Session session,
+            ISession session,
             ReadRawModifiedDetails details,
             IList<ILocalNode> nodes)
         {

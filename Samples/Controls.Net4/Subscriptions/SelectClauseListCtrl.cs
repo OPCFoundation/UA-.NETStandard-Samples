@@ -51,7 +51,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private IList<SimpleAttributeOperand> m_selectClauses;
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, IList<SimpleAttributeOperand> selectClauses)
+        public void Initialize(ISession session, IList<SimpleAttributeOperand> selectClauses)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

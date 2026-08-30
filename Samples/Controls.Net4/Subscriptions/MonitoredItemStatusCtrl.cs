@@ -39,6 +39,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Client.Subscriptions.MonitoredItems;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -56,8 +58,19 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Subscription m_subscription;
-        private MonitoredItem m_monitoredItem;
+        private SubscriptionHandle m_subscription;
+        private MonitoredItemHandle m_monitoredItem;
+        private readonly Dictionary<MonitoredItemHandle, LastNotification> m_notifications = new Dictionary<MonitoredItemHandle, LastNotification>();
+
+        /// <summary>
+        /// The most recent notification of a monitored item. The V2 engine keeps no value
+        /// cache on the item, so the control remembers what it displayed last.
+        /// </summary>
+        private sealed class LastNotification
+        {
+            public string Value;
+            public DateTime Timestamp;
+        }
 
         /// <summary>
         /// The columns to display in the control.
@@ -82,48 +95,24 @@ namespace Opc.Ua.Sample.Controls
         public void Clear()
         {
             ItemsLV.Items.Clear();
+            m_notifications.Clear();
             AdjustColumns();
         }
 
         /// <summary>
-        /// Displays the items for the specified subscription in the control.
+        /// Displays the status of a single monitored item in the control.
         /// </summary>
-        public void Initialize(MonitoredItem monitoredItem)
+        public void Initialize(SubscriptionHandle subscription, MonitoredItemHandle monitoredItem)
         {
-            // do nothing if same subscription provided.
-            if (Object.ReferenceEquals(m_monitoredItem, monitoredItem))
+            // do nothing if same item provided.
+            if (Object.ReferenceEquals(m_subscription, subscription) && Object.ReferenceEquals(m_monitoredItem, monitoredItem))
             {
                 return;
             }
 
-            m_monitoredItem = monitoredItem;
-            m_subscription = null;
-            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
-            #pragma warning restore CA1508
-
-            Clear();
-
-            if (m_monitoredItem != null)
-            {
-                m_subscription = monitoredItem.Subscription;
-                UpdateItems();
-            }
-        }
-
-        /// <summary>
-        /// Displays the items for the specified subscription in the control.
-        /// </summary>
-        public void Initialize(Subscription subscription)
-        {
-            // do nothing if same subscription provided.
-            if (Object.ReferenceEquals(m_subscription, subscription))
-            {
-                return;
-            }
-
-            m_monitoredItem = null;
             m_subscription = subscription;
+            m_monitoredItem = monitoredItem;
+            Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
 
             Clear();
 
@@ -134,11 +123,83 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Called when the subscription changes.
+        /// Displays the items for the specified subscription in the control.
         /// </summary>
-        public void SubscriptionChanged(SubscriptionStateChangedEventArgs e)
+        public void Initialize(SubscriptionHandle subscription)
+        {
+            Initialize(subscription, null);
+        }
+
+        /// <summary>
+        /// Called when the state of the subscription changes, which includes the engine
+        /// finishing to apply monitored item changes.
+        /// </summary>
+        public void SubscriptionChanged()
         {
             UpdateItems();
+        }
+
+        /// <summary>
+        /// Updates the value cells with the data changes of a notification.
+        /// </summary>
+        public void NotificationReceived(DataValueChange[] changes)
+        {
+            foreach (DataValueChange change in changes)
+            {
+                MonitoredItemHandle handle = m_subscription?.FindItem(change.MonitoredItem);
+
+                if (handle == null || (m_monitoredItem != null && !Object.ReferenceEquals(handle, m_monitoredItem)))
+                {
+                    continue;
+                }
+
+                m_notifications[handle] = new LastNotification {
+                    Value = String.Format("{0}", change.Value.WrappedValue),
+                    Timestamp = change.Value.SourceTimestamp.ToDateTime(),
+                };
+            }
+
+            UpdateItems();
+        }
+
+        /// <summary>
+        /// Updates the value cells with the events of a notification.
+        /// </summary>
+        public async void NotificationReceived(EventNotification[] notifications)
+        {
+            try
+            {
+                foreach (EventNotification notification in notifications)
+                {
+                    MonitoredItemHandle handle = m_subscription?.FindItem(notification.MonitoredItem);
+
+                    if (handle == null || (m_monitoredItem != null && !Object.ReferenceEquals(handle, m_monitoredItem)))
+                    {
+                        continue;
+                    }
+
+                    string value = null;
+
+                    if (SubscriptionHandle.GetEventFieldValue(handle, notification, new QualifiedName(Opc.Ua.BrowseNames.EventType)) is NodeId eventTypeId)
+                    {
+                        INode eventType = await m_subscription.Session.NodeCache.FindAsync(eventTypeId);
+                        value = String.Format("{0}", (object)eventType ?? eventTypeId);
+                    }
+
+                    DateTime timestamp = (SubscriptionHandle.GetEventFieldValue(handle, notification, new QualifiedName(Opc.Ua.BrowseNames.Time)) as DateTime?) ?? DateTime.MinValue;
+
+                    m_notifications[handle] = new LastNotification {
+                        Value = value,
+                        Timestamp = timestamp,
+                    };
+                }
+
+                UpdateItems();
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
         }
 
         /// <summary>
@@ -150,33 +211,15 @@ namespace Opc.Ua.Sample.Controls
             {
                 BeginUpdate();
 
-                foreach (MonitoredItem monitoredItem in m_subscription.MonitoredItems)
+                foreach (MonitoredItemHandle monitoredItem in m_subscription.Items)
                 {
-                    if (m_monitoredItem == null || monitoredItem.ClientHandle == m_monitoredItem.ClientHandle)
+                    if (m_monitoredItem == null || Object.ReferenceEquals(monitoredItem, m_monitoredItem))
                     {
                         AddItem(monitoredItem);
                     }
                 }
 
                 EndUpdate();
-
-                AdjustColumns();
-            }
-        }
-
-        /// <summary>
-        /// Apply any changes to the set of items.
-        /// </summary>
-        public async Task ApplyChangesAsync(CancellationToken ct = default)
-        {
-            if (m_subscription != null)
-            {
-                await m_subscription.ApplyChangesAsync(ct);
-
-                foreach (ListViewItem listItem in ItemsLV.Items)
-                {
-                    await UpdateItemAsync(listItem, listItem.Tag, ct);
-                }
 
                 AdjustColumns();
             }
@@ -193,45 +236,32 @@ namespace Opc.Ua.Sample.Controls
         /// <see cref="BaseListCtrl.UpdateItemAsync" />
         protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-            MonitoredItem monitoredItem = item as MonitoredItem;
+            MonitoredItemHandle handle = item as MonitoredItemHandle;
 
-            if (monitoredItem == null)
+            if (handle == null)
             {
                 await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 
-            listItem.SubItems[0].Text = String.Format("{0}", monitoredItem.Status.Id);
-            listItem.SubItems[1].Text = String.Format("{0}", monitoredItem.DisplayName);
-            listItem.SubItems[2].Text = String.Format("{0}", monitoredItem.NodeClass);
-            listItem.SubItems[3].Text = String.Format("{0}", monitoredItem.Status.SamplingInterval);
-            listItem.SubItems[4].Text = String.Format("{0}", monitoredItem.Status.QueueSize);
+            IMonitoredItem monitoredItem = handle.Item;
+
+            listItem.SubItems[0].Text = String.Format("{0}", (monitoredItem != null) ? monitoredItem.ServerId : 0);
+            listItem.SubItems[1].Text = String.Format("{0}", handle.DisplayName);
+            listItem.SubItems[2].Text = String.Format("{0}", handle.NodeClass);
+            listItem.SubItems[3].Text = String.Format("{0}", (monitoredItem != null) ? monitoredItem.CurrentSamplingInterval.TotalMilliseconds : handle.Settings.SamplingInterval.TotalMilliseconds);
+            listItem.SubItems[4].Text = String.Format("{0}", (monitoredItem != null) ? monitoredItem.CurrentQueueSize : handle.Settings.QueueSize);
             listItem.SubItems[5].Text = String.Empty;
-            listItem.SubItems[6].Text = String.Format("{0}", monitoredItem.Status.Error);
+            listItem.SubItems[6].Text = String.Format("{0}", monitoredItem?.Error);
             listItem.SubItems[7].Text = String.Empty;
 
-            IEncodeable value = monitoredItem.LastValue;
-
-            if (value != null)
+            if (m_notifications.TryGetValue(handle, out LastNotification notification))
             {
-                MonitoredItemNotification datachange = value as MonitoredItemNotification;
+                listItem.SubItems[5].Text = notification.Value;
 
-                if (datachange != null)
+                if (notification.Timestamp != DateTime.MinValue)
                 {
-                    listItem.SubItems[5].Text = String.Format("{0}", datachange.Value);
-
-                    if (datachange.Value.SourceTimestamp != DateTime.MinValue)
-                    {
-                        listItem.SubItems[7].Text = String.Format("{0:HH:mm:ss.fff}", datachange.Value.SourceTimestamp.ToLocalTime());
-                    }
-                }
-
-                EventFieldList eventFields = value as EventFieldList;
-
-                if (eventFields != null)
-                {
-                    listItem.SubItems[5].Text = String.Format("{0}", await monitoredItem.GetEventTypeAsync(eventFields, ct));
-                    listItem.SubItems[7].Text = String.Format("{0:HH:mm:ss.fff}", monitoredItem.GetEventTime(eventFields).ToLocalTime());
+                    listItem.SubItems[7].Text = String.Format("{0:HH:mm:ss.fff}", notification.Timestamp.ToLocalTime());
                 }
             }
 

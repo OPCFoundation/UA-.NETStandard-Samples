@@ -53,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private ITelemetryContext m_telemetry;
         private EventFilter m_filter;
         #endregion
@@ -62,7 +62,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public EventFilter ShowDialog(Session session, ITelemetryContext telemetry, EventFilter filter, bool editWhereClause)
+        public EventFilter ShowDialog(ISession session, ITelemetryContext telemetry, EventFilter filter, bool editWhereClause)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (filter == null) throw new ArgumentNullException(nameof(filter));

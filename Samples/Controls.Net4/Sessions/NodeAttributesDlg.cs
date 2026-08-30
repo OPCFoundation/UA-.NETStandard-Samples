@@ -55,7 +55,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private ExpandedNodeId m_nodeId;
         private ITelemetryContext m_telemetry;
         #endregion
@@ -64,7 +64,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowDialogAsync(Session session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task ShowDialogAsync(ISession session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (nodeId.IsNull) throw new ArgumentNullException(nameof(nodeId));

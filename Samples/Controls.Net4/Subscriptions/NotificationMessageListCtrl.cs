@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -56,14 +57,20 @@ namespace Opc.Ua.Sample.Controls
             SetColumns(m_ColumnNames);
 
             ItemsLV.Sorting = SortOrder.Descending;
-            m_SessionNotification = new NotificationEventHandler(Session_Notification);
+
+            m_DataChangeCallback = new Action<ISubscription, uint, DateTime, DataValueChange[], PublishState>(OnDataChangeNotification);
+            m_EventCallback = new Action<ISubscription, uint, DateTime, EventNotification[], PublishState>(OnEventNotification);
+            m_KeepAliveCallback = new Action<ISubscription, uint, DateTime, PublishState>(OnKeepAliveNotification);
         }
         #endregion
 
         #region Private Fields
-        private Session m_session;
-        private Subscription m_subscription;
-        private NotificationEventHandler m_SessionNotification;
+        private ISession m_session;
+        private SubscriptionHandle m_subscription;
+        private readonly List<SubscriptionHandle> m_attached = new List<SubscriptionHandle>();
+        private readonly Action<ISubscription, uint, DateTime, DataValueChange[], PublishState> m_DataChangeCallback;
+        private readonly Action<ISubscription, uint, DateTime, EventNotification[], PublishState> m_EventCallback;
+        private readonly Action<ISubscription, uint, DateTime, PublishState> m_KeepAliveCallback;
         private int m_maxMessageCount;
 
         /// <summary>
@@ -74,7 +81,6 @@ namespace Opc.Ua.Sample.Controls
             new object[] { "Subscription",  HorizontalAlignment.Left,   null   },
             new object[] { "Message ID",    HorizontalAlignment.Center, null   },
             new object[] { "Publish Time",  HorizontalAlignment.Center, null   },
-            new object[] { "Notifications", HorizontalAlignment.Center, null   },
             new object[] { "Data Changes",  HorizontalAlignment.Center, null   },
             new object[] { "EventTypes",    HorizontalAlignment.Center, null   }
         };
@@ -103,33 +109,32 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Initializes the control with the session/subscription indicated.
         /// </summary>
-        public void Initialize(Session session, Subscription subscription)
+        /// <remarks>
+        /// The V2 engine delivers its notifications through the handler a subscription was
+        /// created with, so the control combines its delegates into the callbacks of the
+        /// subscriptions it reports on instead of the session-wide notification event the
+        /// classic engine raised.
+        /// </remarks>
+        public void Initialize(ISession session, IList<SubscriptionHandle> subscriptions, SubscriptionHandle subscription)
         {
-            // do nothing if nothing has changed.
-            if (Object.ReferenceEquals(session, m_session) && Object.ReferenceEquals(subscription, m_subscription))
+            // do nothing if nothing has changed. Unlike the session-wide notification event of
+            // the classic engine the callbacks are per subscription, so a subscription created
+            // since the last call also forces a re-attach.
+            if (Object.ReferenceEquals(session, m_session) &&
+                Object.ReferenceEquals(subscription, m_subscription) &&
+                (subscription != null || subscriptions == null || m_attached.Count == subscriptions.Count))
             {
                 return;
             }
 
-            // subscription to event notifications.
-            if (!Object.ReferenceEquals(session, m_session))
-            {
-                if (m_session != null)
-                {
-                    m_session.Notification -= m_SessionNotification;
-                }
-
-                if (session != null)
-                {
-                    session.Notification += m_SessionNotification;
-                }
-            }
+            // stop receiving notifications from the previous subscriptions.
+            Detach();
 
             Clear();
 
             m_session = session;
             m_subscription = subscription;
-            Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
+            Telemetry = session?.MessageContext?.Telemetry;
 
             // nothing to do if no session provided.
             if (m_session == null)
@@ -137,31 +142,18 @@ namespace Opc.Ua.Sample.Controls
                 return;
             }
 
-            List<ItemData> tags = new List<ItemData>();
-
-            // display only items for current subscription.
+            // display only messages for the current subscription, or for all of them.
             if (subscription != null)
             {
-                foreach (NotificationMessage item in subscription.Notifications)
-                {
-                    tags.Insert(0, new ItemData(subscription, item));
-                }
+                Attach(subscription);
             }
-
-            // display all notifications for all subscriptions.
-            else
+            else if (subscriptions != null)
             {
-                foreach (Subscription item1 in m_session.Subscriptions)
+                foreach (SubscriptionHandle handle in subscriptions)
                 {
-                    foreach (NotificationMessage item2 in item1.Notifications)
-                    {
-                        tags.Insert(0, new ItemData(item1, item2));
-                    }
+                    Attach(handle);
                 }
             }
-
-            // update control.
-            Update(tags);
         }
         #endregion
 
@@ -173,16 +165,28 @@ namespace Opc.Ua.Sample.Controls
         public class ItemData
         {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Sample code preserves existing public API and behavior.")]
-            public Subscription Subscription;
+            public SubscriptionHandle Subscription;
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Sample code preserves existing public API and behavior.")]
-            public NotificationMessage NotificationMessage;
+            public uint SequenceNumber;
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Sample code preserves existing public API and behavior.")]
+            public DateTime PublishTime;
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Sample code preserves existing public API and behavior.")]
+            public int DataChanges;
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Sample code preserves existing public API and behavior.")]
+            public int Events;
 
             public ItemData(
-                Subscription subscription,
-                NotificationMessage notificationMessage)
+                SubscriptionHandle subscription,
+                uint sequenceNumber,
+                DateTime publishTime,
+                int dataChanges,
+                int events)
             {
                 Subscription = subscription;
-                NotificationMessage = notificationMessage;
+                SequenceNumber = sequenceNumber;
+                PublishTime = publishTime;
+                DataChanges = dataChanges;
+                Events = events;
             }
         }
         #endregion
@@ -195,7 +199,9 @@ namespace Opc.Ua.Sample.Controls
             {
                 OptionsMI.Enabled = true;
                 ClearMI.Enabled = true;
-                RepublishMI.Enabled = m_subscription != null;
+
+                // the V2 engine republishes missed messages on its own.
+                RepublishMI.Enabled = false;
 
                 if (clickedItem != null)
                 {
@@ -222,92 +228,94 @@ namespace Opc.Ua.Sample.Controls
             }
 
             listItem.SubItems[0].Text = String.Format("{0}", itemData.Subscription.DisplayName);
-            listItem.SubItems[1].Text = String.Format("{0}", itemData.NotificationMessage.SequenceNumber);
-            listItem.SubItems[2].Text = String.Format("{0:HH:mm:ss.fff}", itemData.NotificationMessage.PublishTime.ToLocalTime());
-
-            int events = 0;
-            int datachanges = 0;
-            int notifications = 0;
-
-            foreach (ExtensionObject notification in itemData.NotificationMessage.NotificationData)
-            {
-                notifications++;
-
-                if ((notification).IsNull)
-                {
-                    continue;
-                }
-
-                DataChangeNotification datachangeNotification = notification.TryGetValue<DataChangeNotification>(out var dataChangeValue, ServiceMessageContext.CreateEmpty(null)) ? dataChangeValue : null;
-
-                if (datachangeNotification != null)
-                {
-                    datachanges += datachangeNotification.MonitoredItems.Count;
-                }
-
-                EventNotificationList EventNotification = notification.TryGetValue<EventNotificationList>(out var eventValue, ServiceMessageContext.CreateEmpty(null)) ? eventValue : null;
-
-                if (EventNotification != null)
-                {
-                    events += EventNotification.Events.Count;
-                }
-            }
-
-            listItem.SubItems[3].Text = String.Format("{0}", notifications);
-            listItem.SubItems[4].Text = String.Format("{0}", datachanges);
-            listItem.SubItems[5].Text = String.Format("{0}", events);
+            listItem.SubItems[1].Text = String.Format("{0}", itemData.SequenceNumber);
+            listItem.SubItems[2].Text = String.Format("{0:HH:mm:ss.fff}", itemData.PublishTime.ToLocalTime());
+            listItem.SubItems[3].Text = String.Format("{0}", itemData.DataChanges);
+            listItem.SubItems[4].Text = String.Format("{0}", itemData.Events);
 
             listItem.Tag = item;
         }
         #endregion
 
-        private void Update(List<ItemData> tags)
+        #region Private Methods
+        /// <summary>
+        /// Starts receiving the notifications of a subscription.
+        /// </summary>
+        private void Attach(SubscriptionHandle subscription)
         {
-            if (tags.Count > MaxMessageCount)
-            {
-                tags.RemoveRange(MaxMessageCount, tags.Count - MaxMessageCount);
-            }
-
-            BeginUpdate();
-
-            foreach (ItemData tag in tags)
-            {
-                AddItem(tag);
-            }
-
-            EndUpdate();
+            subscription.Callbacks.DataChangeCallback += m_DataChangeCallback;
+            subscription.Callbacks.EventCallback += m_EventCallback;
+            subscription.Callbacks.KeepAliveCallback += m_KeepAliveCallback;
+            m_attached.Add(subscription);
         }
 
-        private void Session_Notification(ISession sender, NotificationEventArgs e)
+        /// <summary>
+        /// Stops receiving the notifications of the attached subscriptions.
+        /// </summary>
+        private void Detach()
+        {
+            foreach (SubscriptionHandle subscription in m_attached)
+            {
+                subscription.Callbacks.DataChangeCallback -= m_DataChangeCallback;
+                subscription.Callbacks.EventCallback -= m_EventCallback;
+                subscription.Callbacks.KeepAliveCallback -= m_KeepAliveCallback;
+            }
+
+            m_attached.Clear();
+        }
+
+        /// <summary>
+        /// Adds a message to the list and trims it to the maximum count.
+        /// </summary>
+        private void AddMessage(ItemData itemData)
+        {
+            if (!IsHandleCreated)
+            {
+                return;
+            }
+
+            AddItem(itemData);
+
+            if (ItemsLV.Items.Count > MaxMessageCount)
+            {
+                for (int i = 0; i < (ItemsLV.Items.Count - MaxMessageCount); i++)
+                {
+                    ItemsLV.Items.RemoveAt(i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finds the handle for a subscription of the V2 engine.
+        /// </summary>
+        private SubscriptionHandle FindSubscription(ISubscription subscription)
+        {
+            foreach (SubscriptionHandle handle in m_attached)
+            {
+                if (Object.ReferenceEquals(handle.Subscription, subscription))
+                {
+                    return handle;
+                }
+            }
+
+            return null;
+        }
+
+        private void OnDataChangeNotification(ISubscription subscription, uint sequenceNumber, DateTime publishTime, DataValueChange[] notifications, PublishState publishStateMask)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(m_SessionNotification, sender, e);
-                return;
-            }
-            else if (!IsHandleCreated)
-            {
+                BeginInvoke(m_DataChangeCallback, subscription, sequenceNumber, publishTime, notifications, publishStateMask);
                 return;
             }
 
             try
             {
-                if (m_subscription != null)
-                {
-                    if (!Object.ReferenceEquals(m_subscription, e.Subscription))
-                    {
-                        return;
-                    }
-                }
+                SubscriptionHandle handle = FindSubscription(subscription);
 
-                AddItem(new ItemData(e.Subscription, e.NotificationMessage));
-
-                if (ItemsLV.Items.Count > MaxMessageCount)
+                if (handle != null)
                 {
-                    for (int i = 0; i < (ItemsLV.Items.Count - MaxMessageCount); i++)
-                    {
-                        ItemsLV.Items.RemoveAt(i);
-                    }
+                    AddMessage(new ItemData(handle, sequenceNumber, publishTime, notifications.Length, 0));
                 }
             }
             catch (Exception exception)
@@ -315,6 +323,53 @@ namespace Opc.Ua.Sample.Controls
                 GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
             }
         }
+
+        private void OnEventNotification(ISubscription subscription, uint sequenceNumber, DateTime publishTime, EventNotification[] notifications, PublishState publishStateMask)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(m_EventCallback, subscription, sequenceNumber, publishTime, notifications, publishStateMask);
+                return;
+            }
+
+            try
+            {
+                SubscriptionHandle handle = FindSubscription(subscription);
+
+                if (handle != null)
+                {
+                    AddMessage(new ItemData(handle, sequenceNumber, publishTime, 0, notifications.Length));
+                }
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+
+        private void OnKeepAliveNotification(ISubscription subscription, uint sequenceNumber, DateTime publishTime, PublishState publishStateMask)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(m_KeepAliveCallback, subscription, sequenceNumber, publishTime, publishStateMask);
+                return;
+            }
+
+            try
+            {
+                SubscriptionHandle handle = FindSubscription(subscription);
+
+                if (handle != null)
+                {
+                    AddMessage(new ItemData(handle, sequenceNumber, publishTime, 0, 0));
+                }
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+        #endregion
 
         private void ViewMI_Click(object sender, EventArgs e)
         {
@@ -356,27 +411,8 @@ namespace Opc.Ua.Sample.Controls
 
         private void RepublishMI_Click(object sender, EventArgs e)
         {
-            try
-            {
-                if (m_subscription == null)
-                {
-                    return;
-                }
-
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                NotificationMessage message = new RepublishNotificationMessageDlg().ShowDialog(m_subscription);
-                #pragma warning restore CA2000
-
-                if (message != null)
-                {
-                    ListViewItem listItem = AddItem(new ItemData(m_subscription, message));
-                    listItem.ForeColor = Color.Red;
-                }
-            }
-            catch (Exception exception)
-            {
-                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
-            }
+            // the V2 engine republishes missed messages on its own, so there is nothing left
+            // to trigger by hand.
         }
     }
 }

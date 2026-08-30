@@ -424,7 +424,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a dialog that allows a use to edit a value.
         /// </summary>
-        public static object EditValue(Session session, object value, ITelemetryContext telemetry)
+        public static object EditValue(ISession session, object value, ITelemetryContext telemetry)
         {
             TypeInfo typeInfo = TypeInfo.Construct(value);
 
@@ -439,7 +439,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a dialog that allows a use to edit a value.
         /// </summary>
-        public static object EditValue(Session session, object value, NodeId datatypeId, int valueRank, ITelemetryContext telemetry)
+        public static object EditValue(ISession session, object value, NodeId datatypeId, int valueRank, ITelemetryContext telemetry)
         {
             if (value == null)
             {

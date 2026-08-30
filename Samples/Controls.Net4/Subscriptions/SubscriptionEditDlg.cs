@@ -38,9 +38,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Subscriptions;
 
 namespace Opc.Ua.Sample.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the
+    // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
     public partial class SubscriptionEditDlg : Form
     {
         public SubscriptionEditDlg()
@@ -49,19 +54,27 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Prompts the user to specify the browse options.
+        /// Prompts the user to specify the subscription parameters.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(Subscription subscription, CancellationToken ct = default)
+        /// <remarks>
+        /// Reconfiguring the options monitor of the handle is the modify request: for a
+        /// subscription which already exists the V2 engine applies the new settings on its own
+        /// worker, and for one which does not it uses them when it is created.
+        /// </remarks>
+        public bool ShowDialog(SubscriptionHandle subscription)
         {
             if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
+            ISubscription created = subscription.Created ? subscription.Subscription : null;
+            SubscriptionOptions options = subscription.Settings;
+
             DisplayNameTB.Text = subscription.DisplayName;
-            PublishingIntervalNC.Value = subscription.Created ? (decimal)subscription.CurrentPublishingInterval : (decimal)subscription.PublishingInterval;
-            KeepAliveCountNC.Value = subscription.Created ? subscription.CurrentKeepAliveCount : subscription.KeepAliveCount;
-            LifetimeCountCTRL.Value = subscription.Created ? subscription.CurrentLifetimeCount : subscription.LifetimeCount;
-            MaxNotificationsCTRL.Value = subscription.MaxNotificationsPerPublish;
-            PriorityNC.Value = subscription.Created ? subscription.CurrentPriority : subscription.Priority;
-            PublishingEnabledCK.Checked = subscription.Created ? subscription.CurrentPublishingEnabled : subscription.PublishingEnabled;
+            PublishingIntervalNC.Value = (decimal)((created != null) ? created.CurrentPublishingInterval : options.PublishingInterval).TotalMilliseconds;
+            KeepAliveCountNC.Value = (created != null) ? created.CurrentKeepAliveCount : options.KeepAliveCount;
+            LifetimeCountCTRL.Value = (created != null) ? created.CurrentLifetimeCount : options.LifetimeCount;
+            MaxNotificationsCTRL.Value = (created != null) ? created.CurrentMaxNotificationsPerPublish : options.MaxNotificationsPerPublish;
+            PriorityNC.Value = (created != null) ? created.CurrentPriority : options.Priority;
+            PublishingEnabledCK.Checked = (created != null) ? created.CurrentPublishingEnabled : options.PublishingEnabled;
 
             if (ShowDialog() != DialogResult.OK)
             {
@@ -69,19 +82,23 @@ namespace Opc.Ua.Sample.Controls
             }
 
             subscription.DisplayName = DisplayNameTB.Text;
-            subscription.PublishingInterval = (int)PublishingIntervalNC.Value;
-            subscription.KeepAliveCount = (uint)KeepAliveCountNC.Value;
-            subscription.LifetimeCount = (uint)LifetimeCountCTRL.Value;
-            subscription.MaxNotificationsPerPublish = (uint)MaxNotificationsCTRL.Value;
-            subscription.Priority = (byte)PriorityNC.Value;
-            if (subscription.Created)
-            {
-                await subscription.SetPublishingModeAsync(PublishingEnabledCK.Checked, ct);
-            }
-            else
-            {
-                subscription.PublishingEnabled = PublishingEnabledCK.Checked;
-            }
+
+            TimeSpan publishingInterval = TimeSpan.FromMilliseconds((double)PublishingIntervalNC.Value);
+            uint keepAliveCount = (uint)KeepAliveCountNC.Value;
+            uint lifetimeCount = (uint)LifetimeCountCTRL.Value;
+            uint maxNotifications = (uint)MaxNotificationsCTRL.Value;
+            byte priority = (byte)PriorityNC.Value;
+            bool publishingEnabled = PublishingEnabledCK.Checked;
+
+            subscription.Configure(current => current with {
+                PublishingInterval = publishingInterval,
+                KeepAliveCount = keepAliveCount,
+                LifetimeCount = lifetimeCount,
+                MaxNotificationsPerPublish = maxNotifications,
+                Priority = priority,
+                PublishingEnabled = publishingEnabled,
+            });
+
             return true;
         }
     }

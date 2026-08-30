@@ -55,14 +55,14 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(Session session, IList<ReadValueId> valueIds, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task ShowAsync(ISession session, IList<ReadValueId> valueIds, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

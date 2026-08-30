@@ -77,7 +77,7 @@ namespace Opc.Ua.Sample.Controls
             m_browser = browser;
             m_session = session;
             m_telemetry = telemetry;
-            await ReferenceTypeCTRL.InitializeAsync(m_browser.Session as Session, NodeId.Null, ct);
+            await ReferenceTypeCTRL.InitializeAsync(m_session, NodeId.Null, ct);
 
             ViewIdTB.Text = null;
             ViewTimestampDP.Value = ViewTimestampDP.MinDate;
