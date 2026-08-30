@@ -429,6 +429,45 @@ The same unguarded continuation point check existed three times in
 onto the SDK's native historian interfaces removed those methods altogether: continuation
 points are owned by the SDK's historian dispatcher now.
 
+### What the AlarmCondition client actually waits for
+
+`ClientConnectsToItsSampleServer(AlarmCondition)` timed out on a hosted agent while the same
+commit passed on branch builds, so the case was measured rather than argued about. The
+AlarmCondition client was the slowest of the thirteen at 9.6 seconds against a 75 second
+budget, and the budget was not the problem: pinned to two cores it was unchanged, and pinned
+to a *single* core against twenty CPU hogs it still finished in 14 seconds. The path is not
+CPU bound, it waits.
+
+Most of what it waited for was its own disconnect. Closing a session which still carried a
+subscription waited for the publish pipeline to run dry, and that wait was a flat five
+seconds - the same with an empty subscription as with the sample's event subscription and its
+condition refresh backlog, and unchanged by turning publishing off. Deleting the subscription
+before closing took the same teardown to 20 ms.
+
+**That wait is gone.** Moving the control to `ManagedSession` and the V2 subscription engine
+removed it as a side effect: the disconnect of a client holding one subscription now measures
+70-110 ms without any change to the teardown order. The finding is recorded here because the
+five seconds are the reason this case sat closest to the timeout for so long, and because the
+shape is worth recognising - a teardown which costs the same whether the subscription is busy
+or empty is a pipeline draining, not a backlog being processed, and no amount of looking at
+the server will show it.
+
+What is left is the client's own startup, which was cheap by comparison but wasteful.
+`ConstructSelectClausesAsync` browses the type model for each of the five event types the form
+asks for, and built a fresh table of visited nodes per type - so the supertype chain every
+condition type shares, and the subtree hanging off each link of it, was walked three and four
+times over. One table for the whole call takes it from 576 browse round trips to 344, for the
+same 141 select clauses. On loopback that is worth a quarter of a second; it is worth
+proportionally more on an agent where a round trip is not free.
+
+Two things remain that no measurement here can rule out, and both are now reported rather
+than guessed at. The sample configurations allow **ten minutes** for a single service call,
+which is longer than the whole test may run, so one request that never came back used to
+surface as a bare "did not finish within 75 seconds"; tier 2 caps it at 30 seconds, far above
+the few hundred milliseconds the slowest call actually needs, so a stuck call is reported as
+itself. And the harness timeout now names the step the client was in and how long it had been
+there, because "the clock ran out" reads the same for every way a sample can hang.
+
 ## Status / roadmap
 
 - [x] Phase 1 - shared helpers, Tier 0 configuration tests, CI test stage
