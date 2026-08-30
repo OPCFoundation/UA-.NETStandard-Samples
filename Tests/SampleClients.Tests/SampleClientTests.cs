@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -121,9 +120,10 @@ namespace Opc.Ua.Samples.Tests
         [Test]
         public void UncoveredClientSamplesAreDeclared()
         {
-            // the sample client discovers its server instead of connecting to a fixed
-            // endpoint, and the GDS and aggregation clients need more than one server;
-            // both follow in phase 4 of docs/TESTING.md
+            // the UA Sample Client has no shared connect control and opens its session
+            // through a modal dialog, so it cannot be driven by the loop above - it has its
+            // own fixture in SampleClientFormTests instead. The GDS and aggregation clients
+            // need more than one server and follow in phase 4 of docs/TESTING.md
             string[] expectedGaps = ["Aggregation", "Gds", "Sample"];
 
             IEnumerable<string> uncovered = SampleCatalog.Clients
@@ -201,12 +201,7 @@ namespace Opc.Ua.Samples.Tests
             }
             catch (TimeoutException expired)
             {
-                // the bare message says only that the clock ran out, which is the same for
-                // every way a sample can hang. The step it was in is what tells them apart.
-                throw new TimeoutException(
-                    $"{expired.Message} It was {phase.Current}, " +
-                    $"and had been for {phase.Elapsed.TotalSeconds:F0} of those seconds.",
-                    expired);
+                throw phase.Explain(expired);
             }
 
             if (watchdog?.DuringTeardown.Count > 0)
@@ -296,40 +291,6 @@ namespace Opc.Ua.Samples.Tests
             Assert.That(connect.Session, Is.Null, "The sample client did not release its session on disconnect.");
 
             phase.Enter("shutting down");
-        }
-
-        /// <summary>
-        /// The step a sample client is in, so that a harness timeout says where it hung.
-        /// </summary>
-        /// <remarks>
-        /// Written on the message loop thread and read by the test thread once the clock has
-        /// run out. Neither the reference nor the reading of the stopwatch tears, and a
-        /// message which names the step before last would still be enough to go on, so the
-        /// two are left unsynchronized rather than locked on every step.
-        /// </remarks>
-        private sealed class ClientPhase
-        {
-            private readonly Stopwatch m_since = Stopwatch.StartNew();
-            private volatile string m_current = "starting up";
-
-            /// <summary>
-            /// What the client is doing, phrased to follow "It was ".
-            /// </summary>
-            public string Current => m_current;
-
-            /// <summary>
-            /// How long it has been in that step.
-            /// </summary>
-            public TimeSpan Elapsed => m_since.Elapsed;
-
-            /// <summary>
-            /// Records that the client moved on to the next step.
-            /// </summary>
-            public void Enter(string what)
-            {
-                m_current = what;
-                m_since.Restart();
-            }
         }
     }
 }
