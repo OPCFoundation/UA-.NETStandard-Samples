@@ -365,7 +365,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-17 test cases, about a minute, Windows only. For each WinForms sample client the test
+20 test cases, about a minute, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 
@@ -392,10 +392,37 @@ reaches the user interface.
 `Server_ServerStatus_CurrentTime` through the `MonitoredItemConfigCtrl` grid, applies, and
 waits for a data change to land in the `DataChangeNotificationListCtrl` of the dialog.
 
+`ClientReconnectTests` is the only test which takes the server away. A connect proves that the
+sample talks to a `ManagedSession`; it does not prove that the managed session does the one
+thing it was brought in for. The test connects the Reference Client, subscribes through the V2
+engine and waits for a data change, then **stops the sample server**, waits for the session to
+report `Reconnecting`, **starts the server again on the same endpoint and with the same
+certificate**, and then asserts three things: the session came back `Connected` on its own, the
+connect control is still holding the *same* `ISession` instance, and data changes are arriving
+again. The middle one matters most - the samples no longer rebuild their browse tree around a
+reconnect because the managed session keeps its identity, and this is what would catch that
+assumption breaking. `SampleServerHost.StopAsync`/`StartAgainAsync` are what let a test do
+this; they keep the temporary PKI, so the client sees its server come back rather than a
+different one on the same port.
+
+> The server has to be stopped and started off the message loop (`Task.Run`). It counts its
+> shutdown down and closes the channels the client is still on, and doing that on the thread
+> which also pumps the client's callbacks deadlocks the two.
+
+`SampleClientFormTests` covers the one client the loop above cannot: the **UA Sample Client**
+has no shared connect control and opens its session through the modal `SessionOpenDlg`, so it
+is a declared gap in `SampleClientFactories`. Its own fixture builds `SampleClientForm`, picks
+an endpoint, calls the form's `ConnectAsync` and lets the watchdog click OK on the session
+dialog, then asserts the sample opened a `ManagedSession` running the V2 subscription engine
+and filled its browse tree.
+
 The **dialog watchdog** is what makes this safe: the sample clients report errors through a
 modal `ExceptionDlg`, which in an unattended run would wait forever for a click. A timer on
 the UI thread closes any modal form, keeps its text, and the harness fails the test with it.
-`WatchdogTurnsAModalDialogIntoAFailure` proves the watchdog itself works.
+`WatchdogTurnsAModalDialogIntoAFailure` proves the watchdog itself works. A dialog a sample
+opens *on purpose* is registered with `watchdog.Accept<TDialog>(buttonName)` and answered by
+clicking that button instead - everything else stays a failure, so this cannot quietly swallow
+the next complaint.
 
 The fixture is `[Category("RequiresDesktop")]` because it needs a window station. CI runs it:
 the `Test Samples` job is on a Windows agent and filters nothing out. The category is there so

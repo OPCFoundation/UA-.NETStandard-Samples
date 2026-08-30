@@ -42,6 +42,12 @@ namespace Quickstarts.ReferenceClient
     /// <summary>
     /// The main form for a simple Quickstart Client application.
     /// </summary>
+    /// <remarks>
+    /// The connect control creates a <see cref="ManagedSession"/>, so the reconnect is driven
+    /// by the connection state machine of the session rather than by this form. The session the
+    /// form holds stays the same instance across a reconnect, which is why nothing here swaps
+    /// it out or rebuilds the browse tree when the connection drops.
+    /// </remarks>
     public partial class MainForm : Form
     {
         #region Constructors
@@ -70,11 +76,7 @@ namespace Quickstarts.ReferenceClient
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
-        private bool m_connectedOnce;
         private ITelemetryContext m_telemetry;
-        #endregion
-
-        #region Private Methods
         #endregion
 
         #region Event Handlers
@@ -96,11 +98,11 @@ namespace Quickstarts.ReferenceClient
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                ConnectServerCTRL.Disconnect();
+                await ConnectServerCTRL.DisconnectAsync();
             }
             catch (Exception exception)
             {
@@ -126,17 +128,15 @@ namespace Quickstarts.ReferenceClient
         /// <summary>
         /// Updates the application after connecting to or disconnecting from the server.
         /// </summary>
+        /// <remarks>
+        /// This also runs after a disconnect, where the connect control reports a null session
+        /// and the browse tree empties itself.
+        /// </remarks>
         private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
                 m_session = ConnectServerCTRL.Session;
-
-                // set a suitable initial state.
-                if (m_session != null && !m_connectedOnce)
-                {
-                    m_connectedOnce = true;
-                }
 
                 // browse the instances in the server.
                 await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, m_telemetry, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
@@ -148,39 +148,12 @@ namespace Quickstarts.ReferenceClient
         }
 
         /// <summary>
-        /// Updates the application after a communicate error was detected.
-        /// </summary>
-        private async void Server_ReconnectStartingAsync(object sender, EventArgs e)
-        {
-            try
-            {
-                await BrowseCTRL.ChangeSessionAsync(null);
-            }
-            catch (Exception exception)
-            {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
-            }
-        }
-
-        /// <summary>
-        /// Updates the application after reconnecting to the server.
-        /// </summary>
-        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
-        {
-            try
-            {
-                m_session = ConnectServerCTRL.Session;
-                await BrowseCTRL.ChangeSessionAsync(m_session);
-            }
-            catch (Exception exception)
-            {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
-            }
-        }
-
-        /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// The form is on its way out and there is nothing left to await on, so this closes the
+        /// session synchronously rather than starting work which would outlive the window.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             ConnectServerCTRL.Disconnect();
