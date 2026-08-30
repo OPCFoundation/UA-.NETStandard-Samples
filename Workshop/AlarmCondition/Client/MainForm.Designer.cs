@@ -172,7 +172,7 @@ namespace Quickstarts.AlarmConditionClient
             this.Server_DisconnectMI.Name = "Server_DisconnectMI";
             this.Server_DisconnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_DisconnectMI.Text = "Disconnect";
-            this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_Click);
+            this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_ClickAsync);
             // 
             // ConditionsMI
             // 

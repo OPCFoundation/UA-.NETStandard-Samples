@@ -36,11 +36,18 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace Quickstarts.Boiler.Client
 {
+    // the V2 subscription engine reuses names the classic engine has in Opc.Ua.Client, and
+    // Opc.Ua itself has a server side IMonitoredItem, so the client types are aliased.
+    using IMonitoredItem = Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItem;
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
     /// <summary>
     /// The main form for a simple Quickstart Client application.
     /// </summary>
@@ -69,14 +76,29 @@ namespace Quickstarts.Boiler.Client
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62567/Quickstarts/BoilerServer";
             this.Text = m_configuration.ApplicationName;
             m_telemetry = telemetry;
+
+            // the V2 engine takes the notification handler when the subscription is created,
+            // so the form owns one for its whole lifetime and points it at its own methods.
+            m_callbacks.DataChangeCallback = OnDataChanges;
         }
         #endregion
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Subscription ownership is managed by the OPC UA session in this sample.")]
-        private Subscription m_subscription;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed asynchronously by DeleteSubscriptionAsync.")]
+        private ISubscription m_subscription;
+        private readonly SubscriptionCallbacks m_callbacks = new SubscriptionCallbacks();
+
+        /// <summary>
+        /// The control which displays each monitored item, by the name of the item.
+        /// </summary>
+        /// <remarks>
+        /// The V2 engine identifies an item by a name which is unique within its subscription
+        /// and reports that name with every notification, which replaces the Handle the
+        /// classic monitored item carried.
+        /// </remarks>
+        private readonly Dictionary<string, Control> m_displays = new Dictionary<string, Control>(StringComparer.Ordinal);
         private bool m_connectedOnce;
         private readonly ITelemetryContext m_telemetry;
         #endregion
@@ -103,17 +125,37 @@ namespace Quickstarts.Boiler.Client
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await DeleteSubscriptionAsync();
                 ConnectServerCTRL.Disconnect();
                 m_session = null;
-                m_subscription = null;
             }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Deletes the subscription on the server and drops it from the subscription manager.
+        /// </summary>
+        /// <remarks>
+        /// Done before the session is closed: closing a session which still carries a
+        /// subscription waits for the publish pipeline to drain.
+        /// </remarks>
+        private async Task DeleteSubscriptionAsync()
+        {
+            ISubscription subscription = m_subscription;
+
+            m_subscription = null;
+            m_displays.Clear();
+
+            if (subscription != null)
+            {
+                await subscription.DisposeAsync();
             }
         }
 
@@ -144,6 +186,7 @@ namespace Quickstarts.Boiler.Client
                 if (m_session == null)
                 {
                     m_subscription = null;
+                    m_displays.Clear();
                     BoilerCB.Enabled = false;
                     return;
                 }
@@ -187,13 +230,10 @@ namespace Quickstarts.Boiler.Client
         {
             try
             {
+                // a V2 subscription belongs to the subscription manager of the session and
+                // survives the reconnect together with its monitored items, so there is
+                // nothing to re-attach here.
                 m_session = ConnectServerCTRL.Session;
-
-                foreach (Subscription subscription in m_session.Subscriptions)
-                {
-                    m_subscription = subscription;
-                    break;
-                }
 
                 BoilerCB.Enabled = true;
             }
@@ -208,6 +248,7 @@ namespace Quickstarts.Boiler.Client
         /// </summary>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            DeleteSubscriptionAsync().GetAwaiter().GetResult();
             ConnectServerCTRL.Disconnect();
         }
         #endregion
@@ -265,11 +306,9 @@ namespace Quickstarts.Boiler.Client
                     return;
                 }
 
-                if (m_subscription != null)
-                {
-                    await m_session.RemoveSubscriptionAsync(m_subscription);
-                    m_subscription = null;
-                }
+                // the previous boiler is dropped with its subscription: disposing it deletes
+                // the subscription on the server and removes it from the manager.
+                await DeleteSubscriptionAsync();
 
                 ReferenceDescription boiler = (ReferenceDescription)BoilerCB.SelectedItem;
 
@@ -278,17 +317,12 @@ namespace Quickstarts.Boiler.Client
                     return;
                 }
 
-                m_subscription = new Subscription(m_telemetry);
+                // the V2 engine takes the settings through an options monitor and creates the
+                // subscription on the server on its own worker.
+                var options = new OptionsMonitor<SubscriptionOptions>(
+                    ClientUtils.DefaultSubscriptionOptions with { Priority = 1, LifetimeCount = 20 });
 
-                m_subscription.PublishingEnabled = true;
-                m_subscription.PublishingInterval = 1000;
-                m_subscription.Priority = 1;
-                m_subscription.KeepAliveCount = 10;
-                m_subscription.LifetimeCount = 20;
-                m_subscription.MaxNotificationsPerPublish = 1000;
-
-                m_session.AddSubscription(m_subscription);
-                await m_subscription.CreateAsync();
+                m_subscription = ClientUtils.AddSubscription(m_session, m_callbacks, options);
 
                 NamespaceTable wellKnownNamespaceUris = new NamespaceTable();
                 wellKnownNamespaceUris.Append(Namespaces.Boiler);
@@ -322,16 +356,21 @@ namespace Quickstarts.Boiler.Client
 
                     if (!nodes[ii].IsNull)
                     {
-                        MonitoredItem monitoredItem = new MonitoredItem(m_telemetry);
-                        monitoredItem.StartNodeId = nodes[ii];
-                        monitoredItem.AttributeId = Attributes.Value;
-                        monitoredItem.Handle = controls[ii];
-                        monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
-                        m_subscription.AddItem(monitoredItem);
+                        // adding the item to the collection is the create request: the engine
+                        // applies it on its own worker, there is no ApplyChanges to call.
+                        string name = browsePaths[ii];
+
+                        m_displays[name] = controls[ii];
+
+                        m_subscription.MonitoredItems.TryAdd(
+                            name,
+                            new OptionsMonitor<MonitoredItemOptions>(new MonitoredItemOptions {
+                                StartNodeId = nodes[ii],
+                                AttributeId = Attributes.Value,
+                            }),
+                            out IMonitoredItem _);
                     }
                 }
-
-                await m_subscription.ApplyChangesAsync();
             }
             catch (Exception exception)
             {
@@ -339,31 +378,43 @@ namespace Quickstarts.Boiler.Client
             }
         }
 
-        void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        /// <summary>
+        /// Updates the display with the new values for the monitored variables.
+        /// </summary>
+        /// <remarks>
+        /// The V2 engine calls this on a publish worker instead of on the UI thread, and it
+        /// reports the whole notification instead of one value per item.
+        /// </remarks>
+        private void OnDataChanges(
+            ISubscription subscription,
+            uint sequenceNumber,
+            DateTime publishTime,
+            DataValueChange[] notifications,
+            PublishState publishState)
         {
+            if (!IsHandleCreated || IsDisposed)
+            {
+                return;
+            }
+
             if (InvokeRequired)
             {
-                BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_Notification), monitoredItem, e);
+                BeginInvoke(new Action(
+                    () => OnDataChanges(subscription, sequenceNumber, publishTime, notifications, publishState)));
                 return;
             }
 
             try
             {
-                Control control = monitoredItem.Handle as Control;
-
-                if (control == null)
+                foreach (DataValueChange change in notifications)
                 {
-                    return;
+                    if (change.MonitoredItem == null || !m_displays.TryGetValue(change.MonitoredItem.Name, out Control control))
+                    {
+                        continue;
+                    }
+
+                    control.Text = change.Value.WrappedValue.ToString();
                 }
-
-                MonitoredItemNotification datachange = e.NotificationValue as MonitoredItemNotification;
-
-                if (datachange == null)
-                {
-                    return;
-                }
-
-                control.Text = datachange.Value.WrappedValue.ToString();
             }
             catch (Exception exception)
             {

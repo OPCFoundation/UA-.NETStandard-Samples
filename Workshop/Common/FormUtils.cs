@@ -175,7 +175,7 @@ namespace Quickstarts
         /// <param name="value">The value of the attribute.</param>
         /// <param name="ct">A cancellation token to cancel the operation</param>
         /// <returns>The attribute formatted as a string.</returns>
-        public static async Task<string> GetAttributeDisplayTextAsync(Session session, uint attributeId, Variant value, CancellationToken ct = default)
+        public static async Task<string> GetAttributeDisplayTextAsync(ISession session, uint attributeId, Variant value, CancellationToken ct = default)
         {
             if (value == Variant.Null)
             {
@@ -543,13 +543,16 @@ namespace Quickstarts
         /// <summary>
         /// Finds the type of the event for the notification.
         /// </summary>
-        /// <param name="monitoredItem">The monitored item.</param>
+        /// <param name="filter">The filter the notification was produced with.</param>
         /// <param name="notification">The notification.</param>
         /// <returns>The NodeId of the EventType.</returns>
-        public static NodeId FindEventType(MonitoredItem monitoredItem, EventFieldList notification)
+        /// <remarks>
+        /// The V2 subscription engine reports revised values but not the filter a monitored
+        /// item was created with, so the caller which owns the filter passes it in. The fields
+        /// of a notification line up one to one with its select clauses.
+        /// </remarks>
+        public static NodeId FindEventType(EventFilter filter, EventFieldList notification)
         {
-            EventFilter filter = monitoredItem.Status.Filter as EventFilter;
-
             if (filter != null)
             {
                 for (int ii = 0; ii < filter.SelectClauses.Count; ii++)
@@ -713,7 +716,7 @@ namespace Quickstarts
         /// Constructs an event object from a notification.
         /// </summary>
         /// <param name="session">The session.</param>
-        /// <param name="monitoredItem">The monitored item that produced the notification.</param>
+        /// <param name="filter">The filter the notification was produced with.</param>
         /// <param name="notification">The notification.</param>
         /// <param name="knownEventTypes">The known event types.</param>
         /// <param name="eventTypeMappings">Mapping between event types and known event types.</param>
@@ -722,15 +725,15 @@ namespace Quickstarts
         /// The event object. Null if the notification is not a valid event type.
         /// </returns>
         public static async Task<BaseEventState> ConstructEventAsync(
-            Session session,
-            MonitoredItem monitoredItem,
+            ISession session,
+            EventFilter filter,
             EventFieldList notification,
             Dictionary<NodeId, Type> knownEventTypes,
             Dictionary<NodeId, NodeId> eventTypeMappings,
             CancellationToken ct = default)
         {
             // find the event type.
-            NodeId eventTypeId = FindEventType(monitoredItem, notification);
+            NodeId eventTypeId = FindEventType(filter, notification);
 
             if (eventTypeId.IsNull)
             {
@@ -795,9 +798,6 @@ namespace Quickstarts
             // construct the event based on the known event type.
             BaseEventState e = (BaseEventState)Activator.CreateInstance(knownType, new object[] { (NodeState)null });
 
-            // get the filter which defines the contents of the notification.
-            EventFilter filter = monitoredItem.Status.Filter as EventFilter;
-
             // initialize the event with the values in the notification.
             e.Update(session.SystemContext, filter.SelectClauses, notification);
 
@@ -817,7 +817,7 @@ namespace Quickstarts
         /// <param name="relativePaths">The relative paths.</param>
         /// <returns>A collection of local nodes.</returns>
         public static async Task<List<NodeId>> TranslateBrowsePathsAsync(
-            Session session,
+            ISession session,
             NodeId startNodeId,
             NamespaceTable namespacesUris,
             CancellationToken ct,
@@ -862,8 +862,8 @@ namespace Quickstarts
             List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
 
             // ensure that the server returned valid results.
-            Session.ValidateResponse(results, browsePaths);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, browsePaths);
+            ClientBase.ValidateResponse(results, browsePaths);
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, browsePaths);
 
             // collect the list of node ids found.
             List<NodeId> nodes = new List<NodeId>();
@@ -911,7 +911,7 @@ namespace Quickstarts
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
         /// <param name="ct">The cancellation token to cancel the operation with</param>
-        public static async Task CollectFieldsForTypeAsync(Session session, NodeId typeId, IList<SimpleAttributeOperand> fields, IList<NodeId> fieldNodeIds, CancellationToken ct = default)
+        public static async Task CollectFieldsForTypeAsync(ISession session, NodeId typeId, IList<SimpleAttributeOperand> fields, IList<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             // get the supertypes.
             List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, typeId, false, ct);
@@ -942,7 +942,7 @@ namespace Quickstarts
         /// <param name="fields">The fields.</param>
         /// <param name="fieldNodeIds">The node id for the declaration of the field.</param>
         /// <param name="ct">The cancellation token to cancel the operation with</param>
-        public static async Task CollectFieldsForInstanceAsync(Session session, NodeId instanceId, IList<SimpleAttributeOperand> fields, IList<NodeId> fieldNodeIds, CancellationToken ct = default)
+        public static async Task CollectFieldsForInstanceAsync(ISession session, NodeId instanceId, IList<SimpleAttributeOperand> fields, IList<NodeId> fieldNodeIds, CancellationToken ct = default)
         {
             Dictionary<NodeId, List<QualifiedName>> foundNodes = new Dictionary<NodeId, List<QualifiedName>>();
             List<QualifiedName> parentPath = new List<QualifiedName>();
@@ -960,7 +960,7 @@ namespace Quickstarts
         /// <param name="foundNodes">The table of found nodes.</param>
         /// <param name="ct">The cancellation token to cancel the operation with</param>
         private static async Task CollectFieldsAsync(
-            Session session,
+            ISession session,
             NodeId nodeId,
             List<QualifiedName> parentPath,
             IList<SimpleAttributeOperand> fields,

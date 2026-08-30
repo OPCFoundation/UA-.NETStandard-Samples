@@ -55,7 +55,7 @@ namespace AggregationClient
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_nodeId;
 #pragma warning disable CA2213 // Justification: DataSet is bound to the WinForms grid for the form lifetime.
         private DataSet m_dataset;
@@ -64,7 +64,7 @@ namespace AggregationClient
         #endregion
 
         #region Public Interface
-        public void Show(Session session, NodeId nodeId)
+        public void Show(ISession session, NodeId nodeId)
         {
             m_session = session;
             m_nodeId = nodeId;
