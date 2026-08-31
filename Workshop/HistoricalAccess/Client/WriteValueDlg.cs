@@ -104,7 +104,7 @@ namespace Quickstarts.HistoricalAccess.Client
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             m_value = results[0];
-            ValueTB.Text = Utils.Format("{0}", m_value.WrappedValue.AsBoxedObject());
+            ValueTB.Text = m_value.WrappedValue.ToString();
 
             // display the dialog.
             if (ShowDialog() != DialogResult.OK)

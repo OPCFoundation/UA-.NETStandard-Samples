@@ -126,7 +126,7 @@ namespace Opc.Ua.Samples.Tests
             CapturedEvent last = await capture.WaitAsync(
                 candidate => {
                     if (candidate.EventType == CycleStartedType
-                        && candidate.Field(Opc.Ua.BrowseNames.Severity).AsBoxedObject() is ushort severity)
+                        && candidate.Field(Opc.Ua.BrowseNames.Severity).TryGetValue(out ushort severity))
                     {
                         severities.Add(severity);
                     }
@@ -205,13 +205,13 @@ namespace Opc.Ua.Samples.Tests
 
             CapturedEvent reported = await capture.WaitAsync(
                 candidate => candidate.EventType == CycleStartedType
-                    && candidate.Field(EventBrowseNames.CycleId).AsBoxedObject() != null,
+                    && !candidate.Field(EventBrowseNames.CycleId).IsNull,
                 TimeSpan.FromSeconds(15),
                 "a cycle event carrying a cycle id",
                 ct).ConfigureAwait(false);
 
             Assert.That(
-                reported.Field(EventBrowseNames.CycleId).AsBoxedObject() as string,
+                reported.Field(EventBrowseNames.CycleId).TryGetValue(out string cycleId) ? cycleId : null,
                 Is.Not.Null.And.Not.Empty,
                 "The cycle id is a field of the sample's own event type.");
         }

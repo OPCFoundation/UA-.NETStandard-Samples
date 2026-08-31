@@ -74,7 +74,7 @@ namespace Opc.Ua.Client.Controls
             NodeId nodeId,
             uint attributeId,
             string name,
-            object value,
+            Variant value,
             bool readOnly,
             string caption,
             CancellationToken ct = default)
@@ -87,7 +87,9 @@ namespace Opc.Ua.Client.Controls
             OkBTN.Visible = !readOnly;
 
             ValueCTRL.ChangeSession(session);
-            await ValueCTRL.ShowValueAsync(nodeId, attributeId, name, value, readOnly, ct);
+
+            // the editor navigates boxed CLR values, so the Variant is unwrapped for it.
+            await ValueCTRL.ShowValueAsync(nodeId, attributeId, name, value.AsBoxedObject(), readOnly, ct);
 
             if (base.ShowDialog() != DialogResult.OK)
             {
@@ -105,7 +107,7 @@ namespace Opc.Ua.Client.Controls
             string name,
             NodeId dataType,
             int valueRank,
-            object value,
+            Variant value,
             string caption)
         {
             m_telemetry = session?.MessageContext?.Telemetry;
@@ -117,7 +119,9 @@ namespace Opc.Ua.Client.Controls
             OkBTN.Visible = true;
 
             ValueCTRL.ChangeSession(session);
-            ValueCTRL.ShowValue(name, dataType, valueRank, value);
+
+            // the editor navigates boxed CLR values, so the Variant is unwrapped for it.
+            ValueCTRL.ShowValue(name, dataType, valueRank, value.AsBoxedObject());
 
             if (base.ShowDialog() != DialogResult.OK)
             {
@@ -133,7 +137,7 @@ namespace Opc.Ua.Client.Controls
         public object ShowDialog(
             TypeInfo expectedType,
             string name,
-            object value,
+            Variant value,
             string caption)
         {
             if (!String.IsNullOrEmpty(caption))
@@ -144,7 +148,9 @@ namespace Opc.Ua.Client.Controls
             OkBTN.Visible = true;
 
             ValueCTRL.ChangeSession(null);
-            ValueCTRL.ShowValue(expectedType, name, value);
+
+            // the editor navigates boxed CLR values, so the Variant is unwrapped for it.
+            ValueCTRL.ShowValue(expectedType, name, value.AsBoxedObject());
 
             if (base.ShowDialog() != DialogResult.OK)
             {
@@ -169,10 +175,11 @@ namespace Opc.Ua.Client.Controls
             NodeId nodeId,
             uint attributeId,
             string name,
-            object value,
+            Variant value,
             CancellationToken ct = default)
         {
-            return ValueCTRL.ShowValueAsync(nodeId, attributeId, name, value, true, ct);
+            // the editor navigates boxed CLR values, so the Variant is unwrapped for it.
+            return ValueCTRL.ShowValueAsync(nodeId, attributeId, name, value.AsBoxedObject(), true, ct);
         }
         #endregion
 

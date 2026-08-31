@@ -185,7 +185,7 @@ namespace Opc.Ua.Client.Controls
                         declaration.DisplayName,
                         declaration.DataType,
                         declaration.ValueRank,
-                        field.FilterValue.AsBoxedObject(),
+                        field.FilterValue,
                         "Edit Filter Value");
 
                     if (result != null)

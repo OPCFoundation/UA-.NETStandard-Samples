@@ -421,7 +421,8 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                // get the current value.
+                // get the current value. the simple value editor works on a boxed CLR
+                // value and its runtime type, so the Variant is unwrapped for it.
                 object currentValue = literal.Value.AsBoxedObject();
 
                 if (currentValue == null)

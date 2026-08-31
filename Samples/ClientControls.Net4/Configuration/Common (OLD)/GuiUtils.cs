@@ -424,9 +424,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a dialog that allows a use to edit a value.
         /// </summary>
-        public static object EditValue(ISession session, object value, ITelemetryContext telemetry)
+        public static object EditValue(ISession session, Variant value, ITelemetryContext telemetry)
         {
-            TypeInfo typeInfo = TypeInfo.Construct(value);
+            TypeInfo typeInfo = value.TypeInfo;
 
             if (!typeInfo.IsUnknown)
             {
@@ -439,12 +439,10 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a dialog that allows a use to edit a value.
         /// </summary>
-        public static object EditValue(ISession session, object value, NodeId datatypeId, int valueRank, ITelemetryContext telemetry)
+        public static object EditValue(ISession session, Variant variantValue, NodeId datatypeId, int valueRank, ITelemetryContext telemetry)
         {
-            if (value == null)
-            {
-                value = GetDefaultValue(datatypeId, valueRank);
-            }
+            // the value editors below work on boxed CLR values, so the Variant is unwrapped here.
+            object value = variantValue.AsBoxedObject() ?? GetDefaultValue(datatypeId, valueRank);
 
             if (valueRank >= 0)
             {

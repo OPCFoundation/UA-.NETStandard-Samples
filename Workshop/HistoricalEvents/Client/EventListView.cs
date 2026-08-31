@@ -425,15 +425,15 @@ namespace Quickstarts.HistoricalEvents.Client
                 string text = null;
 
                 // check for missing fields.
-                if (fieldValues[ii].AsBoxedObject() == null)
+                if (fieldValues[ii].IsNull)
                 {
                     text = String.Empty;
                 }
 
                 // display the name of a node instead of the node id.
-                else if (fieldValues[ii].TypeInfo.BuiltInType == BuiltInType.NodeId)
+                else if (fieldValues[ii].TryGetValue(out NodeId fieldNodeId))
                 {
-                    INode node = await m_session.NodeCache.FindAsync((NodeId)fieldValues[ii].AsBoxedObject(), ct);
+                    INode node = await m_session.NodeCache.FindAsync(fieldNodeId, ct);
 
                     if (node != null)
                     {
@@ -442,15 +442,9 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // display local time for any time fields.
-                else if (fieldValues[ii].TypeInfo.BuiltInType == BuiltInType.DateTime)
+                else if (fieldValues[ii].TryGetValue(out DateTimeUtc fieldTime))
                 {
-                    // the 2.0 stack boxes a DateTime field as a DateTimeUtc, which does not
-                    // unbox as a DateTime.
-                    object boxed = fieldValues[ii].AsBoxedObject();
-
-                    DateTime value = boxed is DateTimeUtc utc
-                        ? utc.ToLocalTime()
-                        : ((DateTime)boxed).ToLocalTime();
+                    DateTime value = fieldTime.ToLocalTime();
 
                     if (m_filter.Fields[ii - 1].InstanceDeclaration.DisplayName.Contains("Time", StringComparison.Ordinal))
                     {
@@ -618,14 +612,14 @@ namespace Quickstarts.HistoricalEvents.Client
 
             foreach (List<Variant> e in events)
             {
-                byte[] eventId = null;
+                ByteString eventId = default;
 
                 if (e.Count > index)
                 {
-                    eventId = e[index].AsBoxedObject() as byte[];
+                    e[index].TryGetValue(out eventId);
                 }
 
-                details.EventIds = details.EventIds.AddItem(eventId.ToByteString());
+                details.EventIds = details.EventIds.AddItem(eventId);
             }
 
             // delete the events.

@@ -99,12 +99,12 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.Multiple(() => {
                 Assert.That(
-                    dataType.WrappedValue.AsBoxedObject(),
+                    dataType.WrappedValue.TryGetValue(out NodeId matrixDataType) ? matrixDataType : NodeId.Null,
                     Is.EqualTo(DataTypeIds.Int32),
                     "The matrix holds integers.");
 
                 Assert.That(
-                    valueRank.WrappedValue.AsBoxedObject(),
+                    valueRank.WrappedValue.TryGetValue(out int matrixValueRank) ? matrixValueRank : ValueRanks.Any,
                     Is.EqualTo(ValueRanks.TwoDimensions),
                     "The matrix is two dimensional.");
 
@@ -183,11 +183,11 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.Multiple(() => {
                 Assert.That(
-                    ((QualifiedName)browseName.WrappedValue.AsBoxedObject()).Name,
+                    browseName.WrappedValue.TryGetValue(out QualifiedName name) ? name.Name : null,
                     Is.EqualTo("IsTriggerSource"));
 
                 Assert.That(
-                    ((LocalizedText)inverseName.WrappedValue.AsBoxedObject()).Text,
+                    inverseName.WrappedValue.TryGetValue(out LocalizedText inverse) ? inverse.Text : null,
                     Is.EqualTo("IsSourceOfTrigger"));
             });
 
@@ -209,11 +209,7 @@ namespace Opc.Ua.Samples.Tests
 
         private static uint[] AsUInt32Array(Variant value)
         {
-            return value.AsBoxedObject() switch {
-                uint[] array => array,
-                ArrayOf<uint> arrayOf => arrayOf.ToArray(),
-                _ => [],
-            };
+            return value.TryGetValue(out ArrayOf<uint> array) ? array.ToArray() : [];
         }
     }
 }

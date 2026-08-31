@@ -250,23 +250,7 @@ namespace Opc.Ua.Client.Controls.Common
             AccessInfo info = NavigationMENU.Items[NavigationMENU.Items.Count - 1].Tag as AccessInfo;
 
             TypeInfo currentType = info.TypeInfo;
-            object currentValue = info.Value;
-
-            if (info.Value is Variant)
-            {
-                Variant variant = (Variant)info.Value;
-                currentValue = variant.AsBoxedObject();
-
-                if (currentValue != null)
-                {
-                    currentType = variant.TypeInfo;
-
-                    if (currentType.IsUnknown)
-                    {
-                        currentType = TypeInfo.Construct(currentValue);
-                    }
-                }
-            }
+            object currentValue = Unwrap(info.Value, ref currentType);
 
             int[] dimensions = null;
 
@@ -403,21 +387,7 @@ namespace Opc.Ua.Client.Controls.Common
                 currentValue = TypeInfo.GetDefaultValue(currentType.BuiltInType);
             }
 
-            if (info.Value is Variant)
-            {
-                Variant variant = (Variant)info.Value;
-                currentValue = variant.AsBoxedObject();
-
-                if (currentValue != null)
-                {
-                    currentType = variant.TypeInfo;
-
-                    if (currentType.IsUnknown)
-                    {
-                        currentType = TypeInfo.Construct(currentValue);
-                    }
-                }
-            }
+            currentValue = Unwrap(info.Value, ref currentType);
 
             TypeInfo targetType = new TypeInfo(builtInType, currentType.ValueRank);
             object newValue = Convert(currentValue, currentType, targetType, true);
@@ -713,23 +683,8 @@ namespace Opc.Ua.Client.Controls.Common
             item.Tag = parent;
 
             TypeInfo typeInfo = parent.TypeInfo;
-            object value = parent.Value;
-
-            if (value is Variant)
-            {
-                Variant variant = (Variant)value;
-                value = variant.AsBoxedObject();
-
-                if (value != null)
-                {
-                    parent.TypeInfo = typeInfo = variant.TypeInfo;
-
-                    if (typeInfo.IsUnknown)
-                    {
-                        parent.TypeInfo = typeInfo = TypeInfo.Construct(value);
-                    }
-                }
-            }
+            object value = Unwrap(parent.Value, ref typeInfo);
+            parent.TypeInfo = typeInfo;
 
             if (typeInfo.ValueRank >= 0)
             {
@@ -943,6 +898,25 @@ namespace Opc.Ua.Client.Controls.Common
 
         #region Private Methods
         /// <summary>
+        /// Unwraps a Variant into the boxed value that this reflection based editor
+        /// navigates, and reports the type information carried by the Variant.
+        /// </summary>
+        private static object Unwrap(object value, ref TypeInfo typeInfo)
+        {
+            if (value is Variant variant)
+            {
+                if (!variant.IsNull)
+                {
+                    typeInfo = variant.TypeInfo;
+                }
+
+                return variant.AsBoxedObject();
+            }
+
+            return value;
+        }
+
+        /// <summary>
         /// Returns the index based on the current count.
         /// </summary>
         private int[] GetIndexFromCount(int count, int[] dimensions)
@@ -988,7 +962,7 @@ namespace Opc.Ua.Client.Controls.Common
             row[1] = info.Name;
             row[2] = GetDataTypeString(info);
             row[3] = ValueToString(info.Value, info.TypeInfo);
-            row[4] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, info.Value)];
+            row[4] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, ClientUtils.ToVariant(info.Value))];
 
             m_dataset.Tables[0].Rows.Add(row);
         }
@@ -1104,7 +1078,7 @@ namespace Opc.Ua.Client.Controls.Common
             row[1] = (info.Name != null) ? info.Name : "unknown";
             row[2] = GetDataTypeString(info);
             row[3] = ValueToString(info.Value, info.TypeInfo);
-            row[4] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, info.Value)];
+            row[4] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, ClientUtils.ToVariant(info.Value))];
 
             m_dataset.Tables[0].Rows.Add(row);
         }
@@ -1232,21 +1206,7 @@ namespace Opc.Ua.Client.Controls.Common
                 return String.Empty;
             }
 
-            if (value is Variant)
-            {
-                Variant variant = (Variant)value;
-                value = variant.AsBoxedObject();
-
-                if (value != null)
-                {
-                    typeInfo = variant.TypeInfo;
-
-                    if (typeInfo.IsUnknown)
-                    {
-                        typeInfo = TypeInfo.Construct(value);
-                    }
-                }
-            }
+            value = Unwrap(value, ref typeInfo);
 
             if (typeInfo.ValueRank >= 0)
             {
@@ -1362,7 +1322,7 @@ namespace Opc.Ua.Client.Controls.Common
                 }
             }
 
-            return (string)ClientUtils.ToVariant(value).ConvertTo(BuiltInType.String).AsBoxedObject();
+            return ClientUtils.ToVariant(value).ConvertTo(BuiltInType.String).TryGetValue(out string valueText) ? valueText : String.Empty;
         }
 
         /// <summary>
@@ -1376,19 +1336,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             TypeInfo typeInfo = info.TypeInfo;
-            object value = info.Value;
-
-            if (value is Variant)
-            {
-                Variant variant = (Variant)info.Value;
-                typeInfo = variant.TypeInfo;
-                value = variant.AsBoxedObject();
-
-                if (typeInfo.IsUnknown)
-                {
-                    typeInfo = TypeInfo.Construct(value);
-                }
-            }
+            object value = Unwrap(info.Value, ref typeInfo);
 
             if (typeInfo.ValueRank >= 0)
             {

@@ -247,23 +247,7 @@ namespace Opc.Ua.Gds.Client.Controls
             AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
 
             Opc.Ua.TypeInfo currentType = info.TypeInfo;
-            object currentValue = info.Value;
-
-            if (info.Value is Variant)
-            {
-                Variant variant = (Variant)info.Value;
-                currentValue = variant.AsBoxedObject();
-
-                if (currentValue != null)
-                {
-                    currentType = variant.TypeInfo;
-
-                    if (currentType.IsUnknown)
-                    {
-                        currentType = Opc.Ua.TypeInfo.Construct(currentValue);
-                    }
-                }
-            }
+            object currentValue = Unwrap(info.Value, ref currentType);
 
             int[] dimensions = null;
 
@@ -408,21 +392,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 currentValue = TypeInfo.GetDefaultValue(currentType.BuiltInType);
             }
 
-            if (info.Value is Variant)
-            {
-                Variant variant = (Variant)info.Value;
-                currentValue = variant.AsBoxedObject();
-
-                if (currentValue != null)
-                {
-                    currentType = variant.TypeInfo;
-
-                    if (currentType.IsUnknown)
-                    {
-                        currentType = Opc.Ua.TypeInfo.Construct(currentValue);
-                    }
-                }
-            }
+            currentValue = Unwrap(info.Value, ref currentType);
 
             Opc.Ua.TypeInfo targetType = new Opc.Ua.TypeInfo(builtInType, currentType.ValueRank);
             object newValue  = Convert(currentValue, currentType, targetType, true);
@@ -724,21 +694,8 @@ namespace Opc.Ua.Gds.Client.Controls
                 value = parent.WrappedValue;
             }
 
-            if (value is Variant)
-            {
-                Variant variant = (Variant)value;
-                value = variant.AsBoxedObject();
-
-                if (value != null)
-                {
-                    parent.TypeInfo = typeInfo = variant.TypeInfo;
-
-                    if (typeInfo.IsUnknown)
-                    {
-                        parent.TypeInfo = typeInfo = Opc.Ua.TypeInfo.Construct(value);
-                    }
-                }
-            }
+            value = Unwrap(value, ref typeInfo);
+            parent.TypeInfo = typeInfo;
 
             if (typeInfo.ValueRank >= 0)
             {
@@ -1053,6 +1010,25 @@ namespace Opc.Ua.Gds.Client.Controls
 
         #region Private Methods
         /// <summary>
+        /// Unwraps a Variant into the boxed value that this reflection based editor
+        /// navigates, and reports the type information carried by the Variant.
+        /// </summary>
+        private static object Unwrap(object value, ref Opc.Ua.TypeInfo typeInfo)
+        {
+            if (value is Variant variant)
+            {
+                if (!variant.IsNull)
+                {
+                    typeInfo = variant.TypeInfo;
+                }
+
+                return variant.AsBoxedObject();
+            }
+
+            return value;
+        }
+
+        /// <summary>
         /// Returns the index based on the current count.
         /// </summary>
         private int[] GetIndexFromCount(int count, int[] dimensions)
@@ -1355,21 +1331,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 return "<null>";
             }
 
-            if (value is Variant)
-            {
-                Variant variant = (Variant)value;
-                value = variant.AsBoxedObject();
-
-                if (value != null)
-                {
-                    typeInfo = variant.TypeInfo;
-
-                    if (typeInfo.IsUnknown)
-                    {
-                        typeInfo = Opc.Ua.TypeInfo.Construct(value);
-                    }
-                }
-            }
+            value = Unwrap(value, ref typeInfo);
 
             if (typeInfo.ValueRank >= 0)
             {
@@ -1449,19 +1411,7 @@ namespace Opc.Ua.Gds.Client.Controls
             }
 
             Opc.Ua.TypeInfo typeInfo = info.TypeInfo;
-            object value = info.Value;
-
-            if (value is Variant)
-            {
-                Variant variant = (Variant)info.Value;
-                typeInfo = variant.TypeInfo;
-                value = variant.AsBoxedObject();
-
-                if (typeInfo.IsUnknown)
-                {
-                    typeInfo = Opc.Ua.TypeInfo.Construct(value);
-                }
-            }
+            object value = Unwrap(info.Value, ref typeInfo);
 
             if (typeInfo.ValueRank >= 0)
             {
@@ -1567,21 +1517,17 @@ namespace Opc.Ua.Gds.Client.Controls
                 return;
             }
 
+            Opc.Ua.TypeInfo parentTypeInfo = info.Parent.TypeInfo;
             object parentValue = info.Parent.Value;
 
-            if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank < 0)
+            if (parentTypeInfo.BuiltInType == BuiltInType.Variant && parentTypeInfo.ValueRank < 0)
             {
-                parentValue = ((Variant)info.Parent.Value).AsBoxedObject();
+                parentValue = Unwrap(parentValue, ref parentTypeInfo);
             }
 
             if (info.PropertyInfo != null && info.Parent.TypeInfo.ValueRank < 0)
             {
-                Variant? variant = parentValue as Variant?;
-
-                if (variant != null)
-                {
-                    parentValue = variant.Value.AsBoxedObject();
-                }
+                parentValue = Unwrap(parentValue, ref parentTypeInfo);
 
                 if (parentValue is ExtensionObject extension && TryGetExtensionObjectBody(extension, out object body))
                 {

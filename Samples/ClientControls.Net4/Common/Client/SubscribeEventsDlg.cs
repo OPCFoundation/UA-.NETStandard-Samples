@@ -398,7 +398,7 @@ namespace Opc.Ua.Client.Controls
             MonitoredItemOptions settings = handle.Settings;
 
             row[0] = handle;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex(settings.AttributeId, null)];
+            row[1] = ImageList.Images[ClientUtils.GetImageIndex(settings.AttributeId, Variant.Null)];
             row[2] = await m_session.NodeCache.GetDisplayTextAsync(settings.StartNodeId, ct) + "/" + Attributes.GetBrowseName(settings.AttributeId);
             row[3] = settings.MonitoringMode;
             row[4] = settings.SamplingInterval.TotalMilliseconds;

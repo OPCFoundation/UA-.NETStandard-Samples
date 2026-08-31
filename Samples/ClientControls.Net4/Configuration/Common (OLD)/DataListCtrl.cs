@@ -651,7 +651,7 @@ namespace Opc.Ua.Client.Controls
                     formattedValue.Append("] ");
                 }
 
-                formattedValue.AppendFormat("{0}", dataValue.WrappedValue.AsBoxedObject());
+                formattedValue.Append(dataValue.WrappedValue.ToString());
                 return formattedValue.ToString();
             }
 
@@ -965,9 +965,9 @@ namespace Opc.Ua.Client.Controls
         private Task<(int, bool)> ShowValueAsync(int index, bool overwrite, EventFieldList value, int fieldIndex, CancellationToken ct = default)
         {
             // ignore children that are not elements.
-            object field = value.EventFields[fieldIndex].AsBoxedObject();
+            Variant field = value.EventFields[fieldIndex];
 
-            if (field == null)
+            if (field.IsNull)
             {
                 return Task.FromResult((index, overwrite));
             }

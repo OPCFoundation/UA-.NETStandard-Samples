@@ -44,19 +44,19 @@ namespace Opc.Ua.Samples.Tests
         /// The type of the event.
         /// </summary>
         public NodeId EventType
-            => Field(Opc.Ua.BrowseNames.EventType).AsBoxedObject() as NodeId? ?? NodeId.Null;
+            => Field(Opc.Ua.BrowseNames.EventType).TryGetValue(out NodeId eventType) ? eventType : NodeId.Null;
 
         /// <summary>
         /// The name of the source which reported the event.
         /// </summary>
         public string SourceName
-            => Field(Opc.Ua.BrowseNames.SourceName).AsBoxedObject() as string;
+            => Field(Opc.Ua.BrowseNames.SourceName).TryGetValue(out string sourceName) ? sourceName : null;
 
         /// <summary>
         /// The message of the event.
         /// </summary>
         public string Message
-            => (Field(Opc.Ua.BrowseNames.Message).AsBoxedObject() as LocalizedText?)?.Text;
+            => Field(Opc.Ua.BrowseNames.Message).TryGetValue(out LocalizedText message) ? message.Text : null;
 
         /// <summary>
         /// The value of one of the selected fields, by the name it was selected under.

@@ -1051,36 +1051,39 @@ namespace Quickstarts
                 metadata.BrowseName = target.BrowseName;
                 metadata.DisplayName = target.DisplayName;
 
-                if (values[0].AsBoxedObject() != null && values[1].AsBoxedObject() != null)
+                if (values[0].TryGetValue(out uint writeMask) &&
+                    values[1].TryGetValue(out uint userWriteMask))
                 {
-                    metadata.WriteMask = (AttributeWriteMask)(((uint)values[0].AsBoxedObject()) & ((uint)values[1].AsBoxedObject()));
+                    metadata.WriteMask = (AttributeWriteMask)(writeMask & userWriteMask);
                 }
 
-                if (values[2].AsBoxedObject() != null)
+                if (values[2].TryGetValue(out NodeId dataType))
                 {
-                    metadata.DataType = (NodeId)values[2].AsBoxedObject();
+                    metadata.DataType = dataType;
                 }
 
-                if (values[3].AsBoxedObject() != null)
+                if (values[3].TryGetValue(out int valueRank))
                 {
-                    metadata.ValueRank = (int)values[3].AsBoxedObject();
+                    metadata.ValueRank = valueRank;
                 }
 
-                metadata.ArrayDimensions = values[4].AsBoxedObject() is IList<uint> dims ? dims.ToArrayOf() : ArrayOf<uint>.Empty;
+                metadata.ArrayDimensions = values[4].TryGetValue(out ArrayOf<uint> dims) ? dims : ArrayOf<uint>.Empty;
 
-                if (values[5].AsBoxedObject() != null && values[6].AsBoxedObject() != null)
+                if (values[5].TryGetValue(out byte accessLevel) &&
+                    values[6].TryGetValue(out byte userAccessLevel))
                 {
-                    metadata.AccessLevel = (byte)(((byte)values[5].AsBoxedObject()) & ((byte)values[6].AsBoxedObject()));
+                    metadata.AccessLevel = (byte)(accessLevel & userAccessLevel);
                 }
 
-                if (values[7].AsBoxedObject() != null)
+                if (values[7].TryGetValue(out byte eventNotifier))
                 {
-                    metadata.EventNotifier = (byte)values[7].AsBoxedObject();
+                    metadata.EventNotifier = eventNotifier;
                 }
 
-                if (values[8].AsBoxedObject() != null && values[9].AsBoxedObject() != null)
+                if (values[8].TryGetValue(out bool executable) &&
+                    values[9].TryGetValue(out bool userExecutable))
                 {
-                    metadata.Executable = (((bool)values[8].AsBoxedObject()) && ((bool)values[9].AsBoxedObject()));
+                    metadata.Executable = executable && userExecutable;
                 }
 
                 // get instance references.
@@ -3522,9 +3525,7 @@ namespace Quickstarts
                     return StatusCodes.BadFilterNotAllowed;
                 }
 
-                range = property.Value.AsBoxedObject() as Opc.Ua.Range;
-
-                if (range == null)
+                if (!property.Value.TryGetStructure(out range))
                 {
                     return StatusCodes.BadFilterNotAllowed;
                 }

@@ -319,8 +319,8 @@ namespace Quickstarts.MethodsClient
 
                 if (outputArguments != null && outputArguments.Count > 1)
                 {
-                    RevisedInitialStateTB.Text = String.Format("{0}", outputArguments[0].AsBoxedObject());
-                    RevisedFinalStateTB.Text = String.Format("{0}", outputArguments[1].AsBoxedObject());
+                    RevisedInitialStateTB.Text = outputArguments[0].ToString();
+                    RevisedFinalStateTB.Text = outputArguments[1].ToString();
                 }
             }
             catch (Exception exception)

@@ -703,8 +703,9 @@ namespace Opc.Ua.Aggregates
             DataValue retval = new DataValue { SourceTimestamp = bucket.From }; ;
             StatusCode code = StatusCodes.Good;
             DataValue previous = new DataValue { SourceTimestamp = bucket.From };
-            if (bucket.EarlyBound.Value != null)
-                previous.StatusCode = (StatusCode)bucket.EarlyBound.Value.WrappedValue.Value;
+            if (bucket.EarlyBound.Value != null &&
+                bucket.EarlyBound.Value.WrappedValue.TryGetValue(out StatusCode earlyBoundCode))
+                previous.StatusCode = earlyBoundCode;
             else
                 previous.StatusCode = StatusCodes.Bad;
             if (!RightStatusCode(previous))

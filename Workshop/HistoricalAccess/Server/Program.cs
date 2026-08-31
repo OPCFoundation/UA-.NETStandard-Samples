@@ -333,10 +333,14 @@ namespace Quickstarts.HistoricalAccessServer
 
                 if (StatusCode.IsNotBad(values[ii].StatusCode))
                 {
-                    double value1 = Math.Round(Convert.ToDouble(values[ii].WrappedValue.AsBoxedObject()), 4);
-                    double value2 = Math.Round(Convert.ToDouble(expectedValues[ii].WrappedValue.AsBoxedObject()), 4);
+                    if (!values[ii].WrappedValue.ConvertTo(BuiltInType.Double).TryGetValue(out double value1) ||
+                        !expectedValues[ii].WrappedValue.ConvertTo(BuiltInType.Double).TryGetValue(out double value2))
+                    {
+                        logger.LogTrace("Wrong Value");
+                        continue;
+                    }
 
-                    if (value1 != value2)
+                    if (Math.Round(value1, 4) != Math.Round(value2, 4))
                     {
                         logger.LogTrace("Wrong Value");
                         continue;

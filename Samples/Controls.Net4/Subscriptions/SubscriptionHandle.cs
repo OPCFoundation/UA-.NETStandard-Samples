@@ -328,18 +328,18 @@ namespace Opc.Ua.Sample.Controls
 
         /// <summary>
         /// Returns the value of an event field selected by the filter the item was created
-        /// with, or null if the filter does not select the field.
+        /// with, or a null Variant if the filter does not select the field.
         /// </summary>
         /// <remarks>
         /// The fields of a V2 <see cref="EventNotification"/> align one to one with the select
         /// clauses of the event filter, which replaces the field lookup the classic
         /// MonitoredItem provided.
         /// </remarks>
-        public static object GetEventFieldValue(MonitoredItemHandle handle, EventNotification notification, QualifiedName browseName)
+        public static Variant GetEventFieldValue(MonitoredItemHandle handle, EventNotification notification, QualifiedName browseName)
         {
             if (handle?.Settings?.Filter is not EventFilter filter)
             {
-                return null;
+                return Variant.Null;
             }
 
             for (int ii = 0; ii < filter.SelectClauses.Count && ii < notification.Fields.Count; ii++)
@@ -348,11 +348,11 @@ namespace Opc.Ua.Sample.Controls
 
                 if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == browseName)
                 {
-                    return notification.Fields[ii].AsBoxedObject();
+                    return notification.Fields[ii];
                 }
             }
 
-            return null;
+            return Variant.Null;
         }
 
         /// <inheritdoc/>

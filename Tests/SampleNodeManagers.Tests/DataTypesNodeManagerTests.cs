@@ -109,13 +109,12 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                value.WrappedValue.AsBoxedObject(),
-                Is.InstanceOf<ExtensionObject>(),
+                value.WrappedValue.TryGetValue(out ExtensionObject encoded),
+                Is.True,
                 "The primary vehicle is a structure, so it arrives as an extension object.");
 
             // the type id of the structure has to name one of the encodings the sample
             // serves, otherwise a client has nothing to decode it with
-            var encoded = (ExtensionObject)value.WrappedValue.AsBoxedObject();
 
             Assert.That(
                 encoded.TypeId.IsNull,
@@ -168,11 +167,12 @@ namespace Opc.Ua.Samples.Tests
                 Is.True,
                 $"Reading the primary vehicle failed: {value.StatusCode}");
 
-            var decoded = value.WrappedValue.AsBoxedObject() as ExtensionObject?;
+            Assert.That(
+                value.WrappedValue.TryGetValue(out ExtensionObject decoded),
+                Is.True,
+                "The primary vehicle is a structure.");
 
-            Assert.That(decoded, Is.Not.Null, "The primary vehicle is a structure.");
-
-            decoded.Value.TryGetValue(out IEncodeable body);
+            decoded.TryGetValue(out IEncodeable body);
 
             await TestContext.Out
                 .WriteLineAsync($"PrimaryVehicle: {body?.GetType().Name}")
@@ -240,12 +240,13 @@ namespace Opc.Ua.Samples.Tests
                 .ReadValueAsync(Session, PrimaryVehicle, ct)
                 .ConfigureAwait(false);
 
-            var decoded = value.WrappedValue.AsBoxedObject() as ExtensionObject?;
-
-            Assert.That(decoded, Is.Not.Null, "The primary vehicle is a structure.");
+            Assert.That(
+                value.WrappedValue.TryGetValue(out ExtensionObject decoded),
+                Is.True,
+                "The primary vehicle is a structure.");
 
             Assert.That(
-                decoded.Value.TryGetValue(out BicycleType read),
+                decoded.TryGetValue(out BicycleType read),
                 Is.True,
                 "What went in as a bicycle has to come back as one.");
 

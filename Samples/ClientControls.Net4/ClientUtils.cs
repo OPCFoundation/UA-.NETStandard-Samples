@@ -227,11 +227,9 @@ namespace Opc.Ua.Client.Controls
                 case Attributes.AccessLevel:
                 case Attributes.UserAccessLevel:
                 {
-                    byte? field = value.AsBoxedObject() as byte?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out byte accessLevel))
                     {
-                        return GetAccessLevelDisplayText(field.Value);
+                        return GetAccessLevelDisplayText(accessLevel);
                     }
 
                     break;
@@ -239,11 +237,9 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.EventNotifier:
                 {
-                    byte? field = value.AsBoxedObject() as byte?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out byte eventNotifier))
                     {
-                        return GetEventNotifierDisplayText(field.Value);
+                        return GetEventNotifierDisplayText(eventNotifier);
                     }
 
                     break;
@@ -251,17 +247,15 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataType:
                 {
-                    NodeId dataTypeId = value.AsBoxedObject() is NodeId dt ? dt : NodeId.Null;
+                    NodeId dataTypeId = value.TryGetValue(out NodeId dt) ? dt : NodeId.Null;
                     return await session.NodeCache.GetDisplayTextAsync(dataTypeId, ct);
                 }
 
                 case Attributes.ValueRank:
                 {
-                    int? field = value.AsBoxedObject() as int?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out int valueRank))
                     {
-                        return GetValueRankDisplayText(field.Value);
+                        return GetValueRankDisplayText(valueRank);
                     }
 
                     break;
@@ -269,11 +263,9 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.NodeClass:
                 {
-                    int? field = value.AsBoxedObject() as int?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out int nodeClass))
                     {
-                        return ((NodeClass)field.Value).ToString();
+                        return ((NodeClass)nodeClass).ToString();
                     }
 
                     break;
@@ -281,7 +273,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.NodeId:
                 {
-                    if (value.AsBoxedObject() is NodeId field && !field.IsNull)
+                    if (value.TryGetValue(out NodeId field) && !field.IsNull)
                     {
                         return field.ToString();
                     }
@@ -291,7 +283,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataTypeDefinition:
                 {
-                    if (value.AsBoxedObject() is ExtensionObject field)
+                    if (value.TryGetValue(out ExtensionObject field))
                     {
                         return field.ToString();
                     }
@@ -300,9 +292,9 @@ namespace Opc.Ua.Client.Controls
             }
 
             // check for byte strings.
-            if (value.AsBoxedObject() is byte[])
+            if (value.TryGetValue(out ByteString byteString))
             {
-                return Utils.ToHexString(value.AsBoxedObject() as byte[]);
+                return Utils.ToHexString(byteString.Span);
             }
 
             // use default format.
@@ -654,7 +646,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == BrowseNames.EventType)
                     {
-                        return notification.EventFields[ii].AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null;
+                        return notification.EventFields[ii].TryGetValue(out NodeId nodeId) ? nodeId : NodeId.Null;
                     }
                 }
             }

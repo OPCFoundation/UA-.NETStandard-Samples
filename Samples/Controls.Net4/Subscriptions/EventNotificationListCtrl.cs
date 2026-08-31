@@ -268,11 +268,11 @@ namespace Opc.Ua.Sample.Controls
             EventNotification notification = itemEvent.Notification;
 
             // get the event fields selected by the filter the item was created with.
-            NodeId eventType = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.EventType)) is NodeId eventTypeId ? eventTypeId : NodeId.Null;
-            string sourceName = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.SourceName)) as string;
-            DateTime? time = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Time)) as DateTime?;
-            ushort? severity = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Severity)) as ushort?;
-            LocalizedText message = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Message)) is LocalizedText messageText ? messageText : LocalizedText.Null;
+            NodeId eventType = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.EventType)).TryGetValue(out NodeId eventTypeId) ? eventTypeId : NodeId.Null;
+            string sourceName = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.SourceName)).TryGetValue(out string name) ? name : null;
+            DateTime? time = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Time)).TryGetValue(out DateTimeUtc eventTime) ? (DateTime)eventTime : null;
+            ushort? severity = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Severity)).TryGetValue(out ushort eventSeverity) ? eventSeverity : null;
+            LocalizedText message = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Message)).TryGetValue(out LocalizedText messageText) ? messageText : LocalizedText.Null;
 
             // fill in the columns.
             listItem.SubItems[0].Text = String.Format("[{0}]", (monitoredItem.Item != null) ? monitoredItem.Item.ServerId : 0);

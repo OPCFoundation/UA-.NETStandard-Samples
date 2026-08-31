@@ -133,7 +133,7 @@ namespace Opc.Ua.Client.Controls
             {
                 Argument argument = (Argument)row[0];
                 Variant value = (Variant)row[4];
-                argument.Value = value.AsBoxedObject();
+                argument.Value = value;
                 inputArguments.Add(value);
             }
 
@@ -255,7 +255,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             row[0] = argument;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex(isOutputArgument, value.AsBoxedObject())];
+            row[1] = ImageList.Images[ClientUtils.GetImageIndex(isOutputArgument, value)];
             row[2] = argument.Name;
             row[3] = dataType;
             row[4] = value;
@@ -380,7 +380,7 @@ namespace Opc.Ua.Client.Controls
                     #pragma warning restore CA2000
                         new TypeInfo(builtInType, argument.ValueRank),
                         argument.Name,
-                        argument.Value,
+                        ClientUtils.ToVariant(argument.Value),
                         "Edit Input Argument");
 
                     if (result != null)

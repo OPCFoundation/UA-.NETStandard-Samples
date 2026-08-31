@@ -83,13 +83,10 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private Variant GetValue()
         {
-            TypeInfo sourceType = m_value.TypeInfo;
-
             // check if the value needs to be updated.
             if (m_textChanged)
             {
-                object value = Variant.From(ValueTB.Text).ConvertTo(sourceType.BuiltInType).AsBoxedObject();
-                m_value = ClientUtils.ToVariant(value);
+                m_value = Variant.From(ValueTB.Text).ConvertTo(m_value.TypeInfo.BuiltInType);
             }
 
             return m_value;
@@ -112,20 +109,15 @@ namespace Opc.Ua.Client.Controls
             // get the source type.
             TypeInfo sourceType = value.TypeInfo;
 
-            if (sourceType.IsUnknown)
-            {
-                sourceType = TypeInfo.Construct(value.AsBoxedObject());
-            }
-
             // convert to target type.
             if (!TargetType.IsUnknown && TargetType.BuiltInType != sourceType.BuiltInType)
             {
-                m_value = ClientUtils.ToVariant(ClientUtils.ToVariant(value.AsBoxedObject()).ConvertTo(TargetType.BuiltInType).AsBoxedObject());
+                m_value = value.ConvertTo(TargetType.BuiltInType);
                 sourceType = TargetType;
             }
             else
             {
-                m_value = ClientUtils.ToVariant(value.AsBoxedObject());
+                m_value = value;
             }
 
             m_textChanged = false;
@@ -139,7 +131,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // display as editable text.
-            ValueTB.Text = (string)ClientUtils.ToVariant(m_value.AsBoxedObject()).ConvertTo(BuiltInType.String).AsBoxedObject();
+            ValueTB.Text = m_value.ConvertTo(BuiltInType.String).TryGetValue(out string text) ? text : String.Empty;
             ValueTB.Enabled = true;
         }
 
