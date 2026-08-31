@@ -139,7 +139,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 0 checks today
 
-143 test cases, under a second, no network:
+151 test cases, under a second, no network:
 
 - every `*.Config.xml` in the repository loads and validates, and declares an application
   name, uri, type and security configuration
@@ -154,7 +154,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 1 checks today
 
-89 test cases, about 25 seconds. Fifteen of them start a sample server in process, from the
+93 test cases, about 25 seconds. Sixteen of them start a sample server in process, from the
 sample's own configuration file, and connect to it with a plain OPC UA client:
 
 - the server comes up on the endpoint the catalog claims
@@ -167,7 +167,7 @@ Only the opc.tcp endpoints are exercised; https base addresses are stripped in m
 the server starts, because they need their own bindings and would double the ports a test run
 occupies.
 
-All 14 servers pass. The first run of this tier found four that did not, all of them samples
+All 16 servers pass. The first run of this tier found four that did not, all of them samples
 which had not caught up with the value types the 2.0 stack introduced (`ArrayOf<T>`,
 `DateTimeUtc`, `NodeId` as a struct, the `Variant.From` overloads); they were fixed rather
 than parked:
@@ -266,7 +266,7 @@ not parking. Both lists are currently empty.
 
 ## What Tier 1.5 checks today
 
-88 test cases across 16 fixtures, about 1.5 minutes. One fixture per node manager, each
+104 test cases across 17 fixtures, about 1.5 minutes. One fixture per node manager, each
 starting its sample server once and driving it through an ordinary OPC UA session.
 
 **Everything is observed through the services a client would use.** No test reaches into a
@@ -286,6 +286,7 @@ What each fixture pins down, in one line:
 | Views | The same node browsed through two views shows two different sets of children |
 | SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing |
 | Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
+| RoleManagement | What a Part 18 Role is worth: an anonymous session browses the machine and is refused every value, an Observer reads but neither writes nor calls, an Operator does both, an Engineer sees a node an Observer cannot browse, UserRolePermissions reports what the session earns, the role configuration is refused to everyone but a SecurityAdmin on an encrypted channel, and a Role granted at runtime reaches an already open session |
 | UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session |
 | PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
 | DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths |
@@ -365,7 +366,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-27 test cases, about a minute, Windows only. For each WinForms sample client the test
+28 test cases, about a minute, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 

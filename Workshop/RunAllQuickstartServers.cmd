@@ -8,6 +8,7 @@ start Quickstarts.HistoricalAccessServer.exe
 start Quickstarts.HistoricalEventsServer.exe
 start Quickstarts.MethodsServer.exe
 start Quickstarts.PerfTestServer.exe
+start Quickstarts.RoleManagementServer.exe
 start Quickstarts.SimpleEventsServer.exe
 start Quickstarts.UserAuthenticationServer.exe
 start Quickstarts.ViewsServer.exe

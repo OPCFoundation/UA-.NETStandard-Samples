@@ -73,6 +73,7 @@ namespace Opc.Ua.Samples.Tests
                 Client("HistoricalEvents", (configuration, telemetry) => new Quickstarts.HistoricalEvents.Client.MainForm(configuration, telemetry)),
                 Client("Methods", (configuration, telemetry) => new Quickstarts.MethodsClient.MainForm(configuration, telemetry), "StartBTN"),
                 Client("PerfTest", (configuration, telemetry) => new Quickstarts.PerfTestClient.MainForm(configuration, telemetry)),
+                Client("RoleManagement", (configuration, telemetry) => new Quickstarts.RoleManagement.Client.MainForm(configuration, telemetry), "RefreshBTN"),
                 Client("SimpleEvents", (configuration, telemetry) => new Quickstarts.SimpleEvents.Client.MainForm(configuration, telemetry)),
                 Client("UserAuthentication", (configuration, telemetry) => new Quickstarts.UserAuthenticationClient.MainForm(configuration, telemetry)),
                 Client("Views", (configuration, telemetry) => new Quickstarts.ViewsClient.MainForm(configuration, telemetry)),

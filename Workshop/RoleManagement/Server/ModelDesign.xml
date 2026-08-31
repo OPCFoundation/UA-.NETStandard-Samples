@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<opc:ModelDesign
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:opc="http://opcfoundation.org/UA/ModelDesign.xsd"
+  xmlns:ua="http://opcfoundation.org/UA/"
+  xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+	xmlns="http://opcfoundation.org/Quickstarts/RoleManagement"
+  TargetNamespace="http://opcfoundation.org/Quickstarts/RoleManagement"
+>
+  <opc:Namespaces>
+    <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/</opc:Namespace>
+    <opc:Namespace Name="RoleManagement" Prefix="Quickstarts.RoleManagement" InternalPrefix="Quickstarts.RoleManagement">http://opcfoundation.org/Quickstarts/RoleManagement</opc:Namespace>
+  </opc:Namespaces>
+
+  <!--
+  The address space of this sample is deliberately tiny. Everything it demonstrates is in
+  the RolePermissions the node manager puts on these five nodes: which of the Part 3 well
+  known Roles, and which Role the sample defines itself, may browse, read, write or call
+  them. The node manager assigns those permissions in code so that the mapping between a
+  Role and a permission is readable in one place instead of being buried in the model.
+  -->
+  <opc:Object SymbolicName="Machine" TypeDefinition="ua:BaseObjectType">
+    <opc:Description>A machine whose values are protected by role permissions.</opc:Description>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+    <opc:Children>
+      <opc:Variable SymbolicName="Temperature" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="Read">
+        <opc:Description>The measured temperature. Every Role which may see the machine may read it.</opc:Description>
+      </opc:Variable>
+      <opc:Variable SymbolicName="SetPoint" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
+        <opc:Description>The requested temperature. Readable by everyone, writable by an Operator or an Engineer.</opc:Description>
+      </opc:Variable>
+      <opc:Variable SymbolicName="Calibration" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
+        <opc:Description>The calibration offset of the sensor. Only an Engineer may read or write it.</opc:Description>
+      </opc:Variable>
+      <opc:Variable SymbolicName="MaintenanceNote" DataType="ua:String" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
+        <opc:Description>The maintenance log. Written by the Role this sample defines itself.</opc:Description>
+      </opc:Variable>
+      <opc:Method SymbolicName="Reset">
+        <opc:Description>Returns the set point to its default. Only an Operator or an Engineer may call it.</opc:Description>
+      </opc:Method>
+    </opc:Children>
+  </opc:Object>
+
+</opc:ModelDesign>
