@@ -69,6 +69,7 @@ namespace Opc.Ua.Samples.Tests
                 Client("DataAccess", (configuration, telemetry) => new Quickstarts.DataAccessClient.MainForm(configuration, telemetry), "BrowseNodesTV"),
                 Client("DataTypes", (configuration, telemetry) => new Quickstarts.DataTypes.MainForm(configuration, telemetry)),
                 Client("Empty", (configuration, telemetry) => new Quickstarts.EmptyClient.MainForm(configuration, telemetry)),
+                Client("FileTransfer", (configuration, telemetry) => new Quickstarts.FileTransferClient.MainForm(configuration, telemetry), "UploadBTN"),
                 Client("HistoricalAccess", (configuration, telemetry) => new Quickstarts.HistoricalAccess.Client.MainForm(configuration, telemetry)),
                 Client("HistoricalEvents", (configuration, telemetry) => new Quickstarts.HistoricalEvents.Client.MainForm(configuration, telemetry)),
                 Client("Methods", (configuration, telemetry) => new Quickstarts.MethodsClient.MainForm(configuration, telemetry), "StartBTN"),

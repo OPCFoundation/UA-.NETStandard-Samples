@@ -20,6 +20,10 @@
     <Project Path="Workshop/Empty/Client/Empty Client.csproj" Id="00fe42a0-219c-4fc7-9ec5-b3f8f1fa058f" />
     <Project Path="Workshop/Empty/Server/Empty Server.csproj" Id="d9682351-440a-46ee-93b7-63fb99c2362b" />
   </Folder>
+  <Folder Name="/FileTransfer/">
+    <Project Path="Workshop/FileTransfer/Client/FileTransfer Client.csproj" Id="c4d8e1f2-5a63-4b79-8e01-2f7a9c3d6b85" />
+    <Project Path="Workshop/FileTransfer/Server/FileTransfer Server.csproj" Id="1a9f3c57-8b24-4d60-93e7-6c5b0a2e4f18" />
+  </Folder>
   <Folder Name="/HistoricalAccess/">
     <Project Path="Workshop/HistoricalAccess/Client/HistoricalAccess Client.csproj" Id="d73b826f-96f6-4be4-a888-0ba3fcb12b52" />
     <Project Path="Workshop/HistoricalAccess/Server/HistoricalAccess Server.csproj" Id="8ecd2012-f9b3-41d0-ab7c-59eba25fe98e" />

@@ -4,6 +4,7 @@ start Quickstarts.BoilerServer.exe
 start Quickstarts.DataAccessServer.exe
 start Quickstarts.DataTypesServer.exe
 start Quickstarts.EmptyServer.exe
+start Quickstarts.FileTransferServer.exe
 start Quickstarts.HistoricalAccessServer.exe
 start Quickstarts.HistoricalEventsServer.exe
 start Quickstarts.MethodsServer.exe
