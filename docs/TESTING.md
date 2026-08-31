@@ -130,8 +130,10 @@ contains, is a stale `--no-build` run: `SampleCatalog` is compiled into every te
 so after changing a port or a sample, rebuild every test project - or simply drop
 `--no-build` and let `dotnet test` build.
 
-**Claiming a port for a new sample.** Endpoints come in pairs - opc.tcp one port above its
-https sibling (the DataAccess sample on 62548/62547, for instance). Pick the next free pair
+**Claiming a port for a new sample.** In the 625xx block, where new samples land, endpoints
+come in pairs - opc.tcp one port above its https sibling (the DataAccess sample on
+62548/62547, for instance; the older samples outside the block pair differently, so do not
+extend those). Pick the next free pair
 above the highest paired endpoint in the repo *and in open pull requests*: Tier 0 only
 checks the tree it runs in, so two in-flight branches can claim the same pair and both look
 green until the second one merges (three branches did exactly that on one day). The catalog
