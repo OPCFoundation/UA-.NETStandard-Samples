@@ -123,6 +123,21 @@ bound. `SampleServerHost` therefore retries a start that fails with "address alr
 for up to 15 seconds. A sample you left running by hand is outside both mechanisms - the run
 retries, then fails on the busy endpoint.
 
+Not every port-shaped failure is a race, and the two are easy to tell apart. A bind race
+takes seconds (the retry window) and moves between samples from run to run. A test that
+fails *instantly*, on the *same* sample every time, asserting a URL the source no longer
+contains, is a stale `--no-build` run: `SampleCatalog` is compiled into every test assembly,
+so after changing a port or a sample, rebuild every test project - or simply drop
+`--no-build` and let `dotnet test` build.
+
+**Claiming a port for a new sample.** Endpoints come in pairs - opc.tcp one port above its
+https sibling (the DataAccess sample on 62548/62547, for instance). Pick the next free pair
+above the highest paired endpoint in the repo *and in open pull requests*: Tier 0 only
+checks the tree it runs in, so two in-flight branches can claim the same pair and both look
+green until the second one merges (three branches did exactly that on one day). The catalog
+row you add for the sample is what turns the claim into a merge conflict the second branch
+cannot miss.
+
 ## Running
 
 ```bash
