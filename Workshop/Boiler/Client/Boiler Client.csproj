@@ -23,7 +23,14 @@
     <Content Include="BoilerClient.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <AdditionalFiles Include="..\Server\ModelDesign.xml" />
+    <AdditionalFiles Include="..\Server\ModelDesign.csv" />
   </ItemGroup>
+  <PropertyGroup>
+    <!-- The client consumes the same information model as the server, but has no use for
+         the fluent server accessors (they reference Opc.Ua.Server.Fluent). -->
+    <ModelSourceGeneratorOmitFluentApi>true</ModelSourceGeneratorOmitFluentApi>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
     <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
@@ -32,5 +39,11 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>2.0.0-preview.2</Version>
     </PackageReference>
+
+    <PackageReference
+      Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
+      Version="2.0.0-preview.2"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

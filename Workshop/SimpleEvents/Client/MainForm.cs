@@ -97,9 +97,7 @@ namespace Quickstarts.SimpleEvents.Client
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed by DeleteSubscriptionAsync.")]
         private CancellationTokenSource m_cts;
         private EventFilter m_eventFilter;
-        private Opc.Ua.Client.Controls.FilterDeclaration m_filter;
-        private Dictionary<NodeId, Type> m_knownEventTypes;
-        private Dictionary<NodeId, NodeId> m_eventTypeMappings;
+        private EventRecordDecoderRegistry m_eventDecoders;
         private bool m_connectedOnce;
         private readonly ITelemetryContext m_telemetry;
         #endregion
@@ -245,22 +243,24 @@ namespace Quickstarts.SimpleEvents.Client
             m_streaming = new StreamingSubscription(manager, ClientUtils.DefaultSubscriptionOptions);
             m_cts = new CancellationTokenSource();
 
-            // a table used to track event types.
-            m_eventTypeMappings = new Dictionary<NodeId, NodeId>();
+            // Register the generated activators for the sample's own data types, so that the
+            // CurrentStep of an event arrives as a CycleStepDataType instead of as the raw
+            // body of an extension object.
+            m_session.Factory.Builder.AddQuickstartsSimpleEvents().Commit();
 
-            NodeId knownEventId = ExpandedNodeId.ToNodeId(ObjectTypeIds.SystemCycleStatusEventType, m_session.NamespaceUris);
-
-            m_knownEventTypes = new Dictionary<NodeId, Type>();
-            m_knownEventTypes.Add(knownEventId, typeof(SystemCycleStatusEventState));
-
-            TypeDeclaration type = new TypeDeclaration();
-            type.NodeId = ExpandedNodeId.ToNodeId(ObjectTypeIds.SystemCycleStatusEventType, m_session.NamespaceUris);
-            type.Declarations = await ClientUtils.CollectInstanceDeclarationsForTypeAsync(m_session, type.NodeId, ct);
+            // The source generator emitted one event record - and a positional decoder for it -
+            // per event type in the server's information model. Registering those decoders
+            // yields both the select clauses and the decode step, so the client does not have
+            // to browse the type model to find out which fields a SystemCycleStatusEventType
+            // carries.
+            m_eventDecoders = new EventRecordDecoderRegistry()
+                .RegisterSimpleEventsDecoders(m_session.NamespaceUris);
 
             // the filter to use. The fields of a notification line up with its select clauses,
             // so the form keeps it: the engine does not report the filter of an item back.
-            m_filter = new FilterDeclaration(type, null);
-            m_eventFilter = m_filter.GetFilter();
+            m_eventFilter = SystemCycleStatusEventTypeRecord.EventFilters.Build(
+                m_session.NamespaceUris,
+                m_eventDecoders);
 
             // start reading the events. Nothing is awaited here on purpose: the enumeration
             // runs for as long as the client is connected.
@@ -335,7 +335,7 @@ namespace Quickstarts.SimpleEvents.Client
 
             m_streaming = null;
             m_cts = null;
-            m_filter = null;
+            m_eventDecoders = null;
             m_eventFilter = null;
 
             if (cts != null)
@@ -371,32 +371,14 @@ namespace Quickstarts.SimpleEvents.Client
         {
             try
             {
-                // the engine reports the fields of an event, which line up with the select
-                // clauses of the filter the item was created with.
-                var notification = new EventFieldList {
-                    ClientHandle = eventNotification.MonitoredItem?.ClientHandle ?? 0,
-                    EventFields = eventNotification.Fields,
-                };
-
-                // check the type of event.
-                NodeId eventTypeId = ClientUtils.FindEventType(m_eventFilter, notification);
-
-                // ignore unknown events.
-                if ((eventTypeId).IsNull)
+                // The engine reports the fields of an event, which line up with the select
+                // clauses of the generated filter the item was created with. The registry
+                // routes on the EventType field and remaps the server's field order to the
+                // layout the generated decoder expects.
+                if (m_eventDecoders.Decode(eventNotification.Fields.ToArray())
+                    is not SystemCycleStatusEventTypeRecord status)
                 {
-                    return;
-                }
-
-                // construct the audit object.
-                SystemCycleStatusEventState status = await ClientUtils.ConstructEventAsync(
-                    m_session,
-                    m_eventFilter,
-                    notification,
-                    m_knownEventTypes,
-                    m_eventTypeMappings) as SystemCycleStatusEventState;
-
-                if (status == null)
-                {
+                    // ignore events with no registered decoder.
                     return;
                 }
 
@@ -409,18 +391,11 @@ namespace Quickstarts.SimpleEvents.Client
                 item.SubItems.Add(String.Empty); // Time
                 item.SubItems.Add(String.Empty); // Message
 
-                // look up the condition type metadata in the local cache.
-                INode type = await m_session.NodeCache.FindAsync(status.TypeDefinitionId);
+                // look up the event type metadata in the local cache.
+                INode type = await m_session.NodeCache.FindAsync(status.EventType);
 
                 // Source
-                if (status.SourceName != null)
-                {
-                    item.SubItems[0].Text = Utils.Format("{0}", status.SourceName.Value);
-                }
-                else
-                {
-                    item.SubItems[0].Text = null;
-                }
+                item.SubItems[0].Text = status.SourceName;
 
                 // Type
                 if (type != null)
@@ -433,24 +408,10 @@ namespace Quickstarts.SimpleEvents.Client
                 }
 
                 // CycleId
-                if (status.CycleId != null)
-                {
-                    item.SubItems[2].Text = Utils.Format("{0}", status.CycleId.Value);
-                }
-                else
-                {
-                    item.SubItems[2].Text = null;
-                }
+                item.SubItems[2].Text = status.CycleId;
 
                 // Step
-                if (status.CurrentStep != null && status.CurrentStep.Value != null)
-                {
-                    item.SubItems[3].Text = Utils.Format("{0}", status.CurrentStep.Value.Name);
-                }
-                else
-                {
-                    item.SubItems[3].Text = null;
-                }
+                item.SubItems[3].Text = status.CurrentStep?.Name;
 
                 // Time
                 if (status.Time != null)
@@ -463,14 +424,7 @@ namespace Quickstarts.SimpleEvents.Client
                 }
 
                 // Message
-                if (status.Message != null)
-                {
-                    item.SubItems[5].Text = Utils.Format("{0}", status.Message.Value);
-                }
-                else
-                {
-                    item.SubItems[5].Text = null;
-                }
+                item.SubItems[5].Text = status.Message.Text;
 
                 item.Tag = status;
                 EventsLV.Items.Add(item);

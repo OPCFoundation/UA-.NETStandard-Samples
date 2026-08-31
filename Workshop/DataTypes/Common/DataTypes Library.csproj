@@ -29,16 +29,21 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="BuildDesign.bat" />
-    <Content Include="Types\ModelDesign1.csv" />
     <EmbeddedResource Include="Types\Quickstarts.DataTypes.Types.PredefinedNodes.uanodes" />
     <EmbeddedResource Include="Types\Quickstarts.DataTypes.Types.Types.bsd" />
     <EmbeddedResource Include="Types\Quickstarts.DataTypes.Types.Types.xsd" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Types\ModelDesign1.xml" />
+    <AdditionalFiles Include="Types\ModelDesign1.xml" />
+    <AdditionalFiles Include="Types\ModelDesign1.csv" />
     <Content Include="Types\Quickstarts.DataTypes.Types.NodeSet.xml" />
     <Content Include="Types\Quickstarts.DataTypes.Types.PredefinedNodes.xml" />
   </ItemGroup>
+  <PropertyGroup>
+    <!-- Model-only assembly shared by the DataTypes client and server: opt out of the
+         fluent server accessors, they reference Opc.Ua.Server.Fluent. -->
+    <ModelSourceGeneratorOmitFluentApi>true</ModelSourceGeneratorOmitFluentApi>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
       <Version>10.0.11</Version>
@@ -46,10 +51,11 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
       <Version>2.0.0-preview.2</Version>
     </PackageReference>
-  </ItemGroup>
-  <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="Instances\Quickstarts.DataTypes.Instances.DataTypes.cs" />
-    <Compile Remove="Instances\Quickstarts.DataTypes.Instances.Constants.cs" />
-    <Compile Remove="Instances\Quickstarts.DataTypes.Instances.Classes.cs" />
+
+    <PackageReference
+      Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
+      Version="2.0.0-preview.2"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

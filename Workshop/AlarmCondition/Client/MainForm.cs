@@ -108,13 +108,6 @@ namespace Quickstarts.AlarmConditionClient
         }
         #endregion
 
-        private static void AddInputArgument(CallMethodRequest request, Variant argument)
-        {
-            List<Variant> arguments = request.InputArguments.IsNull ? new List<Variant>() : request.InputArguments.ToList();
-            arguments.Add(argument);
-            request.InputArguments = arguments.ToArrayOf();
-        }
-
         #region Private Fields
         /// <summary>
         /// How long the form waits for the subscription engine to apply the item changes.
@@ -383,19 +376,50 @@ namespace Quickstarts.AlarmConditionClient
         }
 
         /// <summary>
+        /// Calls <paramref name="callAsync"/> for every selected condition and reports a
+        /// failed call in the status column of the row it belongs to.
+        /// </summary>
+        /// <remarks>
+        /// The generated <c>*TypeClient</c> proxies call one object at a time and throw on
+        /// a bad status, so the per-condition result handling which used to accompany a
+        /// batched Call request lives here instead.
+        /// </remarks>
+        private async Task ForEachSelectedConditionAsync(
+            Func<ConditionState, CancellationToken, Task> callAsync,
+            CancellationToken ct)
+        {
+            foreach (ListViewItem item in ConditionsLV.SelectedItems.Cast<ListViewItem>().ToList())
+            {
+                if (item.Tag is not ConditionState condition)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    await callAsync(condition, ct);
+                }
+                catch (ServiceResultException exception)
+                {
+                    item.SubItems[8].Text = Utils.Format("{0}", exception.StatusCode);
+                }
+            }
+        }
+
+        /// <summary>
         /// Enables or disables the selected conditions.
         /// </summary>
         /// <param name="enable">if set to <c>true</c> the conditions are enabled.</param>
-        private async Task EnableDisableConditionAsync(bool enable, CancellationToken ct = default)
+        private Task EnableDisableConditionAsync(bool enable, CancellationToken ct = default)
         {
-            if (enable)
-            {
-                await CallMethodAsync(MethodIds.ConditionType_Enable, null, ct);
-            }
-            else
-            {
-                await CallMethodAsync(MethodIds.ConditionType_Disable, null, ct);
-            }
+            return ForEachSelectedConditionAsync(
+                (condition, token) => {
+                    var client = new ConditionTypeClient(m_session, condition.NodeId, m_telemetry);
+                    return enable
+                        ? client.EnableAsync(token).AsTask()
+                        : client.DisableAsync(token).AsTask();
+                },
+                ct);
         }
 
         /// <summary>
@@ -414,7 +438,11 @@ namespace Quickstarts.AlarmConditionClient
                     return;
                 }
 
-                await CallMethodAsync(MethodIds.ConditionType_AddComment, comment, ct);
+                await ForEachSelectedConditionAsync(
+                    (condition, token) => new ConditionTypeClient(m_session, condition.NodeId, m_telemetry)
+                        .AddCommentAsync(condition.EventId.Value, new LocalizedText(comment), token)
+                        .AsTask(),
+                    ct);
             }
         }
 
@@ -434,7 +462,11 @@ namespace Quickstarts.AlarmConditionClient
                     return;
                 }
 
-                await CallMethodAsync(MethodIds.AcknowledgeableConditionType_Acknowledge, comment, ct);
+                await ForEachSelectedConditionAsync(
+                    (condition, token) => new AcknowledgeableConditionTypeClient(m_session, condition.NodeId, m_telemetry)
+                        .AcknowledgeAsync(condition.EventId.Value, new LocalizedText(comment), token)
+                        .AsTask(),
+                    ct);
             }
         }
 
@@ -454,191 +486,59 @@ namespace Quickstarts.AlarmConditionClient
                     return;
                 }
 
-                await CallMethodAsync(MethodIds.AcknowledgeableConditionType_Confirm, comment, ct);
+                await ForEachSelectedConditionAsync(
+                    (condition, token) => new AcknowledgeableConditionTypeClient(m_session, condition.NodeId, m_telemetry)
+                        .ConfirmAsync(condition.EventId.Value, new LocalizedText(comment), token)
+                        .AsTask(),
+                    ct);
             }
         }
 
         /// <summary>
         /// Confirms the selected conditions.
         /// </summary>
-        private async Task ShelveAsync(bool shelving, bool oneShot, double shelvingTime, CancellationToken ct = default)
+        private Task ShelveAsync(bool shelving, bool oneShot, double shelvingTime, CancellationToken ct = default)
         {
-            // build list of methods to call.
-            List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
-
-            for (int ii = 0; ii < ConditionsLV.SelectedItems.Count; ii++)
-            {
-                ConditionState condition = (ConditionState)ConditionsLV.SelectedItems[ii].Tag;
-
-                // check if the node supports shelving.
-                BaseObjectState shelvingState = condition.FindChild(m_session.SystemContext, new QualifiedName(BrowseNames.ShelvingState)) as BaseObjectState;
-
-                if (shelvingState == null)
-                {
-                    continue;
-                }
-
-                CallMethodRequest request = new CallMethodRequest();
-
-                request.ObjectId = shelvingState.NodeId;
-                request.Handle = ConditionsLV.SelectedItems[ii];
-
-                // select the method to call.
-                if (!shelving)
-                {
-                    request.MethodId = MethodIds.ShelvedStateMachineType_Unshelve;
-                }
-                else
-                {
-                    if (oneShot)
+            return ForEachSelectedConditionAsync(
+                (condition, token) => {
+                    // check if the node supports shelving. The event already carries the
+                    // NodeId of the ShelvingState object, so no browse is needed here -
+                    // AlarmConditionTypeClient.GetShelvingStateAsync resolves it from the
+                    // server when the client does not have it.
+                    if (condition.FindChild(
+                            m_session.SystemContext,
+                            new QualifiedName(BrowseNames.ShelvingState)) is not BaseObjectState shelvingState)
                     {
-                        request.MethodId = MethodIds.ShelvedStateMachineType_OneShotShelve;
+                        return Task.CompletedTask;
                     }
-                    else
+
+                    var client = new ShelvedStateMachineTypeClient(m_session, shelvingState.NodeId, m_telemetry);
+
+                    if (!shelving)
                     {
-                        request.MethodId = MethodIds.ShelvedStateMachineType_TimedShelve;
-                        AddInputArgument(request, new Variant(shelvingTime));
+                        return client.UnshelveAsync(token).AsTask();
                     }
-                }
 
-                methodsToCall.Add(request);
-            }
-
-            if (methodsToCall.Count == 0)
-            {
-                return;
-            }
-
-            // call the methods.
-            CallResponse response = await m_session.CallAsync(
-                null,
-                methodsToCall,
+                    return oneShot
+                        ? client.OneShotShelveAsync(token).AsTask()
+                        : client.TimedShelveAsync(shelvingTime, token).AsTask();
+                },
                 ct);
-            List<CallMethodResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, methodsToCall);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
-
-            for (int ii = 0; ii < results.Count; ii++)
-            {
-                if (StatusCode.IsBad(results[ii].StatusCode))
-                {
-                    ListViewItem item = (ListViewItem)methodsToCall[ii].Handle;
-                    item.SubItems[8].Text = Utils.Format("{0}", results[ii].StatusCode);
-                }
-            }
         }
 
         /// <summary>
         /// Responds to the dialog.
         /// </summary>
-        private async Task RespondAsync(int selectedResponse, CancellationToken ct = default)
+        private Task RespondAsync(int selectedResponse, CancellationToken ct = default)
         {
-            // build list of dialogs to respond to (caller should always make sure that only one is selected).
-            List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
-
-            for (int ii = 0; ii < ConditionsLV.SelectedItems.Count; ii++)
-            {
-                DialogConditionState dialog = ConditionsLV.SelectedItems[ii].Tag as DialogConditionState;
-
-                if (dialog == null)
-                {
-                    continue;
-                }
-
-                CallMethodRequest request = new CallMethodRequest();
-
-                request.ObjectId = dialog.NodeId;
-                request.MethodId = MethodIds.DialogConditionType_Respond;
-                AddInputArgument(request, new Variant(selectedResponse));
-                request.Handle = ConditionsLV.SelectedItems[ii];
-
-                methodsToCall.Add(request);
-            }
-
-            if (methodsToCall.Count == 0)
-            {
-                return;
-            }
-
-            // call the methods.
-            CallResponse response = await m_session.CallAsync(
-                null,
-                methodsToCall,
+            // the caller should always make sure that only one dialog is selected.
+            return ForEachSelectedConditionAsync(
+                (condition, token) => condition is not DialogConditionState dialog
+                    ? Task.CompletedTask
+                    : new DialogConditionTypeClient(m_session, dialog.NodeId, m_telemetry)
+                        .RespondAsync(selectedResponse, token)
+                        .AsTask(),
                 ct);
-
-            List<CallMethodResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, methodsToCall);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
-
-            for (int ii = 0; ii < results.Count; ii++)
-            {
-                if (StatusCode.IsBad(results[ii].StatusCode))
-                {
-                    ListViewItem item = (ListViewItem)methodsToCall[ii].Handle;
-                    item.SubItems[8].Text = Utils.Format("{0}", results[ii].StatusCode);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Adds a comment to the selected conditions.
-        /// </summary>
-        /// <param name="methodId">The NodeId for the method to call.</param>
-        /// <param name="comment">The comment to pass as an argument.</param>
-        /// <param name="ct">The token to cancel the request</param>
-        private async Task CallMethodAsync(NodeId methodId, string comment, CancellationToken ct = default)
-        {
-            // build list of methods to call.
-            List<CallMethodRequest> methodsToCall = new List<CallMethodRequest>();
-
-            for (int ii = 0; ii < ConditionsLV.SelectedItems.Count; ii++)
-            {
-                ConditionState condition = (ConditionState)ConditionsLV.SelectedItems[ii].Tag;
-
-                CallMethodRequest request = new CallMethodRequest();
-
-                request.ObjectId = condition.NodeId;
-                request.MethodId = methodId;
-                request.Handle = ConditionsLV.SelectedItems[ii];
-
-                if (comment != null)
-                {
-                    AddInputArgument(request, new Variant(condition.EventId.Value));
-                    AddInputArgument(request, new Variant((LocalizedText)comment));
-                }
-
-                methodsToCall.Add(request);
-            }
-
-            if (methodsToCall.Count == 0)
-            {
-                return;
-            }
-
-            // call the methods.
-            CallResponse response = await m_session.CallAsync(
-                null,
-                methodsToCall,
-                ct);
-
-            List<CallMethodResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, methodsToCall);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, methodsToCall);
-
-            for (int ii = 0; ii < results.Count; ii++)
-            {
-                if (StatusCode.IsBad(results[ii].StatusCode))
-                {
-                    ListViewItem item = (ListViewItem)methodsToCall[ii].Handle;
-                    item.SubItems[8].Text = Utils.Format("{0}", results[ii].StatusCode);
-                }
-            }
         }
         #endregion
 
@@ -914,7 +814,9 @@ namespace Quickstarts.AlarmConditionClient
             try
             {
                 // the server id of a V2 subscription is not public, and it does not have to
-                // be: the engine calls ConditionRefresh for the subscription itself.
+                // be: the engine calls ConditionRefresh for the subscription itself. The
+                // generated ConditionTypeClient proxy is used for the per condition methods
+                // below, which name the condition they act on.
                 if (m_subscription != null)
                 {
                     await m_subscription.ConditionRefreshAsync();

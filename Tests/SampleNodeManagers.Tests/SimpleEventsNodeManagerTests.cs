@@ -14,6 +14,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
+using Quickstarts.SimpleEvents;
+
 using EventBrowseNames = Quickstarts.SimpleEvents.BrowseNames;
 using EventObjectTypes = Quickstarts.SimpleEvents.ObjectTypes;
 
@@ -212,6 +214,65 @@ namespace Opc.Ua.Samples.Tests
                 reported.Field(EventBrowseNames.CycleId).AsBoxedObject() as string,
                 Is.Not.Null.And.Not.Empty,
                 "The cycle id is a field of the sample's own event type.");
+        }
+
+        /// <summary>
+        /// The generated event records decode what the sample reports, without the client
+        /// having to browse the type model first.
+        /// </summary>
+        /// <remarks>
+        /// This is the path the SimpleEvents client takes since it moved to the source
+        /// generated stubs: the select clauses and the decoder both come out of the model,
+        /// so the whole custom event type - including the CycleStepDataType structure -
+        /// arrives as a typed record on the first notification.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task GeneratedEventRecordsDecodeTheSamplesEvents(CancellationToken ct)
+        {
+            Session.Factory.Builder.AddQuickstartsSimpleEvents().Commit();
+
+            EventRecordDecoderRegistry decoders = new EventRecordDecoderRegistry()
+                .RegisterSimpleEventsDecoders(Session.NamespaceUris);
+
+            EventFilter filter = SystemCycleStatusEventTypeRecord.EventFilters.Build(
+                Session.NamespaceUris,
+                decoders);
+
+            await using EventCapture capture = await EventCapture
+                .CreateAsync(Session, ObjectIds.Server, filter, ct)
+                .ConfigureAwait(false);
+
+            CapturedEvent reported = await capture.WaitAsync(
+                candidate => decoders.Decode(candidate.RawFields)
+                    is SystemCycleStatusEventTypeRecord { CurrentStep: not null },
+                TimeSpan.FromSeconds(20),
+                "a cycle event which decodes into a record with a current step",
+                ct).ConfigureAwait(false);
+
+            var record = (SystemCycleStatusEventTypeRecord)decoders.Decode(reported.RawFields);
+
+            await TestContext.Out
+                .WriteLineAsync($"Decoded: {record.GetType().Name} cycle {record.CycleId}")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    record.CycleId,
+                    Is.Not.Null.And.Not.Empty,
+                    "The cycle id is a field of the sample's own event type.");
+
+                Assert.That(
+                    record.CurrentStep.Name,
+                    Is.Not.Null.And.Not.Empty,
+                    "The current step is the sample's own structured data type, decoded by " +
+                    "the generated CycleStepDataType.");
+
+                Assert.That(
+                    record.SourceName,
+                    Is.EqualTo("System"),
+                    "The standard fields of the base event type are decoded as well.");
+            });
         }
 
         private ushort SimpleEventsIndex => NamespaceIndex(SimpleEventsNamespace);
