@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="2.0.0-preview.2" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="2.0.0-preview.2" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="2.0.0-preview.2" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="2.0.0-preview.3" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="2.0.0-preview.3" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="2.0.0-preview.3" />
   </ItemGroup>
 
 </Project>
