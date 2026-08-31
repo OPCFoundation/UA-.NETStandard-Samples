@@ -170,9 +170,7 @@ namespace Opc.Ua.Sample.Controls
             this.WriteResultsCTRL.AutoUpdate = true;
             this.WriteResultsCTRL.Dock = System.Windows.Forms.DockStyle.Fill;
             this.WriteResultsCTRL.Instructions = "Right click to add filter operands.";
-            this.WriteResultsCTRL.LatestValue = true;
             this.WriteResultsCTRL.Location = new System.Drawing.Point(0, 0);
-            this.WriteResultsCTRL.MonitoredItem = null;
             this.WriteResultsCTRL.Name = "WriteResultsCTRL";
             this.WriteResultsCTRL.Size = new System.Drawing.Size(560, 392);
             this.WriteResultsCTRL.TabIndex = 3;

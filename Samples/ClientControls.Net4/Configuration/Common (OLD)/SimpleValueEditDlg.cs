@@ -28,11 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using Opc.Ua;
@@ -42,7 +37,9 @@ using Opc.Ua.Client.Controls;
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
-    /// Simple value edit dialog
+    /// Edits a simple scalar value as text. The value is passed and returned
+    /// as a Variant and the edited text is converted back to the value's
+    /// built in type.
     /// </summary>
     public partial class SimpleValueEditDlg : Form
     {
@@ -58,86 +55,78 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        private object m_value;
-        private Type m_type;
+        private Variant m_value;
+        private BuiltInType m_targetType;
         private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
-        /// Displays the dialog.
+        /// Displays the dialog. Returns false if the user cancelled the edit;
+        /// otherwise returns the edited value in <paramref name="result"/>.
         /// </summary>
-        public object ShowDialog(object value, Type type, ITelemetryContext telemetry)
+        public bool TryShowDialog(Variant value, ITelemetryContext telemetry, out Variant result)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            result = Variant.Null;
 
-            m_type = type;
+            m_targetType = !value.IsNull ? value.TypeInfo.BuiltInType : BuiltInType.String;
             m_telemetry = telemetry;
 
-            this.Text = Utils.Format("{0} ({1})", this.Text, type.Name);
+            this.Text = Utils.Format("{0} ({1})", this.Text, m_targetType);
 
-            ValueTB.Text = Utils.Format("{0}", value);
+            // the displayed text has to round trip through ConvertTo when it is parsed back.
+            ValueTB.Text = value.ConvertTo(BuiltInType.String).TryGetValue(out string text) ? text : String.Empty;
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return false;
             }
 
-            return m_value;
+            result = m_value;
+            return true;
         }
 
         /// <summary>
         /// Returns true if the dialog supports editing the type.
         /// </summary>
-        public static bool IsSimpleType(Type type)
+        public static bool IsSimpleType(TypeInfo typeInfo)
         {
-            if (type == typeof(bool)) return true;
-            if (type == typeof(sbyte)) return true;
-            if (type == typeof(byte)) return true;
-            if (type == typeof(short)) return true;
-            if (type == typeof(ushort)) return true;
-            if (type == typeof(int)) return true;
-            if (type == typeof(uint)) return true;
-            if (type == typeof(long)) return true;
-            if (type == typeof(ulong)) return true;
-            if (type == typeof(float)) return true;
-            if (type == typeof(double)) return true;
-            if (type == typeof(string)) return true;
-            if (type == typeof(DateTime)) return true;
-            if (type == typeof(Guid)) return true;
+            if (typeInfo.ValueRank >= 0)
+            {
+                return false;
+            }
+
+            switch (typeInfo.BuiltInType)
+            {
+                case BuiltInType.Boolean:
+                case BuiltInType.SByte:
+                case BuiltInType.Byte:
+                case BuiltInType.Int16:
+                case BuiltInType.UInt16:
+                case BuiltInType.Int32:
+                case BuiltInType.UInt32:
+                case BuiltInType.Int64:
+                case BuiltInType.UInt64:
+                case BuiltInType.Float:
+                case BuiltInType.Double:
+                case BuiltInType.String:
+                case BuiltInType.DateTime:
+                case BuiltInType.Guid:
+                {
+                    return true;
+                }
+            }
 
             return false;
         }
         #endregion
-
-        private object Parse(string text)
-        {
-            if (m_type == typeof(bool)) return Convert.ToBoolean(text);
-            if (m_type == typeof(sbyte)) return Convert.ToSByte(text);
-            if (m_type == typeof(byte)) return Convert.ToByte(text);
-            if (m_type == typeof(short)) return Convert.ToInt16(text);
-            if (m_type == typeof(ushort)) return Convert.ToUInt16(text);
-            if (m_type == typeof(int)) return Convert.ToInt32(text);
-            if (m_type == typeof(uint)) return Convert.ToUInt32(text);
-            if (m_type == typeof(long)) return Convert.ToInt64(text);
-            if (m_type == typeof(ulong)) return Convert.ToUInt64(text);
-            if (m_type == typeof(float)) return Convert.ToSingle(text);
-            if (m_type == typeof(double)) return Convert.ToDouble(text);
-            if (m_type == typeof(string)) return text;
-            if (m_type == typeof(DateTime)) return DateTime.ParseExact(text, "yyyy-MM-dd HH:mm:ss.fff", null);
-            if (m_type == typeof(Guid)) return new Guid(text);
-            if (m_type == typeof(QualifiedName)) return new QualifiedName(text);
-            if (m_type == typeof(LocalizedText)) return new LocalizedText(text);
-
-            throw new ServiceResultException(StatusCodes.BadUnexpectedError, "Cannot convert type.");
-        }
 
         #region Event Handlers
         private void OkBTN_Click(object sender, EventArgs e)
         {
             try
             {
-                m_value = Parse(ValueTB.Text);
+                m_value = Variant.From(ValueTB.Text).ConvertTo(m_targetType);
                 DialogResult = DialogResult.OK;
             }
             catch (Exception exception)

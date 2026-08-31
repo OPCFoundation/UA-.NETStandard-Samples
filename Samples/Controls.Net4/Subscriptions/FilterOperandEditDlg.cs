@@ -130,20 +130,18 @@ namespace Opc.Ua.Sample.Controls
 
                 StringBuilder buffer = new StringBuilder();
 
-                // the operand can hold an array of any built in type, so it is listed
-                // element by element through the boxed CLR array.
-                Array array = literalOperand.Value.AsBoxedObject() as Array;
-
-                if (array != null)
+                // the operand can hold an array of any built in type, so it is
+                // listed element by element.
+                if (VariantElements.TryGetElements(literalOperand.Value, out ArrayOf<Variant> literalElements, out _))
                 {
-                    for (int ii = 0; ii < array.Length; ii++)
+                    for (int ii = 0; ii < literalElements.Count; ii++)
                     {
                         if (ii > 0)
                         {
                             buffer.Append("\r\n");
                         }
 
-                        buffer.AppendFormat("{0}", Variant.From((dynamic)array.GetValue(ii)));
+                        buffer.AppendFormat("{0}", literalElements[ii]);
                     }
                 }
                 else

@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -28,18 +28,12 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
-using System.Reflection;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
-    /// A dialog to edit a numeric value.
+    /// A dialog to edit a numeric value held in a Variant.
     /// </summary>
     public partial class NumericValueEditDlg : Form
     {
@@ -56,30 +50,31 @@ namespace Opc.Ua.Client.Controls
 
         #region Public Interface
         /// <summary>
-        /// Displays the dialog.
+        /// Displays the dialog. Returns false if the user cancelled the edit;
+        /// otherwise returns the edited value converted to
+        /// <paramref name="targetType"/> in <paramref name="result"/>.
         /// </summary>
-        public object ShowDialog(object value, Type type)
+        public bool TryShowDialog(Variant value, BuiltInType targetType, out Variant result)
         {
-            if ((type == null || type == typeof(Variant)) && value != null)
+            result = Variant.Null;
+
+            if (targetType == BuiltInType.Null || targetType == BuiltInType.Variant)
             {
-                type = value.GetType();
+                targetType = !value.IsNull ? value.TypeInfo.BuiltInType : BuiltInType.Double;
             }
 
-            if (type == typeof(Variant))
-            {
-                type = typeof(double);
-            }
+            SetLimits(targetType);
 
-            SetLimits(type);
-
-            ValueCTRL.Value = Convert.ToDecimal(value);
+            ValueCTRL.Value = value.TryGetDecimal(out decimal current) ? current : 0M;
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return false;
             }
 
-            return Convert.ChangeType(ValueCTRL.Value, type);
+            // convert through the invariant string so large integers keep full precision.
+            result = Variant.From(ValueCTRL.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)).ConvertTo(targetType);
+            return true;
         }
         #endregion
 
@@ -87,76 +82,92 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Sets the limits according to the data type.
         /// </summary>
-        private void SetLimits(Type type)
+        private void SetLimits(BuiltInType type)
         {
-            if (type == typeof(sbyte))
+            switch (type)
             {
-                ValueCTRL.Minimum = SByte.MinValue;
-                ValueCTRL.Maximum = SByte.MaxValue;
-                ValueCTRL.DecimalPlaces = 0;
-            }
+                case BuiltInType.SByte:
+                {
+                    ValueCTRL.Minimum = SByte.MinValue;
+                    ValueCTRL.Maximum = SByte.MaxValue;
+                    ValueCTRL.DecimalPlaces = 0;
+                    break;
+                }
 
-            if (type == typeof(byte))
-            {
-                ValueCTRL.Minimum = Byte.MinValue;
-                ValueCTRL.Maximum = Byte.MaxValue;
-                ValueCTRL.DecimalPlaces = 0;
-            }
+                case BuiltInType.Byte:
+                {
+                    ValueCTRL.Minimum = Byte.MinValue;
+                    ValueCTRL.Maximum = Byte.MaxValue;
+                    ValueCTRL.DecimalPlaces = 0;
+                    break;
+                }
 
-            if (type == typeof(short))
-            {
-                ValueCTRL.Minimum = Int16.MinValue;
-                ValueCTRL.Maximum = Int16.MaxValue;
-                ValueCTRL.DecimalPlaces = 0;
-            }
+                case BuiltInType.Int16:
+                {
+                    ValueCTRL.Minimum = Int16.MinValue;
+                    ValueCTRL.Maximum = Int16.MaxValue;
+                    ValueCTRL.DecimalPlaces = 0;
+                    break;
+                }
 
-            if (type == typeof(ushort))
-            {
-                ValueCTRL.Minimum = UInt16.MinValue;
-                ValueCTRL.Maximum = UInt16.MaxValue;
-                ValueCTRL.DecimalPlaces = 0;
-            }
+                case BuiltInType.UInt16:
+                {
+                    ValueCTRL.Minimum = UInt16.MinValue;
+                    ValueCTRL.Maximum = UInt16.MaxValue;
+                    ValueCTRL.DecimalPlaces = 0;
+                    break;
+                }
 
-            if (type == typeof(int))
-            {
-                ValueCTRL.Minimum = Int32.MinValue;
-                ValueCTRL.Maximum = Int32.MaxValue;
-                ValueCTRL.DecimalPlaces = 0;
-            }
+                case BuiltInType.Int32:
+                case BuiltInType.Enumeration:
+                {
+                    ValueCTRL.Minimum = Int32.MinValue;
+                    ValueCTRL.Maximum = Int32.MaxValue;
+                    ValueCTRL.DecimalPlaces = 0;
+                    break;
+                }
 
-            if (type == typeof(uint))
-            {
-                ValueCTRL.Minimum = UInt32.MinValue;
-                ValueCTRL.Maximum = UInt32.MaxValue;
-                ValueCTRL.DecimalPlaces = 0;
-            }
+                case BuiltInType.UInt32:
+                {
+                    ValueCTRL.Minimum = UInt32.MinValue;
+                    ValueCTRL.Maximum = UInt32.MaxValue;
+                    ValueCTRL.DecimalPlaces = 0;
+                    break;
+                }
 
-            if (type == typeof(long))
-            {
-                ValueCTRL.Minimum = Int64.MinValue;
-                ValueCTRL.Maximum = Int64.MaxValue;
-                ValueCTRL.DecimalPlaces = 0;
-            }
+                case BuiltInType.Int64:
+                case BuiltInType.Integer:
+                {
+                    ValueCTRL.Minimum = Int64.MinValue;
+                    ValueCTRL.Maximum = Int64.MaxValue;
+                    ValueCTRL.DecimalPlaces = 0;
+                    break;
+                }
 
-            if (type == typeof(ulong))
-            {
-                ValueCTRL.Minimum = UInt64.MinValue;
-                ValueCTRL.Maximum = UInt64.MaxValue;
-                ValueCTRL.DecimalPlaces = 0;
-            }
+                case BuiltInType.UInt64:
+                case BuiltInType.UInteger:
+                {
+                    ValueCTRL.Minimum = UInt64.MinValue;
+                    ValueCTRL.Maximum = UInt64.MaxValue;
+                    ValueCTRL.DecimalPlaces = 0;
+                    break;
+                }
 
-            if (type == typeof(float))
-            {
-                ValueCTRL.Minimum = decimal.MinValue;
-                ValueCTRL.Maximum = decimal.MaxValue;
-                ValueCTRL.DecimalPlaces = 6;
-            }
+                case BuiltInType.Float:
+                {
+                    ValueCTRL.Minimum = decimal.MinValue;
+                    ValueCTRL.Maximum = decimal.MaxValue;
+                    ValueCTRL.DecimalPlaces = 6;
+                    break;
+                }
 
-            if (type == typeof(double))
-            {
-                ValueCTRL.Minimum = decimal.MinValue;
-                ValueCTRL.Maximum = decimal.MaxValue;
-                ValueCTRL.DecimalPlaces = 15;
+                default:
+                {
+                    ValueCTRL.Minimum = decimal.MinValue;
+                    ValueCTRL.Maximum = decimal.MaxValue;
+                    ValueCTRL.DecimalPlaces = 15;
+                    break;
+                }
             }
         }
         #endregion

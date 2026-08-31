@@ -28,11 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 
@@ -42,7 +37,7 @@ using Opc.Ua.Client.Controls;
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
-    /// A dialog to edit a complex value.
+    /// A dialog to view or edit a complex value held in a Variant.
     /// </summary>
     public partial class ComplexValueEditDlg : Form
     {
@@ -58,37 +53,65 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        private object m_value;
         private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
-        /// Displays the dialog.
+        /// Displays the dialog. Returns false if the user cancelled the edit;
+        /// otherwise returns the edited value in <paramref name="result"/>.
         /// </summary>
-        public object ShowDialog(object value, ITelemetryContext telemetry)
-        {
-            return ShowDialog(value, null, telemetry);
-        }
-
-        /// <summary>
-        /// Displays the dialog.
-        /// </summary>
-        public object ShowDialog(object value, MonitoredItem monitoredItem, ITelemetryContext telemetry)
+        public bool TryShowDialog(Variant value, ITelemetryContext telemetry, out Variant result)
         {
             m_telemetry = telemetry;
-            m_value = value is ICloneable clonable ? clonable.Clone() : value;
+            result = Variant.Null;
 
             ValueCTRL.Telemetry = telemetry;
-            ValueCTRL.MonitoredItem = monitoredItem;
-            ValueCTRL.ShowValueAsync(m_value);
+            _ = ValueCTRL.ShowValueAsync(value);
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return false;
             }
 
-            return m_value;
+            result = ValueCTRL.GetValue();
+            return true;
+        }
+
+        /// <summary>
+        /// Displays the array value of a write request, greying out the
+        /// elements outside the request's index range. Returns false if the
+        /// user cancelled the edit; otherwise returns the edited array value
+        /// in <paramref name="result"/>.
+        /// </summary>
+        public bool TryShowDialog(WriteValue value, ITelemetryContext telemetry, out Variant result)
+        {
+            m_telemetry = telemetry;
+            result = Variant.Null;
+
+            ValueCTRL.Telemetry = telemetry;
+            _ = ValueCTRL.ShowValueAsync(value);
+
+            if (ShowDialog() != DialogResult.OK)
+            {
+                return false;
+            }
+
+            result = ValueCTRL.GetValue();
+            return true;
+        }
+
+        /// <summary>
+        /// Displays a data value with its status code and timestamps.
+        /// </summary>
+        public void ShowDialog(DataValue value, ITelemetryContext telemetry)
+        {
+            m_telemetry = telemetry;
+
+            ValueCTRL.Telemetry = telemetry;
+            _ = ValueCTRL.ShowValueAsync(value);
+
+            ShowDialog();
         }
         #endregion
 

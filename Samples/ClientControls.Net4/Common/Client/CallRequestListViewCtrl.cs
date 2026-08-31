@@ -236,10 +236,19 @@ namespace Opc.Ua.Client.Controls
                 foreach (Argument argument in m_inputArguments)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    await UpdateRowAsync(row, argument, ClientUtils.ToVariant(argument.Value), false, ct);
+                    await UpdateRowAsync(row, argument, GetArgumentValue(argument), false, ct);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns the value of an argument. The control keeps the values it
+        /// edits as Variants in the argument's local value slot.
+        /// </summary>
+        private static Variant GetArgumentValue(Argument argument)
+        {
+            return argument.Value is Variant value ? value : Variant.Null;
         }
 
         /// <summary>
@@ -357,7 +366,10 @@ namespace Opc.Ua.Client.Controls
             {
                 foreach (Argument argument in m_inputArguments)
                 {
-                    argument.Value = TypeInfo.GetDefaultValue(argument.DataType, argument.ValueRank, m_session.TypeTree);
+                    #pragma warning disable CA1849 // Justification: sample keeps the existing synchronous call pattern.
+                    BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
+                    #pragma warning restore CA1849
+                    argument.Value = VariantElements.CreateDefault(new TypeInfo(builtInType, argument.ValueRank));
                 }
             }
         }
@@ -376,17 +388,18 @@ namespace Opc.Ua.Client.Controls
                     BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    object result = new EditComplexValueDlg().ShowDialog(
+                    bool edited = new EditComplexValueDlg().TryShowDialog(
                     #pragma warning restore CA2000
                         new TypeInfo(builtInType, argument.ValueRank),
                         argument.Name,
-                        ClientUtils.ToVariant(argument.Value),
-                        "Edit Input Argument");
+                        GetArgumentValue(argument),
+                        "Edit Input Argument",
+                        out Variant result);
 
-                    if (result != null)
+                    if (edited)
                     {
                         argument.Value = result;
-                        await UpdateRowAsync(source.Row, argument, ClientUtils.ToVariant(result), false);
+                        await UpdateRowAsync(source.Row, argument, result, false);
                     }
 
                     break;

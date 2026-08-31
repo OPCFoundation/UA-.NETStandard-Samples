@@ -28,13 +28,14 @@
  * ======================================================================*/
 
 using System;
+using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
     /// <summary>
-    /// Prompts the user to edit a value.
+    /// Displays the details of a certificate.
     /// </summary>
     public partial class EditValueDlg : Form
     {
@@ -46,12 +47,8 @@ namespace Opc.Ua.Gds.Client.Controls
         {
             InitializeComponent();
 
-            for (BuiltInType ii = BuiltInType.Boolean; ii <= BuiltInType.StatusCode; ii++)
-            {
-                SetTypeCB.Items.Add(ii);
-            }
-
-            SetTypeCB.SelectedItem = BuiltInType.String;
+            SetTypeCB.Visible = false;
+            SetArraySizeBTN.Visible = false;
         }
         #endregion
 
@@ -61,17 +58,15 @@ namespace Opc.Ua.Gds.Client.Controls
 
         #region Public Interface
         /// <summary>
-        /// Prompts the user to edit the value.
+        /// Displays the details of the certificate.
         /// </summary>
-        public object ShowDialog(
+        public void ShowDialog(
             ILogger logger,
-            TypeInfo expectedType,
-            string name,
-            object value,
-            bool readOnly,
+            X509Certificate2 certificate,
             string caption)
         {
             m_logger = logger;
+
             if (!String.IsNullOrEmpty(caption))
             {
                 this.Text = caption;
@@ -79,14 +74,9 @@ namespace Opc.Ua.Gds.Client.Controls
 
             OkBTN.Visible = true;
 
-            ValueCTRL.ShowValue(expectedType, name, value, readOnly);
+            ValueCTRL.ShowCertificate(certificate);
 
-            if (base.ShowDialog() != DialogResult.OK)
-            {
-                return null;
-            }
-
-            return ValueCTRL.GetValue();
+            base.ShowDialog();
         }
         #endregion
 
@@ -96,9 +86,6 @@ namespace Opc.Ua.Gds.Client.Controls
             try
             {
                 BackBTN.Visible = ValueCTRL.CanGoBack;
-                SetTypeCB.Visible = ValueCTRL.CanChangeType;
-                SetTypeCB.SelectedItem = ValueCTRL.CurrentType;
-                SetArraySizeBTN.Visible = ValueCTRL.CanSetArraySize;
             }
             catch (Exception ex)
             {
@@ -122,7 +109,6 @@ namespace Opc.Ua.Gds.Client.Controls
         {
             try
             {
-                ValueCTRL.EndEdit();
                 DialogResult = DialogResult.OK;
             }
             catch (Exception ex)
@@ -133,26 +119,12 @@ namespace Opc.Ua.Gds.Client.Controls
 
         private void SetTypeBTN_Click(object sender, EventArgs e)
         {
-            try
-            {
-                ValueCTRL.SetArraySize();
-            }
-            catch (Exception ex)
-            {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
-            }
+            // the certificate view has no array size to change.
         }
 
         private void SetTypeCB_SelectedIndexChanged(object sender, EventArgs e)
         {
-            try
-            {
-                ValueCTRL.SetType((BuiltInType)SetTypeCB.SelectedItem);
-            }
-            catch (Exception ex)
-            {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
-            }
+            // the certificate view has no type to change.
         }
         #endregion
     }
