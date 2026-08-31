@@ -161,7 +161,7 @@ namespace Opc.Ua.Client.Controls
         public void UpdateRow(DataRow row, InstanceDeclaration declaration)
         {
             row[0] = declaration;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex((declaration.NodeClass == NodeClass.Variable) ? Attributes.Value : Attributes.NodeId, null)];
+            row[1] = ImageList.Images[ClientUtils.GetImageIndex((declaration.NodeClass == NodeClass.Variable) ? Attributes.Value : Attributes.NodeId, Variant.Null)];
             row[2] = declaration.DisplayPath;
             row[3] = declaration.DataTypeDisplayText;
             row[4] = declaration.Description;

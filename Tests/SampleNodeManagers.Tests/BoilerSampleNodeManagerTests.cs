@@ -83,7 +83,7 @@ namespace Opc.Ua.Samples.Tests
                     .ReadAttributeAsync(Session, partId, Attributes.DisplayName, ct)
                     .ConfigureAwait(false);
 
-                string shown = ((LocalizedText)displayName.WrappedValue.AsBoxedObject()).Text;
+                string shown = displayName.WrappedValue.TryGetValue(out LocalizedText text) ? text.Text : null;
 
                 renamed.Add($"{part.BrowseName.Name} shown as {shown}");
             }
@@ -150,7 +150,7 @@ namespace Opc.Ua.Samples.Tests
                     $"Reading the state of the simulation of {name} failed: {state.StatusCode}");
 
                 Assert.That(
-                    ((LocalizedText)state.WrappedValue.AsBoxedObject()).Text,
+                    state.WrappedValue.TryGetValue(out LocalizedText simulationState) ? simulationState.Text : null,
                     Is.EqualTo("Running"),
                     $"The node manager starts the simulation of {name} itself, so it has to be running.");
             }

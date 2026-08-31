@@ -119,11 +119,9 @@ namespace Opc.Ua.Sample.Controls
             // read the value from the server.
             DataValue value = await m_session.ReadValueAsync(argumentsNode.NodeId, ct);
 
-            ExtensionObject[] argumentsList = value.WrappedValue.AsBoxedObject() as ExtensionObject[];
-
-            if (argumentsList != null)
+            if (value.WrappedValue.TryGetValue(out ArrayOf<ExtensionObject> argumentsList))
             {
-                for (int ii = 0; ii < argumentsList.Length; ii++)
+                for (int ii = 0; ii < argumentsList.Count; ii++)
                 {
                     AddItem(argumentsList[ii].TryGetValue<Argument>(out var argument, m_session.MessageContext) ? argument : null);
                 }
@@ -148,7 +146,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument != null)
                 {
-                    values.Add(Variant.From((dynamic)argument.Value));
+                    values.Add(ClientUtils.ToVariant(argument.Value));
                 }
             }
 
@@ -168,7 +166,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument != null)
                 {
-                    argument.Value = values[ii++].AsBoxedObject();
+                    argument.Value = values[ii++];
                     await UpdateItemAsync(item, argument, ct);
                 }
             }
@@ -268,7 +266,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                object value = GuiUtils.EditValue(m_session, arguments[0].Value, arguments[0].DataType, arguments[0].ValueRank, Telemetry);
+                object value = GuiUtils.EditValue(m_session, ClientUtils.ToVariant(arguments[0].Value), arguments[0].DataType, arguments[0].ValueRank, Telemetry);
 
                 if (value != null)
                 {

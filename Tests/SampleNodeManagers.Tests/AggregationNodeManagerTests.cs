@@ -265,7 +265,7 @@ namespace Opc.Ua.Samples.Tests
                     $"Reading the proxy root failed: {browseName.StatusCode}");
 
                 Assert.That(
-                    nodeClass.WrappedValue.AsBoxedObject(),
+                    nodeClass.WrappedValue.TryGetValue(out int proxyNodeClass) ? proxyNodeClass : 0,
                     Is.EqualTo((int)NodeClass.Object),
                     "The proxy root is an object.");
             });

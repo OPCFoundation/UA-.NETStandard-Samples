@@ -236,66 +236,12 @@ namespace Quickstarts
             public DataValue() { m_value = new Opc.Ua.DataValue(); }
             public DataValue(Opc.Ua.DataValue value) { m_value = value; }
             public string Comment { get; set; }
-            public object Value { get { return m_value.WrappedValue.AsBoxedObject(); } set { WrappedValue = ToVariant(value); } }
             public Variant WrappedValue { get { return m_value.WrappedValue; } set { m_value = new Opc.Ua.DataValue(value, m_value.StatusCode, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
             public DateTime SourceTimestamp { get { return (DateTime)m_value.SourceTimestamp; } set { m_value = new Opc.Ua.DataValue(m_value.WrappedValue, m_value.StatusCode, value, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
             public StatusCode StatusCode { get { return m_value.StatusCode; } set { m_value = new Opc.Ua.DataValue(m_value.WrappedValue, value, m_value.SourceTimestamp, m_value.ServerTimestamp, m_value.SourcePicoseconds, m_value.ServerPicoseconds); } }
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Existing sample API exposes explicit conversion only.")]
             public static explicit operator Opc.Ua.DataValue(DataValue value) { return value.m_value; }
-
-            private static Variant ToVariant(object value)
-            {
-                switch (value)
-                {
-                    case null: return Variant.Null;
-                    case Variant v: return v;
-                    case bool v: return Variant.From(v);
-                    case sbyte v: return Variant.From(v);
-                    case byte v: return Variant.From(v);
-                    case short v: return Variant.From(v);
-                    case ushort v: return Variant.From(v);
-                    case int v: return Variant.From(v);
-                    case uint v: return Variant.From(v);
-                    case long v: return Variant.From(v);
-                    case ulong v: return Variant.From(v);
-                    case float v: return Variant.From(v);
-                    case double v: return Variant.From(v);
-                    case string v: return Variant.From(v);
-                    case DateTime v: return Variant.From(new DateTimeUtc(v));
-                    case Guid v: return Variant.From(new Uuid(v));
-                    case ByteString v: return Variant.From(v);
-                    case byte[] v: return Variant.From(v.ToByteString());
-                    case NodeId v: return Variant.From(v);
-                    case ExpandedNodeId v: return Variant.From(v);
-                    case StatusCode v: return Variant.From(v);
-                    case QualifiedName v: return Variant.From(v);
-                    case LocalizedText v: return Variant.From(v);
-                    case ExtensionObject v: return Variant.From(v);
-                    case bool[] v: return Variant.From(new ArrayOf<bool>(v));
-                    case sbyte[] v: return Variant.From(new ArrayOf<sbyte>(v));
-                    case short[] v: return Variant.From(new ArrayOf<short>(v));
-                    case ushort[] v: return Variant.From(new ArrayOf<ushort>(v));
-                    case int[] v: return Variant.From(new ArrayOf<int>(v));
-                    case uint[] v: return Variant.From(new ArrayOf<uint>(v));
-                    case long[] v: return Variant.From(new ArrayOf<long>(v));
-                    case ulong[] v: return Variant.From(new ArrayOf<ulong>(v));
-                    case float[] v: return Variant.From(new ArrayOf<float>(v));
-                    case double[] v: return Variant.From(new ArrayOf<double>(v));
-                    case string[] v: return Variant.From(new ArrayOf<string>(v));
-                    case DateTime[] v: return Variant.From(new ArrayOf<DateTimeUtc>(Array.ConvertAll(v, x => new DateTimeUtc(x))));
-                    case Guid[] v: return Variant.From(new ArrayOf<Uuid>(Array.ConvertAll(v, x => new Uuid(x))));
-                    case ByteString[] v: return Variant.From(new ArrayOf<ByteString>(v));
-                    case NodeId[] v: return Variant.From(new ArrayOf<NodeId>(v));
-                    case ExpandedNodeId[] v: return Variant.From(new ArrayOf<ExpandedNodeId>(v));
-                    case StatusCode[] v: return Variant.From(new ArrayOf<StatusCode>(v));
-                    case QualifiedName[] v: return Variant.From(new ArrayOf<QualifiedName>(v));
-                    case LocalizedText[] v: return Variant.From(new ArrayOf<LocalizedText>(v));
-                    case ExtensionObject[] v: return Variant.From(new ArrayOf<ExtensionObject>(v));
-                    case IEncodeable v: return Variant.From(new ExtensionObject(v, false));
-                    default: return Variant.Null;
-                }
-            }
 
             private Opc.Ua.DataValue m_value;
         }
@@ -361,14 +307,10 @@ namespace Quickstarts
                 return String.Empty;
             }
 
-            double? doubleValue = value.AsBoxedObject() as double?;
-
-            if (doubleValue != null)
+            if (value.TryGetValue(out double doubleValue) &&
+                doubleValue != Math.Truncate(doubleValue))
             {
-                if (doubleValue.Value != Math.Truncate(doubleValue.Value))
-                {
-                    return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:F4}", doubleValue);
-                }
+                return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:F4}", doubleValue);
             }
 
             return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}", value);
@@ -584,7 +526,7 @@ namespace Quickstarts
                 foreach (ValueType value in values)
                 {
                     DataValue dv = new DataValue();
-                    dv.Value = ValidateValue(value.Value);
+                    dv.WrappedValue = ValidateValue(value.Value);
                     dv.StatusCode = ValidateQuality(value.Quality);
                     dv.SourceTimestamp = ValidateTimestamp(value.Timestamp);
                     dv.Comment = value.Comment;

@@ -130,6 +130,8 @@ namespace Opc.Ua.Sample.Controls
 
                 StringBuilder buffer = new StringBuilder();
 
+                // the operand can hold an array of any built in type, so it is listed
+                // element by element through the boxed CLR array.
                 Array array = literalOperand.Value.AsBoxedObject() as Array;
 
                 if (array != null)

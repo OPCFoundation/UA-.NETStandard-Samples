@@ -727,11 +727,11 @@ namespace Quickstarts
         /// <summary>
         /// Returns the value for the specified browse name.
         /// </summary>
-        public T GetValue<T>(QualifiedName browseName, IList<Variant> fields, T defaultValue)
+        public Variant GetValue(QualifiedName browseName, IList<Variant> fields)
         {
             if (fields == null || fields.Count == 0)
             {
-                return defaultValue;
+                return Variant.Null;
             }
 
             for (int ii = 0; ii < this.Fields.Count; ii++)
@@ -740,21 +740,14 @@ namespace Quickstarts
                 {
                     if (ii >= fields.Count + 1)
                     {
-                        return defaultValue;
+                        return Variant.Null;
                     }
 
-                    object value = fields[ii + 1].AsBoxedObject();
-
-                    if (typeof(T).IsInstanceOfType(value))
-                    {
-                        return (T)value;
-                    }
-
-                    break;
+                    return fields[ii + 1];
                 }
             }
 
-            return defaultValue;
+            return Variant.Null;
         }
 
         #pragma warning disable CA1051 // Justification: sample data transfer type intentionally exposes mutable fields.

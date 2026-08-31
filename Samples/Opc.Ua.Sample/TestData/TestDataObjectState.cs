@@ -101,60 +101,36 @@ namespace TestData
             NodeState node,
             ref Variant value)
         {
-            try
+            BaseVariableState euRange = node.FindChild(context, new QualifiedName(Opc.Ua.BrowseNames.EURange)) as BaseVariableState;
+
+            if (euRange == null || !euRange.Value.TryGetStructure(out Range range))
             {
+                return ServiceResult.Good;
+            }
 
-                BaseVariableState euRange = node.FindChild(context, new QualifiedName(Opc.Ua.BrowseNames.EURange)) as BaseVariableState;
+            // the analog variables are all numeric, so the value converts to a double.
+            Variant numbers = value.ConvertTo(BuiltInType.Double);
 
-                if (euRange == null)
+            if (numbers.TryGetValue(out ArrayOf<double> elements))
+            {
+                foreach (double element in elements.Span)
                 {
-                    return ServiceResult.Good;
-                }
-
-                Range range = euRange.Value.AsBoxedObject() as Range;
-
-                if (range == null)
-                {
-                    return ServiceResult.Good;
-                }
-
-                Array array = value.AsBoxedObject() as Array;
-
-                if (array != null)
-                {
-                    for (int ii = 0; ii < array.Length; ii++)
+                    if (element > range.High || element < range.Low)
                     {
-                        object element = array.GetValue(ii);
-
-                        if (typeof(Variant).IsInstanceOfType(element))
-                        {
-                            element = ((Variant)element).AsBoxedObject();
-                        }
-
-                        double elementNumber = Convert.ToDouble(element);
-
-                        if (elementNumber > range.High || elementNumber < range.Low)
-                        {
-                            return StatusCodes.BadOutOfRange;
-                        }
+                        return StatusCodes.BadOutOfRange;
                     }
-
-                    return ServiceResult.Good;
-                }
-
-                double number = Convert.ToDouble(value.AsBoxedObject());
-
-                if (number > range.High || number < range.Low)
-                {
-                    return StatusCodes.BadOutOfRange;
                 }
 
                 return ServiceResult.Good;
             }
-            catch (Exception)
+
+            if (numbers.TryGetValue(out double number) &&
+                (number > range.High || number < range.Low))
             {
-                throw;
+                return StatusCodes.BadOutOfRange;
             }
+
+            return ServiceResult.Good;
         }
 
         /// <summary>
@@ -162,65 +138,9 @@ namespace TestData
         /// </summary>
         protected void GenerateValue(TestDataSystem system, BaseVariableState variable)
         {
-            variable.Value = ToVariant(system.ReadValue(variable));
+            variable.Value = system.ReadValue(variable);
             variable.Timestamp = DateTime.UtcNow;
             variable.StatusCode = StatusCodes.Good;
-        }
-
-        private static Variant ToVariant(object value)
-        {
-            switch (value)
-            {
-                case null: return Variant.Null;
-                case Variant v: return v;
-                case bool v: return Variant.From(v);
-                case sbyte v: return Variant.From(v);
-                case byte v: return Variant.From(v);
-                case short v: return Variant.From(v);
-                case ushort v: return Variant.From(v);
-                case int v: return Variant.From(v);
-                case uint v: return Variant.From(v);
-                case long v: return Variant.From(v);
-                case ulong v: return Variant.From(v);
-                case float v: return Variant.From(v);
-                case double v: return Variant.From(v);
-                case string v: return Variant.From(v);
-                case DateTime v: return Variant.From(new DateTimeUtc(v));
-                case Guid v: return Variant.From(new Uuid(v));
-                case ByteString v: return Variant.From(v);
-                case byte[] v: return Variant.From(new ArrayOf<byte>(v));
-                case XmlElement v: return Variant.From(v);
-                case NodeId v: return Variant.From(v);
-                case ExpandedNodeId v: return Variant.From(v);
-                case StatusCode v: return Variant.From(v);
-                case QualifiedName v: return Variant.From(v);
-                case LocalizedText v: return Variant.From(v);
-                case ExtensionObject v: return Variant.From(v);
-                case bool[] v: return Variant.From(new ArrayOf<bool>(v));
-                case sbyte[] v: return Variant.From(new ArrayOf<sbyte>(v));
-                case short[] v: return Variant.From(new ArrayOf<short>(v));
-                case ushort[] v: return Variant.From(new ArrayOf<ushort>(v));
-                case int[] v: return Variant.From(new ArrayOf<int>(v));
-                case uint[] v: return Variant.From(new ArrayOf<uint>(v));
-                case long[] v: return Variant.From(new ArrayOf<long>(v));
-                case ulong[] v: return Variant.From(new ArrayOf<ulong>(v));
-                case float[] v: return Variant.From(new ArrayOf<float>(v));
-                case double[] v: return Variant.From(new ArrayOf<double>(v));
-                case string[] v: return Variant.From(new ArrayOf<string>(v));
-                case DateTime[] v: return Variant.From(new ArrayOf<DateTimeUtc>(Array.ConvertAll(v, x => new DateTimeUtc(x))));
-                case Guid[] v: return Variant.From(new ArrayOf<Uuid>(Array.ConvertAll(v, x => new Uuid(x))));
-                case ByteString[] v: return Variant.From(new ArrayOf<ByteString>(v));
-                case XmlElement[] v: return Variant.From(new ArrayOf<XmlElement>(v));
-                case NodeId[] v: return Variant.From(new ArrayOf<NodeId>(v));
-                case ExpandedNodeId[] v: return Variant.From(new ArrayOf<ExpandedNodeId>(v));
-                case StatusCode[] v: return Variant.From(new ArrayOf<StatusCode>(v));
-                case QualifiedName[] v: return Variant.From(new ArrayOf<QualifiedName>(v));
-                case LocalizedText[] v: return Variant.From(new ArrayOf<LocalizedText>(v));
-                case ExtensionObject[] v: return Variant.From(new ArrayOf<ExtensionObject>(v));
-                case IEncodeable v: return Variant.From(new ExtensionObject(v, false));
-                case Variant[] v: return Variant.From(new ArrayOf<Variant>(v));
-                default: return Variant.Null;
-            }
         }
 
         /// <summary>
@@ -301,7 +221,7 @@ namespace TestData
 
             try
             {
-                value = ToVariant(system.ReadValue(variable));
+                value = system.ReadValue(variable);
 
                 statusCode = StatusCodes.Good;
                 timestamp = DateTime.UtcNow;

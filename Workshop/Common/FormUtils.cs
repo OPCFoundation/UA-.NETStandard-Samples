@@ -187,11 +187,9 @@ namespace Quickstarts
                 case Attributes.AccessLevel:
                 case Attributes.UserAccessLevel:
                 {
-                    byte? field = value.AsBoxedObject() as byte?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out byte accessLevel))
                     {
-                        return GetAccessLevelDisplayText(field.Value);
+                        return GetAccessLevelDisplayText(accessLevel);
                     }
 
                     break;
@@ -199,11 +197,9 @@ namespace Quickstarts
 
                 case Attributes.EventNotifier:
                 {
-                    byte? field = value.AsBoxedObject() as byte?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out byte eventNotifier))
                     {
-                        return GetEventNotifierDisplayText(field.Value);
+                        return GetEventNotifierDisplayText(eventNotifier);
                     }
 
                     break;
@@ -211,16 +207,14 @@ namespace Quickstarts
 
                 case Attributes.DataType:
                 {
-                    return await session.NodeCache.GetDisplayTextAsync(value.AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null, ct);
+                    return await session.NodeCache.GetDisplayTextAsync(value.TryGetValue(out NodeId dataTypeId) ? dataTypeId : NodeId.Null, ct);
                 }
 
                 case Attributes.ValueRank:
                 {
-                    int? field = value.AsBoxedObject() as int?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out int valueRank))
                     {
-                        return GetValueRankDisplayText(field.Value);
+                        return GetValueRankDisplayText(valueRank);
                     }
 
                     break;
@@ -228,11 +222,9 @@ namespace Quickstarts
 
                 case Attributes.NodeClass:
                 {
-                    int? field = value.AsBoxedObject() as int?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out int nodeClass))
                     {
-                        return ((NodeClass)field.Value).ToString();
+                        return ((NodeClass)nodeClass).ToString();
                     }
 
                     break;
@@ -240,9 +232,7 @@ namespace Quickstarts
 
                 case Attributes.NodeId:
                 {
-                    NodeId field = value.AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null;
-
-                    if (!(field).IsNull)
+                    if (value.TryGetValue(out NodeId field) && !field.IsNull)
                     {
                         return field.ToString();
                     }
@@ -252,9 +242,9 @@ namespace Quickstarts
             }
 
             // check for byte strings.
-            if (value.AsBoxedObject() is byte[])
+            if (value.TryGetValue(out ByteString byteString))
             {
-                return Utils.ToHexString(value.AsBoxedObject() as byte[]);
+                return Utils.ToHexString(byteString.Span);
             }
 
             // use default format.
@@ -561,7 +551,7 @@ namespace Quickstarts
 
                     if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == BrowseNames.EventType)
                     {
-                        return notification.EventFields[ii].AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null;
+                        return notification.EventFields[ii].TryGetValue(out NodeId nodeId) ? nodeId : NodeId.Null;
                     }
                 }
             }

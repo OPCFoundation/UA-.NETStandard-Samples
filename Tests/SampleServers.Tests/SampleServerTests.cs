@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -157,7 +156,8 @@ namespace Opc.Ua.Samples.Tests
                 Is.True,
                 $"Reading the server state failed: {state.StatusCode}");
 
-            var serverState = (ServerState)Convert.ToInt32(state.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture);
+            state.WrappedValue.TryGetValue(out int stateCode);
+            var serverState = (ServerState)stateCode;
 
             Assert.That(serverState, Is.EqualTo(ServerState.Running), "The server does not report itself as running.");
 

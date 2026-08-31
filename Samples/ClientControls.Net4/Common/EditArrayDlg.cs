@@ -124,8 +124,9 @@ namespace Opc.Ua.Client.Controls
                 for (int ii = 0; ii < m_dataset.Tables[0].DefaultView.Count; ii++)
                 {
                     string oldValue = m_dataset.Tables[0].DefaultView[ii].Row[0] as string;
-                    object newValue = ClientUtils.ToVariant(oldValue).ConvertTo(m_dataType).AsBoxedObject();
-                    value.SetValue(newValue, ii);
+
+                    // the array is a CLR array, so the converted value has to be boxed.
+                    value.SetValue(Variant.From(oldValue).ConvertTo(m_dataType).AsBoxedObject(), ii);
                 }
             }
 
@@ -150,7 +151,8 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                object newValue = ClientUtils.ToVariant(e.FormattedValue).ConvertTo(m_dataType).AsBoxedObject();
+                // throws if the text cannot be converted to the array element type.
+                _ = ClientUtils.ToVariant(e.FormattedValue).ConvertTo(m_dataType);
             }
             catch (Exception exception)
             {

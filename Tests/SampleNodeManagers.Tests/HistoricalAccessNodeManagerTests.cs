@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -67,7 +66,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                Convert.ToByte(accessLevel.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture)
+                (accessLevel.WrappedValue.TryGetValue(out byte flags) ? flags : (byte)0)
                     & AccessLevels.HistoryRead,
                 Is.Not.Zero,
                 "An archive item has to allow reading its history.");
@@ -106,13 +105,13 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.Multiple(() => {
                 Assert.That(
-                    onCollecting.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(true),
+                    onCollecting.WrappedValue.TryGetValue(out bool collecting) && collecting,
+                    Is.True,
                     "An item the simulation appends to is being collected.");
 
                 Assert.That(
-                    onRecorded.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(false),
+                    onRecorded.WrappedValue.TryGetValue(out bool recorded) ? recorded : (bool?)null,
+                    Is.False,
                     "A finished recording is not being collected, even though it can be read.");
             });
         }
@@ -150,8 +149,8 @@ namespace Opc.Ua.Samples.Tests
                 announced.Add($"{name}={value.WrappedValue}");
 
                 Assert.That(
-                    value.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(true),
+                    value.WrappedValue.TryGetValue(out bool announcedValue) && announcedValue,
+                    Is.True,
                     $"The sample turns {name} on while it builds its address space.");
             }
 
@@ -516,7 +515,7 @@ namespace Opc.Ua.Samples.Tests
             DataValue inserted = archive.First(value => At(value) == ReadBackAt);
 
             Assert.That(
-                Convert.ToDouble(inserted.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture),
+                inserted.WrappedValue.ConvertTo(BuiltInType.Double).TryGetValue(out double insertedValue) ? insertedValue : double.NaN,
                 Is.EqualTo(42.0),
                 "The value which comes back has to be the value which was written.");
         }
@@ -835,7 +834,7 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         private static Annotation Decode(DataValue value)
         {
-            return value.WrappedValue.AsBoxedObject() is ExtensionObject extension
+            return value.WrappedValue.TryGetValue(out ExtensionObject extension)
                 ? ExtensionObject.ToEncodeable(extension) as Annotation
                 : null;
         }

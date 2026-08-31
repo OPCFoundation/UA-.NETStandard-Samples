@@ -180,13 +180,13 @@ namespace Opc.Ua.Sample.Controls
 
                     string value = null;
 
-                    if (SubscriptionHandle.GetEventFieldValue(handle, notification, new QualifiedName(Opc.Ua.BrowseNames.EventType)) is NodeId eventTypeId)
+                    if (SubscriptionHandle.GetEventFieldValue(handle, notification, new QualifiedName(Opc.Ua.BrowseNames.EventType)).TryGetValue(out NodeId eventTypeId))
                     {
                         INode eventType = await m_subscription.Session.NodeCache.FindAsync(eventTypeId);
                         value = String.Format("{0}", (object)eventType ?? eventTypeId);
                     }
 
-                    DateTime timestamp = (SubscriptionHandle.GetEventFieldValue(handle, notification, new QualifiedName(Opc.Ua.BrowseNames.Time)) as DateTime?) ?? DateTime.MinValue;
+                    DateTime timestamp = SubscriptionHandle.GetEventFieldValue(handle, notification, new QualifiedName(Opc.Ua.BrowseNames.Time)).TryGetValue(out DateTimeUtc eventTime) ? (DateTime)eventTime : DateTime.MinValue;
 
                     m_notifications[handle] = new LastNotification {
                         Value = value,

@@ -317,9 +317,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // cast the value to the requested data type.
-            object value = Variant.From(ValueTB.Text).ConvertTo(targetType).AsBoxedObject();
-
-            return ClientUtils.ToVariant(value);
+            return Variant.From(ValueTB.Text).ConvertTo(targetType);
         }
 
         /// <summary>
@@ -339,7 +337,7 @@ namespace Opc.Ua.Client.Controls
             DataTypeCB.SelectedItem = targetType;
             ValueRankCB.SelectedItem = (ValueRankOptions)valueRank;
 
-            if (value.AsBoxedObject() == null)
+            if (value.IsNull)
             {
                 ValueTB.Text = String.Empty;
                 return;
@@ -354,7 +352,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             // cast the value to the requested data type.
-            ValueTB.Text = (string)ClientUtils.ToVariant(value.AsBoxedObject()).ConvertTo(BuiltInType.String).AsBoxedObject();
+            ValueTB.Text = value.ConvertTo(BuiltInType.String).TryGetValue(out string text) ? text : String.Empty;
             ValueTB.ReadOnly = false;
         }
 

@@ -423,7 +423,7 @@ namespace Quickstarts.DataAccessClient
                         // display the value.
                         else
                         {
-                            TypeInfo typeInfo = TypeInfo.Construct(results[ii].WrappedValue.AsBoxedObject());
+                            TypeInfo typeInfo = results[ii].WrappedValue.TypeInfo;
 
                             datatype = typeInfo.BuiltInType.ToString();
 
@@ -432,7 +432,7 @@ namespace Quickstarts.DataAccessClient
                                 datatype += "[]";
                             }
 
-                            value = Utils.Format("{0}", results[ii].WrappedValue.AsBoxedObject());
+                            value = results[ii].WrappedValue.ToString();
                         }
                     }
 
@@ -458,7 +458,7 @@ namespace Quickstarts.DataAccessClient
                         // display the value.
                         else
                         {
-                            TypeInfo typeInfo = TypeInfo.Construct(results[ii].WrappedValue.AsBoxedObject());
+                            TypeInfo typeInfo = results[ii].WrappedValue.TypeInfo;
 
                             datatype = typeInfo.BuiltInType.ToString();
 
@@ -467,7 +467,7 @@ namespace Quickstarts.DataAccessClient
                                 datatype += "[]";
                             }
 
-                            value = Utils.Format("{0}", results[ii].WrappedValue.AsBoxedObject());
+                            value = results[ii].WrappedValue.ToString();
                         }
                     }
 

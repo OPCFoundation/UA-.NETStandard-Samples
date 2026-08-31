@@ -144,12 +144,11 @@ namespace Opc.Ua.Samples.Tests
                 $"Reading the engineering units failed: {units.StatusCode}");
 
             Assert.That(
-                units.WrappedValue.AsBoxedObject(),
-                Is.InstanceOf<ExtensionObject>(),
+                units.WrappedValue.TryGetValue(out ExtensionObject unitsStructure),
+                Is.True,
                 "The engineering units of an analog item are a structure.");
 
-            ((ExtensionObject)units.WrappedValue.AsBoxedObject())
-                .TryGetValue(out EUInformation information, Session.MessageContext);
+            unitsStructure.TryGetValue(out EUInformation information, Session.MessageContext);
 
             Assert.That(
                 information?.DisplayName.Text,
@@ -327,7 +326,7 @@ namespace Opc.Ua.Samples.Tests
                 Is.True,
                 $"Reading the set point failed: {original.StatusCode}");
 
-            float written = (original.WrappedValue.AsBoxedObject() as float? ?? 0f) + 10f;
+            float written = (original.WrappedValue.TryGetValue(out float setPoint) ? setPoint : 0f) + 10f;
 
             try
             {
@@ -349,7 +348,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false);
 
                 Assert.That(
-                    readBack.WrappedValue.AsBoxedObject(),
+                    readBack.WrappedValue.TryGetValue(out float readBackSetPoint) ? readBackSetPoint : float.NaN,
                     Is.EqualTo(written),
                     "The set point has to come back from the underlying system with the written value.");
             }

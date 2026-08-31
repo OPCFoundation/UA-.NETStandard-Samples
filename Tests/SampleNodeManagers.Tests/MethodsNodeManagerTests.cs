@@ -387,19 +387,18 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         private static IEnumerable<ExtensionObject> AsExtensionObjects(Variant value)
         {
-            object boxed = value.AsBoxedObject();
+            if (!value.TryGetValue(out ArrayOf<ExtensionObject> structures))
+            {
+                throw new InvalidOperationException(
+                    $"The value is not an array of structures but a {value.TypeInfo}.");
+            }
 
-            return boxed switch {
-                ExtensionObject[] array => array,
-                ArrayOf<ExtensionObject> arrayOf => arrayOf.ToArray(),
-                _ => throw new InvalidOperationException(
-                    $"The value is not an array of structures but a {boxed?.GetType().Name ?? "null"}."),
-            };
+            return structures.ToArray();
         }
 
         private static uint ToUInt32(Variant value)
         {
-            return Convert.ToUInt32(value.AsBoxedObject(), System.Globalization.CultureInfo.InvariantCulture);
+            return value.ConvertTo(BuiltInType.UInt32).TryGetValue(out uint number) ? number : 0;
         }
     }
 }

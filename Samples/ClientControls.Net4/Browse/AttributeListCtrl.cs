@@ -201,15 +201,15 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Formats the value of an attribute.
         /// </summary>
-        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value, CancellationToken ct = default)
+        private async Task<string> FormatAttributeValueAsync(uint attributeId, Variant value, CancellationToken ct = default)
         {
             switch (attributeId)
             {
                 case Attributes.NodeClass:
                 {
-                    if (value != null)
+                    if (value.TryGetValue(out int nodeClass))
                     {
-                        return String.Format("{0}", Enum.ToObject(typeof(NodeClass), value));
+                        return String.Format("{0}", (NodeClass)nodeClass);
                     }
 
                     return "(null)";
@@ -217,7 +217,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataType:
                 {
-                    NodeId datatypeId = value is NodeId dt ? dt : NodeId.Null;
+                    NodeId datatypeId = value.TryGetValue(out NodeId dt) ? dt : NodeId.Null;
 
                     if (!datatypeId.IsNull)
                     {
@@ -238,11 +238,9 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.ValueRank:
                 {
-                    int? valueRank = value as int?;
-
-                    if (valueRank != null)
+                    if (value.TryGetValue(out int valueRank))
                     {
-                        switch (valueRank.Value)
+                        switch (valueRank)
                         {
                             case ValueRanks.Scalar: return "Scalar";
                             case ValueRanks.OneDimension: return "OneDimension";
@@ -251,7 +249,7 @@ namespace Opc.Ua.Client.Controls
 
                             default:
                             {
-                                return String.Format("{0}", valueRank.Value);
+                                return String.Format("{0}", valueRank);
                             }
                         }
                     }
@@ -261,21 +259,19 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.MinimumSamplingInterval:
                 {
-                    double? minimumSamplingInterval = value as double?;
-
-                    if (minimumSamplingInterval != null)
+                    if (value.TryGetValue(out double minimumSamplingInterval))
                     {
-                        if (minimumSamplingInterval.Value == MinimumSamplingIntervals.Indeterminate)
+                        if (minimumSamplingInterval == MinimumSamplingIntervals.Indeterminate)
                         {
                             return "Indeterminate";
                         }
 
-                        else if (minimumSamplingInterval.Value == MinimumSamplingIntervals.Continuous)
+                        else if (minimumSamplingInterval == MinimumSamplingIntervals.Continuous)
                         {
                             return "Continuous";
                         }
 
-                        return String.Format("{0}", minimumSamplingInterval.Value);
+                        return String.Format("{0}", minimumSamplingInterval);
                     }
 
                     return String.Format("{0}", value);
@@ -284,7 +280,7 @@ namespace Opc.Ua.Client.Controls
                 case Attributes.AccessLevel:
                 case Attributes.UserAccessLevel:
                 {
-                    byte accessLevel = Convert.ToByte(value);
+                    value.TryGetValue(out byte accessLevel);
 
                     StringBuilder bits = new StringBuilder();
 
@@ -333,7 +329,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.EventNotifier:
                 {
-                    byte notifier = Convert.ToByte(value);
+                    value.TryGetValue(out byte notifier);
 
                     StringBuilder bits = new StringBuilder();
 
@@ -399,7 +395,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else
                 {
-                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(info.AttributeId, info.Value.WrappedValue.AsBoxedObject(), ct);
+                    listItem.SubItems[1].Text = await FormatAttributeValueAsync(info.AttributeId, info.Value.WrappedValue, ct);
                 }
 
                 if (info.AttributeId != Attributes.Value)

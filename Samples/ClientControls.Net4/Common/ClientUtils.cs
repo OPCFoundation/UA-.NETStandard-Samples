@@ -66,7 +66,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns an image index for the specified method argument.
         /// </summary>
-        public static int GetImageIndex(bool isOutputArgument, object value)
+        public static int GetImageIndex(bool isOutputArgument, Variant value)
         {
             if (isOutputArgument)
             {
@@ -103,7 +103,7 @@ namespace Opc.Ua.Client.Controls
         /// Returns an image index for the specified attribute.
         /// </summary>
 #pragma warning disable 0162
-        public static int GetImageIndex(uint attributeId, object value)
+        public static int GetImageIndex(uint attributeId, Variant value)
         {
             // Workaround to avoid exception when accessing ImageList
             // Original ImageStream has been removed a long time ago
@@ -113,21 +113,11 @@ namespace Opc.Ua.Client.Controls
 
             if (attributeId == Attributes.Value)
             {
-                TypeInfo typeInfo = TypeInfo.Construct(value);
+                TypeInfo typeInfo = value.TypeInfo;
 
                 if (typeInfo.ValueRank >= 0)
                 {
                     return ClientUtils.ArrayValue;
-                }
-
-                if (typeInfo.BuiltInType == BuiltInType.Variant)
-                {
-                    typeInfo = ((Variant)value).TypeInfo;
-
-                    if (typeInfo.IsUnknown)
-                    {
-                        typeInfo = TypeInfo.Construct(((Variant)value).AsBoxedObject());
-                    }
                 }
 
                 switch (typeInfo.BuiltInType)

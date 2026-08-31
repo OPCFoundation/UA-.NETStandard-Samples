@@ -111,12 +111,7 @@ namespace Opc.Ua.Client.Controls
             // get the source type.
             TypeInfo sourceType = value.TypeInfo;
 
-            if (sourceType.IsUnknown)
-            {
-                sourceType = TypeInfo.Construct(value.AsBoxedObject());
-            }
-
-            m_value = ClientUtils.ToVariant(value.AsBoxedObject());
+            m_value = value;
 
             // display value as text.
             StringBuilder buffer = new StringBuilder();
@@ -140,17 +135,12 @@ namespace Opc.Ua.Client.Controls
 
                 if (sourceType.ValueRank == ValueRanks.Scalar)
                 {
-                    extension = (ExtensionObject)m_value.AsBoxedObject();
+                    m_value.TryGetValue(out extension);
                 }
-                else
+                else if (m_value.TryGetValue(out ArrayOf<ExtensionObject> list) && list.Count > 0)
                 {
                     // only use the first item in the list for arrays.
-                    ExtensionObject[] list = (ExtensionObject[])m_value.AsBoxedObject();
-
-                    if (list.Length > 0)
-                    {
-                        extension = list[0];
-                    }
+                    extension = list[0];
                 }
 
                 encodingId = extension.TypeId;

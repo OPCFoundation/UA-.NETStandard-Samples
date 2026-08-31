@@ -243,18 +243,16 @@ namespace Quickstarts.MethodsServer
             }
 
             // check the data type of the input arguments.
-            uint? initialState = inputArguments[0].AsBoxedObject() as uint?;
-            uint? finalState = inputArguments[1].AsBoxedObject() as uint?;
-
-            if (initialState == null || finalState == null)
+            if (!inputArguments[0].TryGetValue(out uint initialState) ||
+                !inputArguments[1].TryGetValue(out uint finalState))
             {
                 return StatusCodes.BadTypeMismatch;
             }
 
-            StartProcess(initialState.Value, finalState.Value, outputArguments);
+            StartProcess(initialState, finalState, outputArguments);
 
             // signal update to state node.
-            m_stateNode.Value = initialState.Value;
+            m_stateNode.Value = initialState;
             await m_stateNode.ClearChangeMasksAsync(SystemContext, true, cancellationToken).ConfigureAwait(false);
 
             return ServiceResult.Good;

@@ -71,7 +71,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 string text = null;
 
                 // check for missing fields.
-                if (fields.Count <= ii || fields[ii].AsBoxedObject() == null)
+                if (fields.Count <= ii || fields[ii].IsNull)
                 {
                     text = String.Empty;
                 }

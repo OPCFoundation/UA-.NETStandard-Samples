@@ -108,7 +108,7 @@ namespace Quickstarts.DataAccessServer
         /// Gets or sets the value of the tag.
         /// </summary>
         /// <value>The tag value.</value>
-        public object Value
+        public Variant Value
         {
             get { return m_value; }
             set { m_value = value; }
@@ -184,7 +184,7 @@ namespace Quickstarts.DataAccessServer
         private bool m_isWriteable;
         private double[] m_euRange;
         private string[] m_labels;
-        private object m_value;
+        private Variant m_value;
         private DateTime m_timestamp;
         #endregion
     }

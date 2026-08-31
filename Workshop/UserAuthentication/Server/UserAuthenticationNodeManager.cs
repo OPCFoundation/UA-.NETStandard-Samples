@@ -160,7 +160,7 @@ namespace Quickstarts.UserAuthenticationServer
             // written value in the variable, mirroring the synchronous write path.
             try
             {
-                string filePath = value.AsBoxedObject() as string;
+                value.TryGetValue(out string filePath);
                 PropertyState<string> variable = node as PropertyState<string>;
 
                 if (!String.IsNullOrEmpty(variable.Value))

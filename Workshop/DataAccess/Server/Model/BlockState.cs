@@ -163,7 +163,7 @@ namespace Quickstarts.DataAccessServer
                     new AttributeWriteResult(StatusCodes.BadNodeIdUnknown));
             }
 
-            StatusCode error = block.WriteTagValue(node.SymbolicName, value.AsBoxedObject());
+            StatusCode error = block.WriteTagValue(node.SymbolicName, value);
 
             if (error != 0)
             {
@@ -329,7 +329,7 @@ namespace Quickstarts.DataAccessServer
         private void UpdateVariable(ISystemContext context, UnderlyingSystemTag tag, BaseVariableState variable)
         {
             variable.Description = new LocalizedText(tag.Description);
-            variable.Value = Variant.From((dynamic)tag.Value);
+            variable.Value = tag.Value;
             variable.Timestamp = tag.Timestamp;
 
             switch (tag.DataType)
