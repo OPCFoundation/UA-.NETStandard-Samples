@@ -55,6 +55,7 @@ namespace Opc.Ua.Samples.Tests
                 ["Methods"] = telemetry => new Quickstarts.MethodsServer.MethodsServer(telemetry),
                 ["PerfTest"] = telemetry => new Quickstarts.PerfTestServer.PerfTestServer(telemetry),
                 ["SimpleEvents"] = telemetry => new Quickstarts.SimpleEvents.Server.SimpleEventsServer(telemetry),
+                ["StateMachines"] = telemetry => new Quickstarts.StateMachines.Server.StateMachinesServer(telemetry),
                 ["UserAuthentication"] = telemetry => new Quickstarts.UserAuthenticationServer.UserAuthenticationServer(telemetry),
                 ["Views"] = telemetry => new Quickstarts.Views.Server.ViewsServer(telemetry),
                 ["Sample"] = telemetry => new Opc.Ua.Sample.SampleServer(telemetry),

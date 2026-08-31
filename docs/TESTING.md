@@ -139,7 +139,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 0 checks today
 
-143 test cases, under a second, no network:
+151 test cases, under a second, no network:
 
 - every `*.Config.xml` in the repository loads and validates, and declares an application
   name, uri, type and security configuration

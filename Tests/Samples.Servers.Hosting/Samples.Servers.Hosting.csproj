@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\Workshop\Methods\Server\Methods Server.csproj" />
     <ProjectReference Include="..\..\Workshop\PerfTest\Server\PerfTest Server.csproj" />
     <ProjectReference Include="..\..\Workshop\SimpleEvents\Server\SimpleEvents Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\StateMachines\Server\StateMachines Server.csproj" />
     <ProjectReference Include="..\..\Workshop\UserAuthentication\Server\UserAuthentication Server.csproj" />
     <ProjectReference Include="..\..\Workshop\Views\Server\Views Server.csproj" />
     <!-- the console aggregation server compiles the very same sources, so hosting this

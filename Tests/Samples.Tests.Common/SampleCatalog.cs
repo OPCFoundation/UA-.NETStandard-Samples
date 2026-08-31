@@ -181,6 +181,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "StateMachines",
+                ServerProject = "Workshop/StateMachines/Server/StateMachines Server.csproj",
+                ServerConfig = "Workshop/StateMachines/Server/StateMachinesServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62571/Quickstarts/StateMachinesServer",
+                ClientProject = "Workshop/StateMachines/Client/StateMachines Client.csproj",
+                ClientConfig = "Workshop/StateMachines/Client/StateMachinesClient.Config.xml",
+                ClientEndpointSource = "Workshop/StateMachines/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "UserAuthentication",
                 ServerProject = "Workshop/UserAuthentication/Server/UserAuthentication Server.csproj",
                 ServerConfig = "Workshop/UserAuthentication/Server/Quickstarts.UserAuthenticationServer.Config.xml",

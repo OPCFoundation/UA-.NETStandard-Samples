@@ -127,6 +127,12 @@ namespace Opc.Ua.Samples.Tests
                 Expectation = "an event of the server",
             },
             new SubscribingClient {
+                Name = "StateMachines",
+                Arrange = PowerOnTheMachineAsync,
+                HasNotification = form => HasRows(form, "TransitionsLV"),
+                Expectation = "a transition of the state machine it powered on",
+            },
+            new SubscribingClient {
                 Name = "HistoricalEvents",
                 HasNotification = form => HasRows(FindEventList(form), "EventsLV"),
                 Expectation = "a live event of the server",
@@ -277,6 +283,35 @@ namespace Opc.Ua.Samples.Tests
 
             // the handler is an async void event handler, so there is nothing to await
             open.Invoke(form, new object[] { null, EventArgs.Empty });
+
+            await Task.Delay(TimeSpan.FromSeconds(2), ct).ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Powers the state machine of the StateMachines client on.
+        /// </summary>
+        /// <remarks>
+        /// That sample streams the transitions of a state machine, and a state machine which
+        /// nobody drives never has one: the client has to cause a transition before there is
+        /// anything for the stream to report.
+        /// </remarks>
+        private static async Task PowerOnTheMachineAsync(Form form, CancellationToken ct)
+        {
+            var powerOn = (Button)WinFormsHarness.FindControl(form, "PowerOnBTN");
+
+            Assert.That(
+                powerOn,
+                Is.Not.Null,
+                "The StateMachines client no longer has a 'PowerOnBTN'. Rename it here too.");
+
+            Assert.That(
+                powerOn.Enabled,
+                Is.True,
+                "The StateMachines client did not enable its causes, so it never resolved " +
+                "the state machines of its server.");
+
+            // the click handler is an async void event handler, so there is nothing to await
+            powerOn.PerformClick();
 
             await Task.Delay(TimeSpan.FromSeconds(2), ct).ConfigureAwait(true);
         }

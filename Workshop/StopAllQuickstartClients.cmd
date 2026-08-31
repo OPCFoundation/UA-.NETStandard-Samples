@@ -8,6 +8,7 @@ taskkill /IM Quickstarts.HistoricalEventsClient.exe
 taskkill /IM Quickstarts.MethodsClient.exe
 taskkill /IM Quickstarts.PerfTestClient.exe
 taskkill /IM Quickstarts.SimpleEventsClient.exe
+taskkill /IM Quickstarts.StateMachinesClient.exe
 taskkill /IM Quickstarts.UserAuthenticationClient.exe
 taskkill /IM Quickstarts.ViewsClient.exe
 
