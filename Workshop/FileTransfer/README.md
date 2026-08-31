@@ -30,7 +30,10 @@ line: the provider it constructs. `IFileSystemProvider` is a small async interfa
 `CreateFileAsync`, `DeleteAsync`, `MoveAsync`, `CopyAsync`.
 
 Because the directory to publish only becomes known once the configuration has been read, the
-factory is registered in `CreateMasterNodeManagerAsync` rather than in the constructor.
+factory is registered in `OnServerStarting` rather than in the constructor. That hook runs
+before the server builds its master node manager out of the factories registered at that point,
+so a configuration-driven node manager needs no other override - in particular, there is no
+reason to override `CreateMasterNodeManagerAsync` for this.
 
 ### Configuration
 

@@ -30,8 +30,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
@@ -67,22 +65,20 @@ namespace Quickstarts.FileTransferServer
 
         #region Overridden Methods
         /// <summary>
-        /// Creates the node managers for the server.
+        /// Initializes the server before it starts up.
         /// </summary>
         /// <remarks>
-        /// The directory to publish comes from the configuration, which is not available
-        /// before startup, so the node manager factory is registered here rather than in the
-        /// constructor. The base implementation then creates the node manager from it.
+        /// The directory to publish comes from the configuration, which a server does not
+        /// have in its constructor, so the node manager factory is registered here instead.
+        /// This hook runs before the server builds its master node manager out of the
+        /// factories which are registered at that point, so nothing else has to be
+        /// overridden for the file system to be served.
         /// </remarks>
-        protected override async ValueTask<IMasterNodeManager> CreateMasterNodeManagerAsync(
-            IServerInternal server,
-            ApplicationConfiguration configuration,
-            CancellationToken cancellationToken = default)
+        protected override void OnServerStarting(ApplicationConfiguration configuration)
         {
-            ArgumentNullException.ThrowIfNull(server);
             ArgumentNullException.ThrowIfNull(configuration);
 
-            ILogger logger = server.Telemetry.CreateLogger<FileTransferServer>();
+            base.OnServerStarting(configuration);
 
             FileTransferServerConfiguration settings =
                 configuration.ParseExtension<FileTransferServerConfiguration>()
@@ -100,11 +96,11 @@ namespace Quickstarts.FileTransferServer
                 ? FileTransferServerConfiguration.kDefaultMountName
                 : settings.MountName;
 
-            AddSampleContent(rootDirectory, logger);
+            AddSampleContent(rootDirectory, m_logger);
 
-            if (logger.IsEnabled(LogLevel.Information))
+            if (m_logger.IsEnabled(LogLevel.Information))
             {
-                logger.LogInformation(
+                m_logger.LogInformation(
                     "Publishing '{RootDirectory}' as {MountName}, {Access}.",
                     rootDirectory,
                     mountName,
@@ -121,9 +117,6 @@ namespace Quickstarts.FileTransferServer
                 new PhysicalFileSystemProvider(rootDirectory, mountName, settings.Writable));
 
             AddNodeManager(m_factory);
-
-            return await base.CreateMasterNodeManagerAsync(server, configuration, cancellationToken)
-                .ConfigureAwait(false);
         }
 
         /// <summary>
