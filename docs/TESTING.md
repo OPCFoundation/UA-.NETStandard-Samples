@@ -108,9 +108,20 @@ UI popups into readable failures and is the single most valuable piece of the ha
 `AggregationServer` both use 62541). The tests therefore keep the ports the samples ship with -
 that is part of what is being tested - and run one sample at a time (`[NonParallelizable]`).
 
-The consequence is machine wide: **only one test run at a time**. Two runs in parallel fail
-with "address already in use", and a second git worktree of this repository is not isolation -
-the ports are the same. The same applies to a sample you left running by hand.
+The consequence is machine wide: **only one test run at a time** - and a second git worktree
+of this repository is not isolation, because the ports are the same. The port using tiers
+enforce the rule themselves: a `[SetUpFixture]` in each of their assemblies (deriving from
+`SamplePortLockFixture` in `Samples.Tests.Common`) waits up to ten minutes on a machine wide
+lock file under the temp directory before the first test runs, so concurrent runs - from a
+solution level `dotnet test`, another worktree or another terminal - queue instead of failing.
+Tier 0 uses no ports and takes no lock.
+
+The lock cannot cover the seconds in which a finished run's listeners are still draining: a
+test host releases the lock in its teardown, but the operating system tears its sockets down
+a moment later, and the first sample of a back to back run reliably finds its port still
+bound. `SampleServerHost` therefore retries a start that fails with "address already in use"
+for up to 15 seconds. A sample you left running by hand is outside both mechanisms - the run
+retries, then fails on the busy endpoint.
 
 ## Running
 
