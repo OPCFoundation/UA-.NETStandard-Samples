@@ -80,12 +80,20 @@ namespace Opc.Ua.Samples.Tests
         /// through its own browse tree, and show it decoded.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// What the sample is for: the server serves data types of its own, out of two node
-        /// sets, and a client which knew none of them at compile time loads the type system
-        /// after connecting and can then make sense of a value. The client does that load in
-        /// its ConnectComplete handler and shows what it read in the attribute list of its
-        /// browse control, so walking the tree to the parking lot's structured property and
-        /// reading the attribute list follows the whole chain.
+        /// sets loaded into one namespace table, and the client browses to an instance which
+        /// uses them and displays the value. That path - expand, select, read, render - is
+        /// entirely the client's, and none of it runs before a user touches the tree.
+        /// </para>
+        /// <para>
+        /// What it does not pin down is the complex type system the client loads in its
+        /// ConnectComplete handler. Taking that load away does not fail this test, because the
+        /// client links the generated model as well, and in a tier 2 run the server is in the
+        /// same process on top of that - so the structure decodes either way. The load is
+        /// there for a client which has neither, and proving it would need a test which has
+        /// neither. What is asserted here is what the sample puts on the screen.
+        /// </para>
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
