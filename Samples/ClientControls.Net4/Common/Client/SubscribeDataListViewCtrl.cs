@@ -428,7 +428,7 @@ namespace Opc.Ua.Client.Controls
             MonitoredItemOptions settings = handle.Settings;
 
             row[0] = handle;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex(settings.AttributeId, null)];
+            row[1] = ImageList.Images[ClientUtils.GetImageIndex(settings.AttributeId, Variant.Null)];
             row[2] = await m_session.NodeCache.GetDisplayTextAsync(settings.StartNodeId, ct) + "/" + Attributes.GetBrowseName(settings.AttributeId);
             row[3] = settings.IndexRange;
             row[4] = settings.Encoding ?? QualifiedName.Null;
@@ -484,7 +484,7 @@ namespace Opc.Ua.Client.Controls
 
             if (!value.IsNull)
             {
-                row[1] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, value.WrappedValue.AsBoxedObject())];
+                row[1] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, value.WrappedValue)];
                 row[12] = (!value.WrappedValue.TypeInfo.IsUnknown) ? value.WrappedValue.TypeInfo.ToString() : String.Empty;
                 row[13] = value.WrappedValue;
                 row[14] = value.StatusCode;
@@ -621,7 +621,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (m_EditComplexValueDlg != null && Object.ReferenceEquals(m_EditComplexValueDlg.Tag, handle))
                     {
-                        await m_EditComplexValueDlg.UpdateValueAsync(handle.Settings.StartNodeId, handle.Settings.AttributeId, null, change.Value.WrappedValue.AsBoxedObject());
+                        await m_EditComplexValueDlg.UpdateValueAsync(handle.Settings.StartNodeId, handle.Settings.AttributeId, null, change.Value.WrappedValue);
                     }
                 }
             }
@@ -779,7 +779,7 @@ namespace Opc.Ua.Client.Controls
                     handle.Settings.StartNodeId,
                     handle.Settings.AttributeId,
                     null,
-                    value.WrappedValue.AsBoxedObject(),
+                    value.WrappedValue,
                     true,
                     "View Data Change");
 

@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_nodeId;
         private bool m_readOnly;
 
@@ -90,7 +90,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task InitializeAsync(Session session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task InitializeAsync(ISession session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -127,7 +127,7 @@ namespace Opc.Ua.Sample.Controls
         private sealed class NodeField
         {
             public string Name;
-            public object Value;
+            public Variant Value;
             public StatusCode StatusCode;
             public DiagnosticInfo DiagnosticInfo;
             public ReadValueId ValueId;
@@ -182,7 +182,7 @@ namespace Opc.Ua.Sample.Controls
 
                 field.ValueId = nodesToRead[ii];
                 field.Name = Attributes.GetBrowseName(nodesToRead[ii].AttributeId);
-                field.Value = values[ii].WrappedValue.AsBoxedObject();
+                field.Value = values[ii].WrappedValue;
                 field.StatusCode = values[ii].StatusCode;
 
                 if (diagnosticInfos != null && diagnosticInfos.Count > ii)
@@ -251,7 +251,7 @@ namespace Opc.Ua.Sample.Controls
 
                 field.ValueId = nodesToRead[ii];
                 field.Name = references[ii].ToString();
-                field.Value = values[ii].WrappedValue.AsBoxedObject();
+                field.Value = values[ii].WrappedValue;
                 field.StatusCode = values[ii].StatusCode;
 
                 if (diagnosticInfos != null && diagnosticInfos.Count > ii)
@@ -303,15 +303,15 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Formats the value of an attribute.
         /// </summary>
-        private async Task<string> FormatAttributeValueAsync(uint attributeId, object value, CancellationToken ct = default)
+        private async Task<string> FormatAttributeValueAsync(uint attributeId, Variant value, CancellationToken ct = default)
         {
             switch (attributeId)
             {
                 case Attributes.NodeClass:
                 {
-                    if (value != null)
+                    if (value.TryGetValue(out int nodeClass))
                     {
-                        return String.Format("{0}", Enum.ToObject(typeof(NodeClass), value));
+                        return String.Format("{0}", (NodeClass)nodeClass);
                     }
 
                     return "(null)";
@@ -319,7 +319,7 @@ namespace Opc.Ua.Sample.Controls
 
                 case Attributes.DataType:
                 {
-                    NodeId datatypeId = value is NodeId nodeId ? nodeId : NodeId.Null;
+                    NodeId datatypeId = value.TryGetValue(out NodeId nodeId) ? nodeId : NodeId.Null;
 
                     if (!datatypeId.IsNull)
                     {
@@ -340,11 +340,9 @@ namespace Opc.Ua.Sample.Controls
 
                 case Attributes.ValueRank:
                 {
-                    int? valueRank = value as int?;
-
-                    if (valueRank != null)
+                    if (value.TryGetValue(out int valueRank))
                     {
-                        switch (valueRank.Value)
+                        switch (valueRank)
                         {
                             case ValueRanks.Scalar: return "Scalar";
                             case ValueRanks.OneDimension: return "OneDimension";
@@ -353,7 +351,7 @@ namespace Opc.Ua.Sample.Controls
 
                             default:
                             {
-                                return String.Format("{0}", valueRank.Value);
+                                return String.Format("{0}", valueRank);
                             }
                         }
                     }
@@ -363,21 +361,19 @@ namespace Opc.Ua.Sample.Controls
 
                 case Attributes.MinimumSamplingInterval:
                 {
-                    double? minimumSamplingInterval = value as double?;
-
-                    if (minimumSamplingInterval != null)
+                    if (value.TryGetValue(out double minimumSamplingInterval))
                     {
-                        if (minimumSamplingInterval.Value == MinimumSamplingIntervals.Indeterminate)
+                        if (minimumSamplingInterval == MinimumSamplingIntervals.Indeterminate)
                         {
                             return "Indeterminate";
                         }
 
-                        else if (minimumSamplingInterval.Value == MinimumSamplingIntervals.Continuous)
+                        else if (minimumSamplingInterval == MinimumSamplingIntervals.Continuous)
                         {
                             return "Continuous";
                         }
 
-                        return String.Format("{0}", minimumSamplingInterval.Value);
+                        return String.Format("{0}", minimumSamplingInterval);
                     }
 
                     return String.Format("{0}", value);
@@ -386,7 +382,7 @@ namespace Opc.Ua.Sample.Controls
                 case Attributes.AccessLevel:
                 case Attributes.UserAccessLevel:
                 {
-                    byte accessLevel = Convert.ToByte(value);
+                    value.TryGetValue(out byte accessLevel);
 
                     StringBuilder bits = new StringBuilder();
 
@@ -530,11 +526,9 @@ namespace Opc.Ua.Sample.Controls
                 return;
             }
 
-            Array array = field.Value as Array;
-
             listItem.SubItems[0].Text = String.Format("{0}", field.Name);
 
-            if (array == null)
+            if (field.Value.TypeInfo.ValueRank < 0)
             {
                 if (field.ValueId != null)
                 {
@@ -542,12 +536,12 @@ namespace Opc.Ua.Sample.Controls
                 }
                 else
                 {
-                    listItem.SubItems[1].Text = String.Format("{0}", field.Value);
+                    listItem.SubItems[1].Text = field.Value.ToString();
                 }
             }
             else
             {
-                listItem.SubItems[1].Text = String.Format("{0}[{1}]", field.Value.GetType().GetElementType().Name, array.Length);
+                listItem.SubItems[1].Text = field.Value.TypeInfo.ToString();
             }
 
             listItem.SubItems[2].Text = String.Format("{0}", field.StatusCode);
@@ -570,7 +564,7 @@ namespace Opc.Ua.Sample.Controls
                     {
                         if (value != null)
                         {
-                            items[0].Value = value;
+                            items[0].Value = ClientUtils.ToVariant(value);
                             await UpdateItemAsync(ItemsLV.SelectedItems[0], items[0]);
                         }
                     }

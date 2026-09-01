@@ -87,9 +87,7 @@ namespace Opc.Ua.Samples.Tests
                 .ReadAttributeAsync(Session, platforms, Attributes.EventNotifier, ct)
                 .ConfigureAwait(false);
 
-            byte flags = Convert.ToByte(
-                notifier.WrappedValue.AsBoxedObject(),
-                System.Globalization.CultureInfo.InvariantCulture);
+            notifier.WrappedValue.TryGetValue(out byte flags);
 
             await TestContext.Out
                 .WriteLineAsync($"EventNotifier of the platforms object: {flags}")
@@ -134,7 +132,7 @@ namespace Opc.Ua.Samples.Tests
                 [new QualifiedName(ReportBrowseNames.UidWell, ns)]).ConfigureAwait(false);
 
             CapturedEvent reported = await capture.WaitAsync(
-                candidate => candidate.Field(ReportBrowseNames.UidWell).AsBoxedObject() != null,
+                candidate => !candidate.Field(ReportBrowseNames.UidWell).IsNull,
                 TimeSpan.FromSeconds(25),
                 "a well test report carrying the well it belongs to",
                 ct).ConfigureAwait(false);
@@ -148,7 +146,7 @@ namespace Opc.Ua.Samples.Tests
                     "The report names the well it came from as its source.");
 
                 Assert.That(
-                    reported.Field(ReportBrowseNames.UidWell).AsBoxedObject() as string,
+                    reported.Field(ReportBrowseNames.UidWell).TryGetValue(out string uidWell) ? uidWell : null,
                     Does.StartWith("Well_"),
                     "The report carries the sample's own well identifier field.");
             });

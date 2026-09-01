@@ -42,6 +42,19 @@ namespace Opc.Ua.Samples.Tests
         private const int kTimeout = 90_000;
 
         /// <summary>
+        /// How long a single service call of a sample client may take.
+        /// </summary>
+        /// <remarks>
+        /// The sample configurations allow ten minutes, which is longer than this whole
+        /// test may run: a request which never came back used to surface as a bare harness
+        /// timeout with nothing to point at. This cap is far above what any of these
+        /// operations need against a server on loopback - the slowest single call measured
+        /// is a few hundred milliseconds - so it only ever fires for a call which is stuck,
+        /// and then the test reports that call instead of the clock.
+        /// </remarks>
+        private const int kOperationTimeout = 30_000;
+
+        /// <summary>
         /// How long the post connect logic of a sample gets to run before it is inspected.
         /// </summary>
         /// <remarks>
@@ -107,9 +120,11 @@ namespace Opc.Ua.Samples.Tests
         [Test]
         public void UncoveredClientSamplesAreDeclared()
         {
-            // the sample client discovers its server instead of connecting to a fixed
-            // endpoint, and the GDS and aggregation clients need more than one server;
-            // both follow in phase 4 of docs/TESTING.md
+            // the UA Sample Client has no shared connect control and opens its session
+            // through a modal dialog, so it cannot be driven by the loop above - it has its
+            // own fixture in SampleClientFormTests instead. The GDS client hosts no connect
+            // control either and needs two servers, so it has one in GdsClientTests. The
+            // aggregation client also needs more than one server and is still open.
             string[] expectedGaps = ["Aggregation", "Gds", "Sample"];
 
             IEnumerable<string> uncovered = SampleCatalog.Clients
@@ -172,15 +187,23 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             DialogWatchdog watchdog = null;
+            var phase = new ClientPhase();
 
-            await WinFormsHarness.RunAsync(
-                async dialogs => {
-                    watchdog = dialogs;
+            try
+            {
+                await WinFormsHarness.RunAsync(
+                    async dialogs => {
+                        watchdog = dialogs;
 
-                    await DriveClientAsync(client, host.EndpointUrl, ct).ConfigureAwait(true);
-                },
-                TimeSpan.FromMilliseconds(kTimeout) - TimeSpan.FromSeconds(15))
-                .ConfigureAwait(false);
+                        await DriveClientAsync(client, host.EndpointUrl, phase, ct).ConfigureAwait(true);
+                    },
+                    TimeSpan.FromMilliseconds(kTimeout) - TimeSpan.FromSeconds(15))
+                    .ConfigureAwait(false);
+            }
+            catch (TimeoutException expired)
+            {
+                throw phase.Explain(expired);
+            }
 
             if (watchdog?.DuringTeardown.Count > 0)
             {
@@ -194,21 +217,33 @@ namespace Opc.Ua.Samples.Tests
         /// <summary>
         /// Runs on the STA thread of the harness, with a message loop pumping.
         /// </summary>
-        private static async Task DriveClientAsync(SampleClientUnderTest client, string endpointUrl, CancellationToken ct)
+        private static async Task DriveClientAsync(
+            SampleClientUnderTest client,
+            string endpointUrl,
+            ClientPhase phase,
+            CancellationToken ct)
         {
+            phase.Enter("loading the configuration of the sample");
+
             using var pki = new TemporaryPki($"client-{client.Sample.Name}");
 
             ApplicationConfiguration configuration = await SampleConfigurationLoader
                 .LoadAsync(client.Sample.ClientConfig, pki, ct)
                 .ConfigureAwait(true);
 
+            configuration.TransportQuotas.OperationTimeout = kOperationTimeout;
+
             await using var application = new ApplicationInstance(configuration, NullTelemetry.Instance);
+
+            phase.Enter("creating its client certificate");
 
             bool certificateOk = await application
                 .CheckApplicationInstanceCertificatesAsync(true, null, ct)
                 .ConfigureAwait(true);
 
             Assert.That(certificateOk, Is.True, "The client certificate of the sample could not be created.");
+
+            phase.Enter("building its main form");
 
             using Form form = client.CreateMainForm(configuration, NullTelemetry.Instance);
 
@@ -218,6 +253,8 @@ namespace Opc.Ua.Samples.Tests
 
             ConnectServerCtrl connect = WinFormsHarness.GetConnectControl(form);
 
+            phase.Enter($"connecting to {endpointUrl}");
+
             ISession session = await connect
                 .ConnectAsync(NullTelemetry.Instance, endpointUrl, false, 30_000, ct)
                 .ConfigureAwait(true);
@@ -225,6 +262,8 @@ namespace Opc.Ua.Samples.Tests
             Assert.That(session, Is.Not.Null, "The sample client did not create a session.");
             Assert.That(session.Connected, Is.True, "The session of the sample client is not connected.");
             Assert.That(connect.Session, Is.SameAs(session), "The connect control did not keep the session.");
+
+            phase.Enter("running its post connect logic");
 
             // let the post connect logic of the sample run, and give the watchdog a chance to
             // catch a dialog it opens while doing so
@@ -246,9 +285,13 @@ namespace Opc.Ua.Samples.Tests
                     "so its post connect logic did not complete.");
             }
 
+            phase.Enter("disconnecting");
+
             await connect.DisconnectAsync(ct).ConfigureAwait(true);
 
             Assert.That(connect.Session, Is.Null, "The sample client did not release its session on disconnect.");
+
+            phase.Enter("shutting down");
         }
     }
 }

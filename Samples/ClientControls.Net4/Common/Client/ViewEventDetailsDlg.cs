@@ -71,7 +71,7 @@ namespace Opc.Ua.Client.Controls
                 string text = null;
 
                 // check for missing fields.
-                if (fields.Count <= ii + 1 || fields[ii + 1].AsBoxedObject() == null)
+                if (fields.Count <= ii + 1 || fields[ii + 1].IsNull)
                 {
                     text = String.Empty;
                 }

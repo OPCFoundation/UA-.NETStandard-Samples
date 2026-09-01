@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
 
         /// <summary>
 		/// The columns to display in the control.
@@ -82,7 +82,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, IList<WriteValue> values, ITelemetryContext telemetry)
+        public void Initialize(ISession session, IList<WriteValue> values, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -233,7 +233,7 @@ namespace Opc.Ua.Sample.Controls
                 value.Value = new DataValue();
             }
 
-            if (value.Value.WrappedValue.AsBoxedObject() == null)
+            if (value.Value.WrappedValue.IsNull)
             {
                 value.Value = await GetDefaultValueAsync(value.NodeId, value.AttributeId, ct);
             }
@@ -252,7 +252,7 @@ namespace Opc.Ua.Sample.Controls
             listItem.SubItems[1].Text = String.Format("{0}", value.NodeId);
             listItem.SubItems[2].Text = String.Format("{0}", Attributes.GetBrowseName(value.AttributeId));
             listItem.SubItems[3].Text = String.Format("{0}", value.IndexRange);
-            listItem.SubItems[4].Text = String.Format("{0}", value.Value.WrappedValue.AsBoxedObject());
+            listItem.SubItems[4].Text = value.Value.WrappedValue.ToString();
             listItem.SubItems[5].Text = String.Format("{0}", value.Value.StatusCode);
             listItem.SubItems[6].Text = String.Format("{0}", value.Value.SourceTimestamp);
 
@@ -393,17 +393,17 @@ namespace Opc.Ua.Sample.Controls
 
                     if (writeValue != null)
                     {
-                        value = writeValue.Value.WrappedValue.AsBoxedObject();
+                        value = writeValue.Value.WrappedValue;
                     }
                 }
                 else
                 {
-                    value = GuiUtils.EditValue(m_session, values[0].Value.WrappedValue.AsBoxedObject(), datatypeId, valueRank, Telemetry);
+                    value = GuiUtils.EditValue(m_session, values[0].Value.WrappedValue, datatypeId, valueRank, Telemetry);
                 }
 
                 if (value != null)
                 {
-                    values[0].Value = new DataValue(Variant.From((dynamic)value), StatusCodes.Good, values[0].Value.SourceTimestamp, values[0].Value.ServerTimestamp);
+                    values[0].Value = new DataValue(ClientUtils.ToVariant(value), StatusCodes.Good, values[0].Value.SourceTimestamp, values[0].Value.ServerTimestamp);
 
                     await UpdateItemAsync(ItemsLV.SelectedItems[0], values[0]);
 

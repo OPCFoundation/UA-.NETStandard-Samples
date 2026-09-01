@@ -243,15 +243,13 @@ namespace Quickstarts.HistoricalEvents.Client
             }
 
             // get the event time.
-            DateTime? eventTime = data.Events[0].EventFields[0].AsBoxedObject() as DateTime?;
-
-            if (eventTime == null)
+            if (!data.Events[0].EventFields[0].TryGetValue(out DateTimeUtc eventTime))
             {
                 throw new ServiceResultException(StatusCodes.BadTypeMismatch);
             }
 
             // return time as UTC value.
-            return eventTime.Value;
+            return (DateTime)eventTime;
         }
 
         /// <summary>

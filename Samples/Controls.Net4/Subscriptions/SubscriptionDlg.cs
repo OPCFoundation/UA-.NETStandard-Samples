@@ -38,80 +38,77 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
 
 namespace Opc.Ua.Sample.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the
+    // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
+    using SubscriptionState = Opc.Ua.Client.Subscriptions.SubscriptionState;
+
     public partial class SubscriptionDlg : Form
     {
+        /// <summary>
+        /// How long the dialog waits for the subscription engine to apply changes.
+        /// </summary>
+        private static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(10);
+
         #region Constructors
         public SubscriptionDlg()
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            m_SessionNotification = new NotificationEventHandler(Session_NotificationAsync);
-            m_SubscriptionStateChanged = new SubscriptionStateChangedEventHandler(Subscription_StateChanged);
-            m_PublishStatusChanged = new PublishStateChangedEventHandler(Subscription_PublishStatusChangedAsync);
+            m_DataChangeCallback = new Action<ISubscription, uint, DateTime, DataValueChange[], PublishState>(OnDataChangeNotification);
+            m_EventCallback = new Action<ISubscription, uint, DateTime, EventNotification[], PublishState>(OnEventNotification);
+            m_KeepAliveCallback = new Action<ISubscription, uint, DateTime, PublishState>(OnKeepAliveNotification);
+            m_StateChangedCallback = new Action<ISubscription, SubscriptionState, PublishState>(OnSubscriptionStateChanged);
         }
         #endregion
 
         #region Private Fields
         private ITelemetryContext m_telemetry;
-        private ILogger m_logger;
-        private Subscription m_subscription;
-        private NotificationEventHandler m_SessionNotification;
-        private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
+        private SubscriptionHandle m_subscription;
+        private readonly Action<ISubscription, uint, DateTime, DataValueChange[], PublishState> m_DataChangeCallback;
+        private readonly Action<ISubscription, uint, DateTime, EventNotification[], PublishState> m_EventCallback;
+        private readonly Action<ISubscription, uint, DateTime, PublishState> m_KeepAliveCallback;
+        private readonly Action<ISubscription, SubscriptionState, PublishState> m_StateChangedCallback;
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample code preserves existing public API and behavior.")]
         private CreateMonitoredItemsDlg m_createDialog;
-        private PublishStateChangedEventHandler m_PublishStatusChanged;
+        private uint m_lastSequenceNumber;
+        private DateTime m_lastPublishTime;
+        private static uint m_Counter = 0;
         #endregion
 
         #region Public Interface
         /// <summary>
-        /// Creates a new subscription.
+        /// Creates a new subscription with the V2 subscription engine of the session.
         /// </summary>
-        public async Task<Subscription> NewAsync(Session session, ITelemetryContext telemetry, CancellationToken ct = default)
+        public SubscriptionHandle New(ISession session, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_telemetry = telemetry;
-            m_logger = telemetry.CreateLogger<SubscriptionDlg>();
+
+            SubscriptionHandle subscription = new SubscriptionHandle(
+                session,
+                Utils.Format("Subscription {0}", Utils.IncrementIdentifier(ref m_Counter)),
+                ClientUtils.DefaultSubscriptionOptions);
 
             #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            Subscription subscription = new Subscription(session.DefaultSubscription);
-            #pragma warning restore CA2000
-
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (!await new SubscriptionEditDlg().ShowDialogAsync(subscription, ct))
+            if (!new SubscriptionEditDlg().ShowDialog(subscription))
             #pragma warning restore CA2000
             {
                 return null;
             }
 
-            session.AddSubscription(subscription);
-            await subscription.CreateAsync(ct);
+            // registering the subscription is the request, the engine creates it on the
+            // server from its own worker.
+            subscription.Create();
 
-            Subscription duplicateSubscription = session.Subscriptions.FirstOrDefault(s => s.Id != 0 && s.Id.Equals(subscription.Id) && s != subscription);
-            if (duplicateSubscription != null)
-            {
-                m_logger.LogWarning("Duplicate subscription was created with the id: {SubscriptionId}", duplicateSubscription.Id);
-
-                DialogResult result = MessageBox.Show("Duplicate subscription was created with the id: " + duplicateSubscription.Id + ". Do you want to keep it?", "Warning", MessageBoxButtons.YesNo);
-                if (result == System.Windows.Forms.DialogResult.No)
-                {
-                    await duplicateSubscription.DeleteAsync(false, ct);
-                    await session.RemoveSubscriptionAsync(subscription, ct);
-
-                    return null;
-                }
-            }
-
-            #pragma warning disable CA1849 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Show(subscription);
-            #pragma warning restore CA1849
 
             return subscription;
         }
@@ -119,36 +116,32 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Subscription subscription)
+        public void Show(SubscriptionHandle subscription)
         {
             if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+
+            if (m_telemetry == null)
+            {
+                m_telemetry = subscription.Session?.MessageContext?.Telemetry;
+            }
 
             Show();
             BringToFront();
 
-            // remove previous subscription.
-            if (m_subscription != null)
-            {
-                m_subscription.StateChanged -= m_SubscriptionStateChanged;
-                m_subscription.PublishStatusChanged -= m_PublishStatusChanged;
-                m_subscription.Session.Notification -= m_SessionNotification;
-            }
+            // stop receiving notifications from the previous subscription.
+            Detach();
 
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
 
-            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (subscription != null)
-            #pragma warning restore CA1508
-            {
-                m_subscription.StateChanged += m_SubscriptionStateChanged;
-                m_subscription.PublishStatusChanged += m_PublishStatusChanged;
-                m_subscription.Session.Notification += m_SessionNotification;
-            }
+            subscription.Callbacks.DataChangeCallback += m_DataChangeCallback;
+            subscription.Callbacks.EventCallback += m_EventCallback;
+            subscription.Callbacks.KeepAliveCallback += m_KeepAliveCallback;
+            subscription.Callbacks.StateChangedCallback += m_StateChangedCallback;
 
             MonitoredItemsCTRL.Initialize(subscription, m_telemetry);
             EventsCTRL.Initialize(subscription, null);
-            DataChangesCTRL.InitializeAsync(subscription, null);
+            DataChangesCTRL.Initialize(subscription, null);
 
             WindowMI_Click(WindowDataChangesMI, null);
 
@@ -158,52 +151,61 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Methods
         /// <summary>
+        /// Stops receiving notifications from the current subscription.
+        /// </summary>
+        private void Detach()
+        {
+            if (m_subscription != null)
+            {
+                m_subscription.Callbacks.DataChangeCallback -= m_DataChangeCallback;
+                m_subscription.Callbacks.EventCallback -= m_EventCallback;
+                m_subscription.Callbacks.KeepAliveCallback -= m_KeepAliveCallback;
+                m_subscription.Callbacks.StateChangedCallback -= m_StateChangedCallback;
+            }
+        }
+
+        /// <summary>
         /// Updates the controls displaying the status of the subscription.
         /// </summary>
         private void UpdateStatus()
         {
-            NotificationMessage message = null;
-
-            if (m_subscription != null)
-            {
-                message = m_subscription.LastNotification;
-            }
-
             PublishingEnabledTB.Text = String.Empty;
 
             if (m_subscription != null)
             {
-                PublishingEnabledTB.Text = (m_subscription.CurrentPublishingEnabled) ? "Enabled" : "Disabled";
+                bool publishingEnabled = (m_subscription.Subscription != null)
+                    ? m_subscription.Subscription.CurrentPublishingEnabled
+                    : m_subscription.Settings.PublishingEnabled;
+
+                PublishingEnabledTB.Text = (publishingEnabled) ? "Enabled" : "Disabled";
             }
 
             LastUpdateTimeTB.Text = String.Empty;
-
-            if (message != null)
-            {
-                LastUpdateTimeTB.Text = String.Format("{0:HH:mm:ss}", message.PublishTime.ToLocalTime());
-            }
-
             LastMessageIdTB.Text = String.Empty;
 
-            if (message != null)
+            if (m_lastPublishTime != DateTime.MinValue)
             {
-                LastMessageIdTB.Text = String.Format("{0}", message.SequenceNumber);
+                LastUpdateTimeTB.Text = String.Format("{0:HH:mm:ss}", m_lastPublishTime.ToLocalTime());
+                LastMessageIdTB.Text = String.Format("{0}", m_lastSequenceNumber);
             }
 
             // determine what window to show.
             bool hasEvents = false;
             bool hasDatachanges = false;
 
-            foreach (MonitoredItem monitoredItem in m_subscription.MonitoredItems)
+            if (m_subscription != null)
             {
-                if (monitoredItem.Filter is EventFilter)
+                foreach (MonitoredItemHandle monitoredItem in m_subscription.Items)
                 {
-                    hasEvents = true;
-                }
+                    if (monitoredItem.Settings.Filter is EventFilter)
+                    {
+                        hasEvents = true;
+                    }
 
-                if (monitoredItem.NodeClass == NodeClass.Variable)
-                {
-                    hasDatachanges = true;
+                    if (monitoredItem.NodeClass == NodeClass.Variable)
+                    {
+                        hasDatachanges = true;
+                    }
                 }
             }
 
@@ -227,13 +229,13 @@ namespace Opc.Ua.Sample.Controls
 
         #region Event Handlers
         /// <summary>
-        /// Processes a Publish repsonse from the server.
+        /// Processes the data changes of a publish response from the server.
         /// </summary>
-        private async void Session_NotificationAsync(ISession session, NotificationEventArgs e)
+        private async void OnDataChangeNotification(ISubscription subscription, uint sequenceNumber, DateTime publishTime, DataValueChange[] notifications, PublishState publishStateMask)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(m_SessionNotification, session, e);
+                BeginInvoke(m_DataChangeCallback, subscription, sequenceNumber, publishTime, notifications, publishStateMask);
                 return;
             }
             else if (!IsHandleCreated)
@@ -244,14 +246,16 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // ignore notifications for other subscriptions.
-                if (!Object.ReferenceEquals(m_subscription, e.Subscription))
+                if (m_subscription == null || !Object.ReferenceEquals(m_subscription.Subscription, subscription))
                 {
                     return;
                 }
 
+                m_lastSequenceNumber = sequenceNumber;
+                m_lastPublishTime = publishTime;
+
                 // notify controls of the change.
-                EventsCTRL.NotificationReceived(e);
-                await DataChangesCTRL.NotificationReceivedAsync(e);
+                await DataChangesCTRL.NotificationReceivedAsync(notifications, publishStateMask);
 
                 // update subscription status.
                 UpdateStatus();
@@ -263,13 +267,13 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Handles a change to the state of the subscription.
+        /// Processes the events of a publish response from the server.
         /// </summary>
-        private void Subscription_StateChanged(Subscription subscription, SubscriptionStateChangedEventArgs e)
+        private void OnEventNotification(ISubscription subscription, uint sequenceNumber, DateTime publishTime, EventNotification[] notifications, PublishState publishStateMask)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(m_SubscriptionStateChanged, subscription, e);
+                BeginInvoke(m_EventCallback, subscription, sequenceNumber, publishTime, notifications, publishStateMask);
                 return;
             }
             else if (!IsHandleCreated)
@@ -280,15 +284,16 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // ignore notifications for other subscriptions.
-                if (!Object.ReferenceEquals(m_subscription, subscription))
+                if (m_subscription == null || !Object.ReferenceEquals(m_subscription.Subscription, subscription))
                 {
                     return;
                 }
 
+                m_lastSequenceNumber = sequenceNumber;
+                m_lastPublishTime = publishTime;
+
                 // notify controls of the change.
-                EventsCTRL.SubscriptionChanged(e);
-                DataChangesCTRL.SubscriptionChanged(e);
-                MonitoredItemsCTRL.SubscriptionChanged(e);
+                EventsCTRL.NotificationReceived(notifications);
 
                 // update subscription status.
                 UpdateStatus();
@@ -300,13 +305,13 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Handles a change to the publish status for the subscription.
+        /// Processes a keep alive notification from the server.
         /// </summary>
-        private async void Subscription_PublishStatusChangedAsync(object subscription, EventArgs e)
+        private void OnKeepAliveNotification(ISubscription subscription, uint sequenceNumber, DateTime publishTime, PublishState publishStateMask)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(m_PublishStatusChanged, subscription, e);
+                BeginInvoke(m_KeepAliveCallback, subscription, sequenceNumber, publishTime, publishStateMask);
                 return;
             }
             else if (!IsHandleCreated)
@@ -317,13 +322,53 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // ignore notifications for other subscriptions.
-                if (!Object.ReferenceEquals(m_subscription, subscription))
+                if (m_subscription == null || !Object.ReferenceEquals(m_subscription.Subscription, subscription))
+                {
+                    return;
+                }
+
+                m_lastSequenceNumber = sequenceNumber;
+                m_lastPublishTime = publishTime;
+
+                UpdateStatus();
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles a change to the state of the subscription, which is also what reports that
+        /// the engine finished applying changes.
+        /// </summary>
+        private void OnSubscriptionStateChanged(ISubscription subscription, SubscriptionState state, PublishState publishStateMask)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(m_StateChangedCallback, subscription, state, publishStateMask);
+                return;
+            }
+            else if (!IsHandleCreated)
+            {
+                return;
+            }
+
+            try
+            {
+                // ignore notifications for other subscriptions.
+                if (m_subscription == null || !Object.ReferenceEquals(m_subscription.Subscription, subscription))
                 {
                     return;
                 }
 
                 // notify controls of the change.
-                await DataChangesCTRL.PublishStatusChangedAsync();
+                EventsCTRL.SubscriptionChanged();
+                DataChangesCTRL.SubscriptionChanged();
+                MonitoredItemsCTRL.SubscriptionChanged();
+
+                // update subscription status.
+                UpdateStatus();
             }
             catch (Exception exception)
             {
@@ -335,7 +380,9 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                SubscriptionEnablePublishingMI.Checked = m_subscription.CurrentPublishingEnabled;
+                SubscriptionEnablePublishingMI.Checked = (m_subscription.Subscription != null)
+                    ? m_subscription.Subscription.CurrentPublishingEnabled
+                    : m_subscription.Settings.PublishingEnabled;
             }
             catch (Exception exception)
             {
@@ -387,7 +434,12 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                await m_subscription.SetPublishingModeAsync(SubscriptionEnablePublishingMI.Checked);
+                // reconfiguring the options is the request, the engine applies it on its own
+                // worker.
+                bool enabled = SubscriptionEnablePublishingMI.Checked;
+                m_subscription.Configure(options => options with { PublishingEnabled = enabled });
+                await m_subscription.WaitForPendingChangesAsync(kApplyTimeout);
+                UpdateStatus();
             }
             catch (Exception exception)
             {
@@ -405,6 +457,8 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 MonitoredItemsCTRL.FormClosing();
+
+                Detach();
             }
             catch (Exception exception)
             {
@@ -417,13 +471,16 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!await new SubscriptionEditDlg().ShowDialogAsync(m_subscription))
+                if (!new SubscriptionEditDlg().ShowDialog(m_subscription))
                 #pragma warning restore CA2000
                 {
                     return;
                 }
 
-                await m_subscription.ModifyAsync();
+                // the engine applies the new options on its own worker, the state changed
+                // callback refreshes the display once it did.
+                await m_subscription.WaitForPendingChangesAsync(kApplyTimeout);
+                UpdateStatus();
             }
             catch (Exception exception)
             {
@@ -486,7 +543,10 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                await m_subscription.ConditionRefreshAsync();
+                if (m_subscription.Subscription != null)
+                {
+                    await m_subscription.Subscription.ConditionRefreshAsync(CancellationToken.None);
+                }
             }
             catch (Exception exception)
             {

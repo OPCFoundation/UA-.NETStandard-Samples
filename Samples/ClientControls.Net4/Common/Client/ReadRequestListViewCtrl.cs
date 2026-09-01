@@ -210,7 +210,7 @@ namespace Opc.Ua.Client.Controls
         public async Task UpdateRowAsync(DataRow row, ReadValueId nodeToRead, CancellationToken ct = default)
         {
             row[0] = nodeToRead;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex(nodeToRead.AttributeId, null)];
+            row[1] = ImageList.Images[ClientUtils.GetImageIndex(nodeToRead.AttributeId, Variant.Null)];
             row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToRead.NodeId, ct) : Utils.ToString(nodeToRead.NodeId);
             row[3] = Attributes.GetBrowseName(nodeToRead.AttributeId);
             row[4] = nodeToRead.IndexRange;

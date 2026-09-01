@@ -158,7 +158,7 @@ namespace Opc.Ua.Sample.Controls
             }
 
             m_browser = browser;
-            m_session = browser.Session as Session;
+            m_session = browser.Session as ISession;
             Telemetry = m_session?.MessageContext?.Telemetry;
             m_startId = startId;
             m_position = -1;
@@ -259,7 +259,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 ItemData item = new ItemData(referenceType, !reference.IsForward, target, typeDefinition);
-                AddItem(item, await GuiUtils.GetTargetIconAsync(m_browser.Session as Session, reference, ct), -1);
+                AddItem(item, await GuiUtils.GetTargetIconAsync(m_session, reference, ct), -1);
 
                 if ((target.NodeClass & (NodeClass.Variable | NodeClass.VariableType)) != 0)
                 {

@@ -110,18 +110,31 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         public static Control FindControl(Control parent, string name)
         {
-            if (parent == null)
+            return FindField<Control>(parent, name);
+        }
+
+        /// <summary>
+        /// Reads a private field of a form or control by name.
+        /// </summary>
+        /// <remarks>
+        /// The samples keep what they connected with in private fields, and a test which has
+        /// to check that - the session of the UA Sample Client, for instance - reads it here
+        /// rather than widening the sample just to be observable.
+        /// </remarks>
+        public static T FindField<T>(object instance, string name) where T : class
+        {
+            if (instance == null)
             {
-                throw new ArgumentNullException(nameof(parent));
+                throw new ArgumentNullException(nameof(instance));
             }
 
-            for (Type type = parent.GetType(); type != null; type = type.BaseType)
+            for (Type type = instance.GetType(); type != null; type = type.BaseType)
             {
                 FieldInfo field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
 
-                if (field?.GetValue(parent) is Control control)
+                if (field?.GetValue(instance) is T value)
                 {
-                    return control;
+                    return value;
                 }
             }
 

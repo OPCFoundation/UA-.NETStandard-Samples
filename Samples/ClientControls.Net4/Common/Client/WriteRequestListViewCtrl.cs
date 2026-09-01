@@ -279,7 +279,7 @@ namespace Opc.Ua.Client.Controls
         public async Task UpdateRowAsync(DataRow row, WriteValue nodeToWrite, CancellationToken ct = default)
         {
             row[0] = nodeToWrite;
-            row[1] = ImageList.Images[ClientUtils.GetImageIndex(nodeToWrite.AttributeId, null)];
+            row[1] = ImageList.Images[ClientUtils.GetImageIndex(nodeToWrite.AttributeId, Variant.Null)];
             row[2] = (m_session != null) ? await m_session.NodeCache.GetDisplayTextAsync(nodeToWrite.NodeId, ct) : Utils.ToString(nodeToWrite.NodeId);
             row[3] = Attributes.GetBrowseName(nodeToWrite.AttributeId);
             row[4] = nodeToWrite.IndexRange;
@@ -393,7 +393,7 @@ namespace Opc.Ua.Client.Controls
                         nodeToWrite.NodeId,
                         nodeToWrite.AttributeId,
                         null,
-                        nodeToWrite.Value.WrappedValue.AsBoxedObject(),
+                        nodeToWrite.Value.WrappedValue,
                         false,
                         "Edit Value");
 

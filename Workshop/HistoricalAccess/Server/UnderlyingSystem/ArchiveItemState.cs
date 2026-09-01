@@ -216,11 +216,6 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 TypeInfo typeInfo = value.WrappedValue.TypeInfo;
 
-                if (typeInfo.IsUnknown)
-                {
-                    typeInfo = TypeInfo.Construct(value.WrappedValue.AsBoxedObject());
-                }
-
                 if (typeInfo.IsUnknown || typeInfo.BuiltInType != m_archiveItem.DataType || typeInfo.ValueRank != ValueRanks.Scalar)
                 {
                     return StatusCodes.BadTypeMismatch.Code;

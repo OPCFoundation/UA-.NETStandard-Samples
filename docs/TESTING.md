@@ -33,12 +33,12 @@ behaviour the sample was written to show. Tier 1 would not notice any of that.
 Three properties of the samples make headless testing cheap:
 
 1. **Server `Main` methods are UI-free until the last line.** Every sample server registers
-   itself with `AddSampleApplication(...)` / `AddSampleServer<XServer>()` and lets the generic
-   host do `LoadApplicationConfigurationAsync` -> `CheckApplicationInstanceCertificatesAsync` ->
-   `application.StartAsync(server)`; only *then* is the main form resolved from the container
-   and shown. See [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is
-   `public` and derives from `StandardServer`, so a test starts the real server object with the
-   real config file and never touches WinForms.
+   itself with `AddSampleServer<XServer>(configurationFile)` and lets the hosted server of the
+   stack load the configuration file, check the certificate and start the server; only *then*
+   is the main form resolved from the container and shown. See
+   [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is `public` and derives
+   from `StandardServer`, so a test starts the real server object with the real config file
+   and never touches WinForms.
 2. **Every WinForms client uses the same control under the same name.** All client
    `MainForm.Designer.cs` files declare `private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;`,
    and that control exposes `ConnectAsync()`, `Session` and `ConnectComplete`. One reflection
@@ -109,9 +109,37 @@ UI popups into readable failures and is the single most valuable piece of the ha
 `AggregationServer` both use 62541). The tests therefore keep the ports the samples ship with -
 that is part of what is being tested - and run one sample at a time (`[NonParallelizable]`).
 
-The consequence is machine wide: **only one test run at a time**. Two runs in parallel fail
-with "address already in use", and a second git worktree of this repository is not isolation -
-the ports are the same. The same applies to a sample you left running by hand.
+The consequence is machine wide: **only one test run at a time** - and a second git worktree
+of this repository is not isolation, because the ports are the same. The port using tiers
+enforce the rule themselves: a `[SetUpFixture]` in each of their assemblies (deriving from
+`SamplePortLockFixture` in `Samples.Tests.Common`) waits up to ten minutes on a machine wide
+lock file under the temp directory before the first test runs, so concurrent runs - from a
+solution level `dotnet test`, another worktree or another terminal - queue instead of failing.
+Tier 0 uses no ports and takes no lock.
+
+The lock cannot cover the seconds in which a finished run's listeners are still draining: a
+test host releases the lock in its teardown, but the operating system tears its sockets down
+a moment later, and the first sample of a back to back run reliably finds its port still
+bound. `SampleServerHost` therefore retries a start that fails with "address already in use"
+for up to 15 seconds. A sample you left running by hand is outside both mechanisms - the run
+retries, then fails on the busy endpoint.
+
+Not every port-shaped failure is a race, and the two are easy to tell apart. A bind race
+takes seconds (the retry window) and moves between samples from run to run. A test that
+fails *instantly*, on the *same* sample every time, asserting a URL the source no longer
+contains, is a stale `--no-build` run: `SampleCatalog` is compiled into every test assembly,
+so after changing a port or a sample, rebuild every test project - or simply drop
+`--no-build` and let `dotnet test` build.
+
+**Claiming a port for a new sample.** In the 625xx block, where new samples land, endpoints
+come in pairs - opc.tcp one port above its https sibling (the DataAccess sample on
+62548/62547, for instance; the older samples outside the block pair differently, so do not
+extend those). Pick the next free pair
+above the highest paired endpoint in the repo *and in open pull requests*: Tier 0 only
+checks the tree it runs in, so two in-flight branches can claim the same pair and both look
+green until the second one merges (three branches did exactly that on one day). The catalog
+row you add for the sample is what turns the claim into a merge conflict the second branch
+cannot miss.
 
 ## Running
 
@@ -366,7 +394,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-17 test cases, about a minute, Windows only. For each WinForms sample client the test
+27 test cases, about a minute, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 
@@ -384,19 +412,101 @@ wizard of the shared `SubscribeDataListViewCtrl` against the Reference server th
 would - create the subscription, add `Server_ServerStatus_CurrentTime`, step to apply and then
 to view - and waits for a data change to land in the grid. It asserts the connect control
 handed out a `ManagedSession`, so a silent fall back to the raw session and its hand rolled
-reconnect fails a test, and it is the only case which proves that the V2 notification handler
-of a control actually reaches the user interface.
+reconnect fails a test, and it proves that the V2 notification handler of a control actually
+reaches the user interface.
+
+`WorkshopClientSubscriptionTests` asks the same question of the Workshop clients that
+subscribe, and asks it of the sample itself rather than of a shared control. Six clients
+connect to their own server and the test waits for a notification to reach the place the
+sample displays it: the drum level of the Boiler client, the process state of the Methods
+client, the value column of the DataAccess client's monitored item list, a condition in the
+AlarmCondition client, an event in the SimpleEvents client and a live event in the
+HistoricalEvents client. That covers both halves of the V2 engine - the callback based
+`ISubscriptionNotificationHandler` for the first four, the streaming `IStreamingSubscription`
+for the last two - and the AlarmCondition case also opens the audit event window, whose whole
+job is a streaming subscription that starts when it opens and ends when it closes.
+
+This is the part a connect test cannot reach: the handler is fixed when the subscription is
+created, an item is identified by name rather than by a mutable object, and the callback
+arrives on a publish worker. All three can be wired up wrongly and still connect perfectly,
+leaving nothing but an empty window. Writing it found two defects, both fixed:
+
+| Where | What was wrong |
+|-------|----------------|
+| `Workshop/HistoricalEvents/Client/EventListView.cs` | Every event the list was given threw `InvalidCastException` into a modal dialog: it unboxed a `DateTime` event field with `(DateTime)Variant.AsBoxedObject()`, and the 2.0 stack boxes one as `DateTimeUtc`. The same method renders the event *history*, so the sample's only two displays were both dead since the 2.0 migration |
+| `Workshop/AlarmCondition/Client/AuditEventForm.cs` | Closing the audit window threw `BadNotConnected` out of its own error handler. The main form closes that window when the session goes away, so the subscription can no longer be deleted on the server - and the handler for that failure asked the closed session for its telemetry context. The window keeps the telemetry context it was created with and logs the failure instead of showing it |
+
+`SampleControlsSubscribeTests` does the same for the UA Sample Client controls in
+`Controls.Net4`: it opens a managed session the way `SessionOpenDlg` does, creates a
+`SubscriptionHandle` on the V2 engine, shows the (modeless) `SubscriptionDlg`, adds
+`Server_ServerStatus_CurrentTime` through the `MonitoredItemConfigCtrl` grid, applies, and
+waits for a data change to land in the `DataChangeNotificationListCtrl` of the dialog.
+
+`ClientReconnectTests` is the only test which takes the server away. A connect proves that the
+sample talks to a `ManagedSession`; it does not prove that the managed session does the one
+thing it was brought in for. The test connects the Reference Client, subscribes through the V2
+engine and waits for a data change, then **stops the sample server**, waits for the session to
+report `Reconnecting`, **starts the server again on the same endpoint and with the same
+certificate**, and then asserts three things: the session came back `Connected` on its own, the
+connect control is still holding the *same* `ISession` instance, and data changes are arriving
+again. The middle one matters most - the samples no longer rebuild their browse tree around a
+reconnect because the managed session keeps its identity, and this is what would catch that
+assumption breaking. `SampleServerHost.StopAsync`/`StartAgainAsync` are what let a test do
+this; they keep the temporary PKI, so the client sees its server come back rather than a
+different one on the same port.
+
+> The server has to be stopped and started off the message loop (`Task.Run`). It counts its
+> shutdown down and closes the channels the client is still on, and doing that on the thread
+> which also pumps the client's callbacks deadlocks the two.
+
+`SampleClientFormTests` covers the one client the loop above cannot: the **UA Sample Client**
+has no shared connect control and opens its session through the modal `SessionOpenDlg`, so it
+is a declared gap in `SampleClientFactories`. Its own fixture builds `SampleClientForm`, picks
+an endpoint, calls the form's `ConnectAsync` and lets the watchdog click OK on the session
+dialog, then asserts the sample opened a `ManagedSession` running the V2 subscription engine
+and filled its browse tree.
+
+`GdsClientTests` covers the other declared gap, the **Global Discovery Client**. It hosts no
+connect control either, and it is the only sample client which needs two servers: the global
+discovery server it registers with, and the server whose certificates it manages. The fixture
+starts the console GDS as the process it is and the Reference server in process, then composes
+the sample the way `Program.cs` does - `AddGlobalDiscoveryClient()` into a `ServiceCollection`
+and `ActivatorUtilities.CreateInstance<MainForm>` out of it, so the wiring under test is the
+sample's own and not a second copy of it written in the test - and drives the two clients the
+form was given the way its own `SelectGdsDialog` and `SelectServerDialog` do: set the
+credentials, then connect. It asserts
+that both are `ManagedSession`s running the V2 subscription engine, registers the client with
+the directory and reads its own registration back before unregistering it again, and finally
+waits for the **server status panel to fill itself**. That last one is the assertion the
+migration is about: the status used to arrive through `ServerPushConfigurationClient.ServerStatusChanged`,
+which the SDK declares but never raises ([UA-.NETStandard#4346](https://github.com/OPCFoundation/UA-.NETStandard/issues/4346)),
+so the panel sat at its `---` placeholders for the whole session; it now monitors
+`Server_ServerStatus` through the V2 engine.
+
+> The GDS client manages servers it has no trust relationship with yet, so it shows the
+> certificate of every server it meets and asks the user to accept it. Its own `AcceptError`
+> hook *replaces* the `AutoAcceptUntrustedCertificates` of the test PKI - the callback wins
+> over the flag - so the test answers the dialog with `watchdog.Accept<UntrustedCertificateDialog>`
+> rather than suppressing it. Rejecting it is worth knowing about: a `ManagedSession` whose
+> *initial* connect fails goes to `Reconnecting`, and its reconnect handler has no inner
+> session to reconnect, so it reports success and the session comes back `Connected` with
+> nothing behind it. Every call then fails with `BadNotConnected`, which reads like a
+> different defect entirely — reported as
+> [UA-.NETStandard#4347](https://github.com/OPCFoundation/UA-.NETStandard/issues/4347).
 
 The **dialog watchdog** is what makes this safe: the sample clients report errors through a
 modal `ExceptionDlg`, which in an unattended run would wait forever for a click. A timer on
 the UI thread closes any modal form, keeps its text, and the harness fails the test with it.
-`WatchdogTurnsAModalDialogIntoAFailure` proves the watchdog itself works.
+`WatchdogTurnsAModalDialogIntoAFailure` proves the watchdog itself works. A dialog a sample
+opens *on purpose* is registered with `watchdog.Accept<TDialog>(buttonName)` and answered by
+clicking that button instead - everything else stays a failure, so this cannot quietly swallow
+the next complaint.
 
 The fixture is `[Category("RequiresDesktop")]` because it needs a window station. CI runs it:
 the `Test Samples` job is on a Windows agent and filters nothing out. The category is there so
 the suite can still be run where no window station exists - `--filter "TestCategory!=RequiresDesktop"`.
 
-All 17 cases pass. Two samples did not, and both were fixed rather than parked.
+All 26 cases pass. Two samples did not, and both were fixed rather than parked.
 
 The **AlarmCondition client** connected and then filled a modal dialog with a
 `NullReferenceException` followed by `An item with the same key has already been added.
@@ -429,6 +539,45 @@ The same unguarded continuation point check existed three times in
 `HistoryReadProcessed` and `HistoryReadAtTime` - and carried the same guard until the migration
 onto the SDK's native historian interfaces removed those methods altogether: continuation
 points are owned by the SDK's historian dispatcher now.
+
+### What the AlarmCondition client actually waits for
+
+`ClientConnectsToItsSampleServer(AlarmCondition)` timed out on a hosted agent while the same
+commit passed on branch builds, so the case was measured rather than argued about. The
+AlarmCondition client was the slowest of the thirteen at 9.6 seconds against a 75 second
+budget, and the budget was not the problem: pinned to two cores it was unchanged, and pinned
+to a *single* core against twenty CPU hogs it still finished in 14 seconds. The path is not
+CPU bound, it waits.
+
+Most of what it waited for was its own disconnect. Closing a session which still carried a
+subscription waited for the publish pipeline to run dry, and that wait was a flat five
+seconds - the same with an empty subscription as with the sample's event subscription and its
+condition refresh backlog, and unchanged by turning publishing off. Deleting the subscription
+before closing took the same teardown to 20 ms.
+
+**That wait is gone.** Moving the control to `ManagedSession` and the V2 subscription engine
+removed it as a side effect: the disconnect of a client holding one subscription now measures
+70-110 ms without any change to the teardown order. The finding is recorded here because the
+five seconds are the reason this case sat closest to the timeout for so long, and because the
+shape is worth recognising - a teardown which costs the same whether the subscription is busy
+or empty is a pipeline draining, not a backlog being processed, and no amount of looking at
+the server will show it.
+
+What is left is the client's own startup, which was cheap by comparison but wasteful.
+`ConstructSelectClausesAsync` browses the type model for each of the five event types the form
+asks for, and built a fresh table of visited nodes per type - so the supertype chain every
+condition type shares, and the subtree hanging off each link of it, was walked three and four
+times over. One table for the whole call takes it from 576 browse round trips to 344, for the
+same 141 select clauses. On loopback that is worth a quarter of a second; it is worth
+proportionally more on an agent where a round trip is not free.
+
+Two things remain that no measurement here can rule out, and both are now reported rather
+than guessed at. The sample configurations allow **ten minutes** for a single service call,
+which is longer than the whole test may run, so one request that never came back used to
+surface as a bare "did not finish within 75 seconds"; tier 2 caps it at 30 seconds, far above
+the few hundred milliseconds the slowest call actually needs, so a stuck call is reported as
+itself. And the harness timeout now names the step the client was in and how long it had been
+there, because "the clock ran out" reads the same for every way a sample can hang.
 
 ## Status / roadmap
 

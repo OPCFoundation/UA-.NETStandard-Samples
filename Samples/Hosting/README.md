@@ -135,3 +135,12 @@ The main form is created by the container, either by type
 (`ActivatorUtilities.CreateInstance<TMainForm>`) or through a factory - `ServerForm.Create`
 for the server samples, whose shared form takes the running `StandardServer` and the loaded
 configuration.
+
+Because the form is built by the container, a sample which needs a client of the stack lets the
+stack register it rather than constructing it. The Global Discovery Client is the one that does:
+`AddGlobalDiscoveryClient()` registers an `ISessionFactory` and then calls the library's own
+`AddOpcUa().AddGdsClient().AddLocalDiscoveryServerClient()`, and `MainForm` takes the
+`GlobalDiscoveryServerClient`, the `ServerPushConfigurationClient` and the
+`LocalDiscoveryServerClient` as constructor parameters. Which session those clients open is then
+one registration rather than three `new` expressions in a form constructor - and the container,
+not the form, owns their lifetime.

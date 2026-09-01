@@ -32,6 +32,7 @@ namespace Opc.Ua.Samples.Tests
     {
         private readonly List<string> m_captured = [];
         private readonly List<string> m_duringTeardown = [];
+        private readonly Dictionary<Type, string> m_accepted = [];
         private readonly Timer m_timer;
         private bool m_disposed;
 
@@ -48,6 +49,24 @@ namespace Opc.Ua.Samples.Tests
         /// What the dialogs said, in the order they appeared.
         /// </summary>
         public IReadOnlyList<string> Captured => m_captured;
+
+        /// <summary>
+        /// Clicks a button of a dialog the sample opens on purpose, instead of cancelling it
+        /// and reporting it as a complaint.
+        /// </summary>
+        /// <remarks>
+        /// Not every modal dialog of a sample is an error. The UA Sample Client opens its
+        /// session through a modal dialog, and a test which drives that sample has to answer
+        /// it the way a user would - otherwise the only two outcomes are a cancelled connect
+        /// or a hang. Registering the dialog here keeps everything else the sample opens a
+        /// failure, so this cannot silently swallow the next complaint.
+        /// </remarks>
+        /// <typeparam name="TDialog">The dialog to answer.</typeparam>
+        /// <param name="buttonName">The designer name of the button to click.</param>
+        public void Accept<TDialog>(string buttonName) where TDialog : Form
+        {
+            m_accepted[typeof(TDialog)] = buttonName;
+        }
 
         /// <summary>
         /// Starts watching.
@@ -135,6 +154,12 @@ namespace Opc.Ua.Samples.Tests
                 .Where(form => form.Modal && BelongsToThisThread(form))
                 .ToArray())
             {
+                if (m_accepted.TryGetValue(form.GetType(), out string buttonName))
+                {
+                    ClickAccepted(form, buttonName);
+                    continue;
+                }
+
                 m_captured.Add(Describe(form));
 
                 try
@@ -151,6 +176,60 @@ namespace Opc.Ua.Samples.Tests
                     // nor one whose window is already gone
                 }
             }
+        }
+
+        /// <summary>
+        /// Clicks the button of a dialog the test registered with <see cref="Accept{TDialog}"/>.
+        /// </summary>
+        /// <remarks>
+        /// The button of a dialog which is already working on the previous click is disabled,
+        /// and clicking it again would start the operation twice. Skipping a disabled button
+        /// is what lets the watchdog keep ticking while the dialog does its work.
+        /// </remarks>
+        private void ClickAccepted(Form form, string buttonName)
+        {
+            try
+            {
+                if (FindButton(form, buttonName) is not Button button)
+                {
+                    m_captured.Add($"{Describe(form)} <no button '{buttonName}' to click>");
+                    form.DialogResult = DialogResult.Cancel;
+                    form.Close();
+                    return;
+                }
+
+                if (button.Enabled)
+                {
+                    button.PerformClick();
+                }
+            }
+            catch (Exception e) when (e is InvalidOperationException or COMException or ObjectDisposedException)
+            {
+                // a dialog which closed itself between the scan and the click is not a failure
+            }
+        }
+
+        /// <summary>
+        /// Finds a button of a dialog by its designer name.
+        /// </summary>
+        private static Control FindButton(Control parent, string name)
+        {
+            foreach (Control child in parent.Controls)
+            {
+                if (child is Button && string.Equals(child.Name, name, StringComparison.Ordinal))
+                {
+                    return child;
+                }
+
+                Control found = FindButton(child, name);
+
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

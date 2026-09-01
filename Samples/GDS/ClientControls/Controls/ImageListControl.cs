@@ -154,11 +154,6 @@ namespace Opc.Ua.Gds.Client.Controls
                 if (typeInfo.BuiltInType == BuiltInType.Variant)
                 {
                     typeInfo = ((Variant)value).TypeInfo;
-
-                    if (typeInfo.IsUnknown)
-                    {
-                        typeInfo = TypeInfo.Construct(((Variant)value).AsBoxedObject());
-                    }
                 }
 
                 switch (typeInfo.BuiltInType)

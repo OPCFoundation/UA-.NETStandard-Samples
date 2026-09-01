@@ -26,17 +26,4 @@
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="WriteValueDlg.Designer.cs" />
-    <Compile Remove="WriteValueDlg.cs" />
-    <Compile Remove="SubscribeDataDlg.Designer.cs" />
-    <Compile Remove="SubscribeDataDlg.cs" />
-    <Compile Remove="CallMethodDlg.Designer.cs" />
-    <Compile Remove="CallMethodDlg.cs" />
-  </ItemGroup>
-  <ItemGroup Label="EmbeddedResource items now included by globbing that were not in the original project file">
-    <EmbeddedResource Remove="WriteValueDlg.resx" />
-    <EmbeddedResource Remove="SubscribeDataDlg.resx" />
-    <EmbeddedResource Remove="CallMethodDlg.resx" />
-  </ItemGroup>
 </Project>

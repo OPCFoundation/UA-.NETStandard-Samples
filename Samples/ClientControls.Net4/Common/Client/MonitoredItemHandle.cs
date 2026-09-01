@@ -68,6 +68,27 @@ namespace Opc.Ua.Client.Controls
         public string Name { get; }
 
         /// <summary>
+        /// The name a control displays for the item. Defaults to <see cref="Name"/>.
+        /// </summary>
+        /// <remarks>
+        /// The V2 engine identifies an item by its unique name and its options carry no
+        /// display name, so the friendly name the dialogs show lives on the handle.
+        /// </remarks>
+        public string DisplayName
+        {
+            get { return m_displayName ?? Name; }
+            set { m_displayName = value; }
+        }
+
+        /// <summary>
+        /// The node class of the node the item monitors, which the dialogs use to decide
+        /// between the data change and the event surfaces.
+        /// </summary>
+        public NodeClass NodeClass { get; set; } = NodeClass.Variable;
+
+        private string m_displayName;
+
+        /// <summary>
         /// The settings of the item. Reconfiguring the monitor is what modifies the item.
         /// </summary>
         public OptionsMonitor<MonitoredItemOptions> Options { get; }

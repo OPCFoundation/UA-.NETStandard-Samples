@@ -53,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private DataListCtrl m_DataListCtrl;
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace Opc.Ua.Sample.Controls
         /// Sets the nodes in the control.
         /// </summary>
         public async Task InitializeAsync(
-            Session session,
+            ISession session,
             IList<ReadValueId> valueIds,
             IList<DataValue> values,
             IList<ServiceResult> results,
@@ -139,7 +139,7 @@ namespace Opc.Ua.Sample.Controls
         /// Sets the nodes in the control.
         /// </summary>
         public async Task InitializeAsync(
-            Session session,
+            ISession session,
             IList<WriteValue> values,
             IList<ServiceResult> results,
             CancellationToken ct = default)

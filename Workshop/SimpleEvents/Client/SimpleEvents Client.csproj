@@ -21,11 +21,24 @@
     <Content Include="SimpleEventsClient.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <AdditionalFiles Include="..\Server\ModelDesign.xml" />
+    <AdditionalFiles Include="..\Server\ModelDesign.csv" />
   </ItemGroup>
+  <PropertyGroup>
+    <!-- The client consumes the same information model as the server, but has
+         no use for the fluent server accessors (they reference Opc.Ua.Server.Fluent). -->
+    <ModelSourceGeneratorOmitFluentApi>true</ModelSourceGeneratorOmitFluentApi>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
+
+    <PackageReference
+      Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
+      Version="$(OpcUaNetStandardVersion)"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />

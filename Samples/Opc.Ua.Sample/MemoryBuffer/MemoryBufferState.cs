@@ -332,27 +332,23 @@ namespace MemoryBuffer
                 {
                     case BuiltInType.UInt32:
                     {
-                        uint? valueToWrite = value.AsBoxedObject() as uint?;
-
-                        if (valueToWrite == null)
+                        if (!value.TryGetValue(out uint valueToWrite))
                         {
                             return StatusCodes.BadTypeMismatch;
                         }
 
-                        bytes = BitConverter.GetBytes(valueToWrite.Value);
+                        bytes = BitConverter.GetBytes(valueToWrite);
                         break;
                     }
 
                     case BuiltInType.Double:
                     {
-                        double? valueToWrite = value.AsBoxedObject() as double?;
-
-                        if (valueToWrite == null)
+                        if (!value.TryGetValue(out double valueToWrite))
                         {
                             return StatusCodes.BadTypeMismatch;
                         }
 
-                        bytes = BitConverter.GetBytes(valueToWrite.Value);
+                        bytes = BitConverter.GetBytes(valueToWrite);
                         break;
                     }
 

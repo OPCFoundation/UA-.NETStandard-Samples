@@ -36,6 +36,9 @@ using Opc.Ua.Client;
 
 namespace Quickstarts
 {
+    // the V2 subscription engine reuses a name the classic engine has in Opc.Ua.Client.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
     /// <summary>
     /// Defines a event filter for a subscription.
     /// </summary>
@@ -65,11 +68,16 @@ namespace Quickstarts
         #pragma warning restore CA1051
 
         /// <summary>
-        /// Creates the monitored item based on the current definition.
+        /// Creates the settings of a monitored item based on the current definition.
         /// </summary>
         /// <param name="session">The session.</param>
-        /// <returns>The monitored item.</returns>
-        public MonitoredItem CreateMonitoredItem(ISession session, ITelemetryContext telemetry)
+        /// <returns>The settings the item is created with.</returns>
+        /// <remarks>
+        /// The V2 subscription engine takes the settings of an item as options instead of a
+        /// mutable monitored item, and the event filter has to be part of the options the item
+        /// is created with: it cannot be pushed in afterwards.
+        /// </remarks>
+        public MonitoredItemOptions CreateMonitoredItemOptions(ISession session)
         {
             // choose the server object by default.
             if (AreaId.IsNull)
@@ -77,26 +85,15 @@ namespace Quickstarts
                 AreaId = ObjectIds.Server;
             }
 
-            // create the item with the filter.
-            MonitoredItem monitoredItem = new MonitoredItem(telemetry);
-
-            monitoredItem.DisplayName = null;
-            monitoredItem.StartNodeId = AreaId;
-            monitoredItem.RelativePath = null;
-            monitoredItem.NodeClass = NodeClass.Object;
-            monitoredItem.AttributeId = Attributes.EventNotifier;
-            monitoredItem.IndexRange = null;
-            monitoredItem.Encoding = QualifiedName.Null;
-            monitoredItem.MonitoringMode = MonitoringMode.Reporting;
-            monitoredItem.SamplingInterval = 0;
-            monitoredItem.QueueSize = UInt32.MaxValue;
-            monitoredItem.DiscardOldest = true;
-            monitoredItem.Filter = ConstructFilter(session);
-
-            // save the definition as the handle.
-            monitoredItem.Handle = this;
-
-            return monitoredItem;
+            return new MonitoredItemOptions {
+                StartNodeId = AreaId,
+                AttributeId = Attributes.EventNotifier,
+                MonitoringMode = MonitoringMode.Reporting,
+                SamplingInterval = TimeSpan.Zero,
+                QueueSize = UInt32.MaxValue,
+                DiscardOldest = true,
+                Filter = ConstructFilter(session),
+            };
         }
 
         /// <summary>
@@ -114,7 +111,7 @@ namespace Quickstarts
         /// This method browses the type model and
         /// </remarks>
         public async Task<List<SimpleAttributeOperand>> ConstructSelectClausesAsync(
-            Session session,
+            ISession session,
             CancellationToken ct,
             params NodeId[] eventTypeIds)
         {
@@ -234,7 +231,7 @@ namespace Quickstarts
         /// <param name="eventTypeId">The event type id.</param>
         /// <param name="eventFields">The event fields.</param>
         /// <param name="ct">A token to cancel the operation with</param>
-        private async Task CollectFieldsAsync(Session session, NodeId eventTypeId, List<SimpleAttributeOperand> eventFields, CancellationToken ct = default)
+        private async Task CollectFieldsAsync(ISession session, NodeId eventTypeId, List<SimpleAttributeOperand> eventFields, CancellationToken ct = default)
         {
             // get the supertypes.
             List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
@@ -267,7 +264,7 @@ namespace Quickstarts
         /// <param name="foundNodes">The table of found nodes.</param>
         /// <param name="ct">A token to cancel the operation with</param>
         private async Task CollectFieldsAsync(
-            Session session,
+            ISession session,
             NodeId nodeId,
             List<QualifiedName> parentPath,
             List<SimpleAttributeOperand> eventFields,

@@ -328,8 +328,8 @@ namespace Opc.Ua.Client.Controls
 
             if (outputArguments != null && outputArguments.Count == 1)
             {
-                ExtensionObject[] extensions = outputArguments[0].AsBoxedObject() as ExtensionObject[];
-                ApplicationDescription[] descriptions = ExtensionObject.ToArray<ApplicationDescription>(extensions).ToArray();
+                outputArguments[0].TryGetValue(out ArrayOf<ExtensionObject> extensions);
+                ApplicationDescription[] descriptions = ExtensionObject.ToArray<ApplicationDescription>(extensions.ToArray()).ToArray();
                 await UpdateResultsAsync(descriptions, ct);
             }
         }

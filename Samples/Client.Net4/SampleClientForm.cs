@@ -35,6 +35,16 @@ using Opc.Ua.Configuration;
 
 namespace Opc.Ua.Sample
 {
+    /// <summary>
+    /// The main form of the UA Sample Client.
+    /// </summary>
+    /// <remarks>
+    /// Everything about the connection lives in <see cref="ClientForm"/>: it opens a
+    /// <c>ManagedSession</c> through the session dialog of the sample controls, so the reconnect
+    /// is driven by the connection state machine of that session, and its subscription dialogs
+    /// run on the V2 subscription engine. This form only adds what is specific to the sample -
+    /// the certificate prompt for a configuration which does not accept untrusted peers.
+    /// </remarks>
     public partial class SampleClientForm : ClientForm
     {
         public SampleClientForm()

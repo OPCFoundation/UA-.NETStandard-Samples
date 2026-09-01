@@ -24,7 +24,14 @@
     <Content Include="HistoricalEventsClient.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <AdditionalFiles Include="..\Server\Model\ModelDesign.xml" />
+    <AdditionalFiles Include="..\Server\Model\ModelDesign.csv" />
   </ItemGroup>
+  <PropertyGroup>
+    <!-- The client consumes the same information model as the server, but has no use for
+         the fluent server accessors (they reference Opc.Ua.Server.Fluent). -->
+    <ModelSourceGeneratorOmitFluentApi>true</ModelSourceGeneratorOmitFluentApi>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
     <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
@@ -34,14 +41,15 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
+
+    <PackageReference
+      Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
+      Version="$(OpcUaNetStandardVersion)"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="SelectEventTypeDlg.Designer.cs" />
-    <Compile Remove="SelectEventTypeDlg.cs" />
     <Compile Remove="FilterDefinitionField.cs" />
     <Compile Remove="FilterDefinition.cs" />
-  </ItemGroup>
-  <ItemGroup Label="EmbeddedResource items now included by globbing that were not in the original project file">
-    <EmbeddedResource Remove="SelectEventTypeDlg.resx" />
   </ItemGroup>
 </Project>

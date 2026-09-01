@@ -413,7 +413,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 if (!value.IsNull)
                 {
                     // translate any localized text.
-                    if (value.AsBoxedObject() is LocalizedText text && !text.IsNullOrEmpty)
+                    if (value.TryGetValue(out LocalizedText text) && !text.IsNullOrEmpty)
                     {
                         value = Variant.From(Server.ResourceManager.Translate(request.FilterContext.PreferredLocales, text));
                     }

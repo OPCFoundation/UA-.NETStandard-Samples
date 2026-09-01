@@ -79,7 +79,7 @@ namespace Quickstarts.HistoricalAccess.Client
             Processed
         }
 
-        private Session m_session;
+        private ISession m_session;
         private ITelemetryContext m_telemetry;
         private NodeId m_nodeId;
         private HistoryReadResult m_result;
@@ -88,7 +88,7 @@ namespace Quickstarts.HistoricalAccess.Client
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(Session session, NodeId nodeId, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
         {
             m_session = session;
             m_telemetry = session?.MessageContext?.Telemetry;
@@ -207,8 +207,8 @@ namespace Quickstarts.HistoricalAccess.Client
             var results = response.Results.ToList();
             var diagnosticInfos = response.DiagnosticInfos.ToList();
 
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
+            ClientBase.ValidateResponse(results, nodesToRead);
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             m_result = null;
 
@@ -241,8 +241,8 @@ namespace Quickstarts.HistoricalAccess.Client
             var results = response.Results.ToList();
             var diagnosticInfos = response.DiagnosticInfos.ToList();
 
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
+            ClientBase.ValidateResponse(results, nodesToRead);
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             if (StatusCode.IsBad(results[0].StatusCode))
             {
@@ -273,8 +273,8 @@ namespace Quickstarts.HistoricalAccess.Client
                 results = response.Results.ToList();
                 diagnosticInfos = response.DiagnosticInfos.ToList();
 
-                Session.ValidateResponse(results, nodesToRead);
-                Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
+                ClientBase.ValidateResponse(results, nodesToRead);
+                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
             }
 
             return startTime;
@@ -326,8 +326,8 @@ namespace Quickstarts.HistoricalAccess.Client
             var results = response.Results.ToList();
             var diagnosticInfos = response.DiagnosticInfos.ToList();
 
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
+            ClientBase.ValidateResponse(results, nodesToRead);
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             if (StatusCode.IsBad(results[0].StatusCode))
             {
@@ -388,8 +388,8 @@ namespace Quickstarts.HistoricalAccess.Client
             var results = response.Results.ToList();
             var diagnosticInfos = response.DiagnosticInfos.ToList();
 
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
+            ClientBase.ValidateResponse(results, nodesToRead);
+            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             if (StatusCode.IsBad(results[0].StatusCode))
             {

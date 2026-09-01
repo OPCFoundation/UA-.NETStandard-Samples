@@ -82,7 +82,7 @@ namespace Opc.Ua.Samples.Tests
 
             DataValue before = await SessionOps.ReadValueAsync(Session, value, ct).ConfigureAwait(false);
 
-            int written = Convert.ToInt32(before.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture) + 4711;
+            int written = (before.WrappedValue.TryGetValue(out int previous) ? previous : 0) + 4711;
 
             StatusCode result = await SessionOps
                 .WriteValueAsync(Session, value, Variant.From(written), ct)
@@ -100,7 +100,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                Convert.ToInt32(after.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture),
+                after.WrappedValue.TryGetValue(out int current) ? current : 0,
                 Is.EqualTo(written),
                 "A static variable has to keep the value it was written.");
         }
@@ -180,18 +180,18 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.Multiple(() => {
                 Assert.That(
-                    onArchived.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(true),
+                    onArchived.WrappedValue.TryGetValue(out bool archivedFlag) && archivedFlag,
+                    Is.True,
                     "The node manager turns archiving on for the simulated integer.");
 
                 Assert.That(
-                    onOther.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(false),
+                    onOther.WrappedValue.TryGetValue(out bool otherFlag) ? otherFlag : (bool?)null,
+                    Is.False,
                     "No other simulated variable is archived.");
 
                 Assert.That(
-                    onStatic.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(false),
+                    onStatic.WrappedValue.TryGetValue(out bool staticFlag) ? staticFlag : (bool?)null,
+                    Is.False,
                     "The static variables are not archived.");
             });
 
@@ -200,7 +200,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                Convert.ToByte(accessLevel.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture)
+                (accessLevel.WrappedValue.TryGetValue(out byte flags) ? flags : (byte)0)
                     & AccessLevels.HistoryRead,
                 Is.Not.Zero,
                 "The archived variable has to say that its history can be read.");

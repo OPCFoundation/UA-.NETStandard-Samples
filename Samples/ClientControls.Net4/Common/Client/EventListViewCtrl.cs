@@ -231,14 +231,14 @@ namespace Opc.Ua.Client.Controls
 
             foreach (List<Variant> e in events)
             {
-                byte[] eventId = null;
+                ByteString eventId = default;
 
                 if (e.Count > index)
                 {
-                    eventId = e[index].AsBoxedObject() as byte[];
+                    e[index].TryGetValue(out eventId);
                 }
 
-                eventIds.Add(eventId.ToByteString());
+                eventIds.Add(eventId);
             }
 
             details.EventIds = eventIds;

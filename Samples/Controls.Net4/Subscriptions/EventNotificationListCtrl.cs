@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -52,8 +53,17 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Fields
         private int m_maxEventCount = 20;
-        private Subscription m_subscription;
-        private MonitoredItem m_monitoredItem;
+        private SubscriptionHandle m_subscription;
+        private MonitoredItemHandle m_monitoredItem;
+
+        /// <summary>
+        /// An event displayed in the control.
+        /// </summary>
+        private sealed class ItemEvent
+        {
+            public MonitoredItemHandle MonitoredItem;
+            public EventNotification Notification;
+        }
 
         /// <summary>
 		/// The columns to display in the control.
@@ -90,87 +100,46 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Sets the nodes in the control.
+        /// Sets the subscription (and optionally the single item) displayed in the control.
         /// </summary>
-        public void Initialize(Subscription subscription, MonitoredItem monitoredItem)
+        /// <remarks>
+        /// The V2 engine keeps no notification cache, so the control starts empty and fills
+        /// itself from the notifications the owner forwards.
+        /// </remarks>
+        public void Initialize(SubscriptionHandle subscription, MonitoredItemHandle monitoredItem)
         {
-            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
-
             Clear();
 
-            // start receiving notifications from the new subscription.
             m_subscription = subscription;
             m_monitoredItem = monitoredItem;
-            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
             Telemetry = m_subscription?.Session?.MessageContext?.Telemetry;
-            #pragma warning restore CA1508
 
-            // get the events.
-            List<EventFieldList> events = new List<EventFieldList>();
-
-            foreach (NotificationMessage message in m_subscription.Notifications)
-            {
-                foreach (EventFieldList eventFields in message.GetEvents(true))
-                {
-                    if (m_monitoredItem != null)
-                    {
-                        if (m_monitoredItem.ClientHandle != eventFields.ClientHandle)
-                        {
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        if (m_subscription.FindItemByClientHandle(eventFields.ClientHandle) == null)
-                        {
-                            continue;
-                        }
-                    }
-
-                    events.Add(eventFields);
-
-                    if (events.Count >= MaxEventCount)
-                    {
-                        break;
-                    }
-                }
-
-                if (events.Count >= MaxEventCount)
-                {
-                    break;
-                }
-            }
-
-            UpdateEvents(events, 0);
             AdjustColumns();
         }
 
         /// <summary>
-        /// Processes a new notification.
+        /// Processes the events of a notification.
         /// </summary>
-        public void NotificationReceived(NotificationEventArgs e)
+        public void NotificationReceived(EventNotification[] notifications)
         {
             // get the events.
-            List<EventFieldList> events = new List<EventFieldList>();
+            List<ItemEvent> events = new List<ItemEvent>();
 
-            foreach (EventFieldList eventFields in e.NotificationMessage.GetEvents(true))
+            foreach (EventNotification notification in notifications)
             {
-                if (m_monitoredItem != null)
+                MonitoredItemHandle handle = m_subscription?.FindItem(notification.MonitoredItem);
+
+                if (handle == null)
                 {
-                    if (m_monitoredItem.ClientHandle != eventFields.ClientHandle)
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    if (m_subscription.FindItemByClientHandle(eventFields.ClientHandle) == null)
-                    {
-                        continue;
-                    }
+                    continue;
                 }
 
-                events.Add(eventFields);
+                if (m_monitoredItem != null && !Object.ReferenceEquals(handle, m_monitoredItem))
+                {
+                    continue;
+                }
+
+                events.Add(new ItemEvent { MonitoredItem = handle, Notification = notification });
 
                 if (events.Count >= MaxEventCount)
                 {
@@ -189,22 +158,14 @@ namespace Opc.Ua.Sample.Controls
             // fill in earlier events.
             foreach (ListViewItem listItem in ItemsLV.Items)
             {
-                EventFieldList eventFields = listItem.Tag as EventFieldList;
+                ItemEvent earlierEvent = listItem.Tag as ItemEvent;
 
-                if (eventFields == null)
+                if (earlierEvent == null)
                 {
                     continue;
                 }
 
-                if (m_monitoredItem != null)
-                {
-                    if (m_monitoredItem.ClientHandle != eventFields.ClientHandle)
-                    {
-                        continue;
-                    }
-                }
-
-                events.Add(eventFields);
+                events.Add(earlierEvent);
 
                 if (events.Count >= MaxEventCount)
                 {
@@ -217,85 +178,27 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Processes a new notification.
-        /// </summary>
-        public void NotificationReceived(MonitoredItemNotificationEventArgs e)
-        {
-            EventFieldList eventFields = e.NotificationValue as EventFieldList;
-
-            if (eventFields == null)
-            {
-                return;
-            }
-
-            if (m_monitoredItem != null)
-            {
-                if (m_monitoredItem.ClientHandle != eventFields.ClientHandle)
-                {
-                    return;
-                }
-            }
-
-            // get the events.
-            List<EventFieldList> events = new List<EventFieldList>();
-            events.Add(eventFields);
-
-            // fill in earlier events.
-            foreach (ListViewItem listItem in ItemsLV.Items)
-            {
-                eventFields = listItem.Tag as EventFieldList;
-
-                if (m_monitoredItem != null)
-                {
-                    if (m_monitoredItem.ClientHandle != eventFields.ClientHandle)
-                    {
-                        continue;
-                    }
-                }
-
-                if (eventFields != null)
-                {
-                    events.Add(eventFields);
-                }
-
-                if (events.Count >= MaxEventCount)
-                {
-                    break;
-                }
-            }
-
-            UpdateEvents(events, 1);
-            AdjustColumns();
-        }
-
-        /// <summary>
         /// Processes a change to the subscription.
         /// </summary>
-        public void SubscriptionChanged(SubscriptionStateChangedEventArgs e)
+        public void SubscriptionChanged()
         {
-            if ((e.Status & SubscriptionChangeMask.ItemsDeleted) != 0)
+            // collect events for items that have been deleted.
+            List<ListViewItem> itemsToRemove = new List<ListViewItem>();
+
+            foreach (ListViewItem listItem in ItemsLV.Items)
             {
-                // collect events for items that have been deleted.
-                List<ListViewItem> itemsToRemove = new List<ListViewItem>();
+                ItemEvent itemEvent = listItem.Tag as ItemEvent;
 
-                foreach (ListViewItem listItem in ItemsLV.Items)
+                if (itemEvent != null && m_subscription != null && !m_subscription.Items.Contains(itemEvent.MonitoredItem))
                 {
-                    EventFieldList eventFields = listItem.Tag as EventFieldList;
-
-                    if (eventFields != null)
-                    {
-                        if (m_subscription.FindItemByClientHandle(eventFields.ClientHandle) == null)
-                        {
-                            itemsToRemove.Add(listItem);
-                        }
-                    }
+                    itemsToRemove.Add(listItem);
                 }
+            }
 
-                // remove events for items that have been deleted.
-                foreach (ListViewItem listItem in itemsToRemove)
-                {
-                    listItem.Remove();
-                }
+            // remove events for items that have been deleted.
+            foreach (ListViewItem listItem in itemsToRemove)
+            {
+                listItem.Remove();
             }
         }
         #endregion
@@ -318,7 +221,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates the events displayed in the control.
         /// </summary>
-        private void UpdateEvents(IList<EventFieldList> events, int offset)
+        private void UpdateEvents(IList<ItemEvent> events, int offset)
         {
             // save selected indexes.
             List<int> indexes = new List<int>(ItemsLV.SelectedIndices.Count);
@@ -331,9 +234,9 @@ namespace Opc.Ua.Sample.Controls
             // update items.
             BeginUpdate();
 
-            foreach (EventFieldList eventFields in events)
+            foreach (ItemEvent itemEvent in events)
             {
-                AddItem(eventFields);
+                AddItem(itemEvent);
             }
 
             EndUpdate();
@@ -353,38 +256,26 @@ namespace Opc.Ua.Sample.Controls
         /// <see cref="BaseListCtrl.UpdateItemAsync" />
         protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-            EventFieldList eventFields = item as EventFieldList;
+            ItemEvent itemEvent = item as ItemEvent;
 
-            if (eventFields == null)
+            if (itemEvent == null)
             {
                 await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 
-            MonitoredItem monitoredItem = m_subscription.FindItemByClientHandle(eventFields.ClientHandle);
+            MonitoredItemHandle monitoredItem = itemEvent.MonitoredItem;
+            EventNotification notification = itemEvent.Notification;
 
-            if (monitoredItem == null)
-            {
-                listItem.SubItems[0].Text = String.Format("[{0}]", eventFields.ClientHandle);
-                listItem.SubItems[1].Text = "(unknown)";
-                listItem.SubItems[2].Text = null;
-                listItem.SubItems[3].Text = null;
-                listItem.SubItems[4].Text = null;
-                listItem.SubItems[5].Text = null;
-
-                listItem.Tag = eventFields;
-                return;
-            }
-
-            // get the event fields.
-            NodeId eventType = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.EventType)) is NodeId eventTypeNodeId ? eventTypeNodeId : NodeId.Null;
-            string sourceName = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.SourceName)) as string;
-            DateTime? time = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.Time)) as DateTime?;
-            ushort? severity = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.Severity)) as ushort?;
-            LocalizedText message = monitoredItem.GetFieldValue(eventFields, new NodeId(ObjectTypes.BaseEventType), new QualifiedName(Opc.Ua.BrowseNames.Message)) is LocalizedText messageText ? messageText : LocalizedText.Null;
+            // get the event fields selected by the filter the item was created with.
+            NodeId eventType = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.EventType)).TryGetValue(out NodeId eventTypeId) ? eventTypeId : NodeId.Null;
+            string sourceName = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.SourceName)).TryGetValue(out string name) ? name : null;
+            DateTime? time = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Time)).TryGetValue(out DateTimeUtc eventTime) ? (DateTime)eventTime : null;
+            ushort? severity = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Severity)).TryGetValue(out ushort eventSeverity) ? eventSeverity : null;
+            LocalizedText message = SubscriptionHandle.GetEventFieldValue(monitoredItem, notification, new QualifiedName(Opc.Ua.BrowseNames.Message)).TryGetValue(out LocalizedText messageText) ? messageText : LocalizedText.Null;
 
             // fill in the columns.
-            listItem.SubItems[0].Text = String.Format("[{0}]", eventFields.ClientHandle);
+            listItem.SubItems[0].Text = String.Format("[{0}]", (monitoredItem.Item != null) ? monitoredItem.Item.ServerId : 0);
 
             INode typeNode = await m_subscription.Session.NodeCache.FindAsync(eventType, ct);
 
@@ -419,7 +310,7 @@ namespace Opc.Ua.Sample.Controls
                 listItem.SubItems[5].Text = String.Empty;
             }
 
-            listItem.Tag = eventFields;
+            listItem.Tag = item;
         }
         #endregion
 
@@ -428,15 +319,15 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                EventFieldList fieldList = SelectedTag as EventFieldList;
+                ItemEvent itemEvent = SelectedTag as ItemEvent;
 
-                if (fieldList == null)
+                if (itemEvent == null)
                 {
                     return;
                 }
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                new ComplexValueEditDlg().ShowDialog(fieldList, m_subscription.FindItemByClientHandle(fieldList.ClientHandle), Telemetry);
+                new ComplexValueEditDlg().ShowDialog(itemEvent.Notification.Fields.ToArray(), Telemetry);
                 #pragma warning restore CA2000
             }
             catch (Exception exception)

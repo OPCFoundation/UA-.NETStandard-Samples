@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private Browser m_browser;
         private ContentFilter m_filter;
 
@@ -79,7 +79,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public void Initialize(Session session, ContentFilter filter, ITelemetryContext telemetry)
+        public void Initialize(ISession session, ContentFilter filter, ITelemetryContext telemetry)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -421,7 +421,8 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                // get the current value.
+                // get the current value. the simple value editor works on a boxed CLR
+                // value and its runtime type, so the Variant is unwrapped for it.
                 object currentValue = literal.Value.AsBoxedObject();
 
                 if (currentValue == null)
