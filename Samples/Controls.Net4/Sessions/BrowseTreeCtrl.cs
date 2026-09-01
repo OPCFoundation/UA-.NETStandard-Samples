@@ -45,6 +45,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Opc.Ua.Sample.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the
+    // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
     public partial class BrowseTreeCtrl : Opc.Ua.Client.Controls.BaseTreeCtrl
     {
         #region Contructors
@@ -221,7 +225,7 @@ namespace Opc.Ua.Sample.Controls
                 reference.TypeDefinition = ExpandedNodeId.Null;
 
                 string text = GetTargetText(reference);
-                string icon = await GuiUtils.GetTargetIconAsync(m_browser.Session as Session, reference, ct);
+                string icon = await GuiUtils.GetTargetIconAsync(m_session, reference, ct);
 
                 TreeNode root = AddNode(null, reference, text, icon);
                 root.Nodes.Add(new TreeNode());
@@ -232,7 +236,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the root node for the control.
         /// </summary>
-        public Task SetRootAsync(Session session, NodeId rootId, ITelemetryContext telemetry, CancellationToken ct = default)
+        public Task SetRootAsync(ISession session, NodeId rootId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             return SetRootAsync(new Browser(session), rootId, session, telemetry, ct);
         }
@@ -240,7 +244,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the view for the control.
         /// </summary>
-        public Task SetViewAsync(Session session, BrowseViewType viewType, NodeId viewId, ITelemetryContext telemetry, CancellationToken ct = default)
+        public Task SetViewAsync(ISession session, BrowseViewType viewType, NodeId viewId, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             Clear();
 
@@ -389,7 +393,7 @@ namespace Opc.Ua.Sample.Controls
 
                         NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, m_session.NamespaceUris);
 
-                        INode node = await m_browser.Session.ReadNodeAsync(nodeId);
+                        INode node = await m_session.ReadNodeAsync(nodeId);
 
                         byte accessLevel = 0;
                         byte eventNotifier = 0;
@@ -487,14 +491,14 @@ namespace Opc.Ua.Sample.Controls
                             CallMI.Enabled = executable;
                         }
 
-                        if (SubscribeMI.Enabled)
+                        if (SubscribeMI.Enabled && m_SessionTreeCtrl != null)
                         {
                             while (SubscribeMI.DropDown.Items.Count > 1)
                             {
                                 SubscribeMI.DropDown.Items.RemoveAt(SubscribeMI.DropDown.Items.Count - 1);
                             }
 
-                            foreach (Subscription subscription in m_session.Subscriptions)
+                            foreach (SubscriptionHandle subscription in m_SessionTreeCtrl.GetSubscriptions(m_session))
                             {
                                 if (subscription.Created)
                                 {
@@ -535,7 +539,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (reference != null)
                     {
-                        await m_AttributesCtrl.InitializeAsync(m_browser.Session as Session, reference.NodeId, Telemetry);
+                        await m_AttributesCtrl.InitializeAsync(m_session, reference.NodeId, Telemetry);
                     }
                     else
                     {
@@ -602,28 +606,31 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a item to a subscription.
         /// </summary>
-        private async Task SubscribeAsync(Subscription subscription, ReferenceDescription reference, CancellationToken ct = default)
+        private async Task SubscribeAsync(SubscriptionHandle subscription, ReferenceDescription reference, CancellationToken ct = default)
         {
-            MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem);
+            string displayName = await subscription.Session.NodeCache.GetDisplayTextAsync(reference, ct);
+            NodeClass nodeClass = (NodeClass)reference.NodeClass;
 
-            monitoredItem.DisplayName = await subscription.Session.NodeCache.GetDisplayTextAsync(reference, ct);
-            monitoredItem.StartNodeId = (NodeId)reference.NodeId;
-            monitoredItem.NodeClass = (NodeClass)reference.NodeClass;
-            monitoredItem.AttributeId = Attributes.Value;
-            monitoredItem.SamplingInterval = 0;
-            monitoredItem.QueueSize = 1;
+            MonitoredItemOptions options = new MonitoredItemOptions {
+                StartNodeId = (NodeId)reference.NodeId,
+                AttributeId = Attributes.Value,
+                SamplingInterval = TimeSpan.Zero,
+                QueueSize = 1,
+            };
 
-            // add condition fields to any event filter.
-            EventFilter filter = monitoredItem.Filter as EventFilter;
-
-            if (filter != null)
+            // subscribe object and view nodes to their events.
+            if (nodeClass == NodeClass.Object || nodeClass == NodeClass.View)
             {
-                monitoredItem.AttributeId = Attributes.EventNotifier;
-                monitoredItem.QueueSize = 0;
+                options = options with {
+                    AttributeId = Attributes.EventNotifier,
+                    QueueSize = 0,
+                    Filter = SubscriptionHandle.CreateDefaultEventFilter(),
+                };
             }
 
-            subscription.AddItem(monitoredItem);
-            await subscription.ApplyChangesAsync(ct);
+            // adding the item is the request, the engine creates it on its own worker.
+            subscription.AddItem(displayName, nodeClass, options);
+            await subscription.WaitForPendingChangesAsync(TimeSpan.FromSeconds(10), ct);
         }
 
         /// <summary>
@@ -763,7 +770,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 string text = GetTargetText(reference);
-                string icon = await GuiUtils.GetTargetIconAsync(m_browser.Session as Session, reference, ct);
+                string icon = await GuiUtils.GetTargetIconAsync(m_session, reference, ct);
 
                 TreeNode container = parent;
 
@@ -1007,7 +1014,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 using var dialog = new NodeAttributesDlg();
-                await dialog.ShowDialogAsync(m_browser.Session as Session, reference.NodeId, Telemetry);
+                await dialog.ShowDialogAsync(m_session, reference.NodeId, Telemetry);
             }
             catch (Exception exception)
             {
@@ -1023,8 +1030,6 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return;
                 }
-
-                Session session = m_browser.Session as Session;
 
                 ReferenceDescription reference = NodesTV.SelectedNode.Tag as ReferenceDescription;
 
@@ -1051,7 +1056,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_MethodCalled != null)
                 {
-                    MethodCalledEventArgs args = new MethodCalledEventArgs(m_browser.Session as Session, objectId, methodId);
+                    MethodCalledEventArgs args = new MethodCalledEventArgs(m_session, objectId, methodId);
                     m_MethodCalled(this, args);
 
                     if (args.Handled)
@@ -1061,7 +1066,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 using var dialog = new CallMethodDlg();
-                await dialog.ShowAsync(m_browser.Session as Session, objectId, methodId, Telemetry);
+                await dialog.ShowAsync(m_session, objectId, methodId, Telemetry);
             }
             catch (Exception exception)
             {
@@ -1085,8 +1090,6 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Session session = m_browser.Session as Session;
-
                 // build list of nodes to read.
                 List<ReadValueId> valueIds = new List<ReadValueId>();
 
@@ -1101,7 +1104,7 @@ namespace Opc.Ua.Sample.Controls
 
                 // show form.
                 using var dialog = new ReadDlg();
-                await dialog.ShowAsync(session, valueIds, Telemetry);
+                await dialog.ShowAsync(m_session, valueIds, Telemetry);
             }
             catch (Exception exception)
             {
@@ -1125,9 +1128,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Session session = m_browser.Session as Session;
-
-                // build list of nodes to read.
+                // build list of nodes to write.
                 List<WriteValue> values = new List<WriteValue>();
 
                 WriteValue value = new WriteValue();
@@ -1141,7 +1142,7 @@ namespace Opc.Ua.Sample.Controls
 
                 // show form.
                 using var dialog = new WriteDlg();
-                await dialog.ShowAsync(session, values, Telemetry);
+                await dialog.ShowAsync(m_session, values, Telemetry);
             }
             catch (Exception exception)
             {
@@ -1167,7 +1168,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (m_SessionTreeCtrl != null)
                 {
-                    Subscription subscription = await m_SessionTreeCtrl.CreateSubscriptionAsync(m_browser.Session as Session);
+                    SubscriptionHandle subscription = await m_SessionTreeCtrl.CreateSubscriptionAsync(m_session);
 
                     if (subscription != null)
                     {
@@ -1197,7 +1198,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                Subscription subscription = ((ToolStripItem)sender).Tag as Subscription;
+                SubscriptionHandle subscription = ((ToolStripItem)sender).Tag as SubscriptionHandle;
 
                 if (subscription != null)
                 {
@@ -1227,7 +1228,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 using var dialog = new ReadHistoryDlg();
-                await dialog.ShowDialogAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
+                await dialog.ShowDialogAsync(m_session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -1252,7 +1253,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 using var dialog = new BrowseDlg();
-                await dialog.ShowAsync(m_browser.Session as Session, (NodeId)reference.NodeId);
+                await dialog.ShowAsync(m_session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -1368,7 +1369,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a new instance.
         /// </summary>
-        internal MethodCalledEventArgs(Session session, NodeId objectId, NodeId methodId)
+        internal MethodCalledEventArgs(ISession session, NodeId objectId, NodeId methodId)
         {
             m_session = session;
             m_objectId = objectId;
@@ -1380,7 +1381,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// The session
         /// </summary>
-        public Session Session
+        public ISession Session
         {
             get { return m_session; }
         }
@@ -1412,7 +1413,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_objectId;
         private NodeId m_methodId;
         private bool m_handled;

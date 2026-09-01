@@ -82,19 +82,25 @@ namespace Opc.Ua.Client.Controls
 
             if (nodeToWrite.Value.StatusCode != StatusCodes.Good)
             {
-                StatusCodeTB.Text = (string)Variant.From(nodeToWrite.Value.StatusCode).ConvertTo(BuiltInType.String).AsBoxedObject();
+                StatusCodeTB.Text = Variant.From(nodeToWrite.Value.StatusCode)
+                    .ConvertTo(BuiltInType.String)
+                    .TryGetValue(out string statusCodeText) ? statusCodeText : String.Empty;
                 StatusCodeCK.Checked = true;
             }
 
             if (nodeToWrite.Value.SourceTimestamp != DateTime.MinValue)
             {
-                SourceTimestampTB.Text = (string)Variant.From(nodeToWrite.Value.SourceTimestamp).ConvertTo(BuiltInType.String).AsBoxedObject();
+                SourceTimestampTB.Text = Variant.From(nodeToWrite.Value.SourceTimestamp)
+                    .ConvertTo(BuiltInType.String)
+                    .TryGetValue(out string sourceTimestampText) ? sourceTimestampText : String.Empty;
                 SourceTimestampCK.Checked = true;
             }
 
             if (nodeToWrite.Value.ServerTimestamp != DateTime.MinValue)
             {
-                ServerTimestampTB.Text = (string)Variant.From(nodeToWrite.Value.ServerTimestamp).ConvertTo(BuiltInType.String).AsBoxedObject();
+                ServerTimestampTB.Text = Variant.From(nodeToWrite.Value.ServerTimestamp)
+                    .ConvertTo(BuiltInType.String)
+                    .TryGetValue(out string serverTimestampText) ? serverTimestampText : String.Empty;
                 ServerTimestampCK.Checked = true;
             }
 
@@ -113,17 +119,26 @@ namespace Opc.Ua.Client.Controls
 
             if (StatusCodeCK.Checked)
             {
-                dataValue = dataValue.WithStatus((StatusCode)Variant.From(StatusCodeTB.Text).ConvertTo(BuiltInType.StatusCode).AsBoxedObject());
+                if (Variant.From(StatusCodeTB.Text).ConvertTo(BuiltInType.StatusCode).TryGetValue(out StatusCode statusCode))
+                {
+                    dataValue = dataValue.WithStatus(statusCode);
+                }
             }
 
             if (SourceTimestampCK.Checked)
             {
-                dataValue = dataValue.WithSourceTimestamp((DateTimeUtc)Variant.From(SourceTimestampTB.Text).ConvertTo(BuiltInType.DateTime).AsBoxedObject());
+                if (Variant.From(SourceTimestampTB.Text).ConvertTo(BuiltInType.DateTime).TryGetValue(out DateTimeUtc sourceTimestamp))
+                {
+                    dataValue = dataValue.WithSourceTimestamp(sourceTimestamp);
+                }
             }
 
             if (ServerTimestampCK.Checked)
             {
-                dataValue = dataValue.WithServerTimestamp((DateTimeUtc)Variant.From(ServerTimestampTB.Text).ConvertTo(BuiltInType.DateTime).AsBoxedObject());
+                if (Variant.From(ServerTimestampTB.Text).ConvertTo(BuiltInType.DateTime).TryGetValue(out DateTimeUtc serverTimestamp))
+                {
+                    dataValue = dataValue.WithServerTimestamp(serverTimestamp);
+                }
             }
 
             result.Value = dataValue;

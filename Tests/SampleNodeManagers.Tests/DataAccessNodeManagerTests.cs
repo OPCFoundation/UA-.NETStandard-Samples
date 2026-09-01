@@ -27,8 +27,9 @@ namespace Opc.Ua.Samples.Tests
     /// the duration of the operation. The same block appears under several paths, which is
     /// the part of the design a rewrite is most likely to lose, so it is checked here.
     ///
-    /// This is one of the three samples built on the local QuickstartNodeManager fork, so
-    /// these tests are also the coverage for that base class.
+    /// The node manager is built directly on the AsyncCustomNodeManager of the SDK, and
+    /// the tag variables route their writes to the underlying system through the
+    /// asynchronous write handler.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]
@@ -143,12 +144,11 @@ namespace Opc.Ua.Samples.Tests
                 $"Reading the engineering units failed: {units.StatusCode}");
 
             Assert.That(
-                units.WrappedValue.AsBoxedObject(),
-                Is.InstanceOf<ExtensionObject>(),
+                units.WrappedValue.TryGetValue(out ExtensionObject unitsStructure),
+                Is.True,
                 "The engineering units of an analog item are a structure.");
 
-            ((ExtensionObject)units.WrappedValue.AsBoxedObject())
-                .TryGetValue(out EUInformation information, Session.MessageContext);
+            unitsStructure.TryGetValue(out EUInformation information, Session.MessageContext);
 
             Assert.That(
                 information?.DisplayName.Text,
@@ -299,6 +299,65 @@ namespace Opc.Ua.Samples.Tests
                 values.Select(value => value.StatusCode),
                 Is.All.Matches<StatusCode>(StatusCode.IsGood),
                 "The block simulation has to report good values.");
+        }
+
+        /// <summary>
+        /// Writing the set point of a controller reaches the underlying system.
+        /// </summary>
+        /// <remarks>
+        /// The write goes through the asynchronous write handler of the tag variable into
+        /// the underlying system, and the simulation never touches writable tags, so a
+        /// fresh read - which builds a new block from the system - has to return the
+        /// written value. The original value is restored so the fixture stays order
+        /// independent.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ControllerSetPointIsWritable(CancellationToken ct)
+        {
+            NodeId setPointId = Tag("FC1001", "SetPoint");
+
+            DataValue original = await SessionOps
+                .ReadValueAsync(Session, setPointId, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(original.StatusCode),
+                Is.True,
+                $"Reading the set point failed: {original.StatusCode}");
+
+            float written = (original.WrappedValue.TryGetValue(out float setPoint) ? setPoint : 0f) + 10f;
+
+            try
+            {
+                StatusCode result = await SessionOps
+                    .WriteValueAsync(Session, setPointId, Variant.From(written), ct)
+                    .ConfigureAwait(false);
+
+                Assert.That(
+                    StatusCode.IsGood(result),
+                    Is.True,
+                    $"Writing the set point failed: {result}");
+
+                DataValue readBack = await SessionOps
+                    .ReadValueAsync(Session, setPointId, ct)
+                    .ConfigureAwait(false);
+
+                await TestContext.Out
+                    .WriteLineAsync($"Set point: was {original.WrappedValue}, wrote {written}, read {readBack.WrappedValue}")
+                    .ConfigureAwait(false);
+
+                Assert.That(
+                    readBack.WrappedValue.TryGetValue(out float readBackSetPoint) ? readBackSetPoint : float.NaN,
+                    Is.EqualTo(written),
+                    "The set point has to come back from the underlying system with the written value.");
+            }
+            finally
+            {
+                await SessionOps
+                    .WriteValueAsync(Session, setPointId, original.WrappedValue, ct)
+                    .ConfigureAwait(false);
+            }
         }
 
         private QualifiedName Segment(string name)

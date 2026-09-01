@@ -57,18 +57,16 @@ namespace Quickstarts.AlarmConditionClient
         /// <summary>
         /// Shows all fields for the current condition.
         /// </summary>
-        public bool ShowDialog(MonitoredItem monitoredItem, EventFieldList eventFields)
+        public bool ShowDialog(EventFilter filter, EventFieldList eventFields)
         {
             // build a sorted list of non-null fields.
             List<string> fieldNames = new List<string>();
             List<Variant> fieldValues = new List<Variant>();
 
-            // use the filter from the monitored item to determine what is in each field.
-            EventFilter filter = monitoredItem.Status.Filter as EventFilter;
-
+            // the filter the item was created with determines what is in each field.
             if (filter != null)
             {
-                if (eventFields.EventFields[0].AsBoxedObject() != null)
+                if (!eventFields.EventFields[0].IsNull)
                 {
                     fieldNames.Add("ConditionId");
                     fieldValues.Add(eventFields.EventFields[0]);
@@ -76,9 +74,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 for (int ii = 1; ii < filter.SelectClauses.Count; ii++)
                 {
-                    object fieldValue = eventFields.EventFields[ii].AsBoxedObject();
-
-                    if (fieldValue == null)
+                    if (eventFields.EventFields[ii].IsNull)
                     {
                         continue;
                     }
@@ -105,8 +101,8 @@ namespace Quickstarts.AlarmConditionClient
             {
                 ListViewItem item = new ListViewItem(fieldNames[ii]);
 
-                item.SubItems.Add(Utils.Format("{0}", fieldValues[ii].AsBoxedObject()));
-                item.SubItems.Add(Utils.Format("{0}", fieldValues[ii].AsBoxedObject().GetType().Name));
+                item.SubItems.Add(fieldValues[ii].ToString());
+                item.SubItems.Add(fieldValues[ii].TypeInfo.ToString());
 
                 FieldsLV.Items.Add(item);
             }

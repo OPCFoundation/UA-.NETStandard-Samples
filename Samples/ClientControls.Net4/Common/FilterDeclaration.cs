@@ -474,11 +474,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns the value for the specified browse name.
         /// </summary>
-        public T GetValue<T>(QualifiedName browseName, IList<Variant> fields, T defaultValue)
+        public Variant GetValue(QualifiedName browseName, IList<Variant> fields)
         {
             if (fields == null || fields.Count == 0)
             {
-                return defaultValue;
+                return Variant.Null;
             }
 
             if (browseName.IsNull)
@@ -492,21 +492,14 @@ namespace Opc.Ua.Client.Controls
                 {
                     if (ii >= fields.Count + 1)
                     {
-                        return defaultValue;
+                        return Variant.Null;
                     }
 
-                    object value = fields[ii + 1].AsBoxedObject();
-
-                    if (typeof(T).IsInstanceOfType(value))
-                    {
-                        return (T)value;
-                    }
-
-                    break;
+                    return fields[ii + 1];
                 }
             }
 
-            return defaultValue;
+            return Variant.Null;
         }
 
         /// <summary>

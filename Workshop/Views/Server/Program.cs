@@ -37,7 +37,7 @@ using Opc.Ua.Server.Controls;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
-namespace Quickstarts.ViewsServer
+namespace Quickstarts.Views.Server
 {
     static class Program
     {
@@ -69,7 +69,7 @@ namespace Quickstarts.ViewsServer
     }
 
     /// <summary>
-    /// The <b>ViewsServer</b> namespace contains classes which implement a Quickstart Server.
+    /// The <b>Views.Server</b> namespace contains classes which implement a Quickstart Server.
     /// </summary>
     /// <exclude/>
     [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

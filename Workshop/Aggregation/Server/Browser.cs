@@ -53,7 +53,7 @@ namespace AggregationServer
             QualifiedName browseName,
             IEnumerable<IReference> additionalReferences,
             bool internalOnly,
-            Opc.Ua.Client.ISession client,
+            Func<CancellationToken, Task<Opc.Ua.Client.ISession>> clientProvider,
             NamespaceMapper mapper,
             NodeState source,
             NodeId rootId)
@@ -68,7 +68,7 @@ namespace AggregationServer
                 additionalReferences,
                 internalOnly)
         {
-            m_client = client;
+            m_clientProvider = clientProvider;
             m_mapper = mapper;
             m_source = source;
             m_rootId = rootId;
@@ -109,6 +109,10 @@ namespace AggregationServer
 
             if (m_stage == Stage.Begin)
             {
+                // the session to the aggregated server is opened on demand, so an
+                // internal-only browse never has to connect at all.
+                m_client ??= await m_clientProvider(ct);
+
                 // construct request.
                 BrowseDescription nodeToBrowse = new BrowseDescription();
 
@@ -415,6 +419,7 @@ namespace AggregationServer
         #region Private Fields
         private Stage m_stage;
         private int m_position;
+        private Func<CancellationToken, Task<Opc.Ua.Client.ISession>> m_clientProvider;
         private Opc.Ua.Client.ISession m_client;
         private NamespaceMapper m_mapper;
         private NodeState m_source;

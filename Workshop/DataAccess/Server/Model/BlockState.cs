@@ -33,6 +33,7 @@ using System.Xml;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -80,7 +81,7 @@ namespace Quickstarts.DataAccessServer
                     BaseVariableState variable = CreateVariable(nodeManager.SystemContext, tags[ii]);
 #pragma warning restore CA2000
                     AddChild(variable);
-                    variable.OnSimpleWriteValue = OnWriteTagValue;
+                    variable.OnSimpleWriteValueAsync = OnWriteTagValueAsync;
                 }
             }
         }
@@ -138,36 +139,39 @@ namespace Quickstarts.DataAccessServer
         }
 
         /// <summary>
-        /// Used to receive notifications when the value attribute is read or written.
+        /// Used to receive notifications when the value attribute is written.
         /// </summary>
-        public ServiceResult OnWriteTagValue(
+        public ValueTask<AttributeWriteResult> OnWriteTagValueAsync(
             ISystemContext context,
             NodeState node,
-            ref Variant value)
+            Variant value,
+            CancellationToken cancellationToken)
         {
             UnderlyingSystem system = context.SystemHandle as UnderlyingSystem;
 
             if (system == null)
             {
-                return StatusCodes.BadCommunicationError;
+                return new ValueTask<AttributeWriteResult>(
+                    new AttributeWriteResult(StatusCodes.BadCommunicationError));
             }
 
             UnderlyingSystemBlock block = system.FindBlock(m_blockId);
 
             if (block == null)
             {
-                return StatusCodes.BadNodeIdUnknown;
+                return new ValueTask<AttributeWriteResult>(
+                    new AttributeWriteResult(StatusCodes.BadNodeIdUnknown));
             }
 
-            StatusCode error = block.WriteTagValue(node.SymbolicName, value.AsBoxedObject());
+            StatusCode error = block.WriteTagValue(node.SymbolicName, value);
 
             if (error != 0)
             {
                 // the simulator uses UA status codes so there is no need for a mapping table.
-                return error;
+                return new ValueTask<AttributeWriteResult>(new AttributeWriteResult(error));
             }
 
-            return ServiceResult.Good;
+            return new ValueTask<AttributeWriteResult>(new AttributeWriteResult(ServiceResult.Good));
         }
 
         /// <summary>
@@ -176,7 +180,7 @@ namespace Quickstarts.DataAccessServer
         /// <param name="tags">The tags.</param>
         private void OnTagsChanged(IList<UnderlyingSystemTag> tags)
         {
-            lock (m_nodeManager.Lock)
+            lock (m_lock)
             {
                 for (int ii = 0; ii < tags.Count; ii++)
                 {
@@ -325,7 +329,7 @@ namespace Quickstarts.DataAccessServer
         private void UpdateVariable(ISystemContext context, UnderlyingSystemTag tag, BaseVariableState variable)
         {
             variable.Description = new LocalizedText(tag.Description);
-            variable.Value = Variant.From((dynamic)tag.Value);
+            variable.Value = tag.Value;
             variable.Timestamp = tag.Timestamp;
 
             switch (tag.DataType)
@@ -431,8 +435,9 @@ namespace Quickstarts.DataAccessServer
         #endregion
 
         #region Private Fields
+        private readonly Lock m_lock = new();
         private string m_blockId;
-        private QuickstartNodeManager m_nodeManager;
+        private DataAccessServerNodeManager m_nodeManager;
         private int m_monitoringCount;
         #endregion
     }

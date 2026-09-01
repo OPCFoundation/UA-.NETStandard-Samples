@@ -35,12 +35,16 @@ using System.IO;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Security.Cryptography.X509Certificates;
+using Opc.Ua.Client.Subscriptions;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the
+    // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
+    using SubscriptionState = Opc.Ua.Client.Subscriptions.SubscriptionState;
+
     public partial class SessionTreeCtrl : Opc.Ua.Client.Controls.BaseTreeCtrl
     {
         #region Contructors
@@ -50,10 +54,10 @@ namespace Opc.Ua.Sample.Controls
 
             m_eventRegistrations = new Dictionary<object, TreeNode>();
             m_endpointUrls = new List<string>();
-            m_dialogs = new Dictionary<Subscription, SubscriptionDlg>();
+            m_subscriptions = new List<SubscriptionHandle>();
+            m_dialogs = new Dictionary<SubscriptionHandle, SubscriptionDlg>();
 
-            m_SessionSubscriptionsChanged = new EventHandler(Session_SubscriptionsChanged);
-            m_SubscriptionStateChanged = new SubscriptionStateChangedEventHandler(Subscription_StateChanged);
+            m_SubscriptionStateChanged = new Action<ISubscription, SubscriptionState, PublishState>(Subscription_StateChanged);
         }
         #endregion
 
@@ -61,11 +65,11 @@ namespace Opc.Ua.Sample.Controls
         private BrowseTreeCtrl m_AddressSpaceCtrl;
         private NotificationMessageListCtrl m_NotificationMessagesCtrl;
         private ToolStripStatusLabel m_ServerStatusCtrl;
-        private EventHandler m_SessionSubscriptionsChanged;
-        private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
+        private Action<ISubscription, SubscriptionState, PublishState> m_SubscriptionStateChanged;
         private Dictionary<object, TreeNode> m_eventRegistrations;
         private List<string> m_endpointUrls;
-        private Dictionary<Subscription, SubscriptionDlg> m_dialogs;
+        private List<SubscriptionHandle> m_subscriptions;
+        private Dictionary<SubscriptionHandle, SubscriptionDlg> m_dialogs;
         private ApplicationConfiguration m_configuration;
         private ServiceMessageContext m_messageContext;
         private ConfiguredEndpoint m_endpoint;
@@ -110,17 +114,6 @@ namespace Opc.Ua.Sample.Controls
                 dialog.Close();
             }
 
-            // close all active sessions.
-            foreach (TreeNode root in NodesTV.Nodes)
-            {
-                Session session = root.Tag as Session;
-
-                if (session != null)
-                {
-                    await session.CloseAsync(ct);
-                }
-            }
-
             await ClearAsync(ct);
         }
 
@@ -132,7 +125,7 @@ namespace Opc.Ua.Sample.Controls
             // close all active sessions.
             foreach (TreeNode root in NodesTV.Nodes)
             {
-                Session session = root.Tag as Session;
+                ISession session = root.Tag as ISession;
 
                 if (session != null)
                 {
@@ -140,6 +133,7 @@ namespace Opc.Ua.Sample.Controls
                 }
             }
 
+            m_subscriptions.Clear();
             Clear(NodesTV.Nodes);
         }
 
@@ -176,13 +170,15 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Creates a session with the endpoint.
         /// </summary>
-        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITelemetryContext telemetry, CancellationToken ct = default)
+        /// <remarks>
+        /// The session is created with a <see cref="ManagedSessionFactory"/> by the open
+        /// dialog, so it reconnects on its own and runs the V2 subscription engine.
+        /// </remarks>
+        public async Task<ISession> ConnectAsync(ConfiguredEndpoint endpoint, ITelemetryContext telemetry, CancellationToken ct = default)
         {
             if (endpoint == null) throw new ArgumentNullException(nameof(endpoint));
 
             Telemetry = telemetry;
-
-            IList<EndpointDescription> availableEndpoints = null;
 
             // check if the endpoint needs to be updated.
             if (endpoint.UpdateBeforeConnect)
@@ -190,7 +186,7 @@ namespace Opc.Ua.Sample.Controls
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ConfiguredServerDlg configurationDialog = new ConfiguredServerDlg();
                 #pragma warning restore CA2000
-                #pragma warning disable CA1849 // Justification: Sample code retains existing ownership/lifetime and behavior.
+                #pragma warning disable CA1849 // Justification: modal dialogs pump their own message loop.
                 endpoint = configurationDialog.ShowDialog(endpoint, m_configuration);
                 #pragma warning restore CA1849
 
@@ -198,7 +194,6 @@ namespace Opc.Ua.Sample.Controls
                 {
                     return null;
                 }
-                availableEndpoints = configurationDialog.AvailableEnpoints;
             }
 
             m_endpoint = endpoint;
@@ -206,91 +201,30 @@ namespace Opc.Ua.Sample.Controls
             // copy the message context.
             m_messageContext = m_configuration.CreateMessageContext();
 
-            Opc.Ua.Security.Certificates.Certificate clientCertificate = null;
+            // create and open the session.
+            #pragma warning disable CA2000, CA1849 // Justification: modal dialogs pump their own message loop; sample code retains existing ownership/lifetime and behavior.
+            ISession session = new SessionOpenDlg().ShowDialog(m_configuration, endpoint, PreferredLocales, telemetry);
+            #pragma warning restore CA2000, CA1849
 
-            if (endpoint.Description.SecurityPolicyUri != SecurityPolicies.None)
+            if (session == null)
             {
-                if (m_configuration.SecurityConfiguration.ApplicationCertificate == null)
-                {
-                    throw ServiceResultException.Create(StatusCodes.BadConfigurationError, "ApplicationCertificate must be specified.");
-                }
-
-                clientCertificate = await m_configuration.CertificateManager.CertificateProvider.GetPrivateKeyCertificateAsync(
-                    m_configuration.SecurityConfiguration.ApplicationCertificate,
-                    null,
-                    null,
-                    ct);
-
-                if (clientCertificate == null)
-                {
-                    throw ServiceResultException.Create(StatusCodes.BadConfigurationError, "ApplicationCertificate cannot be found.");
-                }
-
+                return null;
             }
 
-            // create the channel.
-            ITransportChannel channel = await UaChannelBase.CreateUaBinaryChannelAsync(
-                m_configuration,
-                endpoint.Description,
-                endpoint.Configuration,
-                clientCertificate,
-                m_messageContext,
-                ct);
+            // delete the existing session.
+            await CloseAsync(ct);
 
-            // create the session.
-            return await ConnectAsync(endpoint, channel, availableEndpoints, telemetry, ct);
-        }
+            // add session to tree.
+            AddNode(session);
 
-        /// <summary>
-        /// Opens a new session.
-        /// </summary>
-        public async Task<Session> ConnectAsync(ConfiguredEndpoint endpoint, ITransportChannel channel, IList<EndpointDescription> availableEndpoints, ITelemetryContext telemetry, CancellationToken ct = default)
-        {
-            if (channel == null) throw new ArgumentNullException(nameof(channel));
-
-            Telemetry = telemetry;
-
-            try
-            {
-                // create the session.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                Session session = new Session(channel, m_configuration, endpoint, null);
-                #pragma warning restore CA2000
-                session.ReturnDiagnostics = DiagnosticsMasks.All;
-
-                #pragma warning disable CA1849, CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new SessionOpenDlg().ShowDialog(session, PreferredLocales))
-                #pragma warning restore CA1849, CA2000
-                {
-                    return null;
-                }
-
-                // session now owns the channel.
-                channel = null;
-
-                // delete the existing session.
-                await CloseAsync(ct);
-
-                // add session to tree.
-                AddNode(session);
-
-                // return the new session.
-                return session;
-            }
-            finally
-            {
-                // ensure the channel is closed on error.
-                if (channel != null)
-                {
-                    await channel.CloseAsync(ct);
-                }
-            }
+            // return the new session.
+            return session;
         }
 
         /// <summary>
         /// Deletes a session.
         /// </summary>
-        public async Task DeleteAsync(Session session, CancellationToken ct = default)
+        public async Task DeleteAsync(ISession session, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -310,6 +244,8 @@ namespace Opc.Ua.Sample.Controls
                 dialog.Close();
             }
 
+            m_subscriptions.RemoveAll(handle => Object.ReferenceEquals(handle.Session, session));
+
             await session.CloseAsync(ct);
             NodesTV.SelectedNode = null;
             SelectNode();
@@ -318,7 +254,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Deletes a subscription.
         /// </summary>
-        public async Task DeleteAsync(Subscription subscription, CancellationToken ct = default)
+        public async Task DeleteAsync(SubscriptionHandle subscription, CancellationToken ct = default)
         {
             if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
@@ -330,8 +266,11 @@ namespace Opc.Ua.Sample.Controls
                 dialog.Close();
             }
 
-            Session session = subscription.Session as Session;
-            await session.RemoveSubscriptionAsync(subscription, ct);
+            // disposing the subscription deletes it on the server and drops it from the
+            // subscription manager of the session.
+            await subscription.DeleteAsync();
+
+            m_subscriptions.Remove(subscription);
 
             TreeNode node = FindNode(NodesTV.Nodes, subscription);
 
@@ -343,14 +282,15 @@ namespace Opc.Ua.Sample.Controls
                 node.Remove();
             }
 
-            NodesTV.SelectedNode = FindNode(NodesTV.Nodes, session);
+            NodesTV.SelectedNode = FindNode(NodesTV.Nodes, subscription.Session);
         }
 
         /// <summary>
         /// Deletes a monitored item.
         /// </summary>
-        public async Task DeleteAsync(MonitoredItem monitoredItem, CancellationToken ct = default)
+        public async Task DeleteAsync(SubscriptionHandle subscription, MonitoredItemHandle monitoredItem, CancellationToken ct = default)
         {
+            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
             if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
             TreeNode node = FindNode(NodesTV.Nodes, monitoredItem);
@@ -363,16 +303,17 @@ namespace Opc.Ua.Sample.Controls
                 node.Remove();
             }
 
-            Subscription subscription = monitoredItem.Subscription;
+            // removing the item is the request, the engine deletes it on its own worker.
             subscription.RemoveItem(monitoredItem);
-            await subscription.ApplyChangesAsync(ct);
+            await subscription.WaitForPendingChangesAsync(TimeSpan.FromSeconds(10), ct);
+
             NodesTV.SelectedNode = FindNode(NodesTV.Nodes, subscription);
         }
 
         /// <summary>
         /// Creates a new subscription.
         /// </summary>
-        public async Task<Subscription> CreateSubscriptionAsync(Session session, CancellationToken ct = default)
+        public async Task<SubscriptionHandle> CreateSubscriptionAsync(ISession session, CancellationToken ct = default)
         {
             // create form.
             #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
@@ -381,30 +322,49 @@ namespace Opc.Ua.Sample.Controls
             dialog.FormClosing += new FormClosingEventHandler(Subscription_FormClosing);
 
             // create subscription.
-            Subscription subscription = await dialog.NewAsync(session, Telemetry, ct);
+            SubscriptionHandle subscription = dialog.New(session, Telemetry);
 
             if (subscription != null)
             {
                 m_dialogs.Add(subscription, dialog);
-                subscription.Handle = dialog;
+                AddSubscription(subscription);
                 return subscription;
             }
 
             return null;
         }
 
-        public void Reload(Session session)
+        /// <summary>
+        /// The subscriptions of the session which the control keeps track of.
+        /// </summary>
+        public IList<SubscriptionHandle> GetSubscriptions(ISession session)
+        {
+            List<SubscriptionHandle> subscriptions = new List<SubscriptionHandle>();
+
+            foreach (SubscriptionHandle handle in m_subscriptions)
+            {
+                if (Object.ReferenceEquals(handle.Session, session))
+                {
+                    subscriptions.Add(handle);
+                }
+            }
+
+            return subscriptions;
+        }
+
+        /// <summary>
+        /// Rebuilds the tree for the session, e.g. after a reconnect.
+        /// </summary>
+        /// <remarks>
+        /// The managed session keeps the same session instance and its V2 subscriptions
+        /// across a reconnect, so this only refreshes the display.
+        /// </remarks>
+        public void Reload(ISession session)
         {
             // update any dialogs.
-            foreach (SubscriptionDlg dialog in new List<SubscriptionDlg>(m_dialogs.Values))
+            foreach (KeyValuePair<SubscriptionHandle, SubscriptionDlg> current in new List<KeyValuePair<SubscriptionHandle, SubscriptionDlg>>(m_dialogs))
             {
-                foreach (Subscription subscription in session.Subscriptions)
-                {
-                    if (subscription.Handle == dialog)
-                    {
-                        dialog.Show(subscription);
-                    }
-                }
+                current.Value.Show(current.Key);
             }
 
             // clear all nodes.
@@ -424,7 +384,7 @@ namespace Opc.Ua.Sample.Controls
             NewWindowMI.Visible = this.FindForm() is ClientForm;
             NewWindowMI.Enabled = true;
 
-            Session session = clickedNode.Tag as Session;
+            ISession session = clickedNode.Tag as ISession;
 
             if (session != null)
             {
@@ -447,7 +407,7 @@ namespace Opc.Ua.Sample.Controls
                 SubscriptionCreateMI.Enabled = SubscriptionMI.Enabled;
             }
 
-            Subscription subscription = clickedNode.Tag as Subscription;
+            SubscriptionHandle subscription = clickedNode.Tag as SubscriptionHandle;
 
             if (subscription != null)
             {
@@ -457,10 +417,10 @@ namespace Opc.Ua.Sample.Controls
                 SubscriptionMI.Enabled = subscription.Session.Connected;
                 SubscriptionMonitorMI.Enabled = SubscriptionMI.Enabled;
                 SubscriptionEnabledPublishingMI.Enabled = SubscriptionMI.Enabled;
-                SubscriptionEnabledPublishingMI.Checked = subscription.CurrentPublishingEnabled;
+                SubscriptionEnabledPublishingMI.Checked = (subscription.Subscription != null) ? subscription.Subscription.CurrentPublishingEnabled : subscription.Settings.PublishingEnabled;
             }
 
-            MonitoredItem monitoredItem = clickedNode.Tag as MonitoredItem;
+            MonitoredItemHandle monitoredItem = clickedNode.Tag as MonitoredItemHandle;
 
             if (monitoredItem != null)
             {
@@ -495,8 +455,8 @@ namespace Opc.Ua.Sample.Controls
 
             TreeNode selectedNode = NodesTV.SelectedNode;
 
-            Session session = Get<Session>(selectedNode);
-            Subscription subscription = Get<Subscription>(selectedNode);
+            ISession session = Get<ISession>(selectedNode);
+            SubscriptionHandle subscription = Get<SubscriptionHandle>(selectedNode);
 
             // update address space control.
             if (m_AddressSpaceCtrl != null)
@@ -507,7 +467,7 @@ namespace Opc.Ua.Sample.Controls
             // update notification messages control.
             if (m_NotificationMessagesCtrl != null)
             {
-                m_NotificationMessagesCtrl.Initialize(session, subscription);
+                m_NotificationMessagesCtrl.Initialize(session, GetSubscriptions(session), subscription);
             }
         }
         #endregion
@@ -519,20 +479,19 @@ namespace Opc.Ua.Sample.Controls
         {
             foreach (TreeNode node in nodes)
             {
-                if (m_eventRegistrations.Remove(node.Tag))
+                if (node.Tag != null && m_eventRegistrations.Remove(node.Tag))
                 {
-                    if (node.Tag is Session)
+                    if (node.Tag is SubscriptionHandle subscription)
                     {
-                        ((Session)node.Tag).SubscriptionsChanged -= m_SessionSubscriptionsChanged;
-                    }
-
-                    else if (node.Tag is Subscription)
-                    {
-                        ((Subscription)node.Tag).StateChanged -= m_SubscriptionStateChanged;
+                        subscription.Callbacks.StateChangedCallback -= m_SubscriptionStateChanged;
                     }
                 }
 
+                #pragma warning disable CA1849 // Justification: Sample code retains existing ownership/lifetime and behavior.
+
                 Clear(node.Nodes);
+
+                #pragma warning restore CA1849
             }
 
             nodes.Clear();
@@ -540,47 +499,52 @@ namespace Opc.Ua.Sample.Controls
 
         #region Private Members
         /// <summary>
-        /// Called when the set of items for a subscription changes.
+        /// Called by the V2 subscription engine when the state of a subscription changes,
+        /// which includes the engine finishing to apply monitored item changes.
         /// </summary>
-        private void Subscription_StateChanged(object sender, EventArgs e)
+        private void Subscription_StateChanged(ISubscription subscription, SubscriptionState state, PublishState publishStateMask)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new EventHandler(Subscription_StateChanged), sender, e);
+                BeginInvoke(m_SubscriptionStateChanged, subscription, state, publishStateMask);
+                return;
+            }
+            else if (!IsHandleCreated)
+            {
                 return;
             }
 
-            TreeNode node = FindNode(NodesTV.Nodes, sender);
+            SubscriptionHandle handle = FindSubscription(subscription);
+
+            if (handle == null)
+            {
+                return;
+            }
+
+            TreeNode node = FindNode(NodesTV.Nodes, handle);
 
             if (node == null)
             {
                 return;
             }
 
-            UpdateNode(node, sender as Subscription);
+            UpdateNode(node, handle);
         }
 
         /// <summary>
-        /// Called when the set of subscriptions for a session changes.
+        /// Finds the handle for a subscription of the V2 engine.
         /// </summary>
-        private void Session_SubscriptionsChanged(object sender, EventArgs e)
+        private SubscriptionHandle FindSubscription(ISubscription subscription)
         {
-            if (InvokeRequired)
+            foreach (SubscriptionHandle handle in m_subscriptions)
             {
-                BeginInvoke(new EventHandler(Session_SubscriptionsChanged), sender, e);
-                return;
+                if (Object.ReferenceEquals(handle.Subscription, subscription))
+                {
+                    return handle;
+                }
             }
 
-            TreeNode node = FindNode(NodesTV.Nodes, sender);
-
-            if (node == null)
-            {
-                return;
-            }
-
-            UpdateNode(node, sender as Session);
-            node.EnsureVisible();
-            node.Expand();
+            return null;
         }
 
         /// <summary>
@@ -607,43 +571,31 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Recursively finds the node with the specified tag and returns the immediate child with the specified child tag.
+        /// Registers a subscription created on behalf of the control and adds it to the tree.
         /// </summary>
-        private TreeNode FindChild(TreeNodeCollection collection, object tag, object childTag)
+        private void AddSubscription(SubscriptionHandle subscription)
         {
-            TreeNode parent = FindNode(collection, tag);
+            m_subscriptions.Add(subscription);
 
-            if (parent == null)
+            TreeNode parent = FindNode(NodesTV.Nodes, subscription.Session);
+
+            if (parent != null)
             {
-                return null;
+                AddNode(parent, subscription);
+                parent.EnsureVisible();
+                parent.Expand();
             }
-
-            foreach (TreeNode child in parent.Nodes)
-            {
-                if (Object.ReferenceEquals(child.Tag, childTag))
-                {
-                    return child;
-                }
-            }
-
-            return null;
         }
 
         /// <summary>
         /// Adds a session to the tree.
         /// </summary>
-        private void AddNode(Session session)
+        private void AddNode(ISession session)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             TreeNode node = AddNode(null, session, session.SessionName, "Server");
             UpdateNode(node, session);
-
-            if (!m_eventRegistrations.ContainsKey(session))
-            {
-                session.SubscriptionsChanged += m_SessionSubscriptionsChanged;
-                m_eventRegistrations.Add(session, node);
-            }
 
             NodesTV.SelectedNode = node;
         }
@@ -651,14 +603,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates a session node in the tree.
         /// </summary>
-        private void UpdateNode(TreeNode parent, Session session)
+        private void UpdateNode(TreeNode parent, ISession session)
         {
             UpdateNode(parent, session, session.SessionName, (session.Connected) ? "Server" : "ServerStopped");
             Clear(parent.Nodes);
 
             if (Object.ReferenceEquals(parent.Tag, session))
             {
-                foreach (Subscription subscription in session.Subscriptions)
+                foreach (SubscriptionHandle subscription in GetSubscriptions(session))
                 {
                     AddNode(parent, subscription);
                 }
@@ -668,14 +620,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Adds a subscription to the tree.
         /// </summary>
-        private void AddNode(TreeNode parent, Subscription subscription)
+        private void AddNode(TreeNode parent, SubscriptionHandle subscription)
         {
             TreeNode node = AddNode(parent, subscription, subscription.DisplayName, "Object");
             UpdateNode(node, subscription);
 
             if (!m_eventRegistrations.ContainsKey(subscription))
             {
-                subscription.StateChanged += m_SubscriptionStateChanged;
+                subscription.Callbacks.StateChangedCallback += m_SubscriptionStateChanged;
                 m_eventRegistrations.Add(subscription, node);
             }
         }
@@ -683,12 +635,12 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Updates a subscription node in the tree.
         /// </summary>
-        private void UpdateNode(TreeNode parent, Subscription subscription)
+        private void UpdateNode(TreeNode parent, SubscriptionHandle subscription)
         {
             Clear(parent.Nodes);
             parent.Text = subscription.DisplayName;
 
-            foreach (MonitoredItem monitoredItem in subscription.MonitoredItems)
+            foreach (MonitoredItemHandle monitoredItem in subscription.Items)
             {
                 AddNode(parent, monitoredItem, monitoredItem.DisplayName, "Property");
             }
@@ -708,7 +660,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -736,7 +688,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -764,7 +716,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -792,7 +744,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -820,7 +772,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -848,7 +800,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -876,7 +828,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -904,7 +856,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -947,7 +899,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -986,7 +938,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // get selected session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session == null)
                 {
@@ -1004,7 +956,7 @@ namespace Opc.Ua.Sample.Controls
 
         private void Subscription_FormClosing(object sender, FormClosingEventArgs e)
         {
-            foreach (KeyValuePair<Subscription, SubscriptionDlg> current in m_dialogs)
+            foreach (KeyValuePair<SubscriptionHandle, SubscriptionDlg> current in m_dialogs)
             {
                 if (current.Value == sender)
                 {
@@ -1039,7 +991,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // delete session.
-                Session session = selectedNode.Tag as Session;
+                ISession session = selectedNode.Tag as ISession;
 
                 if (session != null)
                 {
@@ -1047,7 +999,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // delete subscription
-                Subscription subscription = selectedNode.Tag as Subscription;
+                SubscriptionHandle subscription = selectedNode.Tag as SubscriptionHandle;
 
                 if (subscription != null)
                 {
@@ -1055,11 +1007,16 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // delete monitored item
-                MonitoredItem monitoredItem = selectedNode.Tag as MonitoredItem;
+                MonitoredItemHandle monitoredItem = selectedNode.Tag as MonitoredItemHandle;
 
                 if (monitoredItem != null)
                 {
-                    await DeleteAsync(monitoredItem);
+                    subscription = Get<SubscriptionHandle>(selectedNode);
+
+                    if (subscription != null)
+                    {
+                        await DeleteAsync(subscription, monitoredItem);
+                    }
                 }
             }
             catch (Exception exception)
@@ -1073,7 +1030,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // get the current session.
-                Session session = Get<Session>(NodesTV.SelectedNode);
+                ISession session = Get<ISession>(NodesTV.SelectedNode);
 
                 if (session == null || !session.Connected)
                 {
@@ -1083,35 +1040,21 @@ namespace Opc.Ua.Sample.Controls
                 // build list of nodes to read.
                 List<ReadValueId> valueIds = new List<ReadValueId>();
 
-                MonitoredItem monitoredItem = Get<MonitoredItem>(NodesTV.SelectedNode);
+                MonitoredItemHandle monitoredItem = Get<MonitoredItemHandle>(NodesTV.SelectedNode);
 
                 if (monitoredItem != null)
                 {
-                    ReadValueId valueId = new ReadValueId();
-
-                    valueId.NodeId = monitoredItem.ResolvedNodeId;
-                    valueId.AttributeId = monitoredItem.AttributeId;
-                    valueId.IndexRange = monitoredItem.IndexRange;
-                    valueId.DataEncoding = monitoredItem.Encoding;
-
-                    valueIds.Add(valueId);
+                    valueIds.Add(ToReadValueId(monitoredItem));
                 }
                 else
                 {
-                    Subscription subscription = Get<Subscription>(NodesTV.SelectedNode);
+                    SubscriptionHandle subscription = Get<SubscriptionHandle>(NodesTV.SelectedNode);
 
                     if (subscription != null)
                     {
-                        foreach (MonitoredItem item in subscription.MonitoredItems)
+                        foreach (MonitoredItemHandle item in subscription.Items)
                         {
-                            ReadValueId valueId = new ReadValueId();
-
-                            valueId.NodeId = item.ResolvedNodeId;
-                            valueId.AttributeId = item.AttributeId;
-                            valueId.IndexRange = item.IndexRange;
-                            valueId.DataEncoding = item.Encoding;
-
-                            valueIds.Add(valueId);
+                            valueIds.Add(ToReadValueId(item));
                         }
                     }
                 }
@@ -1127,62 +1070,49 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
+        /// <summary>
+        /// Builds the read request for the node a monitored item watches.
+        /// </summary>
+        private static ReadValueId ToReadValueId(MonitoredItemHandle monitoredItem)
+        {
+            return new ReadValueId {
+                NodeId = monitoredItem.Settings.StartNodeId,
+                AttributeId = monitoredItem.Settings.AttributeId,
+                IndexRange = monitoredItem.Settings.IndexRange,
+                DataEncoding = monitoredItem.Settings.Encoding ?? QualifiedName.Null,
+            };
+        }
+
         private async void WriteMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 // get the current session.
-                Session session = Get<Session>(NodesTV.SelectedNode);
+                ISession session = Get<ISession>(NodesTV.SelectedNode);
 
                 if (session == null || !session.Connected)
                 {
                     return;
                 }
 
-                // build list of nodes to read.
+                // build list of nodes to write.
                 List<WriteValue> values = new List<WriteValue>();
 
-                MonitoredItem monitoredItem = Get<MonitoredItem>(NodesTV.SelectedNode);
+                MonitoredItemHandle monitoredItem = Get<MonitoredItemHandle>(NodesTV.SelectedNode);
 
                 if (monitoredItem != null)
                 {
-                    WriteValue value = new WriteValue();
-
-                    value.NodeId = monitoredItem.ResolvedNodeId;
-                    value.AttributeId = monitoredItem.AttributeId;
-                    value.IndexRange = monitoredItem.IndexRange;
-
-                    MonitoredItemNotification datachange = monitoredItem.LastValue as MonitoredItemNotification;
-
-                    if (datachange != null)
-                    {
-                        value.Value = datachange.Value;
-                    }
-
-                    values.Add(value);
+                    values.Add(ToWriteValue(monitoredItem));
                 }
                 else
                 {
-                    Subscription subscription = Get<Subscription>(NodesTV.SelectedNode);
+                    SubscriptionHandle subscription = Get<SubscriptionHandle>(NodesTV.SelectedNode);
 
                     if (subscription != null)
                     {
-                        foreach (MonitoredItem item in subscription.MonitoredItems)
+                        foreach (MonitoredItemHandle item in subscription.Items)
                         {
-                            WriteValue value = new WriteValue();
-
-                            value.NodeId = item.ResolvedNodeId;
-                            value.AttributeId = item.AttributeId;
-                            value.IndexRange = item.IndexRange;
-
-                            MonitoredItemNotification datachange = item.LastValue as MonitoredItemNotification;
-
-                            if (datachange != null)
-                            {
-                                value.Value = datachange.Value;
-                            }
-
-                            values.Add(value);
+                            values.Add(ToWriteValue(item));
                         }
                     }
                 }
@@ -1198,6 +1128,18 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
+        /// <summary>
+        /// Builds the write request for the node a monitored item watches.
+        /// </summary>
+        private static WriteValue ToWriteValue(MonitoredItemHandle monitoredItem)
+        {
+            return new WriteValue {
+                NodeId = monitoredItem.Settings.StartNodeId,
+                AttributeId = monitoredItem.Settings.AttributeId,
+                IndexRange = monitoredItem.Settings.IndexRange,
+            };
+        }
+
         private async void SubscriptionEnabledPublishingMI_ClickAsync(object sender, EventArgs e)
         {
             try
@@ -1210,12 +1152,15 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                // delete session.
-                Subscription subscription = selectedNode.Tag as Subscription;
+                SubscriptionHandle subscription = selectedNode.Tag as SubscriptionHandle;
 
                 if (subscription != null)
                 {
-                    await subscription.SetPublishingModeAsync(SubscriptionEnabledPublishingMI.Checked);
+                    // reconfiguring the options is the request, the engine applies it on its
+                    // own worker.
+                    bool enabled = SubscriptionEnabledPublishingMI.Checked;
+                    subscription.Configure(options => options with { PublishingEnabled = enabled });
+                    await subscription.WaitForPendingChangesAsync(TimeSpan.FromSeconds(10));
                 }
             }
             catch (Exception exception)
@@ -1228,8 +1173,8 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                // get selected session.
-                Subscription subscription = SelectedTag as Subscription;
+                // get selected subscription.
+                SubscriptionHandle subscription = SelectedTag as SubscriptionHandle;
 
                 if (subscription == null)
                 {
@@ -1244,7 +1189,6 @@ namespace Opc.Ua.Sample.Controls
                     dialog = new SubscriptionDlg();
                     dialog.FormClosing += new FormClosingEventHandler(Subscription_FormClosing);
                     m_dialogs.Add(subscription, dialog);
-                    subscription.Handle = dialog;
                 }
 
                 dialog.Show(subscription);
@@ -1255,14 +1199,14 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private void SessionSaveMI_Click(object sender, EventArgs e)
+        private async void SessionSaveMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 // get selected session.
-                Session session = SelectedTag as Session;
+                ISession session = SelectedTag as ISession;
 
-                if (session == null)
+                if (session is not ManagedSession managedSession)
                 {
                     return;
                 }
@@ -1275,7 +1219,7 @@ namespace Opc.Ua.Sample.Controls
                     m_filePath = defaultInfo.DirectoryName;
                     m_filePath += Path.DirectorySeparatorChar;
                     m_filePath += session.SessionName;
-                    m_filePath += ".xml";
+                    m_filePath += ".uasubs";
                 }
 
                 // prompt user to select file.
@@ -1287,8 +1231,8 @@ namespace Opc.Ua.Sample.Controls
 
                 dialog.CheckFileExists = false;
                 dialog.CheckPathExists = true;
-                dialog.DefaultExt = ".xml";
-                dialog.Filter = "Result Files (*.xml)|*.xml|All Files (*.*)|*.*";
+                dialog.DefaultExt = ".uasubs";
+                dialog.Filter = "Subscription Files (*.uasubs)|*.uasubs|All Files (*.*)|*.*";
                 dialog.ValidateNames = true;
                 dialog.Title = "Save Subscriptions";
                 dialog.FileName = m_filePath;
@@ -1300,8 +1244,11 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                // save file.
-                session.Save(dialog.FileName);
+                // save the subscriptions of the V2 engine.
+                using (FileStream stream = new FileStream(dialog.FileName, FileMode.Create))
+                {
+                    await managedSession.SaveSubscriptionsAsync(stream, null);
+                }
 
                 // remember file path.
                 m_filePath = dialog.FileName;
@@ -1317,9 +1264,9 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // get selected session.
-                Session session = SelectedTag as Session;
+                ISession session = SelectedTag as ISession;
 
-                if (session == null)
+                if (session is not ManagedSession managedSession)
                 {
                     return;
                 }
@@ -1332,7 +1279,7 @@ namespace Opc.Ua.Sample.Controls
                     m_filePath = defaultInfo.DirectoryName;
                     m_filePath += Path.DirectorySeparatorChar;
                     m_filePath += session.SessionName;
-                    m_filePath += ".xml";
+                    m_filePath += ".uasubs";
                 }
 
                 FileInfo fileInfo = new FileInfo(m_filePath);
@@ -1343,8 +1290,8 @@ namespace Opc.Ua.Sample.Controls
 
                 dialog.CheckFileExists = true;
                 dialog.CheckPathExists = true;
-                dialog.DefaultExt = ".xml";
-                dialog.Filter = "Result Files (*.xml)|*.xml|All Files (*.*)|*.*";
+                dialog.DefaultExt = ".uasubs";
+                dialog.Filter = "Subscription Files (*.uasubs)|*.uasubs|All Files (*.*)|*.*";
                 dialog.Multiselect = false;
                 dialog.ValidateNames = true;
                 dialog.Title = "Load Subscriptions";
@@ -1360,15 +1307,37 @@ namespace Opc.Ua.Sample.Controls
                 // remember file path.
                 m_filePath = dialog.FileName;
 
-                // load file.
-                IEnumerable<Subscription> subscriptions = session.Load(dialog.FileName);
+                // restore the subscriptions into the V2 engine. Each restored subscription
+                // gets its own handle, whose callbacks the engine takes as the notification
+                // handler.
+                List<SubscriptionHandle> loaded = new List<SubscriptionHandle>();
 
-                // create the subscriptions automatically if the session is connected.
-                if (session.Connected)
+                using (FileStream stream = new FileStream(dialog.FileName, FileMode.Open))
                 {
-                    foreach (Subscription subscription in subscriptions)
+                    await managedSession.LoadSubscriptionsAsync(
+                        stream,
+                        name => {
+                            SubscriptionHandle handle = new SubscriptionHandle(session, name, ClientUtils.DefaultSubscriptionOptions);
+                            loaded.Add(handle);
+                            return handle.Callbacks;
+                        },
+                        false);
+                }
+
+                // the engine holds the restored subscriptions, so pair each new one with the
+                // handle whose callbacks it was created with.
+                if (loaded.Count > 0 && session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+                {
+                    int index = 0;
+
+                    foreach (ISubscription subscription in manager.Items)
                     {
-                        await subscription.CreateAsync();
+                        if (FindSubscription(subscription) == null && index < loaded.Count)
+                        {
+                            loaded[index].Attach(subscription);
+                            AddSubscription(loaded[index]);
+                            index++;
+                        }
                     }
                 }
             }
@@ -1400,7 +1369,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // get selected session.
-                Session session = SelectedTag as Session;
+                ISession session = SelectedTag as ISession;
 
                 if (session == null)
                 {

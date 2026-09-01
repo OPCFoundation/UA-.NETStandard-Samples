@@ -38,6 +38,10 @@ using System.Threading;
 
 namespace Opc.Ua.Client.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the enclosing
+    // Opc.Ua.Client namespace, which wins over a using directive at the top of the file.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
     /// <summary>
     /// Prompts the user to edit a value.
     /// </summary>
@@ -105,27 +109,32 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the monitored item.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(ISession session, MonitoredItem monitoredItem, bool isEvent, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, MonitoredItemHandle handle, bool isEvent, ITelemetryContext telemetry, CancellationToken ct = default)
         {
+            ArgumentNullException.ThrowIfNull(handle);
+
             m_telemetry = telemetry;
-            if (!monitoredItem.Created)
+            MonitoredItemOptions settings = handle.Settings;
+            bool created = handle.Created;
+
+            if (!created)
             {
                 NodeBTN.ChangeSession(session, telemetry);
-                await NodeBTN.SetSelectedNodeIdAsync(monitoredItem.StartNodeId, ct);
+                await NodeBTN.SetSelectedNodeIdAsync(settings.StartNodeId, ct);
             }
 
             // hide fields not used for events.
-            NodeLB.Visible = !monitoredItem.Created;
-            NodeTB.Visible = !monitoredItem.Created;
-            NodeBTN.Visible = !monitoredItem.Created;
-            AttributeLB.Visible = !isEvent && !monitoredItem.Created;
-            AttributeCB.Visible = !isEvent && !monitoredItem.Created;
-            IndexRangeLB.Visible = !isEvent && !monitoredItem.Created;
-            IndexRangeTB.Visible = !isEvent && !monitoredItem.Created;
-            DataEncodingLB.Visible = !isEvent && !monitoredItem.Created;
-            DataEncodingCB.Visible = !isEvent && !monitoredItem.Created;
-            MonitoringModeLB.Visible = !monitoredItem.Created;
-            MonitoringModeCB.Visible = !monitoredItem.Created;
+            NodeLB.Visible = !created;
+            NodeTB.Visible = !created;
+            NodeBTN.Visible = !created;
+            AttributeLB.Visible = !isEvent && !created;
+            AttributeCB.Visible = !isEvent && !created;
+            IndexRangeLB.Visible = !isEvent && !created;
+            IndexRangeTB.Visible = !isEvent && !created;
+            DataEncodingLB.Visible = !isEvent && !created;
+            DataEncodingCB.Visible = !isEvent && !created;
+            MonitoringModeLB.Visible = !created;
+            MonitoringModeCB.Visible = !created;
             SamplingIntervalLB.Visible = true;
             SamplingIntervalUP.Visible = true;
             QueueSizeLB.Visible = !isEvent;
@@ -140,17 +149,17 @@ namespace Opc.Ua.Client.Controls
             TriggerTypeCB.Visible = !isEvent;
 
             // fill in values.
-            SamplingIntervalUP.Value = monitoredItem.SamplingInterval;
-            DiscardOldestCK.Checked = monitoredItem.DiscardOldest;
+            SamplingIntervalUP.Value = (decimal)settings.SamplingInterval.TotalMilliseconds;
+            DiscardOldestCK.Checked = settings.DiscardOldest;
 
             if (!isEvent)
             {
-                AttributeCB.SelectedIndex = (int)(monitoredItem.AttributeId - 1);
-                IndexRangeTB.Text = monitoredItem.IndexRange;
-                MonitoringModeCB.SelectedItem = monitoredItem.MonitoringMode;
-                QueueSizeUP.Value = monitoredItem.QueueSize;
+                AttributeCB.SelectedIndex = (int)(settings.AttributeId - 1);
+                IndexRangeTB.Text = settings.IndexRange;
+                MonitoringModeCB.SelectedItem = settings.MonitoringMode;
+                QueueSizeUP.Value = settings.QueueSize;
 
-                DataChangeFilter filter = monitoredItem.Filter as DataChangeFilter;
+                DataChangeFilter filter = settings.Filter as DataChangeFilter;
 
                 if (filter != null)
                 {
@@ -159,10 +168,10 @@ namespace Opc.Ua.Client.Controls
                     TriggerTypeCB.SelectedItem = filter.Trigger;
                 }
 
-                if (!monitoredItem.Created)
+                if (!created)
                 {
                     // fetch the available encodings for the first node in the list from the server.
-                    IVariableBase variable = await session.NodeCache.FindAsync(monitoredItem.StartNodeId, ct) as IVariableBase;
+                    IVariableBase variable = await session.NodeCache.FindAsync(settings.StartNodeId, ct) as IVariableBase;
 
                     DataEncodingCB.Items.Add(new EncodingInfo());
                     DataEncodingCB.SelectedIndex = 0;
@@ -175,7 +184,7 @@ namespace Opc.Ua.Client.Controls
                             {
                                 DataEncodingCB.Items.Add(new EncodingInfo() { EncodingName = encoding.BrowseName });
 
-                                if (monitoredItem.Encoding == encoding.BrowseName)
+                                if (settings.Encoding == encoding.BrowseName)
                                 {
                                     DataEncodingCB.SelectedIndex = DataEncodingCB.Items.Count - 1;
                                 }
@@ -194,52 +203,66 @@ namespace Opc.Ua.Client.Controls
                 return false;
             }
 
+            // read the controls before the update, so the callback below stays a pure function
+            // of the dialog state.
+            NodeId startNodeId = NodeBTN.SelectedNode;
+            var samplingInterval = TimeSpan.FromMilliseconds((double)SamplingIntervalUP.Value);
+            bool discardOldest = DiscardOldestCK.Checked;
+            uint attributeId = (uint)(AttributeCB.SelectedIndex + 1);
+            var monitoringMode = (MonitoringMode)MonitoringModeCB.SelectedItem;
+            string indexRange = IndexRangeTB.Text.Trim();
+            QualifiedName dataEncoding = ((EncodingInfo)DataEncodingCB.SelectedItem)?.EncodingName ?? QualifiedName.Null;
+            uint queueSize = (uint)QueueSizeUP.Value;
+            var trigger = (DataChangeTrigger)TriggerTypeCB.SelectedItem;
+            var deadbandType = (DeadbandType)DeadbandTypeCB.SelectedItem;
+            double deadbandValue = (double)DeadbandValueUP.Value;
+
             // update monitored item.
-            if (!monitoredItem.Created)
-            {
-                monitoredItem.StartNodeId = NodeBTN.SelectedNode;
-                monitoredItem.DisplayName = await session.NodeCache.GetDisplayTextAsync(monitoredItem.StartNodeId, ct);
-                monitoredItem.RelativePath = null;
-                monitoredItem.AttributeId = (uint)(AttributeCB.SelectedIndex + 1);
-                monitoredItem.MonitoringMode = (MonitoringMode)MonitoringModeCB.SelectedItem;
-            }
-
-            monitoredItem.SamplingInterval = (int)SamplingIntervalUP.Value;
-            monitoredItem.DiscardOldest = DiscardOldestCK.Checked;
-
-            if (!isEvent)
-            {
-                if (!monitoredItem.Created)
+            handle.Configure(options => {
+                if (!created)
                 {
-                    monitoredItem.IndexRange = IndexRangeTB.Text.Trim();
-                    monitoredItem.Encoding = ((EncodingInfo)DataEncodingCB.SelectedItem).EncodingName;
+                    options = options with {
+                        StartNodeId = startNodeId,
+                        AttributeId = attributeId,
+                        MonitoringMode = monitoringMode,
+                    };
                 }
 
-                monitoredItem.QueueSize = (uint)QueueSizeUP.Value;
+                options = options with {
+                    SamplingInterval = samplingInterval,
+                    DiscardOldest = discardOldest,
+                };
 
-                DataChangeTrigger trigger = (DataChangeTrigger)TriggerTypeCB.SelectedItem;
-                DeadbandType deadbandType = (DeadbandType)DeadbandTypeCB.SelectedItem;
-
-                if (monitoredItem.Filter != null || deadbandType != DeadbandType.None || trigger != DataChangeTrigger.StatusValue)
+                if (!isEvent)
                 {
-                    DataChangeFilter filter = new DataChangeFilter();
-                    filter.DeadbandType = (uint)deadbandType;
-                    filter.DeadbandValue = (double)DeadbandValueUP.Value;
-                    filter.Trigger = trigger;
-                    monitoredItem.Filter = filter;
-                }
-            }
-            else
-            {
-                if (!monitoredItem.Created)
-                {
-                    monitoredItem.IndexRange = null;
-                    monitoredItem.Encoding = QualifiedName.Null;
+                    if (!created)
+                    {
+                        options = options with { IndexRange = indexRange, Encoding = dataEncoding };
+                    }
+
+                    options = options with { QueueSize = queueSize };
+
+                    if (options.Filter != null || deadbandType != DeadbandType.None || trigger != DataChangeTrigger.StatusValue)
+                    {
+                        options = options with {
+                            Filter = new DataChangeFilter {
+                                DeadbandType = (uint)deadbandType,
+                                DeadbandValue = deadbandValue,
+                                Trigger = trigger,
+                            },
+                        };
+                    }
+
+                    return options;
                 }
 
-                monitoredItem.QueueSize = 0;
-                monitoredItem.Filter = new EventFilter();
-            }
+                if (!created)
+                {
+                    options = options with { IndexRange = null, Encoding = QualifiedName.Null };
+                }
+
+                return options with { QueueSize = 0, Filter = new EventFilter() };
+            });
 
             return true;
         }

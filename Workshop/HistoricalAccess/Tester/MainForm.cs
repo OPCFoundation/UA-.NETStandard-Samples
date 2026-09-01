@@ -575,15 +575,15 @@ namespace Quickstarts
 
                 if (!result.TypeInfo.IsUnknown)
                 {
-                    if (result.TypeInfo.BuiltInType == BuiltInType.Double)
+                    if (result.TryGetValue(out double doubleValue))
                     {
-                        if (Math.Truncate((double)result.AsBoxedObject()) == (double)result.AsBoxedObject())
+                        if (Math.Truncate(doubleValue) == doubleValue)
                         {
-                            buffer.AppendFormat("{0}", (long)(double)result.AsBoxedObject());
+                            buffer.AppendFormat("{0}", (long)doubleValue);
                         }
                         else
                         {
-                            buffer.AppendFormat("{0:F3}", result.AsBoxedObject());
+                            buffer.AppendFormat("{0:F3}", doubleValue);
                         }
                     }
                     else
@@ -883,13 +883,10 @@ namespace Quickstarts
                 {
                     Variant expectedValue = TestData.ValidateValue(row[3]);
 
-                    StatusCode? statusValue1 = expectedValue.AsBoxedObject() as StatusCode?;
-
-                    if (statusValue1 != null)
+                    if (expectedValue.TryGetValue(out StatusCode statusValue1))
                     {
-                        StatusCode? statusValue2 = actualValue.Value as StatusCode?;
-
-                        if (statusValue2 == null || statusValue2.Value != statusValue1.Value)
+                        if (!actualValue.WrappedValue.TryGetValue(out StatusCode statusValue2) ||
+                            statusValue2 != statusValue1)
                         {
                             UpdateActualValue(row.Row, actualValue, RowState.Failed);
                             continue;
@@ -898,10 +895,9 @@ namespace Quickstarts
 
                     else
                     {
-                        double value1 = Math.Round(Convert.ToDouble(expectedValue.AsBoxedObject()), 4);
-                        double value2 = Math.Round(Convert.ToDouble(actualValue.Value), 4);
-
-                        if (value1 != value2)
+                        if (!expectedValue.ConvertTo(BuiltInType.Double).TryGetValue(out double value1) ||
+                            !actualValue.WrappedValue.ConvertTo(BuiltInType.Double).TryGetValue(out double value2) ||
+                            Math.Round(value1, 4) != Math.Round(value2, 4))
                         {
                             UpdateActualValue(row.Row, actualValue, RowState.Failed);
                             continue;
@@ -1035,7 +1031,7 @@ namespace Quickstarts
 
                 TestData.DataValue dv = new TestData.DataValue();
 
-                dv.Value = TestData.ValidateValue(TestDataDV.Rows[e.RowIndex].Cells[3].FormattedValue);
+                dv.WrappedValue = TestData.ValidateValue(TestDataDV.Rows[e.RowIndex].Cells[3].FormattedValue);
                 dv.StatusCode = TestData.ValidateQuality(TestDataDV.Rows[e.RowIndex].Cells[4].FormattedValue);
                 dv.SourceTimestamp = TestData.ValidateTimestamp(TestDataDV.Rows[e.RowIndex].Cells[0].FormattedValue);
                 dv.Comment = TestDataDV.Rows[e.RowIndex].Cells[8].FormattedValue as string;
@@ -1344,15 +1340,15 @@ namespace Quickstarts
 
                     if (!value.TypeInfo.IsUnknown)
                     {
-                        if (value.TypeInfo.BuiltInType == BuiltInType.Double)
+                        if (value.TryGetValue(out double doubleValue))
                         {
-                            if (Math.Truncate((double)value.AsBoxedObject()) == (double)value.AsBoxedObject())
+                            if (Math.Truncate(doubleValue) == doubleValue)
                             {
-                                buffer.AppendFormat("{0}", (long)(double)value.AsBoxedObject());
+                                buffer.AppendFormat("{0}", (long)doubleValue);
                             }
                             else
                             {
-                                buffer.AppendFormat("{0:F3}", value.AsBoxedObject());
+                                buffer.AppendFormat("{0:F3}", doubleValue);
                             }
                         }
                         else

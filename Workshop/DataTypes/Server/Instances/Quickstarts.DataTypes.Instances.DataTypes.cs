@@ -168,8 +168,6 @@ namespace Quickstarts.DataTypes.Instances
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public override ExpandedNodeId XmlEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultXml;
 
-        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public override ExpandedNodeId JsonEncodingId => ObjectIds.TwoWheelerType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -352,8 +350,6 @@ namespace Quickstarts.DataTypes.Instances
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public override ExpandedNodeId XmlEncodingId => ObjectIds.BicycleType_Encoding_DefaultXml;
 
-        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public override ExpandedNodeId JsonEncodingId => ObjectIds.BicycleType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)
@@ -536,8 +532,6 @@ namespace Quickstarts.DataTypes.Instances
         /// <summary cref="IEncodeable.XmlEncodingId" />
         public override ExpandedNodeId XmlEncodingId => ObjectIds.ScooterType_Encoding_DefaultXml;
 
-        /// <summary cref="IJsonEncodeable.JsonEncodingId" />
-        public override ExpandedNodeId JsonEncodingId => ObjectIds.ScooterType_Encoding_DefaultJson;
 
         /// <summary cref="IEncodeable.Encode(IEncoder)" />
         public override void Encode(IEncoder encoder)

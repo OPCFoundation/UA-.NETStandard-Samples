@@ -52,7 +52,7 @@ namespace Opc.Ua.Sample.Controls
         }
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private bool m_showValues;
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Sets the nodes in the control.
         /// </summary>
-        public async Task UpdateAsync(Session session, ReferenceDescription reference, CancellationToken ct = default)
+        public async Task UpdateAsync(ISession session, ReferenceDescription reference, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.

@@ -106,8 +106,6 @@ namespace Quickstarts.UserAuthenticationClient
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
         private ITelemetryContext m_telemetry;
-        private Subscription m_subscription;
-        private MonitoredItem m_monitoredItem;
         private bool m_connectedOnce;
 
         // hard code for convience only valid when connecting to UserAuthenticationServer.
@@ -216,24 +214,9 @@ namespace Quickstarts.UserAuthenticationClient
         {
             try
             {
+                // this sample does not subscribe to anything: it demonstrates the user
+                // identity tokens, and the managed session reconnects on its own.
                 m_session = ConnectServerCTRL.Session;
-
-                foreach (Subscription subscription in m_session.Subscriptions)
-                {
-                    m_subscription = subscription;
-                    break;
-                }
-
-                if (m_subscription == null)
-                {
-                    return;
-                }
-
-                foreach (MonitoredItem monitoredItem in m_subscription.MonitoredItems)
-                {
-                    m_monitoredItem = monitoredItem;
-                    break;
-                }
             }
             catch (Exception exception)
             {

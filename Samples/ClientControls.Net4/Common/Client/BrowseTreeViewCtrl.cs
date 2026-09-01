@@ -446,11 +446,10 @@ namespace Opc.Ua.Client.Controls
                                 if (nodeIds.Count > 0 && !nodeIds[0].IsNull)
                                 {
                                     DataValue value = await m_session.ReadValueAsync(nodeIds[0]);
-                                    byte[] bytes = value.WrappedValue.AsBoxedObject() as byte[];
 
-                                    if (bytes != null)
+                                    if (value.WrappedValue.TryGetValue(out ByteString bytes))
                                     {
-                                        System.IO.MemoryStream istrm = new System.IO.MemoryStream(bytes);
+                                        System.IO.MemoryStream istrm = new System.IO.MemoryStream(bytes.ToArray());
                                         Image icon = Image.FromStream(istrm);
                                         BrowseTV.ImageList.Images.Add(icon);
                                         m_typeImageMapping[(NodeId)reference.TypeDefinition] = BrowseTV.ImageList.Images.Count - 1;

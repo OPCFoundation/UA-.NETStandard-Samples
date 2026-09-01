@@ -55,7 +55,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private EventHandler m_SessionClosing;
         #endregion
 
@@ -63,7 +63,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the address space with the specified view
         /// </summary>
-        public async Task ShowAsync(Session session, NodeId startId, CancellationToken ct = default)
+        public async Task ShowAsync(ISession session, NodeId startId, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 

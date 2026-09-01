@@ -25,28 +25,38 @@ namespace Opc.Ua.Samples.Tests
     {
         private readonly IReadOnlyDictionary<string, Variant> m_fields;
 
-        internal CapturedEvent(IReadOnlyDictionary<string, Variant> fields)
+        internal CapturedEvent(IReadOnlyDictionary<string, Variant> fields, Variant[] rawFields)
         {
             m_fields = fields;
+            RawFields = rawFields;
         }
+
+        /// <summary>
+        /// The fields exactly as the server sent them, in the order of the select clauses.
+        /// </summary>
+        /// <remarks>
+        /// This is what a source-generated event-record decoder consumes, so a test which
+        /// subscribed with a generated filter can decode the event from here.
+        /// </remarks>
+        public IReadOnlyList<Variant> RawFields { get; }
 
         /// <summary>
         /// The type of the event.
         /// </summary>
         public NodeId EventType
-            => Field(Opc.Ua.BrowseNames.EventType).AsBoxedObject() as NodeId? ?? NodeId.Null;
+            => Field(Opc.Ua.BrowseNames.EventType).TryGetValue(out NodeId eventType) ? eventType : NodeId.Null;
 
         /// <summary>
         /// The name of the source which reported the event.
         /// </summary>
         public string SourceName
-            => Field(Opc.Ua.BrowseNames.SourceName).AsBoxedObject() as string;
+            => Field(Opc.Ua.BrowseNames.SourceName).TryGetValue(out string sourceName) ? sourceName : null;
 
         /// <summary>
         /// The message of the event.
         /// </summary>
         public string Message
-            => (Field(Opc.Ua.BrowseNames.Message).AsBoxedObject() as LocalizedText?)?.Text;
+            => Field(Opc.Ua.BrowseNames.Message).TryGetValue(out LocalizedText message) ? message.Text : null;
 
         /// <summary>
         /// The value of one of the selected fields, by the name it was selected under.
@@ -98,6 +108,11 @@ namespace Opc.Ua.Samples.Tests
             m_handler = OnNotification;
             m_item.Notification += m_handler;
         }
+
+        /// <summary>
+        /// The id the server gave the subscription, as needed by a ConditionRefresh call.
+        /// </summary>
+        public uint SubscriptionId => m_subscription.Id;
 
         /// <summary>
         /// Subscribes to the events of a notifier.
@@ -161,6 +176,51 @@ namespace Opc.Ua.Samples.Tests
                 filter.WhereClause = OfType(eventTypeId);
             }
 
+            return await CreateAsync(session, notifier, filter, fieldNames.ToArray(), ct)
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Subscribes to the events of a notifier with a filter the caller built.
+        /// </summary>
+        /// <remarks>
+        /// The source generator emits an event filter per event type, whose select clauses
+        /// line up with the decoder of the matching event record. A test which wants to go
+        /// through that path hands the generated filter in here and decodes
+        /// <see cref="CapturedEvent.RawFields"/> afterwards.
+        /// </remarks>
+        /// <param name="session">The session to subscribe on.</param>
+        /// <param name="notifier">The node which reports the events, usually the server.</param>
+        /// <param name="filter">The event filter to apply.</param>
+        /// <param name="ct">The cancellation token.</param>
+        public static Task<EventCapture> CreateAsync(
+            ISession session,
+            NodeId notifier,
+            EventFilter filter,
+            CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(session);
+            ArgumentNullException.ThrowIfNull(filter);
+
+            var fieldNames = new List<string>();
+
+            foreach (SimpleAttributeOperand clause in filter.SelectClauses)
+            {
+                fieldNames.Add(clause.BrowsePath.IsNull || clause.BrowsePath.Count == 0
+                    ? string.Empty
+                    : clause.BrowsePath[clause.BrowsePath.Count - 1].Name);
+            }
+
+            return CreateAsync(session, notifier, filter, fieldNames.ToArray(), ct);
+        }
+
+        private static async Task<EventCapture> CreateAsync(
+            ISession session,
+            NodeId notifier,
+            EventFilter filter,
+            string[] fieldNames,
+            CancellationToken ct)
+        {
             var subscription = new Subscription(NullTelemetry.Instance) {
                 DisplayName = null,
                 PublishingInterval = 250,
@@ -188,7 +248,7 @@ namespace Opc.Ua.Samples.Tests
                     Filter = filter,
                 };
 
-                capture = new EventCapture(session, subscription, item, fieldNames.ToArray());
+                capture = new EventCapture(session, subscription, item, fieldNames);
 
                 subscription.AddItem(item);
                 await subscription.ApplyChangesAsync(ct).ConfigureAwait(false);
@@ -336,7 +396,7 @@ namespace Opc.Ua.Samples.Tests
                 fields[m_fieldNames[ii]] = values[ii];
             }
 
-            m_events.Writer.TryWrite(new CapturedEvent(fields));
+            m_events.Writer.TryWrite(new CapturedEvent(fields, values));
         }
 
         private static async Task SafeRemoveAsync(ISession session, Subscription subscription)

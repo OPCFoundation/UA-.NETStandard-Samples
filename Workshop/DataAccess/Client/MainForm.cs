@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
@@ -37,11 +38,18 @@ using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace Quickstarts.DataAccessClient
 {
+    // the V2 subscription engine reuses names the classic engine has in Opc.Ua.Client, and
+    // Opc.Ua itself has a server side IMonitoredItem, so the client types are aliased.
+    using IMonitoredItem = Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItem;
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
     /// <summary>
     /// The main form for a simple Data Access Client application.
     /// </summary>
@@ -71,20 +79,28 @@ namespace Quickstarts.DataAccessClient
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62548/Quickstarts/DataAccessServer";
             this.Text = m_configuration.ApplicationName;
 
-            // create the callback.
-            m_monitoredItem_Notification = new MonitoredItemNotificationEventHandler(MonitoredItem_Notification);
+            // the V2 engine takes the notification handler when the subscription is created,
+            // so the form owns one for its whole lifetime and points it at its own methods.
+            m_callbacks.DataChangeCallback = OnDataChanges;
         }
         #endregion
 
         #region Private Fields
+        /// <summary>
+        /// How long the form waits for the subscription engine to apply the item changes.
+        /// </summary>
+        private static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(10);
+
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
         private ITelemetryContext m_telemetry;
         private bool m_connectedOnce;
-#pragma warning disable CA2213 // Justification: Subscription lifetime is managed by session disconnect logic.
-        private Subscription m_subscription;
+#pragma warning disable CA2213 // Justification: disposed asynchronously by DeleteSubscriptionAsync.
+        private ISubscription m_subscription;
 #pragma warning restore CA2213
-        private MonitoredItemNotificationEventHandler m_monitoredItem_Notification;
+        private readonly SubscriptionCallbacks m_callbacks = new SubscriptionCallbacks();
+        private readonly Dictionary<string, ListViewItem> m_rows = new Dictionary<string, ListViewItem>(StringComparer.Ordinal);
+        private int m_nextItemId;
         #endregion
 
         #region Private Methods
@@ -109,18 +125,37 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await DeleteSubscriptionAsync();
                 ConnectServerCTRL.Disconnect();
-                m_subscription?.Dispose();
-                m_subscription = null;
                 m_session = null;
             }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Deletes the subscription on the server and drops it from the subscription manager.
+        /// </summary>
+        /// <remarks>
+        /// Done before the session is closed: closing a session which still carries a
+        /// subscription waits for the publish pipeline to drain.
+        /// </remarks>
+        private async Task DeleteSubscriptionAsync()
+        {
+            ISubscription subscription = m_subscription;
+
+            m_subscription = null;
+            m_rows.Clear();
+
+            if (subscription != null)
+            {
+                await subscription.DisposeAsync();
             }
         }
 
@@ -150,6 +185,8 @@ namespace Quickstarts.DataAccessClient
 
                 if (m_session == null)
                 {
+                    m_subscription = null;
+                    m_rows.Clear();
                     MonitoredItemsLV.Items.Clear();
                     BrowseNodesTV.Nodes.Clear();
                     BrowseNodesTV.Enabled = false;
@@ -201,13 +238,10 @@ namespace Quickstarts.DataAccessClient
         {
             try
             {
+                // a V2 subscription belongs to the subscription manager of the session and
+                // survives the reconnect together with its monitored items, so there is
+                // nothing to re-attach here.
                 m_session = ConnectServerCTRL.Session;
-
-                foreach (Subscription subscription in m_session.Subscriptions)
-                {
-                    m_subscription = subscription;
-                    break;
-                }
 
                 BrowseNodesTV.Enabled = true;
                 MonitoredItemsLV.Enabled = true;
@@ -223,6 +257,7 @@ namespace Quickstarts.DataAccessClient
         /// </summary>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            DeleteSubscriptionAsync().GetAwaiter().GetResult();
             ConnectServerCTRL.Disconnect();
         }
         #endregion
@@ -388,7 +423,7 @@ namespace Quickstarts.DataAccessClient
                         // display the value.
                         else
                         {
-                            TypeInfo typeInfo = TypeInfo.Construct(results[ii].WrappedValue.AsBoxedObject());
+                            TypeInfo typeInfo = results[ii].WrappedValue.TypeInfo;
 
                             datatype = typeInfo.BuiltInType.ToString();
 
@@ -397,7 +432,7 @@ namespace Quickstarts.DataAccessClient
                                 datatype += "[]";
                             }
 
-                            value = Utils.Format("{0}", results[ii].WrappedValue.AsBoxedObject());
+                            value = results[ii].WrappedValue.ToString();
                         }
                     }
 
@@ -423,7 +458,7 @@ namespace Quickstarts.DataAccessClient
                         // display the value.
                         else
                         {
-                            TypeInfo typeInfo = TypeInfo.Construct(results[ii].WrappedValue.AsBoxedObject());
+                            TypeInfo typeInfo = results[ii].WrappedValue.TypeInfo;
 
                             datatype = typeInfo.BuiltInType.ToString();
 
@@ -432,7 +467,7 @@ namespace Quickstarts.DataAccessClient
                                 datatype += "[]";
                             }
 
-                            value = Utils.Format("{0}", results[ii].WrappedValue.AsBoxedObject());
+                            value = results[ii].WrappedValue.ToString();
                         }
                     }
 
@@ -594,19 +629,12 @@ namespace Quickstarts.DataAccessClient
 
                 ListViewItem item = await CreateMonitoredItemAsync((NodeId)reference.NodeId, Utils.Format("{0}", reference));
 
-                await m_subscription.ApplyChangesAsync();
+                // the V2 engine has no ApplyChanges: adding the item to the collection is the
+                // request and the engine applies it on its own worker, so the form waits for
+                // that worker before it shows the revised values.
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
 
-                MonitoredItem monitoredItem = (MonitoredItem)item.Tag;
-
-                if (ServiceResult.IsBad(monitoredItem.Status.Error))
-                {
-                    item.SubItems[8].Text = monitoredItem.Status.Error.StatusCode.ToString();
-                }
-
-                item.SubItems.Add(monitoredItem.DisplayName);
-                item.SubItems[1].Text = monitoredItem.MonitoringMode.ToString();
-                item.SubItems[2].Text = monitoredItem.SamplingInterval.ToString();
-                item.SubItems[3].Text = DeadbandFilterToText(monitoredItem.Filter);
+                UpdateRevisedValues(item, (MonitoredItemHandle)item.Tag);
 
                 MonitoredItemsLV.Columns[0].Width = -2;
                 MonitoredItemsLV.Columns[1].Width = -2;
@@ -621,61 +649,79 @@ namespace Quickstarts.DataAccessClient
         /// <summary>
         /// Creates the monitored item.
         /// </summary>
-        private async Task<ListViewItem> CreateMonitoredItemAsync(NodeId nodeId, string displayName, CancellationToken ct = default)
+        private Task<ListViewItem> CreateMonitoredItemAsync(NodeId nodeId, string displayName, CancellationToken ct = default)
         {
             if (m_subscription == null)
             {
-                m_subscription = new Subscription(m_session.DefaultSubscription);
+                // the V2 engine takes the settings through an options monitor, and
+                // reconfiguring that monitor is what modifies the subscription later on.
+                var options = new OptionsMonitor<SubscriptionOptions>(
+                    ClientUtils.DefaultSubscriptionOptions with { Priority = 100 });
 
-                m_subscription.PublishingEnabled = true;
-                m_subscription.PublishingInterval = 1000;
-                m_subscription.KeepAliveCount = 10;
-                m_subscription.LifetimeCount = 10;
-                m_subscription.MaxNotificationsPerPublish = 1000;
-                m_subscription.Priority = 100;
-
-                m_session.AddSubscription(m_subscription);
-
-                await m_subscription.CreateAsync(ct);
+                m_subscription = ClientUtils.AddSubscription(m_session, m_callbacks, options);
             }
 
-            // add the new monitored item.
-            MonitoredItem monitoredItem = new MonitoredItem(m_subscription.DefaultItem);
-
-            monitoredItem.StartNodeId = nodeId;
-            monitoredItem.AttributeId = Attributes.Value;
-            monitoredItem.DisplayName = displayName;
-            monitoredItem.MonitoringMode = MonitoringMode.Reporting;
-            monitoredItem.SamplingInterval = 1000;
-            monitoredItem.QueueSize = 0;
-            monitoredItem.DiscardOldest = true;
-
-            monitoredItem.Notification += m_monitoredItem_Notification;
-
-            m_subscription.AddItem(monitoredItem);
+            // the item is identified by a name which is unique within the subscription. Its
+            // settings live in the handle, because the engine only reports revised values.
+            var handle = new MonitoredItemHandle(
+                Utils.Format("Item{0}", ++m_nextItemId),
+                new MonitoredItemOptions {
+                    StartNodeId = nodeId,
+                    AttributeId = Attributes.Value,
+                    MonitoringMode = MonitoringMode.Reporting,
+                    SamplingInterval = TimeSpan.FromMilliseconds(1000),
+                    QueueSize = 0,
+                    DiscardOldest = true,
+                }) {
+                DisplayName = displayName,
+            };
 
             // add the attribute name/value to the list view.
-            ListViewItem item = new ListViewItem(monitoredItem.ClientHandle.ToString());
-            monitoredItem.Handle = item;
+            ListViewItem item = new ListViewItem(String.Empty);
 
-            item.SubItems.Add(monitoredItem.DisplayName);
-            item.SubItems.Add(monitoredItem.MonitoringMode.ToString());
-            item.SubItems.Add(monitoredItem.SamplingInterval.ToString());
-            item.SubItems.Add(DeadbandFilterToText(monitoredItem.Filter));
+            item.SubItems.Add(handle.DisplayName);
+            item.SubItems.Add(handle.Settings.MonitoringMode.ToString());
+            item.SubItems.Add(handle.Settings.SamplingInterval.TotalMilliseconds.ToString(CultureInfo.CurrentCulture));
+            item.SubItems.Add(DeadbandFilterToText(handle.Settings.Filter));
             item.SubItems.Add(String.Empty);
             item.SubItems.Add(String.Empty);
             item.SubItems.Add(String.Empty);
             item.SubItems.Add(String.Empty);
 
-            item.Tag = monitoredItem;
+            item.Tag = handle;
             MonitoredItemsLV.Items.Add(item);
+            m_rows[handle.Name] = item;
 
-            if (ServiceResult.IsBad(monitoredItem.Status.Error))
+            // adding the item to the collection is the request; the engine applies it.
+            m_subscription.MonitoredItems.TryAdd(handle.Name, handle.Options, out IMonitoredItem monitoredItem);
+            handle.Item = monitoredItem;
+
+            return Task.FromResult(item);
+        }
+
+        /// <summary>
+        /// Shows the values the engine reports for an item after it applied the changes.
+        /// </summary>
+        private void UpdateRevisedValues(ListViewItem item, MonitoredItemHandle handle)
+        {
+            IMonitoredItem monitoredItem = handle.Item;
+
+            if (monitoredItem == null)
             {
-                item.SubItems[8].Text = monitoredItem.Status.Error.StatusCode.ToString();
+                return;
             }
 
-            return item;
+            item.SubItems[0].Text = monitoredItem.ClientHandle.ToString(CultureInfo.CurrentCulture);
+            item.SubItems[2].Text = monitoredItem.CurrentMonitoringMode.ToString();
+            item.SubItems[3].Text = monitoredItem.CurrentSamplingInterval.TotalMilliseconds.ToString(CultureInfo.CurrentCulture);
+
+            // the engine reports no revised filter, only whether the server accepted the one
+            // which was requested, so the requested filter is what the list shows.
+            item.SubItems[4].Text = DeadbandFilterToText(handle.Settings.Filter);
+
+            item.SubItems[8].Text = ServiceResult.IsBad(monitoredItem.Error)
+                ? monitoredItem.Error.StatusCode.ToString()
+                : String.Empty;
         }
 
         /// <summary>
@@ -745,13 +791,28 @@ namespace Quickstarts.DataAccessClient
         }
 
         /// <summary>
-        /// Updates the display with a new value for a monitored variable.
+        /// Updates the display with the new values for the monitored variables.
         /// </summary>
-        private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        /// <remarks>
+        /// The V2 engine calls this on a publish worker instead of on the UI thread, and it
+        /// reports the whole notification instead of one value per item.
+        /// </remarks>
+        private void OnDataChanges(
+            ISubscription subscription,
+            uint sequenceNumber,
+            DateTime publishTime,
+            DataValueChange[] notifications,
+            PublishState publishState)
         {
+            if (!IsHandleCreated || IsDisposed)
+            {
+                return;
+            }
+
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_Notification), monitoredItem, e);
+                this.BeginInvoke(new Action(
+                    () => OnDataChanges(subscription, sequenceNumber, publishTime, notifications, publishState)));
                 return;
             }
 
@@ -762,23 +823,40 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                MonitoredItemNotification notification = e.NotificationValue as MonitoredItemNotification;
-
-                if (notification == null)
+                foreach (DataValueChange change in notifications)
                 {
-                    return;
+                    if (change.MonitoredItem == null || !m_rows.TryGetValue(change.MonitoredItem.Name, out ListViewItem item))
+                    {
+                        continue;
+                    }
+
+                    item.SubItems[5].Text = Utils.Format("{0}", change.Value.WrappedValue);
+                    item.SubItems[6].Text = Utils.Format("{0}", change.Value.StatusCode);
+                    item.SubItems[7].Text = Utils.Format("{0:HH:mm:ss.fff}", change.Value.SourceTimestamp.ToLocalTime());
                 }
-
-                ListViewItem item = (ListViewItem)monitoredItem.Handle;
-
-                item.SubItems[5].Text = Utils.Format("{0}", notification.Value.WrappedValue);
-                item.SubItems[6].Text = Utils.Format("{0}", notification.Value.StatusCode);
-                item.SubItems[7].Text = Utils.Format("{0:HH:mm:ss.fff}", notification.Value.SourceTimestamp.ToLocalTime());
             }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
+        }
+
+        /// <summary>
+        /// Returns the handles of the currently selected monitored items.
+        /// </summary>
+        private List<MonitoredItemHandle> GetSelectedHandles()
+        {
+            var handles = new List<MonitoredItemHandle>();
+
+            for (int ii = 0; ii < MonitoredItemsLV.SelectedItems.Count; ii++)
+            {
+                if (MonitoredItemsLV.SelectedItems[ii].Tag is MonitoredItemHandle handle)
+                {
+                    handles.Add(handle);
+                }
+            }
+
+            return handles;
         }
 
         /// <summary>
@@ -807,37 +885,23 @@ namespace Quickstarts.DataAccessClient
                     monitoringMode = MonitoringMode.Sampling;
                 }
 
-                // update the monitoring mode.
-                List<MonitoredItem> itemsToChange = new List<MonitoredItem>();
+                // reconfiguring the options of an item is what modifies it; the engine picks
+                // the change up on its own worker.
+                List<MonitoredItemHandle> itemsToChange = GetSelectedHandles();
 
-                for (int ii = 0; ii < MonitoredItemsLV.SelectedItems.Count; ii++)
+                foreach (MonitoredItemHandle handle in itemsToChange)
                 {
-                    MonitoredItem monitoredItem = MonitoredItemsLV.SelectedItems[ii].Tag as MonitoredItem;
-
-                    if (monitoredItem != null)
-                    {
-                        itemsToChange.Add(monitoredItem);
-                    }
+                    handle.Configure(options => options with { MonitoringMode = monitoringMode });
                 }
 
-                // apply the changes to the server.
-                await m_subscription.SetMonitoringModeAsync(monitoringMode, itemsToChange);
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
 
                 // update the display.
-                for (int ii = 0; ii < itemsToChange.Count; ii++)
+                foreach (MonitoredItemHandle handle in itemsToChange)
                 {
-                    ListViewItem item = itemsToChange[ii].Handle as ListViewItem;
-
-                    if (item != null)
+                    if (m_rows.TryGetValue(handle.Name, out ListViewItem item))
                     {
-                        item.SubItems[8].Text = String.Empty;
-
-                        if (ServiceResult.IsBad(itemsToChange[ii].Status.Error))
-                        {
-                            item.SubItems[8].Text = itemsToChange[ii].Status.Error.StatusCode.ToString();
-                        }
-
-                        item.SubItems[2].Text = itemsToChange[ii].Status.MonitoringMode.ToString();
+                        UpdateRevisedValues(item, handle);
                     }
                 }
             }
@@ -876,38 +940,24 @@ namespace Quickstarts.DataAccessClient
                     samplingInterval = 5000;
                 }
 
-                // update the monitoring mode.
-                List<MonitoredItem> itemsToChange = new List<MonitoredItem>();
+                // update the sampling interval.
+                List<MonitoredItemHandle> itemsToChange = GetSelectedHandles();
 
-                for (int ii = 0; ii < MonitoredItemsLV.SelectedItems.Count; ii++)
+                foreach (MonitoredItemHandle handle in itemsToChange)
                 {
-                    MonitoredItem monitoredItem = MonitoredItemsLV.SelectedItems[ii].Tag as MonitoredItem;
-
-                    if (monitoredItem != null)
-                    {
-                        monitoredItem.SamplingInterval = (int)samplingInterval;
-                        itemsToChange.Add(monitoredItem);
-                    }
+                    handle.Configure(options => options with {
+                        SamplingInterval = TimeSpan.FromMilliseconds(samplingInterval),
+                    });
                 }
 
-                // apply the changes to the server.
-                await m_subscription.ApplyChangesAsync();
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
 
                 // update the display.
-                for (int ii = 0; ii < itemsToChange.Count; ii++)
+                foreach (MonitoredItemHandle handle in itemsToChange)
                 {
-                    ListViewItem item = itemsToChange[ii].Handle as ListViewItem;
-
-                    if (item != null)
+                    if (m_rows.TryGetValue(handle.Name, out ListViewItem item))
                     {
-                        item.SubItems[8].Text = String.Empty;
-
-                        if (ServiceResult.IsBad(itemsToChange[ii].Status.Error))
-                        {
-                            item.SubItems[8].Text = itemsToChange[ii].Status.Error.StatusCode.ToString();
-                        }
-
-                        item.SubItems[3].Text = itemsToChange[ii].Status.SamplingInterval.ToString();
+                        UpdateRevisedValues(item, handle);
                     }
                 }
             }
@@ -969,39 +1019,27 @@ namespace Quickstarts.DataAccessClient
                     filter = null;
                 }
 
-                // update the monitoring mode.
-                List<MonitoredItem> itemsToChange = new List<MonitoredItem>();
+                // update the deadband.
+                List<MonitoredItemHandle> itemsToChange = GetSelectedHandles();
 
-                for (int ii = 0; ii < MonitoredItemsLV.SelectedItems.Count; ii++)
+                foreach (MonitoredItemHandle handle in itemsToChange)
                 {
-                    MonitoredItem monitoredItem = MonitoredItemsLV.SelectedItems[ii].Tag as MonitoredItem;
-
-                    if (monitoredItem != null)
-                    {
-                        monitoredItem.Filter = filter;
-                        itemsToChange.Add(monitoredItem);
-                    }
+                    handle.Configure(options => options with { Filter = filter });
                 }
 
-                // apply the changes to the server.
-                await m_subscription.ApplyChangesAsync();
+                await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
 
-                // update the display.
-                for (int ii = 0; ii < itemsToChange.Count; ii++)
+                // update the display, and drop a filter the server would not take.
+                foreach (MonitoredItemHandle handle in itemsToChange)
                 {
-                    ListViewItem item = itemsToChange[ii].Handle as ListViewItem;
-
-                    if (item != null)
+                    if (handle.Item != null && ServiceResult.IsBad(handle.Item.Error))
                     {
-                        item.SubItems[8].Text = String.Empty;
+                        handle.Configure(options => options with { Filter = null });
+                    }
 
-                        if (ServiceResult.IsBad(itemsToChange[ii].Status.Error))
-                        {
-                            itemsToChange[ii].Filter = null;
-                            item.SubItems[8].Text = itemsToChange[ii].Status.Error.StatusCode.ToString();
-                        }
-
-                        item.SubItems[4].Text = DeadbandFilterToText(itemsToChange[ii].Status.Filter);
+                    if (m_rows.TryGetValue(handle.Name, out ListViewItem item))
+                    {
+                        UpdateRevisedValues(item, handle);
                     }
                 }
             }
@@ -1031,36 +1069,24 @@ namespace Quickstarts.DataAccessClient
 
                 for (int ii = 0; ii < MonitoredItemsLV.SelectedItems.Count; ii++)
                 {
-                    MonitoredItem monitoredItem = MonitoredItemsLV.SelectedItems[ii].Tag as MonitoredItem;
-
-                    if (monitoredItem != null)
+                    if (MonitoredItemsLV.SelectedItems[ii].Tag is MonitoredItemHandle handle)
                     {
-                        monitoredItem.Notification -= m_monitoredItem_Notification;
                         itemsToDelete.Add(MonitoredItemsLV.SelectedItems[ii]);
 
-                        if (m_subscription != null)
+                        // removing the item from the collection is the delete request.
+                        if (m_subscription != null && handle.Item != null)
                         {
-                            m_subscription.RemoveItem(monitoredItem);
+                            m_subscription.MonitoredItems.TryRemove(handle.Item.ClientHandle);
                         }
+
+                        m_rows.Remove(handle.Name);
                     }
                 }
 
                 // update the server.
                 if (m_subscription != null)
                 {
-                    await m_subscription.ApplyChangesAsync();
-
-                    // check the status.
-                    for (int ii = 0; ii < itemsToDelete.Count; ii++)
-                    {
-                        MonitoredItem monitoredItem = itemsToDelete[ii].Tag as MonitoredItem;
-
-                        if (ServiceResult.IsBad(monitoredItem.Status.Error))
-                        {
-                            itemsToDelete[ii].SubItems[8].Text = monitoredItem.Status.Error.StatusCode.ToString();
-                            continue;
-                        }
-                    }
+                    await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
                 }
 
                 // remove the items.
@@ -1114,13 +1140,11 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                MonitoredItem monitoredItem = MonitoredItemsLV.SelectedItems[0].Tag as MonitoredItem;
-
-                if (monitoredItem != null)
+                if (MonitoredItemsLV.SelectedItems[0].Tag is MonitoredItemHandle handle)
                 {
                     using (var dialog = new WriteValueDlg())
                     {
-                        await dialog.ShowDialogAsync(m_session, (NodeId)monitoredItem.ResolvedNodeId, Attributes.Value);
+                        await dialog.ShowDialogAsync(m_session, handle.Settings.StartNodeId, Attributes.Value);
                     }
                 }
             }

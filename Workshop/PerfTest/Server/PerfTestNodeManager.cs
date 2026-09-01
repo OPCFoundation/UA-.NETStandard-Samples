@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -27,23 +27,39 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Diagnostics;
-using System.Xml;
-using System.IO;
 using System.Threading;
-using System.Reflection;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
 
 namespace Quickstarts.PerfTestServer
 {
     /// <summary>
+    /// The factory the server registers to create the node manager.
+    /// </summary>
+    public class PerfTestNodeManagerFactory : IAsyncNodeManagerFactory
+    {
+        /// <inheritdoc/>
+        public ValueTask<IAsyncNodeManager> CreateAsync(
+            IServerInternal server,
+            ApplicationConfiguration configuration,
+            CancellationToken cancellationToken = default)
+        {
+#pragma warning disable CA2000 // Justification: ownership of the node manager transfers to the caller.
+            return new ValueTask<IAsyncNodeManager>(
+                new PerfTestNodeManager(server, configuration));
+#pragma warning restore CA2000
+        }
+
+        /// <inheritdoc/>
+        public ArrayOf<string> NamespacesUris => [Namespaces.PerfTest];
+    }
+
+    /// <summary>
     /// A node manager for a server that exposes several variables.
     /// </summary>
-    public class PerfTestNodeManager : CustomNodeManager2
+    public class PerfTestNodeManager : AsyncCustomNodeManager
     {
         #region Constructors
         /// <summary>
@@ -51,34 +67,13 @@ namespace Quickstarts.PerfTestServer
         /// </summary>
         public PerfTestNodeManager(IServerInternal server, ApplicationConfiguration configuration)
         :
-            base(server, configuration, Namespaces.PerfTest)
+            base(
+                server,
+                configuration,
+                server.Telemetry.CreateLogger<PerfTestNodeManager>(),
+                Namespaces.PerfTest)
         {
-            SystemContext.NodeIdFactory = this;
             SystemContext.SystemHandle = m_system = new UnderlyingSystem();
-
-            // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<PerfTestServerConfiguration>();
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new PerfTestServerConfiguration();
-            }
-        }
-        #endregion
-
-        #region IDisposable Members
-        /// <summary>
-        /// An overrideable version of the Dispose.
-        /// </summary>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // TBD
-            }
-
-            base.Dispose(disposing);
         }
         #endregion
 
@@ -92,145 +87,148 @@ namespace Quickstarts.PerfTestServer
         }
         #endregion
 
-        #region INodeManager Members
+        #region IAsyncNodeManager Members
         /// <summary>
         /// Does any initialization required before the address space can be used.
         /// </summary>
         /// <remarks>
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.  
+        /// should have a reference to the root folder node(s) exposed by this node manager.
         /// </remarks>
-        public override void CreateAddressSpace(IDictionary<NodeId, IList<IReference>> externalReferences)
+        public override async ValueTask CreateAddressSpaceAsync(
+            IDictionary<NodeId, IList<IReference>> externalReferences,
+            CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
+
+            m_system.Initialize(Server.Telemetry);
+
+            IList<MemoryRegister> registers = m_system.GetRegisters();
+
+            for (int ii = 0; ii < registers.Count; ii++)
             {
-                m_system.Initialize(Server.Telemetry);
+                NodeId targetId = ModelUtils.GetRegisterId(registers[ii], NamespaceIndex);
 
-                IList<MemoryRegister> registers = m_system.GetRegisters();
+                IList<IReference> references = null;
 
-                for (int ii = 0; ii < registers.Count; ii++)
+                if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out references))
                 {
-                    NodeId targetId = ModelUtils.GetRegisterId(registers[ii], NamespaceIndex);
-
-                    IList<IReference> references = null;
-
-                    if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out references))
-                    {
-                        externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
-                    }
-
-                    references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, targetId));
+                    externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
                 }
-            }
-        }
 
-        /// <summary>
-        /// Frees any resources allocated for the address space.
-        /// </summary>
-        public override void DeleteAddressSpace()
-        {
-            lock (Lock)
-            {
-                // TBD
+                references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, targetId));
             }
         }
 
         /// <summary>
         /// Returns a unique handle for the node.
         /// </summary>
-        protected override NodeHandle GetManagerHandle(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache)
+        /// <remarks>
+        /// The node manager stores no node objects: the register number and the index of
+        /// the variable within it are encoded in the numeric identifier, and a node is
+        /// synthesized for the duration of the operation. There is no shared state to
+        /// protect, so reads run in parallel without any lock.
+        /// </remarks>
+        protected override ValueTask<NodeHandle> GetManagerHandleAsync(
+            ServerSystemContext context,
+            NodeId nodeId,
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
-            lock (Lock)
+            // quickly exclude nodes that are not in the namespace.
+            if (!IsNodeIdInNamespace(nodeId))
             {
-                // quickly exclude nodes that are not in the namespace.
-                if (!IsNodeIdInNamespace(nodeId))
+                return new ValueTask<NodeHandle>();
+            }
+
+            if (!nodeId.TryGetValue(out uint id))
+            {
+                return new ValueTask<NodeHandle>();
+            }
+
+            NodeHandle handle = new NodeHandle();
+            handle.NodeId = nodeId;
+            handle.Validated = true;
+
+            // find register
+            int registerId = (int)((id & 0xFF000000) >> 24);
+            int index = (int)(id & 0x00FFFFFF);
+
+            if (registerId == 0)
+            {
+                MemoryRegister register = m_system.GetRegister(index);
+
+                if (register == null)
                 {
-                    return null;
+                    return new ValueTask<NodeHandle>();
                 }
 
-                NodeHandle handle = new NodeHandle();
-                handle.NodeId = nodeId;
-                handle.Validated = true;
+                handle.Node = ModelUtils.GetRegister(register, NamespaceIndex);
+            }
 
-                if (!nodeId.TryGetValue(out uint id))
+            // find register variable.
+            else
+            {
+                MemoryRegister register = m_system.GetRegister(registerId);
+
+                if (register == null)
                 {
-                    return null;
-                }
-
-                // find register
-                int registerId = (int)((id & 0xFF000000) >> 24);
-                int index = (int)(id & 0x00FFFFFF);
-
-                if (registerId == 0)
-                {
-                    MemoryRegister register = m_system.GetRegister(index);
-
-                    if (register == null)
-                    {
-                        return null;
-                    }
-
-                    handle.Node = ModelUtils.GetRegister(register, NamespaceIndex);
+                    return new ValueTask<NodeHandle>();
                 }
 
                 // find register variable.
-                else
+                BaseDataVariableState variable = ModelUtils.GetRegisterVariable(register, index, NamespaceIndex);
+
+                if (variable == null)
                 {
-                    MemoryRegister register = m_system.GetRegister(registerId);
-
-                    if (register == null)
-                    {
-                        return null;
-                    }
-
-                    // find register variable.
-                    BaseDataVariableState variable = ModelUtils.GetRegisterVariable(register, index, NamespaceIndex);
-
-                    if (variable == null)
-                    {
-                        return null;
-                    }
-
-                    handle.Node = variable;
+                    return new ValueTask<NodeHandle>();
                 }
 
-                return handle;
+                handle.Node = variable;
             }
+
+            return new ValueTask<NodeHandle>(handle);
         }
 
         /// <summary>
         /// Verifies that the specified node exists.
         /// </summary>
-        protected override NodeState ValidateNode(
+        protected override ValueTask<NodeState> ValidateNodeAsync(
             ServerSystemContext context,
             NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache)
+            IDictionary<NodeId, NodeState> cache,
+            CancellationToken cancellationToken = default)
         {
             // not valid if no root.
             if (handle == null)
             {
-                return null;
+                return new ValueTask<NodeState>();
             }
 
             // check if previously validated.
             if (handle.Validated)
             {
-                return handle.Node;
+                return new ValueTask<NodeState>(handle.Node);
             }
 
             // TBD
 
-            return null;
+            return new ValueTask<NodeState>();
         }
         #endregion
 
         #region Overridden Methods
+        /// <summary>
+        /// Called when a batch of monitored items has been created. The items are wired
+        /// straight into the register, which queues the changed values from its own timer
+        /// and bypasses the sampling machinery of the server.
+        /// </summary>
         protected override void OnCreateMonitoredItemsComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
         {
             for (int ii = 0; ii < monitoredItems.Count; ii++)
             {
-                NodeHandle handle = IsHandleInNamespace(monitoredItems[ii].ManagerHandle);
+                NodeHandle handle = monitoredItems[ii].ManagerHandle as NodeHandle;
 
                 if (handle == null)
                 {
@@ -247,11 +245,17 @@ namespace Quickstarts.PerfTestServer
             }
         }
 
-        protected override void OnDeleteMonitoredItemsComplete(ServerSystemContext context, IList<IMonitoredItem> monitoredItems)
+        /// <summary>
+        /// Called when a batch of monitored items has been deleted.
+        /// </summary>
+        protected override ValueTask OnDeleteMonitoredItemsCompleteAsync(
+            ServerSystemContext context,
+            IList<IMonitoredItem> monitoredItems,
+            CancellationToken cancellationToken = default)
         {
             for (int ii = 0; ii < monitoredItems.Count; ii++)
             {
-                NodeHandle handle = IsHandleInNamespace(monitoredItems[ii].ManagerHandle);
+                NodeHandle handle = monitoredItems[ii].ManagerHandle as NodeHandle;
 
                 if (handle == null)
                 {
@@ -266,11 +270,12 @@ namespace Quickstarts.PerfTestServer
                     register.Unsubscribe((int)variable.NumericId, (IDataChangeMonitoredItem2)monitoredItems[ii]);
                 }
             }
+
+            return default;
         }
         #endregion
 
         #region Private Fields
-        private PerfTestServerConfiguration m_configuration;
         private UnderlyingSystem m_system;
         #endregion
     }

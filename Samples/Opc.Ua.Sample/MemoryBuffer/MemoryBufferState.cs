@@ -99,7 +99,7 @@ namespace MemoryBuffer
         /// <summary>
         /// The node manager that the buffer belongs to.
         /// </summary>
-        public INodeManager NodeManager
+        public IAsyncNodeManager NodeManager
         {
             get { return m_nodeManager; }
         }
@@ -332,27 +332,23 @@ namespace MemoryBuffer
                 {
                     case BuiltInType.UInt32:
                     {
-                        uint? valueToWrite = value.AsBoxedObject() as uint?;
-
-                        if (valueToWrite == null)
+                        if (!value.TryGetValue(out uint valueToWrite))
                         {
                             return StatusCodes.BadTypeMismatch;
                         }
 
-                        bytes = BitConverter.GetBytes(valueToWrite.Value);
+                        bytes = BitConverter.GetBytes(valueToWrite);
                         break;
                     }
 
                     case BuiltInType.Double:
                     {
-                        double? valueToWrite = value.AsBoxedObject() as double?;
-
-                        if (valueToWrite == null)
+                        if (!value.TryGetValue(out double valueToWrite))
                         {
                             return StatusCodes.BadTypeMismatch;
                         }
 
-                        bytes = BitConverter.GetBytes(valueToWrite.Value);
+                        bytes = BitConverter.GetBytes(valueToWrite);
                         break;
                     }
 
@@ -425,7 +421,7 @@ namespace MemoryBuffer
         /// </summary>
         public void InitializeMonitoring(
             IServerInternal server,
-            INodeManager nodeManager)
+            IAsyncNodeManager nodeManager)
         {
             lock (m_dataLock)
             {
@@ -440,8 +436,8 @@ namespace MemoryBuffer
         /// Creates a new data change monitored item.
         /// </summary>
         public MemoryBufferMonitoredItem CreateDataChangeItem(
-            ServerSystemContext context,
             MemoryTagState tag,
+            NodeHandle handle,
             uint subscriptionId,
             uint monitoredItemId,
             ReadValueId itemToMonitor,
@@ -450,26 +446,15 @@ namespace MemoryBuffer
             MonitoringMode monitoringMode,
             uint clientHandle,
             double samplingInterval)
-
-        /*
-        ISystemContext context,
-        MemoryTagState tag,
-        uint monitoredItemId,
-        uint attributeId,
-        DiagnosticsMasks diagnosticsMasks,
-        TimestampsToReturn timestampsToReturn,
-        MonitoringMode monitoringMode,
-        uint clientHandle,
-        double samplingInterval)*/
         {
             lock (m_dataLock)
             {
                 MemoryBufferMonitoredItem monitoredItem = new MemoryBufferMonitoredItem(
                     m_server,
                     m_nodeManager,
-                    this,
+                    handle,
                     tag.Offset,
-                    0,
+                    subscriptionId,
                     monitoredItemId,
                     itemToMonitor,
                     diagnosticsMasks,
@@ -483,19 +468,6 @@ namespace MemoryBuffer
                     0,
                     false,
                     0);
-
-                /*
-                MemoryBufferMonitoredItem monitoredItem = new MemoryBufferMonitoredItem(
-                    this,
-                    monitoredItemId,
-                    tag.Offset,
-                    attributeId,
-                    diagnosticsMasks,
-                    timestampsToReturn,
-                    monitoringMode,
-                    clientHandle,
-                    samplingInterval);
-                */
 
                 if (itemToMonitor.AttributeId != Attributes.Value)
                 {
@@ -689,7 +661,7 @@ namespace MemoryBuffer
         private object m_dataLock = new object();
         private IServerInternal m_server;
         private ILogger m_logger;
-        private INodeManager m_nodeManager;
+        private IAsyncNodeManager m_nodeManager;
         private MemoryBufferMonitoredItem[][] m_monitoringTable;
         private Dictionary<uint, MemoryBufferMonitoredItem> m_nonValueMonitoredItems;
         private BuiltInType m_elementType;

@@ -13,9 +13,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Quickstarts.DataTypes.Instances;
+using Quickstarts.DataTypes.Types;
 
-using CarType = Quickstarts.DataTypes.Types.CarType;
-using EngineType = Quickstarts.DataTypes.Types.EngineType;
 using InstanceObjects = Quickstarts.DataTypes.Instances.Objects;
 using InstanceVariables = Quickstarts.DataTypes.Instances.Variables;
 using TypeDataTypes = Quickstarts.DataTypes.Types.DataTypes;
@@ -110,13 +110,12 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                value.WrappedValue.AsBoxedObject(),
-                Is.InstanceOf<ExtensionObject>(),
+                value.WrappedValue.TryGetValue(out ExtensionObject encoded),
+                Is.True,
                 "The primary vehicle is a structure, so it arrives as an extension object.");
 
             // the type id of the structure has to name one of the encodings the sample
             // serves, otherwise a client has nothing to decode it with
-            var encoded = (ExtensionObject)value.WrappedValue.AsBoxedObject();
 
             Assert.That(
                 encoded.TypeId.IsNull,
@@ -141,6 +140,130 @@ namespace Opc.Ua.Samples.Tests
                 children,
                 Does.Contain("DriverOfTheMonth").And.Contain("VehiclesInLot"),
                 "The parking lot of the instance node set lost its contents.");
+        }
+
+        /// <summary>
+        /// A client which registers the data types decodes the structure the server serves
+        /// into the derived type it was written as, inherited fields included.
+        /// </summary>
+        /// <remarks>
+        /// This is the chain the sample exists for: the bicycle comes from the instance
+        /// model, its make and model from the vehicle type of the other model, which the
+        /// source generator builds from a model design. If the generated encodings did not
+        /// line up with the node set, the value would either stay an undecoded extension
+        /// object or come back short of its inherited fields.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task GeneratedActivatorsDecodeTheSamplesStructures(CancellationToken ct)
+        {
+            RegisterGeneratedDataTypes();
+
+            DataValue value = await SessionOps
+                .ReadValueAsync(Session, PrimaryVehicle, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(value.StatusCode),
+                Is.True,
+                $"Reading the primary vehicle failed: {value.StatusCode}");
+
+            Assert.That(
+                value.WrappedValue.TryGetValue(out ExtensionObject decoded),
+                Is.True,
+                "The primary vehicle is a structure.");
+
+            decoded.TryGetValue(out IEncodeable body);
+
+            await TestContext.Out
+                .WriteLineAsync($"PrimaryVehicle: {body?.GetType().Name}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                body,
+                Is.InstanceOf<BicycleType>(),
+                "The driver of the month rides the bicycle the instance model gives them, " +
+                "and the registered activator has to turn it back into one.");
+
+            var bicycle = (BicycleType)body;
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    bicycle.Make,
+                    Is.EqualTo("Trek"),
+                    "Make is inherited from the generated vehicle type of the other model.");
+
+                Assert.That(
+                    bicycle.NoOfGears,
+                    Is.EqualTo(10u),
+                    "The number of gears is the bicycle's own field.");
+            });
+        }
+
+        /// <summary>
+        /// A structure written by a client comes back with every field intact.
+        /// </summary>
+        /// <remarks>
+        /// The whole point of the sample is that a client and a server agree on a custom
+        /// structure, so the round trip is the test that matters. The bicycle is the
+        /// interesting case: its make, model and engine come from the vehicle type of the
+        /// other model, which the generator builds from a model design, while the bicycle
+        /// itself is a <c>[DataType]</c> class. Both halves of the encoding have to line up.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task GeneratedStructuresRoundTrip(CancellationToken ct)
+        {
+            RegisterGeneratedDataTypes();
+
+            var written = new BicycleType {
+                Make = "Trek",
+                Model = "Compact",
+                Engine = EngineType.Manual,
+                ManufacturerName = "Cube",
+                NoOfGears = 10,
+            };
+
+            StatusCode writeResult = await SessionOps
+                .WriteValueAsync(
+                    Session,
+                    PrimaryVehicle,
+                    new Variant(new ExtensionObject(written)),
+                    ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(writeResult),
+                Is.True,
+                $"Writing a bicycle to the primary vehicle failed: {writeResult}");
+
+            DataValue value = await SessionOps
+                .ReadValueAsync(Session, PrimaryVehicle, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                value.WrappedValue.TryGetValue(out ExtensionObject decoded),
+                Is.True,
+                "The primary vehicle is a structure.");
+
+            Assert.That(
+                decoded.TryGetValue(out BicycleType read),
+                Is.True,
+                "What went in as a bicycle has to come back as one.");
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"Round trip: {read.Make} {read.Model}, {read.Engine}, " +
+                    $"{read.ManufacturerName}, {read.NoOfGears} gears")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(read.Make, Is.EqualTo("Trek"), "Make comes from the vehicle type.");
+                Assert.That(read.Model, Is.EqualTo("Compact"), "Model comes from the vehicle type.");
+                Assert.That(read.Engine, Is.EqualTo(EngineType.Manual), "Engine is an enumeration of the vehicle type.");
+                Assert.That(read.ManufacturerName, Is.EqualTo("Cube"), "ManufacturerName comes from the two wheeler.");
+                Assert.That(read.NoOfGears, Is.EqualTo(10u), "NoOfGears is the bicycle's own field.");
+            });
         }
 
         /// <summary>
@@ -188,29 +311,24 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// A variable with a custom structure type accepts a write and serves the new
-        /// value back.
+        /// A variable with a custom structure type accepts a write which changes its
+        /// value, and serves the new value back.
         /// </summary>
         /// <remarks>
-        /// The original value is written back at the end, so the other tests of the
-        /// fixture see the address space the sample shipped no matter in which order
-        /// NUnit runs them.
+        /// The bicycle round trip above writes the same vehicle the sample ships, so it
+        /// alone cannot tell a landed write from a served default. This test writes a
+        /// car the address space never contained and reads it back. The original value
+        /// is restored at the end, so the other tests of the fixture see the address
+        /// space the sample shipped no matter in which order NUnit runs them.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
         public async Task WritingAStructuredValueRoundTrips(CancellationToken ct)
         {
-            // decode structures on the client for this test: the session factory does
-            // not know the types of the sample by default, and the round trip is only
-            // provable on the decoded value.
-            Session.MessageContext.Factory.AddEncodeableTypes(typeof(CarType).Assembly);
-
-            var primaryVehicle = new NodeId(
-                InstanceVariables.ParkingLot_DriverOfTheMonth_PrimaryVehicle,
-                NamespaceIndex(InstancesNamespace));
+            RegisterGeneratedDataTypes();
 
             DataValue before = await SessionOps
-                .ReadValueAsync(Session, primaryVehicle, ct)
+                .ReadValueAsync(Session, PrimaryVehicle, ct)
                 .ConfigureAwait(false);
 
             var written = new CarType {
@@ -221,7 +339,7 @@ namespace Opc.Ua.Samples.Tests
             };
 
             StatusCode result = await SessionOps
-                .WriteValueAsync(Session, primaryVehicle, Variant.From(new ExtensionObject(written)), ct)
+                .WriteValueAsync(Session, PrimaryVehicle, new Variant(new ExtensionObject(written)), ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -230,7 +348,7 @@ namespace Opc.Ua.Samples.Tests
                 $"Writing the primary vehicle failed: {result}");
 
             DataValue after = await SessionOps
-                .ReadValueAsync(Session, primaryVehicle, ct)
+                .ReadValueAsync(Session, PrimaryVehicle, ct)
                 .ConfigureAwait(false);
 
             await TestContext.Out
@@ -238,31 +356,48 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                after.WrappedValue.AsBoxedObject(),
-                Is.InstanceOf<ExtensionObject>(),
+                after.WrappedValue.TryGetValue(out ExtensionObject encoded),
+                Is.True,
                 "The written structure has to come back as an extension object.");
 
-            var encoded = (ExtensionObject)after.WrappedValue.AsBoxedObject();
-
             Assert.That(
-                encoded.Body,
-                Is.InstanceOf<CarType>(),
+                encoded.TryGetValue(out CarType car),
+                Is.True,
                 "The value has to decode into the structure that was written.");
 
-            var car = (CarType)encoded.Body;
-
-            Assert.That(car.Make, Is.EqualTo("Rimac"), "The write lost the content of the structure.");
-            Assert.That(car.NoOfPassengers, Is.EqualTo(2u), "The write lost the content of the structure.");
+            Assert.Multiple(() => {
+                Assert.That(car.Make, Is.EqualTo("Rimac"), "The write lost the content of the structure.");
+                Assert.That(car.NoOfPassengers, Is.EqualTo(2u), "The write lost the content of the structure.");
+            });
 
             // restore the value the sample shipped.
             StatusCode restored = await SessionOps
-                .WriteValueAsync(Session, primaryVehicle, before.WrappedValue, ct)
+                .WriteValueAsync(Session, PrimaryVehicle, before.WrappedValue, ct)
                 .ConfigureAwait(false);
 
             Assert.That(
                 StatusCode.IsGood(restored),
                 Is.True,
                 $"Restoring the primary vehicle failed: {restored}");
+        }
+
+        private NodeId PrimaryVehicle => new(
+            InstanceVariables.ParkingLot_DriverOfTheMonth_PrimaryVehicle,
+            NamespaceIndex(InstancesNamespace));
+
+        /// <summary>
+        /// Registers the data types of both models of the sample, which is what a client
+        /// has to do to decode their structures.
+        /// </summary>
+        /// <remarks>
+        /// The vehicle types come with the registration extension the source generator
+        /// emitted from the model design of the library; the instance model is still
+        /// ModelCompiler output and is registered by reflection.
+        /// </remarks>
+        private void RegisterGeneratedDataTypes()
+        {
+            Session.Factory.Builder.AddQuickstartsDataTypesTypes().Commit();
+            Session.Factory.AddEncodeableTypes(typeof(BicycleType).Assembly);
         }
     }
 }

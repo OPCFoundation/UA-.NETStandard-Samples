@@ -37,12 +37,29 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Client.Subscriptions.Streaming;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
+    // the V2 subscription engine reuses a name the classic engine has in Opc.Ua.Client.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
+    /// <summary>
+    /// Shows the events of one area, from history and - while subscribed - live.
+    /// </summary>
+    /// <remarks>
+    /// The live half uses the streaming API of the V2 subscription engine:
+    /// <see cref="IStreamingSubscription"/> hands the notifications out as an
+    /// <see cref="IAsyncEnumerable{T}"/>, creates the monitored item when the enumeration
+    /// starts and removes it again when it ends. That suits this control, because neither the
+    /// node an item monitors nor its event filter can be modified afterwards - picking another
+    /// area or another filter simply restarts the enumeration.
+    /// </remarks>
     public partial class EventListView : UserControl
     {
         public EventListView()
@@ -53,10 +70,13 @@ namespace Quickstarts.HistoricalEvents.Client
         #region Private Methods
         private ISession m_session;
         private ITelemetryContext m_telemetry;
-        #pragma warning disable CA2213 // Justification: subscription lifetime is managed by the OPC UA session/sample control.
-        private Subscription m_subscription;
+        #pragma warning disable CA2213 // Justification: disposed asynchronously by DeleteSubscriptionAsync.
+        private StreamingSubscription m_streaming;
         #pragma warning restore CA2213
-        private MonitoredItem m_monitoredItem;
+        #pragma warning disable CA2213 // Justification: disposed by StopPumpAsync.
+        private CancellationTokenSource m_cts;
+        #pragma warning restore CA2213
+        private EventFilter m_eventFilter;
         private FilterDeclaration m_filter;
         private NodeId m_areaId;
         private bool m_isSubscribed;
@@ -139,28 +159,14 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Updates the control after the session has reconnected.
         /// </summary>
+        /// <remarks>
+        /// The streaming subscription belongs to the subscription manager of the session and
+        /// survives the reconnect together with its monitored item, so the enumeration keeps
+        /// running and there is nothing to re-create here.
+        /// </remarks>
         public void SessionReconnected(ISession session)
         {
             m_session = session;
-
-            if (m_isSubscribed)
-            {
-                foreach (Subscription subscription in m_session.Subscriptions)
-                {
-                    if (Object.ReferenceEquals(subscription.Handle, this))
-                    {
-                        m_subscription = subscription;
-
-                        foreach (MonitoredItem monitoredItem in subscription.MonitoredItems)
-                        {
-                            m_monitoredItem = monitoredItem;
-                            break;
-                        }
-
-                        break;
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -176,19 +182,9 @@ namespace Quickstarts.HistoricalEvents.Client
                 await ReadRecentHistoryAsync(ct);
             }
 
-            if (m_subscription != null)
-            {
-                MonitoredItem monitoredItem = new MonitoredItem(m_monitoredItem);
-                monitoredItem.StartNodeId = areaId;
-
-                m_subscription.AddItem(monitoredItem);
-                m_subscription.RemoveItem(m_monitoredItem);
-                m_monitoredItem = monitoredItem;
-
-                monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
-
-                await m_subscription.ApplyChangesAsync(ct);
-            }
+            // the node an item monitors cannot be changed, so the enumeration is restarted:
+            // that removes the old monitored item and creates one for the new area.
+            await RestartPumpAsync();
         }
 
         /// <summary>
@@ -235,12 +231,9 @@ namespace Quickstarts.HistoricalEvents.Client
                 await ReadRecentHistoryAsync(ct);
             }
 
-            // update subscription.
-            if (m_subscription != null)
-            {
-                m_monitoredItem.Filter = m_filter.GetFilter();
-                await m_subscription.ApplyChangesAsync(ct);
-            }
+            // the event filter of an item cannot be changed, so the enumeration is restarted:
+            // that removes the old monitored item and creates one with the new filter.
+            await RestartPumpAsync();
         }
 
         /// <summary>
@@ -282,45 +275,135 @@ namespace Quickstarts.HistoricalEvents.Client
         /// </summary>
         private async Task CreateSubscriptionAsync(CancellationToken ct = default)
         {
-            m_subscription = new Subscription(m_telemetry);
-            m_subscription.Handle = this;
-            m_subscription.DisplayName = null;
-            m_subscription.PublishingInterval = 1000;
-            m_subscription.KeepAliveCount = 10;
-            m_subscription.LifetimeCount = 100;
-            m_subscription.MaxNotificationsPerPublish = 1000;
-            m_subscription.PublishingEnabled = true;
-            m_subscription.TimestampsToReturn = TimestampsToReturn.Both;
+            await DeleteSubscriptionAsync(ct);
 
-            m_session.AddSubscription(m_subscription);
-            await m_subscription.CreateAsync(ct);
+            // the underlying OPC UA subscription is created when the first enumeration starts.
+            if (!m_session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                throw new ServiceResultException(
+                    StatusCodes.BadNotSupported,
+                    "The session does not use the V2 subscription engine.");
+            }
 
-            m_monitoredItem = new MonitoredItem(m_telemetry);
-            m_monitoredItem.StartNodeId = m_areaId;
-            m_monitoredItem.AttributeId = Attributes.EventNotifier;
-            m_monitoredItem.SamplingInterval = 0;
-            m_monitoredItem.QueueSize = 1000;
-            m_monitoredItem.DiscardOldest = true;
+            m_streaming = new StreamingSubscription(manager, ClientUtils.DefaultSubscriptionOptions);
 
+            // rebuilding the columns from the filter is what also starts the enumeration.
             await ChangeFilterAsync(m_filter, false, ct);
-
-            m_monitoredItem.Notification += new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync);
-
-            m_subscription.AddItem(m_monitoredItem);
-            await m_subscription.ApplyChangesAsync(ct);
         }
 
         /// <summary>
-        /// Deletes the subscription.
+        /// Stops the stream and deletes the subscription on the server.
         /// </summary>
         private async Task DeleteSubscriptionAsync(CancellationToken ct = default)
         {
-            if (m_subscription != null)
+            StreamingSubscription streaming = m_streaming;
+
+            m_streaming = null;
+
+            await StopPumpAsync();
+
+            if (streaming == null)
             {
-                await m_subscription.DeleteAsync(true, ct);
-                await m_session.RemoveSubscriptionAsync(m_subscription, ct);
-                m_subscription = null;
-                m_monitoredItem = null;
+                return;
+            }
+
+            try
+            {
+                await streaming.DisposeAsync();
+            }
+            catch (Exception exception)
+            {
+                // this also runs when the session has already gone away, and then the
+                // subscription cannot be deleted on the server any more.
+                m_telemetry?.CreateLogger<EventListView>()
+                    .LogError(exception, "Failed to delete the event subscription.");
+            }
+        }
+
+        /// <summary>
+        /// Ends the current enumeration, which removes the monitored item it created.
+        /// </summary>
+        private async Task StopPumpAsync()
+        {
+            CancellationTokenSource cts = m_cts;
+
+            m_cts = null;
+
+            if (cts != null)
+            {
+                await cts.CancelAsync();
+                cts.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Restarts the enumeration for the current area and filter.
+        /// </summary>
+        private async Task RestartPumpAsync()
+        {
+            await StopPumpAsync();
+
+            if (m_streaming == null || m_filter == null || m_areaId.IsNull)
+            {
+                return;
+            }
+
+            // the fields of a notification line up with the select clauses of this filter, so
+            // the control keeps it: the engine does not report the filter of an item back.
+            m_eventFilter = m_filter.GetFilter();
+            m_cts = new CancellationTokenSource();
+
+            // nothing is awaited here on purpose: the enumeration runs until the area, the
+            // filter or the session changes.
+            _ = PumpEventsAsync(m_areaId, m_eventFilter, m_cts.Token);
+        }
+
+        /// <summary>
+        /// Reads the events of one area off the streaming subscription.
+        /// </summary>
+        private async Task PumpEventsAsync(NodeId areaId, EventFilter filter, CancellationToken ct)
+        {
+            IStreamingSubscription streaming = m_streaming;
+
+            var options = new MonitoredItemOptions {
+                StartNodeId = areaId,
+                AttributeId = Attributes.EventNotifier,
+                SamplingInterval = TimeSpan.Zero,
+                QueueSize = 1000,
+                DiscardOldest = true,
+            };
+
+            try
+            {
+                await foreach (EventNotification notification in streaming
+                    .SubscribeEventsAsync(areaId, filter, options, ct)
+                    .ConfigureAwait(false))
+                {
+                    if (ct.IsCancellationRequested || IsDisposed)
+                    {
+                        return;
+                    }
+
+                    // without a window there is nothing to update, and the enumeration keeps
+                    // running rather than ending for good.
+                    if (!IsHandleCreated)
+                    {
+                        continue;
+                    }
+
+                    // the enumeration runs on a publish worker, so the display is updated on
+                    // the UI thread.
+                    BeginInvoke(new Action<EventNotification>(DisplayEventAsync), notification);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // the area, the filter or the session changed.
+            }
+            catch (Exception exception)
+            {
+                // the pump runs on a publish worker, so the error is logged instead of shown.
+                m_telemetry?.CreateLogger<EventListView>().LogError(exception, "Failed to read the events.");
             }
         }
 
@@ -342,15 +425,15 @@ namespace Quickstarts.HistoricalEvents.Client
                 string text = null;
 
                 // check for missing fields.
-                if (fieldValues[ii].AsBoxedObject() == null)
+                if (fieldValues[ii].IsNull)
                 {
                     text = String.Empty;
                 }
 
                 // display the name of a node instead of the node id.
-                else if (fieldValues[ii].TypeInfo.BuiltInType == BuiltInType.NodeId)
+                else if (fieldValues[ii].TryGetValue(out NodeId fieldNodeId))
                 {
-                    INode node = await m_session.NodeCache.FindAsync((NodeId)fieldValues[ii].AsBoxedObject(), ct);
+                    INode node = await m_session.NodeCache.FindAsync(fieldNodeId, ct);
 
                     if (node != null)
                     {
@@ -359,17 +442,17 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // display local time for any time fields.
-                else if (fieldValues[ii].TypeInfo.BuiltInType == BuiltInType.DateTime)
+                else if (fieldValues[ii].TryGetValue(out DateTimeUtc fieldTime))
                 {
-                    DateTime value = (DateTime)fieldValues[ii].AsBoxedObject();
+                    DateTime value = fieldTime.ToLocalTime();
 
                     if (m_filter.Fields[ii - 1].InstanceDeclaration.DisplayName.Contains("Time", StringComparison.Ordinal))
                     {
-                        text = value.ToLocalTime().ToString("HH:mm:ss.fff");
+                        text = value.ToString("HH:mm:ss.fff");
                     }
                     else
                     {
-                        text = value.ToLocalTime().ToString("yyyy-MM-dd");
+                        text = value.ToString("yyyy-MM-dd");
                     }
                 }
 
@@ -395,40 +478,20 @@ namespace Quickstarts.HistoricalEvents.Client
         }
 
         /// <summary>
-        /// Updates the display with a new value for a monitored variable.
+        /// Updates the display with an event read off the stream.
         /// </summary>
-        private async void MonitoredItem_NotificationAsync(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
+        private async void DisplayEventAsync(EventNotification eventNotification)
         {
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new MonitoredItemNotificationEventHandler(MonitoredItem_NotificationAsync), monitoredItem, e);
-                return;
-            }
-
             try
             {
-                // check for valid notification.
-                EventFieldList notification = e.NotificationValue as EventFieldList;
-
-                if (notification == null)
-                {
-                    return;
-                }
-
-                // check if monitored item has changed.
-                if (!Object.ReferenceEquals(m_monitoredItem, monitoredItem))
-                {
-                    return;
-                }
-
-                // check if the filter has changed.
-                if (notification.EventFields.Count != m_filter.Fields.Count + 1)
+                // check if the filter has changed while this event was on its way.
+                if (eventNotification.Fields.Count != m_filter.Fields.Count + 1)
                 {
                     return;
                 }
 
                 // create an item and add to top of list.
-                ListViewItem item = await CreateListItemAsync(m_filter, notification.EventFields.ToList());
+                ListViewItem item = await CreateListItemAsync(m_filter, eventNotification.Fields.ToList());
                 EventsLV.Items.Insert(0, item);
 
                 // adjust the width of the columns.
@@ -549,14 +612,14 @@ namespace Quickstarts.HistoricalEvents.Client
 
             foreach (List<Variant> e in events)
             {
-                byte[] eventId = null;
+                ByteString eventId = default;
 
                 if (e.Count > index)
                 {
-                    eventId = e[index].AsBoxedObject() as byte[];
+                    e[index].TryGetValue(out eventId);
                 }
 
-                details.EventIds = details.EventIds.AddItem(eventId.ToByteString());
+                details.EventIds = details.EventIds.AddItem(eventId);
             }
 
             // delete the events.

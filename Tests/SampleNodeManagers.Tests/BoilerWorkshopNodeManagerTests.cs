@@ -171,7 +171,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             double[] levels = values
-                .Select(value => Convert.ToDouble(value.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture))
+                .Select(value => value.WrappedValue.ConvertTo(BuiltInType.Double).TryGetValue(out double level) ? level : double.NaN)
                 .ToArray();
 
             await ReportAsync(

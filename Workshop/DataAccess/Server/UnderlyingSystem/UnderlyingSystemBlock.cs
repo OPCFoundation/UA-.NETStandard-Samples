@@ -207,7 +207,7 @@ namespace Quickstarts.DataAccessServer
         /// <param name="tagName">Name of the tag.</param>
         /// <param name="value">The value.</param>
         /// <returns>The status code for the operation.</returns>
-        public StatusCode WriteTagValue(string tagName, object value)
+        public StatusCode WriteTagValue(string tagName, Variant value)
         {
             UnderlyingSystemTag tag = null;
             TagsChangedEventHandler onTagsChanged = null;
@@ -224,45 +224,63 @@ namespace Quickstarts.DataAccessServer
                     return StatusCodes.BadNodeIdUnknown;
                 }
 
-                // cast value to correct type.
-                try
+                // the value must match the type of the tag.
+                switch (tag.DataType)
                 {
-                    switch (tag.DataType)
+                    case UnderlyingSystemDataType.Integer1:
                     {
-                        case UnderlyingSystemDataType.Integer1:
+                        if (!value.TryGetValue(out sbyte int1Value))
                         {
-                            tag.Value = (sbyte)value;
-                            break;
+                            return StatusCodes.BadTypeMismatch;
                         }
 
-                        case UnderlyingSystemDataType.Integer2:
-                        {
-                            tag.Value = (short)value;
-                            break;
-                        }
-
-                        case UnderlyingSystemDataType.Integer4:
-                        {
-                            tag.Value = (int)value;
-                            break;
-                        }
-
-                        case UnderlyingSystemDataType.Real4:
-                        {
-                            tag.Value = (float)value;
-                            break;
-                        }
-
-                        case UnderlyingSystemDataType.String:
-                        {
-                            tag.Value = (string)value;
-                            break;
-                        }
+                        tag.Value = int1Value;
+                        break;
                     }
-                }
-                catch
-                {
-                    return StatusCodes.BadTypeMismatch;
+
+                    case UnderlyingSystemDataType.Integer2:
+                    {
+                        if (!value.TryGetValue(out short int2Value))
+                        {
+                            return StatusCodes.BadTypeMismatch;
+                        }
+
+                        tag.Value = int2Value;
+                        break;
+                    }
+
+                    case UnderlyingSystemDataType.Integer4:
+                    {
+                        if (!value.TryGetValue(out int int4Value))
+                        {
+                            return StatusCodes.BadTypeMismatch;
+                        }
+
+                        tag.Value = int4Value;
+                        break;
+                    }
+
+                    case UnderlyingSystemDataType.Real4:
+                    {
+                        if (!value.TryGetValue(out float real4Value))
+                        {
+                            return StatusCodes.BadTypeMismatch;
+                        }
+
+                        tag.Value = real4Value;
+                        break;
+                    }
+
+                    case UnderlyingSystemDataType.String:
+                    {
+                        if (!value.TryGetValue(out string stringValue))
+                        {
+                            return StatusCodes.BadTypeMismatch;
+                        }
+
+                        tag.Value = stringValue;
+                        break;
+                    }
                 }
 
                 // updated the timestamp.

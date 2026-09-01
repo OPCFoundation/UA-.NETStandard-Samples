@@ -27,9 +27,6 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-#define CUSTOM_NODE_MANAGER
-
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,6 +46,11 @@ namespace Opc.Ua.Sample
         public SampleServer(ITelemetryContext telemetry)
             : base(telemetry)
         {
+            // register the node manager factories. the server creates the node
+            // managers from them while it builds the master node manager on startup.
+            AddNodeManager(new global::TestData.TestDataNodeManagerFactory());
+            AddNodeManager(new global::MemoryBuffer.MemoryBufferNodeManagerFactory());
+            AddNodeManager(new global::Boiler.BoilerNodeManagerFactory());
         }
         #endregion
 
@@ -95,44 +97,7 @@ namespace Opc.Ua.Sample
             Debug.WriteLine("The Server is stopping.");
 
             await base.OnServerStoppingAsync(cancellationToken);
-
-#if INCLUDE_Sample
-            CleanSampleModel();
-#endif
         }
-
-#if CUSTOM_NODE_MANAGER
-        /// <summary>
-        /// Creates the node managers for the server.
-        /// </summary>
-        /// <remarks>
-        /// This method allows the sub-class create any additional node managers which it uses. The SDK
-        /// always creates a CoreNodeManager which handles the built-in nodes defined by the specification.
-        /// Any additional NodeManagers are expected to handle application specific nodes.
-        /// 
-        /// Applications with small address spaces do not need to create their own NodeManagers and can add any
-        /// application specific nodes to the CoreNodeManager. Applications should use custom NodeManagers when
-        /// the structure of the address space is stored in another system or when the address space is too large
-        /// to keep in memory.
-        /// </remarks>
-        protected override IMasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        {
-            Debug.WriteLine("Creating the Node Managers.");
-
-            List<INodeManager> nodeManagers = new List<INodeManager>();
-
-            // create the custom node managers.
-            INodeManagerFactory factory = new global::TestData.TestDataNodeManagerFactory();
-            nodeManagers.Add(factory.Create(server, configuration));
-            factory = new global::MemoryBuffer.MemoryBufferNodeManagerFactory();
-            nodeManagers.Add(factory.Create(server, configuration));
-            factory = new global::Boiler.BoilerNodeManagerFactory();
-            nodeManagers.Add(factory.Create(server, configuration));
-
-            // create master node manager.
-            return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
-        }
-#endif
 
         /// <summary>
         /// Loads the non-configurable properties for the application.
@@ -173,11 +138,6 @@ namespace Opc.Ua.Sample
 
             // allow base class processing to happen first.
             base.OnNodeManagerStarted(server);
-
-            // adds the sample information models to the core node manager. 
-#if INCLUDE_Sample
-            InitializeSampleModel();
-#endif
         }
 
 #if USER_AUTHENTICATION

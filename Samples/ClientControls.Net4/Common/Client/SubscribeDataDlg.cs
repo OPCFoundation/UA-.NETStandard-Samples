@@ -37,9 +37,14 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Subscriptions;
 
 namespace Opc.Ua.Client.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the enclosing
+    // Opc.Ua.Client namespace, which wins over a using directive at the top of the file.
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
     /// <summary>
     /// Allows the user to edit and issue read requests.
     /// </summary>
@@ -83,11 +88,28 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
+        /// The handler the control needs when a subscription is created on its behalf.
+        /// </summary>
+        public ISubscriptionNotificationHandler NotificationHandler => SubscribeRequestCTRL.NotificationHandler;
+
+        /// <summary>
+        /// Creates the subscription the dialog displays on the session.
+        /// </summary>
+        public ISubscription CreateSubscription(ISession session, SubscriptionOptions options = null)
+        {
+            ISubscription subscription = SubscribeRequestCTRL.CreateSubscription(session, options);
+            NextBTN.Visible = SubscribeRequestCTRL.CanCallNext;
+            BackBTN.Visible = SubscribeRequestCTRL.CanCallBack;
+            return subscription;
+        }
+
+        /// <summary>
         /// Set the subscription managed by the control.
         /// </summary>
-        public void SetSubscription(Subscription subscription)
+        public void SetSubscription(ISubscription subscription, ISession session, OptionsMonitor<SubscriptionOptions> options = null)
         {
-            SubscribeRequestCTRL.SetSubscription(subscription);
+            SubscribeRequestCTRL.SetSubscription(subscription, session, options);
+            m_session = session;
             NextBTN.Visible = SubscribeRequestCTRL.CanCallNext;
             BackBTN.Visible = SubscribeRequestCTRL.CanCallBack;
         }

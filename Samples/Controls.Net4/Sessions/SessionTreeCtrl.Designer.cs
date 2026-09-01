@@ -125,7 +125,7 @@ namespace Opc.Ua.Sample.Controls
             this.SessionSaveMI.Name = "SessionSaveMI";
             this.SessionSaveMI.Size = new System.Drawing.Size(183, 22);
             this.SessionSaveMI.Text = "Save Subscriptions...";
-            this.SessionSaveMI.Click += new System.EventHandler(this.SessionSaveMI_Click);
+            this.SessionSaveMI.Click += new System.EventHandler(this.SessionSaveMI_ClickAsync);
             // 
             // SessionLoadMI
             // 

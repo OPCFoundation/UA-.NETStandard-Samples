@@ -77,7 +77,7 @@ namespace Opc.Ua.Sample.Controls
             Processed
         }
 
-        private Session m_session;
+        private ISession m_session;
         private NodeId m_nodeId;
         private HistoryReadResult m_result;
         private int m_index;
@@ -85,7 +85,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(Session session, NodeId nodeId, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
         {
             m_session = session;
             m_nodeId = nodeId;

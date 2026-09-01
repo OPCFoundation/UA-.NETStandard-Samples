@@ -177,7 +177,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 item.Tag = new AttributeInfo() { NodeToRead = nodesToRead[ii], Value = results[ii] };
-                item.ImageIndex = ClientUtils.GetImageIndex(nodesToRead[ii].AttributeId, results[ii].WrappedValue.AsBoxedObject());
+                item.ImageIndex = ClientUtils.GetImageIndex(nodesToRead[ii].AttributeId, results[ii].WrappedValue);
 
                 // display in list.
                 AttributesLV.Items.Add(item);
@@ -274,7 +274,7 @@ namespace Opc.Ua.Client.Controls
             {
                 ReferenceDescription reference = (ReferenceDescription)nodesToRead[ii].Handle;
 
-                TypeInfo typeInfo = TypeInfo.Construct(results[ii].WrappedValue.AsBoxedObject());
+                TypeInfo typeInfo = results[ii].WrappedValue.TypeInfo;
 
                 // add the metadata for the attribute.
                 ListViewItem item = new ListViewItem(reference.ToString());
@@ -328,7 +328,7 @@ namespace Opc.Ua.Client.Controls
                     info.NodeToRead.NodeId,
                     info.NodeToRead.AttributeId,
                     null,
-                    info.Value.WrappedValue.AsBoxedObject(),
+                    info.Value.WrappedValue,
                     true,
                     "View Attribute Value");
             }

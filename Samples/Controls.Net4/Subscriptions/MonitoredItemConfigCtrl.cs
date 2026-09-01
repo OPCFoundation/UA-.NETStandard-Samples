@@ -40,11 +40,21 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions.MonitoredItems;
 
 namespace Opc.Ua.Sample.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the
+    // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+
     public partial class MonitoredItemConfigCtrl : Opc.Ua.Client.Controls.BaseListCtrl
     {
+        /// <summary>
+        /// How long the control waits for the subscription engine to apply the item changes.
+        /// </summary>
+        private static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(10);
+
         #region Constructors
         /// <summary>
         /// Initializes the object with default values.
@@ -53,13 +63,13 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
             SetColumns(m_ColumnNames);
-            m_dialogs = new Dictionary<uint, MonitoredItemDlg>();
+            m_dialogs = new Dictionary<MonitoredItemHandle, MonitoredItemDlg>();
         }
         #endregion
 
         #region Private Fields
-        private Subscription m_subscription;
-        private Dictionary<uint, MonitoredItemDlg> m_dialogs;
+        private SubscriptionHandle m_subscription;
+        private Dictionary<MonitoredItemHandle, MonitoredItemDlg> m_dialogs;
         private bool m_batchUpdates;
 
         /// <summary>
@@ -71,7 +81,6 @@ namespace Opc.Ua.Sample.Controls
             new object[] { "Name",                      HorizontalAlignment.Left,   null       },
             new object[] { "Class",                     HorizontalAlignment.Left,   "Variable" },
             new object[] { "Node ID",                   HorizontalAlignment.Left,   null       },
-            new object[] { "Path",                      HorizontalAlignment.Left,   ""         },
             new object[] { "Attribute",                 HorizontalAlignment.Left,   "Value"    },
             new object[] { "Indexes",                   HorizontalAlignment.Left,   ""         },
             new object[] { "Encoding",                  HorizontalAlignment.Left,   ""         },
@@ -108,7 +117,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the items for the specified subscription in the control.
         /// </summary>
-        public void Initialize(Subscription subscription, ITelemetryContext telemetry)
+        public void Initialize(SubscriptionHandle subscription, ITelemetryContext telemetry)
         {
             // do nothing if same subscription provided.
             if (Object.ReferenceEquals(m_subscription, subscription))
@@ -124,54 +133,59 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Called when the subscription changes.
+        /// Called when the state of the subscription changes, which includes the engine
+        /// finishing to apply monitored item changes.
         /// </summary>
-        public void SubscriptionChanged(SubscriptionStateChangedEventArgs e)
+        public void SubscriptionChanged()
         {
             UpdateItems();
 
-            // close any monitoring windows.
-            if ((e.Status | SubscriptionChangeMask.ItemsDeleted) != 0)
+            // close any monitoring windows for items that are gone.
+            List<MonitoredItemDlg> dialogsToClose = new List<MonitoredItemDlg>();
+
+            foreach (KeyValuePair<MonitoredItemHandle, MonitoredItemDlg> current in m_dialogs)
             {
-                List<MonitoredItemDlg> dialogsToClose = new List<MonitoredItemDlg>();
-
-                foreach (KeyValuePair<uint, MonitoredItemDlg> current in m_dialogs)
+                if (m_subscription == null || !m_subscription.Items.Contains(current.Key))
                 {
-                    if (m_subscription.FindItemByClientHandle(current.Key) == null)
-                    {
-                        dialogsToClose.Add(current.Value);
-                    }
+                    dialogsToClose.Add(current.Value);
                 }
+            }
 
-                // this invokes a callback which will remove the dialog from the table.
-                foreach (MonitoredItemDlg dialog in dialogsToClose)
-                {
-                    dialog.Close();
-                }
+            // this invokes a callback which will remove the dialog from the table.
+            foreach (MonitoredItemDlg dialog in dialogsToClose)
+            {
+                dialog.Close();
             }
         }
 
         /// <summary>
-        /// Creates a new group item.
+        /// Creates a new monitored item after prompting the user for its settings.
         /// </summary>
-        public MonitoredItem CreateItem(Subscription subscription, ITelemetryContext telemetry)
+        public MonitoredItemHandle CreateItem()
         {
-            if (subscription == null) throw new ArgumentNullException(nameof(subscription));
+            if (m_subscription == null)
+            {
+                return null;
+            }
 
-            MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem);
-            monitoredItem.QueueSize = 1;
+            // let the user edit a handle which is not part of the subscription yet.
+            MonitoredItemHandle monitoredItem = new MonitoredItemHandle(
+                Utils.Format("MonitoredItem {0}", m_subscription.Items.Count + 1),
+                new MonitoredItemOptions { QueueSize = 1 });
+
+            monitoredItem.DisplayName = monitoredItem.Name;
 
             #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (!new MonitoredItemEditDlg().ShowDialog(subscription.Session as Session, monitoredItem, telemetry))
+            if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session, monitoredItem, Telemetry))
             #pragma warning restore CA2000
             {
                 return null;
             }
 
-            subscription.AddItem(monitoredItem);
-            subscription.ChangesCompleted();
-
-            return monitoredItem;
+            // stage the item so the containing dialog decides when it is handed to the engine.
+            MonitoredItemHandle handle = m_subscription.StageItem(monitoredItem.DisplayName, monitoredItem.NodeClass, monitoredItem.Settings);
+            UpdateItems();
+            return handle;
         }
 
         /// <summary>
@@ -183,7 +197,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 BeginUpdate();
 
-                foreach (MonitoredItem monitoredItem in m_subscription.MonitoredItems)
+                foreach (MonitoredItemHandle monitoredItem in m_subscription.Items)
                 {
                     AddItem(monitoredItem);
                 }
@@ -203,23 +217,9 @@ namespace Opc.Ua.Sample.Controls
 
             if (parents.Count > 0)
             {
-                bool followToType = false;
-
                 foreach (IReference parentReference in parents)
                 {
-                    Node parent = await m_subscription.Session.NodeCache.FindAsync(parentReference.TargetId, ct) as Node;
-
-                    if (followToType)
-                    {
-                        if (parent.NodeClass == NodeClass.VariableType || parent.NodeClass == NodeClass.ObjectType)
-                        {
-                            return parent;
-                        }
-                    }
-                    else
-                    {
-                        return parent;
-                    }
+                    return await m_subscription.Session.NodeCache.FindAsync(parentReference.TargetId, ct) as Node;
                 }
             }
 
@@ -231,7 +231,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public async Task AddItemAsync(ReferenceDescription reference, CancellationToken ct = default)
         {
-            if (reference == null)
+            if (reference == null || m_subscription == null)
             {
                 return;
             }
@@ -243,73 +243,41 @@ namespace Opc.Ua.Sample.Controls
                 return;
             }
 
-            Node parent = null;
+            // use the parent to build a friendlier display name.
+            Node parent = await FindParentAsync(node, ct);
 
-            // if the NodeId is of type string and contains '.' do not use relative paths
-            if (node.NodeId.IdType != IdType.String || (!node.NodeId.IdentifierAsString.Contains('.', StringComparison.Ordinal) && !node.NodeId.IdentifierAsString.Contains('/', StringComparison.Ordinal)))
+            string displayName = (parent != null) ? String.Format("{0}.{1}", parent, node) : String.Format("{0}", node);
+
+            MonitoredItemOptions options = new MonitoredItemOptions {
+                StartNodeId = node.NodeId,
+                AttributeId = Attributes.Value,
+                QueueSize = 1,
+            };
+
+            // subscribe object and view nodes to their events.
+            if (node.NodeClass == NodeClass.Object || node.NodeClass == NodeClass.View)
             {
-                parent = await FindParentAsync(node, ct);
+                options = options with {
+                    AttributeId = Attributes.EventNotifier,
+                    QueueSize = 0,
+                    Filter = SubscriptionHandle.CreateDefaultEventFilter(),
+                };
             }
 
-            MonitoredItem monitoredItem = new MonitoredItem(m_subscription.DefaultItem);
-
-            if (parent != null)
-            {
-                monitoredItem.DisplayName = String.Format("{0}.{1}", parent, node);
-            }
-            else
-            {
-                monitoredItem.DisplayName = String.Format("{0}", node);
-            }
-
-            monitoredItem.StartNodeId = node.NodeId;
-            monitoredItem.NodeClass = node.NodeClass;
-
-            if (parent != null)
-            {
-                List<Node> parents = new List<Node>();
-                parents.Add(parent);
-
-                while (parent.NodeClass != NodeClass.ObjectType && parent.NodeClass != NodeClass.VariableType)
-                {
-                    parent = await FindParentAsync(parent, ct);
-
-                    if (parent == null)
-                    {
-                        break;
-                    }
-
-                    parents.Add(parent);
-                }
-
-                monitoredItem.StartNodeId = parents[parents.Count - 1].NodeId;
-
-                StringBuilder relativePath = new StringBuilder();
-
-                for (int ii = parents.Count - 2; ii >= 0; ii--)
-                {
-                    relativePath.AppendFormat(".{0}", parents[ii].BrowseName);
-                }
-
-                relativePath.AppendFormat(".{0}", node.BrowseName);
-
-                monitoredItem.RelativePath = relativePath.ToString();
-            }
-
-            Session session = m_subscription.Session as Session;
-
-            if (node.NodeClass == NodeClass.Object || node.NodeClass == NodeClass.Variable)
-            {
-                node.Find(ReferenceTypeIds.HasChild, true);
-
-            }
-
-            m_subscription.AddItem(monitoredItem);
+            // stage the item so the containing dialog can apply all new items in one step.
+            m_subscription.StageItem(displayName, node.NodeClass, options);
+            UpdateItems();
         }
 
         /// <summary>
         /// Apply any changes to the set of items.
         /// </summary>
+        /// <remarks>
+        /// The V2 engine has no ApplyChanges: handing an item to the engine or reconfiguring
+        /// its options is the request, and the engine applies it on its own worker. This step
+        /// hands over the staged items and waits for that worker to settle so the revised
+        /// values can be shown.
+        /// </remarks>
         public async Task ApplyChangesAsync(bool force, CancellationToken ct = default)
         {
             if (m_batchUpdates && !force)
@@ -319,7 +287,9 @@ namespace Opc.Ua.Sample.Controls
 
             if (m_subscription != null)
             {
-                await m_subscription.ApplyChangesAsync(ct);
+                m_subscription.ApplyChanges();
+
+                await m_subscription.WaitForPendingChangesAsync(kApplyTimeout, ct);
 
                 foreach (ListViewItem listItem in ItemsLV.Items)
                 {
@@ -335,12 +305,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         public void FormClosing()
         {
-            List<MonitoredItemDlg> dialogsToClose = new List<MonitoredItemDlg>();
-
-            foreach (KeyValuePair<uint, MonitoredItemDlg> current in m_dialogs)
-            {
-                dialogsToClose.Add(current.Value);
-            }
+            List<MonitoredItemDlg> dialogsToClose = new List<MonitoredItemDlg>(m_dialogs.Values);
 
             // this invokes a callback which will remove the dialog from the table.
             foreach (MonitoredItemDlg dialog in dialogsToClose)
@@ -376,64 +341,67 @@ namespace Opc.Ua.Sample.Controls
         /// <see cref="BaseListCtrl.UpdateItemAsync" />
         protected override async Task UpdateItemAsync(ListViewItem listItem, object item, CancellationToken ct = default)
         {
-            MonitoredItem monitoredItem = item as MonitoredItem;
+            MonitoredItemHandle handle = item as MonitoredItemHandle;
 
-            if (monitoredItem == null)
+            if (handle == null)
             {
                 await base.UpdateItemAsync(listItem, item, ct);
                 return;
             }
 
-            listItem.SubItems[0].Text = String.Format("{0}", monitoredItem.Status.Id);
-            listItem.SubItems[1].Text = String.Format("{0}", monitoredItem.DisplayName);
-            listItem.SubItems[2].Text = String.Format("{0}", monitoredItem.NodeClass);
-            listItem.SubItems[3].Text = String.Format("{0}", monitoredItem.StartNodeId);
-            listItem.SubItems[4].Text = String.Format("{0}", monitoredItem.RelativePath);
-            listItem.SubItems[5].Text = String.Format("{0}", Attributes.GetBrowseName(monitoredItem.AttributeId));
-            listItem.SubItems[6].Text = String.Format("{0}", monitoredItem.IndexRange);
-            listItem.SubItems[7].Text = String.Format("{0}", monitoredItem.Encoding);
-            listItem.SubItems[8].Text = String.Format("{0}", monitoredItem.MonitoringMode);
-            listItem.SubItems[9].Text = String.Format("{0}", monitoredItem.SamplingInterval);
+            MonitoredItemOptions settings = handle.Settings;
+            IMonitoredItem monitoredItem = handle.Item;
 
-            double revisedSampingInterval = monitoredItem.Created ? monitoredItem.Status.SamplingInterval : (double)0.0;
+            listItem.SubItems[0].Text = String.Format("{0}", (monitoredItem != null) ? monitoredItem.ServerId : 0);
+            listItem.SubItems[1].Text = String.Format("{0}", handle.DisplayName);
+            listItem.SubItems[2].Text = String.Format("{0}", handle.NodeClass);
+            listItem.SubItems[3].Text = String.Format("{0}", settings.StartNodeId);
+            listItem.SubItems[4].Text = String.Format("{0}", Attributes.GetBrowseName(settings.AttributeId));
+            listItem.SubItems[5].Text = String.Format("{0}", settings.IndexRange);
+            listItem.SubItems[6].Text = String.Format("{0}", settings.Encoding);
+            listItem.SubItems[7].Text = String.Format("{0}", (monitoredItem != null && monitoredItem.Created) ? monitoredItem.CurrentMonitoringMode : settings.MonitoringMode);
+            listItem.SubItems[8].Text = String.Format("{0}", settings.SamplingInterval.TotalMilliseconds);
 
-            listItem.SubItems[10].Text = String.Format("{0}", revisedSampingInterval);
-            listItem.SubItems[11].Text = String.Format("{0}", monitoredItem.QueueSize);
+            double revisedSampingInterval = handle.Created ? monitoredItem.CurrentSamplingInterval.TotalMilliseconds : 0.0;
 
-            uint revisedQueueSize = monitoredItem.Created ? monitoredItem.Status.QueueSize : 0;
+            listItem.SubItems[9].Text = String.Format("{0}", revisedSampingInterval);
+            listItem.SubItems[10].Text = String.Format("{0}", settings.QueueSize);
 
-            listItem.SubItems[12].Text = String.Format("{0}", revisedQueueSize);
-            listItem.SubItems[13].Text = String.Format("{0}", monitoredItem.DiscardOldest);
-            listItem.SubItems[14].Text = String.Format("{0}", monitoredItem.Status.Error);
+            uint revisedQueueSize = handle.Created ? monitoredItem.CurrentQueueSize : 0;
+
+            listItem.SubItems[11].Text = String.Format("{0}", revisedQueueSize);
+            listItem.SubItems[12].Text = String.Format("{0}", settings.DiscardOldest);
+            listItem.SubItems[13].Text = String.Format("{0}", monitoredItem?.Error);
 
             listItem.ForeColor = Color.Gray;
 
-            if (monitoredItem.Status.Created)
+            if (handle.Created)
             {
                 listItem.ForeColor = Color.Empty;
 
-                if ((revisedQueueSize != monitoredItem.QueueSize) && monitoredItem.AttributeId != Opc.Ua.Attributes.EventNotifier)
+                if ((revisedQueueSize != settings.QueueSize) && settings.AttributeId != Opc.Ua.Attributes.EventNotifier)
                 {
                     listItem.ForeColor = Color.DarkOrange;
                 }
 
-                if ((revisedSampingInterval != monitoredItem.SamplingInterval) && monitoredItem.AttributeId != Opc.Ua.Attributes.EventNotifier)
+                if ((revisedSampingInterval != settings.SamplingInterval.TotalMilliseconds) && settings.AttributeId != Opc.Ua.Attributes.EventNotifier)
                 {
                     listItem.ForeColor = Color.DarkOrange;
                 }
             }
 
-            if (monitoredItem.Status.Id == 0)
+            if (monitoredItem == null || monitoredItem.ServerId == 0)
             {
                 listItem.ForeColor = Color.DarkOrange;
             }
 
-            if (monitoredItem.Status.Error != null && ServiceResult.IsBad(monitoredItem.Status.Error))
+            if (monitoredItem != null && ServiceResult.IsBad(monitoredItem.Error))
             {
                 listItem.ForeColor = Color.Red;
             }
 
-            if (monitoredItem.AttributesModified)
+            // the engine has not applied the latest options yet.
+            if (monitoredItem is IMonitoredItemApplyState applyState && applyState.HasPendingChanges)
             {
                 listItem.ForeColor = Color.Red;
             }
@@ -475,7 +443,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                CreateItem(m_subscription, Telemetry);
+                CreateItem();
                 await ApplyChangesAsync(false);
             }
             catch (Exception exception)
@@ -488,7 +456,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                MonitoredItem monitoredItem = SelectedTag as MonitoredItem;
+                MonitoredItemHandle monitoredItem = SelectedTag as MonitoredItemHandle;
 
                 if (monitoredItem == null)
                 {
@@ -501,7 +469,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session as Session, monitoredItem, true, Telemetry))
+                if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session, monitoredItem, monitoredItem.Created, Telemetry))
                 #pragma warning restore CA2000
                 {
                     return;
@@ -524,38 +492,18 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                MonitoredItem[] monitoredItems = (MonitoredItem[])GetSelectedItems(typeof(MonitoredItem));
+                MonitoredItemHandle[] monitoredItems = (MonitoredItemHandle[])GetSelectedItems(typeof(MonitoredItemHandle));
 
-                if (monitoredItems.Length > 0)
+                foreach (MonitoredItemHandle monitoredItem in monitoredItems)
                 {
-                    m_subscription.RemoveItems(monitoredItems);
+                    // removing the item is the request, the engine deletes it on the server
+                    // from its own worker.
+                    m_subscription.RemoveItem(monitoredItem);
                 }
 
-                IList<MonitoredItem> deletedItems = (await m_subscription.DeleteItemsAsync()).ToList();
+                await m_subscription.WaitForPendingChangesAsync(kApplyTimeout);
 
-                string errorString = string.Empty;
-
-                foreach (MonitoredItem item in deletedItems)
-                {
-                    if (item.Status.Error != null && ServiceResult.IsBad(item.Status.Error))
-                    {
-                        errorString += System.Environment.NewLine + item.Status.Error;
-                    }
-                }
-
-                foreach (ListViewItem listItem in ItemsLV.Items)
-                {
-                    await UpdateItemAsync(listItem, listItem.Tag);
-                }
-
-                AdjustColumns();
-
-                if (!String.IsNullOrEmpty(errorString))
-                {
-                    #pragma warning disable CA2201 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    throw new Exception(String.Format("DeleteMonitoredItems error: {0}", errorString));
-                    #pragma warning restore CA2201
-                }
+                UpdateItems();
             }
             catch (Exception exception)
             {
@@ -572,11 +520,11 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                MonitoredItem[] monitoredItems = (MonitoredItem[])GetSelectedItems(typeof(MonitoredItem));
+                MonitoredItemHandle[] monitoredItems = (MonitoredItemHandle[])GetSelectedItems(typeof(MonitoredItemHandle));
 
                 if (monitoredItems.Length > 0)
                 {
-                    MonitoringMode monitoringMode = monitoredItems[0].MonitoringMode;
+                    MonitoringMode monitoringMode = monitoredItems[0].Settings.MonitoringMode;
 
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     if (!new SetMonitoringModeDlg().ShowDialog(ref monitoringMode))
@@ -585,21 +533,15 @@ namespace Opc.Ua.Sample.Controls
                         return;
                     }
 
-                    List<ServiceResult> errors = await m_subscription.SetMonitoringModeAsync(monitoringMode, monitoredItems);
-
-                    if (errors != null)
+                    // reconfiguring the options is the request: the engine sends
+                    // SetMonitoringMode for the items which already exist and creates the rest
+                    // with the new mode.
+                    foreach (MonitoredItemHandle monitoredItem in monitoredItems)
                     {
-                        string errorString = string.Empty;
-
-                        foreach (ServiceResult result in errors)
-                        {
-                            errorString += System.Environment.NewLine + result;
-                        }
-
-                        #pragma warning disable CA2201 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                        throw new Exception(String.Format("SetMonitoringMode error: {0}", errorString));
-                        #pragma warning restore CA2201
+                        monitoredItem.Configure(options => options with { MonitoringMode = monitoringMode });
                     }
+
+                    await ApplyChangesAsync(false);
                 }
             }
             catch (Exception exception)
@@ -617,14 +559,14 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                MonitoredItem[] monitoredItems = (MonitoredItem[])GetSelectedItems(typeof(MonitoredItem));
+                MonitoredItemHandle[] monitoredItems = (MonitoredItemHandle[])GetSelectedItems(typeof(MonitoredItemHandle));
 
                 if (monitoredItems.Length == 1)
                 {
                     if (monitoredItems[0].NodeClass == NodeClass.Variable || monitoredItems[0].NodeClass == NodeClass.VariableType)
                     {
                         #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                        if (!new DataChangeFilterEditDlg().ShowDialog(m_subscription.Session as Session, monitoredItems[0]))
+                        if (!new DataChangeFilterEditDlg().ShowDialog(m_subscription.Session, monitoredItems[0]))
                         #pragma warning restore CA2000
                         {
                             return;
@@ -633,7 +575,7 @@ namespace Opc.Ua.Sample.Controls
                     else
                     {
                         #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session as Session, Telemetry, monitoredItems[0].Filter as EventFilter, false);
+                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session, Telemetry, monitoredItems[0].Settings.Filter as EventFilter, false);
                         #pragma warning restore CA2000
 
                         if (filter == null)
@@ -641,10 +583,9 @@ namespace Opc.Ua.Sample.Controls
                             return;
                         }
 
-                        monitoredItems[0].Filter = filter;
+                        monitoredItems[0].Configure(options => options with { Filter = filter });
                     }
 
-                    await m_subscription.ModifyItemsAsync();
                     await ApplyChangesAsync(false);
                 }
             }
@@ -658,7 +599,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                MonitoredItem monitoredItem = SelectedTag as MonitoredItem;
+                MonitoredItemHandle monitoredItem = SelectedTag as MonitoredItemHandle;
 
                 if (monitoredItem == null)
                 {
@@ -672,13 +613,13 @@ namespace Opc.Ua.Sample.Controls
 
                 MonitoredItemDlg dialog = null;
 
-                if (!m_dialogs.TryGetValue(monitoredItem.ClientHandle, out dialog))
+                if (!m_dialogs.TryGetValue(monitoredItem, out dialog))
                 {
-                    m_dialogs[monitoredItem.ClientHandle] = dialog = new MonitoredItemDlg();
+                    m_dialogs[monitoredItem] = dialog = new MonitoredItemDlg();
                     dialog.FormClosing += new FormClosingEventHandler(MonitoredItemDlg_FormClosing);
                 }
 
-                dialog.Show(monitoredItem);
+                dialog.Show(m_subscription, monitoredItem);
             }
             catch (Exception exception)
             {
@@ -690,7 +631,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                foreach (KeyValuePair<uint, MonitoredItemDlg> current in m_dialogs)
+                foreach (KeyValuePair<MonitoredItemHandle, MonitoredItemDlg> current in m_dialogs)
                 {
                     if (current.Value == sender)
                     {

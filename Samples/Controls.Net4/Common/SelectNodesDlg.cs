@@ -54,7 +54,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Public Interface
@@ -62,7 +62,7 @@ namespace Opc.Ua.Sample.Controls
         /// Displays the dialog.
         /// </summary>
         public async Task<IList<NodeId>> ShowDialogAsync(
-            Session session,
+            ISession session,
             BrowseViewType browseView,
             IList<NodeId> nodesIds,
             NodeClass nodeClassMask,

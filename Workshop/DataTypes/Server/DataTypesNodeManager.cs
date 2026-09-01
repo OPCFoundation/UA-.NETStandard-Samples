@@ -32,6 +32,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Quickstarts.DataTypes.Types;
 
 namespace Quickstarts.DataTypes
 {
@@ -84,8 +85,12 @@ namespace Quickstarts.DataTypes
                 Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances)
         {
             // register the encodeable types of both models so the values of the
-            // custom structures can be decoded and encoded by the server.
-            Server.Factory.AddEncodeableTypes(typeof(Quickstarts.DataTypes.Types.VehicleType).Assembly);
+            // custom structures can be decoded and encoded by the server. the
+            // vehicle types of the library are source generated from its model
+            // design and come with a registration extension of their own; the
+            // instance model is still built by the ModelCompiler and its types
+            // are picked up by reflection.
+            Server.Factory.Builder.AddQuickstartsDataTypesTypes().Commit();
             Server.Factory.AddEncodeableTypes(typeof(DataTypesNodeManager).GetTypeInfo().Assembly);
         }
         #endregion

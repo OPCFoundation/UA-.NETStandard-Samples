@@ -38,9 +38,14 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
 
 namespace Opc.Ua.Sample.Controls
 {
+    // the V2 subscription engine reuses names the classic engine already has in the
+    // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
+    using SubscriptionState = Opc.Ua.Client.Subscriptions.SubscriptionState;
+
     public partial class CreateMonitoredItemsDlg : Form
     {
         #region Constructors
@@ -48,48 +53,44 @@ namespace Opc.Ua.Sample.Controls
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
-            m_SubscriptionStateChanged = new SubscriptionStateChangedEventHandler(Subscription_StateChanged);
+
+            m_StateChangedCallback = new Action<ISubscription, SubscriptionState, PublishState>(OnSubscriptionStateChanged);
+
+            FormClosing += new FormClosingEventHandler(CreateMonitoredItemsDlg_FormClosing);
         }
         #endregion
 
         #region Private Fields
-        private Subscription m_subscription;
+        private SubscriptionHandle m_subscription;
         private ITelemetryContext m_telemetry;
-        private SubscriptionStateChangedEventHandler m_SubscriptionStateChanged;
+        private readonly Action<ISubscription, SubscriptionState, PublishState> m_StateChangedCallback;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(Subscription subscription, bool useTypeModel, ITelemetryContext telemetry)
+        public void Show(SubscriptionHandle subscription, bool useTypeModel, ITelemetryContext telemetry)
         {
             if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
             Show();
             BringToFront();
 
-            // remove previous subscription.
+            // stop receiving notifications from the previous subscription.
             if (m_subscription != null)
             {
-                m_subscription.StateChanged -= m_SubscriptionStateChanged;
+                m_subscription.Callbacks.StateChangedCallback -= m_StateChangedCallback;
             }
 
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
             m_telemetry = telemetry;
 
-            #pragma warning disable CA1508 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (subscription != null)
-            #pragma warning restore CA1508
-            {
-                m_subscription.StateChanged += m_SubscriptionStateChanged;
-            }
-
-            m_subscription = subscription;
+            m_subscription.Callbacks.StateChangedCallback += m_StateChangedCallback;
 
             BrowseCTRL.AllowPick = true;
-            BrowseCTRL.SetViewAsync(subscription.Session as Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, NodeId.Null, telemetry);
+            BrowseCTRL.SetViewAsync(subscription.Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, NodeId.Null, telemetry);
 
             MonitoredItemsCTRL.Initialize(subscription, telemetry);
         }
@@ -97,13 +98,14 @@ namespace Opc.Ua.Sample.Controls
 
         #region Event Handlers
         /// <summary>
-        /// Handles a change to the state of the subscription.
+        /// Handles a change to the state of the subscription, which is also what reports that
+        /// the engine finished applying monitored item changes.
         /// </summary>
-        void Subscription_StateChanged(Subscription subscription, SubscriptionStateChangedEventArgs e)
+        private void OnSubscriptionStateChanged(ISubscription subscription, SubscriptionState state, PublishState publishStateMask)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(m_SubscriptionStateChanged, subscription, e);
+                BeginInvoke(m_StateChangedCallback, subscription, state, publishStateMask);
                 return;
             }
             else if (!IsHandleCreated)
@@ -114,13 +116,28 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 // ignore notifications for other subscriptions.
-                if (!Object.ReferenceEquals(m_subscription, subscription))
+                if (m_subscription == null || !Object.ReferenceEquals(m_subscription.Subscription, subscription))
                 {
                     return;
                 }
 
                 // notify controls of the change.
-                MonitoredItemsCTRL.SubscriptionChanged(e);
+                MonitoredItemsCTRL.SubscriptionChanged();
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(m_telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+
+        private void CreateMonitoredItemsDlg_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            try
+            {
+                if (m_subscription != null)
+                {
+                    m_subscription.Callbacks.StateChangedCallback -= m_StateChangedCallback;
+                }
             }
             catch (Exception exception)
             {

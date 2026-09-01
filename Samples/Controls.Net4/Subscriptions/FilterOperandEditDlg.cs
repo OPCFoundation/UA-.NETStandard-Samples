@@ -65,7 +65,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Public Interface
@@ -73,7 +73,7 @@ namespace Opc.Ua.Sample.Controls
         /// Displays the dialog.
         /// </summary>
         public FilterOperand ShowDialog(
-            Session session,
+            ISession session,
             IList<ContentFilterElement> elements,
             int index,
             FilterOperand operand,
@@ -130,6 +130,8 @@ namespace Opc.Ua.Sample.Controls
 
                 StringBuilder buffer = new StringBuilder();
 
+                // the operand can hold an array of any built in type, so it is listed
+                // element by element through the boxed CLR array.
                 Array array = literalOperand.Value.AsBoxedObject() as Array;
 
                 if (array != null)

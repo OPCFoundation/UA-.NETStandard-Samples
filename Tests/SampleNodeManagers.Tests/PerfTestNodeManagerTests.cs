@@ -95,7 +95,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                ((QualifiedName)browseName.WrappedValue.AsBoxedObject()).Name,
+                browseName.WrappedValue.TryGetValue(out QualifiedName name) ? name.Name : null,
                 Is.EqualTo("000005"),
                 "The browse name of a register variable is its index padded to six digits.");
 
@@ -104,7 +104,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                dataType.WrappedValue.AsBoxedObject(),
+                dataType.WrappedValue.TryGetValue(out NodeId registerDataType) ? registerDataType : NodeId.Null,
                 Is.EqualTo(DataTypeIds.Int32),
                 "A register holds integers.");
         }

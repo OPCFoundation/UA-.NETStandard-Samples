@@ -53,7 +53,7 @@ namespace Opc.Ua.Sample
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         private event TypeNavigatorEventHandler m_TypeSelected;
         #endregion
 
@@ -70,7 +70,7 @@ namespace Opc.Ua.Sample
         /// <summary>
         /// Initializes the control.
         /// </summary>
-        public async Task InitializeAsync(Session session, NodeId typeId, CancellationToken ct = default)
+        public async Task InitializeAsync(ISession session, NodeId typeId, CancellationToken ct = default)
         {
             if (session == null)
             {

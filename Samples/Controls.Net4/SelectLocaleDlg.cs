@@ -54,7 +54,7 @@ namespace Opc.Ua.Sample.Controls
         #endregion
 
         #region Private Fields
-        private Session m_session;
+        private ISession m_session;
         #endregion
 
         #region Public Interface
@@ -63,7 +63,7 @@ namespace Opc.Ua.Sample.Controls
         /// </summary>
         /// <param name="session">The session.</param>
         /// <returns></returns>
-        public async Task<string> ShowDialogAsync(Session session, CancellationToken ct = default)
+        public async Task<string> ShowDialogAsync(ISession session, CancellationToken ct = default)
         {
             m_session = session;
 

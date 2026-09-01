@@ -28,7 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\Server\Model\AggregationModel.PredefinedNodes.uanodes" Link="Model\AggregationModel.PredefinedNodes.uanodes" />
+    <!-- the generated node manager lives in the AggregationServer namespace but the
+         generated model node set extension lives in AggregationModel; the bridge has
+         to be a global using because the generated code cannot be edited -->
+    <Using Include="AggregationModel" />
   </ItemGroup>
 
   <ItemGroup>

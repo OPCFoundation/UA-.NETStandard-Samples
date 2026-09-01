@@ -8,7 +8,6 @@
  * ======================================================================*/
 
 using System;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -101,8 +100,8 @@ namespace Opc.Ua.Samples.Tests
                 .ReadAttributeAsync(Session, logFilePath, Attributes.UserAccessLevel, ct)
                 .ConfigureAwait(false);
 
-            byte forTheNode = Convert.ToByte(accessLevel.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture);
-            byte forThisUser = Convert.ToByte(userAccessLevel.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture);
+            accessLevel.WrappedValue.TryGetValue(out byte forTheNode);
+            userAccessLevel.WrappedValue.TryGetValue(out byte forThisUser);
 
             await TestContext.Out
                 .WriteLineAsync($"AccessLevel {forTheNode}, UserAccessLevel {forThisUser} for an anonymous session")
@@ -231,7 +230,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                Convert.ToByte(userAccessLevel.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture),
+                userAccessLevel.WrappedValue.TryGetValue(out byte writable) ? writable : (byte)0,
                 Is.EqualTo(AccessLevels.CurrentReadOrWrite),
                 "An authenticated session has to be told it may write.");
 

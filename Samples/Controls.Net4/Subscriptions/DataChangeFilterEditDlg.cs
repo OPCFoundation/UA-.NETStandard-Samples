@@ -64,13 +64,17 @@ namespace Opc.Ua.Sample.Controls
         }
 
         /// <summary>
-        /// Prompts the user to specify the browse options.
+        /// Prompts the user to specify the data change filter for a monitored item.
         /// </summary>
-        public bool ShowDialog(Session session, MonitoredItem monitoredItem)
+        /// <remarks>
+        /// Reconfiguring the options monitor of the handle is the modify request: the V2
+        /// engine applies the new filter on its own worker.
+        /// </remarks>
+        public bool ShowDialog(ISession session, MonitoredItemHandle monitoredItem)
         {
             if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
-            DataChangeFilter filter = monitoredItem.Filter as DataChangeFilter;
+            DataChangeFilter filter = monitoredItem.Settings.Filter as DataChangeFilter;
 
             if (filter == null)
             {
@@ -94,7 +98,7 @@ namespace Opc.Ua.Sample.Controls
             filter.DeadbandType = Convert.ToUInt32(DeadbandTypeCB.SelectedItem);
             filter.DeadbandValue = (double)DeadbandNC.Value;
 
-            monitoredItem.Filter = filter;
+            monitoredItem.Configure(options => options with { Filter = filter });
 
             return true;
         }

@@ -34,6 +34,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Client.Subscriptions.MonitoredItems;
+
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1016:Mark assemblies with assembly version", Justification = "Sample project keeps existing assembly version metadata.")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1824:Mark assemblies with NeutralResourcesLanguageAttribute", Justification = "Sample project keeps existing resource metadata.")]
@@ -223,11 +227,9 @@ namespace Opc.Ua.Client.Controls
                 case Attributes.AccessLevel:
                 case Attributes.UserAccessLevel:
                 {
-                    byte? field = value.AsBoxedObject() as byte?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out byte accessLevel))
                     {
-                        return GetAccessLevelDisplayText(field.Value);
+                        return GetAccessLevelDisplayText(accessLevel);
                     }
 
                     break;
@@ -235,11 +237,9 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.EventNotifier:
                 {
-                    byte? field = value.AsBoxedObject() as byte?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out byte eventNotifier))
                     {
-                        return GetEventNotifierDisplayText(field.Value);
+                        return GetEventNotifierDisplayText(eventNotifier);
                     }
 
                     break;
@@ -247,17 +247,15 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataType:
                 {
-                    NodeId dataTypeId = value.AsBoxedObject() is NodeId dt ? dt : NodeId.Null;
+                    NodeId dataTypeId = value.TryGetValue(out NodeId dt) ? dt : NodeId.Null;
                     return await session.NodeCache.GetDisplayTextAsync(dataTypeId, ct);
                 }
 
                 case Attributes.ValueRank:
                 {
-                    int? field = value.AsBoxedObject() as int?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out int valueRank))
                     {
-                        return GetValueRankDisplayText(field.Value);
+                        return GetValueRankDisplayText(valueRank);
                     }
 
                     break;
@@ -265,11 +263,9 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.NodeClass:
                 {
-                    int? field = value.AsBoxedObject() as int?;
-
-                    if (field != null)
+                    if (value.TryGetValue(out int nodeClass))
                     {
-                        return ((NodeClass)field.Value).ToString();
+                        return ((NodeClass)nodeClass).ToString();
                     }
 
                     break;
@@ -277,7 +273,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.NodeId:
                 {
-                    if (value.AsBoxedObject() is NodeId field && !field.IsNull)
+                    if (value.TryGetValue(out NodeId field) && !field.IsNull)
                     {
                         return field.ToString();
                     }
@@ -287,7 +283,7 @@ namespace Opc.Ua.Client.Controls
 
                 case Attributes.DataTypeDefinition:
                 {
-                    if (value.AsBoxedObject() is ExtensionObject field)
+                    if (value.TryGetValue(out ExtensionObject field))
                     {
                         return field.ToString();
                     }
@@ -296,9 +292,9 @@ namespace Opc.Ua.Client.Controls
             }
 
             // check for byte strings.
-            if (value.AsBoxedObject() is byte[])
+            if (value.TryGetValue(out ByteString byteString))
             {
-                return Utils.ToHexString(value.AsBoxedObject() as byte[]);
+                return Utils.ToHexString(byteString.Span);
             }
 
             // use default format.
@@ -632,12 +628,17 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Finds the type of the event for the notification.
         /// </summary>
-        /// <param name="monitoredItem">The monitored item.</param>
+        /// <param name="filter">The filter the notification was produced with.</param>
         /// <param name="notification">The notification.</param>
         /// <returns>The NodeId of the EventType.</returns>
-        public static NodeId FindEventType(MonitoredItem monitoredItem, EventFieldList notification)
+        /// <remarks>
+        /// The V2 subscription engine reports revised values but not the filter a monitored
+        /// item was created with, so the caller which owns the filter passes it in. The fields
+        /// of a notification line up one to one with its select clauses.
+        /// </remarks>
+        public static NodeId FindEventType(EventFilter filter, EventFieldList notification)
         {
-            if (monitoredItem.Status.Filter is EventFilter filter)
+            if (filter != null)
             {
                 for (int ii = 0; ii < filter.SelectClauses.Count; ii++)
                 {
@@ -645,7 +646,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (clause.BrowsePath.Count == 1 && clause.BrowsePath[0] == BrowseNames.EventType)
                     {
-                        return notification.EventFields[ii].AsBoxedObject() is NodeId nodeId ? nodeId : NodeId.Null;
+                        return notification.EventFields[ii].TryGetValue(out NodeId nodeId) ? nodeId : NodeId.Null;
                     }
                 }
             }
@@ -657,7 +658,7 @@ namespace Opc.Ua.Client.Controls
         /// Constructs an event object from a notification.
         /// </summary>
         /// <param name="session">The session.</param>
-        /// <param name="monitoredItem">The monitored item that produced the notification.</param>
+        /// <param name="filter">The filter the notification was produced with.</param>
         /// <param name="notification">The notification.</param>
         /// <param name="knownEventTypes">The known event types.</param>
         /// <param name="eventTypeMappings">Mapping between event types and known event types.</param>
@@ -667,14 +668,14 @@ namespace Opc.Ua.Client.Controls
         /// </returns>
         public static async Task<BaseEventState> ConstructEventAsync(
             ISession session,
-            MonitoredItem monitoredItem,
+            EventFilter filter,
             EventFieldList notification,
             Dictionary<NodeId, Type> knownEventTypes,
             Dictionary<NodeId, NodeId> eventTypeMappings,
             CancellationToken ct = default)
         {
             // find the event type.
-            NodeId eventTypeId = FindEventType(monitoredItem, notification);
+            NodeId eventTypeId = FindEventType(filter, notification);
 
             if (eventTypeId.IsNull)
             {
@@ -738,9 +739,6 @@ namespace Opc.Ua.Client.Controls
 
             // construct the event based on the known event type.
             BaseEventState e = (BaseEventState)Activator.CreateInstance(knownType, new object[] { (NodeState)null });
-
-            // get the filter which defines the contents of the notification.
-            EventFilter filter = monitoredItem.Status.Filter as EventFilter;
 
             // initialize the event with the values in the notification.
             e.Update(session.SystemContext, filter.SelectClauses, notification);
@@ -1254,6 +1252,92 @@ namespace Opc.Ua.Client.Controls
             }
 
             return -1;
+        }
+        #endregion
+
+        #region Subscriptions
+        /// <summary>
+        /// Adds a subscription driven by the V2 subscription engine to the session.
+        /// </summary>
+        /// <param name="session">The session, which has to run the V2 subscription engine.</param>
+        /// <param name="handler">The handler which receives the notifications.</param>
+        /// <param name="options">The options of the subscription. The caller keeps the monitor
+        /// so it can reconfigure the subscription later on.</param>
+        public static ISubscription AddSubscription(
+            ISession session,
+            ISubscriptionNotificationHandler handler,
+            IOptionsMonitor<Opc.Ua.Client.Subscriptions.SubscriptionOptions> options)
+        {
+            ArgumentNullException.ThrowIfNull(session);
+
+            if (!session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                throw new ServiceResultException(
+                    StatusCodes.BadNotSupported,
+                    "The session does not use the V2 subscription engine. Create it with a " +
+                    "ManagedSessionFactory or a session factory configured with the " +
+                    "DefaultSubscriptionEngineFactory.");
+            }
+
+            return manager.Add(handler, options);
+        }
+
+        /// <summary>
+        /// The options a control uses for a subscription it creates itself.
+        /// </summary>
+        public static Opc.Ua.Client.Subscriptions.SubscriptionOptions DefaultSubscriptionOptions => new Opc.Ua.Client.Subscriptions.SubscriptionOptions {
+            PublishingInterval = TimeSpan.FromSeconds(1),
+            KeepAliveCount = 10,
+            LifetimeCount = 100,
+            MaxNotificationsPerPublish = 1000,
+            PublishingEnabled = true,
+        };
+
+        /// <summary>
+        /// Waits until the V2 engine has applied the pending monitored item changes.
+        /// </summary>
+        /// <remarks>
+        /// The V2 engine applies added, modified and removed items on its own worker instead of
+        /// on an explicit ApplyChanges call, so a wizard which wants to show the operation
+        /// results of a step has to wait for that worker to catch up first.
+        /// </remarks>
+        /// <param name="subscription">The subscription to wait for.</param>
+        /// <param name="timeout">How long to wait before giving up and showing what there is.</param>
+        /// <param name="ct">Cancellation token to use to cancel operation.</param>
+        public static async Task WaitForPendingChangesAsync(
+            ISubscription subscription,
+            TimeSpan timeout,
+            CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(subscription);
+
+            DateTime deadline = DateTime.UtcNow.Add(timeout);
+
+            while (HasPendingChanges(subscription))
+            {
+                if (DateTime.UtcNow >= deadline)
+                {
+                    return;
+                }
+
+                await Task.Delay(50, ct).ConfigureAwait(true);
+            }
+        }
+
+        /// <summary>
+        /// Returns true while the V2 engine still has monitored item changes to apply.
+        /// </summary>
+        private static bool HasPendingChanges(ISubscription subscription)
+        {
+            foreach (IMonitoredItem monitoredItem in subscription.MonitoredItems.Items)
+            {
+                if (monitoredItem is IMonitoredItemApplyState applyState && applyState.HasPendingChanges)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
         #endregion
     }

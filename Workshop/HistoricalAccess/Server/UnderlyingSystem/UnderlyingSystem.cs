@@ -51,6 +51,13 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <summary>
+        /// Serializes access to the archive item data sets, which are plain ADO.NET
+        /// tables without any thread safety of their own. The historian provider and
+        /// the node manager - which appends simulated samples - share this lock.
+        /// </summary>
+        public object SyncRoot { get; } = new object();
+
+        /// <summary>
         /// Returns a folder object for the specified node.
         /// </summary>
         public ArchiveFolderState GetFolderState(ISystemContext context, string rootId)
@@ -100,6 +107,36 @@ namespace Quickstarts.HistoricalAccessServer
 
                 m_items.Add(parsedNodeId.RootId, state);
 
+                return state;
+            }
+        }
+
+        /// <summary>
+        /// Registers an item which was created outside the system - the predefined
+        /// items loaded from embedded resources - so lookups by node id find it.
+        /// </summary>
+        public void RegisterItemState(ArchiveItemState state)
+        {
+            lock (m_items)
+            {
+                m_items[state.ArchiveItem.UniquePath] = state;
+            }
+        }
+
+        /// <summary>
+        /// Returns the item for the node when the archive has already materialized
+        /// it, without creating one.
+        /// </summary>
+        public ArchiveItemState FindItemState(ParsedNodeId parsedNodeId)
+        {
+            if (parsedNodeId == null || parsedNodeId.RootType != NodeTypes.Item)
+            {
+                return null;
+            }
+
+            lock (m_items)
+            {
+                m_items.TryGetValue(parsedNodeId.RootId, out ArchiveItemState state);
                 return state;
             }
         }

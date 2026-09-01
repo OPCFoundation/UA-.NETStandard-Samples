@@ -46,18 +46,6 @@ namespace AggregationServer
             get { return m_localNamespaceIndexes; }
         }
 
-        private Array CastArray(Array source, Func<object, BuiltInType, BuiltInType, object> converter)
-        {
-            Type elementType = source.GetType().GetElementType() ?? typeof(object);
-            Array result = Array.CreateInstance(elementType, source.Length);
-            for (int ii = 0; ii < source.Length; ii++)
-            {
-                object mapped = converter(source.GetValue(ii), BuiltInType.Null, BuiltInType.Null);
-                result.SetValue(mapped, ii);
-            }
-            return result;
-        }
-
         /// <summary>
         /// Gets or sets the Uris for the Node Managers it supports e.g. "http://samples.org/UA/memorybuffer".
         /// </summary>
@@ -344,11 +332,6 @@ namespace AggregationServer
 
             if (type.IsUnknown)
             {
-                type = TypeInfo.Construct(value.AsBoxedObject());
-            }
-
-            if (type.IsUnknown)
-            {
                 return Variant.Null;
             }
 
@@ -358,22 +341,30 @@ namespace AggregationServer
                 {
                     case BuiltInType.NodeId:
                     {
-                        return Variant.From(ToId((NodeId)value.AsBoxedObject(), namespaceIndexes));
+                        return value.TryGetValue(out NodeId nodeId)
+                            ? Variant.From(ToId(nodeId, namespaceIndexes))
+                            : value;
                     }
 
                     case BuiltInType.ExpandedNodeId:
                     {
-                        return Variant.From(ToId((ExpandedNodeId)value.AsBoxedObject(), namespaceIndexes));
+                        return value.TryGetValue(out ExpandedNodeId expandedNodeId)
+                            ? Variant.From(ToId(expandedNodeId, namespaceIndexes))
+                            : value;
                     }
 
                     case BuiltInType.QualifiedName:
                     {
-                        return Variant.From(ToName((QualifiedName)value.AsBoxedObject(), namespaceIndexes));
+                        return value.TryGetValue(out QualifiedName qualifiedName)
+                            ? Variant.From(ToName(qualifiedName, namespaceIndexes))
+                            : value;
                     }
 
                     case BuiltInType.ExtensionObject:
                     {
-                        return Variant.From(ToExtensionObject((ExtensionObject)value.AsBoxedObject(), namespaceIndexes));
+                        return value.TryGetValue(out ExtensionObject extension)
+                            ? Variant.From(ToExtensionObject(extension, namespaceIndexes))
+                            : value;
                     }
                 }
             }
@@ -382,31 +373,38 @@ namespace AggregationServer
                 switch (type.BuiltInType)
                 {
                     case BuiltInType.NodeId:
+                    {
+                        return value.TryGetValue(out ArrayOf<NodeId> nodeIds)
+                            ? Variant.From(MapElements(nodeIds, x => ToId(x, namespaceIndexes)))
+                            : value;
+                    }
+
                     case BuiltInType.ExpandedNodeId:
+                    {
+                        return value.TryGetValue(out ArrayOf<ExpandedNodeId> expandedNodeIds)
+                            ? Variant.From(MapElements(expandedNodeIds, x => ToId(x, namespaceIndexes)))
+                            : value;
+                    }
+
                     case BuiltInType.QualifiedName:
+                    {
+                        return value.TryGetValue(out ArrayOf<QualifiedName> qualifiedNames)
+                            ? Variant.From(MapElements(qualifiedNames, x => ToName(x, namespaceIndexes)))
+                            : value;
+                    }
+
                     case BuiltInType.ExtensionObject:
+                    {
+                        return value.TryGetValue(out ArrayOf<ExtensionObject> extensions)
+                            ? Variant.From(MapElements(extensions, x => ToExtensionObject(x, namespaceIndexes)))
+                            : value;
+                    }
+
                     case BuiltInType.Variant:
                     {
-                        Array array = null;
-
-                        if (Object.ReferenceEquals(m_localNamespaceIndexes, namespaceIndexes))
-                        {
-                            array = CastArray((Array)value.AsBoxedObject(), CastArrayToLocal);
-                        }
-                        else
-                        {
-                            array = CastArray((Array)value.AsBoxedObject(), CastArrayToRemote);
-                        }
-
-                        return type.BuiltInType switch
-                        {
-                            BuiltInType.NodeId => Variant.From((NodeId[])array),
-                            BuiltInType.ExpandedNodeId => Variant.From((ExpandedNodeId[])array),
-                            BuiltInType.QualifiedName => Variant.From((QualifiedName[])array),
-                            BuiltInType.ExtensionObject => Variant.From((ExtensionObject[])array),
-                            BuiltInType.Variant => Variant.From((Variant[])array),
-                            _ => value
-                        };
+                        return value.TryGetValue(out ArrayOf<Variant> variants)
+                            ? Variant.From(MapElements(variants, x => ToVariant(x, namespaceIndexes)))
+                            : value;
                     }
                 }
             }
@@ -415,36 +413,20 @@ namespace AggregationServer
         }
 
         /// <summary>
-        /// Casts an array value to a local value.
+        /// Maps the namespace indexes of every element of an array.
         /// </summary>
-        private object CastArrayToLocal(object source, BuiltInType srcType, BuiltInType dstType)
+        private static ArrayOf<T> MapElements<T>(ArrayOf<T> source, Func<T, T> converter)
         {
-            return MapElement(source, m_localNamespaceIndexes);
-        }
+            T[] result = new T[source.Count];
 
-        /// <summary>
-        /// Casts an array value to a remote value.
-        /// </summary>
-        private object CastArrayToRemote(object source, BuiltInType srcType, BuiltInType dstType)
-        {
-            return MapElement(source, m_remoteNamespaceIndexes);
-        }
-
-        /// <summary>
-        /// Maps the namespace indexes of a single array element.
-        /// </summary>
-        private object MapElement(object source, int[] namespaceIndexes)
-        {
-            switch (source)
+            for (int ii = 0; ii < result.Length; ii++)
             {
-                case Variant variant: return ToVariant(variant, namespaceIndexes);
-                case NodeId nodeId: return ToId(nodeId, namespaceIndexes);
-                case ExpandedNodeId expandedNodeId: return ToId(expandedNodeId, namespaceIndexes);
-                case QualifiedName qualifiedName: return ToName(qualifiedName, namespaceIndexes);
-                case ExtensionObject extension: return ToExtensionObject(extension, namespaceIndexes);
-                default: return source;
+                result[ii] = converter(source[ii]);
             }
+
+            return new ArrayOf<T>(result);
         }
+
         #endregion
 
         #region Private Fields

@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -67,7 +66,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             Assert.That(
-                Convert.ToByte(accessLevel.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture)
+                (accessLevel.WrappedValue.TryGetValue(out byte flags) ? flags : (byte)0)
                     & AccessLevels.HistoryRead,
                 Is.Not.Zero,
                 "An archive item has to allow reading its history.");
@@ -106,13 +105,13 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.Multiple(() => {
                 Assert.That(
-                    onCollecting.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(true),
+                    onCollecting.WrappedValue.TryGetValue(out bool collecting) && collecting,
+                    Is.True,
                     "An item the simulation appends to is being collected.");
 
                 Assert.That(
-                    onRecorded.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(false),
+                    onRecorded.WrappedValue.TryGetValue(out bool recorded) ? recorded : (bool?)null,
+                    Is.False,
                     "A finished recording is not being collected, even though it can be read.");
             });
         }
@@ -150,8 +149,8 @@ namespace Opc.Ua.Samples.Tests
                 announced.Add($"{name}={value.WrappedValue}");
 
                 Assert.That(
-                    value.WrappedValue.AsBoxedObject(),
-                    Is.EqualTo(true),
+                    value.WrappedValue.TryGetValue(out bool announcedValue) && announcedValue,
+                    Is.True,
                     $"The sample turns {name} on while it builds its address space.");
             }
 
@@ -304,49 +303,90 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// A read at a recorded time ought to return that value, and today it returns none.
+        /// A read at a recorded time returns the value which was recorded there.
         /// </summary>
         /// <remarks>
-        /// The request itself succeeds and the server answers with one value per requested
-        /// time, stamped correctly, which ReadAtTimeReturnsTheRecordedValue pins down. The
-        /// value that comes back is bad, though, even for a point in time the archive
-        /// demonstrably holds a value for - the raw read the test takes the timestamp from
-        /// returns it.
-        ///
-        /// The archive is searched with a binary search over a view sorted by source
-        /// timestamp, so this is a good place to look first: a read at a time is the one
-        /// operation which depends on that search finding an exact match.
+        /// ReadAtTimeReturnsTheRecordedValue pins the shape of the answer down - one
+        /// value per requested time, stamped correctly - and this pins its payload
+        /// down. The value asked for is one the archive recorded as good, because the
+        /// archive also holds deliberately bad values and a read at their time
+        /// faithfully returns the recorded bad status.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
-        public Task ReadAtTimeCarriesTheValue(CancellationToken ct)
+        public async Task ReadAtTimeCarriesTheValue(CancellationToken ct)
         {
-            return KnownIssueAsync(
-                async () => {
-                    NodeId item = await ResolveSampleItemAsync(ct).ConfigureAwait(false);
+            NodeId item = await ResolveSampleItemAsync(ct).ConfigureAwait(false);
 
-                    IReadOnlyList<DataValue> values = await HistoryOps
-                        .ReadAllRawAsync(Session, item, ArchiveStart, ArchiveEnd, 0, ct)
-                        .ConfigureAwait(false);
+            IReadOnlyList<DataValue> values = await HistoryOps
+                .ReadAllRawAsync(Session, item, ArchiveStart, ArchiveEnd, 0, ct)
+                .ConfigureAwait(false);
 
-                    DataValue expected = values[values.Count / 2];
+            DataValue expected = values.First(value => StatusCode.IsGood(value.StatusCode));
 
-                    HistoryReadOutcome outcome = await HistoryOps
-                        .ReadAtTimeAsync(Session, item, [At(expected)], ct)
-                        .ConfigureAwait(false);
+            HistoryReadOutcome outcome = await HistoryOps
+                .ReadAtTimeAsync(Session, item, [At(expected)], ct)
+                .ConfigureAwait(false);
 
-                    Assert.That(
-                        StatusCode.IsNotBad(outcome.Values[0].StatusCode),
-                        Is.True,
-                        "A read at a time the archive has a value for has to succeed.");
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"At {At(expected):O} the archive holds {expected.WrappedValue}, " +
+                    $"a read at that time returns {outcome.Values[0].WrappedValue} " +
+                    $"({outcome.Values[0].StatusCode})")
+                .ConfigureAwait(false);
 
-                    Assert.That(
-                        outcome.Values[0].WrappedValue.ToString(),
-                        Is.EqualTo(expected.WrappedValue.ToString()),
-                        "The value at a recorded time is the value which was recorded there.");
-                },
-                "a read at a point in time the archive holds a value for returns a bad value, " +
-                "although the same point in time comes back from a raw read.");
+            Assert.That(
+                StatusCode.IsNotBad(outcome.Values[0].StatusCode),
+                Is.True,
+                "A read at a time the archive has a good value for has to succeed.");
+
+            Assert.That(
+                outcome.Values[0].WrappedValue.ToString(),
+                Is.EqualTo(expected.WrappedValue.ToString()),
+                "The value at a recorded time is the value which was recorded there.");
+        }
+
+        /// <summary>
+        /// A read at the time of a recorded bad value returns that bad value.
+        /// </summary>
+        /// <remarks>
+        /// The sample archive deliberately records failures, and asking to skip bad
+        /// values only changes which neighbours an interpolation may use - a value
+        /// recorded at the requested time itself always answers, whatever its
+        /// status. Interpolating over it would fabricate a measurement where the
+        /// archive says there was none.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ReadAtTimeReturnsTheRecordedBadValue(CancellationToken ct)
+        {
+            NodeId item = await ResolveSampleItemAsync(ct).ConfigureAwait(false);
+
+            IReadOnlyList<DataValue> values = await HistoryOps
+                .ReadAllRawAsync(Session, item, ArchiveStart, ArchiveEnd, 0, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                values.Any(value => StatusCode.IsBad(value.StatusCode)),
+                Is.True,
+                "The sample archive records deliberately bad values.");
+
+            DataValue recorded = values.First(value => StatusCode.IsBad(value.StatusCode));
+
+            HistoryReadOutcome outcome = await HistoryOps
+                .ReadAtTimeAsync(Session, item, [At(recorded)], ct, useSimpleBounds: false)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"At {At(recorded):O} the archive recorded {recorded.StatusCode}, " +
+                    $"a read at that time returns {outcome.Values[0].StatusCode}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                outcome.Values[0].StatusCode,
+                Is.EqualTo(recorded.StatusCode),
+                "The value recorded at the requested time answers, whatever its status.");
         }
 
         /// <summary>
@@ -475,7 +515,7 @@ namespace Opc.Ua.Samples.Tests
             DataValue inserted = archive.First(value => At(value) == ReadBackAt);
 
             Assert.That(
-                Convert.ToDouble(inserted.WrappedValue.AsBoxedObject(), CultureInfo.InvariantCulture),
+                inserted.WrappedValue.ConvertTo(BuiltInType.Double).TryGetValue(out double insertedValue) ? insertedValue : double.NaN,
                 Is.EqualTo(42.0),
                 "The value which comes back has to be the value which was written.");
         }
@@ -484,14 +524,9 @@ namespace Opc.Ua.Samples.Tests
         /// Deleting a point in time which holds nothing is refused.
         /// </summary>
         /// <remarks>
-        /// This is the error path of the delete, and it is the half of it which works: the
-        /// server reports per value that there was no entry to delete.
-        ///
-        /// Deleting a point in time which does hold a recorded value is not tested, because
-        /// today it answers BadUnexpectedError - which is what a server answers when the
-        /// handler threw - and leaves the archive item in a state where every later read of
-        /// it is refused as well. A test which did that would take the rest of the fixture
-        /// down with it, so the behaviour is recorded here in prose instead.
+        /// This is the error path of the delete: the server reports per value that
+        /// there was no entry to delete. The path which deletes a value that is
+        /// there has its own test - DeletingARecordedValueRemovesItFromTheHistory.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
@@ -520,6 +555,159 @@ namespace Opc.Ua.Samples.Tests
                 "The refusal has to say that there was no entry.");
         }
 
+        /// <summary>
+        /// A recorded value can be deleted, and the modified history remembers it.
+        /// </summary>
+        /// <remarks>
+        /// The value is inserted first, at a timestamp far away from anything the
+        /// archive recorded, so the test owns what it deletes and the reading tests
+        /// are not disturbed. The timestamp deliberately carries milliseconds,
+        /// because timestamps are matched with full precision and truncating them
+        /// to the second is exactly the kind of bug this path had.
+        ///
+        /// The delete has to remove the value from the raw history and leave a
+        /// deletion record in the modified history next to the insertion record.
+        /// Both records carry the same source timestamp, so reading them back one
+        /// value at a time also pins down that a continuation point inside such a
+        /// group loses nothing.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task DeletingARecordedValueRemovesItFromTheHistory(CancellationToken ct)
+        {
+            NodeId item = await ResolveWritableItemAsync(ct).ConfigureAwait(false);
+
+            (StatusCode inserted, IReadOnlyList<StatusCode> perInserted) = await HistoryOps
+                .UpdateDataAsync(
+                    Session,
+                    item,
+                    PerformUpdateType.Insert,
+                    [new DataValue(Variant.From(42.0f), StatusCodes.Good, DeletedAt, DeletedAt)],
+                    ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(inserted) && perInserted.All(StatusCode.IsGood),
+                Is.True,
+                $"Inserting the value to delete failed: {inserted} / {string.Join(", ", perInserted)}");
+
+            (_, IReadOnlyList<StatusCode> perDeleted) = await HistoryOps
+                .DeleteAtTimeAsync(Session, item, [DeletedAt], ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Deleting at {DeletedAt:O}, per value: {string.Join(", ", perDeleted)}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                perDeleted,
+                Is.Not.Empty.And.All.Matches<StatusCode>(StatusCode.IsGood),
+                "Deleting a value which is in the archive has to succeed.");
+
+            IReadOnlyList<DataValue> archive = await HistoryOps
+                .ReadAllRawAsync(Session, item, ArchiveStart, ArchiveEnd, 0, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                archive.Select(At),
+                Does.Not.Contain(DeletedAt),
+                "A deleted value must not be in the raw history any more.");
+
+            // read the modified history one value at a time: the insertion and the
+            // deletion record share the timestamp and both have to come back.
+            var modified = new List<DataValue>();
+            ByteString continuationPoint = default;
+
+            do
+            {
+                HistoryReadOutcome page = await HistoryOps
+                    .ReadModifiedAsync(Session, item, ArchiveStart, ArchiveEnd, 1, ct, continuationPoint)
+                    .ConfigureAwait(false);
+
+                modified.AddRange(page.Values);
+                continuationPoint = page.ContinuationPoint;
+            }
+            while (!continuationPoint.IsNull && continuationPoint.Length > 0);
+
+            await ReportAsync(
+                "Modified history",
+                modified.Select(value => $"{value.WrappedValue} at {At(value):O}"))
+                .ConfigureAwait(false);
+
+            Assert.That(
+                modified.Count(value => At(value) == DeletedAt),
+                Is.EqualTo(2),
+                "The modified history has to remember both the insertion and the deletion of the value.");
+        }
+
+        /// <summary>
+        /// The annotations recorded in the archive are served, and a client can add
+        /// its own.
+        /// </summary>
+        /// <remarks>
+        /// Annotations are the structured half of the history profile: they live on
+        /// the Annotations property of an item and travel through HistoryRead and
+        /// HistoryUpdate like values do, just as extension objects. The sample
+        /// archive ships with annotations, so the read has fixed recorded content to
+        /// check; the written annotation goes to the item the deleting test uses, at
+        /// its own timestamp, so the recorded archive stays as it is.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnnotationsAreServedAndAccepted(CancellationToken ct)
+        {
+            NodeId item = await ResolveSampleItemAsync(ct).ConfigureAwait(false);
+            NodeId annotations = await ResolveAnnotationsPropertyAsync(item, ct).ConfigureAwait(false);
+
+            IReadOnlyList<DataValue> recorded = await HistoryOps
+                .ReadAllRawAsync(Session, annotations, ArchiveStart, ArchiveEnd, 0, ct)
+                .ConfigureAwait(false);
+
+            await ReportAsync(
+                "Recorded annotations",
+                recorded.Select(value => $"{value.WrappedValue} at {At(value):O}"))
+                .ConfigureAwait(false);
+
+            Assert.That(recorded, Is.Not.Empty, "The sample archive ships with annotations.");
+
+            Assert.That(
+                recorded.Select(Decode),
+                Is.All.Not.Null,
+                "Every value on the Annotations property has to decode as an Annotation.");
+
+            // add an annotation of our own on the item the deleting test writes to.
+            NodeId writable = await ResolveWritableItemAsync(ct).ConfigureAwait(false);
+            NodeId writableAnnotations = await ResolveAnnotationsPropertyAsync(writable, ct).ConfigureAwait(false);
+
+            var annotation = new Annotation {
+                AnnotationTime = AnnotatedAt,
+                UserName = "Tester",
+                Message = "Written by the node manager tests.",
+            };
+
+            (StatusCode result, IReadOnlyList<StatusCode> perValue) = await HistoryOps
+                .UpdateStructureDataAsync(
+                    Session,
+                    writableAnnotations,
+                    PerformUpdateType.Insert,
+                    [new DataValue(new ExtensionObject(annotation), StatusCodes.Good, AnnotatedAt, AnnotatedAt)],
+                    ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(result) && perValue.All(StatusCode.IsGood),
+                Is.True,
+                $"Inserting an annotation failed: {result} / {string.Join(", ", perValue)}");
+
+            IReadOnlyList<DataValue> readBack = await HistoryOps
+                .ReadAllRawAsync(Session, writableAnnotations, ArchiveStart, ArchiveEnd, 0, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                readBack.Select(At),
+                Does.Contain(AnnotatedAt),
+                "An inserted annotation has to be served from the Annotations property afterwards.");
+        }
 
         /// <summary>
         /// The dynamic items record new values while a client is subscribed to them.
@@ -563,11 +751,9 @@ namespace Opc.Ua.Samples.Tests
         /// the other side of it: the archive has to grow while that is happening.
         ///
         /// Growth is what is measured, over the whole archive, rather than reading back the
-        /// span the subscription covered. A bounded read whose range starts before the first
-        /// archived value returns nothing rather than the values inside the range - see
-        /// ReadAtTimeCarriesTheValue - so a test written that way says more about that bug
-        /// than about whether anything was archived, and answers differently depending on
-        /// where the generated data happens to end relative to the clock.
+        /// span the subscription covered: the simulation stamps its samples on its own
+        /// clock, so a range pinned to the subscription would answer differently depending
+        /// on where the generated data happens to end relative to the test's clock.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
@@ -631,12 +817,26 @@ namespace Opc.Ua.Samples.Tests
 
         private static readonly DateTime ReadBackAt = new(1990, 2, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        private static readonly DateTime DeletedAt = new(1990, 4, 1, 0, 0, 0, 500, DateTimeKind.Utc);
+
+        private static readonly DateTime AnnotatedAt = new(1990, 5, 1, 0, 0, 0, DateTimeKind.Utc);
+
         /// <summary>
         /// The point in time a recorded value carries.
         /// </summary>
         private static DateTime At(DataValue value)
         {
             return (DateTime)value.SourceTimestamp;
+        }
+
+        /// <summary>
+        /// The annotation a value read from an Annotations property carries.
+        /// </summary>
+        private static Annotation Decode(DataValue value)
+        {
+            return value.WrappedValue.TryGetValue(out ExtensionObject extension)
+                ? ExtensionObject.ToEncodeable(extension) as Annotation
+                : null;
         }
 
         private static DataValue SampleValue(DateTime when, double value)
@@ -663,13 +863,12 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// The item the tests which write history use.
+        /// The item the test which deletes history uses.
         /// </summary>
         /// <remarks>
-        /// Writing goes to a different item from the one the reading tests use, because an
-        /// insert leaves the item it was written to in a state where every later read of it
-        /// is refused - see InsertedValueIsReadBack. Keeping the two apart means one broken
-        /// path does not take the tests for the other paths down with it.
+        /// Deleting goes to a different item from the one the reading tests use, so
+        /// the recorded archive those tests measure is never disturbed, whichever
+        /// order the fixture runs in.
         /// </remarks>
         private Task<NodeId> ResolveWritableItemAsync(CancellationToken ct)
         {
@@ -679,6 +878,23 @@ namespace Opc.Ua.Samples.Tests
         private Task<NodeId> ResolveDynamicItemAsync(CancellationToken ct)
         {
             return ItemOfAsync(DynamicFolder, "Dynamic", "Double", ct);
+        }
+
+        /// <summary>
+        /// The Annotations property of an archive item.
+        /// </summary>
+        private async Task<NodeId> ResolveAnnotationsPropertyAsync(NodeId item, CancellationToken ct)
+        {
+            IReadOnlyList<ReferenceDescription> children = await SessionOps
+                .BrowseAsync(Session, item, ct)
+                .ConfigureAwait(false);
+
+            ReferenceDescription annotations = children.FirstOrDefault(child =>
+                child.BrowseName.Name == Opc.Ua.BrowseNames.Annotations);
+
+            Assert.That(annotations, Is.Not.Null, "An archive item exposes its Annotations property.");
+
+            return ExpandedNodeId.ToNodeId(annotations.NodeId, Session.NamespaceUris);
         }
 
         private async Task<NodeId> ItemOfAsync(
