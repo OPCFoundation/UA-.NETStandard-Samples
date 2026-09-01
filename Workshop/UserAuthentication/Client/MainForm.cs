@@ -40,6 +40,7 @@ using Opc.Ua.Client.Controls;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Quickstarts.UserAuthenticationClient
 {
@@ -347,11 +348,11 @@ namespace Quickstarts.UserAuthenticationClient
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 await m_session.UpdateSessionAsync(identity, preferredLocales);
 
-                MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Report($"Impersonating '{UserNameTB.Text}'", StatusCodes.Good);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+                Report($"Impersonating '{UserNameTB.Text}'", exception);
             }
             finally
             {
@@ -385,11 +386,11 @@ namespace Quickstarts.UserAuthenticationClient
                 string[] preferredLocales = PreferredLocalesTB.Text.Split([','], StringSplitOptions.RemoveEmptyEntries);
                 await m_session.UpdateSessionAsync(identity, preferredLocales);
 
-                MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Report("Impersonating with a certificate", StatusCodes.Good);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+                Report("Impersonating with a certificate", exception);
             }
             finally
             {
@@ -414,11 +415,11 @@ namespace Quickstarts.UserAuthenticationClient
                 await m_session.UpdateSessionAsync(new UserIdentity(new AnonymousIdentityToken()), preferredLocales);
 #pragma warning restore CA2000
 
-                MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Report("Impersonating anonymously", StatusCodes.Good);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+                Report("Impersonating anonymously", exception);
             }
             finally
             {
@@ -444,11 +445,11 @@ namespace Quickstarts.UserAuthenticationClient
                 string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 await m_session.UpdateSessionAsync(identity, preferredLocales);
 
-                MessageBox.Show("User identity changed.", "Impersonate User", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Report("Impersonating with a Kerberos token", StatusCodes.Good);
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+                Report("Impersonating with a Kerberos token", exception);
             }
             finally
             {
@@ -541,19 +542,54 @@ namespace Quickstarts.UserAuthenticationClient
                 ClientBase.ValidateResponse(results, valuesToWrite);
                 ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);
 
+                // the refusal is the interesting outcome here, not an error: the node manager
+                // answers the user access level per session, and an identity which may not
+                // write is told so by the write handler as well
+                Report("Writing the log file path", results[0]);
+
                 if (StatusCode.IsBad(results[0]))
                 {
-                    throw ServiceResultException.Create(results[0], 0, diagnosticInfos, responseHeader.StringTable);
+                    return;
                 }
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+                Report("Writing the log file path", exception);
             }
             finally
             {
                 m_session.ReturnDiagnostics = DiagnosticsMasks.None;
             }
+        }
+
+        /// <summary>
+        /// Reports what the server answered to an operation the user asked for.
+        /// </summary>
+        /// <remarks>
+        /// The status bar rather than a message box: the whole point of this sample is to try
+        /// the same operation as one identity after another and compare what the server says,
+        /// and a modal dialog between every click makes that tedious. It also keeps the
+        /// buttons drivable from a test, which a modal dialog does not.
+        /// </remarks>
+        private void Report(string what, StatusCode status)
+        {
+            ActionStatusLB.Text = $"{what} answered {status}";
+            ActionStatusLB.ForeColor = StatusCode.IsGood(status) ? Color.Empty : Color.Red;
+        }
+
+        /// <summary>
+        /// Reports an operation which did not get through, with the status code it failed with
+        /// where the stack gave one.
+        /// </summary>
+        private void Report(string what, Exception exception)
+        {
+            Report(
+                what,
+                exception is ServiceResultException refused
+                    ? refused.StatusCode
+                    : (StatusCode)StatusCodes.Bad);
+
+            m_telemetry.CreateLogger<MainForm>().LogInformation(exception, "{What} did not get through.", what);
         }
         #endregion
     }

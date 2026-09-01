@@ -401,9 +401,9 @@ since the server started.
 
 ## What Tier 2 checks today
 
-46 test cases, about two and a half minutes, Windows only. For each WinForms sample client the test
-starts its sample server in process, then on a dedicated STA thread with a running message
-loop - but without ever showing a window:
+52 test cases, about two and a half minutes, Windows only. For each WinForms sample client
+the test starts its sample server in process, then on a dedicated STA thread with a running
+message loop - but without ever showing a window:
 
 - builds the client's real `MainForm` from the client's own configuration file
 - reaches the shared `ConnectServerCtrl` through its designer field and connects it to the
@@ -414,6 +414,70 @@ loop - but without ever showing a window:
   the proof that the sample's own logic ran, not just the shared control
 - disconnects and asserts the session was released
 
+### Every client is now driven past connect
+
+A connect is not enough for any of these samples. A client can build its form, open its
+session and finish its post connect logic while every one of its buttons does nothing, and
+until recently no tier would have noticed. That is not hypothetical. The Reset button of the
+role management client **shipped broken for every
+account**: it resolved its method with a browse path built from a bare string, and a
+`QualifiedName` made from a bare string is in namespace zero while the method's browse name
+is in the model's namespace, so the path resolved to nothing and the button answered the
+sample's own `BadNotFound`. Measured against the running server, `ns=0 Reset` did not resolve
+and `ns=2 Reset` gave `ns=2;i=6` - the server was right the whole time. Tier 0, 1 and 1.5 all
+passed, the tier 1.5 fixture because it resolves the same method *with* the namespace index,
+and tier 2 because it only asked whether the client connects. A user found it by pressing the
+button once.
+
+So every sample client which has a control now has one test which presses it and asserts what
+the sample exists to show:
+
+| Client | What is driven | What is asserted | Where |
+|--------|----------------|------------------|-------|
+| AlarmCondition | opens the audit event window | a condition reaches the display | `WorkshopClientSubscriptionTests` |
+| Boiler | connects | the drum level of the selected boiler arrives | `WorkshopClientSubscriptionTests` |
+| DataAccess | monitors a value | the value column of the monitored item list fills | `WorkshopClientSubscriptionTests` |
+| DataTypes | walks the browse tree to the parking lot's primary vehicle and selects it | the value shows the structure decoded into its fields, the ones the *derived* type adds included | `SampleClientActionTests` |
+| FileTransfer | selects and expands a directory, then reports a completed reconnect | the selected node is still the same node object and the tree did not change size | `FileTransferClientTests` |
+| Gds | connects both of its clients, registers with the directory and reads the registration back | the registration round trips and the server status panel fills itself | `GdsClientTests` |
+| HistoricalAccess | points the history control at a recorded archive item and presses Go | the grid fills with the recorded values | `SampleClientActionTests` |
+| HistoricalEvents | connects | a live event reaches the list | `WorkshopClientSubscriptionTests` |
+| Methods | connects | the current state of the process arrives | `WorkshopClientSubscriptionTests` |
+| PerfTest | connects, then presses Stop | the item update count leaves zero, and Stop ends the run | `SampleClientActionTests` |
+| Reference | browses into the static scalars and selects one | the attribute list holds the attributes of the node the tree selected | `SampleClientActionTests` |
+| RoleManagement | signs in as an Operator and presses Reset | the server answered Good and the set point is back at its default - the case which motivated all of this | `RoleManagementClientTests` |
+| Sample | opens a session through the modal dialog | a `ManagedSession` on the V2 engine, and a filled browse tree | `SampleClientFormTests` |
+| SimpleEvents | connects | an event reaches the list | `WorkshopClientSubscriptionTests` |
+| StateMachines | powers the machine on and starts it | a transition of the machine it powered on reaches the list | `WorkshopClientSubscriptionTests` |
+| UserAuthentication | writes the log file path anonymously, then impersonates an unknown account | the write is refused with `BadUserAccessDenied` and the sample reports it; the refused impersonation leaves the session's identity alone | `SampleClientActionTests` |
+| Views | selects the engineering view and presses Change | the operations nodes are gone from the re-browse and the engineering ones are still there | `SampleClientActionTests` |
+
+Aggregation is the one client still uncovered at any depth: it needs more than one server and
+is a declared gap in `SampleClientTests.UncoveredClientSamplesAreDeclared`.
+
+**Empty is deliberately uncovered.** It is the template a new sample is copied from: its form
+has the shared connect control, a menu and a status bar, and not one control of its own.
+There is nothing to press, and a test which pressed something would be testing the shared
+controls rather than the sample. `SampleClientActionTests` says so in its remarks, so the
+omission cannot be mistaken for an oversight. Should the template ever grow a control, its
+case belongs in that fixture with the others.
+
+Two things about driving a form the harness never shows, which cost a run each to find and
+are collected in `SampleFormDriver`:
+
+- `Button.PerformClick()` is **inert**. It is gated on `CanSelect`, which is false while no
+  parent of the control is visible, so no handler runs and nothing fails either. The handler
+  is invoked by reflection instead.
+- `Control.Visible` is answered from the whole parent chain, so **every** control reports
+  itself invisible however the sample set the property. Whether a sample showed or hid
+  something has to be read from the state the sample keeps - which is why the PerfTest case
+  watches the update timer rather than the Stop button. `Enabled` is not affected.
+
+Two more, which apply to any fixture here: the synchronous `connect.Disconnect()` deadlocks
+because it blocks the UI thread on work which needs the same message loop, so every fixture
+awaits `connect.DisconnectAsync(ct)`; and `ListViewItem.Selected` does not reliably reach a
+list which was never displayed, so a row is selected through `SelectedIndices`.
+
 `SubscribeControlTests` covers what a connect alone does not: it drives the subscription
 wizard of the shared `SubscribeDataListViewCtrl` against the Reference server the way a user
 would - create the subscription, add `Server_ServerStatus_CurrentTime`, step to apply and then
@@ -423,15 +487,18 @@ reconnect fails a test, and it proves that the V2 notification handler of a cont
 reaches the user interface.
 
 `WorkshopClientSubscriptionTests` asks the same question of the Workshop clients that
-subscribe, and asks it of the sample itself rather than of a shared control. Six clients
+subscribe, and asks it of the sample itself rather than of a shared control. Seven clients
 connect to their own server and the test waits for a notification to reach the place the
 sample displays it: the drum level of the Boiler client, the process state of the Methods
 client, the value column of the DataAccess client's monitored item list, a condition in the
-AlarmCondition client, an event in the SimpleEvents client and a live event in the
-HistoricalEvents client. That covers both halves of the V2 engine - the callback based
-`ISubscriptionNotificationHandler` for the first four, the streaming `IStreamingSubscription`
-for the last two - and the AlarmCondition case also opens the audit event window, whose whole
-job is a streaming subscription that starts when it opens and ends when it closes.
+AlarmCondition client, an event in the SimpleEvents client, a transition in the StateMachines
+client and a live event in the HistoricalEvents client. That covers both halves of the V2
+engine - the callback based `ISubscriptionNotificationHandler` for the first four, the
+streaming `IStreamingSubscription` for the last three - and two of them press something
+first: the AlarmCondition case opens the audit event window, whose whole job is a streaming
+subscription that starts when it opens and ends when it closes, and the StateMachines case
+has to power its machine on, because a state machine nobody drives never has a transition to
+report.
 
 This is the part a connect test cannot reach: the handler is fixed when the subscription is
 created, an item is identified by name rather than by a mutable object, and the callback
