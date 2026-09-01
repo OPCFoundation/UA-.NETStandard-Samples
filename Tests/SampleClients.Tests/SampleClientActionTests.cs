@@ -655,6 +655,124 @@ namespace Opc.Ua.Samples.Tests
         }
         #endregion
 
+        #region AlarmCondition
+        /// <summary>
+        /// The alarm client silences an alarm and shows that the server accepted it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="WorkshopClientSubscriptionTests"/> proves that this client fills its
+        /// list; what it cannot prove is that the condition Methods behind the menu still
+        /// reach the server. Silence is the shortest of the Part 9 Methods to press - it
+        /// takes no argument and asks the operator nothing - so it is the one which pins
+        /// down the whole path: the facade the form calls, the Method NodeId the generated
+        /// proxy fills in, the handler on the server, and the event which comes back and
+        /// repaints the row.
+        /// </para>
+        /// <para>
+        /// The dialog conditions of the sample are skipped: a dialog is a condition without
+        /// a SilenceState, and calling Silence on one is correctly refused.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public Task AlarmConditionClientSilencesAnAlarm(CancellationToken ct)
+        {
+            return DriveAsync("AlarmCondition", async (form, session, phase, token) => {
+                phase.Enter("waiting for an alarm which is not silenced yet");
+
+                var conditions = WinFormsHarness.FindControl(form, "ConditionsLV") as ListView;
+
+                Assert.That(conditions, Is.Not.Null, "The sample no longer shows a condition list.");
+
+                bool arrived = await SampleFormDriver.PumpUntilAsync(
+                    () => FindAudibleAlarm(conditions) != null,
+                    s_step,
+                    token).ConfigureAwait(true);
+
+                Assert.That(
+                    arrived,
+                    Is.True,
+                    "No alarm which could be silenced arrived. The sample server reports one " +
+                    "every few seconds, so an empty list means the subscription never delivered.");
+
+                ListViewItem row = FindAudibleAlarm(conditions);
+                string condition = row.SubItems[kConditionColumn].Text;
+
+                await TestContext.Out
+                    .WriteLineAsync($"Silencing '{row.SubItems[kSourceColumn].Text}/{condition}'")
+                    .ConfigureAwait(true);
+
+                phase.Enter("silencing the alarm through the condition menu");
+
+                Assert.That(
+                    SampleFormDriver.TrySelectRow(conditions, row.Index),
+                    Is.True,
+                    "The alarm could not be selected.");
+
+                Assert.That(
+                    SampleFormDriver.TryInvokeHandler(form, "Conditions_SilenceMI_ClickAsync", null),
+                    Is.True,
+                    "The sample no longer has a handler for its Silence menu item.");
+
+                bool silenced = await SampleFormDriver.PumpUntilAsync(
+                    () => FlagsOf(conditions, condition).Contains("Silenced", StringComparison.Ordinal),
+                    s_step,
+                    token).ConfigureAwait(true);
+
+                await TestContext.Out
+                    .WriteLineAsync($"'{condition}' now reports: {FlagsOf(conditions, condition)}")
+                    .ConfigureAwait(true);
+
+                Assert.That(
+                    silenced,
+                    Is.True,
+                    "Silencing an alarm has to come back as an event which puts the alarm into " +
+                    "the silenced state, and the client has to show it.");
+            }, ct);
+        }
+
+        /// <summary>
+        /// The columns of the condition list which this fixture reads.
+        /// </summary>
+        private const int kSourceColumn = 0;
+        private const int kConditionColumn = 1;
+        private const int kFlagsColumn = 7;
+
+        /// <summary>
+        /// The first alarm of the list which carries a silence state and is not silenced.
+        /// </summary>
+        private static ListViewItem FindAudibleAlarm(ListView conditions)
+        {
+            foreach (ListViewItem candidate in conditions.Items)
+            {
+                if (candidate.Tag is AlarmConditionState alarm &&
+                    alarm.SilenceState?.Id?.Value == false)
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The flags the list shows for a condition, by the name in its condition column.
+        /// </summary>
+        private static string FlagsOf(ListView conditions, string condition)
+        {
+            foreach (ListViewItem candidate in conditions.Items)
+            {
+                if (candidate.SubItems[kConditionColumn].Text == condition)
+                {
+                    return candidate.SubItems[kFlagsColumn].Text;
+                }
+            }
+
+            return string.Empty;
+        }
+        #endregion
+
         #region Helpers
         /// <summary>
         /// Starts the sample's server, builds the client's real main form, connects it and

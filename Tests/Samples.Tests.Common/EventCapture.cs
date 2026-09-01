@@ -126,7 +126,10 @@ namespace Opc.Ua.Samples.Tests
         /// </param>
         /// <param name="extraFields">
         /// Fields beyond the standard ones, given as the browse path to reach them. They
-        /// are addressable afterwards by the name of their last element.
+        /// are addressable afterwards by the name of their last element, or by the whole
+        /// path joined with slashes where the path has more than one element - the two
+        /// state variables of a condition all end in "Id", so the last element alone would
+        /// not tell them apart.
         /// </param>
         public static async Task<EventCapture> CreateAsync(
             ISession session,
@@ -166,7 +169,7 @@ namespace Opc.Ua.Samples.Tests
                 // and naming the concrete type makes the clause miss on some of them
                 selectClauses.Add(Operand(ObjectTypeIds.BaseEventType, path));
 
-                fieldNames.Add(path[^1].Name);
+                fieldNames.Add(NameOf(path));
             }
 
             var filter = new EventFilter { SelectClauses = selectClauses.ToArrayOf() };
@@ -208,7 +211,7 @@ namespace Opc.Ua.Samples.Tests
             {
                 fieldNames.Add(clause.BrowsePath.IsNull || clause.BrowsePath.Count == 0
                     ? string.Empty
-                    : clause.BrowsePath[clause.BrowsePath.Count - 1].Name);
+                    : NameOf([.. clause.BrowsePath]));
             }
 
             return CreateAsync(session, notifier, filter, fieldNames.ToArray(), ct);
@@ -358,6 +361,17 @@ namespace Opc.Ua.Samples.Tests
             m_events.Writer.TryComplete();
 
             await SafeRemoveAsync(m_session, m_subscription).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// The name a field is addressable by: the last element of its browse path, or the
+        /// whole path where that would be ambiguous.
+        /// </summary>
+        private static string NameOf(QualifiedName[] path)
+        {
+            return path.Length == 1
+                ? path[0].Name
+                : string.Join("/", path.Select(element => element.Name));
         }
 
         private static SimpleAttributeOperand Operand(NodeId typeId, QualifiedName[] path)
