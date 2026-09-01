@@ -318,6 +318,32 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// Inserts, replaces or updates events in the history of a notifier.
+        /// </summary>
+        /// <remarks>
+        /// The fields of an event travel in the order the select clauses of the filter
+        /// name them, which is also how the server reads them back, so both sides of
+        /// one call have to be built from the same filter.
+        /// </remarks>
+        public static async Task<(StatusCode Result, IReadOnlyList<StatusCode> PerValue)> UpdateEventsAsync(
+            ISession session,
+            NodeId nodeId,
+            PerformUpdateType updateType,
+            EventFilter filter,
+            IEnumerable<HistoryEventFieldList> events,
+            CancellationToken ct)
+        {
+            var details = new UpdateEventDetails {
+                NodeId = nodeId,
+                PerformInsertReplace = updateType,
+                Filter = filter,
+                EventData = events.ToArray().ToArrayOf(),
+            };
+
+            return await UpdateAsync(session, details, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Deletes events from the history of a notifier.
         /// </summary>
         public static async Task<(StatusCode Result, IReadOnlyList<StatusCode> PerValue)> DeleteEventsAsync(

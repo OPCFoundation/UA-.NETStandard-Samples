@@ -38,6 +38,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Historian;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.MonitoredItems;
 
@@ -57,6 +58,12 @@ namespace Opc.Ua.Client.Controls
         /// How long the control waits for the subscription engine to apply a monitored item change.
         /// </summary>
         private static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(10);
+
+        /// <summary>
+        /// How many values the control shows at a time when neither the client nor
+        /// the server puts a number on it.
+        /// </summary>
+        private const uint kMaxRowsPerPage = 1000;
 
         #region Constructors
         /// <summary>
@@ -249,11 +256,31 @@ namespace Opc.Ua.Client.Controls
         #pragma warning restore CA2213
         private int m_nextId;
         private bool m_isSubscribed;
-        private HistoryReadDetails m_details;
-        private HistoryReadValueId m_nodeToContinue;
+        private HistoryClient m_historian;
+        private HistoryServerCapabilitiesInfo m_capabilities;
+        private IAsyncEnumerator<HistoryRow> m_reader;
         private bool m_timesChanged;
         private HistoricalDataConfigurationState m_configuration;
         private List<PropertyWithHistory> m_properties;
+        #endregion
+
+        #region HistoryRow Class
+        /// <summary>
+        /// One row of an answer: the value, and for a modified read what was done to
+        /// it and by whom.
+        /// </summary>
+        private sealed class HistoryRow
+        {
+            public HistoryRow(DataValue value, ModificationInfo info)
+            {
+                Value = value;
+                Info = info;
+            }
+
+            public DataValue Value { get; }
+
+            public ModificationInfo Info { get; }
+        }
         #endregion
 
         #region Public Members
@@ -487,7 +514,10 @@ namespace Opc.Ua.Client.Controls
             if (m_session != null)
             {
                 await DeleteSubscriptionAsync(ct);
+                await ReleaseReaderAsync();
                 m_session = null;
+                m_historian = null;
+                m_capabilities = null;
             }
 
             if (session == null)
@@ -499,6 +529,17 @@ namespace Opc.Ua.Client.Controls
             m_telemetry = telemetry;
             m_dataset.Clear();
             LeftPN.Enabled = true;
+
+            // the history services of the session, as one object: it builds the read
+            // and update details, follows the continuation points a read leaves
+            // behind, and releases the one still open when the caller stops early.
+            m_historian = session.Historian();
+
+            // what the server says it can do with history. a client which asks for an
+            // operation the server does not have is told so one round trip later, so
+            // the control asks once and shapes itself around the answer.
+            m_capabilities = await m_historian.GetServerCapabilitiesAsync(ct).ConfigureAwait(true);
+            InsertAnnotationMI.Enabled = m_capabilities.InsertAnnotation;
 
             #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
             if (m_session != null)
@@ -559,6 +600,10 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public async Task ChangeNodeAsync(NodeId nodeId, CancellationToken ct = default)
         {
+            // whatever is being read is about the node the control is leaving.
+            await ReleaseReaderAsync().ConfigureAwait(true);
+            ShowReadInProgress(false);
+
             m_nodeId = nodeId;
             m_configuration = null;
             m_properties = null;
@@ -922,70 +967,10 @@ namespace Opc.Ua.Client.Controls
             }
 
             // do it the hard way (may take a long time with some servers).
-            ReadRawModifiedDetails details = new ReadRawModifiedDetails();
-            details.StartTime = new DateTime(1970, 1, 1);
-            details.EndTime = DateTime.MinValue;
-            details.NumValuesPerNode = 1;
-            details.IsReadModified = false;
-            details.ReturnBounds = false;
-
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = m_nodeId;
-
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Source,
-                false,
-                nodesToRead,
-                ct);
-
-            List<HistoryReadResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                return DateTime.MinValue;
-            }
-
-            HistoryData data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
-
-            if (results == null)
-            {
-                return DateTime.MinValue;
-            }
-
-            DateTime startTime = (DateTime)data.DataValues[0].SourceTimestamp;
-
-            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
-            {
-                nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
-
-                response = await m_session.HistoryReadAsync(
-                    null,
-                    new ExtensionObject(details),
-                    TimestampsToReturn.Source,
-                    true,
-                    nodesToRead,
-                    ct);
-
-                results = response.Results.ToList();
-                diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                Session.ValidateResponse(results, nodesToRead);
-                Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-            }
-
-            startTime = new DateTime(startTime.Year, startTime.Month, startTime.Day, startTime.Hour, startTime.Minute, startTime.Second, 0, DateTimeKind.Utc);
-            startTime = startTime.ToLocalTime();
-
-            return startTime;
+            return await ReadEdgeOfArchiveAsync(
+                new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                DateTime.MinValue,
+                ct).ConfigureAwait(true);
         }
 
         /// <summary>
@@ -993,71 +978,52 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task<DateTime> ReadLastDateAsync(CancellationToken ct = default)
         {
-            ReadRawModifiedDetails details = new ReadRawModifiedDetails();
-            details.StartTime = DateTime.MinValue;
-            details.EndTime = DateTime.UtcNow.AddDays(1);
-            details.NumValuesPerNode = 1;
-            details.IsReadModified = false;
-            details.ReturnBounds = false;
+            DateTime endTime = await ReadEdgeOfArchiveAsync(
+                DateTime.MinValue,
+                DateTime.UtcNow.AddDays(1),
+                ct).ConfigureAwait(true);
 
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = m_nodeId;
+            // one second past the last sample, so that a read of the whole archive
+            // has it inside its window rather than on the edge of it.
+            return endTime != DateTime.MinValue ? endTime.AddSeconds(1) : endTime;
+        }
 
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
+        /// <summary>
+        /// Reads the one sample at an edge of the archive, as a local time truncated
+        /// to the second so that it can be shown in a date picker.
+        /// </summary>
+        /// <remarks>
+        /// One end of the window is left unset. A read without an end time runs
+        /// forwards from its start and a read without a start time runs backwards
+        /// from its end, so asking for a single value either way answers with the
+        /// sample at that end of the archive. Leaving the loop after that one value
+        /// is what releases the continuation point the server opened for the rest.
+        /// </remarks>
+        private async Task<DateTime> ReadEdgeOfArchiveAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
+        {
+            await foreach (DataValue value in m_historian.ReadRawAsync(
+                GetSelectedNode(),
+                startTime,
+                endTime,
+                maxValuesPerNode: 1,
+                returnBounds: false,
                 TimestampsToReturn.Source,
-                false,
-                nodesToRead,
-                ct);
-
-            List<HistoryReadResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
+                ct).ConfigureAwait(true))
             {
-                return DateTime.MinValue;
+                DateTime timestamp = (DateTime)value.SourceTimestamp;
+
+                return new DateTime(
+                    timestamp.Year,
+                    timestamp.Month,
+                    timestamp.Day,
+                    timestamp.Hour,
+                    timestamp.Minute,
+                    timestamp.Second,
+                    0,
+                    DateTimeKind.Utc).ToLocalTime();
             }
 
-            HistoryData data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
-
-            if (data == null || data.DataValues.Count == 0)
-            {
-                return DateTime.MinValue;
-            }
-
-            DateTime endTime = (DateTime)data.DataValues[0].SourceTimestamp;
-
-            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
-            {
-                nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
-
-                response = await m_session.HistoryReadAsync(
-                    null,
-                    new ExtensionObject(details),
-                    TimestampsToReturn.Source,
-                    true,
-                    nodesToRead,
-                    ct);
-
-                results = response.Results.ToList();
-                diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                Session.ValidateResponse(results, nodesToRead);
-                Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-            }
-
-            endTime = new DateTime(endTime.Year, endTime.Month, endTime.Day, endTime.Hour, endTime.Minute, endTime.Second, 0, DateTimeKind.Utc);
-            endTime = endTime.AddSeconds(1);
-            endTime = endTime.ToLocalTime();
-
-            return endTime;
+            return DateTime.MinValue;
         }
 
         /// <summary>
@@ -1255,45 +1221,6 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Fetches the next batch of history.
-        /// </summary>
-        private async Task ReadNextAsync(CancellationToken ct = default)
-        {
-            if (m_nodeToContinue == null)
-            {
-                return;
-            }
-
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            nodesToRead.Add(m_nodeToContinue);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(m_details),
-                TimestampsToReturn.Both,
-                false,
-                nodesToRead,
-                ct);
-
-            List<HistoryReadResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(results[0].StatusCode);
-            }
-
-            HistoryData values = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
-            DisplayResults(values);
-
-            // save any continuation point.
-            await SaveContinuationPointAsync(m_details, m_nodeToContinue, results[0].ContinuationPoint, ct);
-        }
-
-        /// <summary>
         /// Returns the currently selected historical variable or property node id.
         /// </summary>
         private NodeId GetSelectedNode()
@@ -1309,210 +1236,332 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Fetches the recent history.
         /// </summary>
-        private async Task ReadRawAsync(bool isReadModified, CancellationToken ct = default)
+        /// <remarks>
+        /// A modified read is the one kind the history client of the SDK cannot serve
+        /// the control: it yields the values of an answer, and the modification info
+        /// beside them - what was done to a value, when and by whom - is the whole
+        /// point of reading modified history, so that read keeps its own reader.
+        /// </remarks>
+        private Task ReadRawAsync(bool isReadModified, CancellationToken ct = default)
         {
-            m_dataset.Clear();
+            NodeId nodeId = GetSelectedNode();
+            DateTime startTime = StartTimeCK.Checked ? StartTimeDP.Value.ToUniversalTime() : DateTime.MinValue;
+            DateTime endTime = EndTimeCK.Checked ? EndTimeDP.Value.ToUniversalTime() : DateTime.MinValue;
 
-            ReadRawModifiedDetails details = new ReadRawModifiedDetails();
-            details.StartTime = (StartTimeCK.Checked) ? StartTimeDP.Value.ToUniversalTime() : DateTime.MinValue;
-            details.EndTime = (EndTimeCK.Checked) ? EndTimeDP.Value.ToUniversalTime() : DateTime.MinValue;
-            details.NumValuesPerNode = (MaxReturnValuesCK.Checked) ? (uint)MaxReturnValuesNP.Value : 0;
-            details.IsReadModified = isReadModified;
-            details.ReturnBounds = (isReadModified) ? false : ReturnBoundsCK.Checked;
-
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = GetSelectedNode();
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Both,
-                false,
-                nodesToRead,
-                ct);
-
-            List<HistoryReadResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
+            if (isReadModified)
             {
-                throw new ServiceResultException(results[0].StatusCode);
+                return StartReadAsync(ReadModifiedRowsAsync(nodeId, startTime, endTime, PageSize, ct), true, ct);
             }
 
-            HistoryData values = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
-            DisplayResults(values);
-
-            // save any continuation point.
-            await SaveContinuationPointAsync(details, nodeToRead, results[0].ContinuationPoint, ct);
+            return StartReadAsync(
+                AsRows(m_historian.ReadRawAsync(
+                    nodeId,
+                    startTime,
+                    endTime,
+                    PageSize,
+                    ReturnBoundsCK.Checked,
+                    TimestampsToReturn.Both,
+                    ct)),
+                false,
+                ct);
         }
 
         /// <summary>
-        /// Fetches the recent history.
+        /// Fetches the values recorded at a series of times.
         /// </summary>
-        private async Task ReadAtTimeAsync(CancellationToken ct = default)
+        private Task ReadAtTimeAsync(CancellationToken ct = default)
         {
-            m_dataset.Clear();
-
-            ReadAtTimeDetails details = new ReadAtTimeDetails();
-            details.UseSimpleBounds = UseSimpleBoundsCK.Checked;
-
-            // generate times
             DateTime startTime = StartTimeDP.Value.ToUniversalTime();
-
-            List<DateTimeUtc> reqTimes = new List<DateTimeUtc>();
+            List<DateTime> times = new List<DateTime>();
 
             for (int ii = 0; ii < MaxReturnValuesNP.Value; ii++)
             {
-                reqTimes.Add(startTime.AddMilliseconds((double)(ii * TimeStepNP.Value)));
+                times.Add(startTime.AddMilliseconds((double)(ii * TimeStepNP.Value)));
             }
 
-            details.ReqTimes = reqTimes;
-
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = GetSelectedNode();
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Both,
+            return StartReadAsync(
+                AsRows(m_historian.ReadAtTimeAsync(
+                    GetSelectedNode(),
+                    times,
+                    UseSimpleBoundsCK.Checked,
+                    TimestampsToReturn.Both,
+                    ct)),
                 false,
-                nodesToRead,
                 ct);
-
-            List<HistoryReadResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(results[0].StatusCode);
-            }
-
-            HistoryData values = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
-            DisplayResults(values);
-
-            // save any continuation point.
-            await SaveContinuationPointAsync(details, nodeToRead, results[0].ContinuationPoint, ct);
         }
 
         /// <summary>
-        /// Fetches the recent history.
+        /// Fetches an aggregate over the recent history.
         /// </summary>
-        private async Task ReadProcessedAsync(CancellationToken ct = default)
+        private Task ReadProcessedAsync(CancellationToken ct = default)
         {
-            m_dataset.Clear();
-
             AvailableAggregate aggregate = (AvailableAggregate)AggregateCB.SelectedItem;
 
             if (aggregate == null)
             {
+                return Task.CompletedTask;
+            }
+
+            return StartReadAsync(
+                AsRows(m_historian.ReadProcessedAsync(
+                    m_nodeId,
+                    aggregate.NodeId,
+                    StartTimeDP.Value.ToUniversalTime(),
+                    EndTimeDP.Value.ToUniversalTime(),
+                    (double)ProcessingIntervalNP.Value,
+                    null,
+                    TimestampsToReturn.Both,
+                    ct)),
+                false,
+                ct);
+        }
+
+        /// <summary>
+        /// Starts a new read and shows its first page.
+        /// </summary>
+        /// <remarks>
+        /// The history client hands out the answer of a read as a sequence which
+        /// spans the whole time range: it issues the requests, carries the
+        /// continuation point of one to the next, and releases the one still open
+        /// when the caller stops pulling. The control walks that sequence a page at a
+        /// time so that Go, Next and Stop keep meaning what they always did - Stop
+        /// abandons the sequence, which is what releases the continuation point the
+        /// server is holding.
+        /// </remarks>
+        private async Task StartReadAsync(IAsyncEnumerable<HistoryRow> rows, bool isModified, CancellationToken ct = default)
+        {
+            await ReleaseReaderAsync().ConfigureAwait(true);
+
+            m_dataset.Tables[0].Rows.Clear();
+
+            ResultsDV.Columns[5].Visible = isModified;
+            ResultsDV.Columns[6].Visible = isModified;
+            ResultsDV.Columns[7].Visible = isModified;
+            ResultsDV.Columns[8].Visible = false;
+
+            m_reader = rows.GetAsyncEnumerator(ct);
+
+            await ReadNextAsync(ct).ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Fetches the next page of the read in progress.
+        /// </summary>
+        private async Task ReadNextAsync(CancellationToken ct = default)
+        {
+            if (m_reader == null)
+            {
                 return;
             }
 
-            ReadProcessedDetails details = new ReadProcessedDetails();
-            details.StartTime = StartTimeDP.Value.ToUniversalTime();
-            details.EndTime = EndTimeDP.Value.ToUniversalTime();
-            details.ProcessingInterval = (double)ProcessingIntervalNP.Value;
-            details.AggregateType = new List<NodeId> { aggregate.NodeId };
-            details.AggregateConfiguration.UseServerCapabilitiesDefaults = true;
+            uint pageSize = PageSize != 0 ? PageSize : kMaxRowsPerPage;
+            bool exhausted = false;
 
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = m_nodeId;
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Both,
-                false,
-                nodesToRead,
-                ct);
-
-            List<HistoryReadResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
+            for (uint ii = 0; ii < pageSize; ii++)
             {
-                throw new ServiceResultException(results[0].StatusCode);
+                if (!await m_reader.MoveNextAsync().ConfigureAwait(true))
+                {
+                    exhausted = true;
+                    break;
+                }
+
+                AddValue(m_reader.Current.Value, m_reader.Current.Info);
             }
 
-            HistoryData values = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
-            DisplayResults(values);
+            m_dataset.AcceptChanges();
 
-            // save any continuation point.
-            await SaveContinuationPointAsync(details, nodeToRead, results[0].ContinuationPoint, ct);
+            if (exhausted)
+            {
+                await ReleaseReaderAsync().ConfigureAwait(true);
+            }
+
+            ShowReadInProgress(m_reader != null);
         }
 
         /// <summary>
-        /// Saves a continuation point for later use.
+        /// Abandons the read in progress, which releases the continuation point the
+        /// server is holding for it.
         /// </summary>
-        private async Task SaveContinuationPointAsync(HistoryReadDetails details, HistoryReadValueId nodeToRead, ByteString continuationPoint, CancellationToken ct = default)
+        private async Task ReleaseReaderAsync()
         {
-            // clear existing continuation point.
-            if (m_nodeToContinue != null)
+            if (m_reader == null)
             {
-                List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-                nodesToRead.Add(m_nodeToContinue);
+                return;
+            }
 
-                HistoryReadResponse response = await m_session.HistoryReadAsync(
+            IAsyncEnumerator<HistoryRow> reader = m_reader;
+            m_reader = null;
+
+            await reader.DisposeAsync().ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Offers Next and Stop while a read has more to give, Go once it has not.
+        /// </summary>
+        private void ShowReadInProgress(bool inProgress)
+        {
+            GoBTN.Visible = !inProgress;
+            GoBTN.Enabled = !inProgress;
+            NextBTN.Visible = inProgress;
+            NextBTN.Enabled = inProgress;
+            StopBTN.Enabled = inProgress;
+        }
+
+        /// <summary>
+        /// The number of values the control asks the server for at a time.
+        /// </summary>
+        /// <remarks>
+        /// A server which caps how much it returns per request is honoured: asking
+        /// for more than the cap only earns a smaller answer than the page the
+        /// control is about to display.
+        /// </remarks>
+        private uint PageSize
+        {
+            get
+            {
+                uint requested = MaxReturnValuesCK.Checked ? (uint)MaxReturnValuesNP.Value : 0;
+                uint limit = m_capabilities?.MaxReturnDataValues ?? 0;
+
+                if (limit == 0)
+                {
+                    return requested;
+                }
+
+                return requested == 0 ? limit : Math.Min(requested, limit);
+            }
+        }
+
+        /// <summary>
+        /// Presents the values of a read as rows without modification info.
+        /// </summary>
+        private static async IAsyncEnumerable<HistoryRow> AsRows(IAsyncEnumerable<DataValue> values)
+        {
+            await foreach (DataValue value in values.ConfigureAwait(false))
+            {
+                yield return new HistoryRow(value, null);
+            }
+        }
+
+        /// <summary>
+        /// Reads the modified history of a node, following the continuation points
+        /// the server leaves behind and releasing the one still open when the caller
+        /// stops pulling.
+        /// </summary>
+        /// <remarks>
+        /// This is what the history client of the SDK does for every other read; it
+        /// is spelled out here because the modification info of an answer does not
+        /// survive the sequence of values that client yields.
+        /// </remarks>
+        private async IAsyncEnumerable<HistoryRow> ReadModifiedRowsAsync(
+            NodeId nodeId,
+            DateTime startTime,
+            DateTime endTime,
+            uint maxValuesPerNode,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+        {
+            ExtensionObject details = new ExtensionObject(new ReadRawModifiedDetails {
+                IsReadModified = true,
+                StartTime = startTime,
+                EndTime = endTime,
+                NumValuesPerNode = maxValuesPerNode,
+                ReturnBounds = false,
+            });
+
+            ByteString continuationPoint = ByteString.Empty;
+            ByteString openPoint = ByteString.Empty;
+
+            try
+            {
+                while (true)
+                {
+                    HistoryReadValueId nodeToRead = new HistoryReadValueId {
+                        NodeId = nodeId,
+                        ContinuationPoint = continuationPoint,
+                    };
+
+                    HistoryReadResponse response = await m_session.HistoryReadAsync(
+                        null,
+                        details,
+                        TimestampsToReturn.Both,
+                        false,
+                        new List<HistoryReadValueId> { nodeToRead },
+                        ct).ConfigureAwait(false);
+
+                    HistoryReadResult result = response.Results.ToList()[0];
+
+                    if (StatusCode.IsBad(result.StatusCode))
+                    {
+                        throw new ServiceResultException(result.StatusCode);
+                    }
+
+                    openPoint = result.ContinuationPoint;
+
+                    if (ExtensionObject.ToEncodeable(result.HistoryData) is HistoryModifiedData data)
+                    {
+                        for (int ii = 0; ii < data.DataValues.Count; ii++)
+                        {
+                            yield return new HistoryRow(
+                                data.DataValues[ii],
+                                ii < data.ModificationInfos.Count ? data.ModificationInfos[ii] : null);
+                        }
+                    }
+
+                    if (result.ContinuationPoint.IsNull || result.ContinuationPoint.Length == 0)
+                    {
+                        openPoint = ByteString.Empty;
+                        yield break;
+                    }
+
+                    continuationPoint = result.ContinuationPoint;
+                }
+            }
+            finally
+            {
+                if (!openPoint.IsNull && openPoint.Length > 0)
+                {
+                    await ReleaseContinuationPointAsync(nodeId, details, openPoint).ConfigureAwait(false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tells the server the continuation point of an abandoned read is no longer
+        /// needed. A server only holds so many at a time, so this is best effort but
+        /// not optional.
+        /// </summary>
+        private async Task ReleaseContinuationPointAsync(NodeId nodeId, ExtensionObject details, ByteString continuationPoint)
+        {
+            try
+            {
+                await m_session.HistoryReadAsync(
                     null,
-                    new ExtensionObject(m_details),
+                    details,
                     TimestampsToReturn.Neither,
                     true,
-                    nodesToRead,
-                    ct);
-
-                List<HistoryReadResult> results = response.Results.ToList();
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                ClientBase.ValidateResponse(results, nodesToRead);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
+                    new List<HistoryReadValueId> {
+                        new HistoryReadValueId { NodeId = nodeId, ContinuationPoint = continuationPoint },
+                    },
+                    CancellationToken.None).ConfigureAwait(false);
             }
-
-            m_details = null;
-            m_nodeToContinue = null;
-
-            // save new continutation point.
-            if (!continuationPoint.IsNull && continuationPoint.Length > 0)
+            catch (ServiceResultException)
             {
-                m_details = details;
-                m_nodeToContinue = nodeToRead;
-                m_nodeToContinue.ContinuationPoint = continuationPoint;
-            }
-
-            // update controls.
-            if (m_nodeToContinue != null)
-            {
-                GoBTN.Visible = false;
-                NextBTN.Visible = true;
-                NextBTN.Enabled = true;
-                StopBTN.Enabled = true;
-            }
-            else
-            {
-                GoBTN.Visible = true;
-                GoBTN.Enabled = true;
-                NextBTN.Visible = false;
-                StopBTN.Enabled = false;
+                // the point is gone either way once the session is done with it.
             }
         }
 
         /// <summary>
-        /// Updates the history.
+        /// Writes the values on display back into the history of the node.
         /// </summary>
+        /// <remarks>
+        /// Insert, replace and update go through the history client of the SDK, which
+        /// builds the details of the request and unpacks the status the archive
+        /// answered with for each value. Remove is not part of that client - it has
+        /// the two deletes of Part 11 instead - so it keeps the service call.
+        ///
+        /// The rows on display are annotations rather than values when the annotations
+        /// property of the variable is the one being read, and an annotation is
+        /// written one at a time through the variable it belongs to.
+        /// </remarks>
         private async Task InsertReplaceAsync(PerformUpdateType updateType, CancellationToken ct = default)
         {
             List<DataValue> values = new List<DataValue>();
@@ -1523,58 +1572,71 @@ namespace Opc.Ua.Client.Controls
                 values.Add(value);
             }
 
-            bool isStructured = false;
-
             PropertyWithHistory property = PropertyCB.SelectedItem as PropertyWithHistory;
 
             if (property != null && property.BrowseName == Opc.Ua.BrowseNames.Annotations)
             {
-                isStructured = true;
+                ShowOperationResults(await WriteAnnotationsAsync(values, updateType, ct));
+                return;
             }
 
-            List<HistoryUpdateResult> results = await InsertReplaceAsync(GetSelectedNode(), updateType, isStructured, values, ct);
+            NodeId nodeId = GetSelectedNode();
 
-            ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
+            IList<StatusCode> results = updateType switch {
+                PerformUpdateType.Insert => await m_historian.InsertAsync(nodeId, values, ct),
+                PerformUpdateType.Replace => await m_historian.ReplaceAsync(nodeId, values, ct),
+                PerformUpdateType.Update => await m_historian.UpdateAsync(nodeId, values, ct),
+                _ => await RemoveAsync(nodeId, values, ct),
+            };
 
-            for (int ii = 0; ii < m_dataset.Tables[0].DefaultView.Count; ii++)
-            {
-                m_dataset.Tables[0].DefaultView[ii].Row[10] = results[0].OperationResults[ii];
-            }
-
-            m_dataset.AcceptChanges();
+            ShowOperationResults(results);
         }
 
         /// <summary>
-        /// Updates the history.
+        /// Writes the annotations on display back to the variable they belong to.
         /// </summary>
-        private async Task<List<HistoryUpdateResult>> InsertReplaceAsync(NodeId nodeId, PerformUpdateType updateType, bool isStructure, IList<DataValue> values, CancellationToken ct = default)
+        private async Task<IList<StatusCode>> WriteAnnotationsAsync(
+            IList<DataValue> values,
+            PerformUpdateType updateType,
+            CancellationToken ct = default)
         {
-            HistoryUpdateDetails details = null;
+            List<StatusCode> results = new List<StatusCode>(values.Count);
 
-            if (isStructure)
+            foreach (DataValue value in values)
             {
-                UpdateStructureDataDetails details2 = new UpdateStructureDataDetails();
-                details2.NodeId = nodeId;
-                details2.PerformInsertReplace = updateType;
-                details2.UpdateValues = new List<DataValue>(values);
-                details = details2;
-            }
-            else
-            {
-                UpdateDataDetails details2 = new UpdateDataDetails();
-                details2.NodeId = nodeId;
-                details2.PerformInsertReplace = updateType;
-                details2.UpdateValues = new List<DataValue>(values);
-                details = details2;
+                if (!value.WrappedValue.TryGetValue(out ExtensionObject extension) ||
+                    !extension.TryGetValue(out Annotation annotation))
+                {
+                    results.Add(StatusCodes.BadTypeMismatch);
+                    continue;
+                }
+
+                results.Add(await m_historian.WriteAnnotationAsync(
+                    m_nodeId,
+                    (DateTime)annotation.AnnotationTime,
+                    annotation.Message,
+                    annotation.UserName,
+                    updateType,
+                    ct));
             }
 
-            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
-            nodesToUpdate.Add(new ExtensionObject(details));
+            return results;
+        }
 
-            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
-                null,
-                nodesToUpdate,
-                ct);
+        /// <summary>
+        /// Removes the values from the history of the node.
+        /// </summary>
+        private async Task<IList<StatusCode>> RemoveAsync(NodeId nodeId, IList<DataValue> values, CancellationToken ct = default)
+        {
+            UpdateDataDetails details = new UpdateDataDetails {
+                NodeId = nodeId,
+                PerformInsertReplace = PerformUpdateType.Remove,
+                UpdateValues = new List<DataValue>(values),
+            };
+
+            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject> { new ExtensionObject(details) };
+
+            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(null, nodesToUpdate, ct);
 
             List<HistoryUpdateResult> results = response.Results.ToList();
             List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
@@ -1587,7 +1649,22 @@ namespace Opc.Ua.Client.Controls
                 throw new ServiceResultException(results[0].StatusCode);
             }
 
-            return results;
+            return results[0].OperationResults.ToList();
+        }
+
+        /// <summary>
+        /// Shows what the archive answered for each of the values on display.
+        /// </summary>
+        private void ShowOperationResults(IList<StatusCode> results)
+        {
+            ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
+
+            for (int ii = 0; ii < m_dataset.Tables[0].DefaultView.Count && ii < results.Count; ii++)
+            {
+                m_dataset.Tables[0].DefaultView[ii].Row[10] = results[ii];
+            }
+
+            m_dataset.AcceptChanges();
         }
 
         /// <summary>
@@ -1595,29 +1672,16 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async Task DeleteRawAsync(bool isModified, CancellationToken ct = default)
         {
-            DeleteRawModifiedDetails details = new DeleteRawModifiedDetails();
-            details.NodeId = m_nodeId;
-            details.IsDeleteModified = isModified;
-            details.StartTime = StartTimeDP.Value;
-            details.EndTime = EndTimeDP.Value;
+            StatusCode result = await m_historian.DeleteRawAsync(
+                m_nodeId,
+                StartTimeDP.Value.ToUniversalTime(),
+                EndTimeDP.Value.ToUniversalTime(),
+                isModified,
+                ct);
 
-            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
-            nodesToUpdate.Add(new ExtensionObject(details));
-
-            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
-                 null,
-                 nodesToUpdate,
-                 ct);
-
-            List<HistoryUpdateResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToUpdate);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
+            if (StatusCode.IsBad(result))
             {
-                throw new ServiceResultException(results[0].StatusCode);
+                throw new ServiceResultException(result);
             }
 
             ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = false;
@@ -1627,86 +1691,24 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Deletes the history.
         /// </summary>
+        /// <remarks>
+        /// The row of a value on display keeps the value it was built from, which is
+        /// what carries the source timestamp the archive keys it by; the column of
+        /// the grid holds the local rendering of it and would not name the same
+        /// instant back to the server.
+        /// </remarks>
         private async Task DeleteAtTimeAsync(CancellationToken ct = default)
         {
-            DeleteAtTimeDetails details = new DeleteAtTimeDetails();
-            details.NodeId = m_nodeId;
-
-            List<DateTimeUtc> reqTimes = new List<DateTimeUtc>();
+            List<DateTime> times = new List<DateTime>();
 
             foreach (DataRowView row in m_dataset.Tables[0].DefaultView)
             {
-                DateTime value = (DateTime)row.Row[1];
-                reqTimes.Add(value);
+                times.Add((DateTime)((DataValue)row.Row[9]).SourceTimestamp);
             }
 
-            details.ReqTimes = reqTimes;
+            IList<StatusCode> results = await m_historian.DeleteAtTimeAsync(m_nodeId, times, ct);
 
-            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject>();
-            nodesToUpdate.Add(new ExtensionObject(details));
-
-            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(
-                 null,
-                 nodesToUpdate,
-                 ct);
-
-            List<HistoryUpdateResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToUpdate);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(results[0].StatusCode);
-            }
-
-            ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
-
-            for (int ii = 0; ii < m_dataset.Tables[0].DefaultView.Count; ii++)
-            {
-                m_dataset.Tables[0].DefaultView[ii].Row[10] = results[0].OperationResults[ii];
-            }
-
-            m_dataset.AcceptChanges();
-        }
-
-        /// <summary>
-        /// Displays the results of a history operation.
-        /// </summary>
-        private void DisplayResults(HistoryData values)
-        {
-            HistoryModifiedData modifiedData = values as HistoryModifiedData;
-
-            if (modifiedData != null)
-            {
-                ResultsDV.Columns[5].Visible = true;
-                ResultsDV.Columns[6].Visible = true;
-                ResultsDV.Columns[7].Visible = true;
-                ResultsDV.Columns[8].Visible = false;
-
-                for (int ii = 0; ii < modifiedData.DataValues.Count; ii++)
-                {
-                    AddValue(modifiedData.DataValues[ii], modifiedData.ModificationInfos[ii]);
-                }
-            }
-            else
-            {
-                ResultsDV.Columns[5].Visible = false;
-                ResultsDV.Columns[6].Visible = false;
-                ResultsDV.Columns[7].Visible = false;
-                ResultsDV.Columns[8].Visible = false;
-
-                if (values != null)
-                {
-                    foreach (DataValue value in values.DataValues)
-                    {
-                        AddValue(value, null);
-                    }
-                }
-            }
-
-            m_dataset.AcceptChanges();
+            ShowOperationResults(results);
         }
 
         private async void NodeIdBTN_ClickAsync(object sender, EventArgs e)
@@ -1772,8 +1774,9 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                m_dataset.Tables[0].Rows.Clear();
-
+                // the rows are not cleared here: a read starts by clearing them, and
+                // the operations which write history take the values to write from
+                // exactly the rows a read left behind.
                 switch ((HistoryReadType)ReadTypeCB.SelectedItem)
                 {
                     case HistoryReadType.Subscribe:
@@ -1872,6 +1875,9 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
+                // abandoning the read is what releases the continuation point the
+                // server is holding open for it.
+                await ReleaseReaderAsync();
                 await DeleteSubscriptionAsync();
             }
             catch (Exception exception)
@@ -2293,30 +2299,20 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
+        /// <summary>
+        /// Annotates every selected value with the same note.
+        /// </summary>
+        /// <remarks>
+        /// An annotation is addressed through the variable rather than through its
+        /// Annotations property: the history client translates the one to the other,
+        /// which is also what the server does with the node id of an annotation
+        /// request, so a client never has to find that property for itself.
+        /// </remarks>
         private async void InsertAnnotationMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                if (m_session == null)
-                {
-                    return;
-                }
-
-                NodeId propertyId = NodeId.Null;
-
-                if (m_properties != null)
-                {
-                    foreach (PropertyWithHistory property in m_properties)
-                    {
-                        if (property.BrowseName == Opc.Ua.BrowseNames.Annotations)
-                        {
-                            propertyId = property.NodeId;
-                            break;
-                        }
-                    }
-                }
-
-                if (propertyId.IsNull)
+                if (m_session == null || ResultsDV.SelectedRows.Count == 0)
                 {
                     return;
                 }
@@ -2325,30 +2321,27 @@ namespace Opc.Ua.Client.Controls
                 Annotation annotation = new EditAnnotationDlg().ShowDialog(m_session, null, null);
                 #pragma warning restore CA2000
 
-                if (annotation != null)
+                if (annotation == null)
                 {
-                    List<DataValue> valuesToUpdate = new List<DataValue>();
-
-                    foreach (DataGridViewRow row in ResultsDV.SelectedRows)
-                    {
-                        DataRowView source = row.DataBoundItem as DataRowView;
-                        DataValue value = (DataValue)source.Row[9];
-
-                    }
-
-                    List<HistoryUpdateResult> results = await InsertReplaceAsync(propertyId, PerformUpdateType.Insert, true, valuesToUpdate);
-
-                    ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
-
-                    for (int ii = 0; ii < ResultsDV.SelectedRows.Count; ii++)
-                    {
-                        DataGridViewRow row = ResultsDV.SelectedRows[ii];
-                        DataRowView source = row.DataBoundItem as DataRowView;
-                        source.Row[10] = results[0].OperationResults[ii];
-                    }
-
-                    m_dataset.AcceptChanges();
+                    return;
                 }
+
+                ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
+
+                foreach (DataGridViewRow row in ResultsDV.SelectedRows)
+                {
+                    DataRowView source = row.DataBoundItem as DataRowView;
+                    DataValue value = (DataValue)source.Row[9];
+
+                    // the annotation belongs to the instant the value was recorded at.
+                    source.Row[10] = await m_historian.WriteAnnotationAsync(
+                        m_nodeId,
+                        (DateTime)value.SourceTimestamp,
+                        annotation.Message,
+                        annotation.UserName);
+                }
+
+                m_dataset.AcceptChanges();
             }
             catch (Exception exception)
             {
