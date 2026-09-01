@@ -280,10 +280,10 @@ namespace Opc.Ua.Sample.Controls
                                 browsePath);
 
                             // create default value.
-                            object value = GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank);
+                            Variant value = GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank);
 
                             // create attribute filter.
-                            element = m_filter.Push(FilterOperator.Equals, new Variant(new ExtensionObject(attribute, false)), Variant.From((dynamic)value));
+                            element = m_filter.Push(FilterOperator.Equals, new Variant(new ExtensionObject(attribute, false)), value);
                             break;
                         }
 
@@ -421,27 +421,24 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                // get the current value. the simple value editor works on a boxed CLR
-                // value and its runtime type, so the Variant is unwrapped for it.
-                object currentValue = literal.Value.AsBoxedObject();
+                // get the current value.
+                Variant currentValue = literal.Value;
 
-                if (currentValue == null)
+                if (currentValue.IsNull)
                 {
-                    currentValue = String.Empty;
+                    currentValue = Variant.From(String.Empty);
                 }
 
                 // edit the value.
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                object value = new SimpleValueEditDlg().ShowDialog(currentValue, currentValue.GetType(), Telemetry);
+                if (!new SimpleValueEditDlg().TryShowDialog(currentValue, Telemetry, out Variant value))
                 #pragma warning restore CA2000
-
-                if (value == null)
                 {
                     return;
                 }
 
                 // update value.
-                literal.Value = Variant.From((dynamic)value);
+                literal.Value = value;
                 ContentFilter filter = GetFilter();
                 Update(filter);
             }

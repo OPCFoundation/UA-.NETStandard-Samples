@@ -28,23 +28,22 @@
  * ======================================================================*/
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Data;
-using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using System.Xml;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace Opc.Ua.Client.Controls.Common
 {
     /// <summary>
-    /// Allows the user to edit a complex value.
+    /// Allows the user to edit a complex value. The editor navigates the value
+    /// as Variants: array elements are lifted with <see cref="VariantElements"/>
+    /// and structure fields with <see cref="VariantFieldCollection"/>, so no
+    /// boxed CLR values or reflection are involved.
     /// </summary>
     public partial class EditComplexValueCtrl : UserControl
     {
@@ -83,14 +82,40 @@ namespace Opc.Ua.Client.Controls.Common
         private event EventHandler m_ValueChanged;
         #endregion
 
+        /// <summary>
+        /// Tracks one navigation step into the value. The chain of parents
+        /// leads back to the root value, and every node carries its current
+        /// value as a Variant.
+        /// </summary>
         private sealed class AccessInfo
         {
-            public AccessInfo Parent { get; set; }
-            public PropertyInfo PropertyInfo { get; set; }
-            public int[] Indexes;
+            public AccessInfo Parent;
+
+            /// <summary>The declared type of the slot holding this value.</summary>
             public TypeInfo TypeInfo;
-            public object Value;
+
+            /// <summary>The current value.</summary>
+            public Variant Value;
+
             public string Name;
+
+            /// <summary>The flat element index when the parent is an array or matrix.</summary>
+            public int ElementIndex = -1;
+
+            /// <summary>The display indexes when the parent is an array or matrix.</summary>
+            public int[] Indexes;
+
+            /// <summary>The field index when the parent is a structure.</summary>
+            public int FieldIndex = -1;
+
+            /// <summary>Whether the field belongs to a DataValue parent.</summary>
+            public bool IsDataValueField;
+
+            /// <summary>The captured fields when this node displays a structure.</summary>
+            public VariantFieldCollection Fields;
+
+            /// <summary>The structure instance the fields were captured from.</summary>
+            public IEncodeable Structure;
         }
 
         #region Public Members
@@ -143,7 +168,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                 if (info != null)
                 {
-                    return info.TypeInfo.ValueRank >= 0;
+                    return EffectiveType(info).ValueRank >= 0;
                 }
 
                 return false;
@@ -168,7 +193,8 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (info != null)
                     {
-                        return info.Parent != null && !info.Parent.TypeInfo.IsUnknown && info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant;
+                        // the type can only be changed when the value sits in a Variant slot.
+                        return !info.TypeInfo.IsUnknown && info.TypeInfo.BuiltInType == BuiltInType.Variant && info.TypeInfo.ValueRank < 0;
                     }
                 }
 
@@ -189,14 +215,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (info != null)
                     {
-                        Variant? value = info.Value as Variant?;
-
-                        if (value != null && !value.Value.TypeInfo.IsUnknown)
-                        {
-                            return value.Value.TypeInfo.BuiltInType;
-                        }
-
-                        return info.TypeInfo.BuiltInType;
+                        return EffectiveType(info).BuiltInType;
                     }
                 }
 
@@ -234,7 +253,6 @@ namespace Opc.Ua.Client.Controls.Common
             NavigationMENU_Click(NavigationMENU.Items[NavigationMENU.Items.Count - 2], null);
         }
 
-
         /// <summary>
         /// Changes the array size.
         /// </summary>
@@ -249,37 +267,14 @@ namespace Opc.Ua.Client.Controls.Common
 
             AccessInfo info = NavigationMENU.Items[NavigationMENU.Items.Count - 1].Tag as AccessInfo;
 
-            TypeInfo currentType = info.TypeInfo;
-            object currentValue = Unwrap(info.Value, ref currentType);
-
+            TypeInfo currentType = EffectiveType(info);
+            IReadOnlyList<Variant> elements = Array.Empty<Variant>();
             int[] dimensions = null;
 
-            Array array = currentValue as Array;
-
-            if (array != null)
+            if (VariantElements.TryGetElements(info.Value, out ArrayOf<Variant> lifted, out int[] currentDimensions))
             {
-                dimensions = new int[array.Rank];
-
-                for (int ii = 0; ii < array.Rank; ii++)
-                {
-                    dimensions[ii] = array.GetLength(ii);
-                }
-            }
-
-            IList list = currentValue as IList;
-
-            if (array == null && list != null)
-            {
-                dimensions = new int[1];
-                dimensions[0] = list.Count;
-            }
-
-            Matrix matrix = currentValue as Matrix;
-
-            if (matrix != null)
-            {
-                dimensions = matrix.Dimensions;
-                array = matrix.ToArray();
+                elements = lifted.ToList();
+                dimensions = currentDimensions;
             }
 
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
@@ -291,74 +286,45 @@ namespace Opc.Ua.Client.Controls.Common
                 return;
             }
 
-            // convert to new type.
-            object newValue = currentValue;
+            BuiltInType targetType = result.TypeInfo.BuiltInType;
 
+            // convert to a scalar.
             if (result.ArrayDimensions == null || result.ArrayDimensions.Length < 1)
             {
-                newValue = Convert(currentValue, currentType, result.TypeInfo, result.UseDefaultOnError);
+                Variant scalar = elements.Count > 0 ? elements[0] : info.Value;
+                info.Value = Convert(scalar, targetType, result.UseDefaultOnError);
             }
+
+            // convert the elements and resize.
             else
             {
-                if (array == null && list != null)
+                int total = 1;
+
+                for (int ii = 0; ii < result.ArrayDimensions.Length; ii++)
                 {
-                    Type elementType = GetListElementType(list);
-
-                    for (int ii = result.ArrayDimensions[0]; ii < list.Count; ii++)
-                    {
-                        list.RemoveAt(ii);
-                    }
-
-                    for (int ii = list.Count; ii < result.ArrayDimensions[0]; ii++)
-                    {
-                        list.Add(Activator.CreateInstance(elementType));
-                    }
-
-                    newValue = list;
+                    total *= result.ArrayDimensions[ii];
                 }
 
-                if (array != null)
-                {
-                    Array newArray = null;
+                var newElements = new List<Variant>(total);
 
-                    if (currentValue is Array)
+                for (int ii = 0; ii < total; ii++)
+                {
+                    if (ii < elements.Count)
                     {
-                        newArray = Array.CreateInstance(currentValue.GetType().GetElementType(), result.ArrayDimensions);
+                        newElements.Add(Convert(elements[ii], targetType, result.UseDefaultOnError));
                     }
                     else
                     {
-                        newArray = TypeInfo.CreateArray(result.TypeInfo.BuiltInType, result.ArrayDimensions);
+                        newElements.Add(TypeInfo.GetDefaultVariantValue(targetType));
                     }
-
-                    int maxCount = result.ArrayDimensions[0];
-
-                    for (int ii = 1; ii < result.ArrayDimensions.Length; ii++)
-                    {
-                        maxCount *= result.ArrayDimensions[ii];
-                    }
-
-                    int count = 0;
-
-                    foreach (object element in array)
-                    {
-                        if (maxCount <= count)
-                        {
-                            break;
-                        }
-
-                        object newElement = Convert(element, currentType, result.TypeInfo, result.UseDefaultOnError);
-                        int[] indexes = GetIndexFromCount(count++, result.ArrayDimensions);
-                        newArray.SetValue(newElement, indexes);
-                    }
-
-                    newValue = newArray;
                 }
+
+                info.Value = VariantElements.CreateFromElements(targetType, newElements, result.ArrayDimensions);
             }
 
-            NavigationMENU.Items.RemoveAt(NavigationMENU.Items.Count - 1);
+            UpdateParent(info);
 
-            info.TypeInfo = result.TypeInfo;
-            info.Value = newValue;
+            NavigationMENU.Items.RemoveAt(NavigationMENU.Items.Count - 1);
             ShowValue(info);
         }
 
@@ -374,81 +340,45 @@ namespace Opc.Ua.Client.Controls.Common
 
             AccessInfo info = NavigationMENU.Items[NavigationMENU.Items.Count - 1].Tag as AccessInfo;
 
-            TypeInfo currentType = info.TypeInfo;
-            object currentValue = info.Value;
-
             try
             {
                 EndEdit();
-                currentValue = info.Value;
             }
             catch (Exception)
             {
-                currentValue = TypeInfo.GetDefaultValue(currentType.BuiltInType);
+                info.Value = TypeInfo.GetDefaultVariantValue(EffectiveType(info).BuiltInType);
             }
 
-            currentValue = Unwrap(info.Value, ref currentType);
-
-            TypeInfo targetType = new TypeInfo(builtInType, currentType.ValueRank);
-            object newValue = Convert(currentValue, currentType, targetType, true);
+            info.Value = Convert(info.Value, builtInType, true);
+            UpdateParent(info);
 
             NavigationMENU.Items.RemoveAt(NavigationMENU.Items.Count - 1);
-
-            info.TypeInfo = targetType;
-            info.Value = newValue;
             ShowValueNoNotify(info);
         }
 
         /// <summary>
-        /// Converts the old type to the new type.
+        /// Converts the value to the new built in type.
         /// </summary>
-        private object Convert(object oldValue, TypeInfo oldType, TypeInfo newType, bool useDefaultOnError)
+        private Variant Convert(Variant oldValue, BuiltInType targetType, bool useDefaultOnError)
         {
-            object newValue = oldValue;
-
-            if (oldType.BuiltInType != newType.BuiltInType)
+            if (oldValue.TypeInfo.BuiltInType == targetType)
             {
-                try
-                {
-                    newValue = ClientUtils.ToVariant(oldValue).ConvertTo(newType.BuiltInType).AsBoxedObject();
-                }
-                catch (Exception e)
-                {
-                    if (!useDefaultOnError)
-                    {
-                        throw new FormatException("Could not cast value to requested type.", e);
-                    }
-
-                    newValue = TypeInfo.GetDefaultValue(newType.BuiltInType);
-                }
+                return oldValue;
             }
 
-            return newValue;
-        }
-
-        private static Type GetSystemType(BuiltInType builtInType, int valueRank, IEncodeableTypeLookup factory)
-        {
-            NodeId dataTypeId = TypeInfo.GetDataTypeId(new TypeInfo(builtInType, ValueRanks.Scalar));
-            return GetSystemType(new ExpandedNodeId(dataTypeId), factory, valueRank);
-        }
-
-        private static Type GetSystemType(ExpandedNodeId dataTypeId, IEncodeableTypeLookup factory, int valueRank)
-        {
-#pragma warning disable UA_NETStandard_1 // Experimental IType/GetSystemType API required in 2.0 to resolve a CLR type.
-            IType uaType = TypeInfo.GetSystemType(dataTypeId, factory);
-            return GetValueRankType(uaType?.Type, valueRank);
-#pragma warning restore UA_NETStandard_1
-        }
-
-        private static Type GetValueRankType(Type type, int valueRank)
-        {
-            if (type == null || valueRank < 0)
+            try
             {
-                return type;
+                return oldValue.ConvertTo(targetType);
             }
+            catch (Exception e)
+            {
+                if (!useDefaultOnError)
+                {
+                    throw new FormatException("Could not cast value to requested type.", e);
+                }
 
-            int rank = valueRank <= 1 ? 1 : valueRank;
-            return type.MakeArrayType(rank);
+                return TypeInfo.GetDefaultVariantValue(targetType);
+            }
         }
 
         /// <summary>
@@ -458,7 +388,7 @@ namespace Opc.Ua.Client.Controls.Common
             NodeId nodeId,
             uint attributeId,
             string name,
-            object value,
+            Variant value,
             bool readOnly,
             CancellationToken ct = default)
         {
@@ -471,18 +401,18 @@ namespace Opc.Ua.Client.Controls.Common
                 TextValueTB.ReadOnly = true;
             }
 
-            Type type = null;
+            TypeInfo expectedType = TypeInfo.Unknown;
+            NodeId dataTypeId = NodeId.Null;
 
             // determine the expected data type for non-value attributes.
             if (attributeId != 0 && attributeId != Attributes.Value)
             {
                 BuiltInType builtInType = TypeInfo.GetBuiltInType(Attributes.GetDataTypeId(attributeId));
-                int valueRank = Attributes.GetValueRank(attributeId);
-                type = GetSystemType(builtInType, valueRank, m_session.Factory);
+                expectedType = new TypeInfo(builtInType, Attributes.GetValueRank(attributeId));
             }
 
             // determine the expected data type for value attributes.
-            else if (!(nodeId).IsNull)
+            else if (!nodeId.IsNull && m_session != null)
             {
                 IVariableBase variable = await m_session.NodeCache.FindAsync(nodeId, ct) as IVariableBase;
 
@@ -491,26 +421,15 @@ namespace Opc.Ua.Client.Controls.Common
                     #pragma warning disable CA1849 // Justification: sample keeps the existing synchronous call pattern.
                     BuiltInType builtInType = TypeInfo.GetBuiltInType(variable.DataType, m_session.TypeTree);
                     #pragma warning restore CA1849
-                    int valueRank = variable.ValueRank;
-                    type = GetSystemType(builtInType, valueRank, m_session.Factory);
-
-                    if (builtInType == BuiltInType.ExtensionObject && valueRank < 0)
-                    {
-                        type = GetSystemType(variable.DataType, m_session.Factory, valueRank);
-                    }
+                    expectedType = new TypeInfo(builtInType, variable.ValueRank);
+                    dataTypeId = variable.DataType;
                 }
             }
 
             // use the value.
-            else if (value != null)
+            if (expectedType.IsUnknown)
             {
-                type = value.GetType();
-            }
-
-            // go with default.
-            else
-            {
-                type = typeof(string);
+                expectedType = !value.IsNull ? value.TypeInfo : TypeInfo.Scalars.String;
             }
 
             // assign a name.
@@ -522,17 +441,17 @@ namespace Opc.Ua.Client.Controls.Common
                 }
                 else
                 {
-                    name = type.Name;
+                    name = expectedType.ToString();
                 }
             }
 
             AccessInfo info = new AccessInfo();
-            info.Value = value is ICloneable clonable ? clonable.Clone() : value;
-            info.TypeInfo = TypeInfo.Construct(type);
+            info.TypeInfo = expectedType;
+            info.Value = value;
 
-            if (value == null && info.TypeInfo.ValueRank < 0)
+            if (value.IsNull)
             {
-                info.Value = TypeInfo.GetDefaultValue(info.TypeInfo.BuiltInType);
+                info.Value = CreateDefaultValue(expectedType, dataTypeId);
             }
 
             info.Name = name;
@@ -548,35 +467,30 @@ namespace Opc.Ua.Client.Controls.Common
             string name,
             NodeId dataType,
             int valueRank,
-            object value)
+            Variant value)
         {
-            if (value == null && m_session != null)
+            TypeInfo expectedType = TypeInfo.Unknown;
+
+            if (m_session != null && !dataType.IsNull)
             {
                 BuiltInType builtInType = TypeInfo.GetBuiltInType(dataType, m_session.TypeTree);
-
-                if (builtInType == BuiltInType.ExtensionObject)
-                {
-                    Type type = m_session.Factory.GetSystemType(dataType);
-
-                    if (type != null)
-                    {
-                        if (valueRank < 0)
-                        {
-                            value = Activator.CreateInstance(type);
-                        }
-                        else
-                        {
-                            value = Array.CreateInstance(type, new int[valueRank]);
-                        }
-                    }
-                }
-                else
-                {
-                    value = TypeInfo.GetDefaultValue(dataType, valueRank, m_session.TypeTree);
-                }
+                expectedType = new TypeInfo(builtInType, valueRank);
+            }
+            else if (!value.IsNull)
+            {
+                expectedType = value.TypeInfo;
+            }
+            else
+            {
+                expectedType = new TypeInfo(BuiltInType.String, valueRank);
             }
 
-            ShowValue(default, name, value);
+            if (value.IsNull)
+            {
+                value = CreateDefaultValue(expectedType, dataType);
+            }
+
+            ShowValue(expectedType, name, value);
         }
 
         /// <summary>
@@ -585,7 +499,7 @@ namespace Opc.Ua.Client.Controls.Common
         public void ShowValue(
             TypeInfo expectedType,
             string name,
-            object value)
+            Variant value)
         {
             m_readOnly = false;
             NavigationMENU.Items.Clear();
@@ -593,14 +507,7 @@ namespace Opc.Ua.Client.Controls.Common
             // assign a type.
             if (expectedType.IsUnknown)
             {
-                if (value == null)
-                {
-                    expectedType = TypeInfo.Scalars.String;
-                }
-                else
-                {
-                    expectedType = TypeInfo.Construct(value);
-                }
+                expectedType = !value.IsNull ? value.TypeInfo : TypeInfo.Scalars.String;
             }
 
             // assign a name.
@@ -610,16 +517,20 @@ namespace Opc.Ua.Client.Controls.Common
             }
 
             AccessInfo info = new AccessInfo();
-            info.Value = value is ICloneable clonable ? clonable.Clone() : value;
             info.TypeInfo = expectedType;
+            info.Value = value;
 
-            if (value == null && info.TypeInfo.ValueRank < 0)
+            if (value.IsNull)
             {
-                info.Value = TypeInfo.GetDefaultValue(info.TypeInfo.BuiltInType);
+                info.Value = CreateDefaultValue(expectedType, NodeId.Null);
             }
 
-            // ensure value is the target type.
-            info.Value = ClientUtils.ToVariant(info.Value).ConvertTo(expectedType.BuiltInType).AsBoxedObject();
+            // ensure the value has the expected type.
+            else if (expectedType.BuiltInType != BuiltInType.Variant &&
+                value.TypeInfo.BuiltInType != expectedType.BuiltInType)
+            {
+                info.Value = value.ConvertTo(expectedType.BuiltInType);
+            }
 
             info.Name = name;
             m_value = info;
@@ -631,7 +542,7 @@ namespace Opc.Ua.Client.Controls.Common
         /// Returns the edited value.
         /// </summary>
         #pragma warning disable CA1024 // Justification: sample public API shape is preserved by design.
-        public object GetValue()
+        public Variant GetValue()
         #pragma warning restore CA1024
         {
             return m_value.Value;
@@ -653,9 +564,25 @@ namespace Opc.Ua.Client.Controls.Common
                 return;
             }
 
+            if (m_readOnly)
+            {
+                return;
+            }
+
             AccessInfo info = NavigationMENU.Items[NavigationMENU.Items.Count - 1].Tag as AccessInfo;
-            object newValue = Variant.From(TextValueTB.Text).ConvertTo(info.TypeInfo.BuiltInType).AsBoxedObject();
-            info.Value = newValue;
+
+            TypeInfo typeInfo = EffectiveType(info);
+
+            // structures and byte strings shown as text are not edited in the text box.
+            if (typeInfo.ValueRank >= 0 ||
+                typeInfo.BuiltInType == BuiltInType.ExtensionObject ||
+                typeInfo.BuiltInType == BuiltInType.ByteString ||
+                typeInfo.BuiltInType == BuiltInType.DataValue)
+            {
+                return;
+            }
+
+            info.Value = Variant.From(TextValueTB.Text).ConvertTo(typeInfo.BuiltInType);
             UpdateParent(info);
         }
 
@@ -682,74 +609,31 @@ namespace Opc.Ua.Client.Controls.Common
             item.Click += new EventHandler(NavigationMENU_Click);
             item.Tag = parent;
 
-            TypeInfo typeInfo = parent.TypeInfo;
-            object value = Unwrap(parent.Value, ref typeInfo);
-            parent.TypeInfo = typeInfo;
+            Variant value = parent.Value;
+            TypeInfo typeInfo = EffectiveType(parent);
 
+            // display the elements of an array or matrix.
             if (typeInfo.ValueRank >= 0)
             {
-                Matrix matrix = value as Matrix;
-
-                if (matrix != null)
+                if (VariantElements.TryGetElements(value, out ArrayOf<Variant> elements, out int[] dimensions))
                 {
-                    value = matrix.ToArray();
-                }
-
-                System.Collections.IEnumerable enumerable = value as System.Collections.IEnumerable;
-
-                if (enumerable != null)
-                {
-                    // get the dimensions of any array.
-                    int[] dimensions = null;
-
-                    // calculate them.
-                    if (matrix == null)
-                    {
-                        Array array = enumerable as Array;
-
-                        if (array != null)
-                        {
-                            dimensions = new int[array.Rank];
-
-                            for (int ii = 0; ii < array.Rank; ii++)
-                            {
-                                dimensions[ii] = array.GetLength(ii);
-                            }
-                        }
-                        else
-                        {
-                            dimensions = new int[1];
-                            System.Collections.IList list = enumerable as System.Collections.IList;
-
-                            if (list != null)
-                            {
-                                dimensions[0] = list.Count;
-                            }
-                        }
-                    }
-
-                    // get them from the matrix.
-                    else
-                    {
-                        dimensions = matrix.Dimensions;
-                    }
-
-                    // display the array elements.
-                    int count = 0;
-                    TypeInfo elementType = new TypeInfo(typeInfo.BuiltInType, ValueRanks.Scalar);
+                    // elements of a variant array keep their own type; other
+                    // arrays fix the element type.
+                    TypeInfo elementType = (value.TypeInfo.BuiltInType == BuiltInType.Variant)
+                        ? TypeInfo.Scalars.Variant
+                        : new TypeInfo(value.TypeInfo.BuiltInType, ValueRanks.Scalar);
 
                     ValuesDV.Visible = true;
                     TextValueTB.Visible = false;
 
-                    foreach (object element in enumerable)
+                    for (int ii = 0; ii < elements.Count; ii++)
                     {
-                        int[] indexes = GetIndexFromCount(count++, dimensions);
-
                         AccessInfo info = new AccessInfo();
                         info.Parent = parent;
-                        info.Indexes = indexes;
+                        info.ElementIndex = ii;
+                        info.Indexes = GetIndexFromCount(ii, dimensions);
                         info.TypeInfo = elementType;
-                        info.Value = element;
+                        info.Value = elements[ii];
 
                         ShowIndexedValue(info);
                     }
@@ -758,162 +642,158 @@ namespace Opc.Ua.Client.Controls.Common
                 return;
             }
 
-            // check for null.
-            if (value == null)
+            // check for extension object.
+            if (value.TypeInfo.BuiltInType == BuiltInType.ExtensionObject)
             {
-                if (parent.Parent != null && parent.Parent.Value is Array)
+                ExtensionObject extension = value.GetExtensionObject();
+
+                if (extension.TryGetValue(out IEncodeable encodeable, GetMessageContext()) &&
+                    VariantFieldCollection.TryCapture(encodeable, GetMessageContext(), out VariantFieldCollection fields) &&
+                    fields.Count > 0)
                 {
-                    parent.Value = value = Activator.CreateInstance(parent.Parent.Value.GetType().GetElementType());
-                }
-                else if (parent.Parent != null && parent.PropertyInfo != null)
-                {
-                    parent.Value = value = Activator.CreateInstance(parent.PropertyInfo.PropertyType);
-                }
-                else
-                {
-                    ShowTextValue(value, parent.TypeInfo);
+                    parent.Structure = encodeable;
+                    parent.Fields = fields;
+
+                    ValuesDV.Visible = true;
+                    TextValueTB.Visible = false;
+
+                    for (int ii = 0; ii < fields.Count; ii++)
+                    {
+                        AccessInfo info = new AccessInfo();
+                        info.Parent = parent;
+                        info.FieldIndex = ii;
+                        info.TypeInfo = fields.GetSlotType(ii);
+                        info.Value = fields.GetValue(ii);
+                        info.Name = fields.GetName(ii);
+
+                        ShowNamedValue(info);
+                    }
+
                     return;
                 }
+
+                // show opaque bodies as text.
+                if (extension.TryGetAsBinary(out ByteString bytes, GetMessageContext()))
+                {
+                    ShowTextValue(bytes);
+                    return;
+                }
+
+                if (extension.TryGetAsXml(out XmlElement xml, GetMessageContext()))
+                {
+                    ShowTextValue(xml);
+                    return;
+                }
+
+                ShowTextValue(value.ToString());
+                return;
             }
 
-            object structure = value;
-
-            // check for extension object.
-            if (structure is ExtensionObject extension)
+            // display the components of a data value.
+            if (value.TypeInfo.BuiltInType == BuiltInType.DataValue && value.TypeInfo.ValueRank < 0)
             {
-                structure = GetExtensionObjectBody(extension);
+                DataValue dataValue = value.GetDataValue();
+
+                ValuesDV.Visible = true;
+                TextValueTB.Visible = false;
+
+                ShowNamedValue(CreateDataValueField(parent, 0, "Value", TypeInfo.Scalars.Variant, dataValue.WrappedValue));
+                ShowNamedValue(CreateDataValueField(parent, 1, "StatusCode", TypeInfo.Scalars.StatusCode, Variant.From(dataValue.StatusCode)));
+                ShowNamedValue(CreateDataValueField(parent, 2, "SourceTimestamp", TypeInfo.Scalars.DateTime, Variant.From(dataValue.SourceTimestamp)));
+                ShowNamedValue(CreateDataValueField(parent, 3, "SourcePicoseconds", TypeInfo.Scalars.UInt16, Variant.From(dataValue.SourcePicoseconds)));
+                ShowNamedValue(CreateDataValueField(parent, 4, "ServerTimestamp", TypeInfo.Scalars.DateTime, Variant.From(dataValue.ServerTimestamp)));
+                ShowNamedValue(CreateDataValueField(parent, 5, "ServerPicoseconds", TypeInfo.Scalars.UInt16, Variant.From(dataValue.ServerPicoseconds)));
+                return;
             }
 
             // check for XmlElements.
-            if (structure is XmlElement)
+            if (value.TryGetValue(out XmlElement xmlElement))
             {
-                ShowTextValue((XmlElement)structure);
+                ShowTextValue(xmlElement);
                 return;
             }
 
             // check for ByteString.
-            if (structure is byte[])
+            if (value.TryGetValue(out ByteString byteString))
             {
-                ShowTextValue((byte[])structure);
+                ShowTextValue(byteString);
                 return;
             }
 
-            // check for NodeId.
-            if (structure is NodeId)
-            {
-                ShowTextValue(((NodeId)structure).ToString());
-                return;
-            }
-
-            // check for ExpandedNodeId.
-            if (structure is ExpandedNodeId)
-            {
-                ShowTextValue(((ExpandedNodeId)structure).ToString());
-                return;
-            }
-
-            // check for QualifiedName.
-            if (structure is QualifiedName)
-            {
-                ShowTextValue(((QualifiedName)structure).ToString());
-                return;
-            }
-
-            // check for Guid.
-            if (structure is Guid)
-            {
-                ShowTextValue(((Guid)structure).ToString());
-                return;
-            }
-
-            // check for Uuid.
-            if (structure is Uuid)
-            {
-                ShowTextValue(((Uuid)structure).ToString());
-                return;
-            }
-
-            // check for StatusCode.
-            if (structure is StatusCode)
-            {
-                ShowTextValue(Utils.Format("0x{0:X8}", ((StatusCode)structure).Code));
-                return;
-            }
-
-            ValuesDV.Visible = true;
-            TextValueTB.Visible = false;
-
-            // use reflection to display the properties of the structure.
-            bool isStructure = false;
-            PropertyInfo[] properties = structure.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            foreach (PropertyInfo property in properties)
-            {
-                if (property.GetIndexParameters().Length > 0)
-                {
-                    continue;
-                }
-
-                object element = property.GetValue(structure, null);
-
-                string name = null;
-
-                foreach (object attribute in property.GetCustomAttributes(true))
-                {
-                    if (typeof(System.Runtime.Serialization.DataMemberAttribute).IsInstanceOfType(attribute))
-                    {
-                        name = ((System.Runtime.Serialization.DataMemberAttribute)attribute).Name;
-
-                        if (name == null)
-                        {
-                            name = property.Name;
-                        }
-
-                        break;
-                    }
-                }
-
-                if (name == null)
-                {
-                    continue;
-                }
-
-                AccessInfo info = new AccessInfo();
-                info.Parent = parent;
-                info.PropertyInfo = property;
-                info.TypeInfo = TypeInfo.Construct(property.PropertyType);
-                info.Value = element;
-                info.Name = name;
-
-                ShowNamedValue(info);
-                isStructure = true;
-            }
-
-            if (!isStructure)
-            {
-                ShowTextValue(parent.Value, parent.TypeInfo);
-            }
+            // display everything else as text.
+            ShowTextValue(value, typeInfo);
         }
         #endregion
 
         #region Private Methods
         /// <summary>
-        /// Unwraps a Variant into the boxed value that this reflection based editor
-        /// navigates, and reports the type information carried by the Variant.
+        /// Returns the type describing the current value: the declared slot
+        /// type unless the slot is a Variant, in which case the type carried
+        /// by the value itself.
         /// </summary>
-        private static object Unwrap(object value, ref TypeInfo typeInfo)
+        private static TypeInfo EffectiveType(AccessInfo info)
         {
-            if (value is Variant variant)
+            TypeInfo typeInfo = info.TypeInfo;
+
+            if (typeInfo.IsUnknown || typeInfo.BuiltInType == BuiltInType.Variant)
             {
-                if (!variant.IsNull)
+                if (!info.Value.IsNull)
                 {
-                    typeInfo = variant.TypeInfo;
+                    return info.Value.TypeInfo;
                 }
 
-                return variant.AsBoxedObject();
+                if (typeInfo.IsUnknown)
+                {
+                    return TypeInfo.Scalars.String;
+                }
             }
 
-            return value;
+            return typeInfo;
+        }
+
+        /// <summary>
+        /// Returns the message context used to access extension object bodies.
+        /// </summary>
+        private IServiceMessageContext GetMessageContext()
+        {
+            return m_session?.MessageContext ?? ServiceMessageContext.CreateEmpty(null);
+        }
+
+        /// <summary>
+        /// Creates a default value for the expected type. For structured
+        /// values the encodeable factory provides a default instance.
+        /// </summary>
+        private Variant CreateDefaultValue(TypeInfo expectedType, NodeId dataTypeId)
+        {
+            if (expectedType.BuiltInType == BuiltInType.ExtensionObject && expectedType.ValueRank < 0 &&
+                m_session != null && !dataTypeId.IsNull)
+            {
+#pragma warning disable UA_NETStandard_1 // Experimental IType API required in 2.0 to create a default instance.
+                if (m_session.Factory.TryGetType(new ExpandedNodeId(dataTypeId), out IType type) &&
+                    type is IEncodeableType encodeableType)
+                {
+                    return Variant.FromStructure(encodeableType.CreateInstance());
+                }
+#pragma warning restore UA_NETStandard_1
+            }
+
+            return VariantElements.CreateDefault(expectedType);
+        }
+
+        /// <summary>
+        /// Creates the access info for one component of a DataValue.
+        /// </summary>
+        private static AccessInfo CreateDataValueField(AccessInfo parent, int index, string name, TypeInfo slotType, Variant value)
+        {
+            return new AccessInfo
+            {
+                Parent = parent,
+                FieldIndex = index,
+                IsDataValueField = true,
+                TypeInfo = slotType,
+                Value = value,
+                Name = name
+            };
         }
 
         /// <summary>
@@ -961,110 +841,30 @@ namespace Opc.Ua.Client.Controls.Common
             row[0] = info;
             row[1] = info.Name;
             row[2] = GetDataTypeString(info);
-            row[3] = ValueToString(info.Value, info.TypeInfo);
-            row[4] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, ClientUtils.ToVariant(info.Value))];
+            row[3] = ValueToString(info.Value, EffectiveType(info));
+            row[4] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, info.Value)];
 
             m_dataset.Tables[0].Rows.Add(row);
         }
 
         /// <summary>
-        /// Returns the element type for a list.
-        /// </summary>
-        private Type GetListElementType(IList list)
-        {
-            if (list != null)
-            {
-                for (Type type = list.GetType(); type != null; type = type.BaseType)
-                {
-                    if (type.IsGenericType)
-                    {
-                        Type[] argTypes = type.GetGenericArguments();
-
-                        if (argTypes.Length > 0)
-                        {
-                            return argTypes[0];
-                        }
-                    }
-                }
-            }
-
-            return typeof(object);
-        }
-
-        private static object GetExtensionObjectBody(ExtensionObject extension)
-        {
-            if (extension.TryGetAsBinary(out ByteString bytes, ServiceMessageContext.CreateEmpty(null)))
-            {
-                return bytes.ToArray();
-            }
-
-            if (extension.TryGetAsXml(out XmlElement xml, ServiceMessageContext.CreateEmpty(null)))
-            {
-                return xml;
-            }
-
-            if (extension.TryGetValue(out IEncodeable encodeable, ServiceMessageContext.CreateEmpty(null)))
-            {
-                return encodeable;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Returns the data type of the value.
-        /// </summary>
-        private Type GetDataType(AccessInfo accessInfo)
-        {
-            if (accessInfo == null || accessInfo.TypeInfo.IsUnknown)
-            {
-                return null;
-            }
-
-            if (accessInfo.TypeInfo.BuiltInType == BuiltInType.ExtensionObject)
-            {
-                if (accessInfo.Value != null)
-                {
-                    return accessInfo.Value.GetType();
-                }
-
-                if (accessInfo.PropertyInfo != null)
-                {
-                    return accessInfo.PropertyInfo.PropertyType;
-                }
-
-                if (accessInfo.Parent != null)
-                {
-                    if (accessInfo.Parent.Value is Array)
-                    {
-                        Array array = (Array)accessInfo.Parent.Value;
-                        return array.GetType().GetElementType();
-                    }
-
-                    if (accessInfo.Parent.Value is IList)
-                    {
-                        IList list = (IList)accessInfo.Parent.Value;
-                        return GetListElementType(list);
-                    }
-                }
-            }
-
-            return GetSystemType(accessInfo.TypeInfo.BuiltInType, accessInfo.TypeInfo.ValueRank, m_session.Factory);
-        }
-
-        /// <summary>
-        /// Returns the data type of the value.
+        /// Returns the display name for the data type of the value.
         /// </summary>
         private string GetDataTypeString(AccessInfo accessInfo)
         {
-            Type type = GetDataType(accessInfo);
+            TypeInfo typeInfo = EffectiveType(accessInfo);
 
-            if (type == null)
+            if (typeInfo.BuiltInType == BuiltInType.ExtensionObject && typeInfo.ValueRank < 0)
             {
-                return accessInfo.TypeInfo.ToString();
+                ExtensionObject extension = accessInfo.Value.GetExtensionObject();
+
+                if (extension.TryGetValue(out IEncodeable encodeable, GetMessageContext()))
+                {
+                    return VariantFieldCollection.GetTypeDisplayName(encodeable);
+                }
             }
 
-            return type.Name;
+            return typeInfo.ToString();
         }
 
         /// <summary>
@@ -1077,8 +877,8 @@ namespace Opc.Ua.Client.Controls.Common
             row[0] = info;
             row[1] = (info.Name != null) ? info.Name : "unknown";
             row[2] = GetDataTypeString(info);
-            row[3] = ValueToString(info.Value, info.TypeInfo);
-            row[4] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, ClientUtils.ToVariant(info.Value))];
+            row[3] = ValueToString(info.Value, EffectiveType(info));
+            row[4] = ImageList.Images[ClientUtils.GetImageIndex(Attributes.Value, info.Value)];
 
             m_dataset.Tables[0].Rows.Add(row);
         }
@@ -1086,25 +886,25 @@ namespace Opc.Ua.Client.Controls.Common
         /// <summary>
         /// Displays a value in the control.
         /// </summary>
-        private void ShowTextValue(object value, TypeInfo typeInfo)
+        private void ShowTextValue(Variant value, TypeInfo typeInfo)
         {
             switch (typeInfo.BuiltInType)
             {
                 case BuiltInType.ByteString:
                 {
-                    ShowTextValue((byte[])value);
+                    ShowTextValue(value.GetByteString());
                     break;
                 }
 
                 case BuiltInType.XmlElement:
                 {
-                    ShowTextValue((XmlElement)value);
+                    ShowTextValue(value.GetXmlElement());
                     break;
                 }
 
                 case BuiltInType.String:
                 {
-                    ShowTextValue((string)value);
+                    ShowTextValue(value.GetString());
                     break;
                 }
 
@@ -1140,23 +940,26 @@ namespace Opc.Ua.Client.Controls.Common
         /// <summary>
         /// Displays a complete byte string in the control.
         /// </summary>
-        private void ShowTextValue(byte[] value)
+        private void ShowTextValue(ByteString value)
         {
             ValuesDV.Visible = false;
             TextValueTB.Visible = true;
 
             StringBuilder buffer = new StringBuilder();
 
-            if (value != null)
+            if (!value.IsNull)
             {
-                for (int ii = 0; ii < value.Length; ii++)
+                int count = 0;
+
+                foreach (byte b in value.Span)
                 {
-                    if (buffer.Length > 0 && (ii % 30) == 0)
+                    if (buffer.Length > 0 && (count % 30) == 0)
                     {
                         buffer.Append("\r\n");
                     }
 
-                    buffer.AppendFormat("{0:X2} ", value[ii]);
+                    buffer.AppendFormat("{0:X2} ", b);
+                    count++;
                 }
             }
 
@@ -1176,16 +979,16 @@ namespace Opc.Ua.Client.Controls.Common
 
             if (!value.IsNull)
             {
-                XmlWriterSettings settings = new XmlWriterSettings();
+                System.Xml.XmlWriterSettings settings = new System.Xml.XmlWriterSettings();
                 settings.Indent = true;
                 settings.OmitXmlDeclaration = true;
-                settings.NewLineHandling = NewLineHandling.Replace;
+                settings.NewLineHandling = System.Xml.NewLineHandling.Replace;
                 settings.NewLineChars = "\r\n";
                 settings.IndentChars = "    ";
 
-                using (XmlWriter writer = XmlWriter.Create(buffer, settings))
+                using (System.Xml.XmlWriter writer = System.Xml.XmlWriter.Create(buffer, settings))
                 {
-                    using (XmlNodeReader reader = new XmlNodeReader((System.Xml.XmlElement)value))
+                    using (System.Xml.XmlNodeReader reader = new System.Xml.XmlNodeReader((System.Xml.XmlElement)value))
                     {
                         writer.WriteNode(reader, false);
                     }
@@ -1199,26 +1002,22 @@ namespace Opc.Ua.Client.Controls.Common
         /// <summary>
         /// Converts a value to a string for display in the grid.
         /// </summary>
-        private string ValueToString(object value, TypeInfo typeInfo)
+        private string ValueToString(Variant value, TypeInfo typeInfo)
         {
-            if (value == null)
+            if (value.IsNull)
             {
                 return String.Empty;
             }
 
-            value = Unwrap(value, ref typeInfo);
-
-            if (typeInfo.ValueRank >= 0)
+            if (value.TypeInfo.ValueRank >= 0)
             {
                 StringBuilder buffer = new StringBuilder();
 
-                System.Collections.IEnumerable enumerable = value as System.Collections.IEnumerable;
-
-                if (enumerable != null)
+                if (VariantElements.TryGetElements(value, out ArrayOf<Variant> elements, out _))
                 {
                     buffer.Append("{ ");
 
-                    foreach (object element in enumerable)
+                    foreach (Variant element in elements)
                     {
                         if (buffer.Length > 2)
                         {
@@ -1231,7 +1030,7 @@ namespace Opc.Ua.Client.Controls.Common
                             break;
                         }
 
-                        buffer.Append(ValueToString(element, new TypeInfo(typeInfo.BuiltInType, ValueRanks.Scalar)));
+                        buffer.Append(ValueToString(element, element.TypeInfo));
                     }
 
                     buffer.Append(" }");
@@ -1240,11 +1039,11 @@ namespace Opc.Ua.Client.Controls.Common
                 return buffer.ToString();
             }
 
-            switch (typeInfo.BuiltInType)
+            switch (value.TypeInfo.BuiltInType)
             {
                 case BuiltInType.String:
                 {
-                    string text = (string)value;
+                    string text = value.GetString();
 
                     if (text != null && text.Length > MaxDisplayTextLength)
                     {
@@ -1258,9 +1057,9 @@ namespace Opc.Ua.Client.Controls.Common
                 {
                     StringBuilder buffer = new StringBuilder();
 
-                    byte[] bytes = (byte[])value;
+                    ByteString bytes = value.GetByteString();
 
-                    for (int ii = 0; ii < bytes.Length; ii++)
+                    foreach (byte b in bytes.Span)
                     {
                         if (buffer.Length > MaxDisplayTextLength)
                         {
@@ -1268,50 +1067,17 @@ namespace Opc.Ua.Client.Controls.Common
                             break;
                         }
 
-                        buffer.AppendFormat("{0:X2}", bytes[ii]);
+                        buffer.AppendFormat("{0:X2}", b);
                     }
 
                     return buffer.ToString();
                 }
 
                 case BuiltInType.Enumeration:
-                {
-                    return ((int)value).ToString();
-                }
-
                 case BuiltInType.ExtensionObject:
+                case BuiltInType.DataValue:
                 {
-                    string text = null;
-
-                    if (value is ExtensionObject extension)
-                    {
-                        object body = GetExtensionObjectBody(extension);
-
-                        if (body is byte[])
-                        {
-                            return ValueToString(body, new TypeInfo(BuiltInType.ByteString, ValueRanks.Scalar));
-                        }
-
-                        if (body is XmlElement)
-                        {
-                            return ValueToString(body, new TypeInfo(BuiltInType.XmlElement, ValueRanks.Scalar));
-                        }
-
-                        if (body is IEncodeable)
-                        {
-                            text = Variant.From(extension).ToString();
-                        }
-                    }
-
-                    if (text == null)
-                    {
-                        IEncodeable encodeable = value as IEncodeable;
-
-                        if (encodeable != null)
-                        {
-                            text = Variant.From(new ExtensionObject(encodeable)).ToString();
-                        }
-                    }
+                    string text = value.ToString();
 
                     if (text != null && text.Length > MaxDisplayTextLength)
                     {
@@ -1322,7 +1088,7 @@ namespace Opc.Ua.Client.Controls.Common
                 }
             }
 
-            return ClientUtils.ToVariant(value).ConvertTo(BuiltInType.String).TryGetValue(out string valueText) ? valueText : String.Empty;
+            return value.ConvertTo(BuiltInType.String).TryGetValue(out string valueText) ? valueText : String.Empty;
         }
 
         /// <summary>
@@ -1330,13 +1096,12 @@ namespace Opc.Ua.Client.Controls.Common
         /// </summary>
         private bool IsSimpleValue(AccessInfo info)
         {
-            if (info == null || info.TypeInfo.IsUnknown)
+            if (info == null)
             {
                 return true;
             }
 
-            TypeInfo typeInfo = info.TypeInfo;
-            object value = Unwrap(info.Value, ref typeInfo);
+            TypeInfo typeInfo = EffectiveType(info);
 
             if (typeInfo.ValueRank >= 0)
             {
@@ -1347,7 +1112,7 @@ namespace Opc.Ua.Client.Controls.Common
             {
                 case BuiltInType.String:
                 {
-                    string text = value as string;
+                    string text = info.Value.GetString();
 
                     if (text != null && text.Length >= MaxDisplayTextLength)
                     {
@@ -1439,7 +1204,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (IsSimpleValue(info))
                     {
-                        ClientUtils.ToVariant(e.FormattedValue).ConvertTo(info.TypeInfo.BuiltInType);
+                        Variant.From(e.FormattedValue as string).ConvertTo(EffectiveType(info).BuiltInType);
                     }
                 }
             }
@@ -1461,8 +1226,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                     if (IsSimpleValue(info))
                     {
-                        object newValue = Variant.From((string)source.Row[3]).ConvertTo(info.TypeInfo.BuiltInType).AsBoxedObject();
-                        info.Value = newValue;
+                        info.Value = Variant.From((string)source.Row[3]).ConvertTo(EffectiveType(info).BuiltInType);
                         UpdateParent(info);
                     }
                 }
@@ -1474,86 +1238,53 @@ namespace Opc.Ua.Client.Controls.Common
         }
 
         /// <summary>
-        /// Recusivesly updates the parent values.
+        /// Recursively rebuilds the parent values from the changed child value.
         /// </summary>
         private void UpdateParent(AccessInfo info)
         {
-            if (info.Parent == null)
+            AccessInfo parent = info.Parent;
+
+            if (parent == null)
             {
                 return;
             }
 
-            object parentValue = info.Parent.Value;
-
-            if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank < 0)
+            // replace the element in the parent array or matrix.
+            if (info.ElementIndex >= 0)
             {
-                parentValue = ((Variant)info.Parent.Value).AsBoxedObject();
-            }
-
-            if (info.PropertyInfo != null && info.Parent.TypeInfo.ValueRank < 0)
-            {
-                if (parentValue is ExtensionObject extension)
+                if (VariantElements.TryGetElements(parent.Value, out ArrayOf<Variant> elements, out int[] dimensions))
                 {
-                    parentValue = GetExtensionObjectBody(extension);
-                }
+                    var newElements = new List<Variant>(elements.ToList());
+                    newElements[info.ElementIndex] = info.Value;
 
-                info.PropertyInfo.SetValue(parentValue, info.Value, null);
-            }
-
-            else if (info.Indexes != null)
-            {
-                int[] indexes = info.Indexes;
-                Array array = parentValue as Array;
-
-                Matrix matrix = parentValue as Matrix;
-
-                if (matrix != null)
-                {
-                    int count = 0;
-                    int block = 1;
-
-                    for (int ii = info.Indexes.Length - 1; ii >= 0; ii--)
-                    {
-                        count += info.Indexes[ii] * block;
-                        block *= matrix.Dimensions[ii];
-                    }
-
-                    array = matrix.Elements;
-                    indexes = new int[] { count };
-                }
-
-                if (array != null)
-                {
-                    if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
-                    {
-                        array.SetValue(ClientUtils.ToVariant(info.Value), indexes);
-                    }
-                    else
-                    {
-                        array.SetValue(info.Value, indexes);
-                    }
-                }
-                else
-                {
-                    IList list = parentValue as IList;
-
-                    if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
-                    {
-                        list[indexes[0]] = ClientUtils.ToVariant(info.Value);
-                    }
-                    else
-                    {
-                        list[indexes[0]] = info.Value;
-                    }
+                    BuiltInType elementType = parent.Value.TypeInfo.BuiltInType;
+                    parent.Value = VariantElements.CreateFromElements(elementType, newElements, dimensions);
                 }
             }
 
-            #pragma warning disable CA1508 // Justification: sample control flow is intentional and analyzer reports a false positive.
-            if (info.Parent != null)
-            #pragma warning restore CA1508
+            // replace the component in the parent data value.
+            else if (info.IsDataValueField)
             {
-                UpdateParent(info.Parent);
+                DataValue dataValue = parent.Value.GetDataValue();
+
+                parent.Value = Variant.From(new DataValue(
+                    info.FieldIndex == 0 ? info.Value : dataValue.WrappedValue,
+                    info.FieldIndex == 1 ? info.Value.GetStatusCode() : dataValue.StatusCode,
+                    info.FieldIndex == 2 ? info.Value.GetDateTime() : dataValue.SourceTimestamp,
+                    info.FieldIndex == 4 ? info.Value.GetDateTime() : dataValue.ServerTimestamp,
+                    info.FieldIndex == 3 ? info.Value.GetUInt16() : dataValue.SourcePicoseconds,
+                    info.FieldIndex == 5 ? info.Value.GetUInt16() : dataValue.ServerPicoseconds));
             }
+
+            // replace the field in the parent structure.
+            else if (info.FieldIndex >= 0 && parent.Fields != null && parent.Structure != null)
+            {
+                parent.Fields.SetValue(info.FieldIndex, info.Value);
+                parent.Structure = parent.Fields.ApplyTo(parent.Structure);
+                parent.Value = Variant.FromStructure(parent.Structure);
+            }
+
+            UpdateParent(parent);
         }
     }
 }

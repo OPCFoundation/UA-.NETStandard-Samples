@@ -1255,6 +1255,77 @@ namespace Opc.Ua.Client.Controls
         }
         #endregion
 
+        #region Sessions
+        /// <summary>
+        /// How long a sample waits for a session to close before it stops waiting and tears
+        /// the session down instead.
+        /// </summary>
+        public static readonly TimeSpan DefaultCloseTimeout = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// Closes a session and disposes it, without letting a server which is no longer
+        /// reachable hold the sample up.
+        /// </summary>
+        /// <remarks>
+        /// A managed session cannot close while its connection state machine is inside a
+        /// reconnect attempt: requesting the close only moves the state machine to Closing,
+        /// and the attempt in flight runs to its own end first. Against a host which accepts
+        /// the connection but never answers - a server which was stopped while its machine
+        /// stayed up, a firewall which swallows the traffic - that end is the OperationTimeout
+        /// of the endpoint, which the sample configurations set to ten minutes. Closing the
+        /// window of a sample would then block for those ten minutes.
+        ///
+        /// So the wait is bounded and, when it expires, the session is disposed instead:
+        /// disposing cancels the state machine, which does cancel the attempt in flight. The
+        /// session is disposed either way, which is also what stops its background workers.
+        /// </remarks>
+        /// <param name="session">The session to close. A null session is ignored.</param>
+        /// <param name="ct">The cancellation token.</param>
+        public static Task CloseAndDisposeAsync(ISession session, CancellationToken ct = default)
+        {
+            return CloseAndDisposeAsync(session, DefaultCloseTimeout, ct);
+        }
+
+        /// <summary>
+        /// Closes a session and disposes it, waiting no longer than the given timeout.
+        /// </summary>
+        /// <param name="session">The session to close. A null session is ignored.</param>
+        /// <param name="timeout">How long to wait for the close before disposing instead.</param>
+        /// <param name="ct">The cancellation token.</param>
+        public static async Task CloseAndDisposeAsync(
+            ISession session,
+            TimeSpan timeout,
+            CancellationToken ct = default)
+        {
+            if (session == null)
+            {
+                return;
+            }
+
+            try
+            {
+                using var bounded = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                bounded.CancelAfter(timeout);
+
+                await session.CloseAsync((int)timeout.TotalMilliseconds, bounded.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // the server did not answer in time, or the caller gave up: the dispose below
+                // is what actually tears the session down
+            }
+            catch (ServiceResultException)
+            {
+                // closing a session on a server which is already gone is not an error a
+                // sample has anything to do about
+            }
+            finally
+            {
+                await session.DisposeAsync();
+            }
+        }
+        #endregion
+
         #region Subscriptions
         /// <summary>
         /// Adds a subscription driven by the V2 subscription engine to the session.

@@ -387,7 +387,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     // prompt use to edit value.
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    object value = new EditComplexValueDlg().ShowDialogAsync(
+                    Variant? value = await new EditComplexValueDlg().ShowDialogAsync(
                     #pragma warning restore CA2000
                         m_session,
                         nodeToWrite.NodeId,
@@ -404,7 +404,7 @@ namespace Opc.Ua.Client.Controls
                         {
                             DataRowView source = row.DataBoundItem as DataRowView;
                             nodeToWrite = (WriteValue)source.Row[0];
-                            nodeToWrite.Value = new DataValue(ClientUtils.ToVariant(value));
+                            nodeToWrite.Value = new DataValue(value.Value);
                             await UpdateRowAsync(source.Row, nodeToWrite);
                         }
                     }

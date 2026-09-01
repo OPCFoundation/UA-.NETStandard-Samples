@@ -27,6 +27,11 @@ namespace Opc.Ua.Samples.Tests
     /// </remarks>
     public sealed class TestClient : IAsyncDisposable
     {
+        /// <summary>
+        /// How long a teardown waits for the session to close before it disposes it instead.
+        /// </summary>
+        private static readonly TimeSpan kCloseTimeout = TimeSpan.FromSeconds(5);
+
         private readonly TemporaryPki m_pki;
         private readonly ApplicationInstance m_application;
 
@@ -289,13 +294,24 @@ namespace Opc.Ua.Samples.Tests
         {
             if (Session != null)
             {
+                // the close is bounded: a session which is inside a reconnect attempt against
+                // a server that is gone only leaves that attempt when it runs out, and against
+                // an endpoint which accepts but never answers that is the OperationTimeout of
+                // the sample configuration - ten minutes. Disposing is what actually cancels
+                // the attempt, so a teardown must not wait for the close indefinitely.
+                using var bounded = new CancellationTokenSource(kCloseTimeout);
+
                 try
                 {
-                    await Session.CloseAsync(default).ConfigureAwait(false);
+                    await Session.CloseAsync(bounded.Token).ConfigureAwait(false);
                 }
                 catch (ServiceResultException)
                 {
                     // closing a session on a server which is already gone must not fail a test
+                }
+                catch (OperationCanceledException)
+                {
+                    // the server did not answer in time, the dispose below tears it down
                 }
 
                 await Session.DisposeAsync().ConfigureAwait(false);

@@ -175,7 +175,7 @@ namespace Opc.Ua.Sample.Controls
 
             if (ServiceResult.IsBad(result))
             {
-                value = new DataValue(Variant.From((dynamic)GuiUtils.GetDefaultValue(Attributes.GetDataTypeId(attributeId), ValueRanks.Scalar)), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
+                value = new DataValue(GuiUtils.GetDefaultValue(Attributes.GetDataTypeId(attributeId), ValueRanks.Scalar), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
             }
 
             // update the value attribute.
@@ -191,7 +191,7 @@ namespace Opc.Ua.Sample.Controls
 
                     if (variable != null)
                     {
-                        value = new DataValue(Variant.From((dynamic)GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank)), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
+                        value = new DataValue(GuiUtils.GetDefaultValue(variable.DataType, variable.ValueRank), StatusCodes.Good, DateTime.MinValue, DateTime.MinValue);
                     }
                 }
             }
@@ -369,7 +369,6 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 bool useIndexRange = false;
-                object value = null;
 
                 // check IndexRange for arrays
                 if (values[0].AttributeId == Attributes.Value && valueRank > 0)
@@ -383,27 +382,23 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
+                bool edited;
+                Variant value;
+
                 if (useIndexRange)
                 {
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    value = new ComplexValueEditDlg().ShowDialog(values[0], Telemetry);
+                    edited = new ComplexValueEditDlg().TryShowDialog(values[0], Telemetry, out value);
                     #pragma warning restore CA2000
-
-                    WriteValue writeValue = value as WriteValue;
-
-                    if (writeValue != null)
-                    {
-                        value = writeValue.Value.WrappedValue;
-                    }
                 }
                 else
                 {
-                    value = GuiUtils.EditValue(m_session, values[0].Value.WrappedValue, datatypeId, valueRank, Telemetry);
+                    edited = GuiUtils.TryEditValue(m_session, values[0].Value.WrappedValue, datatypeId, valueRank, Telemetry, out value);
                 }
 
-                if (value != null)
+                if (edited)
                 {
-                    values[0].Value = new DataValue(ClientUtils.ToVariant(value), StatusCodes.Good, values[0].Value.SourceTimestamp, values[0].Value.ServerTimestamp);
+                    values[0].Value = new DataValue(value, StatusCodes.Good, values[0].Value.SourceTimestamp, values[0].Value.ServerTimestamp);
 
                     await UpdateItemAsync(ItemsLV.SelectedItems[0], values[0]);
 

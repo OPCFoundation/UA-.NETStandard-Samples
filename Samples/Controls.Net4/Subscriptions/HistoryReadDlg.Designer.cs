@@ -180,9 +180,7 @@ namespace Opc.Ua.Sample.Controls
             this.ReadResultsCTRL.AutoUpdate = true;
             this.ReadResultsCTRL.Dock = System.Windows.Forms.DockStyle.Fill;
             this.ReadResultsCTRL.Instructions = "Right click to add filter operands.";
-            this.ReadResultsCTRL.LatestValue = true;
             this.ReadResultsCTRL.Location = new System.Drawing.Point(0, 0);
-            this.ReadResultsCTRL.MonitoredItem = null;
             this.ReadResultsCTRL.Name = "ReadResultsCTRL";
             this.ReadResultsCTRL.Size = new System.Drawing.Size(391, 392);
             this.ReadResultsCTRL.TabIndex = 3;

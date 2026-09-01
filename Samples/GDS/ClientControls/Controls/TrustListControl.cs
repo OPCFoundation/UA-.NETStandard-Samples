@@ -428,8 +428,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         Size = new Size(800, 400)
                     };
-                    var wrapper = new CertificateWrapper() { Certificate = Certificate.From((X509Certificate2)source.Row[7]) };
-                    dialog.ShowDialog(m_logger, TypeInfo.Construct(wrapper), "", wrapper, true, this.Text);
+                    dialog.ShowDialog(m_logger, (X509Certificate2)source.Row[7], this.Text);
                     break;
                 }
             }

@@ -179,8 +179,7 @@ namespace Opc.Ua.Gds.Client
             if (certificate != null)
             {
                 m_certificate = certificate;
-                var wrapper = new CertificateWrapper() { Certificate = Certificate.From(certificate) };
-                CertificateControl.ShowValue(TypeInfo.Construct(wrapper), "Application Certificate", wrapper, true);
+                CertificateControl.ShowCertificate(certificate);
             }
         }
 
@@ -283,8 +282,7 @@ namespace Opc.Ua.Gds.Client
                 }
                 m_certificate = newCertificate;
 
-                var wrapper = new CertificateWrapper() { Certificate = Certificate.From(newCertificate) };
-                CertificateControl.ShowValue(TypeInfo.Construct(wrapper), "Application Certificate", wrapper, true);
+                CertificateControl.ShowCertificate(newCertificate);
                 WarningLabel.Visible = false;
 
                 MessageBox.Show(
@@ -743,8 +741,7 @@ certificate,
                     }
                 }
 
-                var updatedWrapper = new CertificateWrapper() { Certificate = Certificate.From(m_certificate) };
-                CertificateControl.ShowValue(TypeInfo.Construct(updatedWrapper), "Application Certificate", updatedWrapper, true);
+                CertificateControl.ShowCertificate(m_certificate);
             }
             catch (Exception exception)
             {

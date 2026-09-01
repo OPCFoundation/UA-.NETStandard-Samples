@@ -108,9 +108,37 @@ UI popups into readable failures and is the single most valuable piece of the ha
 `AggregationServer` both use 62541). The tests therefore keep the ports the samples ship with -
 that is part of what is being tested - and run one sample at a time (`[NonParallelizable]`).
 
-The consequence is machine wide: **only one test run at a time**. Two runs in parallel fail
-with "address already in use", and a second git worktree of this repository is not isolation -
-the ports are the same. The same applies to a sample you left running by hand.
+The consequence is machine wide: **only one test run at a time** - and a second git worktree
+of this repository is not isolation, because the ports are the same. The port using tiers
+enforce the rule themselves: a `[SetUpFixture]` in each of their assemblies (deriving from
+`SamplePortLockFixture` in `Samples.Tests.Common`) waits up to ten minutes on a machine wide
+lock file under the temp directory before the first test runs, so concurrent runs - from a
+solution level `dotnet test`, another worktree or another terminal - queue instead of failing.
+Tier 0 uses no ports and takes no lock.
+
+The lock cannot cover the seconds in which a finished run's listeners are still draining: a
+test host releases the lock in its teardown, but the operating system tears its sockets down
+a moment later, and the first sample of a back to back run reliably finds its port still
+bound. `SampleServerHost` therefore retries a start that fails with "address already in use"
+for up to 15 seconds. A sample you left running by hand is outside both mechanisms - the run
+retries, then fails on the busy endpoint.
+
+Not every port-shaped failure is a race, and the two are easy to tell apart. A bind race
+takes seconds (the retry window) and moves between samples from run to run. A test that
+fails *instantly*, on the *same* sample every time, asserting a URL the source no longer
+contains, is a stale `--no-build` run: `SampleCatalog` is compiled into every test assembly,
+so after changing a port or a sample, rebuild every test project - or simply drop
+`--no-build` and let `dotnet test` build.
+
+**Claiming a port for a new sample.** In the 625xx block, where new samples land, endpoints
+come in pairs - opc.tcp one port above its https sibling (the DataAccess sample on
+62548/62547, for instance; the older samples outside the block pair differently, so do not
+extend those). Pick the next free pair
+above the highest paired endpoint in the repo *and in open pull requests*: Tier 0 only
+checks the tree it runs in, so two in-flight branches can claim the same pair and both look
+green until the second one merges (three branches did exactly that on one day). The catalog
+row you add for the sample is what turns the claim into a merge conflict the second branch
+cannot miss.
 
 ## Running
 
@@ -139,7 +167,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 0 checks today
 
-151 test cases, under a second, no network:
+167 test cases, under a second, no network:
 
 - every `*.Config.xml` in the repository loads and validates, and declares an application
   name, uri, type and security configuration
@@ -154,7 +182,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 1 checks today
 
-93 test cases, about 25 seconds. Sixteen of them start a sample server in process, from the
+103 test cases, about 25 seconds. Eighteen of them start a sample server in process, from the
 sample's own configuration file, and connect to it with a plain OPC UA client:
 
 - the server comes up on the endpoint the catalog claims
@@ -167,7 +195,7 @@ Only the opc.tcp endpoints are exercised; https base addresses are stripped in m
 the server starts, because they need their own bindings and would double the ports a test run
 occupies.
 
-All 16 servers pass. The first run of this tier found four that did not, all of them samples
+All 18 servers pass. The first run of this tier found four that did not, all of them samples
 which had not caught up with the value types the 2.0 stack introduced (`ArrayOf<T>`,
 `DateTimeUtc`, `NodeId` as a struct, the `Variant.From` overloads); they were fixed rather
 than parked:
@@ -266,7 +294,7 @@ not parking. Both lists are currently empty.
 
 ## What Tier 1.5 checks today
 
-104 test cases across 17 fixtures, about 1.5 minutes. One fixture per node manager, each
+122 test cases across 19 fixtures, about 1.5 minutes. One fixture per node manager, each
 starting its sample server once and driving it through an ordinary OPC UA session.
 
 **Everything is observed through the services a client would use.** No test reaches into a
@@ -282,7 +310,7 @@ What each fixture pins down, in one line:
 |---|---|
 | Empty | The hand-built trigger, its 2x2 matrix property, and the sample's own reference type in both directions |
 | Boiler (Workshop) | The boiler from the node set and the one built in code; the simulation counts one below 100 and the other below 20 |
-| DataTypes | Custom structures with both encodings, an instance from a second node set carrying a value of a type from the first |
+| DataTypes | Custom structures with both encodings, an instance from a second node set carrying a value of a type from the first, a structured value surviving a write round trip, and a subscription reporting the current value |
 | Views | The same node browsed through two views shows two different sets of children |
 | SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing |
 | Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
@@ -300,6 +328,13 @@ What each fixture pins down, in one line:
 | TestData | Static write round trip, simulated values while monitored, which single variable is archived, and the archive read back over an authenticated session |
 | MemoryBuffer | Tags synthesized from node ids, a buffer browsing into its tags, and the three creation refusals the custom monitored item makes |
 | Boiler (sample server) | Display names renamed after the unit, and the state machines of both boilers started by the node manager itself |
+| FileTransfer | The configured directory mounted below `Server/FileSystem`, the content the sample seeds, an upload/download/delete round trip, a streamed transfer of a file larger than one chunk, create/rename/remove of a directory, and a path which tries to leave the mount |
+
+The file transfer fixture is the one exception to "one fixture per node manager": that sample
+writes no node manager, it registers the one the SDK ships. What the fixture holds it to is
+therefore its own half of the contract - that it mounts the directory its configuration names
+where a client looks for it, seeds it, and publishes it writable - asked through an ordinary
+`FileSystemClient`, which is the same surface the sample client uses.
 
 The condition refresh test earned its keep on arrival: the dialog condition every alarm
 source creates was never replayed by a refresh. `SetEnableState` in the 2.0 stack
@@ -366,7 +401,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-29 test cases, about a minute, Windows only. For each WinForms sample client the test
+46 test cases, about two and a half minutes, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 
@@ -407,6 +442,16 @@ leaving nothing but an empty window. Writing it found two defects, both fixed:
 |-------|----------------|
 | `Workshop/HistoricalEvents/Client/EventListView.cs` | Every event the list was given threw `InvalidCastException` into a modal dialog: it unboxed a `DateTime` event field with `(DateTime)Variant.AsBoxedObject()`, and the 2.0 stack boxes one as `DateTimeUtc`. The same method renders the event *history*, so the sample's only two displays were both dead since the 2.0 migration |
 | `Workshop/AlarmCondition/Client/AuditEventForm.cs` | Closing the audit window threw `BadNotConnected` out of its own error handler. The main form closes that window when the session goes away, so the subscription can no longer be deleted on the server - and the handler for that failure asked the closed session for its telemetry context. The window keeps the telemetry context it was created with and logs the failure instead of showing it |
+
+`FileTransferClientTests` asks what a connect test cannot of a client whose whole job is
+navigation: does the sample keep the place the user browsed to? It selects and expands a
+directory, then reports a completed reconnect the way the connect control would, and asserts
+that the selected node is still the *same node object* and that the tree did not change size.
+The sample used to fail both: it rebuilt its file system client, and with it the whole tree, on
+every reconnect, on the assumption that a reconnect brings a new session whose file handles are
+gone. A managed session keeps its `ISession`, so that rebuild only ever cost the user their
+position. Comparing node identity rather than node text is what makes the test see it - a
+rebuilt tree carries new nodes even where every label matches.
 
 `SampleControlsSubscribeTests` does the same for the UA Sample Client controls in
 `Controls.Net4`: it opens a managed session the way `SessionOpenDlg` does, creates a

@@ -10,8 +10,10 @@
 using System;
 
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using NUnit.Framework;
 using Opc.Ua.Configuration;
 using Opc.Ua.Server;
 
@@ -169,9 +171,73 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// Loads the configuration and starts one instance of the server from it.
+        /// How long a start keeps retrying an endpoint which is still bound.
+        /// </summary>
+        /// <remarks>
+        /// A finished test run releases the machine wide port lock from its teardown, but
+        /// the listeners of its test host drain asynchronously for a few seconds after
+        /// that - long enough that the first sample of the next run reliably finds its port
+        /// still bound. Retrying briefly absorbs that window; a port held for longer than
+        /// this (a sample left running by hand, another process) still fails.
+        /// </remarks>
+        private static readonly TimeSpan kBindRetryWindow = TimeSpan.FromSeconds(15);
+
+        private static readonly TimeSpan kBindRetryDelay = TimeSpan.FromMilliseconds(500);
+
+        /// <summary>
+        /// Starts the server, retrying while its endpoint is still draining from an
+        /// earlier run.
         /// </summary>
         private async Task StartServerAsync(CancellationToken ct)
+        {
+            DateTime deadline = DateTime.UtcNow + kBindRetryWindow;
+
+            while (true)
+            {
+                try
+                {
+                    await StartServerOnceAsync(ct).ConfigureAwait(false);
+
+                    return;
+                }
+                catch (Exception e) when (IsAddressAlreadyInUse(e) && DateTime.UtcNow < deadline)
+                {
+                    await TestContext.Progress.WriteLineAsync(
+                        $"{m_name}: {EndpointUrl} is still bound, retrying ...").ConfigureAwait(false);
+
+                    await Task.Delay(kBindRetryDelay, ct).ConfigureAwait(false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reports whether the failure is a listener finding its port already bound.
+        /// </summary>
+        private static bool IsAddressAlreadyInUse(Exception e)
+        {
+            while (e != null)
+            {
+                if (e is SocketException socketError &&
+                    socketError.SocketErrorCode == SocketError.AddressAlreadyInUse)
+                {
+                    return true;
+                }
+
+                if (e is AggregateException aggregate)
+                {
+                    return aggregate.InnerExceptions.Any(IsAddressAlreadyInUse);
+                }
+
+                e = e.InnerException;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Loads the configuration and starts one instance of the server from it.
+        /// </summary>
+        private async Task StartServerOnceAsync(CancellationToken ct)
         {
             ApplicationInstance application = null;
             StandardServer server = null;
