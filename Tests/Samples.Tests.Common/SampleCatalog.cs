@@ -181,6 +181,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "RoleManagement",
+                ServerProject = "Workshop/RoleManagement/Server/RoleManagement Server.csproj",
+                ServerConfig = "Workshop/RoleManagement/Server/Quickstarts.RoleManagementServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62573/Quickstarts/RoleManagementServer",
+                ClientProject = "Workshop/RoleManagement/Client/RoleManagement Client.csproj",
+                ClientConfig = "Workshop/RoleManagement/Client/Quickstarts.RoleManagementClient.Config.xml",
+                ClientEndpointSource = "Workshop/RoleManagement/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "SimpleEvents",
                 ServerProject = "Workshop/SimpleEvents/Server/SimpleEvents Server.csproj",
                 ServerConfig = "Workshop/SimpleEvents/Server/SimpleEventsServer.Config.xml",

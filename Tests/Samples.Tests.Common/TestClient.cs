@@ -100,7 +100,7 @@ namespace Opc.Ua.Samples.Tests
             IUserIdentity identity,
             CancellationToken ct = default)
         {
-            return await ConnectCoreAsync(endpointUrl, sessionName, identity, false, ct)
+            return await ConnectCoreAsync(endpointUrl, sessionName, identity, EndpointChoice.Any, ct)
                 .ConfigureAwait(false);
         }
 
@@ -115,7 +115,7 @@ namespace Opc.Ua.Samples.Tests
             string sessionName,
             CancellationToken ct = default)
         {
-            return await ConnectCoreAsync(endpointUrl, sessionName, null, false, ct)
+            return await ConnectCoreAsync(endpointUrl, sessionName, null, EndpointChoice.Any, ct)
                 .ConfigureAwait(false);
         }
 
@@ -134,15 +134,49 @@ namespace Opc.Ua.Samples.Tests
             IUserIdentity identity,
             CancellationToken ct = default)
         {
-            return await ConnectCoreAsync(endpointUrl, sessionName, identity, true, ct)
+            return await ConnectCoreAsync(endpointUrl, sessionName, identity, EndpointChoice.UnsecuredOnly, ct)
                 .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Opens a session on an encrypted endpoint and lets a refusal through.
+        /// </summary>
+        /// <remarks>
+        /// OPC UA Part 18 requires the Methods which change the role configuration of a
+        /// server to be called over an encrypted channel, so a test which exercises them has
+        /// to say which endpoint it wants rather than take the unsecured one the ordinary
+        /// connect prefers.
+        /// </remarks>
+        public static async Task<TestClient> ConnectEncryptedAsync(
+            string endpointUrl,
+            string sessionName,
+            IUserIdentity identity,
+            CancellationToken ct = default)
+        {
+            return await ConnectCoreAsync(endpointUrl, sessionName, identity, EndpointChoice.EncryptedOnly, ct)
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Which endpoint of the server a connect is willing to use.
+        /// </summary>
+        private enum EndpointChoice
+        {
+            /// <summary>Any endpoint which accepts a session, least secure first.</summary>
+            Any,
+
+            /// <summary>Only the unsecured endpoint, and report what it answered.</summary>
+            UnsecuredOnly,
+
+            /// <summary>Only an encrypted endpoint, and report what it answered.</summary>
+            EncryptedOnly,
         }
 
         private static async Task<TestClient> ConnectCoreAsync(
             string endpointUrl,
             string sessionName,
             IUserIdentity identity,
-            bool unsecuredOnly,
+            EndpointChoice choice,
             CancellationToken ct)
         {
             TemporaryPki pki = null;
@@ -163,7 +197,7 @@ namespace Opc.Ua.Samples.Tests
                 EndpointDescription[] candidates = await SelectEndpointsAsync(configuration, endpointUrl, ct)
                     .ConfigureAwait(false);
 
-                if (unsecuredOnly)
+                if (choice == EndpointChoice.UnsecuredOnly)
                 {
                     candidates = candidates
                         .Where(endpoint => endpoint.SecurityMode == MessageSecurityMode.None
@@ -175,6 +209,21 @@ namespace Opc.Ua.Samples.Tests
                     {
                         throw new InvalidOperationException(
                             $"{endpointUrl} offers no unsecured endpoint to open a session on.");
+                    }
+                }
+                else if (choice == EndpointChoice.EncryptedOnly)
+                {
+                    candidates = candidates
+                        .Where(endpoint => endpoint.SecurityMode == MessageSecurityMode.SignAndEncrypt
+                            && !string.IsNullOrEmpty(endpoint.SecurityPolicyUri)
+                            && endpoint.SecurityPolicyUri != SecurityPolicies.None)
+                        .Take(1)
+                        .ToArray();
+
+                    if (candidates.Length == 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"{endpointUrl} offers no encrypted endpoint to open a session on.");
                     }
                 }
 
@@ -208,7 +257,7 @@ namespace Opc.Ua.Samples.Tests
                         pki = null;
                         return client;
                     }
-                    catch (ServiceResultException) when (unsecuredOnly)
+                    catch (ServiceResultException) when (choice != EndpointChoice.Any)
                     {
                         // the caller asked for one endpoint on purpose, because what the
                         // server answered is the thing it wants to look at

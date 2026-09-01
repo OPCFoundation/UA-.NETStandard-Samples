@@ -216,7 +216,11 @@ namespace Opc.Ua.Samples.Tests
                 Assert.Ignore(
                     $"Set {UserVariable} and {PasswordVariable} to a local Windows account to run this. " +
                     "The server verifies the password with LogonUser, so there is no way to " +
-                    "authenticate without one.");
+                    "authenticate without one. Note that this is the only test which exercises " +
+                    "a password the server accepts, so a regression in how the sample reads the " +
+                    "password out of the token - it has to come from the handler's " +
+                    "DecryptedPassword, not from Token.Password - is invisible on a run which " +
+                    "skips this.");
             }
 
             await using TestClient client = await TestClient

@@ -34,6 +34,7 @@
     <ProjectReference Include="..\..\Workshop\HistoricalEvents\Client\HistoricalEvents Client.csproj" />
     <ProjectReference Include="..\..\Workshop\Methods\Client\Methods Client.csproj" />
     <ProjectReference Include="..\..\Workshop\PerfTest\Client\PerfTest Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\RoleManagement\Client\RoleManagement Client.csproj" />
     <ProjectReference Include="..\..\Workshop\SimpleEvents\Client\SimpleEvents Client.csproj" />
     <ProjectReference Include="..\..\Workshop\StateMachines\Client\StateMachines Client.csproj" />
     <ProjectReference Include="..\..\Workshop\UserAuthentication\Client\UserAuthentication Client.csproj" />

@@ -172,11 +172,31 @@ namespace Quickstarts.UserAuthenticationServer
             }
         }
 
+        /// <summary>
+        /// Verifies the password of a user name token against a Windows account.
+        /// </summary>
+        /// <remarks>
+        /// The password is taken from <see cref="UserNameIdentityTokenHandler.DecryptedPassword"/>
+        /// rather than from the token. A user name token must not travel in the clear, so
+        /// unless its UserTokenPolicy names the None security policy the password is encrypted
+        /// with the server's certificate - which the policies in this sample's configuration
+        /// do not, so it is encrypted on the unsecured endpoint too. <c>Token.Password</c> is
+        /// therefore the cipher text and only the handler carries the plain text the stack
+        /// decrypted. Reading the token handed LogonUser a UTF-8 decoding of 256 bytes of
+        /// cipher text, which refused every account with BadUserAccessDenied.
+        /// </remarks>
         private ValueTask<IUserIdentity> AuthenticateUserNameAsync(UserNameIdentityTokenHandler handler, System.Threading.CancellationToken ct)
         {
-            UserNameIdentityToken userNameToken = handler.Token as UserNameIdentityToken;
-            VerifyPassword(userNameToken.UserName, Encoding.UTF8.GetString(userNameToken.Password.ToArray()));
-            IUserIdentity identity = new UserIdentity(userNameToken);
+            if (handler.DecryptedPassword == null)
+            {
+                throw ServiceResultException.Create(
+                    StatusCodes.BadIdentityTokenInvalid,
+                    "The password of the user name token could not be decrypted.");
+            }
+
+            VerifyPassword(handler.UserName, Encoding.UTF8.GetString(handler.DecryptedPassword));
+
+            IUserIdentity identity = new UserIdentity(handler);
             if (m_logger.IsEnabled(LogLevel.Information))
             {
                 m_logger.LogInformation("UserName Token Accepted: {DisplayName}", identity.DisplayName);

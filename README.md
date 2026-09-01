@@ -77,6 +77,8 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [Methods Client](Workshop/Methods/Client) | **Client** | Discovers and calls UA methods on a Methods server. |
 | [PerfTest Server](Workshop/PerfTest/Server) | **Server** | Performance test server that exposes a large number of monitored variables for throughput benchmarking. |
 | [PerfTest Client](Workshop/PerfTest/Client) | **Client** | Performance test client that subscribes to many variables and measures data-change throughput. |
+| [RoleManagement Server](Workshop/RoleManagement/Server) | **Server** | Demonstrates OPC UA Part 18 role-based security: identities earn Roles, RolePermissions on nodes decide what each Role may browse, read, write or call, and the RoleSet lets a SecurityAdmin change that at runtime. See the [sample README](Workshop/RoleManagement/README.md). |
+| [RoleManagement Client](Workshop/RoleManagement/Client) | **Client** | Connects as different accounts to see how the address space and the permissions change, and manages the RoleSet of the server. |
 | [SimpleEvents Server](Workshop/SimpleEvents/Server) | **Server** | Generates simple OPC UA events to demonstrate event subscriptions. |
 | [SimpleEvents Client](Workshop/SimpleEvents/Client) | **Client** | Subscribes to and displays simple events from an events server. |
 | [StateMachines Server](Workshop/StateMachines/Server) | **Server** | Demonstrates OPC UA Part 16 state machines: one declared with the fluent `StateMachineBuilder` (states, transitions, causes, guards, timed transitions) and the standard `ProgramStateMachineType` with behaviour attached to it. |
