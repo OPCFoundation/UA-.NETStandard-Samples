@@ -298,6 +298,7 @@ namespace Opc.Ua.Samples.Tests
         private static async Task PowerOnTheMachineAsync(Form form, CancellationToken ct)
         {
             var powerOn = (Button)WinFormsHarness.FindControl(form, "PowerOnBTN");
+            var start = (Button)WinFormsHarness.FindControl(form, "StartBTN");
 
             Assert.That(
                 powerOn,
@@ -310,10 +311,27 @@ namespace Opc.Ua.Samples.Tests
                 "The StateMachines client did not enable its causes, so it never resolved " +
                 "the state machines of its server.");
 
+            // the machine starts in Off, where Start is not a declared cause. The client reads
+            // that from the Executable attribute rather than guessing, so the button for a
+            // cause which cannot apply is not offered at all.
+            Assert.That(
+                start.Enabled,
+                Is.False,
+                "Start is not declared for Off, so the client must not offer it there.");
+
             // the click handler is an async void event handler, so there is nothing to await
             powerOn.PerformClick();
 
-            await Task.Delay(TimeSpan.FromSeconds(2), ct).ConfigureAwait(true);
+            // and once the machine is Idle the same button has to become available. The click
+            // handler re-reads the attributes after its call returns, so this is a wait on the
+            // message loop rather than on the transition coming back over the subscription.
+            bool offered = await WaitAsync(() => start.Enabled, ct).ConfigureAwait(true);
+
+            Assert.That(
+                offered,
+                Is.True,
+                "Start is declared for Idle, so the client has to offer it once the machine " +
+                "has been powered on.");
         }
 
         /// <summary>

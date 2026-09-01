@@ -390,8 +390,8 @@ namespace Quickstarts.StateMachines.Server
         /// Adds one of the methods which cause a transition of the Operation machine.
         /// </summary>
         /// <remarks>
-        /// The method needs no handler of its own: <c>WithCause</c> installs one which calls
-        /// <c>DoCause</c> with the numeric identifier of the method node.
+        /// The method needs no call handler of its own: <c>WithCause</c> installs one which
+        /// calls <c>DoCause</c> with the numeric identifier of the method node.
         /// </remarks>
         private void AddCauseMethod(FluentFiniteStateMachineState stateMachine, uint causeId, string name)
         {
@@ -403,10 +403,40 @@ namespace Quickstarts.StateMachines.Server
             method.BrowseName = new QualifiedName(name, NamespaceIndex);
             method.DisplayName = new LocalizedText(name);
             method.ReferenceTypeId = ReferenceTypeIds.HasComponent;
+
+            BindExecutable(method, stateMachine, causeId);
+
+            stateMachine.AddChild(method);
+        }
+
+        /// <summary>
+        /// Answers the Executable attributes of a cause method from the state machine.
+        /// </summary>
+        /// <remarks>
+        /// A cause is only permitted in the states it was declared for, so whether a method
+        /// can be called right now is a property of the machine rather than a constant. OPC
+        /// 10000-16 has the server say so through <c>Executable</c> / <c>UserExecutable</c>,
+        /// which is what lets a client offer only the causes which currently apply instead of
+        /// calling one and being refused with BadNotSupported. The callbacks run per read, so
+        /// the answer follows the machine without anything having to update the node.
+        /// </remarks>
+        private static void BindExecutable(
+            MethodState method,
+            FiniteStateMachineState stateMachine,
+            uint causeId)
+        {
             method.Executable = true;
             method.UserExecutable = true;
 
-            stateMachine.AddChild(method);
+            method.OnReadExecutable = (ISystemContext context, NodeState node, ref bool value) => {
+                value = stateMachine.IsCausePermitted(context, causeId, checkUserAccessRights: false);
+                return ServiceResult.Good;
+            };
+
+            method.OnReadUserExecutable = (ISystemContext context, NodeState node, ref bool value) => {
+                value = stateMachine.IsCausePermitted(context, causeId, checkUserAccessRights: true);
+                return ServiceResult.Good;
+            };
         }
 
         /// <summary>
@@ -538,8 +568,9 @@ namespace Quickstarts.StateMachines.Server
         /// </summary>
         private static void BindCause(MethodState method, ProgramStateMachineState program, uint causeId)
         {
-            method.Executable = true;
-            method.UserExecutable = true;
+            // the same Executable contract as the Operation machine, so a client can offer the
+            // program's five causes the same way it offers the vendor machine's six.
+            BindExecutable(method, program, causeId);
 
             method.OnCallMethod2Async = (context, called, objectId, inputArguments, outputArguments, cancellationToken)
                 => new ValueTask<ServiceResult>(

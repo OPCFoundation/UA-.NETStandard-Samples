@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -221,6 +222,15 @@ namespace Opc.Ua.Samples.Tests
         /// A cause which is not declared for the state the machine is in is refused, and the
         /// machine stays where it was.
         /// </summary>
+        /// <remarks>
+        /// Two layers refuse this, and which one answers is worth recording. Because the
+        /// sample answers <c>Executable</c> / <c>UserExecutable</c> from
+        /// <c>IsCausePermitted</c>, the Call service refuses a method which cannot apply with
+        /// <see cref="StatusCodes.BadNotExecutable"/> before the cause pipeline is reached.
+        /// The <see cref="StatusCodes.BadNotSupported"/> which <c>DoCause</c> answers for an
+        /// unmapped cause is the layer behind it, and is what a server which does not maintain
+        /// the attributes would return instead.
+        /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
         public async Task CauseWhichIsNotDeclaredForTheCurrentStateIsRefused(CancellationToken ct)
@@ -239,8 +249,9 @@ namespace Opc.Ua.Samples.Tests
             Assert.Multiple(() => {
                 Assert.That(
                     result.StatusCode,
-                    Is.EqualTo((StatusCode)StatusCodes.BadNotSupported),
-                    "A cause with no mapping for the current state has to be refused.");
+                    Is.EqualTo((StatusCode)StatusCodes.BadNotExecutable),
+                    "A cause which cannot apply in the current state has to be refused as " +
+                    "not executable, which is what the Executable attribute already said.");
 
                 Assert.That(
                     state,
@@ -321,6 +332,49 @@ namespace Opc.Ua.Samples.Tests
                 await ReadOperationTransitionNameAsync(ct).ConfigureAwait(false),
                 Is.EqualTo("FaultedToIdle"),
                 "The automatic reset has to be reported as the transition it takes.");
+        }
+
+        /// <summary>
+        /// The server says which causes apply right now, so a client does not have to call one
+        /// and be refused to find out.
+        /// </summary>
+        /// <remarks>
+        /// This is the Executable / UserExecutable contract of OPC 10000-16: a cause method is
+        /// executable exactly in the states its cause was declared for. Without it a client
+        /// has to either duplicate the server's state table or offer every cause always.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ExecutableFollowsTheCausesPermittedInTheCurrentState(CancellationToken ct)
+        {
+            // Off: only PowerOn applies
+            IReadOnlyDictionary<string, bool> inOff = await ReadCauseExecutableAsync(ct)
+                .ConfigureAwait(false);
+
+            await ReportAsync(
+                "Executable in Off",
+                inOff.Select(entry => $"{entry.Key}={entry.Value}")).ConfigureAwait(false);
+
+            await CallOperationAsync(StateMachinesNodeManager.PowerOnCause, ct).ConfigureAwait(false);
+
+            // Idle: PowerOff and Start apply
+            IReadOnlyDictionary<string, bool> inIdle = await ReadCauseExecutableAsync(ct)
+                .ConfigureAwait(false);
+
+            await ReportAsync(
+                "Executable in Idle",
+                inIdle.Select(entry => $"{entry.Key}={entry.Value}")).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(inOff["PowerOn"], Is.True, "PowerOn is the only cause declared for Off.");
+                Assert.That(inOff["Start"], Is.False, "Start is not declared for Off.");
+                Assert.That(inOff["Stop"], Is.False, "Stop is not declared for Off.");
+                Assert.That(inOff["Reset"], Is.False, "Reset is not declared for Off.");
+
+                Assert.That(inIdle["Start"], Is.True, "Start has to become executable in Idle.");
+                Assert.That(inIdle["PowerOff"], Is.True, "PowerOff is declared for Idle.");
+                Assert.That(inIdle["PowerOn"], Is.False, "PowerOn is not declared for Idle.");
+            });
         }
 
         /// <summary>
@@ -486,6 +540,40 @@ namespace Opc.Ua.Samples.Tests
             return value.WrappedValue.ConvertTo(BuiltInType.UInt32).TryGetValue(out uint count)
                 ? count
                 : 0;
+        }
+
+        /// <summary>
+        /// Reads the UserExecutable attribute of every cause method of the Operation machine.
+        /// </summary>
+        private async Task<IReadOnlyDictionary<string, bool>> ReadCauseExecutableAsync(CancellationToken ct)
+        {
+            var causes = new (string Name, uint Id)[] {
+                ("PowerOn", StateMachinesNodeManager.PowerOnCause),
+                ("PowerOff", StateMachinesNodeManager.PowerOffCause),
+                ("Start", StateMachinesNodeManager.StartCause),
+                ("Stop", StateMachinesNodeManager.StopCause),
+                ("Fault", StateMachinesNodeManager.FaultCause),
+                ("Reset", StateMachinesNodeManager.ResetCause),
+            };
+
+            ushort ns = NamespaceIndex(StateMachinesNamespace);
+            var executable = new Dictionary<string, bool>(StringComparer.Ordinal);
+
+            foreach ((string name, uint id) in causes)
+            {
+                DataValue value = await SessionOps
+                    .ReadAttributeAsync(Session, new NodeId(id, ns), Attributes.UserExecutable, ct)
+                    .ConfigureAwait(false);
+
+                Assert.That(
+                    StatusCode.IsGood(value.StatusCode),
+                    Is.True,
+                    $"Reading UserExecutable of {name} failed: {value.StatusCode}");
+
+                executable[name] = value.WrappedValue.TryGetValue(out bool flag) && flag;
+            }
+
+            return executable;
         }
 
         private async Task WriteInterlockAsync(bool clear, CancellationToken ct)

@@ -110,6 +110,7 @@ namespace Quickstarts.StateMachines.Client
         private ProgramStateMachineTypeClient m_program;
         private NodeId m_interlockNode;
         private readonly Dictionary<Button, NodeId> m_causes = new();
+        private readonly Dictionary<Button, NodeId> m_programCauses = new();
         private bool m_updatingInterlock;
         #endregion
 
@@ -272,12 +273,15 @@ namespace Quickstarts.StateMachines.Client
             m_interlockNode = nodes[2];
 
             m_causes.Clear();
+            m_programCauses.Clear();
             m_causes[PowerOnBTN] = nodes[3];
             m_causes[PowerOffBTN] = nodes[4];
             m_causes[StartBTN] = nodes[5];
             m_causes[StopBTN] = nodes[6];
             m_causes[FaultBTN] = nodes[7];
             m_causes[ResetBTN] = nodes[8];
+
+            await ResolveProgramCausesAsync(ct);
 
             // where the machines are right now, before anything moves them.
             ShowSnapshot(kOperation, await m_operation.GetCurrentFiniteStateAsync(ct), append: false);
@@ -302,6 +306,95 @@ namespace Quickstarts.StateMachines.Client
             _ = PumpTransitionsAsync(kProgram, m_program, m_cts.Token);
 
             EnableControls(true);
+
+            await RefreshPermittedCausesAsync(ct);
+        }
+
+        /// <summary>
+        /// Resolves the five methods of the program machine.
+        /// </summary>
+        /// <remarks>
+        /// They carry the browse names of the standard type, so they live in the OPC UA
+        /// namespace rather than in the one of the sample.
+        /// </remarks>
+        private async Task ResolveProgramCausesAsync(CancellationToken ct)
+        {
+            m_programCauses.Clear();
+
+            var wellKnownNamespaceUris = new NamespaceTable();
+
+            var buttons = new (Button Button, string BrowseName)[] {
+                (ProgramStartBTN, BrowseNames.Start),
+                (ProgramSuspendBTN, BrowseNames.Suspend),
+                (ProgramResumeBTN, BrowseNames.Resume),
+                (ProgramHaltBTN, BrowseNames.Halt),
+                (ProgramResetBTN, BrowseNames.Reset),
+            };
+
+            List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
+                m_session,
+                m_program.ObjectId,
+                wellKnownNamespaceUris,
+                ct,
+                buttons.Select(entry => entry.BrowseName).ToArray());
+
+            for (int ii = 0; ii < buttons.Length && ii < nodes.Count; ii++)
+            {
+                if (!nodes[ii].IsNull)
+                {
+                    m_programCauses[buttons[ii].Button] = nodes[ii];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Offers only the causes which apply to the state each machine is in right now.
+        /// </summary>
+        /// <remarks>
+        /// A cause is only declared for some of the states of its machine, so calling one in
+        /// any other state is refused with BadNotSupported. Which ones apply is not something
+        /// a client should work out for itself: OPC 10000-16 has the server say so through the
+        /// <c>Executable</c> and <c>UserExecutable</c> attributes of the method nodes, which
+        /// the sample server answers from <c>IsCausePermitted</c>. Reading them after every
+        /// transition keeps the buttons in step with the machine, and keeps this client
+        /// correct if the server ever changes its state table.
+        /// </remarks>
+        private async Task RefreshPermittedCausesAsync(CancellationToken ct = default)
+        {
+            List<KeyValuePair<Button, NodeId>> causes = m_causes
+                .Concat(m_programCauses)
+                .ToList();
+
+            if (m_session == null || causes.Count == 0)
+            {
+                return;
+            }
+
+            var nodesToRead = causes
+                .Select(cause => new ReadValueId {
+                    NodeId = cause.Value,
+                    AttributeId = Attributes.UserExecutable,
+                })
+                .ToArrayOf();
+
+            ReadResponse response = await m_session.ReadAsync(
+                null,
+                0,
+                TimestampsToReturn.Neither,
+                nodesToRead,
+                ct);
+
+            List<DataValue> results = response.Results.ToList();
+
+            ClientBase.ValidateResponse(results, nodesToRead.ToArray());
+
+            for (int ii = 0; ii < causes.Count && ii < results.Count; ii++)
+            {
+                // a server which does not answer the attribute leaves the button enabled, so
+                // that this client stays usable against one which is not the sample.
+                causes[ii].Key.Enabled = !results[ii].WrappedValue.TryGetValue(out bool executable)
+                    || executable;
+            }
         }
 
         /// <summary>
@@ -339,7 +432,7 @@ namespace Quickstarts.StateMachines.Client
 
                     // the enumeration runs on a publish worker, so the display is updated on
                     // the UI thread.
-                    BeginInvoke(new Action(() => ShowSnapshot(name, snapshot, append: true)));
+                    BeginInvoke(new Action(() => OnTransitionObserved(name, snapshot)));
                 }
             }
             catch (OperationCanceledException)
@@ -371,6 +464,7 @@ namespace Quickstarts.StateMachines.Client
             m_operation = null;
             m_program = null;
             m_causes.Clear();
+            m_programCauses.Clear();
 
             if (cts != null)
             {
@@ -404,9 +498,9 @@ namespace Quickstarts.StateMachines.Client
         /// <remarks>
         /// The Operation machine has no type definition, so there is no generated proxy for
         /// it and its causes are called as the plain methods they are. Which transition a
-        /// call takes is the server's business: the same method answers BadNotSupported in a
-        /// state it was not declared for, and BadInvalidState while the guard on Start refuses
-        /// it.
+        /// call takes is the server's business: a method whose cause cannot apply in the
+        /// current state is refused as BadNotExecutable, and the guard on Start answers
+        /// BadInvalidState while the interlock is open.
         /// </remarks>
         private async void OperationCauseBTN_ClickAsync(object sender, EventArgs e)
         {
@@ -419,6 +513,11 @@ namespace Quickstarts.StateMachines.Client
                 }
 
                 await m_session.CallAsync(m_operation.ObjectId, methodId, default);
+
+                // the call just moved the machine, so what it permits has changed. Re-read it
+                // here rather than waiting for the transition to come back on the stream: the
+                // buttons then follow the user's own action immediately.
+                await RefreshPermittedCausesAsync();
             }
             catch (Exception exception)
             {
@@ -483,6 +582,9 @@ namespace Quickstarts.StateMachines.Client
                 }
 
                 await call(default);
+
+                // same as for the vendor machine: the causes the program permits changed.
+                await RefreshPermittedCausesAsync();
             }
             catch (Exception exception)
             {
@@ -548,6 +650,31 @@ namespace Quickstarts.StateMachines.Client
         #endregion
 
         #region Display
+        /// <summary>
+        /// Records a transition and re-reads which causes the machines now permit.
+        /// </summary>
+        /// <remarks>
+        /// Runs on the UI thread, marshalled from the publish worker the stream runs on. The
+        /// causes are re-read here rather than in the pump because a transition is exactly
+        /// what changes them: leaving Idle takes Start away and offers Stop instead.
+        /// </remarks>
+        private async void OnTransitionObserved(string name, FiniteStateSnapshot snapshot)
+        {
+            try
+            {
+                ShowSnapshot(name, snapshot, append: true);
+
+                await RefreshPermittedCausesAsync();
+            }
+            catch (Exception exception)
+            {
+                // this runs as an async void continuation, so an escaping exception would
+                // take the process down rather than reach a handler.
+                m_telemetry?.CreateLogger<MainForm>()
+                    .LogError(exception, "Failed to update the causes the machines permit.");
+            }
+        }
+
         /// <summary>
         /// Shows where a machine is, and optionally records how it got there.
         /// </summary>

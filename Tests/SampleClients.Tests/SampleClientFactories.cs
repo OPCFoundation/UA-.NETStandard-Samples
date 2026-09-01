@@ -74,7 +74,7 @@ namespace Opc.Ua.Samples.Tests
                 Client("Methods", (configuration, telemetry) => new Quickstarts.MethodsClient.MainForm(configuration, telemetry), "StartBTN"),
                 Client("PerfTest", (configuration, telemetry) => new Quickstarts.PerfTestClient.MainForm(configuration, telemetry)),
                 Client("SimpleEvents", (configuration, telemetry) => new Quickstarts.SimpleEvents.Client.MainForm(configuration, telemetry)),
-                Client("StateMachines", (configuration, telemetry) => new Quickstarts.StateMachines.Client.MainForm(configuration, telemetry), "StartBTN"),
+                Client("StateMachines", (configuration, telemetry) => new Quickstarts.StateMachines.Client.MainForm(configuration, telemetry), "PowerOnBTN"),
                 Client("UserAuthentication", (configuration, telemetry) => new Quickstarts.UserAuthenticationClient.MainForm(configuration, telemetry)),
                 Client("Views", (configuration, telemetry) => new Quickstarts.ViewsClient.MainForm(configuration, telemetry)),
                 Client("Reference", (configuration, telemetry) => new Quickstarts.ReferenceClient.MainForm(configuration, telemetry)),
