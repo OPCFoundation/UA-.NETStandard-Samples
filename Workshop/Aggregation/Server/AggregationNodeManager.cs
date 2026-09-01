@@ -28,7 +28,9 @@
  * ======================================================================*/
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +41,49 @@ using Opc.Ua.Server.Fluent;
 
 namespace AggregationServer
 {
+    // The V2 client subscription types collide by name with the server side ones this
+    // node manager implements - RemoteSubscription and IMonitoredItem exist in both - so the
+    // downstream ones are aliased rather than imported wholesale. The aliases have to sit
+    // inside the namespace body: at the top of the file the enclosing namespace wins and
+    // they silently resolve to the server types.
+    using DataValueChange = Opc.Ua.Client.Subscriptions.DataValueChange;
+    using EventNotification = Opc.Ua.Client.Subscriptions.EventNotification;
+    using IMonitoredItemApplyState = Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItemApplyState;
+    using ISubscriptionManager = Opc.Ua.Client.Subscriptions.ISubscriptionManager;
+    using ISubscriptionNotificationHandler = Opc.Ua.Client.Subscriptions.ISubscriptionNotificationHandler;
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+    using PublishState = Opc.Ua.Client.Subscriptions.PublishState;
+    using RemoteMonitoredItem = Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItem;
+    using RemoteSubscription = Opc.Ua.Client.Subscriptions.ISubscription;
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
+    /// <summary>
+    /// One monitored item of this server, and the item forwarded for it to the
+    /// aggregated server.
+    /// </summary>
+    /// <remarks>
+    /// The V2 engine assigns the client handle itself and offers no <c>Handle</c> to
+    /// hang the local item off, so the pairing is kept here instead. The options
+    /// monitor has to be kept too: reconfiguring it <em>is</em> the modify request,
+    /// there is no ApplyChanges to call.
+    /// </remarks>
+    internal sealed class ForwardedMonitoredItem
+    {
+        public ForwardedMonitoredItem(
+            Opc.Ua.Server.MonitoredItem local,
+            RemoteMonitoredItem remote,
+            OptionsMonitor<MonitoredItemOptions> options)
+        {
+            Local = local;
+            Remote = remote;
+            Options = options;
+        }
+
+        public Opc.Ua.Server.MonitoredItem Local { get; }
+        public RemoteMonitoredItem Remote { get; }
+        public OptionsMonitor<MonitoredItemOptions> Options { get; }
+    }
+
     /// <summary>
     /// The information about a client session.
     /// </summary>
@@ -64,8 +109,28 @@ namespace AggregationServer
                 SessionSessionId = value != null ? value.SessionId : NodeId.Null;
             }
         }
-        public Opc.Ua.Client.SessionReconnectHandler ReconnectHandler { get; set; }
         public DateTime LastUsed { get; set; }
+
+        /// <summary>
+        /// The subscription this session forwards to the aggregated server, and the
+        /// options monitor which configures it.
+        /// </summary>
+        internal RemoteSubscription Subscription { get; set; }
+        internal OptionsMonitor<SubscriptionOptions> SubscriptionOptions { get; set; }
+
+        /// <summary>
+        /// The forwarded items, by the id of the local monitored item and by the client
+        /// handle the engine assigned to the remote one.
+        /// </summary>
+        /// <remarks>
+        /// Notifications arrive on a publish worker while the subscription services run
+        /// under <see cref="SubscriptionLock"/>, so these are concurrent rather than
+        /// covered by that lock.
+        /// </remarks>
+        internal ConcurrentDictionary<uint, ForwardedMonitoredItem> ItemsByLocalId { get; }
+            = new ConcurrentDictionary<uint, ForwardedMonitoredItem>();
+        internal ConcurrentDictionary<uint, ForwardedMonitoredItem> ItemsByClientHandle { get; }
+            = new ConcurrentDictionary<uint, ForwardedMonitoredItem>();
 
         /// <summary>
         /// Serializes changes to the subscription forwarded to the aggregated
@@ -95,7 +160,18 @@ namespace AggregationServer
         const uint DefaultSessionTimeout = 60000;
         const int DefaultMetadataRefresh = 300000;
         const int DefaultMetadataInitDelay = 5000;
-        const int DefaultReconnectPeriod = 5000;
+
+        /// <summary>
+        /// How long the node manager waits for a downstream session to close before it
+        /// stops waiting and disposes the session instead.
+        /// </summary>
+        static readonly TimeSpan kCloseTimeout = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// How long a subscription service waits for the V2 engine to apply the monitored
+        /// item changes it made before it reports the results it has.
+        /// </summary>
+        static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(15);
 
         #region Constructors
         /// <summary>
@@ -951,7 +1027,7 @@ namespace AggregationServer
 
             ServerSystemContext systemContext = SystemContext.Copy(context);
 
-            List<Opc.Ua.Client.MonitoredItem> requests = new List<Opc.Ua.Client.MonitoredItem>();
+            List<MonitoredItem> toForward = new List<MonitoredItem>();
 
             for (int ii = 0; ii < monitoredItems.Count; ii++)
             {
@@ -971,18 +1047,10 @@ namespace AggregationServer
                     continue;
                 }
 
-                // create a request.
-                Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(monitoredItem.Id, Server.Telemetry);
-
-                request.StartNodeId = m_mapper.ToRemoteId(monitoredItem.NodeId);
-                request.MonitoringMode = monitoredItem.MonitoringMode;
-                request.SamplingInterval = (int)(monitoredItem.SamplingInterval / 2);
-                request.Handle = monitoredItem;
-
-                requests.Add(request);
+                toForward.Add(monitoredItem);
             }
 
-            if (requests.Count == 0)
+            if (toForward.Count == 0)
             {
                 return;
             }
@@ -995,21 +1063,39 @@ namespace AggregationServer
                 await clientSession.SubscriptionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
-                    Opc.Ua.Client.Subscription target = await GetOrCreateSubscriptionAsync(clientSession, cancellationToken).ConfigureAwait(false);
+                    RemoteSubscription target = GetOrCreateSubscription(clientSession);
 
-                    for (int ii = 0; ii < requests.Count; ii++)
+                    var forwarded = new List<ForwardedMonitoredItem>();
+
+                    foreach (MonitoredItem monitoredItem in toForward)
                     {
-                        target.AddItem(requests[ii]);
+                        var options = new OptionsMonitor<MonitoredItemOptions>(new MonitoredItemOptions {
+                            StartNodeId = m_mapper.ToRemoteId(monitoredItem.NodeId),
+                            AttributeId = Attributes.Value,
+                            MonitoringMode = monitoredItem.MonitoringMode,
+                            SamplingInterval = TimeSpan.FromMilliseconds(monitoredItem.SamplingInterval / 2),
+                            TimestampsToReturn = TimestampsToReturn.Both,
+                        });
+
+                        if (target.MonitoredItems.TryAdd(ForwardedItemName(monitoredItem.Id), options, out RemoteMonitoredItem remote))
+                        {
+                            var pair = new ForwardedMonitoredItem(monitoredItem, remote, options);
+                            clientSession.ItemsByLocalId[monitoredItem.Id] = pair;
+                            clientSession.ItemsByClientHandle[remote.ClientHandle] = pair;
+                            forwarded.Add(pair);
+                        }
                     }
 
-                    await target.ApplyChangesAsync(cancellationToken).ConfigureAwait(false);
+                    // the engine creates the items on its own worker, so the operation
+                    // results only exist once it has caught up.
+                    await WaitForPendingChangesAsync(target, cancellationToken).ConfigureAwait(false);
 
                     // check status.
-                    foreach (Opc.Ua.Client.MonitoredItem request in requests)
+                    foreach (ForwardedMonitoredItem pair in forwarded)
                     {
-                        if (ServiceResult.IsBad(request.Status.Error))
+                        if (ServiceResult.IsBad(pair.Remote.Error))
                         {
-                            ((MonitoredItem)request.Handle).QueueValue(DataValue.Null, request.Status.Error);
+                            pair.Local.QueueValue(DataValue.Null, pair.Remote.Error);
                         }
                     }
                 }
@@ -1023,9 +1109,9 @@ namespace AggregationServer
                 // handle unexpected communication error.
                 ServiceResult error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Could not access external system.");
 
-                foreach (Opc.Ua.Client.MonitoredItem request in requests)
+                foreach (MonitoredItem monitoredItem in toForward)
                 {
-                    ((MonitoredItem)request.Handle).QueueValue(DataValue.Null, error);
+                    monitoredItem.QueueValue(DataValue.Null, error);
                 }
             }
         }
@@ -1038,7 +1124,7 @@ namespace AggregationServer
             IList<IMonitoredItem> monitoredItems,
             CancellationToken cancellationToken = default)
         {
-            List<Opc.Ua.Client.MonitoredItem> remoteItems = new List<Opc.Ua.Client.MonitoredItem>();
+            List<ForwardedMonitoredItem> remoteItems = new List<ForwardedMonitoredItem>();
 
             try
             {
@@ -1047,7 +1133,7 @@ namespace AggregationServer
                 await clientSession.SubscriptionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
-                    Opc.Ua.Client.Subscription target = FindSubscription(clientSession.Session);
+                    RemoteSubscription target = clientSession.Subscription;
 
                     if (target == null)
                     {
@@ -1072,17 +1158,20 @@ namespace AggregationServer
                         }
 
                         // find matching item.
-                        Opc.Ua.Client.MonitoredItem remoteItem = target.FindItemByClientHandle(monitoredItem.Id);
-
-                        if (remoteItem == null)
+                        if (!clientSession.ItemsByLocalId.TryGetValue(monitoredItem.Id, out ForwardedMonitoredItem forwarded))
                         {
                             continue;
                         }
 
-                        //  update item.
-                        remoteItem.MonitoringMode = monitoredItem.MonitoringMode;
-                        remoteItem.SamplingInterval = (int)(monitoredItem.SamplingInterval / 2);
-                        remoteItems.Add(remoteItem);
+                        // update item: reconfiguring the monitor is the modify request.
+                        MonitoringMode mode = monitoredItem.MonitoringMode;
+                        TimeSpan samplingInterval = TimeSpan.FromMilliseconds(monitoredItem.SamplingInterval / 2);
+                        forwarded.Options.Configure(o => o with {
+                            MonitoringMode = mode,
+                            SamplingInterval = samplingInterval,
+                        });
+
+                        remoteItems.Add(forwarded);
                     }
 
                     if (remoteItems.Count == 0)
@@ -1090,14 +1179,14 @@ namespace AggregationServer
                         return;
                     }
 
-                    await target.ApplyChangesAsync(cancellationToken).ConfigureAwait(false);
+                    await WaitForPendingChangesAsync(target, cancellationToken).ConfigureAwait(false);
 
                     // check status.
-                    foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
+                    foreach (ForwardedMonitoredItem forwarded in remoteItems)
                     {
-                        if (ServiceResult.IsBad(monitoredItem.Status.Error))
+                        if (ServiceResult.IsBad(forwarded.Remote.Error))
                         {
-                            ((MonitoredItem)monitoredItem.Handle).QueueValue(DataValue.Null, monitoredItem.Status.Error);
+                            forwarded.Local.QueueValue(DataValue.Null, forwarded.Remote.Error);
                         }
                     }
                 }
@@ -1111,9 +1200,9 @@ namespace AggregationServer
                 // handle unexpected communication error.
                 ServiceResult error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Could not access external system.");
 
-                foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
+                foreach (ForwardedMonitoredItem forwarded in remoteItems)
                 {
-                    ((MonitoredItem)monitoredItem.Handle).QueueValue(DataValue.Null, error);
+                    forwarded.Local.QueueValue(DataValue.Null, error);
                 }
             }
         }
@@ -1133,14 +1222,10 @@ namespace AggregationServer
                 await clientSession.SubscriptionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
-                    Opc.Ua.Client.Subscription target = FindSubscription(clientSession.Session);
-
-                    if (target == null)
+                    if (clientSession.Subscription == null)
                     {
                         return;
                     }
-
-                    bool changed = false;
 
                     for (int ii = 0; ii < monitoredItems.Count; ii++)
                     {
@@ -1160,27 +1245,18 @@ namespace AggregationServer
                         }
 
                         // find matching item.
-                        Opc.Ua.Client.MonitoredItem remoteItem = target.FindItemByClientHandle(monitoredItem.Id);
-
-                        if (remoteItem == null)
+                        if (!clientSession.ItemsByLocalId.TryGetValue(monitoredItem.Id, out ForwardedMonitoredItem forwarded))
                         {
                             continue;
                         }
 
-                        target.RemoveItem(remoteItem);
-                        changed = true;
-                    }
+                        await RemoveForwardedItemAsync(clientSession, forwarded, cancellationToken).ConfigureAwait(false);
 
-                    if (!changed)
-                    {
-                        return;
-                    }
-
-                    await target.ApplyChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                    if (target.MonitoredItemCount == 0)
-                    {
-                        await clientSession.Session.RemoveSubscriptionAsync(target, cancellationToken).ConfigureAwait(false);
+                        if (clientSession.Subscription == null)
+                        {
+                            // the last item is gone and the subscription with it.
+                            return;
+                        }
                     }
                 }
                 finally
@@ -1202,7 +1278,7 @@ namespace AggregationServer
             IList<IMonitoredItem> monitoredItems,
             CancellationToken cancellationToken = default)
         {
-            List<Opc.Ua.Client.MonitoredItem> remoteItems = new List<Opc.Ua.Client.MonitoredItem>();
+            List<ForwardedMonitoredItem> remoteItems = new List<ForwardedMonitoredItem>();
 
             try
             {
@@ -1211,7 +1287,7 @@ namespace AggregationServer
                 await clientSession.SubscriptionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
-                    Opc.Ua.Client.Subscription target = FindSubscription(clientSession.Session);
+                    RemoteSubscription target = clientSession.Subscription;
 
                     if (target == null)
                     {
@@ -1236,15 +1312,15 @@ namespace AggregationServer
                         }
 
                         // find matching item.
-                        Opc.Ua.Client.MonitoredItem remoteItem = target.FindItemByClientHandle(monitoredItem.Id);
-
-                        if (remoteItem == null)
+                        if (!clientSession.ItemsByLocalId.TryGetValue(monitoredItem.Id, out ForwardedMonitoredItem forwarded))
                         {
                             continue;
                         }
 
-                        remoteItem.MonitoringMode = monitoredItem.MonitoringMode;
-                        remoteItems.Add(remoteItem);
+                        MonitoringMode mode = monitoredItem.MonitoringMode;
+                        forwarded.Options.Configure(o => o with { MonitoringMode = mode });
+
+                        remoteItems.Add(forwarded);
                     }
 
                     if (remoteItems.Count == 0)
@@ -1252,14 +1328,14 @@ namespace AggregationServer
                         return;
                     }
 
-                    await target.ApplyChangesAsync(cancellationToken).ConfigureAwait(false);
+                    await WaitForPendingChangesAsync(target, cancellationToken).ConfigureAwait(false);
 
                     // check status.
-                    foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
+                    foreach (ForwardedMonitoredItem forwarded in remoteItems)
                     {
-                        if (ServiceResult.IsBad(monitoredItem.Status.Error))
+                        if (ServiceResult.IsBad(forwarded.Remote.Error))
                         {
-                            ((MonitoredItem)monitoredItem.Handle).QueueValue(DataValue.Null, monitoredItem.Status.Error);
+                            forwarded.Local.QueueValue(DataValue.Null, forwarded.Remote.Error);
                         }
                     }
                 }
@@ -1273,9 +1349,9 @@ namespace AggregationServer
                 // handle unexpected communication error.
                 ServiceResult error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Could not access external system.");
 
-                foreach (Opc.Ua.Client.MonitoredItem monitoredItem in remoteItems)
+                foreach (ForwardedMonitoredItem forwarded in remoteItems)
                 {
-                    ((MonitoredItem)monitoredItem.Handle).QueueValue(DataValue.Null, error);
+                    forwarded.Local.QueueValue(DataValue.Null, error);
                 }
             }
         }
@@ -1324,30 +1400,18 @@ namespace AggregationServer
                     await clientSession.SubscriptionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                     try
                     {
-                        // get the subscription.
-                        Opc.Ua.Client.Subscription target = FindSubscription(clientSession.Session);
-
-                        if (target == null)
+                        if (clientSession.Subscription == null)
                         {
                             return ServiceResult.Good;
                         }
 
                         // find matching item.
-                        Opc.Ua.Client.MonitoredItem remoteItem = target.FindItemByClientHandle(monitoredItem.Id);
-
-                        if (remoteItem == null)
+                        if (!clientSession.ItemsByLocalId.TryGetValue(localItem.Id, out ForwardedMonitoredItem forwarded))
                         {
                             return ServiceResult.Good;
                         }
 
-                        // apply changes.
-                        target.RemoveItem(remoteItem);
-                        await target.ApplyChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                        if (target.MonitoredItemCount == 0)
-                        {
-                            await clientSession.Session.RemoveSubscriptionAsync(target, cancellationToken).ConfigureAwait(false);
-                        }
+                        await RemoveForwardedItemAsync(clientSession, forwarded, cancellationToken).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -1357,37 +1421,39 @@ namespace AggregationServer
                     return ServiceResult.Good;
                 }
 
-                // create a request.
-                Opc.Ua.Client.MonitoredItem request = new Opc.Ua.Client.MonitoredItem(localItem.Id, Server.Telemetry);
+                // create a request. An event item needs its filter in the options it is
+                // created with; the V2 engine does not take one pushed in afterwards.
+                NodeId startNodeId = (localItem.NodeId == ObjectIds.Server || localItem.NodeId == m_root.NodeId)
+                    ? ObjectIds.Server
+                    : m_mapper.ToRemoteId(localItem.NodeId);
 
-                if (localItem.NodeId == ObjectIds.Server || localItem.NodeId == m_root.NodeId)
-                {
-                    request.StartNodeId = ObjectIds.Server;
-                }
-                else
-                {
-                    request.StartNodeId = m_mapper.ToRemoteId(localItem.NodeId);
-                }
-
-                request.AttributeId = Attributes.EventNotifier;
-                request.MonitoringMode = localItem.MonitoringMode;
-                request.SamplingInterval = (int)localItem.SamplingInterval;
-                request.QueueSize = localItem.QueueSize;
-                request.DiscardOldest = true;
-                request.Filter = localItem.Filter;
-                request.Handle = localItem;
+                var options = new OptionsMonitor<MonitoredItemOptions>(new MonitoredItemOptions {
+                    StartNodeId = startNodeId,
+                    AttributeId = Attributes.EventNotifier,
+                    MonitoringMode = localItem.MonitoringMode,
+                    SamplingInterval = TimeSpan.FromMilliseconds(localItem.SamplingInterval),
+                    QueueSize = localItem.QueueSize,
+                    DiscardOldest = true,
+                    Filter = localItem.Filter,
+                });
 
                 await clientSession.SubscriptionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
-                    Opc.Ua.Client.Subscription target = await GetOrCreateSubscriptionAsync(clientSession, cancellationToken).ConfigureAwait(false);
+                    RemoteSubscription target = GetOrCreateSubscription(clientSession);
 
-                    target.AddItem(request);
-                    await target.ApplyChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                    if (ServiceResult.IsBad(request.Status.Error))
+                    if (target.MonitoredItems.TryAdd(ForwardedItemName(localItem.Id), options, out RemoteMonitoredItem remote))
                     {
-                        m_logger.LogError("Could not create event item. {Error}", request.Status.Error.ToLongString());
+                        var pair = new ForwardedMonitoredItem(localItem, remote, options);
+                        clientSession.ItemsByLocalId[localItem.Id] = pair;
+                        clientSession.ItemsByClientHandle[remote.ClientHandle] = pair;
+
+                        await WaitForPendingChangesAsync(target, cancellationToken).ConfigureAwait(false);
+
+                        if (ServiceResult.IsBad(remote.Error))
+                        {
+                            m_logger.LogError("Could not create event item. {Error}", remote.Error.ToLongString());
+                        }
                     }
                 }
                 finally
@@ -1406,68 +1472,121 @@ namespace AggregationServer
 
         #region Notification Callbacks
         /// <summary>
-        /// The delegate used to receive data change notifications via a direct function call instead of a .NET Event.
+        /// Receives the notifications of one downstream subscription and queues them on
+        /// the local monitored items they were forwarded for.
         /// </summary>
-        public void OnDataChangeNotification(Opc.Ua.Client.Subscription subscription, DataChangeNotification notification, ArrayOf<string> stringTable)
+        /// <remarks>
+        /// The V2 engine takes its handler when the subscription is created, so there is
+        /// one of these per client session, holding the pairing maps that replace the
+        /// <c>Handle</c> the classic client monitored item carried.
+        /// </remarks>
+        private sealed class ForwardingHandler : ISubscriptionNotificationHandler
         {
-            for (int ii = 0; ii < notification.MonitoredItems.Count; ii++)
+            public ForwardingHandler(AggregationNodeManager nodeManager, AggregationClientSession clientSession)
             {
-                MonitoredItemNotification remoteValue = notification.MonitoredItems[ii];
-
-                Opc.Ua.Client.MonitoredItem monitoredItem = subscription.FindItemByClientHandle(remoteValue.ClientHandle);
-                MonitoredItem localItem = monitoredItem?.Handle as MonitoredItem;
-
-                if (localItem == null)
-                {
-                    continue;
-                }
-
-                ServiceResult error = null;
-
-                if (remoteValue.Value.StatusCode != StatusCodes.Good)
-                {
-                    error = new ServiceResult(remoteValue.Value.StatusCode, remoteValue.DiagnosticInfo, stringTable);
-                }
-
-                DataValue value = new DataValue(
-                    m_mapper.ToLocalVariant(remoteValue.Value.WrappedValue),
-                    remoteValue.Value.StatusCode,
-                    remoteValue.Value.SourceTimestamp,
-                    DateTime.UtcNow,
-                    remoteValue.Value.SourcePicoseconds,
-                    remoteValue.Value.ServerPicoseconds);
-
-                localItem.QueueValue(value, error);
+                m_nodeManager = nodeManager;
+                m_clientSession = clientSession;
             }
-        }
 
-        /// <summary>
-        /// The delegate used to receive event notifications via a direct function call instead of a .NET Event.
-        /// </summary>
-        public void OnEventNotification(Opc.Ua.Client.Subscription subscription, EventNotificationList notification, ArrayOf<string> stringTable)
-        {
-            for (int ii = 0; ii < notification.Events.Count; ii++)
+            public ValueTask OnDataChangeNotificationAsync(
+                RemoteSubscription subscription,
+                uint sequenceNumber,
+                DateTime publishTime,
+                ReadOnlyMemory<DataValueChange> notifications,
+                PublishState publishStateMask,
+                IReadOnlyList<string> stringTable)
             {
-                EventFieldList e = notification.Events[ii];
+                ReadOnlySpan<DataValueChange> changes = notifications.Span;
 
-                Opc.Ua.Client.MonitoredItem monitoredItem = subscription.FindItemByClientHandle(e.ClientHandle);
-                MonitoredItem localItem = monitoredItem?.Handle as MonitoredItem;
-
-                if (localItem == null)
+                for (int ii = 0; ii < changes.Length; ii++)
                 {
-                    continue;
+                    DataValueChange change = changes[ii];
+
+                    if (change.MonitoredItem == null ||
+                        !m_clientSession.ItemsByClientHandle.TryGetValue(change.MonitoredItem.ClientHandle, out ForwardedMonitoredItem forwarded))
+                    {
+                        continue;
+                    }
+
+                    ServiceResult error = null;
+
+                    if (change.Value.StatusCode != StatusCodes.Good)
+                    {
+                        error = new ServiceResult(change.Value.StatusCode, change.DiagnosticInfo, stringTable.ToArrayOf());
+                    }
+
+                    var value = new DataValue(
+                        m_nodeManager.m_mapper.ToLocalVariant(change.Value.WrappedValue),
+                        change.Value.StatusCode,
+                        change.Value.SourceTimestamp,
+                        DateTime.UtcNow,
+                        change.Value.SourcePicoseconds,
+                        change.Value.ServerPicoseconds);
+
+                    forwarded.Local.QueueValue(value, error);
                 }
 
-                List<Variant> eventFields = new List<Variant>();
-                for (int jj = 0; jj < e.EventFields.Count; jj++)
-                {
-                    eventFields.Add(m_mapper.ToLocalVariant(e.EventFields[jj]));
-                }
-                e.EventFields = eventFields.ToArrayOf();
-                e.ClientHandle = localItem.ClientHandle;
-
-                localItem.QueueEvent(e);
+                return default;
             }
+
+            public ValueTask OnEventDataNotificationAsync(
+                RemoteSubscription subscription,
+                uint sequenceNumber,
+                DateTime publishTime,
+                ReadOnlyMemory<EventNotification> notifications,
+                PublishState publishStateMask,
+                IReadOnlyList<string> stringTable)
+            {
+                ReadOnlySpan<EventNotification> events = notifications.Span;
+
+                for (int ii = 0; ii < events.Length; ii++)
+                {
+                    EventNotification e = events[ii];
+
+                    if (e.MonitoredItem == null ||
+                        !m_clientSession.ItemsByClientHandle.TryGetValue(e.MonitoredItem.ClientHandle, out ForwardedMonitoredItem forwarded))
+                    {
+                        continue;
+                    }
+
+                    // the engine reports the fields alone, so they are wrapped back into the
+                    // EventFieldList the server side queues - and copied out while doing so,
+                    // because the engine may recycle the notification once this returns.
+                    var eventFields = new List<Variant>();
+                    foreach (Variant field in e.Fields)
+                    {
+                        eventFields.Add(m_nodeManager.m_mapper.ToLocalVariant(field));
+                    }
+
+                    forwarded.Local.QueueEvent(new EventFieldList {
+                        ClientHandle = forwarded.Local.ClientHandle,
+                        EventFields = eventFields.ToArrayOf(),
+                    });
+                }
+
+                return default;
+            }
+
+            public ValueTask OnKeepAliveNotificationAsync(
+                RemoteSubscription subscription,
+                uint sequenceNumber,
+                DateTime publishTime,
+                PublishState publishStateMask)
+            {
+                return default;
+            }
+
+            public ValueTask OnSubscriptionStateChangedAsync(
+                RemoteSubscription subscription,
+                Opc.Ua.Client.Subscriptions.SubscriptionState state,
+                PublishState publishStateMask,
+                CancellationToken ct)
+            {
+                return default;
+            }
+
+            private readonly AggregationNodeManager m_nodeManager;
+            private readonly AggregationClientSession m_clientSession;
         }
         #endregion
 
@@ -1535,19 +1654,18 @@ namespace AggregationServer
                         {
                             return clientSession;
                         }
-                        var reconnectHandler = clientSession.ReconnectHandler;
-                        if (reconnectHandler == null)
+                        if (session.Reconnecting)
                         {
-                            // the client session is stale and not reconnecting
-                            m_clients.Remove(sessionId);
-                            staleSession = session;
-                            clientSession = null;
-                        }
-                        else
-                        {
-                            // the client session is busy reconnecting
+                            // the managed session is busy reconnecting and keeps its identity
+                            // while it does, so the caller has to come back rather than start
+                            // a second downstream session.
                             throw new ServiceResultException(StatusCodes.BadNotConnected, "Reconnecting server!");
                         }
+
+                        // the client session is stale and not reconnecting
+                        m_clients.Remove(sessionId);
+                        staleSession = session;
+                        clientSession = null;
                     }
                     else
                     {
@@ -1568,9 +1686,18 @@ namespace AggregationServer
             // close the stale session outside the dictionary lock.
             if (staleSession != null)
             {
+                if (staleSession is Opc.Ua.Client.ManagedSession staleManagedSession)
+                {
+                    staleManagedSession.ConnectionStateChanged -= Client_ConnectionStateChanged;
+                }
+
                 try
                 {
-                    await staleSession.CloseAsync(cancellationToken).ConfigureAwait(false);
+                    // bounded for the same reason as the teardown in CloseDownstreamSessionAsync.
+                    using var closeTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    closeTimeout.CancelAfter(kCloseTimeout);
+
+                    await staleSession.CloseAsync(closeTimeout.Token).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -1588,7 +1715,9 @@ namespace AggregationServer
                 {
                     m_logger.LogInformation("Create Connect Session: {Endpoint} for {SessionName}", m_endpoint, sessionName);
                 }
-                Opc.Ua.Client.ISession session = await new Opc.Ua.Client.DefaultSessionFactory(Server.Telemetry).CreateAsync(
+                // the managed session brings its own connection state machine and reconnect
+                // policy, so no SessionReconnectHandler is wired up here.
+                Opc.Ua.Client.ISession session = await new Opc.Ua.Client.ManagedSessionFactory(Server.Telemetry).CreateAsync(
                     m_configuration,
                     m_reverseConnectManager,
                     m_endpoint,
@@ -1600,7 +1729,11 @@ namespace AggregationServer
                     preferredLocales,
                     cancellationToken).ConfigureAwait(false);
 
-                session.KeepAlive += Client_KeepAlive;
+                if (session is Opc.Ua.Client.ManagedSession managedSession)
+                {
+                    managedSession.ConnectionStateChanged += Client_ConnectionStateChanged;
+                }
+
                 lock (m_clientsLock)
                 {
                     clientSession.Session = session;
@@ -1803,47 +1936,120 @@ namespace AggregationServer
         /// aggregated server, creating it on first use. The caller must hold the
         /// subscription lock of the client session.
         /// </summary>
-        private async Task<Opc.Ua.Client.Subscription> GetOrCreateSubscriptionAsync(AggregationClientSession clientSession, CancellationToken cancellationToken)
+        /// <summary>
+        /// Returns the subscription this client session forwards to the aggregated
+        /// server, creating it on first use.
+        /// </summary>
+        /// <remarks>
+        /// The handler is created here rather than cached anywhere: it closes over the
+        /// client session whose items it resolves, and a session which went stale is
+        /// replaced by a new object, so a cached handler would resolve notifications
+        /// against the maps of the session that is gone.
+        /// </remarks>
+        private RemoteSubscription GetOrCreateSubscription(AggregationClientSession clientSession)
         {
-            Opc.Ua.Client.Subscription target = FindSubscription(clientSession.Session);
-
-            if (target != null)
+            if (clientSession.Subscription != null)
             {
-                return target;
+                return clientSession.Subscription;
             }
 
-#pragma warning disable CA2000 // Justification: Subscription ownership is transferred to the client session.
-            Opc.Ua.Client.Subscription subscription = new Opc.Ua.Client.Subscription(Server.Telemetry);
-#pragma warning restore CA2000
+            if (!clientSession.Session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                throw new ServiceResultException(
+                    StatusCodes.BadNotSupported,
+                    "The downstream session does not use the V2 subscription engine.");
+            }
 
-            subscription.PublishingInterval = 250;
-            subscription.KeepAliveCount = 100;
-            subscription.LifetimeCount = 1000;
-            subscription.MaxNotificationsPerPublish = 10000;
-            subscription.Priority = 1;
-            subscription.PublishingEnabled = true;
-            subscription.TimestampsToReturn = TimestampsToReturn.Both;
-            subscription.DisableMonitoredItemCache = true;
-            subscription.FastDataChangeCallback = OnDataChangeNotification;
-            subscription.FastEventCallback = OnEventNotification;
+            clientSession.SubscriptionOptions = new OptionsMonitor<SubscriptionOptions>(new SubscriptionOptions {
+                PublishingInterval = TimeSpan.FromMilliseconds(250),
+                KeepAliveCount = 100,
+                LifetimeCount = 1000,
+                MaxNotificationsPerPublish = 10000,
+                Priority = 1,
+                PublishingEnabled = true,
+            });
 
-            clientSession.Session.AddSubscription(subscription);
-            await subscription.CreateAsync(cancellationToken).ConfigureAwait(false);
+            clientSession.Subscription = manager.Add(
+                new ForwardingHandler(this, clientSession),
+                clientSession.SubscriptionOptions);
 
-            return subscription;
+            return clientSession.Subscription;
         }
 
         /// <summary>
-        /// Returns the forwarding subscription of the session, or null.
+        /// The name the forwarded item is registered under in the V2 engine.
         /// </summary>
-        private static Opc.Ua.Client.Subscription FindSubscription(Opc.Ua.Client.ISession client)
+        /// <remarks>
+        /// The engine keys its items by name, so the id of the local monitored item is
+        /// what pairs the two - the role the client handle played when the item was
+        /// constructed with it.
+        /// </remarks>
+        private static string ForwardedItemName(uint localId)
         {
-            foreach (Opc.Ua.Client.Subscription current in client.Subscriptions)
+            return localId.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Waits until the V2 engine has applied the monitored item changes.
+        /// </summary>
+        /// <remarks>
+        /// The engine applies added, modified and removed items on its own worker rather
+        /// than on an ApplyChanges call, so the operation results a service has to report
+        /// only exist once that worker has caught up.
+        /// </remarks>
+        private static async Task WaitForPendingChangesAsync(RemoteSubscription subscription, CancellationToken cancellationToken)
+        {
+            DateTime deadline = DateTime.UtcNow.Add(kApplyTimeout);
+
+            while (HasPendingChanges(subscription))
             {
-                return current;
+                if (DateTime.UtcNow >= deadline)
+                {
+                    return;
+                }
+
+                await Task.Delay(25, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private static bool HasPendingChanges(RemoteSubscription subscription)
+        {
+            foreach (RemoteMonitoredItem monitoredItem in subscription.MonitoredItems.Items)
+            {
+                if (monitoredItem is IMonitoredItemApplyState applyState && applyState.HasPendingChanges)
+                {
+                    return true;
+                }
             }
 
-            return null;
+            return false;
+        }
+
+        /// <summary>
+        /// Removes a forwarded item from the engine and from the pairing maps, and drops
+        /// the subscription once the last item is gone.
+        /// </summary>
+        private static async Task RemoveForwardedItemAsync(
+            AggregationClientSession clientSession,
+            ForwardedMonitoredItem forwarded,
+            CancellationToken cancellationToken)
+        {
+            clientSession.ItemsByLocalId.TryRemove(forwarded.Local.Id, out _);
+            clientSession.ItemsByClientHandle.TryRemove(forwarded.Remote.ClientHandle, out _);
+
+            clientSession.Subscription.MonitoredItems.TryRemove(forwarded.Remote.ClientHandle);
+
+            await WaitForPendingChangesAsync(clientSession.Subscription, cancellationToken).ConfigureAwait(false);
+
+            if (clientSession.ItemsByLocalId.IsEmpty)
+            {
+                // DisposeAsync deletes the subscription on the server and drops it from
+                // the manager; there is no RemoveSubscription in the V2 engine.
+                RemoteSubscription subscription = clientSession.Subscription;
+                clientSession.Subscription = null;
+                clientSession.SubscriptionOptions = null;
+                await subscription.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -1887,15 +2093,45 @@ namespace AggregationServer
         {
             try
             {
-                clientSession.ReconnectHandler?.Dispose();
+                clientSession.ItemsByLocalId.Clear();
+                clientSession.ItemsByClientHandle.Clear();
+
+                // the subscription goes with the session, so it only has to be dropped
+                // from the engine - closing the session deletes it on the server.
+                RemoteSubscription subscription = clientSession.Subscription;
+                clientSession.Subscription = null;
+                clientSession.SubscriptionOptions = null;
+
+                if (subscription != null)
+                {
+                    try
+                    {
+                        await subscription.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception e)
+                    {
+                        m_logger.LogDebug(e, "Error disposing the forwarding subscription.");
+                    }
+                }
 
                 Opc.Ua.Client.ISession session = clientSession.Session;
                 if (session != null)
                 {
-                    session.KeepAlive -= Client_KeepAlive;
+                    if (session is Opc.Ua.Client.ManagedSession managedSession)
+                    {
+                        managedSession.ConnectionStateChanged -= Client_ConnectionStateChanged;
+                    }
+
+                    // a managed session whose close runs into a reconnect attempt waits it
+                    // out, so bound the close and let the dispose cancel what is in flight.
+                    using var closeTimeout = new CancellationTokenSource(kCloseTimeout);
                     try
                     {
-                        await session.CloseAsync().ConfigureAwait(false);
+                        await session.CloseAsync(closeTimeout.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        m_logger.LogWarning("Timed out closing the downstream session for client {SessionId}.", clientSessionId);
                     }
                     finally
                     {
@@ -1916,81 +2152,61 @@ namespace AggregationServer
             }
         }
 
-        private void Client_KeepAlive(Opc.Ua.Client.ISession session, Opc.Ua.Client.KeepAliveEventArgs e)
+        /// <summary>
+        /// Reports the connection state changes of a downstream session.
+        /// </summary>
+        /// <remarks>
+        /// The managed session detects the broken connection, reconnects on its own
+        /// schedule and keeps the same <see cref="Opc.Ua.Client.ISession"/> instance while
+        /// it does, so there is nothing to reconnect or swap out here - only to report.
+        /// This replaces the keep-alive handler which used to drive a
+        /// <c>SessionReconnectHandler</c> itself, and with it the case where a
+        /// synchronously failing keep-alive never incremented the request counters the
+        /// reconnect was gated on (issue #312).
+        /// </remarks>
+        private void Client_ConnectionStateChanged(object sender, Opc.Ua.Client.ConnectionStateChangedEventArgs e)
         {
-            if (e.Status != null && ServiceResult.IsNotGood(e.Status))
-            {
-                if (m_logger.IsEnabled(LogLevel.Debug))
-                {
-                    m_logger.LogDebug("{Status} {OutstandingRequestCount}/{DefunctRequestCount}", e.Status, session.OutstandingRequestCount, session.DefunctRequestCount);
-                }
-                Opc.Ua.Client.SessionReconnectHandler reconnectHandler;
-                // Any not-good keep-alive status means the connection to the downstream
-                // server is broken, so start reconnecting immediately. Previously this was
-                // gated on OutstandingRequestCount + DefunctRequestCount >= 3, but when a
-                // keep-alive read fails synchronously (e.g. BadConnectionClosed after the
-                // downstream server is restarted or the network is lost) those counters are
-                // never incremented, so the reconnect logic never triggered (issue #312).
-                if (!session.SessionId.IsNull)
-                {
-                    lock (m_clientsLock)
-                    {
-                        AggregationClientSession clientSession = m_clients.Where(c => c.Value?.SessionSessionId == session.SessionId).FirstOrDefault().Value;
-                        if (clientSession != null && clientSession.ReconnectHandler == null)
-                        {
-#pragma warning disable CA1873 // Justification: Sample logging keeps existing message formatting.
-                            m_logger.LogInformation("--- RECONNECTING --- SessionId: {SessionId}", clientSession.ClientSessionId);
-#pragma warning restore CA1873
-                            reconnectHandler = new Opc.Ua.Client.SessionReconnectHandler(Server.Telemetry, true);
-                            reconnectHandler.BeginReconnect(session, m_reverseConnectManager, DefaultReconnectPeriod, Client_ReconnectComplete);
-                            clientSession.ReconnectHandler = reconnectHandler;
-                            e.CancelKeepAlive = true;
-                        }
-                        else if (clientSession == null)
-                        {
-                            m_logger.LogWarning("--- KEEP ALIVE for stale session --- SessionId: {SessionId}", session.SessionId);
-                        }
-                    }
-                }
-            }
-        }
-
-        private void Client_ReconnectComplete(object sender, EventArgs e)
-        {
-            // ignore callbacks from discarded objects.
-            Opc.Ua.Client.SessionReconnectHandler reconnectHandler = sender as Opc.Ua.Client.SessionReconnectHandler;
-            if (reconnectHandler == null)
+            if (sender is not Opc.Ua.Client.ISession session || session.SessionId.IsNull)
             {
                 return;
             }
 
+            NodeId clientSessionId;
             lock (m_clientsLock)
             {
-                var session = reconnectHandler.Session;
-                AggregationClientSession clientSession = m_clients.Where(c => Object.ReferenceEquals(reconnectHandler, c.Value?.ReconnectHandler)).FirstOrDefault().Value;
+                AggregationClientSession clientSession = m_clients
+                    .Where(c => c.Value?.SessionSessionId == session.SessionId)
+                    .FirstOrDefault().Value;
+
                 if (clientSession == null)
                 {
-#pragma warning disable CA1873 // Justification: Sample logging keeps existing message formatting.
-                    m_logger.LogInformation("--- RECONNECTED --- SessionId: {SessionId} but client session was not found.", session?.SessionId);
-#pragma warning restore CA1873
+                    m_logger.LogWarning("--- {State} for stale session --- SessionId: {SessionId}", e.NewState, session.SessionId);
                     return;
                 }
 
-                clientSession.ReconnectHandler = null;
-                Opc.Ua.Client.Session newSession = session as Opc.Ua.Client.Session;
-                if (newSession != null && !ReferenceEquals(newSession, clientSession.Session))
-                {
-                    var oldSession = clientSession.Session;
-                    oldSession.KeepAlive -= Client_KeepAlive;
-                    newSession.KeepAlive += Client_KeepAlive;
-                    clientSession.Session = newSession;
-                    oldSession?.Dispose();
-                }
-                reconnectHandler.Dispose();
-#pragma warning disable CA1873 // Justification: Sample logging keeps existing message formatting.
-                m_logger.LogInformation("--- RECONNECTED --- SessionId: {SessionId}", clientSession.ClientSessionId);
-#pragma warning restore CA1873
+                clientSessionId = clientSession.ClientSessionId;
             }
+
+#pragma warning disable CA1873 // Justification: Sample logging keeps existing message formatting.
+            switch (e.NewState)
+            {
+                case Opc.Ua.Client.ConnectionState.Reconnecting:
+                case Opc.Ua.Client.ConnectionState.Failover:
+                    m_logger.LogInformation("--- RECONNECTING (attempt {Attempt}) --- SessionId: {SessionId}", e.ReconnectAttempt, clientSessionId);
+                    break;
+
+                case Opc.Ua.Client.ConnectionState.Connected:
+                    if (e.PreviousState is Opc.Ua.Client.ConnectionState.Reconnecting or Opc.Ua.Client.ConnectionState.Failover)
+                    {
+                        m_logger.LogInformation("--- RECONNECTED --- SessionId: {SessionId}", clientSessionId);
+                    }
+                    break;
+
+                case Opc.Ua.Client.ConnectionState.Disconnected:
+                    m_logger.LogInformation("--- DISCONNECTED ({Error}) --- SessionId: {SessionId}", e.Error, clientSessionId);
+                    break;
+            }
+#pragma warning restore CA1873
         }
 
         /// <summary>
