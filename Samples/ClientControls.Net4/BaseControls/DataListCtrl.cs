@@ -766,7 +766,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (extension.TryGetValue(out IEncodeable encodeable, ServiceMessageContext.CreateEmpty(null)))
                     {
-                        return encodeable.GetType().Name;
+                        return VariantFieldCollection.GetTypeDisplayName(encodeable);
                     }
 
                     return value.ToString();
@@ -818,7 +818,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (extension.TryGetValue(out IEncodeable encodeable, ServiceMessageContext.CreateEmpty(null)))
                 {
-                    return encodeable.GetType().Name;
+                    return VariantFieldCollection.GetTypeDisplayName(encodeable);
                 }
             }
 

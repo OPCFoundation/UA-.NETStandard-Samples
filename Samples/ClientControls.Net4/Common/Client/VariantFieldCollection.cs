@@ -179,6 +179,28 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
+        /// Returns the display name of a structure's data type. Dynamically
+        /// loaded custom types all share one stand-in CLR type, so their UA
+        /// type name is preferred over the CLR type name.
+        /// </summary>
+        public static string GetTypeDisplayName(IEncodeable value)
+        {
+            if (value == null)
+            {
+                return String.Empty;
+            }
+
+#pragma warning disable UA_NETStandard_1 // Experimental IType API required in 2.0 to read the UA type name.
+            if (value is IType type && !String.IsNullOrEmpty(type.XmlName?.Name))
+            {
+                return type.XmlName.Name;
+            }
+#pragma warning restore UA_NETStandard_1
+
+            return value.GetType().Name;
+        }
+
+        /// <summary>
         /// Applies the current field values to a clone of the structure and
         /// returns the updated clone.
         /// </summary>

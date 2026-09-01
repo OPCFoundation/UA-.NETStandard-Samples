@@ -389,7 +389,7 @@ namespace Opc.Ua.Sample.Controls
                     m_preferredLocales?.ToArray(),
                     ct);
 
-                var typeSystemLoader = new ComplexTypeSystemFactory(m_telemetry).Create(session);
+                var typeSystemLoader = ComplexTypeSystemClientExtensions.Create(session, m_telemetry);
                 _ = await typeSystemLoader.LoadAsync(ct: ct);
 
                 OpenComplete(session);

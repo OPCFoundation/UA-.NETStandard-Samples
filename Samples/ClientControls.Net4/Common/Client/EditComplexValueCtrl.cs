@@ -860,7 +860,7 @@ namespace Opc.Ua.Client.Controls.Common
 
                 if (extension.TryGetValue(out IEncodeable encodeable, GetMessageContext()))
                 {
-                    return encodeable.GetType().Name;
+                    return VariantFieldCollection.GetTypeDisplayName(encodeable);
                 }
             }
 
