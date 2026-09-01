@@ -366,7 +366,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-28 test cases, about a minute, Windows only. For each WinForms sample client the test
+29 test cases, about a minute, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 

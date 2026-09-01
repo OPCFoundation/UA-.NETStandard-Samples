@@ -46,6 +46,7 @@ namespace Quickstarts.RoleManagement.Client
             this.HelpMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Help_ContentsMI = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusBar = new System.Windows.Forms.StatusStrip();
+            this.ActionStatusLB = new System.Windows.Forms.ToolStripStatusLabel();
             this.IdentityPN = new System.Windows.Forms.Panel();
             this.IdentityHintLB = new System.Windows.Forms.Label();
             this.IdentityCB = new System.Windows.Forms.ComboBox();
@@ -142,10 +143,17 @@ namespace Quickstarts.RoleManagement.Client
             //
             // StatusBar
             //
+            this.StatusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ActionStatusLB});
             this.StatusBar.Location = new System.Drawing.Point(0, 594);
             this.StatusBar.Name = "StatusBar";
             this.StatusBar.Size = new System.Drawing.Size(884, 22);
             this.StatusBar.TabIndex = 2;
+            //
+            // ActionStatusLB
+            //
+            this.ActionStatusLB.Name = "ActionStatusLB";
+            this.ActionStatusLB.Size = new System.Drawing.Size(0, 17);
             //
             // IdentityPN
             //
@@ -469,6 +477,7 @@ namespace Quickstarts.RoleManagement.Client
 
         private System.Windows.Forms.MenuStrip MenuBar;
         private System.Windows.Forms.StatusStrip StatusBar;
+        private System.Windows.Forms.ToolStripStatusLabel ActionStatusLB;
         private System.Windows.Forms.ToolStripMenuItem ServerMI;
         private System.Windows.Forms.ToolStripMenuItem Server_DiscoverMI;
         private System.Windows.Forms.ToolStripMenuItem Server_ConnectMI;

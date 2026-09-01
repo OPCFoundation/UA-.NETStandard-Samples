@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -106,6 +107,12 @@ namespace Quickstarts.RoleManagement.Client
         private readonly ITelemetryContext m_telemetry;
         private ISession m_session;
         private NodeId m_machineId;
+
+        /// <summary>
+        /// The Reset method of the machine, as this Session browsed it, or null when the
+        /// Session may not see it.
+        /// </summary>
+        private NodeId m_resetId;
         private readonly Dictionary<NodeId, string> m_roleNames = new Dictionary<NodeId, string>();
         #endregion
 
@@ -193,6 +200,7 @@ namespace Quickstarts.RoleManagement.Client
                 if (m_session == null)
                 {
                     m_machineId = NodeId.Null;
+                    m_resetId = NodeId.Null;
                     NodesLV.Items.Clear();
                     RolesLV.Items.Clear();
                     SetButtonsEnabled(false);
@@ -347,15 +355,15 @@ namespace Quickstarts.RoleManagement.Client
                     return;
                 }
 
-                NodeId methodId = await ResolveAsync(m_machineId, ModelNames.Reset).ConfigureAwait(true);
-
-                if (methodId.IsNull)
+                if (m_resetId.IsNull)
                 {
-                    Report("Calling Reset", StatusCodes.BadNotFound);
+                    // the method is not in the address space this Session can see, so it was
+                    // not granted Browse on it - which is a refusal in its own right
+                    Report("Calling Reset", StatusCodes.BadUserAccessDenied);
                     return;
                 }
 
-                CallMethodResult result = await CallAsync(m_machineId, methodId).ConfigureAwait(true);
+                CallMethodResult result = await CallAsync(m_machineId, m_resetId).ConfigureAwait(true);
 
                 Report("Calling Reset", result.StatusCode);
 
@@ -493,6 +501,7 @@ namespace Quickstarts.RoleManagement.Client
         private async Task<ArrayOf<NodeId>> LoadMachineAsync()
         {
             NodesLV.Items.Clear();
+            m_resetId = NodeId.Null;
 
             if (m_machineId.IsNull)
             {
@@ -528,6 +537,15 @@ namespace Quickstarts.RoleManagement.Client
                     NodeId = nodeId,
                     IsMethod = reference.NodeClass == NodeClass.Method,
                 };
+
+                // The node ids of the model come from this browse rather than from a browse
+                // path, so the namespace index is whatever the server assigned and the client
+                // never has to guess it. Comparing the browse name is safe here because the
+                // browse is scoped to the children of the machine.
+                if (row.IsMethod && string.Equals(row.Name, ModelNames.Reset, StringComparison.Ordinal))
+                {
+                    m_resetId = nodeId;
+                }
 
                 string value = string.Empty;
                 string status = string.Empty;
@@ -663,6 +681,17 @@ namespace Quickstarts.RoleManagement.Client
         /// <summary>
         /// Follows one hierarchical browse name from a node.
         /// </summary>
+        /// <remarks>
+        /// Only for browse names of the STANDARD address space, which are in namespace zero -
+        /// the Methods and Properties of a Role, for instance. A browse name of the sample's
+        /// own model is in the model's namespace, and a <see cref="QualifiedName"/> built from
+        /// a bare string is in namespace zero, so passing one here silently resolves to
+        /// nothing. The nodes of the model are taken from the browse in
+        /// <see cref="LoadMachineAsync"/> instead, which carries whatever namespace index the
+        /// server assigned.
+        /// </remarks>
+        /// <param name="startingNode">The node to start at.</param>
+        /// <param name="browseName">A browse name in namespace zero.</param>
         private async Task<NodeId> ResolveAsync(NodeId startingNode, string browseName)
         {
             var browsePath = new BrowsePath {
@@ -737,14 +766,16 @@ namespace Quickstarts.RoleManagement.Client
         /// <summary>
         /// Reports what the server answered to an operation the user asked for.
         /// </summary>
+        /// <remarks>
+        /// The status bar rather than a message box: half the point of this sample is to try
+        /// an operation as one account after another and compare the refusals, and a modal
+        /// dialog between every click makes that tedious. It also keeps the buttons drivable
+        /// from a test, which a modal dialog does not.
+        /// </remarks>
         private void Report(string what, StatusCode status)
         {
-            MessageBox.Show(
-                this,
-                $"{what} answered {status}.",
-                this.Text,
-                MessageBoxButtons.OK,
-                StatusCode.IsGood(status) ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+            ActionStatusLB.Text = $"{what} answered {status}";
+            ActionStatusLB.ForeColor = StatusCode.IsGood(status) ? Color.Empty : Color.Red;
         }
 
         /// <summary>
