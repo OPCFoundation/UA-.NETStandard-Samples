@@ -120,6 +120,15 @@ account to see both change.
   Role, so an ordinary Session cannot browse to `AddIdentity` at all. The client shows
   *(not visible to this session)* in the identities column rather than an error.
 
+## What this sample does not cover
+
+Part 18 is larger than one sample. The identity criteria other than `UserName`, the
+`Applications` and `Endpoints` filters of a Role, the §5 user management model, event and
+history permissions, `AccessRestrictions`, namespace-level default permissions, the audit
+event the stack already raises for every role change, and a persistent `IRoleManager` are all
+outside it. They are listed, with what each would take,
+in [#836](https://github.com/OPCFoundation/UA-.NETStandard-Samples/issues/836).
+
 ## Tests
 
 `Tests/SampleNodeManagers.Tests/RoleManagementNodeManagerTests.cs` (tier 1.5) drives all of
