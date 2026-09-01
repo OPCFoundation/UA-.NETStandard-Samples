@@ -7,6 +7,7 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -263,6 +264,121 @@ namespace Opc.Ua.Samples.Tests
                 Assert.That(read.ManufacturerName, Is.EqualTo("Cube"), "ManufacturerName comes from the two wheeler.");
                 Assert.That(read.NoOfGears, Is.EqualTo(10u), "NoOfGears is the bicycle's own field.");
             });
+        }
+
+        /// <summary>
+        /// A property of the sample can be subscribed to and reports its current value.
+        /// </summary>
+        /// <remarks>
+        /// Monitored items go through the monitored-item manager of the node manager,
+        /// which is a part the migration to <c>AsyncCustomNodeManager</c> replaces
+        /// wholesale, so the subscription path gets its own pin.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task SubscribingToTheLotTypeDeliversTheCurrentValue(CancellationToken ct)
+        {
+            var lotType = new NodeId(
+                InstanceVariables.ParkingLot_LotType,
+                NamespaceIndex(InstancesNamespace));
+
+            DataValue read = await SessionOps.ReadValueAsync(Session, lotType, ct).ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(read.StatusCode),
+                Is.True,
+                $"Reading the lot type failed: {read.StatusCode}");
+
+            await using DataChangeCapture capture = await DataChangeCapture
+                .CreateAsync(Session, lotType, ct)
+                .ConfigureAwait(false);
+
+            DataValue reported = await capture.NextAsync(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"LotType: read {read.WrappedValue}, subscription reported {reported.WrappedValue}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(reported.StatusCode),
+                Is.True,
+                $"The subscription reported a bad status: {reported.StatusCode}");
+
+            Assert.That(
+                reported.WrappedValue,
+                Is.EqualTo(read.WrappedValue),
+                "The subscription has to report the same value a read returns.");
+        }
+
+        /// <summary>
+        /// A variable with a custom structure type accepts a write which changes its
+        /// value, and serves the new value back.
+        /// </summary>
+        /// <remarks>
+        /// The bicycle round trip above writes the same vehicle the sample ships, so it
+        /// alone cannot tell a landed write from a served default. This test writes a
+        /// car the address space never contained and reads it back. The original value
+        /// is restored at the end, so the other tests of the fixture see the address
+        /// space the sample shipped no matter in which order NUnit runs them.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task WritingAStructuredValueRoundTrips(CancellationToken ct)
+        {
+            RegisterGeneratedDataTypes();
+
+            DataValue before = await SessionOps
+                .ReadValueAsync(Session, PrimaryVehicle, ct)
+                .ConfigureAwait(false);
+
+            var written = new CarType {
+                Make = "Rimac",
+                Model = "Nevera",
+                Engine = EngineType.Electric,
+                NoOfPassengers = 2,
+            };
+
+            StatusCode result = await SessionOps
+                .WriteValueAsync(Session, PrimaryVehicle, new Variant(new ExtensionObject(written)), ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(result),
+                Is.True,
+                $"Writing the primary vehicle failed: {result}");
+
+            DataValue after = await SessionOps
+                .ReadValueAsync(Session, PrimaryVehicle, ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"PrimaryVehicle after write: {after.WrappedValue}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                after.WrappedValue.TryGetValue(out ExtensionObject encoded),
+                Is.True,
+                "The written structure has to come back as an extension object.");
+
+            Assert.That(
+                encoded.TryGetValue(out CarType car),
+                Is.True,
+                "The value has to decode into the structure that was written.");
+
+            Assert.Multiple(() => {
+                Assert.That(car.Make, Is.EqualTo("Rimac"), "The write lost the content of the structure.");
+                Assert.That(car.NoOfPassengers, Is.EqualTo(2u), "The write lost the content of the structure.");
+            });
+
+            // restore the value the sample shipped.
+            StatusCode restored = await SessionOps
+                .WriteValueAsync(Session, PrimaryVehicle, before.WrappedValue, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(restored),
+                Is.True,
+                $"Restoring the primary vehicle failed: {restored}");
         }
 
         private NodeId PrimaryVehicle => new(

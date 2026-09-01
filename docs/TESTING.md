@@ -310,7 +310,7 @@ What each fixture pins down, in one line:
 |---|---|
 | Empty | The hand-built trigger, its 2x2 matrix property, and the sample's own reference type in both directions |
 | Boiler (Workshop) | The boiler from the node set and the one built in code; the simulation counts one below 100 and the other below 20 |
-| DataTypes | Custom structures with both encodings, an instance from a second node set carrying a value of a type from the first |
+| DataTypes | Custom structures with both encodings, an instance from a second node set carrying a value of a type from the first, a structured value surviving a write round trip, and a subscription reporting the current value |
 | Views | The same node browsed through two views shows two different sets of children |
 | SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing |
 | Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
