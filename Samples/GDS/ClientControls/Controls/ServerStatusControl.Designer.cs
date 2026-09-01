@@ -37,7 +37,20 @@
         {
             this.components = new System.ComponentModel.Container();
             this.RegistrationButtonsPanel = new System.Windows.Forms.Panel();
+            this.CancelChangesButton = new System.Windows.Forms.Button();
             this.ApplyChangesButton = new System.Windows.Forms.Button();
+            this.SupportsTransactionsLabel = new System.Windows.Forms.Label();
+            this.SupportsTransactionsTextBox = new System.Windows.Forms.Label();
+            this.HasSecureElementLabel = new System.Windows.Forms.Label();
+            this.HasSecureElementTextBox = new System.Windows.Forms.Label();
+            this.InApplicationSetupLabel = new System.Windows.Forms.Label();
+            this.InApplicationSetupTextBox = new System.Windows.Forms.Label();
+            this.TransactionResultLabel = new System.Windows.Forms.Label();
+            this.TransactionResultTextBox = new System.Windows.Forms.Label();
+            this.TransactionTimesLabel = new System.Windows.Forms.Label();
+            this.TransactionTimesTextBox = new System.Windows.Forms.Label();
+            this.TransactionAffectsLabel = new System.Windows.Forms.Label();
+            this.TransactionAffectsTextBox = new System.Windows.Forms.Label();
             this.ServerStatusPanel = new System.Windows.Forms.Panel();
             this.ServerBrowseControl = new Opc.Ua.Client.Controls.BrowseNodeCtrl();
             this.ServerStatusFieldsPanel = new System.Windows.Forms.TableLayoutPanel();
@@ -71,6 +84,7 @@
             // RegistrationButtonsPanel
             // 
             this.RegistrationButtonsPanel.BackColor = System.Drawing.Color.MidnightBlue;
+            this.RegistrationButtonsPanel.Controls.Add(this.CancelChangesButton);
             this.RegistrationButtonsPanel.Controls.Add(this.ApplyChangesButton);
             this.RegistrationButtonsPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.RegistrationButtonsPanel.Location = new System.Drawing.Point(0, 612);
@@ -93,9 +107,26 @@
             this.ApplyChangesButton.Click += new System.EventHandler(this.ApplyChangesButton_Click);
             this.ApplyChangesButton.MouseEnter += new System.EventHandler(this.Button_MouseEnter);
             this.ApplyChangesButton.MouseLeave += new System.EventHandler(this.Button_MouseLeave);
-            // 
+            //
+            // CancelChangesButton
+            //
+            this.CancelChangesButton.BackColor = System.Drawing.Color.MidnightBlue;
+            this.CancelChangesButton.Dock = System.Windows.Forms.DockStyle.Left;
+            this.CancelChangesButton.Enabled = false;
+            this.CancelChangesButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.CancelChangesButton.ForeColor = System.Drawing.Color.White;
+            this.CancelChangesButton.Location = new System.Drawing.Point(129, 0);
+            this.CancelChangesButton.Name = "CancelChangesButton";
+            this.CancelChangesButton.Size = new System.Drawing.Size(129, 32);
+            this.CancelChangesButton.TabIndex = 4;
+            this.CancelChangesButton.Text = "Cancel Changes";
+            this.CancelChangesButton.UseVisualStyleBackColor = false;
+            this.CancelChangesButton.Click += new System.EventHandler(this.CancelChangesButton_Click);
+            this.CancelChangesButton.MouseEnter += new System.EventHandler(this.Button_MouseEnter);
+            this.CancelChangesButton.MouseLeave += new System.EventHandler(this.Button_MouseLeave);
+            //
             // ServerStatusPanel
-            // 
+            //
             this.ServerStatusPanel.Controls.Add(this.ServerBrowseControl);
             this.ServerStatusPanel.Controls.Add(this.ServerStatusFieldsPanel);
             this.ServerStatusPanel.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -108,9 +139,9 @@
             // 
             this.ServerBrowseControl.AttributesListCollapsed = false;
             this.ServerBrowseControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ServerBrowseControl.Location = new System.Drawing.Point(0, 230);
+            this.ServerBrowseControl.Location = new System.Drawing.Point(0, 350);
             this.ServerBrowseControl.Name = "ServerBrowseControl";
-            this.ServerBrowseControl.Size = new System.Drawing.Size(879, 382);
+            this.ServerBrowseControl.Size = new System.Drawing.Size(879, 262);
             this.ServerBrowseControl.SplitterDistance = 387;
             this.ServerBrowseControl.TabIndex = 1;
             this.ServerBrowseControl.View = null;
@@ -120,6 +151,18 @@
             this.ServerStatusFieldsPanel.ColumnCount = 2;
             this.ServerStatusFieldsPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.ServerStatusFieldsPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.ServerStatusFieldsPanel.Controls.Add(this.TransactionAffectsTextBox, 1, 16);
+            this.ServerStatusFieldsPanel.Controls.Add(this.TransactionAffectsLabel, 0, 16);
+            this.ServerStatusFieldsPanel.Controls.Add(this.TransactionTimesTextBox, 1, 15);
+            this.ServerStatusFieldsPanel.Controls.Add(this.TransactionTimesLabel, 0, 15);
+            this.ServerStatusFieldsPanel.Controls.Add(this.TransactionResultTextBox, 1, 14);
+            this.ServerStatusFieldsPanel.Controls.Add(this.TransactionResultLabel, 0, 14);
+            this.ServerStatusFieldsPanel.Controls.Add(this.InApplicationSetupTextBox, 1, 13);
+            this.ServerStatusFieldsPanel.Controls.Add(this.InApplicationSetupLabel, 0, 13);
+            this.ServerStatusFieldsPanel.Controls.Add(this.HasSecureElementTextBox, 1, 12);
+            this.ServerStatusFieldsPanel.Controls.Add(this.HasSecureElementLabel, 0, 12);
+            this.ServerStatusFieldsPanel.Controls.Add(this.SupportsTransactionsTextBox, 1, 11);
+            this.ServerStatusFieldsPanel.Controls.Add(this.SupportsTransactionsLabel, 0, 11);
             this.ServerStatusFieldsPanel.Controls.Add(this.ShutdownReasonTextBox, 1, 10);
             this.ServerStatusFieldsPanel.Controls.Add(this.ShutdownReasonLabel, 0, 10);
             this.ServerStatusFieldsPanel.Controls.Add(this.SecondsUntilShutdownTextBox, 1, 9);
@@ -147,7 +190,7 @@
             this.ServerStatusFieldsPanel.Margin = new System.Windows.Forms.Padding(2);
             this.ServerStatusFieldsPanel.Name = "ServerStatusFieldsPanel";
             this.ServerStatusFieldsPanel.Padding = new System.Windows.Forms.Padding(3);
-            this.ServerStatusFieldsPanel.RowCount = 11;
+            this.ServerStatusFieldsPanel.RowCount = 17;
             this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
@@ -159,11 +202,137 @@
             this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.ServerStatusFieldsPanel.Size = new System.Drawing.Size(879, 230);
+            this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.ServerStatusFieldsPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.ServerStatusFieldsPanel.Size = new System.Drawing.Size(879, 350);
             this.ServerStatusFieldsPanel.TabIndex = 0;
-            // 
+            //
+            // SupportsTransactionsLabel
+            //
+            this.SupportsTransactionsLabel.AutoSize = true;
+            this.SupportsTransactionsLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.SupportsTransactionsLabel.Margin = new System.Windows.Forms.Padding(2);
+            this.SupportsTransactionsLabel.Name = "SupportsTransactionsLabel";
+            this.SupportsTransactionsLabel.TabIndex = 22;
+            this.SupportsTransactionsLabel.Text = "Supports Transactions";
+            this.SupportsTransactionsLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // SupportsTransactionsTextBox
+            //
+            this.SupportsTransactionsTextBox.AutoSize = true;
+            this.SupportsTransactionsTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.SupportsTransactionsTextBox.Margin = new System.Windows.Forms.Padding(2);
+            this.SupportsTransactionsTextBox.Name = "SupportsTransactionsTextBox";
+            this.SupportsTransactionsTextBox.TabIndex = 23;
+            this.SupportsTransactionsTextBox.Text = "---";
+            this.SupportsTransactionsTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // HasSecureElementLabel
+            //
+            this.HasSecureElementLabel.AutoSize = true;
+            this.HasSecureElementLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.HasSecureElementLabel.Margin = new System.Windows.Forms.Padding(2);
+            this.HasSecureElementLabel.Name = "HasSecureElementLabel";
+            this.HasSecureElementLabel.TabIndex = 24;
+            this.HasSecureElementLabel.Text = "Has Secure Element";
+            this.HasSecureElementLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // HasSecureElementTextBox
+            //
+            this.HasSecureElementTextBox.AutoSize = true;
+            this.HasSecureElementTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.HasSecureElementTextBox.Margin = new System.Windows.Forms.Padding(2);
+            this.HasSecureElementTextBox.Name = "HasSecureElementTextBox";
+            this.HasSecureElementTextBox.TabIndex = 25;
+            this.HasSecureElementTextBox.Text = "---";
+            this.HasSecureElementTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // InApplicationSetupLabel
+            //
+            this.InApplicationSetupLabel.AutoSize = true;
+            this.InApplicationSetupLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.InApplicationSetupLabel.Margin = new System.Windows.Forms.Padding(2);
+            this.InApplicationSetupLabel.Name = "InApplicationSetupLabel";
+            this.InApplicationSetupLabel.TabIndex = 26;
+            this.InApplicationSetupLabel.Text = "In Application Setup";
+            this.InApplicationSetupLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // InApplicationSetupTextBox
+            //
+            this.InApplicationSetupTextBox.AutoSize = true;
+            this.InApplicationSetupTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.InApplicationSetupTextBox.Margin = new System.Windows.Forms.Padding(2);
+            this.InApplicationSetupTextBox.Name = "InApplicationSetupTextBox";
+            this.InApplicationSetupTextBox.TabIndex = 27;
+            this.InApplicationSetupTextBox.Text = "---";
+            this.InApplicationSetupTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // TransactionResultLabel
+            //
+            this.TransactionResultLabel.AutoSize = true;
+            this.TransactionResultLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TransactionResultLabel.Margin = new System.Windows.Forms.Padding(2);
+            this.TransactionResultLabel.Name = "TransactionResultLabel";
+            this.TransactionResultLabel.TabIndex = 28;
+            this.TransactionResultLabel.Text = "Transaction Result";
+            this.TransactionResultLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // TransactionResultTextBox
+            //
+            this.TransactionResultTextBox.AutoSize = true;
+            this.TransactionResultTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TransactionResultTextBox.Margin = new System.Windows.Forms.Padding(2);
+            this.TransactionResultTextBox.Name = "TransactionResultTextBox";
+            this.TransactionResultTextBox.TabIndex = 29;
+            this.TransactionResultTextBox.Text = "---";
+            this.TransactionResultTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // TransactionTimesLabel
+            //
+            this.TransactionTimesLabel.AutoSize = true;
+            this.TransactionTimesLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TransactionTimesLabel.Margin = new System.Windows.Forms.Padding(2);
+            this.TransactionTimesLabel.Name = "TransactionTimesLabel";
+            this.TransactionTimesLabel.TabIndex = 30;
+            this.TransactionTimesLabel.Text = "Transaction Start / End";
+            this.TransactionTimesLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // TransactionTimesTextBox
+            //
+            this.TransactionTimesTextBox.AutoSize = true;
+            this.TransactionTimesTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TransactionTimesTextBox.Margin = new System.Windows.Forms.Padding(2);
+            this.TransactionTimesTextBox.Name = "TransactionTimesTextBox";
+            this.TransactionTimesTextBox.TabIndex = 31;
+            this.TransactionTimesTextBox.Text = "---";
+            this.TransactionTimesTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // TransactionAffectsLabel
+            //
+            this.TransactionAffectsLabel.AutoSize = true;
+            this.TransactionAffectsLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TransactionAffectsLabel.Margin = new System.Windows.Forms.Padding(2);
+            this.TransactionAffectsLabel.Name = "TransactionAffectsLabel";
+            this.TransactionAffectsLabel.TabIndex = 32;
+            this.TransactionAffectsLabel.Text = "Transaction Affects";
+            this.TransactionAffectsLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // TransactionAffectsTextBox
+            //
+            this.TransactionAffectsTextBox.AutoSize = true;
+            this.TransactionAffectsTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TransactionAffectsTextBox.Margin = new System.Windows.Forms.Padding(2);
+            this.TransactionAffectsTextBox.Name = "TransactionAffectsTextBox";
+            this.TransactionAffectsTextBox.TabIndex = 33;
+            this.TransactionAffectsTextBox.Text = "---";
+            this.TransactionAffectsTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
             // ShutdownReasonTextBox
-            // 
+            //
             this.ShutdownReasonTextBox.AllowDrop = true;
             this.ShutdownReasonTextBox.AutoSize = true;
             this.ShutdownReasonTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -493,5 +662,18 @@
         private System.Windows.Forms.Label ProductNameTextBox;
         private System.Windows.Forms.Label ProductNameLabel;
         private System.Windows.Forms.Button ApplyChangesButton;
+        private System.Windows.Forms.Button CancelChangesButton;
+        private System.Windows.Forms.Label SupportsTransactionsLabel;
+        private System.Windows.Forms.Label SupportsTransactionsTextBox;
+        private System.Windows.Forms.Label HasSecureElementLabel;
+        private System.Windows.Forms.Label HasSecureElementTextBox;
+        private System.Windows.Forms.Label InApplicationSetupLabel;
+        private System.Windows.Forms.Label InApplicationSetupTextBox;
+        private System.Windows.Forms.Label TransactionResultLabel;
+        private System.Windows.Forms.Label TransactionResultTextBox;
+        private System.Windows.Forms.Label TransactionTimesLabel;
+        private System.Windows.Forms.Label TransactionTimesTextBox;
+        private System.Windows.Forms.Label TransactionAffectsLabel;
+        private System.Windows.Forms.Label TransactionAffectsTextBox;
     }
 }

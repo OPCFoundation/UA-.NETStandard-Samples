@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -43,6 +44,7 @@ using Mono.Options;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Linq;
 using Opc.Ua.Gds.Server.Database;
+using Opc.Ua.Gds.Server.Onboarding;
 using Opc.Ua.Server;
 using Opc.Ua.Server.UserDatabase;
 
@@ -146,7 +148,7 @@ namespace Opc.Ua.Gds.Server
     public class NetCoreGlobalDiscoveryServer
     #pragma warning restore CA1001, CA1708
     {
-        private GlobalDiscoverySampleServer server;
+        private SampleGlobalDiscoveryServer server;
         private IHost m_host;
         private ITelemetryContext m_telemetry;
         // a completed task until the status thread is started, so a failure between
@@ -157,6 +159,11 @@ namespace Opc.Ua.Gds.Server
         private IApplicationsDatabase m_database;
         private LdsScannerConfiguration m_ldsScannerConfiguration;
         private GlobalDiscoveryServerAliasMerger m_aliasMerger;
+        // OPC 10000-12 §7.2 ApplicationAdmin grants, §7.10.13 ResetToServerDefaults and the
+        // OPC 10000-21 ticket store, kept so the interactive commands can reach them.
+        private GdsApplicationAdminUserDatabase m_userDatabase;
+        private SampleServerConfigurationResetProvider m_resetProvider;
+        private ITicketStore m_ticketStore;
         #pragma warning disable CA2211 // Justification: Public sample API compatibility is preserved.
         public static ExitCode exitCode;
         #pragma warning restore CA2211
@@ -222,6 +229,14 @@ namespace Opc.Ua.Gds.Server
                         case "SCAN":
                             await RunLdsScanWorkflowAsync().ConfigureAwait(false);
                             break;
+                        case "T":
+                        case "TICKETS":
+                            await ListOnboardingTicketsAsync().ConfigureAwait(false);
+                            break;
+                        case "A":
+                        case "ADMINS":
+                            RunApplicationAdminWorkflow();
+                            break;
                         case "H":
                         case "HELP":
                         case "?":
@@ -274,9 +289,11 @@ namespace Opc.Ua.Gds.Server
         {
             Console.WriteLine();
             Console.WriteLine("Commands:");
-            Console.WriteLine("  scan  - scan the configured LDS(es) for servers and stage them for approval");
-            Console.WriteLine("  help  - show this message");
-            Console.WriteLine("  quit  - stop the server and exit (Ctrl-C also works)");
+            Console.WriteLine("  scan    - scan the configured LDS(es) for servers and stage them for approval");
+            Console.WriteLine("  admins  - list and edit the OPC 10000-12 ApplicationAdmin grants");
+            Console.WriteLine("  tickets - list the OPC 10000-21 onboarding tickets the registrar holds");
+            Console.WriteLine("  help    - show this message");
+            Console.WriteLine("  quit    - stop the server and exit (Ctrl-C also works)");
             Console.WriteLine();
         }
 
@@ -297,6 +314,150 @@ namespace Opc.Ua.Gds.Server
             }
 
             return await readTask.ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Prints the OPC 10000-21 onboarding tickets currently loaded into the registrar.
+        /// </summary>
+        /// <remarks>
+        /// Tickets get here through the <c>RegisterTickets</c> Method on the registrar
+        /// administration Object - the GDS client's <b>Onboarding</b> panel drives it, and so
+        /// does any client using the SDK's <c>OnboardingClient</c>.
+        /// </remarks>
+        private async Task ListOnboardingTicketsAsync()
+        {
+            if (m_ticketStore == null)
+            {
+                Console.WriteLine("The onboarding registrar is not configured.");
+                return;
+            }
+
+            int count = 0;
+
+            await foreach (TicketRecord ticket in m_ticketStore.ListAsync().ConfigureAwait(false))
+            {
+                count++;
+                Console.WriteLine("  Ticket id      : {0}", ticket.TicketId);
+                Console.WriteLine("  Kind           : {0}", ticket.Metadata.Kind);
+                Console.WriteLine("  Manufacturer   : {0}", ticket.Metadata.ManufacturerName);
+                Console.WriteLine("  Model          : {0}", ticket.Metadata.ModelName);
+                Console.WriteLine("  Serial number  : {0}", ticket.Metadata.SerialNumber);
+                Console.WriteLine("  Product URI    : {0}", ticket.Metadata.ProductInstanceUri);
+                Console.WriteLine("  Registered at  : {0:u}", ticket.CreatedAt);
+                Console.WriteLine("  Encoded length : {0} byte(s)", ticket.EncodedTicket?.Length ?? 0);
+                Console.WriteLine();
+            }
+
+            if (count == 0)
+            {
+                Console.WriteLine("The registrar holds no onboarding tickets.");
+            }
+        }
+
+        /// <summary>
+        /// Lists and edits the OPC 10000-12 §7.2 <c>ApplicationAdmin</c> grants.
+        /// </summary>
+        /// <remarks>
+        /// A user holding <c>ApplicationAdmin</c> may administer exactly the applications
+        /// granted here - unlike <c>DiscoveryAdmin</c>, which may administer all of them. The
+        /// grants are matched against the target application of every GDS Method call by the
+        /// stack's <c>AuthorizationHelper</c>.
+        /// </remarks>
+        private void RunApplicationAdminWorkflow()
+        {
+            if (m_userDatabase == null || m_database == null)
+            {
+                Console.WriteLine("The server is not ready yet.");
+                return;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Current ApplicationAdmin grants:");
+
+            IReadOnlyDictionary<string, IReadOnlyList<string>> grants = m_userDatabase.Grants;
+
+            if (grants.Count == 0)
+            {
+                Console.WriteLine("  (none)");
+            }
+            else
+            {
+                foreach (KeyValuePair<string, IReadOnlyList<string>> grant in grants)
+                {
+                    Console.WriteLine("  {0}: {1}", grant.Key, string.Join(", ", grant.Value));
+                }
+            }
+
+            Console.WriteLine();
+            Console.Write("User to grant ApplicationAdmin to (empty to cancel): ");
+            string userName = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                return;
+            }
+
+            userName = userName.Trim();
+
+            ApplicationDescription[] applications = m_database.QueryApplications(
+                startingRecordId: 0,
+                maxRecordsToReturn: 0,
+                applicationName: string.Empty,
+                applicationUri: string.Empty,
+                applicationType: 0,
+                productUri: string.Empty,
+                serverCapabilities: ArrayOf<string>.Empty,
+                lastCounterResetTime: out _,
+                nextRecordId: out _);
+
+            var selected = new List<NodeId>();
+
+            foreach (ApplicationDescription application in applications ?? Array.Empty<ApplicationDescription>())
+            {
+                ApplicationRecordDataType[] records = m_database.FindApplications(application.ApplicationUri);
+
+                if (records == null || records.Length == 0)
+                {
+                    continue;
+                }
+
+                foreach (ApplicationRecordDataType record in records)
+                {
+                    Console.Write(
+                        "  Administer '{0}' ({1})? (y/n, default n): ",
+                        application.ApplicationUri, record.ApplicationId);
+
+                    string answer = Console.ReadLine();
+
+                    if (!string.IsNullOrEmpty(answer) &&
+                        (answer.StartsWith('y') || answer.StartsWith('Y')))
+                    {
+                        selected.Add(record.ApplicationId);
+                    }
+                }
+            }
+
+            if (selected.Count == 0)
+            {
+                if (m_userDatabase.RevokeApplicationAdmin(userName))
+                {
+                    Console.WriteLine("Revoked every ApplicationAdmin grant of '{0}'.", userName);
+                }
+                else
+                {
+                    Console.WriteLine("Nothing selected, '{0}' is unchanged.", userName);
+                }
+
+                return;
+            }
+
+            m_userDatabase.GrantApplicationAdmin(userName, selected);
+
+            Console.WriteLine(
+                "Granted '{0}' the ApplicationAdmin privilege for {1} application(s).",
+                userName, selected.Count);
+            Console.WriteLine(
+                "Assign the ApplicationAdmin role to the user as well for the grant to take effect.");
         }
 
         private async Task RunLdsScanWorkflowAsync()
@@ -394,7 +555,7 @@ namespace Opc.Ua.Gds.Server
 
             await m_host.StartAsync().ConfigureAwait(false);
 
-            server = m_host.Services.GetRequiredService<AliasMergingGlobalDiscoverySampleServer>();
+            server = m_host.Services.GetRequiredService<SampleGlobalDiscoveryServer>();
 
             ApplicationInstance application = m_host.Services.GetRequiredService<ApplicationInstance>();
             ApplicationConfiguration config = m_host.Services.GetRequiredService<ApplicationConfiguration>();
@@ -407,6 +568,10 @@ namespace Opc.Ua.Gds.Server
             // start periodically refreshing the GDS master AliasNames list
             // from every registered server.
             m_aliasMerger.Start(config, m_database);
+
+            // remember what "the server defaults" are before the first client can change
+            // them, so OPC 10000-12 §7.10.13 ResetToServerDefaults has something to restore.
+            await m_resetProvider.CaptureDefaultsAsync().ConfigureAwait(false);
 
             // print endpoint info
             IEnumerable<string> endpoints = application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
@@ -425,10 +590,12 @@ namespace Opc.Ua.Gds.Server
         }
 
         /// <summary>
-        /// Creates the server, together with the databases and the alias merger it is
-        /// built on. Called by the host once the configuration has been read.
+        /// Creates the server, together with the databases, the alias merger, the
+        /// ManagedApplications store, the onboarding ticket store and the Optional
+        /// ServerConfiguration surface it is built on. Called by the host once the
+        /// configuration has been read.
         /// </summary>
-        private AliasMergingGlobalDiscoverySampleServer CreateServer(IServiceProvider provider)
+        private SampleGlobalDiscoveryServer CreateServer(IServiceProvider provider)
         {
             ITelemetryContext telemetry = provider.GetRequiredService<ITelemetryContext>();
             ApplicationConfiguration config = provider.GetRequiredService<ApplicationConfiguration>();
@@ -439,9 +606,16 @@ namespace Opc.Ua.Gds.Server
             string userdatabaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.UsersDatabaseStorePath);
 
             var database = JsonApplicationsDatabase.Load(databaseStorePath);
-            var userDatabase = JsonUserDatabase.Load(userdatabaseStorePath, telemetry);
 
-            ConfigureUsers(userDatabase);
+            // the users database is wrapped so the GDS can also answer "which applications
+            // may this user administer?" - the OPC 10000-12 §7.2 ApplicationAdmin privilege.
+            m_userDatabase = new GdsApplicationAdminUserDatabase(
+                JsonUserDatabase.Load(userdatabaseStorePath, telemetry),
+                Path.Combine(
+                    Path.GetDirectoryName(userdatabaseStorePath) ?? string.Empty,
+                    "gdsapplicationadmins.json"));
+
+            ConfigureUsers(m_userDatabase);
 
             m_database = database;
 
@@ -449,16 +623,59 @@ namespace Opc.Ua.Gds.Server
             // server's AliasNames into a master list served by this GDS.
             m_aliasMerger = new GlobalDiscoveryServerAliasMerger(telemetry);
 
-            return new AliasMergingGlobalDiscoverySampleServer(
+            // OPC 10000-21: the onboarding tickets the registrar accepts. In memory here -
+            // a production registrar persists them.
+            m_ticketStore = new MemoryTicketStore();
+
+            m_resetProvider = new SampleServerConfigurationResetProvider(config, telemetry);
+
+            return new SampleGlobalDiscoveryServer(
                 database,
                 database,
                 #pragma warning disable CA2000 // Justification: Certificate group ownership is transferred to the server.
                 new CertificateGroup(telemetry),
                 #pragma warning restore CA2000
-                userDatabase,
+                m_userDatabase,
                 telemetry,
                 m_aliasMerger,
-                true);
+                true,
+                new GdsManagedApplicationsDataStore(
+                    database,
+                    Path.Combine(
+                        Path.GetDirectoryName(databaseStorePath) ?? string.Empty,
+                        "ManagedApplications"),
+                    telemetry),
+                m_ticketStore,
+                CreateServerConfigurationOptions(config, telemetry));
+        }
+
+        /// <summary>
+        /// Turns on the Optional OPC 10000-12 §7.10.3 <c>ServerConfiguration</c> members.
+        /// </summary>
+        /// <remarks>
+        /// Each member is suppressed from the address space unless it is configured here, so
+        /// this method is the whole difference between a push server that only exposes the
+        /// mandatory surface and one that also advertises <c>HasSecureElement</c>,
+        /// <c>InApplicationSetup</c>, <c>ResetToServerDefaults</c> and <c>ConfigurationFile</c>.
+        /// </remarks>
+        private ServerConfigurationOptions CreateServerConfigurationOptions(
+            ApplicationConfiguration config,
+            ITelemetryContext telemetry)
+        {
+            return new ServerConfigurationOptions {
+                // the sample keeps its private keys in the file system, not in a TPM or
+                // secure element - reporting that honestly is the point of the Property.
+                HasSecureElement = false,
+
+                // the GDS is commissioned, not in the OPC 10000-21 setup state.
+                InApplicationSetup = false,
+
+                ResetProvider = m_resetProvider,
+
+                ConfigurationFileProvider = new SampleApplicationConfigurationFileProvider(
+                    config.SourceFilePath,
+                    telemetry)
+            };
         }
 
         /// <summary>
@@ -495,6 +712,7 @@ namespace Opc.Ua.Gds.Server
                 userDatabase.DeleteUser("sysadmin");
                 userDatabase.DeleteUser("DiscoveryAdmin");
                 userDatabase.DeleteUser("CertificateAuthorityAdmin");
+                userDatabase.DeleteUser("ApplicationAdmin");
 
                 //Create new admin user
                 Console.Write("Please specify user name of the application admin user:");
@@ -526,6 +744,7 @@ namespace Opc.Ua.Gds.Server
                 userDatabase.DeleteUser("sysadmin");
                 userDatabase.DeleteUser("DiscoveryAdmin");
                 userDatabase.DeleteUser("CertificateAuthorityAdmin");
+                userDatabase.DeleteUser("ApplicationAdmin");
 
                 //create standard users
                 userDatabase.CreateUser(
@@ -548,6 +767,14 @@ namespace Opc.Ua.Gds.Server
                     "CertificateAuthorityAdmin",
                     Encoding.UTF8.GetBytes("demo"),
                     [Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin]);
+
+                // OPC 10000-12 §7.2: an ApplicationAdmin may administer the applications it
+                // was granted and no others. The role alone grants nothing - use the
+                // 'admins' command to bind registered applications to this user.
+                userDatabase.CreateUser(
+                    "ApplicationAdmin",
+                    Encoding.UTF8.GetBytes("demo"),
+                    [Role.AuthenticatedUser, GdsRole.ApplicationAdmin]);
             }
 
             return createStandardUsers;

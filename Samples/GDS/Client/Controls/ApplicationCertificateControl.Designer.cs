@@ -39,6 +39,7 @@
             this.ApplyChangesButton = new System.Windows.Forms.Button();
             this.RequestNewButton = new System.Windows.Forms.Button();
             this.NewKeyPairFromDerButton = new System.Windows.Forms.Button();
+            this.CertificatesButton = new System.Windows.Forms.Button();
             this.CertificateRequestTimer = new System.Windows.Forms.Timer(this.components);
             this.RegistrationPanel.SuspendLayout();
             this.RegistrationButtonsPanel.SuspendLayout();
@@ -97,6 +98,7 @@
             // RegistrationButtonsPanel
             // 
             this.RegistrationButtonsPanel.BackColor = System.Drawing.Color.MidnightBlue;
+            this.RegistrationButtonsPanel.Controls.Add(this.CertificatesButton);
             this.RegistrationButtonsPanel.Controls.Add(this.PrivateKeyPasswordTextBox);
             this.RegistrationButtonsPanel.Controls.Add(this.PrivateKeyPasswordLabel);
             this.RegistrationButtonsPanel.Controls.Add(this.NewKeyPairFromDerButton);
@@ -176,9 +178,25 @@
             this.NewKeyPairFromDerButton.Click += new System.EventHandler(this.NewKeyPairFromDerButton_Click);
             this.NewKeyPairFromDerButton.MouseEnter += new System.EventHandler(this.Button_MouseEnter);
             this.NewKeyPairFromDerButton.MouseLeave += new System.EventHandler(this.Button_MouseLeave);
-            // 
+            //
+            // CertificatesButton
+            //
+            this.CertificatesButton.BackColor = System.Drawing.Color.MidnightBlue;
+            this.CertificatesButton.Dock = System.Windows.Forms.DockStyle.Left;
+            this.CertificatesButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.CertificatesButton.ForeColor = System.Drawing.Color.White;
+            this.CertificatesButton.Location = new System.Drawing.Point(418, 0);
+            this.CertificatesButton.Name = "CertificatesButton";
+            this.CertificatesButton.Size = new System.Drawing.Size(129, 32);
+            this.CertificatesButton.TabIndex = 8;
+            this.CertificatesButton.Text = "Certificates...";
+            this.CertificatesButton.UseVisualStyleBackColor = false;
+            this.CertificatesButton.Click += new System.EventHandler(this.CertificatesButton_Click);
+            this.CertificatesButton.MouseEnter += new System.EventHandler(this.Button_MouseEnter);
+            this.CertificatesButton.MouseLeave += new System.EventHandler(this.Button_MouseLeave);
+            //
             // CertificateRequestTimer
-            // 
+            //
             this.CertificateRequestTimer.Interval = 5000;
             this.CertificateRequestTimer.Tick += new System.EventHandler(this.CertificateRequestTimer_Tick);
             // 
@@ -209,5 +227,6 @@
         private System.Windows.Forms.Button ApplyChangesButton;
         private System.Windows.Forms.Label PrivateKeyPasswordLabel;
         private System.Windows.Forms.TextBox PrivateKeyPasswordTextBox;
+        private System.Windows.Forms.Button CertificatesButton;
     }
 }

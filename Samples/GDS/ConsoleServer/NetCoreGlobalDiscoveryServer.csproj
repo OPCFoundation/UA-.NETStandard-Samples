@@ -13,7 +13,12 @@
 
   <ItemGroup>
     <Compile Include="..\Common\GlobalDiscoveryServerAliasMerger.cs" Link="Common\GlobalDiscoveryServerAliasMerger.cs" />
-    <Compile Include="..\Common\AliasMergingGlobalDiscoverySampleServer.cs" Link="Common\AliasMergingGlobalDiscoverySampleServer.cs" />
+    <Compile Include="..\Common\SampleGlobalDiscoveryServer.cs" Link="Common\SampleGlobalDiscoveryServer.cs" />
+    <Compile Include="..\Common\GdsApplicationAdminUserDatabase.cs" Link="Common\GdsApplicationAdminUserDatabase.cs" />
+    <Compile Include="..\Common\GdsManagedApplicationsDataStore.cs" Link="Common\GdsManagedApplicationsDataStore.cs" />
+    <Compile Include="..\Common\SampleApplicationConfigurationFileProvider.cs" Link="Common\SampleApplicationConfigurationFileProvider.cs" />
+    <Compile Include="..\Common\SampleServerConfigurationResetProvider.cs" Link="Common\SampleServerConfigurationResetProvider.cs" />
+    <Compile Include="..\Common\DeviceRegistrarNodeManager.cs" Link="Common\DeviceRegistrarNodeManager.cs" />
   </ItemGroup>
 
   <ItemGroup>

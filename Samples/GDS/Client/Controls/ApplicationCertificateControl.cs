@@ -201,6 +201,41 @@ namespace Opc.Ua.Gds.Client
         }
 
         /// <summary>
+        /// Opens the certificate list of the GDS (pull) or of the managed server (push).
+        /// </summary>
+        /// <remarks>
+        /// OPC 10000-12 v1.05.07 added a <c>GetCertificates</c> Method to both models
+        /// (§7.9.8 and §7.10.8), so a client no longer has to infer what a server holds from
+        /// the certificate its endpoint happens to present. The dialog also drives the
+        /// per-slot Methods that came with it - see
+        /// <see cref="Controls.CertificateManagementDialog"/>. A push Method only stages its
+        /// change, so a staged change leaves <c>Apply Changes</c> enabled here.
+        /// </remarks>
+        private void CertificatesButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
+                bool staged = new Controls.CertificateManagementDialog().ShowDialog(
+                    Parent,
+                    m_gds,
+                    m_server,
+                    m_application,
+                    m_telemetry);
+                #pragma warning restore CA2000
+
+                if (staged)
+                {
+                    ApplyChangesButton.Enabled = true;
+                }
+            }
+            catch (Exception exception)
+            {
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, exception);
+            }
+        }
+
+        /// <summary>
         /// Creates a new .pfx (with a fresh public/private key pair) from the information
         /// contained in the currently loaded certificate.
         /// </summary>
