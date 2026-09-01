@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -275,27 +275,43 @@ namespace Quickstarts.UserAuthenticationServer
                     throw new InvalidOperationException("No certificate validator configured.");
                 }
 
-                // Mimic X509CertificateValidator.PeerTrust by requiring the user certificate to
-                // exist in the Windows TrustedPeople store (CurrentUser or LocalMachine).
-                bool trusted = false;
-
-                foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
-                {
-                    using var store = new X509Store(StoreName.TrustedPeople, location);
-                    store.Open(OpenFlags.ReadOnly);
+                // Mimic X509CertificateValidator.PeerTrust by requiring the user certificate to
 
-                    if (store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, validOnly: false).Count > 0)
+                // exist in the Windows TrustedPeople store (CurrentUser or LocalMachine).
+
+                bool trusted = false;
+
+
+
+                foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
+
+                {
+                    using var store = new X509Store(StoreName.TrustedPeople, location);
+
+                    store.Open(OpenFlags.ReadOnly);
+
+
+                    if (store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, validOnly: false).Count > 0)
+
                     {
-                        trusted = true;
-                        break;
+                        trusted = true;
+
+                        break;
+
                     }
                 }
-
-                if (!trusted)
-                {
-                    throw new CryptographicException(
-                        "The user certificate is not present in the TrustedPeople store.");
-                }
+
+
+                if (!trusted)
+
+                {
+
+                    throw new CryptographicException(
+
+                        "The user certificate is not present in the TrustedPeople store.");
+
+                }
+
             }
             catch (Exception e)
             {
