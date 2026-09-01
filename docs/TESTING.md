@@ -167,7 +167,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 0 checks today
 
-143 test cases, under a second, no network:
+151 test cases, under a second, no network:
 
 - every `*.Config.xml` in the repository loads and validates, and declares an application
   name, uri, type and security configuration
@@ -182,7 +182,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 1 checks today
 
-89 test cases, about 25 seconds. Fifteen of them start a sample server in process, from the
+93 test cases, about 25 seconds. Sixteen of them start a sample server in process, from the
 sample's own configuration file, and connect to it with a plain OPC UA client:
 
 - the server comes up on the endpoint the catalog claims
@@ -195,7 +195,7 @@ Only the opc.tcp endpoints are exercised; https base addresses are stripped in m
 the server starts, because they need their own bindings and would double the ports a test run
 occupies.
 
-All 14 servers pass. The first run of this tier found four that did not, all of them samples
+All 16 servers pass. The first run of this tier found four that did not, all of them samples
 which had not caught up with the value types the 2.0 stack introduced (`ArrayOf<T>`,
 `DateTimeUtc`, `NodeId` as a struct, the `Variant.From` overloads); they were fixed rather
 than parked:
@@ -294,7 +294,7 @@ not parking. Both lists are currently empty.
 
 ## What Tier 1.5 checks today
 
-88 test cases across 16 fixtures, about 1.5 minutes. One fixture per node manager, each
+102 test cases across 17 fixtures, about 1.5 minutes. One fixture per node manager, each
 starting its sample server once and driving it through an ordinary OPC UA session.
 
 **Everything is observed through the services a client would use.** No test reaches into a
@@ -327,6 +327,13 @@ What each fixture pins down, in one line:
 | TestData | Static write round trip, simulated values while monitored, which single variable is archived, and the archive read back over an authenticated session |
 | MemoryBuffer | Tags synthesized from node ids, a buffer browsing into its tags, and the three creation refusals the custom monitored item makes |
 | Boiler (sample server) | Display names renamed after the unit, and the state machines of both boilers started by the node manager itself |
+| FileTransfer | The configured directory mounted below `Server/FileSystem`, the content the sample seeds, an upload/download/delete round trip, a streamed transfer of a file larger than one chunk, create/rename/remove of a directory, and a path which tries to leave the mount |
+
+The file transfer fixture is the one exception to "one fixture per node manager": that sample
+writes no node manager, it registers the one the SDK ships. What the fixture holds it to is
+therefore its own half of the contract - that it mounts the directory its configuration names
+where a client looks for it, seeds it, and publishes it writable - asked through an ordinary
+`FileSystemClient`, which is the same surface the sample client uses.
 
 The condition refresh test earned its keep on arrival: the dialog condition every alarm
 source creates was never replayed by a refresh. `SetEnableState` in the 2.0 stack
@@ -393,7 +400,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-27 test cases, about a minute, Windows only. For each WinForms sample client the test
+29 test cases, about a minute and a half, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 
@@ -434,6 +441,16 @@ leaving nothing but an empty window. Writing it found two defects, both fixed:
 |-------|----------------|
 | `Workshop/HistoricalEvents/Client/EventListView.cs` | Every event the list was given threw `InvalidCastException` into a modal dialog: it unboxed a `DateTime` event field with `(DateTime)Variant.AsBoxedObject()`, and the 2.0 stack boxes one as `DateTimeUtc`. The same method renders the event *history*, so the sample's only two displays were both dead since the 2.0 migration |
 | `Workshop/AlarmCondition/Client/AuditEventForm.cs` | Closing the audit window threw `BadNotConnected` out of its own error handler. The main form closes that window when the session goes away, so the subscription can no longer be deleted on the server - and the handler for that failure asked the closed session for its telemetry context. The window keeps the telemetry context it was created with and logs the failure instead of showing it |
+
+`FileTransferClientTests` asks what a connect test cannot of a client whose whole job is
+navigation: does the sample keep the place the user browsed to? It selects and expands a
+directory, then reports a completed reconnect the way the connect control would, and asserts
+that the selected node is still the *same node object* and that the tree did not change size.
+The sample used to fail both: it rebuilt its file system client, and with it the whole tree, on
+every reconnect, on the assumption that a reconnect brings a new session whose file handles are
+gone. A managed session keeps its `ISession`, so that rebuild only ever cost the user their
+position. Comparing node identity rather than node text is what makes the test see it - a
+rebuilt tree carries new nodes even where every label matches.
 
 `SampleControlsSubscribeTests` does the same for the UA Sample Client controls in
 `Controls.Net4`: it opens a managed session the way `SessionOpenDlg` does, creates a

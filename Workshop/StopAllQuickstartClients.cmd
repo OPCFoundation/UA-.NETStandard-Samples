@@ -3,6 +3,7 @@ taskkill /IM Quickstarts.BoilerClient.exe
 taskkill /IM Quickstarts.DataAccessClient.exe
 taskkill /IM Quickstarts.DataTypesClient.exe
 taskkill /IM Quickstarts.EmptyClient.exe
+taskkill /IM Quickstarts.FileTransferClient.exe
 taskkill /IM Quickstarts.HistoricalAccessClient.exe
 taskkill /IM Quickstarts.HistoricalEventsClient.exe
 taskkill /IM Quickstarts.MethodsClient.exe

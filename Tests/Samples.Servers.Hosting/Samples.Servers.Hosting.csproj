@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\Workshop\DataAccess\Server\DataAccess Server.csproj" />
     <ProjectReference Include="..\..\Workshop\DataTypes\Server\DataTypes Server.csproj" />
     <ProjectReference Include="..\..\Workshop\Empty\Server\Empty Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\FileTransfer\Server\FileTransfer Server.csproj" />
     <ProjectReference Include="..\..\Workshop\HistoricalAccess\Server\HistoricalAccess Server.csproj" />
     <ProjectReference Include="..\..\Workshop\HistoricalEvents\Server\HistoricalEvents Server.csproj" />
     <ProjectReference Include="..\..\Workshop\Methods\Server\Methods Server.csproj" />

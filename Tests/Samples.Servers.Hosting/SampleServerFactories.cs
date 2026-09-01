@@ -50,6 +50,7 @@ namespace Opc.Ua.Samples.Tests
                 ["DataAccess"] = telemetry => new Quickstarts.DataAccessServer.DataAccessServer(telemetry),
                 ["DataTypes"] = telemetry => new Quickstarts.DataTypes.DataTypesServer(telemetry),
                 ["Empty"] = telemetry => new Quickstarts.EmptyServer.EmptyServer(telemetry),
+                ["FileTransfer"] = telemetry => new Quickstarts.FileTransferServer.FileTransferServer(telemetry),
                 ["HistoricalAccess"] = telemetry => new Quickstarts.HistoricalAccessServer.HistoricalAccessServer(telemetry),
                 ["HistoricalEvents"] = telemetry => new Quickstarts.HistoricalEvents.Server.HistoricalEventsServer(telemetry),
                 ["Methods"] = telemetry => new Quickstarts.MethodsServer.MethodsServer(telemetry),

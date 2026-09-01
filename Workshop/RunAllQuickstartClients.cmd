@@ -4,6 +4,7 @@ start Quickstarts.BoilerClient.exe
 start Quickstarts.DataAccessClient.exe
 start Quickstarts.DataTypesClient.exe
 start Quickstarts.EmptyClient.exe
+start Quickstarts.FileTransferClient.exe
 start Quickstarts.HistoricalAccessClient.exe
 start Quickstarts.HistoricalEventsClient.exe
 start Quickstarts.MethodsClient.exe

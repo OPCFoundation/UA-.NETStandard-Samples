@@ -131,6 +131,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "FileTransfer",
+                ServerProject = "Workshop/FileTransfer/Server/FileTransfer Server.csproj",
+                ServerConfig = "Workshop/FileTransfer/Server/Quickstarts.FileTransferServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62569/Quickstarts/FileTransferServer",
+                ClientProject = "Workshop/FileTransfer/Client/FileTransfer Client.csproj",
+                ClientConfig = "Workshop/FileTransfer/Client/Quickstarts.FileTransferClient.Config.xml",
+                ClientEndpointSource = "Workshop/FileTransfer/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "HistoricalAccess",
                 ServerProject = "Workshop/HistoricalAccess/Server/HistoricalAccess Server.csproj",
                 ServerConfig = "Workshop/HistoricalAccess/Server/HistoricalAccessServer.Config.xml",

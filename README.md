@@ -67,6 +67,8 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [DataAccess Client](Workshop/DataAccess/Client) | **Client** | Reads and writes DataAccess items (analog/discrete) on a DataAccess server. |
 | [DataTypes Server](Workshop/DataTypes/Server) | **Server** | Demonstrates how to define and expose custom structured data types in OPC UA. |
 | [DataTypes Client](Workshop/DataTypes/Client) | **Client** | Reads custom structured data types from a DataTypes server. |
+| [FileTransfer Server](Workshop/FileTransfer/Server) | **Server** | Publishes a directory of the host as an OPC UA file system (Part 5 Annex C / Part 20 `FileType` and `FileDirectoryType`), using the file system node manager of the SDK. See the [sample overview](Workshop/FileTransfer/README.md). |
+| [FileTransfer Client](Workshop/FileTransfer/Client) | **Client** | Browses the file system of a server and uploads, downloads, creates and deletes files and directories. Works against any server which offers `Server/FileSystem`. |
 | [HistoricalAccess Server](Workshop/HistoricalAccess/Server) | **Server** | Stores historical data for variables and supports UA HistoricalAccess services (ReadRaw, ReadProcessed, etc.). |
 | [HistoricalAccess Client](Workshop/HistoricalAccess/Client) | **Client** | Queries and displays historical data from a HistoricalAccess server. |
 | [HistoricalEvents Server](Workshop/HistoricalEvents/Server) | **Server** | Stores historical events and supports UA HistoricalAccess for events. |
