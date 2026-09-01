@@ -681,7 +681,7 @@ namespace Quickstarts
 
                 if (variable != null && variable.Value.IsNull)
                 {
-                    variable.Value = Variant.From((dynamic)Opc.Ua.TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree));
+                    variable.Value = Opc.Ua.TypeInfo.GetDefaultVariantValue(variable.DataType, variable.ValueRank, Server.TypeTree);
                 }
 
                 IList<IReference> references = new List<IReference>();
