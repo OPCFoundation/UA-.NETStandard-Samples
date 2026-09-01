@@ -129,7 +129,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    await session.CloseAsync(ct);
+                    await ClientUtils.CloseAndDisposeAsync(session, ct);
                 }
             }
 
@@ -246,7 +246,7 @@ namespace Opc.Ua.Sample.Controls
 
             m_subscriptions.RemoveAll(handle => Object.ReferenceEquals(handle.Session, session));
 
-            await session.CloseAsync(ct);
+            await ClientUtils.CloseAndDisposeAsync(session, ct);
             NodesTV.SelectedNode = null;
             SelectNode();
         }

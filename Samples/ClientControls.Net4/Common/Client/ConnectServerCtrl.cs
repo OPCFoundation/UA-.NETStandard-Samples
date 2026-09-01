@@ -503,11 +503,17 @@ namespace Opc.Ua.Client.Controls
         {
             // disconnect any existing session. Closing the managed session also stops its
             // connection state machine, so there is no separate reconnect handler to cancel.
+            // The close is bounded: a session which is in the middle of a reconnect attempt
+            // against a server that is gone cannot close until that attempt has run out, and
+            // the sample must not wait for that. See ClientUtils.CloseAndDisposeAsync.
             if (m_session != null)
             {
                 DetachSession();
-                await m_session.CloseAsync(10000, ct);
+
+                ISession session = m_session;
                 m_session = null;
+
+                await ClientUtils.CloseAndDisposeAsync(session, ct);
             }
 
             // raise an event.
