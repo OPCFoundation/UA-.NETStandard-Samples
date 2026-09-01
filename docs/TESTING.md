@@ -315,6 +315,7 @@ What each fixture pins down, in one line:
 | SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing |
 | Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
 | RoleManagement | What a Part 18 Role is worth: an anonymous session browses the machine and is refused every value, an Observer reads but neither writes nor calls, an Operator does both, an Engineer sees a node an Observer cannot browse, UserRolePermissions reports what the session earns, the role configuration is refused to everyone but a SecurityAdmin on an encrypted channel, and a Role granted at runtime reaches an already open session |
+| AliasNames | What a Part 17 index is worth: the standard TagVariables object answers FindAlias for the whole plant, a wildcard narrows it, a tag name resolves to the node the browse path leads to and back again, the application-defined category tree is browsable below the standard Aliases object and its nested categories serve only their own unit, FindAliasVerbose names the category an entry came from, and the tag list is editable at runtime by a SecurityAdmin on an encrypted channel and by nobody else |
 | UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session |
 | PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
 | DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths |

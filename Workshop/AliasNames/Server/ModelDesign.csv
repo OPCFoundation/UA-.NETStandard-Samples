@@ -1,0 +1,10 @@
+Plant,1,Object
+Plant_Reactor,2,Object
+Plant_Reactor_TemperatureMeasurement,3,Variable
+Plant_Reactor_TemperatureSetpoint,4,Variable
+Plant_Reactor_PressureMeasurement,5,Variable
+Plant_Reactor_AgitatorSpeed,6,Variable
+Plant_Boiler,7,Object
+Plant_Boiler_SteamPressure,8,Variable
+Plant_Boiler_FeedwaterFlow,9,Variable
+Plant_Boiler_BurnerEnabled,10,Variable

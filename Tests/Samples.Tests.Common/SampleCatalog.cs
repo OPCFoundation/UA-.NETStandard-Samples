@@ -91,6 +91,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "AliasNames",
+                ServerProject = "Workshop/AliasNames/Server/AliasNames Server.csproj",
+                ServerConfig = "Workshop/AliasNames/Server/Quickstarts.AliasNamesServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62575/Quickstarts/AliasNamesServer",
+                ClientProject = "Workshop/AliasNames/Client/AliasNames Client.csproj",
+                ClientConfig = "Workshop/AliasNames/Client/Quickstarts.AliasNamesClient.Config.xml",
+                ClientEndpointSource = "Workshop/AliasNames/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "Boiler",
                 ServerProject = "Workshop/Boiler/Server/Boiler Server.csproj",
                 ServerConfig = "Workshop/Boiler/Server/BoilerServer.Config.xml",

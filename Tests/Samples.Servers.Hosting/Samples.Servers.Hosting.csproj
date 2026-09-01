@@ -16,6 +16,7 @@
   <!-- the sample servers which can be started headless -->
   <ItemGroup>
     <ProjectReference Include="..\..\Workshop\AlarmCondition\Server\AlarmCondition Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\AliasNames\Server\AliasNames Server.csproj" />
     <ProjectReference Include="..\..\Workshop\Boiler\Server\Boiler Server.csproj" />
     <ProjectReference Include="..\..\Workshop\DataAccess\Server\DataAccess Server.csproj" />
     <ProjectReference Include="..\..\Workshop\DataTypes\Server\DataTypes Server.csproj" />

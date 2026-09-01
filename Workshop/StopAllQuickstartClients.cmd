@@ -1,4 +1,5 @@
 taskkill /IM Quickstarts.AlarmConditionClient.exe
+taskkill /IM Quickstarts.AliasNamesClient.exe
 taskkill /IM Quickstarts.BoilerClient.exe
 taskkill /IM Quickstarts.DataAccessClient.exe
 taskkill /IM Quickstarts.DataTypesClient.exe

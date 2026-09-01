@@ -46,6 +46,7 @@ namespace Opc.Ua.Samples.Tests
         private static readonly Dictionary<string, Func<ITelemetryContext, StandardServer>> s_factories =
             new(StringComparer.Ordinal) {
                 ["AlarmCondition"] = telemetry => new Quickstarts.AlarmConditionServer.AlarmConditionServer(telemetry),
+                ["AliasNames"] = telemetry => new Quickstarts.AliasNames.Server.AliasNamesServer(telemetry),
                 ["Boiler"] = telemetry => new Quickstarts.Boiler.Server.BoilerServer(telemetry),
                 ["DataAccess"] = telemetry => new Quickstarts.DataAccessServer.DataAccessServer(telemetry),
                 ["DataTypes"] = telemetry => new Quickstarts.DataTypes.DataTypesServer(telemetry),
