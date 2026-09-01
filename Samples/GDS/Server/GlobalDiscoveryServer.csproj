@@ -38,13 +38,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>2.0.0-preview.2</Version>
+      <Version>2.0.0-preview.3</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>2.0.0-preview.2</Version>
+      <Version>2.0.0-preview.3</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common">
-      <Version>2.0.0-preview.2</Version>
+      <Version>2.0.0-preview.3</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup />
