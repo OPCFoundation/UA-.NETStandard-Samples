@@ -683,14 +683,7 @@ namespace Quickstarts
 
                 if (variable != null && variable.Value.IsNull)
                 {
-                    object defaultValue = Opc.Ua.TypeInfo.GetDefaultValue(variable.DataType, variable.ValueRank, Server.TypeTree);
-
-                    // there is no default value for arrays, and a null has no type which
-                    // the dynamic dispatch below could use to select an overload.
-                    if (defaultValue != null)
-                    {
-                        variable.Value = Variant.From((dynamic)defaultValue);
-                    }
+                    variable.Value = Opc.Ua.TypeInfo.GetDefaultVariantValue(variable.DataType, variable.ValueRank, Server.TypeTree);
                 }
 
                 IList<IReference> references = new List<IReference>();
