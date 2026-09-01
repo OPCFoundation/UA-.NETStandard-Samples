@@ -100,7 +100,7 @@ namespace Opc.Ua.Sample.Controls
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
             ReadResultsCTRL.Telemetry = m_session?.MessageContext?.Telemetry;
-            await ReadResultsCTRL.ShowValueAsync(values, true, ct);
+            await ReadResultsCTRL.ShowValueAsync(Variant.From((ArrayOf<DataValue>)values.ToArray()), true, ct);
         }
         #endregion
 

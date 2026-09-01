@@ -114,9 +114,7 @@ namespace Opc.Ua.Client.Controls
             | System.Windows.Forms.AnchorStyles.Right)));
             this.ValueCTRL.AutoUpdate = true;
             this.ValueCTRL.Instructions = null;
-            this.ValueCTRL.LatestValue = true;
             this.ValueCTRL.Location = new System.Drawing.Point(4, 3);
-            this.ValueCTRL.MonitoredItem = null;
             this.ValueCTRL.Name = "ValueCTRL";
             this.ValueCTRL.Size = new System.Drawing.Size(699, 311);
             this.ValueCTRL.TabIndex = 0;

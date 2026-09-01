@@ -266,9 +266,7 @@ namespace Opc.Ua.Sample.Controls
             this.LatestValueCTRL.AutoUpdate = true;
             this.LatestValueCTRL.Dock = System.Windows.Forms.DockStyle.Fill;
             this.LatestValueCTRL.Instructions = null;
-            this.LatestValueCTRL.LatestValue = true;
             this.LatestValueCTRL.Location = new System.Drawing.Point(0, 0);
-            this.LatestValueCTRL.MonitoredItem = null;
             this.LatestValueCTRL.Name = "LatestValueCTRL";
             this.LatestValueCTRL.Size = new System.Drawing.Size(640, 484);
             this.LatestValueCTRL.TabIndex = 6;

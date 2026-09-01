@@ -558,13 +558,13 @@ namespace Opc.Ua.Sample.Controls
 
                 if (items != null && items.Length == 1)
                 {
-                    object value = GuiUtils.EditValue(m_session, items[0].Value, Telemetry);
+                    bool edited = GuiUtils.TryEditValue(m_session, items[0].Value, Telemetry, out Variant value);
 
                     if (!m_readOnly)
                     {
-                        if (value != null)
+                        if (edited)
                         {
-                            items[0].Value = ClientUtils.ToVariant(value);
+                            items[0].Value = value;
                             await UpdateItemAsync(ItemsLV.SelectedItems[0], items[0]);
                         }
                     }

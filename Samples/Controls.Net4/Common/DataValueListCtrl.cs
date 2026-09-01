@@ -243,11 +243,11 @@ namespace Opc.Ua.Sample.Controls
 
                 if (values != null && values.Length > 0)
                 {
-                    m_DataListCtrl.ShowValueAsync(values[0].Value);
+                    _ = m_DataListCtrl.ShowValueAsync(values[0].Value);
                 }
                 else
                 {
-                    m_DataListCtrl.ShowValueAsync(null);
+                    m_DataListCtrl.Clear();
                 }
             }
         }

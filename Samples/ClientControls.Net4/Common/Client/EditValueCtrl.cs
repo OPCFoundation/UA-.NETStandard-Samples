@@ -107,19 +107,20 @@ namespace Opc.Ua.Client.Controls
             }
 
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            object value = new EditComplexValueDlg().ShowDialog(
+            bool edited = new EditComplexValueDlg().TryShowDialog(
             #pragma warning restore CA2000
                 m_value.TypeInfo,
                 null,
                 m_value,
-                "Edit Value");
+                "Edit Value",
+                out Variant value);
 
-            if (value == null)
+            if (!edited)
             {
                 return;
             }
 
-            Value = ClientUtils.ToVariant(value);
+            Value = value;
 
             m_ValueChanged?.Invoke(this, e);
         }

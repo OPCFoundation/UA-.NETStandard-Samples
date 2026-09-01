@@ -354,7 +354,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 UpdateStatus(false, DateTime.Now, "Connected, loading complex type system.");
-                var typeSystemLoader = new ComplexTypeSystemFactory(m_telemetry).Create(m_session);
+                var typeSystemLoader = ComplexTypeSystemClientExtensions.Create(m_session, m_telemetry);
                 await typeSystemLoader.LoadAsync(ct: ct);
             }
             catch (Exception e)
@@ -402,7 +402,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 UpdateStatus(false, DateTime.Now, "Connected, loading complex type system.");
-                var typeSystemLoader = new ComplexTypeSystemFactory(m_telemetry).Create(m_session);
+                var typeSystemLoader = ComplexTypeSystemClientExtensions.Create(m_session, m_telemetry);
                 await typeSystemLoader.LoadAsync(ct: ct);
             }
             catch (Exception e)

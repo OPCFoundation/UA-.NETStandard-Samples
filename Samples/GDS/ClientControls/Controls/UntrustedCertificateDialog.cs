@@ -43,8 +43,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
         public DialogResult ShowDialog(IWin32Window owner, X509Certificate2 certificate)
         {
-            var wrapper = new CertificateWrapper() { Certificate = Certificate.From(certificate) };
-            CertificateValueControl.ShowValue(TypeInfo.Construct(wrapper), null, wrapper, true);
+            CertificateValueControl.ShowCertificate(certificate);
  
             if (base.ShowDialog(owner) != DialogResult.OK)
             {

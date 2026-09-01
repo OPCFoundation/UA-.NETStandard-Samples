@@ -39,7 +39,10 @@ using System.Threading;
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
-    /// Prompts the user to edit a value.
+    /// Prompts the user to edit a value. The value is passed and returned as a
+    /// Variant. Because Variant.Null is a legitimate value, the dialogs report
+    /// a cancelled edit separately: the async overload returns null and the
+    /// synchronous overloads return false.
     /// </summary>
     public partial class EditComplexValueDlg : Form
     {
@@ -62,14 +65,12 @@ namespace Opc.Ua.Client.Controls
         }
         #endregion
 
-        #region Private Fields
-        #endregion
-
         #region Public Interface
         /// <summary>
-        /// Prompts the user to view or edit the value.
+        /// Prompts the user to view or edit the value. Returns null if the
+        /// user cancelled the edit.
         /// </summary>
-        public async Task<object> ShowDialogAsync(
+        public async Task<Variant?> ShowDialogAsync(
             ISession session,
             NodeId nodeId,
             uint attributeId,
@@ -79,6 +80,8 @@ namespace Opc.Ua.Client.Controls
             string caption,
             CancellationToken ct = default)
         {
+            m_telemetry = session?.MessageContext?.Telemetry;
+
             if (!String.IsNullOrEmpty(caption))
             {
                 this.Text = caption;
@@ -88,8 +91,7 @@ namespace Opc.Ua.Client.Controls
 
             ValueCTRL.ChangeSession(session);
 
-            // the editor navigates boxed CLR values, so the Variant is unwrapped for it.
-            await ValueCTRL.ShowValueAsync(nodeId, attributeId, name, value.AsBoxedObject(), readOnly, ct);
+            await ValueCTRL.ShowValueAsync(nodeId, attributeId, name, value, readOnly, ct);
 
             if (base.ShowDialog() != DialogResult.OK)
             {
@@ -100,17 +102,21 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Prompts the user to edit the value.
+        /// Prompts the user to edit the value. Returns false if the user
+        /// cancelled the edit.
         /// </summary>
-        public object ShowDialog(
+        public bool TryShowDialog(
             ISession session,
             string name,
             NodeId dataType,
             int valueRank,
             Variant value,
-            string caption)
+            string caption,
+            out Variant result)
         {
             m_telemetry = session?.MessageContext?.Telemetry;
+            result = Variant.Null;
+
             if (!String.IsNullOrEmpty(caption))
             {
                 this.Text = caption;
@@ -119,27 +125,30 @@ namespace Opc.Ua.Client.Controls
             OkBTN.Visible = true;
 
             ValueCTRL.ChangeSession(session);
-
-            // the editor navigates boxed CLR values, so the Variant is unwrapped for it.
-            ValueCTRL.ShowValue(name, dataType, valueRank, value.AsBoxedObject());
+            ValueCTRL.ShowValue(name, dataType, valueRank, value);
 
             if (base.ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return false;
             }
 
-            return ValueCTRL.GetValue();
+            result = ValueCTRL.GetValue();
+            return true;
         }
 
         /// <summary>
-        /// Prompts the user to edit the value.
+        /// Prompts the user to edit the value. Returns false if the user
+        /// cancelled the edit.
         /// </summary>
-        public object ShowDialog(
+        public bool TryShowDialog(
             TypeInfo expectedType,
             string name,
             Variant value,
-            string caption)
+            string caption,
+            out Variant result)
         {
+            result = Variant.Null;
+
             if (!String.IsNullOrEmpty(caption))
             {
                 this.Text = caption;
@@ -148,16 +157,15 @@ namespace Opc.Ua.Client.Controls
             OkBTN.Visible = true;
 
             ValueCTRL.ChangeSession(null);
-
-            // the editor navigates boxed CLR values, so the Variant is unwrapped for it.
-            ValueCTRL.ShowValue(expectedType, name, value.AsBoxedObject());
+            ValueCTRL.ShowValue(expectedType, name, value);
 
             if (base.ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return false;
             }
 
-            return ValueCTRL.GetValue();
+            result = ValueCTRL.GetValue();
+            return true;
         }
 
         /// <summary>
@@ -178,8 +186,7 @@ namespace Opc.Ua.Client.Controls
             Variant value,
             CancellationToken ct = default)
         {
-            // the editor navigates boxed CLR values, so the Variant is unwrapped for it.
-            return ValueCTRL.ShowValueAsync(nodeId, attributeId, name, value.AsBoxedObject(), true, ct);
+            return ValueCTRL.ShowValueAsync(nodeId, attributeId, name, value, true, ct);
         }
         #endregion
 

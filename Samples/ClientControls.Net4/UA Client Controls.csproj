@@ -101,7 +101,7 @@
     <Compile Update="Common\HostListCtrl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Configuration\Common %28OLD%29\GuiUtils.cs">
+    <Compile Update="BaseControls\GuiUtils.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="Common\EditDataValueCtrl.cs">
@@ -116,19 +116,19 @@
     <Compile Update="Common\ReferenceListCtrl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Configuration\Common %28OLD%29\BaseListCtrl.cs">
+    <Compile Update="BaseControls\BaseListCtrl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Configuration\Common %28OLD%29\BaseTreeCtrl.cs">
+    <Compile Update="BaseControls\BaseTreeCtrl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Configuration\Common %28OLD%29\DataListCtrl.cs">
+    <Compile Update="BaseControls\DataListCtrl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Configuration\Common %28OLD%29\NodeIdCtrl.cs">
+    <Compile Update="BaseControls\NodeIdCtrl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Configuration\Common %28OLD%29\ReferenceTypeCtrl.cs">
+    <Compile Update="BaseControls\ReferenceTypeCtrl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="Configuration\CertificateListCtrl.cs">
@@ -190,9 +190,6 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.ComplexTypes">
-      <Version>$(OpcUaNetStandardVersion)</Version>
-    </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
@@ -210,8 +207,6 @@
     <Compile Remove="Endpoints\DiscoveredServerListCtrl.cs" />
     <Compile Remove="Configuration\UserNamePasswordDlg.Designer.cs" />
     <Compile Remove="Configuration\UserNamePasswordDlg.cs" />
-    <Compile Remove="Configuration\Common (OLD)\ExceptionDlg.Designer.cs" />
-    <Compile Remove="Configuration\Common (OLD)\ExceptionDlg.cs" />
     <Compile Remove="Common\ViewEventDetailsDlg.Designer.cs" />
     <Compile Remove="Common\ViewEventDetailsDlg.cs" />
     <Compile Remove="Common\SelectNodeDlg.Designer.cs" />
@@ -234,7 +229,6 @@
     <EmbeddedResource Remove="Endpoints\DiscoveredServerListDlg.resx" />
     <EmbeddedResource Remove="Endpoints\DiscoveredServerListCtrl.resx" />
     <EmbeddedResource Remove="Configuration\UserNamePasswordDlg.resx" />
-    <EmbeddedResource Remove="Configuration\Common (OLD)\ExceptionDlg.resx" />
     <EmbeddedResource Remove="Common\ViewEventDetailsDlg.resx" />
     <EmbeddedResource Remove="Common\SelectNodeDlg.resx" />
     <EmbeddedResource Remove="Common\SelectNodeCtrl.resx" />

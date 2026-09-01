@@ -141,7 +141,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            string[] strings = null;
+            string[] strings = Array.Empty<string>();
 
             if (m_urls != null)
             {
@@ -154,19 +154,19 @@ namespace Opc.Ua.Client.Controls
             }
 
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            strings = new EditArrayDlg().ShowDialog(m_telemetry, strings, BuiltInType.String, false, null) as string[];
+            bool edited = new EditArrayDlg().TryShowDialog(m_telemetry, Variant.From((ArrayOf<string>)strings), BuiltInType.String, false, null, out Variant result);
             #pragma warning restore CA2000
 
-            if (strings == null)
+            if (!edited)
             {
                 return;
             }
 
             List<Uri> urls = new List<Uri>();
 
-            for (int ii = 0; ii < strings.Length; ii++)
+            foreach (string text in result.GetStringArray())
             {
-                Uri url = Utils.ParseUri(strings[ii]);
+                Uri url = Utils.ParseUri(text);
 
                 if (url != null)
                 {

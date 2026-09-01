@@ -77,29 +77,6 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Creates a Variant from a boxed value using the value's runtime type.
-        /// </summary>
-        public static Variant ToVariant(object value)
-        {
-            if (value == null)
-            {
-                return Variant.Null;
-            }
-
-            if (value is Variant variant)
-            {
-                return variant;
-            }
-
-            if (value is IEncodeable encodeable)
-            {
-                return Variant.From(new ExtensionObject(encodeable));
-            }
-
-            return Variant.From((dynamic)value);
-        }
-
-        /// <summary>
         /// Returns an image index for the specified attribute.
         /// </summary>
 #pragma warning disable 0162

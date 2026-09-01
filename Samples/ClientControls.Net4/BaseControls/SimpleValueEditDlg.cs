@@ -28,29 +28,26 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
-
-using Opc.Ua.Client;
+using Opc.Ua;
 using Opc.Ua.Client.Controls;
+
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
-    /// A dialog to edit a complex value.
+    /// Edits a simple scalar value as text. The value is passed and returned
+    /// as a Variant and the edited text is converted back to the value's
+    /// built in type.
     /// </summary>
-    public partial class ComplexValueEditDlg : Form
+    public partial class SimpleValueEditDlg : Form
     {
         #region Constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="ComplexValueEditDlg"/> class.
+        /// Default constructor
         /// </summary>
-        public ComplexValueEditDlg()
+        public SimpleValueEditDlg()
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -58,37 +55,69 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Fields
-        private object m_value;
+        private Variant m_value;
+        private BuiltInType m_targetType;
         private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
-        /// Displays the dialog.
+        /// Displays the dialog. Returns false if the user cancelled the edit;
+        /// otherwise returns the edited value in <paramref name="result"/>.
         /// </summary>
-        public object ShowDialog(object value, ITelemetryContext telemetry)
+        public bool TryShowDialog(Variant value, ITelemetryContext telemetry, out Variant result)
         {
-            return ShowDialog(value, null, telemetry);
-        }
+            result = Variant.Null;
 
-        /// <summary>
-        /// Displays the dialog.
-        /// </summary>
-        public object ShowDialog(object value, MonitoredItem monitoredItem, ITelemetryContext telemetry)
-        {
+            m_targetType = !value.IsNull ? value.TypeInfo.BuiltInType : BuiltInType.String;
             m_telemetry = telemetry;
-            m_value = value is ICloneable clonable ? clonable.Clone() : value;
 
-            ValueCTRL.Telemetry = telemetry;
-            ValueCTRL.MonitoredItem = monitoredItem;
-            ValueCTRL.ShowValueAsync(m_value);
+            this.Text = Utils.Format("{0} ({1})", this.Text, m_targetType);
+
+            // the displayed text has to round trip through ConvertTo when it is parsed back.
+            ValueTB.Text = value.ConvertTo(BuiltInType.String).TryGetValue(out string text) ? text : String.Empty;
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return false;
             }
 
-            return m_value;
+            result = m_value;
+            return true;
+        }
+
+        /// <summary>
+        /// Returns true if the dialog supports editing the type.
+        /// </summary>
+        public static bool IsSimpleType(TypeInfo typeInfo)
+        {
+            if (typeInfo.ValueRank >= 0)
+            {
+                return false;
+            }
+
+            switch (typeInfo.BuiltInType)
+            {
+                case BuiltInType.Boolean:
+                case BuiltInType.SByte:
+                case BuiltInType.Byte:
+                case BuiltInType.Int16:
+                case BuiltInType.UInt16:
+                case BuiltInType.Int32:
+                case BuiltInType.UInt32:
+                case BuiltInType.Int64:
+                case BuiltInType.UInt64:
+                case BuiltInType.Float:
+                case BuiltInType.Double:
+                case BuiltInType.String:
+                case BuiltInType.DateTime:
+                case BuiltInType.Guid:
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
         #endregion
 
@@ -97,6 +126,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
+                m_value = Variant.From(ValueTB.Text).ConvertTo(m_targetType);
                 DialogResult = DialogResult.OK;
             }
             catch (Exception exception)
