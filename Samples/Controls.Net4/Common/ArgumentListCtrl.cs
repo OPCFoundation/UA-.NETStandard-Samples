@@ -233,7 +233,7 @@ namespace Opc.Ua.Sample.Controls
                 if (argument.Value == null)
                 {
                     BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
-                    Variant defaultValue = VariantElements.CreateDefault(new TypeInfo(builtInType, argument.ValueRank));
+                    Variant defaultValue;
 
                     // create a default instance for structured types.
 #pragma warning disable UA_NETStandard_1 // Experimental IType API required in 2.0 to create a default instance.
@@ -244,6 +244,17 @@ namespace Opc.Ua.Sample.Controls
                         defaultValue = Variant.FromStructure(encodeableType.CreateInstance());
                     }
 #pragma warning restore UA_NETStandard_1
+                    else
+                    {
+                        // the stack knows the default for scalars; arrays
+                        // start as an empty typed array.
+                        defaultValue = TypeInfo.GetDefaultVariantValue(argument.DataType, argument.ValueRank, m_session.TypeTree);
+
+                        if (defaultValue.IsNull && argument.ValueRank >= 0)
+                        {
+                            defaultValue = VariantElements.CreateDefault(new TypeInfo(builtInType, argument.ValueRank));
+                        }
+                    }
 
                     argument.Value = defaultValue;
                 }

@@ -257,9 +257,21 @@ namespace Opc.Ua.Client.Controls
 
             m_rootState = root;
 
-            m_defaultFont = (root.Value.TypeInfo.BuiltInType == BuiltInType.ByteString && root.Value.TypeInfo.ValueRank < 0)
-                ? new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)))
-                : ItemsLV.Font;
+            if (m_defaultFont != null && m_defaultFont != ItemsLV.Font)
+            {
+                m_defaultFont.Dispose();
+            }
+
+            if (root.Value.TypeInfo.BuiltInType == BuiltInType.ByteString && root.Value.TypeInfo.ValueRank < 0)
+            {
+                #pragma warning disable CA2000 // Justification: the font is kept in a field and disposed when it is replaced.
+                m_defaultFont = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
+                #pragma warning restore CA2000
+            }
+            else
+            {
+                m_defaultFont = ItemsLV.Font;
+            }
 
             // switch to detail view.
             if (ItemsLV.View == View.List)

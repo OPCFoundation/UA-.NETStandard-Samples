@@ -315,7 +315,7 @@ namespace Opc.Ua.Client.Controls.Common
                     }
                     else
                     {
-                        newElements.Add(VariantElements.CreateDefaultScalar(targetType));
+                        newElements.Add(TypeInfo.GetDefaultVariantValue(targetType));
                     }
                 }
 
@@ -346,7 +346,7 @@ namespace Opc.Ua.Client.Controls.Common
             }
             catch (Exception)
             {
-                info.Value = VariantElements.CreateDefaultScalar(EffectiveType(info).BuiltInType);
+                info.Value = TypeInfo.GetDefaultVariantValue(EffectiveType(info).BuiltInType);
             }
 
             info.Value = Convert(info.Value, builtInType, true);
@@ -377,7 +377,7 @@ namespace Opc.Ua.Client.Controls.Common
                     throw new FormatException("Could not cast value to requested type.", e);
                 }
 
-                return VariantElements.CreateDefaultScalar(targetType);
+                return TypeInfo.GetDefaultVariantValue(targetType);
             }
         }
 

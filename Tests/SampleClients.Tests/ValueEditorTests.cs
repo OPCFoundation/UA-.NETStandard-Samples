@@ -245,9 +245,12 @@ namespace Opc.Ua.Samples.Tests
         [Test]
         public void DefaultValuesMatchTheType()
         {
-            Assert.That(VariantElements.CreateDefaultScalar(BuiltInType.String).GetString(), Is.EqualTo(String.Empty));
-            Assert.That(VariantElements.CreateDefaultScalar(BuiltInType.Int32).GetInt32(), Is.EqualTo(0));
+            // scalars come from the stack's own defaults.
+            Variant text = VariantElements.CreateDefault(TypeInfo.Scalars.String);
+            Assert.That(text.TypeInfo.BuiltInType, Is.EqualTo(BuiltInType.String));
+            Assert.That(VariantElements.CreateDefault(TypeInfo.Scalars.Int32).GetInt32(), Is.EqualTo(0));
 
+            // the stack has no array defaults, so an empty typed array is created.
             Variant array = VariantElements.CreateDefault(new TypeInfo(BuiltInType.Double, ValueRanks.OneDimension));
             Assert.That(array.TypeInfo.ValueRank, Is.EqualTo(ValueRanks.OneDimension));
             Assert.That(array.GetDoubleArray().Count, Is.EqualTo(0));

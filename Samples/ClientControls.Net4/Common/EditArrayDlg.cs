@@ -223,7 +223,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    row[0] = ElementToString(VariantElements.CreateDefaultScalar(m_dataType));
+                    row[0] = ElementToString(TypeInfo.GetDefaultVariantValue(m_dataType));
                     row[1] = index;
                     m_dataset.Tables[0].Rows.Add(row);
                 }

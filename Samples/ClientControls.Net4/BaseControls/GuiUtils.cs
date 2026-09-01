@@ -215,26 +215,6 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Uses the command line to override the UA TCP implementation specified in the configuration.
-        /// </summary>
-        /// <param name="configuration">The configuration instance that stores the configurable information for a UA application.
-        /// </param>
-        public static void OverrideUaTcpImplementation(ApplicationConfiguration configuration)
-        {
-            // check if UA TCP configuration included.
-            TransportConfiguration transport = null;
-
-            for (int ii = 0; ii < configuration.TransportConfigurations.Count; ii++)
-            {
-                if (configuration.TransportConfigurations[ii].UriScheme == Utils.UriSchemeOpcTcp)
-                {
-                    transport = configuration.TransportConfigurations[ii];
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
         /// Displays the UA-TCP configuration in the form.
         /// </summary>
         /// <param name="form">The form to display the UA-TCP configuration.</param>
@@ -377,7 +357,17 @@ namespace Opc.Ua.Client.Controls
 #pragma warning restore UA_NETStandard_1
             }
 
-            return VariantElements.CreateDefault(new TypeInfo(builtInType, valueRank));
+            // the stack knows the default for scalars (including ns0 subtypes
+            // like Duration); it has none for arrays, so an empty typed array
+            // is created for those.
+            Variant defaultValue = TypeInfo.GetDefaultVariantValue(datatypeId, valueRank);
+
+            if (defaultValue.IsNull && valueRank >= 0)
+            {
+                defaultValue = VariantElements.CreateDefault(new TypeInfo(builtInType, valueRank));
+            }
+
+            return defaultValue;
         }
 
         /// <summary>

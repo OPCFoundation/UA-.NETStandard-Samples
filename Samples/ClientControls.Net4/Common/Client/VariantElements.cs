@@ -139,46 +139,10 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Returns a Variant holding a sensible non-null default scalar value
-        /// for the built in type, used when new array elements or values are
-        /// created in an editor.
-        /// </summary>
-        public static Variant CreateDefaultScalar(BuiltInType builtInType)
-        {
-            switch (builtInType)
-            {
-                case BuiltInType.Boolean: return Variant.From(false);
-                case BuiltInType.SByte: return Variant.From((sbyte)0);
-                case BuiltInType.Byte: return Variant.From((byte)0);
-                case BuiltInType.Int16: return Variant.From((short)0);
-                case BuiltInType.UInt16: return Variant.From((ushort)0);
-                case BuiltInType.Int32: return Variant.From(0);
-                case BuiltInType.UInt32: return Variant.From(0U);
-                case BuiltInType.Int64: return Variant.From(0L);
-                case BuiltInType.UInt64: return Variant.From(0UL);
-                case BuiltInType.Float: return Variant.From(0.0F);
-                case BuiltInType.Double: return Variant.From(0.0);
-                case BuiltInType.String: return Variant.From(String.Empty);
-                case BuiltInType.DateTime: return Variant.From(DateTimeUtc.MinValue);
-                case BuiltInType.Guid: return Variant.From(default(Uuid));
-                case BuiltInType.ByteString: return Variant.From(default(ByteString));
-                case BuiltInType.XmlElement: return Variant.From(default(XmlElement));
-                case BuiltInType.NodeId: return Variant.From(NodeId.Null);
-                case BuiltInType.ExpandedNodeId: return Variant.From(ExpandedNodeId.Null);
-                case BuiltInType.StatusCode: return Variant.From(StatusCodes.Good);
-                case BuiltInType.QualifiedName: return Variant.From(QualifiedName.Null);
-                case BuiltInType.LocalizedText: return Variant.From(LocalizedText.Null);
-                case BuiltInType.ExtensionObject: return Variant.From(ExtensionObject.Null);
-                case BuiltInType.DataValue: return Variant.From(DataValue.Null);
-                case BuiltInType.Enumeration: return Variant.From(new EnumValue(0));
-                default: return Variant.Null;
-            }
-        }
-
-        /// <summary>
-        /// Returns a Variant holding a default value for the type info: a
-        /// default scalar for scalar types, an empty array for array types
-        /// and an empty matrix for higher ranks.
+        /// Returns a Variant holding a default value for the type info: the
+        /// stack's default scalar for scalar types (see
+        /// <see cref="TypeInfo.GetDefaultVariantValue(BuiltInType)"/>), an
+        /// empty array for array types and an empty matrix for higher ranks.
         /// </summary>
         public static Variant CreateDefault(TypeInfo typeInfo)
         {
@@ -189,7 +153,7 @@ namespace Opc.Ua.Client.Controls
 
             if (typeInfo.ValueRank < 0)
             {
-                return CreateDefaultScalar(typeInfo.BuiltInType);
+                return TypeInfo.GetDefaultVariantValue(typeInfo.BuiltInType);
             }
 
             int[] dimensions = typeInfo.ValueRank <= 1 ? new int[1] : new int[typeInfo.ValueRank];

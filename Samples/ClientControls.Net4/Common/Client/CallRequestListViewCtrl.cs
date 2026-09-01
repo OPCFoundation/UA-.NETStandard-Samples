@@ -361,15 +361,23 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
-            // set default values for input arguments.
+            // set default values for input arguments. the stack knows the
+            // default for scalars; arrays start as an empty typed array.
             if (m_inputArguments != null)
             {
                 foreach (Argument argument in m_inputArguments)
                 {
                     #pragma warning disable CA1849 // Justification: sample keeps the existing synchronous call pattern.
-                    BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
+                    Variant defaultValue = TypeInfo.GetDefaultVariantValue(argument.DataType, argument.ValueRank, m_session.TypeTree);
+
+                    if (defaultValue.IsNull && argument.ValueRank >= 0)
+                    {
+                        BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
+                        defaultValue = VariantElements.CreateDefault(new TypeInfo(builtInType, argument.ValueRank));
+                    }
                     #pragma warning restore CA1849
-                    argument.Value = VariantElements.CreateDefault(new TypeInfo(builtInType, argument.ValueRank));
+
+                    argument.Value = defaultValue;
                 }
             }
         }
