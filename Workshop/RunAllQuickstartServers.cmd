@@ -10,6 +10,7 @@ start Quickstarts.HistoricalEventsServer.exe
 start Quickstarts.MethodsServer.exe
 start Quickstarts.PerfTestServer.exe
 start Quickstarts.SimpleEventsServer.exe
+start Quickstarts.StateMachinesServer.exe
 start Quickstarts.UserAuthenticationServer.exe
 start Quickstarts.ViewsServer.exe
 cd ..\..\Workshop

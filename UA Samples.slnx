@@ -45,6 +45,10 @@
     <Project Path="Workshop/SimpleEvents/Client/SimpleEvents Client.csproj" Id="fa574129-651d-4655-ae44-b61f3e68230b" />
     <Project Path="Workshop/SimpleEvents/Server/SimpleEvents Server.csproj" Id="6ac7a41d-cc27-4b7f-8570-b99561e2a339" />
   </Folder>
+  <Folder Name="/StateMachines/">
+    <Project Path="Workshop/StateMachines/Client/StateMachines Client.csproj" />
+    <Project Path="Workshop/StateMachines/Server/StateMachines Server.csproj" />
+  </Folder>
   <Folder Name="/UserAuthentication/">
     <Project Path="Workshop/UserAuthentication/Client/UserAuthentication Client.csproj" Id="2f6c8e81-8e6a-4f49-8096-b35a1cd157bc" />
     <Project Path="Workshop/UserAuthentication/Server/UserAuthentication Server.csproj" Id="39be8219-83db-4e49-b178-b7f8b0052b7b" />

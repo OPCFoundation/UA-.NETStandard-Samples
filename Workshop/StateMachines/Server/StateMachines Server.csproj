@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Quickstarts.StateMachines.Server</RootNamespace>
+    <AssemblyName>Quickstarts.StateMachinesServer</AssemblyName>
+    <ApplicationIcon>App.ico</ApplicationIcon>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="App.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <Content Include="StateMachinesServer.Config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
+    <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
+      <Version>2.0.0-preview.2</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

@@ -127,6 +127,12 @@ namespace Opc.Ua.Samples.Tests
                 Expectation = "an event of the server",
             },
             new SubscribingClient {
+                Name = "StateMachines",
+                Arrange = PowerOnTheMachineAsync,
+                HasNotification = form => HasRows(form, "TransitionsLV"),
+                Expectation = "a transition of the state machine it powered on",
+            },
+            new SubscribingClient {
                 Name = "HistoricalEvents",
                 HasNotification = form => HasRows(FindEventList(form), "EventsLV"),
                 Expectation = "a live event of the server",
@@ -279,6 +285,53 @@ namespace Opc.Ua.Samples.Tests
             open.Invoke(form, new object[] { null, EventArgs.Empty });
 
             await Task.Delay(TimeSpan.FromSeconds(2), ct).ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Powers the state machine of the StateMachines client on.
+        /// </summary>
+        /// <remarks>
+        /// That sample streams the transitions of a state machine, and a state machine which
+        /// nobody drives never has one: the client has to cause a transition before there is
+        /// anything for the stream to report.
+        /// </remarks>
+        private static async Task PowerOnTheMachineAsync(Form form, CancellationToken ct)
+        {
+            var powerOn = (Button)WinFormsHarness.FindControl(form, "PowerOnBTN");
+            var start = (Button)WinFormsHarness.FindControl(form, "StartBTN");
+
+            Assert.That(
+                powerOn,
+                Is.Not.Null,
+                "The StateMachines client no longer has a 'PowerOnBTN'. Rename it here too.");
+
+            Assert.That(
+                powerOn.Enabled,
+                Is.True,
+                "The StateMachines client did not enable its causes, so it never resolved " +
+                "the state machines of its server.");
+
+            // the machine starts in Off, where Start is not a declared cause. The client reads
+            // that from the Executable attribute rather than guessing, so the button for a
+            // cause which cannot apply is not offered at all.
+            Assert.That(
+                start.Enabled,
+                Is.False,
+                "Start is not declared for Off, so the client must not offer it there.");
+
+            // the click handler is an async void event handler, so there is nothing to await
+            powerOn.PerformClick();
+
+            // and once the machine is Idle the same button has to become available. The click
+            // handler re-reads the attributes after its call returns, so this is a wait on the
+            // message loop rather than on the transition coming back over the subscription.
+            bool offered = await WaitAsync(() => start.Enabled, ct).ConfigureAwait(true);
+
+            Assert.That(
+                offered,
+                Is.True,
+                "Start is declared for Idle, so the client has to offer it once the machine " +
+                "has been powered on.");
         }
 
         /// <summary>

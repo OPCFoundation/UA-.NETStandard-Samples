@@ -10,6 +10,7 @@ start Quickstarts.HistoricalEventsClient.exe
 start Quickstarts.MethodsClient.exe
 start Quickstarts.PerfTestClient.exe
 start Quickstarts.SimpleEventsClient.exe
+start Quickstarts.StateMachinesClient.exe
 start Quickstarts.UserAuthenticationClient.exe
 start Quickstarts.ViewsClient.exe
 cd ..\..\Workshop
