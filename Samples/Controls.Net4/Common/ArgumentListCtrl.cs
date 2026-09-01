@@ -146,11 +146,20 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument != null)
                 {
-                    values.Add(ClientUtils.ToVariant(argument.Value));
+                    values.Add(GetArgumentValue(argument));
                 }
             }
 
             return values;
+        }
+
+        /// <summary>
+        /// Returns the value of an argument. The control keeps the values it
+        /// edits as Variants in the argument's local value slot.
+        /// </summary>
+        private static Variant GetArgumentValue(Argument argument)
+        {
+            return argument.Value is Variant value ? value : Variant.Null;
         }
 
         /// <summary>
@@ -223,27 +232,34 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument.Value == null)
                 {
-                    argument.Value = TypeInfo.GetDefaultValue(argument.DataType, argument.ValueRank, m_session.TypeTree);
+                    BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
+                    Variant defaultValue;
 
-                    if (argument.Value == null)
+                    // create a default instance for structured types.
+#pragma warning disable UA_NETStandard_1 // Experimental IType API required in 2.0 to create a default instance.
+                    if (builtInType == BuiltInType.ExtensionObject && argument.ValueRank == ValueRanks.Scalar &&
+                        m_session.MessageContext.Factory.TryGetType(new ExpandedNodeId(argument.DataType), out IType type) &&
+                        type is IEncodeableType encodeableType)
                     {
-                        Type type = m_session.MessageContext.Factory.GetSystemType(argument.DataType);
+                        defaultValue = Variant.FromStructure(encodeableType.CreateInstance());
+                    }
+#pragma warning restore UA_NETStandard_1
+                    else
+                    {
+                        // the stack knows the default for scalars; arrays
+                        // start as an empty typed array.
+                        defaultValue = TypeInfo.GetDefaultVariantValue(argument.DataType, argument.ValueRank, m_session.TypeTree);
 
-                        if (type != null)
+                        if (defaultValue.IsNull && argument.ValueRank >= 0)
                         {
-                            if (argument.ValueRank == ValueRanks.Scalar)
-                            {
-                                argument.Value = new ExtensionObject((IEncodeable)Activator.CreateInstance(type), false);
-                            }
-                            else
-                            {
-                                argument.Value = Array.Empty<ExtensionObject>();
-                            }
+                            defaultValue = VariantElements.CreateDefault(new TypeInfo(builtInType, argument.ValueRank));
                         }
                     }
+
+                    argument.Value = defaultValue;
                 }
 
-                listItem.SubItems[2].Text = String.Format("{0}", argument.Value);
+                listItem.SubItems[2].Text = String.Format("{0}", GetArgumentValue(argument));
                 listItem.SubItems[3].Text = String.Format("{0}", argument.Description.Text);
 
                 listItem.Tag = item;
@@ -266,9 +282,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                object value = GuiUtils.EditValue(m_session, ClientUtils.ToVariant(arguments[0].Value), arguments[0].DataType, arguments[0].ValueRank, Telemetry);
-
-                if (value != null)
+                if (GuiUtils.TryEditValue(m_session, GetArgumentValue(arguments[0]), arguments[0].DataType, arguments[0].ValueRank, Telemetry, out Variant value))
                 {
                     arguments[0].Value = value;
                 }

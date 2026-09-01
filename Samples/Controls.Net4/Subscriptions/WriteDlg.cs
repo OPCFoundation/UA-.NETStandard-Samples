@@ -120,7 +120,7 @@ namespace Opc.Ua.Sample.Controls
             ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToWrite);
 
             WriteResultsCTRL.Telemetry = m_session?.MessageContext?.Telemetry;
-            await WriteResultsCTRL.ShowValueAsync(results, true, ct);
+            await WriteResultsCTRL.ShowValueAsync(Variant.From((ArrayOf<StatusCode>)results.ToArray()), true, ct);
         }
         #endregion
 

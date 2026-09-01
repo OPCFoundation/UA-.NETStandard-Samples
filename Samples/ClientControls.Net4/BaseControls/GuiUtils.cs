@@ -215,26 +215,6 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Uses the command line to override the UA TCP implementation specified in the configuration.
-        /// </summary>
-        /// <param name="configuration">The configuration instance that stores the configurable information for a UA application.
-        /// </param>
-        public static void OverrideUaTcpImplementation(ApplicationConfiguration configuration)
-        {
-            // check if UA TCP configuration included.
-            TransportConfiguration transport = null;
-
-            for (int ii = 0; ii < configuration.TransportConfigurations.Count; ii++)
-            {
-                if (configuration.TransportConfigurations[ii].UriScheme == Utils.UriSchemeOpcTcp)
-                {
-                    transport = configuration.TransportConfigurations[ii];
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
         /// Displays the UA-TCP configuration in the form.
         /// </summary>
         /// <param name="form">The form to display the UA-TCP configuration.</param>
@@ -361,93 +341,69 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Returns a default value for the data type.
         /// </summary>
-        public static object GetDefaultValue(NodeId datatypeId, int valueRank)
+        public static Variant GetDefaultValue(NodeId datatypeId, int valueRank)
         {
-            Type type = TypeInfo.GetSystemType(datatypeId, EncodeableFactory.Create())?.Type;
+            BuiltInType builtInType = TypeInfo.GetBuiltInType(datatypeId);
 
-            if (type == null)
+            // create a default instance for structured types.
+            if (builtInType == BuiltInType.ExtensionObject && valueRank < 0)
             {
-                return null;
+#pragma warning disable UA_NETStandard_1 // Experimental IType API required in 2.0 to create a default instance.
+                if (EncodeableFactory.Create().TryGetType(new ExpandedNodeId(datatypeId), out IType type) &&
+                    type is IEncodeableType encodeableType)
+                {
+                    return Variant.FromStructure(encodeableType.CreateInstance());
+                }
+#pragma warning restore UA_NETStandard_1
             }
 
-            if (valueRank < 0)
+            // the stack knows the default for scalars (including ns0 subtypes
+            // like Duration); it has none for arrays, so an empty typed array
+            // is created for those.
+            Variant defaultValue = TypeInfo.GetDefaultVariantValue(datatypeId, valueRank);
+
+            if (defaultValue.IsNull && valueRank >= 0)
             {
-                if (type == typeof(String))
-                {
-                    return System.String.Empty;
-                }
-
-                if (type == typeof(byte[]))
-                {
-                    return Array.Empty<byte>();
-                }
-
-                if (type == typeof(NodeId))
-                {
-                    return Opc.Ua.NodeId.Null;
-                }
-
-                if (type == typeof(ExpandedNodeId))
-                {
-                    return Opc.Ua.ExpandedNodeId.Null;
-                }
-
-                if (type == typeof(QualifiedName))
-                {
-                    return Opc.Ua.QualifiedName.Null;
-                }
-
-                if (type == typeof(LocalizedText))
-                {
-                    return Opc.Ua.LocalizedText.Null;
-                }
-
-                if (type == typeof(Guid))
-                {
-                    return System.Guid.Empty;
-                }
-
-                if (type == typeof(System.Xml.XmlElement))
-                {
-                    System.Xml.XmlDocument document = new System.Xml.XmlDocument { XmlResolver = null };
-                    using XmlReader reader = XmlReader.Create("<Null/>", new XmlReaderSettings() { XmlResolver = null });
-                    document.Load(reader);
-                    return document.DocumentElement;
-                }
-
-                return Activator.CreateInstance(type);
+                defaultValue = VariantElements.CreateDefault(new TypeInfo(builtInType, valueRank));
             }
 
-            return Array.CreateInstance(type, new int[valueRank]);
+            return defaultValue;
         }
 
         /// <summary>
-        /// Displays a dialog that allows a use to edit a value.
+        /// Displays a dialog that allows a user to edit a value. Returns false
+        /// if the user cancelled the edit.
         /// </summary>
-        public static object EditValue(ISession session, Variant value, ITelemetryContext telemetry)
+        public static bool TryEditValue(ISession session, Variant value, ITelemetryContext telemetry, out Variant result)
         {
+            result = Variant.Null;
             TypeInfo typeInfo = value.TypeInfo;
 
             if (!typeInfo.IsUnknown)
             {
-                return EditValue(session, value, new NodeId((uint)typeInfo.BuiltInType), typeInfo.ValueRank, telemetry);
+                return TryEditValue(session, value, new NodeId((uint)typeInfo.BuiltInType), typeInfo.ValueRank, telemetry, out result);
             }
 
-            return null;
+            return false;
         }
 
         /// <summary>
-        /// Displays a dialog that allows a use to edit a value.
+        /// Displays a dialog that allows a user to edit a value. Returns false
+        /// if the user cancelled the edit.
         /// </summary>
-        public static object EditValue(ISession session, Variant variantValue, NodeId datatypeId, int valueRank, ITelemetryContext telemetry)
+        public static bool TryEditValue(ISession session, Variant value, NodeId datatypeId, int valueRank, ITelemetryContext telemetry, out Variant result)
         {
-            // the value editors below work on boxed CLR values, so the Variant is unwrapped here.
-            object value = variantValue.AsBoxedObject() ?? GetDefaultValue(datatypeId, valueRank);
+            result = Variant.Null;
+
+            if (value.IsNull)
+            {
+                value = GetDefaultValue(datatypeId, valueRank);
+            }
 
             if (valueRank >= 0)
             {
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                return new ComplexValueEditDlg().ShowDialog(value, telemetry);
+                return new ComplexValueEditDlg().TryShowDialog(value, telemetry, out result);
                 #pragma warning restore CA2000
             }
 
@@ -456,6 +412,12 @@ namespace Opc.Ua.Client.Controls
             switch (builtinType)
             {
                 case BuiltInType.Boolean:
+                {
+                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
+                    return new SimpleValueEditDlg().TryShowDialog(value.ConvertTo(BuiltInType.Boolean), telemetry, out result);
+                    #pragma warning restore CA2000
+                }
+
                 case BuiltInType.Byte:
                 case BuiltInType.SByte:
                 case BuiltInType.Int16:
@@ -467,64 +429,63 @@ namespace Opc.Ua.Client.Controls
                 case BuiltInType.Float:
                 case BuiltInType.Double:
                 case BuiltInType.Enumeration:
-                {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(builtinType).Type);
-                    #pragma warning restore CA2000
-                }
-
                 case BuiltInType.Number:
-                {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Double).Type);
-                    #pragma warning restore CA2000
-                }
-
                 case BuiltInType.Integer:
-                {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.Int64).Type);
-                    #pragma warning restore CA2000
-                }
-
                 case BuiltInType.UInteger:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().ShowDialog(value, TypeInfo.GetSystemType(BuiltInType.UInt64).Type);
+                    return new NumericValueEditDlg().TryShowDialog(value, builtinType, out result);
                     #pragma warning restore CA2000
                 }
 
                 case BuiltInType.NodeId:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NodeIdValueEditDlg().ShowDialog(session, (NodeId)value, telemetry);
+                    NodeId nodeId = new NodeIdValueEditDlg().ShowDialog(session, value.GetNodeId(), telemetry);
                     #pragma warning restore CA2000
+
+                    if (nodeId.IsNull)
+                    {
+                        return false;
+                    }
+
+                    result = Variant.From(nodeId);
+                    return true;
                 }
 
                 case BuiltInType.ExpandedNodeId:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NodeIdValueEditDlg().ShowDialog(session, (ExpandedNodeId)value, telemetry);
+                    ExpandedNodeId expandedNodeId = new NodeIdValueEditDlg().ShowDialog(session, value.GetExpandedNodeId(), telemetry);
                     #pragma warning restore CA2000
+
+                    if (expandedNodeId.IsNull)
+                    {
+                        return false;
+                    }
+
+                    result = Variant.From(expandedNodeId);
+                    return true;
                 }
 
                 case BuiltInType.DateTime:
                 {
-                    DateTime datetime = (DateTime)value;
+                    DateTime datetime = value.GetDateTime().ToDateTime();
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     if (new DateTimeValueEditDlg().ShowDialog(ref datetime))
                     #pragma warning restore CA2000
                     {
-                        return datetime;
+                        result = Variant.From(new DateTimeUtc(datetime));
+                        return true;
                     }
 
-                    return null;
+                    return false;
                 }
 
                 case BuiltInType.QualifiedName:
                 {
-                    QualifiedName qname = (QualifiedName)value;
+                    QualifiedName qname = value.GetQualifiedName();
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     string name = new StringValueEditDlg().ShowDialog(qname.Name);
@@ -532,23 +493,31 @@ namespace Opc.Ua.Client.Controls
 
                     if (name != null)
                     {
-                        return new QualifiedName(name, qname.NamespaceIndex);
+                        result = Variant.From(new QualifiedName(name, qname.NamespaceIndex));
+                        return true;
                     }
 
-                    return null;
+                    return false;
                 }
 
                 case BuiltInType.String:
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new StringValueEditDlg().ShowDialog((string)value);
+                    string text = new StringValueEditDlg().ShowDialog(value.GetString());
                     #pragma warning restore CA2000
+
+                    if (text == null)
+                    {
+                        return false;
+                    }
+
+                    result = Variant.From(text);
+                    return true;
                 }
 
                 case BuiltInType.ByteString:
                 {
-                    byte[] bytes = value as byte[];
-                    string hex = FormatByteString(bytes);
+                    string hex = FormatByteString(value.GetByteString());
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     string edited = new StringValueEditDlg().ShowDialog(hex);
@@ -556,15 +525,16 @@ namespace Opc.Ua.Client.Controls
 
                     if (edited == null)
                     {
-                        return null;
+                        return false;
                     }
 
-                    return ParseByteString(edited);
+                    result = Variant.From(ByteString.From(ParseByteString(edited)));
+                    return true;
                 }
 
                 case BuiltInType.LocalizedText:
                 {
-                    LocalizedText ltext = (LocalizedText)value;
+                    LocalizedText ltext = value.GetLocalizedText();
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     string text = new StringValueEditDlg().ShowDialog(ltext.Text);
@@ -572,38 +542,40 @@ namespace Opc.Ua.Client.Controls
 
                     if (text != null)
                     {
-                        return new LocalizedText(ltext.Locale, text);
+                        result = Variant.From(new LocalizedText(ltext.Locale, text));
+                        return true;
                     }
 
-                    return null;
+                    return false;
                 }
             }
 
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            return new ComplexValueEditDlg().ShowDialog(value, telemetry);
+            return new ComplexValueEditDlg().TryShowDialog(value, telemetry, out result);
             #pragma warning restore CA2000
         }
 
         /// <summary>
-        /// Formats a byte array as a whitespace separated hex string for editing.
+        /// Formats a byte string as a whitespace separated hex string for editing.
         /// </summary>
-        private static string FormatByteString(byte[] bytes)
+        private static string FormatByteString(ByteString bytes)
         {
-            if (bytes == null)
+            if (bytes.IsNull)
             {
                 return String.Empty;
             }
 
-            var builder = new StringBuilder(bytes.Length * 3);
+            var builder = new StringBuilder(bytes.Span.Length * 3);
+            int ii = 0;
 
-            for (int ii = 0; ii < bytes.Length; ii++)
+            foreach (byte b in bytes.Span)
             {
-                if (ii > 0)
+                if (ii++ > 0)
                 {
                     builder.Append(' ');
                 }
 
-                builder.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, "{0:X2}", bytes[ii]);
+                builder.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, "{0:X2}", b);
             }
 
             return builder.ToString();

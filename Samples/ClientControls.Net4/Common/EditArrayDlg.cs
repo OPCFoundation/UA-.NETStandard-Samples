@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -30,10 +30,6 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using System.Drawing;
-using System.Text;
-using System.Xml;
-using System.Xml.Serialization;
 using System.Data;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -41,7 +37,8 @@ using Opc.Ua.Client;
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
-    /// Prompts the user to edit a value.
+    /// Prompts the user to edit a one dimensional array value held in a
+    /// Variant, one element per row.
     /// </summary>
     public partial class EditArrayDlg : Form
     {
@@ -75,11 +72,21 @@ namespace Opc.Ua.Client.Controls
 
         #region Public Interface
         /// <summary>
-        /// Prompts the user to edit an array value.
+        /// Prompts the user to edit an array value. Returns false if the user
+        /// cancelled the edit; otherwise returns the edited array in
+        /// <paramref name="result"/>.
         /// </summary>
-        public Array ShowDialog(ITelemetryContext telemetry, Array value, BuiltInType dataType, bool readOnly, string caption)
+        public bool TryShowDialog(
+            ITelemetryContext telemetry,
+            Variant value,
+            BuiltInType dataType,
+            bool readOnly,
+            string caption,
+            out Variant result)
         {
             m_telemetry = telemetry;
+            result = Variant.Null;
+
             if (caption != null)
             {
                 this.Text = caption;
@@ -88,7 +95,7 @@ namespace Opc.Ua.Client.Controls
             // detect the data type.
             if (dataType == BuiltInType.Null)
             {
-                dataType = TypeInfo.Construct(value).BuiltInType;
+                dataType = value.TypeInfo.BuiltInType;
             }
 
             m_dataType = dataType;
@@ -97,12 +104,12 @@ namespace Opc.Ua.Client.Controls
             ArrayDV.RowHeadersVisible = !readOnly;
             m_dataset.Tables[0].Clear();
 
-            if (value != null)
+            if (VariantElements.TryGetElements(value, out ArrayOf<Variant> elements, out _))
             {
-                for (int ii = 0; ii < value.Length; ii++)
+                for (int ii = 0; ii < elements.Count; ii++)
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    row[0] = ClientUtils.ToVariant(value.GetValue(ii)).ToString();
+                    row[0] = ElementToString(elements[ii]);
                     row[1] = ii;
                     m_dataset.Tables[0].Rows.Add(row);
                 }
@@ -112,25 +119,39 @@ namespace Opc.Ua.Client.Controls
 
             if (ShowDialog() != DialogResult.OK)
             {
-                return null;
+                return false;
             }
 
             m_dataset.AcceptChanges();
 
-            if (!readOnly)
+            if (readOnly)
             {
-                value = TypeInfo.CreateArray(dataType, m_dataset.Tables[0].Rows.Count);
-
-                for (int ii = 0; ii < m_dataset.Tables[0].DefaultView.Count; ii++)
-                {
-                    string oldValue = m_dataset.Tables[0].DefaultView[ii].Row[0] as string;
-
-                    // the array is a CLR array, so the converted value has to be boxed.
-                    value.SetValue(Variant.From(oldValue).ConvertTo(m_dataType).AsBoxedObject(), ii);
-                }
+                result = value;
+                return true;
             }
 
-            return value;
+            var newElements = new List<Variant>(m_dataset.Tables[0].DefaultView.Count);
+
+            for (int ii = 0; ii < m_dataset.Tables[0].DefaultView.Count; ii++)
+            {
+                string text = m_dataset.Tables[0].DefaultView[ii].Row[0] as string;
+                newElements.Add(Variant.From(text).ConvertTo(m_dataType));
+            }
+
+            result = VariantElements.CreateFromElements(m_dataType, newElements, new int[] { newElements.Count });
+            return true;
+        }
+        #endregion
+
+        #region Private Methods
+        /// <summary>
+        /// Converts an element to the text shown in a row. The text has to
+        /// round trip through <see cref="Variant.ConvertTo"/> when the edited
+        /// array is rebuilt.
+        /// </summary>
+        private string ElementToString(Variant element)
+        {
+            return element.ConvertTo(BuiltInType.String).TryGetValue(out string text) ? text : String.Empty;
         }
         #endregion
 
@@ -152,7 +173,7 @@ namespace Opc.Ua.Client.Controls
             try
             {
                 // throws if the text cannot be converted to the array element type.
-                _ = ClientUtils.ToVariant(e.FormattedValue).ConvertTo(m_dataType);
+                _ = Variant.From(e.FormattedValue as string).ConvertTo(m_dataType);
             }
             catch (Exception exception)
             {
@@ -202,7 +223,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     DataRow row = m_dataset.Tables[0].NewRow();
-                    row[0] = ClientUtils.ToVariant(TypeInfo.GetDefaultValue(m_dataType));
+                    row[0] = ElementToString(TypeInfo.GetDefaultVariantValue(m_dataType));
                     row[1] = index;
                     m_dataset.Tables[0].Rows.Add(row);
                 }

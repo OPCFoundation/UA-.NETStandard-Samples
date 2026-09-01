@@ -28,24 +28,23 @@
  * ======================================================================*/
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Data;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Reflection;
-using System.IO;
-using System.Runtime.Serialization;
-using Microsoft.Extensions.Logging;
+using System.Security.Cryptography.X509Certificates;
+using Opc.Ua.Security.Certificates;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
     /// <summary>
-    /// Allows the user to edit a complex value.
+    /// Displays the details of a certificate. Every caller of this control
+    /// shows an X.509 certificate read only, so the control reads the named
+    /// certificate properties directly instead of navigating a boxed CLR
+    /// object with reflection.
     /// </summary>
     public partial class EditValueCtrl : UserControl
     {
@@ -65,7 +64,7 @@ namespace Opc.Ua.Gds.Client.Controls
             m_dataset = new DataSet();
             m_dataset.Tables.Add("Values");
 
-            m_dataset.Tables[0].Columns.Add("AccessInfo", typeof(AccessInfo));
+            m_dataset.Tables[0].Columns.Add("Field", typeof(CertificateField));
             m_dataset.Tables[0].Columns.Add("Name", typeof(string));
             m_dataset.Tables[0].Columns.Add("DataType", typeof(string));
             m_dataset.Tables[0].Columns.Add("Value", typeof(string));
@@ -76,26 +75,23 @@ namespace Opc.Ua.Gds.Client.Controls
         #endregion
 
         #region Private Fields
-        private ILogger m_logger = LoggerUtils.Null.Logger;
         #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private DataSet m_dataset;
         #pragma warning restore CA2213
-        private AccessInfo m_value;
-        private bool m_readOnly;
         private int m_maxDisplayTextLength;
         private event EventHandler m_ValueChanged;
         #endregion
 
-        #region AccessInfo Class
-        private sealed class AccessInfo
+        #region CertificateField Class
+        /// <summary>
+        /// One displayed certificate property.
+        /// </summary>
+        private sealed class CertificateField
         {
-            public AccessInfo Parent;
-            public PropertyInfo PropertyInfo;
-            public int[] Indexes;
-            public Opc.Ua.TypeInfo TypeInfo;
-            public object Value;
-            public object WrappedValue;
             public string Name;
+            public string DataType;
+            public string Value;
+            public ByteString Bytes;
         }
         #endregion
 
@@ -129,89 +125,12 @@ namespace Opc.Ua.Gds.Client.Controls
         {
             get
             {
-                return (ButtonPanel.Controls.Count > 1);
+                return TextValueTB.Visible;
             }
         }
 
         /// <summary>
-        /// Returns true if the ArraySize can be changed.
-        /// </summary>
-        public bool CanSetArraySize
-        {
-            get
-            {
-                if (m_readOnly)
-                {
-                    return false;
-                }
-
-                AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
-
-                if (info != null)
-                {
-                    return info.TypeInfo.ValueRank >= 0;
-                }
-
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Returns true if the data type can be changed.
-        /// </summary>
-        public bool CanChangeType
-        {
-            get
-            {
-                if (m_readOnly)
-                {
-                    return false;
-                }
-
-                if (ButtonPanel.Controls.Count > 0)
-                {
-                    AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
-
-                    if (info != null)
-                    {
-                        return info.Parent != null && !info.Parent.TypeInfo.IsUnknown && info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant;
-                    }
-                }
-
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Returns the current data type.
-        /// </summary>
-        public BuiltInType CurrentType
-        {
-            get
-            {
-                if (ButtonPanel.Controls.Count > 0)
-                {
-                    AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
-
-                    if (info != null)
-                    {
-                        Variant? value = info.Value as Variant?;
-
-                        if (value != null && !value.Value.TypeInfo.IsUnknown)
-                        {
-                            return value.Value.TypeInfo.BuiltInType;
-                        }
-
-                        return info.TypeInfo.BuiltInType;
-                    }
-                }
-
-                return BuiltInType.Variant;
-            }
-        }
-
-        /// <summary>
-        /// Raised when the value is changed.
+        /// Raised when the displayed content changes.
         /// </summary>
         public event EventHandler ValueChanged
         {
@@ -220,7 +139,7 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         /// <summary>
-        /// Moves the displayed value back.
+        /// Moves the display back from a detail view to the property list.
         /// </summary>
         public void Back()
         {
@@ -229,1408 +148,163 @@ namespace Opc.Ua.Gds.Client.Controls
                 return;
             }
 
-            NavigationMenu_Click(ButtonPanel.Controls[ButtonPanel.Controls.Count - 2], null);
+            ShowFieldList();
         }
 
         /// <summary>
-        /// Changes the array size.
+        /// Displays the details of a certificate in the control.
         /// </summary>
-        public void SetArraySize()
+        public void ShowCertificate(X509Certificate2 certificate)
         {
-            if (!CanSetArraySize)
-            {
-                return;
-            }
+            if (certificate == null) throw new ArgumentNullException(nameof(certificate));
 
-            EndEdit();
+            ButtonPanel.Visible = false;
+            ValuesDV.ReadOnly = true;
+            m_dataset.Tables[0].Clear();
 
-            AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
+            Certificate details = Certificate.From(certificate);
 
-            Opc.Ua.TypeInfo currentType = info.TypeInfo;
-            object currentValue = Unwrap(info.Value, ref currentType);
-
-            int[] dimensions = null;
-
-            if (currentValue == null)
-            {
-                dimensions = Array.Empty<int>();
-            }
-
-            Array array = currentValue as Array;
-
-            if (dimensions == null && array != null)
-            {
-                dimensions = new int[array.Rank];
-
-                for (int ii = 0; ii < array.Rank; ii++)
-                {
-                    dimensions[ii] = array.GetLength(ii);
-                }
-            }
-
-            IList list = currentValue as IList;
-
-            if (dimensions == null && list != null)
-            {
-                dimensions = new int[1];
-                dimensions[0] = list.Count;
-            }
-
-            Matrix matrix = currentValue as Matrix;
-
-            if (dimensions == null && matrix != null)
-            {
-                dimensions = matrix.Dimensions;
-                array = matrix.ToArray();
-            }
-
-            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-            SetTypeDlg.SetTypeResult result = new SetTypeDlg().ShowDialog(m_logger, currentType, dimensions);
-            #pragma warning restore CA2000
-
-            if (result == null)
-            {
-                return;
-            }
-
-            // convert to new type.
-            object newValue = null;
-
-            if (result.ArrayDimensions == null || result.ArrayDimensions.Length < 1)
-            {
-                newValue = Convert(currentValue, currentType, result.TypeInfo, result.UseDefaultOnError);
-            }
-            else
-            {
-                if (list != null)
-                {
-                    Type elementType = GetListElementType(list);
-
-                    for (int ii = result.ArrayDimensions[0]; ii < list.Count; ii++)
-                    {
-                        list.RemoveAt(ii);
-                    }
-
-                    for (int ii = list.Count; ii < result.ArrayDimensions[0]; ii++)
-                    {
-                        list.Add(CreateInstance(elementType));
-                    }
-
-                    newValue = list;
-                }
-
-                else
-                {
-                    Array newArray = null;
-
-                    if (currentValue is Array)
-                    {
-                        newArray = Array.CreateInstance(currentValue.GetType().GetElementType(), result.ArrayDimensions);
-                    }
-                    else
-                    {
-                        newArray = TypeInfo.CreateArray(result.TypeInfo.BuiltInType, result.ArrayDimensions);
-                    }
-
-                    int maxCount = result.ArrayDimensions[0];
-
-                    for (int ii = 1; ii < result.ArrayDimensions.Length; ii++)
-                    {
-                        maxCount *= result.ArrayDimensions[ii];
-                    }
-
-                    int count = 0;
-
-                    if (array != null)
-                    {
-                        foreach (object element in array)
-                        {
-                            if (maxCount <= count)
-                            {
-                                break;
-                            }
-
-                            object newElement = Convert(element, currentType, result.TypeInfo, result.UseDefaultOnError);
-                            int[] indexes = GetIndexFromCount(count++, result.ArrayDimensions);
-                            newArray.SetValue(newElement, indexes);
-                        }
-                    }
-
-                    newValue = newArray;
-                }
-            }
-
-            ButtonPanel.Controls.RemoveAt(ButtonPanel.Controls.Count - 1);
-
-            info.TypeInfo = result.TypeInfo;
-            info.Value = newValue;
-            ShowValue(info);
-        }
-
-        /// <summary>
-        /// Changes the data type.
-        /// </summary>
-        public void SetType(BuiltInType builtInType)
-        {
-            if (!CanChangeType)
-            {
-                return;
-            }
-
-            AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
-
-            Opc.Ua.TypeInfo currentType = info.TypeInfo;
-            object currentValue = info.Value;
+            AddField("SubjectName", "String", details.Subject);
+            AddField("IssuerName", "String", details.Issuer);
+            AddField("ValidFrom", "DateTime", Utils.Format("{0:yyyy-MM-dd HH:mm:ss}", details.NotBefore));
+            AddField("ValidTo", "DateTime", Utils.Format("{0:yyyy-MM-dd HH:mm:ss}", details.NotAfter));
+            AddField("SerialNumber", "String", details.SerialNumber);
+            AddField("Thumbprint", "String", details.Thumbprint);
+            AddField("SignatureAlgorithm", "String", details.SignatureAlgorithm.FriendlyName);
+            AddField("PublicKeyAlgorithm", "String", details.PublicKey.Oid.FriendlyName);
+            AddField("PublicKey", "ByteString", ByteString.From(details.PublicKey.EncodedKeyValue.RawData));
+            AddField("KeySize", "Int32", Utils.Format("{0}", X509Utils.GetRSAPublicKeySize(details)));
 
             try
             {
-                EndEdit();
-                currentValue = info.Value;
+                IReadOnlyList<string> applicationUris = X509Utils.GetApplicationUrisFromCertificate(details);
+                AddField("ApplicationUri", "String", applicationUris.Count > 0 ? applicationUris[0] : null);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                currentValue = TypeInfo.GetDefaultValue(currentType.BuiltInType);
+                AddField("ApplicationUri", "String", e.Message);
             }
 
-            currentValue = Unwrap(info.Value, ref currentType);
+            try
+            {
+                AddField("Domains", "String[]", String.Join(", ", X509Utils.GetDomainsFromCertificate(details)));
+            }
+            catch (Exception e)
+            {
+                AddField("Domains", "String[]", e.Message);
+            }
 
-            Opc.Ua.TypeInfo targetType = new Opc.Ua.TypeInfo(builtInType, currentType.ValueRank);
-            object newValue  = Convert(currentValue, currentType, targetType, true);
+            AddField("RawData", "ByteString", ByteString.From(certificate.RawData));
 
-            ButtonPanel.Controls.RemoveAt(ButtonPanel.Controls.Count - 1);
-
-            info.TypeInfo = targetType;
-            info.Value = newValue;
-            ShowValueNoNotify(info);
-            ValuesDV.ClearSelection();
+            ShowFieldList();
         }
 
         /// <summary>
-        /// Converts the old type to the new type.
+        /// Clears the control.
         /// </summary>
-        private object Convert(object oldValue, Opc.Ua.TypeInfo oldType, Opc.Ua.TypeInfo newType, bool useDefaultOnError)
-        {
-            object newValue = oldValue;
-
-            if (oldType.BuiltInType != newType.BuiltInType)
-            {
-                try
-                {
-                    newValue = CastValue(oldValue, newType.BuiltInType);
-                }
-                catch (Exception e)
-                {
-                    if (!useDefaultOnError)
-                    {
-                        throw new FormatException("Could not cast value to requested type.", e);
-                    }
-
-                    newValue = TypeInfo.GetDefaultValue(newType.BuiltInType);
-                }
-            }
-
-            return newValue;
-        }
-
-        private object CastValue(object value, BuiltInType targetType)
-        {
-            if (value == null)
-            {
-                return null;
-            }
-
-            if (value is string text)
-            {
-                switch (targetType)
-                {
-                    case BuiltInType.Boolean: return Boolean.Parse(text);
-                    case BuiltInType.SByte: return SByte.Parse(text);
-                    case BuiltInType.Byte: return Byte.Parse(text);
-                    case BuiltInType.Int16: return Int16.Parse(text);
-                    case BuiltInType.UInt16: return UInt16.Parse(text);
-                    case BuiltInType.Int32: return Int32.Parse(text);
-                    case BuiltInType.UInt32: return UInt32.Parse(text);
-                    case BuiltInType.Int64: return Int64.Parse(text);
-                    case BuiltInType.UInt64: return UInt64.Parse(text);
-                    case BuiltInType.Float: return Single.Parse(text);
-                    case BuiltInType.Double: return Double.Parse(text);
-                    case BuiltInType.DateTime: return DateTime.Parse(text);
-                    case BuiltInType.Guid: return new Uuid(Guid.Parse(text));
-                    case BuiltInType.NodeId: return NodeId.Parse(text);
-                    case BuiltInType.ExpandedNodeId: return ExpandedNodeId.Parse(text);
-                    case BuiltInType.QualifiedName: return QualifiedName.Parse(text);
-                    case BuiltInType.LocalizedText: return new LocalizedText(text);
-                    case BuiltInType.StatusCode: return new StatusCode(UInt32.Parse(text));
-                    case BuiltInType.String: return text;
-                }
-            }
-
-            if (targetType == BuiltInType.String)
-            {
-                return System.Convert.ToString(value);
-            }
-
-            return value;
-        }
-
-        private object Clone(object value)
-        {
-            if (value == null)
-            {
-                return null;
-            }
-
-            ICloneable cloneable = value as ICloneable;
-
-            if (cloneable != null)
-            {
-                return cloneable.Clone();
-            }
-
-            foreach (object attribute in value.GetType().GetCustomAttributes(true))
-            {
-                if (typeof(System.Runtime.Serialization.DataContractAttribute).IsInstanceOfType(attribute))
-                {
-                    DataContractSerializer serializer = new DataContractSerializer(value.GetType());
-                    MemoryStream mstrm = new MemoryStream();
-                    serializer.WriteObject(mstrm, value);
-                    mstrm.Position = 0;
-                    return serializer.ReadObject(mstrm);
-                }
-
-                if (typeof(System.Xml.Serialization.XmlRootAttribute).IsInstanceOfType(attribute) || typeof(System.Xml.Serialization.XmlTypeAttribute).IsInstanceOfType(attribute))
-                {
-                    XmlSerializer serializer = new XmlSerializer(value.GetType());
-                    MemoryStream mstrm = new MemoryStream();
-                    serializer.Serialize(mstrm, value);
-                    mstrm.Position = 0;
-                    using XmlReader reader = XmlReader.Create(mstrm, new XmlReaderSettings() { XmlResolver = null });
-                    return serializer.Deserialize(reader);
-                }
-            }
-
-            return value;
-        }
-
-        public void ShowValue(
-            Opc.Ua.TypeInfo expectedType,
-            string name,
-            object value,
-            bool readOnly)
-        {
-            TextValueTB.ReadOnly = m_readOnly = readOnly;
-            ButtonPanel.Visible = true;
-
-            while (ButtonPanel.Controls.Count > 1)
-            {
-                ButtonPanel.Controls.RemoveAt(ButtonPanel.Controls.Count - 1);
-            }
-
-            // assign a type.
-            if (expectedType.IsUnknown)
-            {
-                if (value == null)
-                {
-                    expectedType = Opc.Ua.TypeInfo.Scalars.String;
-                }
-                else
-                {
-                    expectedType = Opc.Ua.TypeInfo.Construct(value);
-                }
-            }
-
-            // assign a name.
-            if (String.IsNullOrEmpty(name))
-            {
-                name = expectedType.ToString();
-
-                if (value != null && expectedType.BuiltInType == BuiltInType.ExtensionObject)
-                {
-                    name = value.GetType().Name;
-
-                    if (value is ExtensionObject extension && TryGetExtensionObjectBody(extension, out object body))
-                    {
-                        name = body.GetType().Name;
-                    }
-                }
-            }
-
-            AccessInfo info = new AccessInfo();
-            info.Value = value;
-            info.TypeInfo = expectedType;
-
-            if (value == null && info.TypeInfo.ValueRank < 0)
-            {
-                info.Value = TypeInfo.GetDefaultValue(info.TypeInfo.BuiltInType);
-            }
-
-            // ensure value is the target type.
-            info.Value = CastValue(info.Value, expectedType.BuiltInType);
-
-            info.Name = name;
-            SetWrappedValue(info);
-
-            m_value = info;
-
-            ShowValue(info);
-        }
-
         public void ShowNothing()
         {
-            TextValueTB.ReadOnly = m_readOnly = true;
             ButtonPanel.Visible = false;
+            m_dataset.Tables[0].Clear();
             ValuesDV.Visible = false;
             TextValueTB.Visible = true;
+            TextValueTB.ReadOnly = true;
             TextValueTB.Text = null;
         }
+        #endregion
 
+        #region Private Methods
         /// <summary>
-        /// Returns the edited value.
+        /// Adds a text property to the list.
         /// </summary>
-        #pragma warning disable CA1024 // Justification: Public sample API compatibility is preserved.
-        public object GetValue()
-        #pragma warning restore CA1024
+        private void AddField(string name, string dataType, string value)
         {
-            return m_value.Value;
+            AddRow(new CertificateField { Name = name, DataType = dataType, Value = value ?? String.Empty });
         }
 
         /// <summary>
-        /// Validates the value currently being edited.
+        /// Adds a byte string property to the list. The bytes are shown in a
+        /// detail view when the row is double clicked.
         /// </summary>
-        public void EndEdit()
+        private void AddField(string name, string dataType, ByteString value)
         {
-            if (ButtonPanel.Controls.Count < 1)
+            AddRow(new CertificateField { Name = name, DataType = dataType, Value = "<double click to see data>", Bytes = value });
+        }
+
+        private void AddRow(CertificateField field)
+        {
+            DataRow row = m_dataset.Tables[0].NewRow();
+
+            row[0] = field;
+            row[1] = field.Name;
+            row[2] = field.DataType;
+            row[3] = Truncate(field.Value);
+            row[4] = ImageList.Images[ImageIndex.Get(Attributes.Value, field.Value)];
+
+            m_dataset.Tables[0].Rows.Add(row);
+        }
+
+        private string Truncate(string text)
+        {
+            if (text != null && text.Length > MaxDisplayTextLength)
             {
-                return;
+                return string.Concat(text.AsSpan(0, MaxDisplayTextLength), "...");
             }
 
-            if (!TextValueTB.Visible)
-            {
-                ValuesDV.EndEdit();
-                return;
-            }
-
-            AccessInfo info = ButtonPanel.Controls[ButtonPanel.Controls.Count - 1].Tag as AccessInfo;
-
-            object newValue = null;
-
-            if (info.PropertyInfo != null && info.PropertyInfo.PropertyType.IsEnum)
-            {
-                newValue = Enum.Parse(info.PropertyInfo.PropertyType, TextValueTB.Text);
-            }
-            else
-            {
-                newValue = CastValue(TextValueTB.Text, info.TypeInfo.BuiltInType);
-            }
-
-            info.Value = newValue;
-            UpdateParent(info);
+            return text;
         }
 
         /// <summary>
-        /// Displays the value in the control.
+        /// Shows the property list.
         /// </summary>
-        private void ShowValue(AccessInfo parent)
+        private void ShowFieldList()
         {
-            if (m_readOnly && IsSimpleValue(parent))
-            {
-                return;
-            }
-
-            ShowValueNoNotify(parent);
+            ValuesDV.Visible = true;
+            TextValueTB.Visible = false;
             ValuesDV.ClearSelection();
 
             m_ValueChanged?.Invoke(this, null);
         }
 
         /// <summary>
-        /// Displays the value in the control.
+        /// Shows the bytes of a property in the detail view.
         /// </summary>
-        private void ShowValueNoNotify(AccessInfo parent)
-        {
-            m_dataset.Tables[0].Clear();
-            ValuesDV.Visible = true;
-            TextValueTB.Visible = false;
-
-            Button item = null;
-
-            //foreach (Control control in ButtonPanel.Controls)
-            //{
-            //    control.BackColor = System.Drawing.Color.MidnightBlue;
-            //}
-
-            if (parent.Parent != null || ButtonPanel.Controls.Count == 0)
-            {
-                item = new Button();
-
-                item.AutoSize = true;
-                item.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-                item.FlatStyle = FlatStyle.Standard;
-                item.BackColor = System.Drawing.Color.MidnightBlue;
-                item.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-                item.ForeColor = System.Drawing.Color.White;
-                item.Click += new EventHandler(NavigationMenu_Click);
-                item.Dock = DockStyle.Left;
-                item.Margin = new System.Windows.Forms.Padding(0);
-                item.Padding = new System.Windows.Forms.Padding(5);
-            }
-            else
-            {
-                item = (Button)ButtonPanel.Controls[0];
-            }
-
-            item.Text = parent.Name;
-            item.Tag = parent;
-
-            ButtonPanel.Controls.Add(item);
-            item.TabIndex = 1000 - ButtonPanel.Controls.Count;
-
-            Opc.Ua.TypeInfo typeInfo = parent.TypeInfo;
-            object value = parent.Value;
-
-            // substitute the wrapped value.
-            if (parent.WrappedValue != null)
-            {
-                value = parent.WrappedValue;
-            }
-
-            value = Unwrap(value, ref typeInfo);
-            parent.TypeInfo = typeInfo;
-
-            if (typeInfo.ValueRank >= 0)
-            {
-                Matrix matrix = value as Matrix;
-
-                if (matrix != null)
-                {
-                    value = matrix.ToArray();
-                }
-
-                System.Collections.IEnumerable enumerable = value as System.Collections.IEnumerable;
-
-                if (enumerable != null)
-                {
-                    // get the dimensions of any array.
-                    int[] dimensions = null;
-
-                    // calculate them.
-                    if (matrix == null)
-                    {
-                        Array array = enumerable as Array;
-
-                        if (array != null)
-                        {
-                            dimensions = new int[array.Rank];
-
-                            for (int ii = 0; ii < array.Rank; ii++)
-                            {
-                                dimensions[ii] = array.GetLength(ii);
-                            }
-                        }
-                        else
-                        {
-                            dimensions = new int[1];
-                            System.Collections.IList list = enumerable as System.Collections.IList;
-
-                            if (list != null)
-                            {
-                                dimensions[0] = list.Count;
-                            }
-                        }
-                    }
-
-                    // get them from the matrix.
-                    else
-                    {
-                        dimensions = matrix.Dimensions;
-                    }
-
-                    // display the array elements.
-                    int count = 0;
-                    Opc.Ua.TypeInfo elementType = new Opc.Ua.TypeInfo(typeInfo.BuiltInType, ValueRanks.Scalar);
-
-                    ValuesDV.Visible = true;
-                    TextValueTB.Visible = false;
-
-                    foreach (object element in enumerable)
-                    {
-                        int[] indexes = GetIndexFromCount(count++, dimensions);
-
-                        AccessInfo info = new AccessInfo();
-                        info.Parent = parent;
-                        info.Indexes = indexes;
-                        info.TypeInfo = elementType;
-                        info.Value = element;
-                        SetWrappedValue(info);
-
-                        ShowIndexedValue(info);
-                    }
-                }
-
-                return;
-            }
-
-            // check for null.
-            if (value == null)
-            {
-                if (parent.Parent != null && parent.Parent.Value is Array)
-                {
-                    parent.Value = value = CreateInstance(parent.Parent.Value.GetType().GetElementType());
-                }
-                else if (parent.Parent != null && parent.PropertyInfo != null)
-                {
-                    parent.Value = value = CreateInstance(parent.PropertyInfo.PropertyType);
-                }
-                else
-                {
-                    ShowTextValue(value, parent.TypeInfo);
-                    return;
-                }
-            }
-
-            object structure = value;
-
-            // check for extension object.
-            if (structure is ExtensionObject extension)
-            {
-                if (!TryGetExtensionObjectBody(extension, out structure))
-                {
-                    return;
-                }
-            }
-
-            // check for XmlElements.
-            if (structure is System.Xml.XmlElement)
-            {
-                ShowTextValue((System.Xml.XmlElement)structure);
-                return;
-            }
-
-            // check for ByteString.
-            if (structure is byte[])
-            {
-                ShowTextValue((byte[])structure);
-                return;
-            }
-
-            // check for NodeId.
-            if (structure is NodeId)
-            {
-                ShowTextValue(((NodeId)structure).ToString());
-                return;
-            }
-
-            // check for ExpandedNodeId.
-            if (structure is ExpandedNodeId)
-            {
-                ShowTextValue(((ExpandedNodeId)structure).ToString());
-                return;
-            }
-
-            // check for QualifiedName.
-            if (structure is QualifiedName)
-            {
-                ShowTextValue(((QualifiedName)structure).ToString());
-                return;
-            }
-
-            // check for Guid.
-            if (structure is Guid)
-            {
-                ShowTextValue(((Guid)structure).ToString());
-                return;
-            }
-
-            // check for Uuid.
-            if (structure is Uuid)
-            {
-                ShowTextValue(((Uuid)structure).ToString());
-                return;
-            }
-
-            // check for StatusCode.
-            if (structure is StatusCode)
-            {
-                ShowTextValue(String.Format("0x{0:X8}", ((StatusCode)structure).Code));
-                return;
-            }
-
-            ValuesDV.Visible = true;
-            TextValueTB.Visible = false;
-
-            // use reflection to display the properties of the structure.
-            bool isStructure = false;
-            PropertyInfo[] properties = GetProperties(structure.GetType());
-
-            foreach (PropertyInfo property in properties)
-            {
-                object element = property.GetValue(structure, null);
-
-                string name = property.Name;
-
-                foreach (object attribute in property.GetCustomAttributes(true))
-                {
-                    System.Runtime.Serialization.DataMemberAttribute dma = attribute as System.Runtime.Serialization.DataMemberAttribute;
-
-                    if (dma != null && !String.IsNullOrEmpty(dma.Name))
-                    {
-                        name = dma.Name;
-                        break;
-                    }
-
-                    System.Xml.Serialization.XmlElementAttribute xea = attribute as System.Xml.Serialization.XmlElementAttribute;
-
-                    if (xea != null && !String.IsNullOrEmpty(xea.ElementName))
-                    {
-                        name = xea.ElementName;
-                        break;
-                    }
-
-                    System.Xml.Serialization.XmlAttributeAttribute xaa = attribute as System.Xml.Serialization.XmlAttributeAttribute;
-
-                    if (xaa != null && !String.IsNullOrEmpty(xaa.AttributeName))
-                    {
-                        name = xaa.AttributeName;
-                        break;
-                    }
-                }
-
-                AccessInfo info = new AccessInfo();
-                info.Parent = parent;
-                info.PropertyInfo = property;
-                info.TypeInfo = Opc.Ua.TypeInfo.Construct(property.PropertyType);
-                info.Value = element;
-                info.Name = name;
-                SetWrappedValue(info);
-
-                ShowNamedValue(info);
-                isStructure = true;
-            }
-
-            if (!isStructure)
-            {
-                ShowTextValue(parent.Value, parent.TypeInfo);
-            }
-        }
-
-        private PropertyInfo[] GetProperties(Type type)
-        {
-            PropertyInfo[] properties = null;
-
-            List<PropertyInfo> list = new List<PropertyInfo>();
-
-            Type supertype = type;
-
-            while (supertype != null)
-            {
-                properties = supertype.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                list.InsertRange(0, SortProperties(properties));
-                supertype = supertype.BaseType;
-            }
-
-            return list.ToArray();
-        }
-
-        private PropertyInfo[] SortProperties(PropertyInfo[] properties)
-        {
-            List<PropertyInfo> list = new List<PropertyInfo>();
-            List<int> ordinals = new List<int>();
-
-            foreach (PropertyInfo property in properties)
-            {
-                if (property.GetIndexParameters().Length > 0)
-                {
-                    continue;
-                }
-
-                foreach (object attribute in property.GetCustomAttributes(true))
-                {
-                    System.Runtime.Serialization.DataMemberAttribute dma = attribute as System.Runtime.Serialization.DataMemberAttribute;
-
-                    if (dma != null)
-                    {
-                        for (int ii = 0; ii < ordinals.Count; ii++)
-                        {
-                            if (ordinals[ii] > dma.Order)
-                            {
-                                list.Insert(ii, property);
-                                ordinals.Insert(ii, dma.Order);
-                                break;
-                            }
-                        }
-
-                        list.Add(property);
-                        ordinals.Add(dma.Order);
-                        break;
-                    }
-
-                    System.Xml.Serialization.XmlElementAttribute xea = attribute as System.Xml.Serialization.XmlElementAttribute;
-
-                    if (xea != null)
-                    {
-                        for (int ii = 0; ii < ordinals.Count; ii++)
-                        {
-                            if (ordinals[ii] > xea.Order)
-                            {
-                                list.Insert(ii, property);
-                                ordinals.Insert(ii, xea.Order);
-                                break;
-                            }
-                        }
-
-                        list.Add(property);
-                        ordinals.Add(xea.Order);
-                        break;
-                    }
-
-                    System.Xml.Serialization.XmlAttributeAttribute xaa = attribute as System.Xml.Serialization.XmlAttributeAttribute;
-
-                    if (xaa != null)
-                    {
-                        for (int ii = 0; ii < ordinals.Count; ii++)
-                        {
-                            if (ordinals[ii] > 0)
-                            {
-                                list.Insert(ii, property);
-                                ordinals.Insert(ii, 0);
-                                break;
-                            }
-                        }
-
-                        list.Add(property);
-                        ordinals.Add(0);
-                        break;
-                    }
-                }
-            }
-
-            return list.ToArray();
-        }
-        #endregion
-
-        #region Private Methods
-        /// <summary>
-        /// Unwraps a Variant into the boxed value that this reflection based editor
-        /// navigates, and reports the type information carried by the Variant.
-        /// </summary>
-        private static object Unwrap(object value, ref Opc.Ua.TypeInfo typeInfo)
-        {
-            if (value is Variant variant)
-            {
-                if (!variant.IsNull)
-                {
-                    typeInfo = variant.TypeInfo;
-                }
-
-                return variant.AsBoxedObject();
-            }
-
-            return value;
-        }
-
-        /// <summary>
-        /// Returns the index based on the current count.
-        /// </summary>
-        private int[] GetIndexFromCount(int count, int[] dimensions)
-        {
-            int[] indexes = new int[(dimensions != null) ? dimensions.Length : 1];
-
-            for (int ii = indexes.Length - 1; ii >= 0; ii--)
-            {
-                indexes[ii] = count % dimensions[ii];
-                count /= dimensions[ii];
-            }
-
-            return indexes;
-        }
-
-        /// <summary>
-        /// Adds the value at an array index to the control.
-        /// </summary>
-        private void ShowIndexedValue(AccessInfo info)
-        {
-            DataRow row = m_dataset.Tables[0].NewRow();
-
-            StringBuilder buffer = new StringBuilder();
-            buffer.Append('[');
-
-            if (info.Indexes != null)
-            {
-                for (int ii = 0; ii < info.Indexes.Length; ii++)
-                {
-                    if (ii > 0)
-                    {
-                        buffer.Append(',');
-                    }
-
-                    buffer.Append(info.Indexes[ii]);
-                }
-            }
-
-            buffer.Append(']');
-            info.Name = buffer.ToString();
-
-            row[0] = info;
-            row[1] = info.Name;
-            row[2] = GetDataTypeString(info);
-            row[3] = ValueToString(info.Value, info.WrappedValue, info.TypeInfo);
-            row[4] = ImageList.Images[ImageIndex.Get(Attributes.Value, info.Value)];
-
-            m_dataset.Tables[0].Rows.Add(row);
-        }
-
-        /// <summary>
-        /// Returns the element type for a list.
-        /// </summary>
-        private Type GetListElementType(IList list)
-        {
-            if (list != null)
-            {
-                for (Type type = list.GetType(); type != null; type = type.BaseType)
-                {
-                    if (type.IsGenericType)
-                    {
-                        Type[] argTypes = type.GetGenericArguments();
-
-                        if (argTypes.Length > 0)
-                        {
-                            return argTypes[0];
-                        }
-                    }
-                }
-            }
-
-            return typeof(object);
-        }
-
-        /// <summary>
-        /// Returns the data type of the value.
-        /// </summary>
-        private Type GetDataType(AccessInfo accessInfo)
-        {
-            if (accessInfo == null || accessInfo.TypeInfo.IsUnknown)
-            {
-                return null;
-            }
-
-            if (accessInfo.TypeInfo.BuiltInType == BuiltInType.ExtensionObject)
-            {
-                if (accessInfo.Value != null)
-                {
-                    return accessInfo.Value.GetType();
-                }
-
-                if (accessInfo.PropertyInfo != null)
-                {
-                    return accessInfo.PropertyInfo.PropertyType;
-                }
-
-                if (accessInfo.Parent != null)
-                {
-                    if (accessInfo.Parent.Value is Array)
-                    {
-                        Array array = (Array)accessInfo.Parent.Value;
-                        return array.GetType().GetElementType();
-                    }
-
-                    if (accessInfo.Parent.Value is IList)
-                    {
-                        IList list = (IList)accessInfo.Parent.Value;
-                        return GetListElementType(list);
-                    }
-                }
-            }
-
-            if (accessInfo.TypeInfo.BuiltInType == BuiltInType.Enumeration)
-            {
-                if (accessInfo.Value != null)
-                {
-                    return accessInfo.Value.GetType();
-                }
-
-                if (accessInfo.PropertyInfo != null)
-                {
-                    return accessInfo.PropertyInfo.PropertyType;
-                }
-            }
-
-            object defaultValue = TypeInfo.GetDefaultValue(accessInfo.TypeInfo.BuiltInType, accessInfo.TypeInfo.ValueRank);
-            return defaultValue?.GetType() ?? typeof(object);
-        }
-
-        /// <summary>
-        /// Returns the data type of the value.
-        /// </summary>
-        private string GetDataTypeString(AccessInfo accessInfo)
-        {
-            Type type = GetDataType(accessInfo);
-
-            if (type == null)
-            {
-                return accessInfo.TypeInfo.ToString();
-            }
-
-            return type.Name;
-        }
-
-        /// <summary>
-        /// Sets a wrapper that controls now a value is displayed.
-        /// </summary>
-        private void SetWrappedValue(AccessInfo info)
-        {
-            if (!m_readOnly)
-            {
-                return;
-            }
-
-            if (info.TypeInfo.BuiltInType == BuiltInType.ExtensionObject && info.TypeInfo.ValueRank == ValueRanks.Scalar)
-            {
-                if (info.Name != null && info.Name.Contains("Certificate", StringComparison.Ordinal))
-                {
-                    info.WrappedValue = info.Value;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Adds the value with the specified name to the control.
-        /// </summary>
-        private void ShowNamedValue(AccessInfo info)
-        {
-            DataRow row = m_dataset.Tables[0].NewRow();
-
-            row[0] = info;
-            row[1] = (info.Name != null) ? info.Name : "unknown";
-            row[2] = GetDataTypeString(info);
-            row[3] = ValueToString(info.Value, info.WrappedValue, info.TypeInfo);
-            row[4] = ImageList.Images[ImageIndex.Get(Attributes.Value, info.Value)];
-
-            m_dataset.Tables[0].Rows.Add(row);
-        }
-
-        /// <summary>
-        /// Displays a value in the control.
-        /// </summary>
-        private void ShowTextValue(object value, Opc.Ua.TypeInfo typeInfo)
-        {
-            switch (typeInfo.BuiltInType)
-            {
-                case BuiltInType.ByteString:
-                {
-                    ShowTextValue((byte[])value);
-                    break;
-                }
-
-                case BuiltInType.XmlElement:
-                {
-                    ShowTextValue((System.Xml.XmlElement)value);
-                    break;
-                }
-
-                case BuiltInType.String:
-                {
-                    ShowTextValue((string)value);
-                    break;
-                }
-
-                default:
-                {
-                    ShowTextValue(ValueToString(value, null, typeInfo));
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Displays a string in the control.
-        /// </summary>
-        private void ShowTextValue(string value)
+        private void ShowDetailView(CertificateField field)
         {
             ValuesDV.Visible = false;
             TextValueTB.Visible = true;
-
-            if (value != null && value.Length > MaxDisplayTextLength)
-            {
-                TextValueTB.ScrollBars = ScrollBars.Both;
-            }
-            else
-            {
-                TextValueTB.ScrollBars = ScrollBars.None;
-            }
-
-            TextValueTB.Font = new Font("Segoe UI", TextValueTB.Font.Size);
-            TextValueTB.Text = value;
-        }
-
-        /// <summary>
-        /// Displays a complete byte string in the control.
-        /// </summary>
-        private void ShowTextValue(byte[] value)
-        {
-            ValuesDV.Visible = false;
-            TextValueTB.Visible = true;
+            TextValueTB.ReadOnly = true;
 
             StringBuilder buffer = new StringBuilder();
 
-            if (value != null)
+            if (!field.Bytes.IsNull)
             {
-                for (int ii = 0; ii < value.Length; ii++)
+                int count = 0;
+
+                foreach (byte b in field.Bytes.Span)
                 {
-                    if (buffer.Length > 0 && (ii % 30) == 0)
+                    if (buffer.Length > 0 && (count % 30) == 0)
                     {
                         buffer.Append("\r\n");
                     }
 
-                    buffer.AppendFormat("{0:X2} ", value[ii]);
+                    buffer.AppendFormat("{0:X2} ", b);
+                    count++;
                 }
+            }
+            else
+            {
+                buffer.Append(field.Value);
             }
 
             TextValueTB.Font = new Font("Courier New", TextValueTB.Font.Size);
             TextValueTB.Text = buffer.ToString();
-        }
 
-        /// <summary>
-        /// Displays a complete XML element in the control.
-        /// </summary>
-        private void ShowTextValue(System.Xml.XmlElement value)
-        {
-            ValuesDV.Visible = false;
-            TextValueTB.Visible = true;
-
-            StringBuilder buffer = new StringBuilder();
-
-            if (value != null)
-            {
-                XmlWriterSettings settings = new XmlWriterSettings();
-                settings.Indent = true;
-                settings.OmitXmlDeclaration = true;
-                settings.NewLineHandling = NewLineHandling.Replace;
-                settings.NewLineChars = "\r\n";
-                settings.IndentChars = "    ";
-
-                using (XmlWriter writer = XmlWriter.Create(buffer, settings))
-                {
-                    using (XmlNodeReader reader = new XmlNodeReader(value))
-                    {
-                        writer.WriteNode(reader, false);
-                    }
-                }
-            }
-
-            TextValueTB.Font = new Font("Courier New", TextValueTB.Font.Size);
-            TextValueTB.Text = buffer.ToString();
-        }
-
-        /// <summary>
-        /// Converts a value to a string for display in the grid.
-        /// </summary>
-        private string ValueToString(object value, object wrappedValue, Opc.Ua.TypeInfo typeInfo)
-        {
-            if (value == null)
-            {
-                return "<null>";
-            }
-
-            value = Unwrap(value, ref typeInfo);
-
-            if (typeInfo.ValueRank >= 0)
-            {
-                return "<double click to see array>";
-            }
-
-            switch (typeInfo.BuiltInType)
-            {
-                case BuiltInType.String:
-                {
-                    string text = (string)value;
-
-                    if (text != null && text.Length > MaxDisplayTextLength)
-                    {
-                        return string.Concat(text.AsSpan(0, MaxDisplayTextLength), "...");
-                    }
-
-                    return text;
-                }
-
-                case BuiltInType.ByteString:
-                {
-                    if (wrappedValue != null)
-                    {
-                        string text = "<double click to see structure>";
-
-                        #pragma warning disable CA1508 // Justification: Public sample API compatibility is preserved.
-                        if (text != null && text.Length > MaxDisplayTextLength)
-                        #pragma warning restore CA1508
-                        {
-                            return string.Concat(text.AsSpan(0, MaxDisplayTextLength), "...");
-                        }
-
-                        return text;
-                    }
-
-                    StringBuilder buffer = new StringBuilder();
-
-                    byte[] bytes = (byte[])value;
-
-                    for (int ii = 0; ii < bytes.Length; ii++)
-                    {
-                        if (buffer.Length > MaxDisplayTextLength)
-                        {
-                            buffer.Append("...");
-                            break;
-                        }
-
-                        buffer.AppendFormat("{0:X2}", bytes[ii]);
-                    }
-
-                    return buffer.ToString();
-                }
-
-                case BuiltInType.Enumeration:
-                {
-                    return value.ToString();
-                }
-
-                case BuiltInType.ExtensionObject:
-                {
-                    return "<double click to see structure>";
-                }
-            }
-
-            return (string)CastValue(value, BuiltInType.String);
-        }
-
-        /// <summary>
-        /// Whether the value can be edited in the grid view.
-        /// </summary>
-        private bool IsSimpleValue(AccessInfo info)
-        {
-            if (info == null || info.TypeInfo.IsUnknown)
-            {
-                return true;
-            }
-
-            Opc.Ua.TypeInfo typeInfo = info.TypeInfo;
-            object value = Unwrap(info.Value, ref typeInfo);
-
-            if (typeInfo.ValueRank >= 0)
-            {
-                return false;
-            }
-
-            switch (typeInfo.BuiltInType)
-            {
-                case BuiltInType.String:
-                {
-                    string text = value as string;
-
-                    if (text != null && text.Length >= MaxDisplayTextLength)
-                    {
-                        return false;
-                    }
-
-                    return true;
-                }
-
-                case BuiltInType.ByteString:
-                case BuiltInType.XmlElement:
-                case BuiltInType.LocalizedText:
-                case BuiltInType.DataValue:
-                case BuiltInType.ExtensionObject:
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool TryGetExtensionObjectBody(ExtensionObject extension, out object body)
-        {
-            body = null;
-
-            if (extension.IsNull)
-            {
-                return false;
-            }
-
-            if (extension.TryGetValue(out IEncodeable encodeable, ServiceMessageContext.CreateEmpty(null)))
-            {
-                body = encodeable;
-                return true;
-            }
-
-            return false;
-        }
-
-        private static Variant CreateVariant(object value)
-        {
-            if (value == null)
-            {
-                return Variant.Null;
-            }
-
-            return value switch
-            {
-                bool v => Variant.From(v),
-                sbyte v => Variant.From(v),
-                byte v => Variant.From(v),
-                short v => Variant.From(v),
-                ushort v => Variant.From(v),
-                int v => Variant.From(v),
-                uint v => Variant.From(v),
-                long v => Variant.From(v),
-                ulong v => Variant.From(v),
-                float v => Variant.From(v),
-                double v => Variant.From(v),
-                string v => Variant.From(v),
-                DateTime v => Variant.From(new DateTimeUtc(v)),
-                Guid v => Variant.From(new Uuid(v)),
-                byte[] v => Variant.From(ByteString.From(v)),
-                NodeId v => Variant.From(v),
-                ExpandedNodeId v => Variant.From(v),
-                StatusCode v => Variant.From(v),
-                QualifiedName v => Variant.From(v),
-                LocalizedText v => Variant.From(v),
-                ExtensionObject v => Variant.From(v),
-                DataValue v => Variant.From(v),
-                Variant v => Variant.From(in v),
-                IEncodeable v => Variant.From(new ExtensionObject(v)),
-                _ => Variant.Null
-            };
-        }
-
-        private object CreateInstance(Type type)
-        {
-            if (typeof(string).Equals(type))
-            {
-                return String.Empty;
-            }
-
-            return Activator.CreateInstance(type);
-        }
-
-        private void UpdateParent(AccessInfo info)
-        {
-            if (info.Parent == null)
-            {
-                return;
-            }
-
-            Opc.Ua.TypeInfo parentTypeInfo = info.Parent.TypeInfo;
-            object parentValue = info.Parent.Value;
-
-            if (parentTypeInfo.BuiltInType == BuiltInType.Variant && parentTypeInfo.ValueRank < 0)
-            {
-                parentValue = Unwrap(parentValue, ref parentTypeInfo);
-            }
-
-            if (info.PropertyInfo != null && info.Parent.TypeInfo.ValueRank < 0)
-            {
-                parentValue = Unwrap(parentValue, ref parentTypeInfo);
-
-                if (parentValue is ExtensionObject extension && TryGetExtensionObjectBody(extension, out object body))
-                {
-                    parentValue = body;
-                }
-
-                if (info.PropertyInfo.CanWrite && info.PropertyInfo.PropertyType.IsInstanceOfType(info.Value))
-                {
-                    info.PropertyInfo.SetValue(parentValue, info.Value, null);
-                }
-            }
-
-            else if (info.Indexes != null)
-            {
-                int[] indexes = info.Indexes;
-                Array array = parentValue as Array;
-
-                Matrix matrix = parentValue as Matrix;
-
-                if (matrix != null)
-                {
-                    int count = 0;
-                    int block = 1;
-
-                    for (int ii = info.Indexes.Length - 1; ii >= 0; ii--)
-                    {
-                        count += info.Indexes[ii] * block;
-                        block *= matrix.Dimensions[ii];
-                    }
-
-                    array = matrix.Elements;
-                    indexes = new int[] { count };
-                }
-
-                if (array != null)
-                {
-                    if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
-                    {
-                        array.SetValue(CreateVariant(info.Value), indexes);
-                    }
-                    else
-                    {
-                        array.SetValue(info.Value, indexes);
-                    }
-                }
-                else
-                {
-                    IList list = parentValue as IList;
-
-                    if (info.Parent.TypeInfo.BuiltInType == BuiltInType.Variant && info.Parent.TypeInfo.ValueRank >= 0)
-                    {
-                        list[indexes[0]] = CreateVariant(info.Value);
-                    }
-                    else
-                    {
-                        list[indexes[0]] = info.Value;
-                    }
-                }
-            }
-
-            #pragma warning disable CA1508 // Justification: Public sample API compatibility is preserved.
-            if (info.Parent != null)
-            #pragma warning restore CA1508
-            {
-                UpdateParent(info.Parent);
-            }
+            m_ValueChanged?.Invoke(this, null);
         }
         #endregion
 
         #region Event Handlers
-        private void NavigationMenu_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                EndEdit();
-
-                Button item = sender as Button;
-
-                if (item != null)
-                {
-                    // remove all menu items appearing after the selected item.
-                    for (int ii = ButtonPanel.Controls.Count - 1; ii >= 0; ii--)
-                    {
-                        Button target = ButtonPanel.Controls[ii] as Button;
-                        ButtonPanel.Controls.RemoveAt(ii);
-
-                        if (Object.ReferenceEquals(target, item))
-                        {
-                            break;
-                        }
-                    }
-
-                    // show the current value.
-                    AccessInfo info = (AccessInfo)item.Tag;
-                    ShowValue(info);
-                }
-            }
-            catch (Exception ex)
-            {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
-            }
-        }
-
         private void ValuesDV_DoubleClick(object sender, EventArgs e)
         {
             try
@@ -1638,77 +312,30 @@ namespace Opc.Ua.Gds.Client.Controls
                 foreach (DataGridViewRow row in ValuesDV.SelectedRows)
                 {
                     DataRowView source = row.DataBoundItem as DataRowView;
-                    AccessInfo info = (AccessInfo)source.Row[0];
-                    ShowValue(info);
+                    CertificateField field = (CertificateField)source.Row[0];
+
+                    if (!field.Bytes.IsNull || (field.Value != null && field.Value.Length > MaxDisplayTextLength))
+                    {
+                        ShowDetailView(field);
+                    }
+
                     break;
                 }
             }
             catch (Exception ex)
             {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(LoggerUtils.Null.Logger, Text, ex);
             }
         }
 
         private void ValuesDV_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
         {
-            try
-            {
-                if (this.Visible && e.ColumnIndex == 3)
-                {
-                    DataRowView source = ValuesDV.Rows[e.RowIndex].DataBoundItem as DataRowView;
-                    AccessInfo info = (AccessInfo)source.Row[0];
-
-                    if (IsSimpleValue(info))
-                    {
-                        if (info.TypeInfo.BuiltInType == BuiltInType.Enumeration && info.Value.GetType().IsEnum)
-                        {
-                            Enum.Parse(info.Value.GetType(), (string)e.FormattedValue);
-                        }
-                        else
-                        {
-                            CastValue(e.FormattedValue, info.TypeInfo.BuiltInType);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
-                e.Cancel = true;
-            }
+            // the certificate view is read only.
         }
 
         private void ValuesDV_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
-            try
-            {
-                if (this.Visible && e.RowIndex >= 0 && e.ColumnIndex == 3)
-                {
-                    DataRowView source = ValuesDV.Rows[e.RowIndex].DataBoundItem as DataRowView;
-                    AccessInfo info = (AccessInfo)source.Row[0];
-
-                    if (IsSimpleValue(info))
-                    {
-                        object newValue = null;
-
-                        if (info.TypeInfo.BuiltInType == BuiltInType.Enumeration && info.Value.GetType().IsEnum)
-                        {
-                            newValue = Enum.Parse(info.Value.GetType(), (string)source.Row[3]);
-                        }
-                        else
-                        {
-                            newValue = CastValue((string)source.Row[3], info.TypeInfo.BuiltInType);
-                        }
-
-                        info.Value = newValue;
-                        UpdateParent(info);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_logger, Text, ex);
-            }
+            // the certificate view is read only.
         }
 
         private void TextValueTB_VisibleChanged(object sender, EventArgs e)

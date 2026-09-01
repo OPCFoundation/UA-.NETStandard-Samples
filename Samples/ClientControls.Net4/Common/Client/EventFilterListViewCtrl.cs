@@ -179,22 +179,23 @@ namespace Opc.Ua.Client.Controls
                     InstanceDeclaration declaration = field.InstanceDeclaration;
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    object result = new EditComplexValueDlg().ShowDialog(
+                    bool edited = new EditComplexValueDlg().TryShowDialog(
                     #pragma warning restore CA2000
                         m_session,
                         declaration.DisplayName,
                         declaration.DataType,
                         declaration.ValueRank,
                         field.FilterValue,
-                        "Edit Filter Value");
+                        "Edit Filter Value",
+                        out Variant result);
 
-                    if (result != null)
+                    if (edited)
                     {
                         field.FilterEnabled = true;
                         source.Row[5] = field.FilterEnabled;
                         source.Row[6] = field.FilterOperator;
 
-                        field.FilterValue = ClientUtils.ToVariant(result);
+                        field.FilterValue = result;
                         source.Row[7] = field.FilterValue;
                     }
 
