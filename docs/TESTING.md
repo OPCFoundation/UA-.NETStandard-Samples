@@ -108,9 +108,37 @@ UI popups into readable failures and is the single most valuable piece of the ha
 `AggregationServer` both use 62541). The tests therefore keep the ports the samples ship with -
 that is part of what is being tested - and run one sample at a time (`[NonParallelizable]`).
 
-The consequence is machine wide: **only one test run at a time**. Two runs in parallel fail
-with "address already in use", and a second git worktree of this repository is not isolation -
-the ports are the same. The same applies to a sample you left running by hand.
+The consequence is machine wide: **only one test run at a time** - and a second git worktree
+of this repository is not isolation, because the ports are the same. The port using tiers
+enforce the rule themselves: a `[SetUpFixture]` in each of their assemblies (deriving from
+`SamplePortLockFixture` in `Samples.Tests.Common`) waits up to ten minutes on a machine wide
+lock file under the temp directory before the first test runs, so concurrent runs - from a
+solution level `dotnet test`, another worktree or another terminal - queue instead of failing.
+Tier 0 uses no ports and takes no lock.
+
+The lock cannot cover the seconds in which a finished run's listeners are still draining: a
+test host releases the lock in its teardown, but the operating system tears its sockets down
+a moment later, and the first sample of a back to back run reliably finds its port still
+bound. `SampleServerHost` therefore retries a start that fails with "address already in use"
+for up to 15 seconds. A sample you left running by hand is outside both mechanisms - the run
+retries, then fails on the busy endpoint.
+
+Not every port-shaped failure is a race, and the two are easy to tell apart. A bind race
+takes seconds (the retry window) and moves between samples from run to run. A test that
+fails *instantly*, on the *same* sample every time, asserting a URL the source no longer
+contains, is a stale `--no-build` run: `SampleCatalog` is compiled into every test assembly,
+so after changing a port or a sample, rebuild every test project - or simply drop
+`--no-build` and let `dotnet test` build.
+
+**Claiming a port for a new sample.** In the 625xx block, where new samples land, endpoints
+come in pairs - opc.tcp one port above its https sibling (the DataAccess sample on
+62548/62547, for instance; the older samples outside the block pair differently, so do not
+extend those). Pick the next free pair
+above the highest paired endpoint in the repo *and in open pull requests*: Tier 0 only
+checks the tree it runs in, so two in-flight branches can claim the same pair and both look
+green until the second one merges (three branches did exactly that on one day). The catalog
+row you add for the sample is what turns the claim into a merge conflict the second branch
+cannot miss.
 
 ## Running
 

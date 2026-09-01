@@ -11,7 +11,8 @@ using NUnit.Framework;
 
 // every fixture in this assembly starts a sample server, and the samples bind the fixed
 // ports they ship with. Two fixtures running at the same time would fight over a port,
-// so the whole assembly runs one fixture at a time. The same reason keeps a test run
-// from being started twice on one machine, which docs/TESTING.md spells out.
+// so the whole assembly runs one fixture at a time. Across processes the same is enforced
+// by SamplePortLock, which queues this run behind any other port using test run on the
+// machine; docs/TESTING.md spells out both.
 [assembly: NonParallelizable]
 [assembly: LevelOfParallelism(1)]
