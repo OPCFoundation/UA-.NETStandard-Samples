@@ -372,7 +372,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-28 test cases, about a minute and a half, Windows only. For each WinForms sample client the test
+29 test cases, about a minute and a half, Windows only. For each WinForms sample client the test
 starts its sample server in process, then on a dedicated STA thread with a running message
 loop - but without ever showing a window:
 
@@ -413,6 +413,16 @@ leaving nothing but an empty window. Writing it found two defects, both fixed:
 |-------|----------------|
 | `Workshop/HistoricalEvents/Client/EventListView.cs` | Every event the list was given threw `InvalidCastException` into a modal dialog: it unboxed a `DateTime` event field with `(DateTime)Variant.AsBoxedObject()`, and the 2.0 stack boxes one as `DateTimeUtc`. The same method renders the event *history*, so the sample's only two displays were both dead since the 2.0 migration |
 | `Workshop/AlarmCondition/Client/AuditEventForm.cs` | Closing the audit window threw `BadNotConnected` out of its own error handler. The main form closes that window when the session goes away, so the subscription can no longer be deleted on the server - and the handler for that failure asked the closed session for its telemetry context. The window keeps the telemetry context it was created with and logs the failure instead of showing it |
+
+`FileTransferClientTests` asks what a connect test cannot of a client whose whole job is
+navigation: does the sample keep the place the user browsed to? It selects and expands a
+directory, then reports a completed reconnect the way the connect control would, and asserts
+that the selected node is still the *same node object* and that the tree did not change size.
+The sample used to fail both: it rebuilt its file system client, and with it the whole tree, on
+every reconnect, on the assumption that a reconnect brings a new session whose file handles are
+gone. A managed session keeps its `ISession`, so that rebuild only ever cost the user their
+position. Comparing node identity rather than node text is what makes the test see it - a
+rebuilt tree carries new nodes even where every label matches.
 
 `SampleControlsSubscribeTests` does the same for the UA Sample Client controls in
 `Controls.Net4`: it opens a managed session the way `SessionOpenDlg` does, creates a

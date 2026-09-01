@@ -110,6 +110,12 @@ namespace Quickstarts.FileTransferClient
         private FileSystemClient m_fileSystem;
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed by CancelTransfers, which the form calls when it closes.")]
         private CancellationTokenSource m_cancellation;
+
+        /// <summary>
+        /// Counts the directory listings which were started, so a listing can tell whether
+        /// it is still the one the user is waiting for.
+        /// </summary>
+        private int m_browse;
         #endregion
 
         #region Private Types
@@ -218,15 +224,25 @@ namespace Quickstarts.FileTransferClient
         /// Updates the application after reconnecting to the server.
         /// </summary>
         /// <remarks>
-        /// The file handles the server issued belong to the session which opened them, and
-        /// the reconnect brings up a new one, so the file system client is built again from
-        /// scratch instead of being carried over.
+        /// A managed session keeps its <see cref="ISession"/> across a reconnect, so the
+        /// file system client and the tree which was browsed with it are still valid and
+        /// the user keeps their place. Rebuilding them here would throw the tree away and
+        /// drop the selection back to the root every time the connection hiccups.
+        /// Only a session which really was replaced is worth starting over from.
         /// </remarks>
         private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
+
+                if (ReferenceEquals(session, m_session) && m_fileSystem != null)
+                {
+                    EnableCommands(true);
+                    return;
+                }
+
+                m_session = session;
 
                 await OpenFileSystemAsync();
             }
@@ -470,6 +486,12 @@ namespace Quickstarts.FileTransferClient
         /// <summary>
         /// Browses the subdirectories of a node, once.
         /// </summary>
+        /// <remarks>
+        /// The node is claimed before the browse rather than after it. Expanding a node
+        /// raises BeforeExpand again while the first browse is still running, and a flag
+        /// which is only set at the end lets the second one through - which browses the
+        /// same directory twice and appends its children a second time.
+        /// </remarks>
         private async Task LoadSubdirectoriesAsync(TreeNode node)
         {
             var tag = (DirectoryTag)node.Tag;
@@ -479,42 +501,83 @@ namespace Quickstarts.FileTransferClient
                 return;
             }
 
-            node.Nodes.Clear();
+            tag.Loaded = true;
 
-            await foreach (UaDirectoryInfo directory in
-                m_fileSystem.EnumerateDirectoriesAsync(tag.Path, Token()))
+            var children = new List<TreeNode>();
+
+            try
             {
-                var child = new TreeNode(directory.Name) {
-                    Tag = new DirectoryTag { Path = directory.FullPath },
-                };
+                await foreach (UaDirectoryInfo directory in
+                    m_fileSystem.EnumerateDirectoriesAsync(tag.Path, Token()))
+                {
+                    var child = new TreeNode(directory.Name) {
+                        Tag = new DirectoryTag { Path = directory.FullPath },
+                    };
 
-                // a node which was never browsed gets a placeholder, so that it shows the
-                // expander a user has to click to have it browsed
-                child.Nodes.Add(new TreeNode());
+                    // a node which was never browsed gets a placeholder, so that it shows
+                    // the expander a user has to click to have it browsed
+                    child.Nodes.Add(new TreeNode());
 
-                node.Nodes.Add(child);
+                    children.Add(child);
+                }
+            }
+            catch
+            {
+                // a browse which did not finish leaves nothing behind, so the next attempt
+                // to open the node tries again instead of showing it as empty
+                tag.Loaded = false;
+                throw;
             }
 
-            tag.Loaded = true;
+            // the placeholder is replaced only once the real children are known, so the
+            // node never flickers through an empty state
+            node.Nodes.Clear();
+            node.Nodes.AddRange(children.ToArray());
         }
 
         /// <summary>
         /// Lists the files and directories of a node.
         /// </summary>
+        /// <remarks>
+        /// Reading the metadata of every entry takes a round trip each, so a browse is slow
+        /// enough for the user to have selected something else by the time it finishes. The
+        /// rows are therefore collected first and only shown if this browse is still the
+        /// one the tree is waiting for - otherwise two directories would interleave their
+        /// entries in the list.
+        /// </remarks>
         private async Task ShowDirectoryAsync(TreeNode node)
         {
-            EntriesLV.Items.Clear();
+            int browse = ++m_browse;
 
             if (node == null)
             {
+                EntriesLV.Items.Clear();
                 return;
             }
 
             var tag = (DirectoryTag)node.Tag;
+            var rows = new List<ListViewItem>();
 
             await foreach (UaFileSystemInfo entry in m_fileSystem.EnumerateAsync(tag.Path, Token()))
             {
-                EntriesLV.Items.Add(await DescribeAsync(entry));
+                rows.Add(await DescribeAsync(entry));
+            }
+
+            if (browse != m_browse)
+            {
+                return;
+            }
+
+            EntriesLV.BeginUpdate();
+
+            try
+            {
+                EntriesLV.Items.Clear();
+                EntriesLV.Items.AddRange(rows.ToArray());
+            }
+            finally
+            {
+                EntriesLV.EndUpdate();
             }
 
             EntriesLV_SelectedIndexChanged(this, EventArgs.Empty);

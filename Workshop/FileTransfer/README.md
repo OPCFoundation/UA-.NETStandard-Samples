@@ -94,9 +94,15 @@ server which offers one - not only against the sample server here.
 Start `Quickstarts.FileTransferServer.exe`, then `Quickstarts.FileTransferClient.exe`, and
 connect. The client opens on `SampleFiles`.
 
-File handles belong to the session which opened them. When the client reconnects, the file
-system client is built again from scratch rather than carried over, because the handles of the
-old session are gone.
+File handles belong to the session which opened them, and the server closes whatever is still
+open when that session closes. The client only holds a handle for the duration of one transfer,
+so between operations there is nothing to lose.
+
+That matters for what the client does when the connection hiccups. A managed session keeps the
+same `ISession` across a reconnect, so the file system client and the tree browsed with it stay
+valid, and the sample leaves both alone - a reconnect must not cost the user the directory they
+had navigated to. Only a session which really was replaced is worth starting over from, which is
+what the sample checks before it rebuilds anything.
 
 ## See also
 
