@@ -61,7 +61,7 @@ namespace Quickstarts.StateMachines.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "StateMachinesClient";
+                        options.ConfigurationFile = "StateMachinesClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

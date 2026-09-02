@@ -33,17 +33,14 @@ namespace Quickstarts.AliasNames.Server
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
 
-            // the generic host owns the configuration, the certificate, the logging
-            // and the lifetime of the server; the main form is created by the container
-            // from the services registered here.
-            SampleWinFormsHost.Run<ServerForm>(
+            // the generic host owns the logging and the lifetime of the sample; the
+            // server is hosted by the stack, its configuration is loaded straight from
+            // the configuration file, and the form shows the running server.
+            SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleApplication(options => {
-                        options.ApplicationType = ApplicationType.Server;
-                        options.ConfigSectionName = "Quickstarts.AliasNamesServer";
-                    })
-                    .AddSampleServer<AliasNamesServer>(),
+                    .AddSampleServer<AliasNamesServer>("Quickstarts.AliasNamesServer.Config.xml"),
+                ServerForm.Create,
                 ExceptionDlg.Show);
         }
     }

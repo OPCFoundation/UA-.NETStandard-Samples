@@ -40,7 +40,7 @@ namespace Quickstarts.RoleManagement.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Quickstarts.RoleManagementClient";
+                        options.ConfigurationFile = "Quickstarts.RoleManagementClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

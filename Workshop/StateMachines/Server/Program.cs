@@ -56,14 +56,11 @@ namespace Quickstarts.StateMachines.Server
             // the generic host owns the configuration, the certificate, the logging and the
             // lifetime of the server; the form is created by the container from the services
             // it registers here.
-            SampleWinFormsHost.Run<ServerForm>(
+            SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleApplication(options => {
-                        options.ApplicationType = ApplicationType.Server;
-                        options.ConfigSectionName = "StateMachinesServer";
-                    })
-                    .AddSampleServer<StateMachinesServer>(),
+                    .AddSampleServer<StateMachinesServer>("StateMachinesServer.Config.xml"),
+                ServerForm.Create,
                 ExceptionDlg.Show);
         }
     }

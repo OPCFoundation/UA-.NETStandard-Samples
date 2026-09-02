@@ -9,7 +9,7 @@ those names into the NodeId it stands for.
 | [Server](Server) | A `StandardServer` with a plant laid out by structure, and the same signals indexed by tag name |
 | [Client](Client) | A Windows Forms client which browses the plant, searches the index, and edits it |
 
-Endpoints: `opc.tcp://localhost:62575/Quickstarts/AliasNamesServer` and
+Endpoints: `opc.tcp://localhost:62577/Quickstarts/AliasNamesServer` and
 `https://localhost:62574/Quickstarts/AliasNamesServer`.
 
 ## The problem Part 17 solves

@@ -94,7 +94,7 @@ namespace Opc.Ua.Samples.Tests
                 Name = "AliasNames",
                 ServerProject = "Workshop/AliasNames/Server/AliasNames Server.csproj",
                 ServerConfig = "Workshop/AliasNames/Server/Quickstarts.AliasNamesServer.Config.xml",
-                ServerUrl = "opc.tcp://localhost:62575/Quickstarts/AliasNamesServer",
+                ServerUrl = "opc.tcp://localhost:62577/Quickstarts/AliasNamesServer",
                 ClientProject = "Workshop/AliasNames/Client/AliasNames Client.csproj",
                 ClientConfig = "Workshop/AliasNames/Client/Quickstarts.AliasNamesClient.Config.xml",
                 ClientEndpointSource = "Workshop/AliasNames/Client/MainForm.cs",

@@ -40,7 +40,7 @@ namespace Quickstarts.NodeManagement.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Quickstarts.NodeManagementClient";
+                        options.ConfigurationFile = "Quickstarts.NodeManagementClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

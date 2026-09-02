@@ -80,7 +80,7 @@ namespace Quickstarts.AliasNames.Client
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = m_configuration = configuration;
-            ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62575/Quickstarts/AliasNamesServer";
+            ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62577/Quickstarts/AliasNamesServer";
             this.Text = m_configuration.ApplicationName;
 
             // the two accounts of the sample server. Which one is signed in decides only

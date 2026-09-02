@@ -40,7 +40,7 @@ namespace Quickstarts.AliasNames.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Quickstarts.AliasNamesClient";
+                        options.ConfigurationFile = "Quickstarts.AliasNamesClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }
