@@ -65,6 +65,7 @@ namespace Quickstarts.UserAuthenticationClient
             this.HelpMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Help_ContentsMI = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusBar = new System.Windows.Forms.StatusStrip();
+            this.ActionStatusLB = new System.Windows.Forms.ToolStripStatusLabel();
             this.MainPN = new System.Windows.Forms.Panel();
             this.AccessControlCheckGB = new System.Windows.Forms.GroupBox();
             this.LogFilePathLB = new System.Windows.Forms.Label();
@@ -169,11 +170,18 @@ namespace Quickstarts.UserAuthenticationClient
             // 
             // StatusBar
             // 
+            this.StatusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ActionStatusLB});
             this.StatusBar.Location = new System.Drawing.Point(0, 422);
             this.StatusBar.Name = "StatusBar";
             this.StatusBar.Size = new System.Drawing.Size(809, 22);
             this.StatusBar.TabIndex = 2;
-            // 
+            //
+            // ActionStatusLB
+            //
+            this.ActionStatusLB.Name = "ActionStatusLB";
+            this.ActionStatusLB.Size = new System.Drawing.Size(0, 17);
+            //
             // MainPN
             // 
             this.MainPN.Controls.Add(this.AccessControlCheckGB);
@@ -600,6 +608,7 @@ namespace Quickstarts.UserAuthenticationClient
 
         private System.Windows.Forms.MenuStrip MenuBar;
         private System.Windows.Forms.StatusStrip StatusBar;
+        private System.Windows.Forms.ToolStripStatusLabel ActionStatusLB;
         private System.Windows.Forms.ToolStripMenuItem ServerMI;
         private System.Windows.Forms.ToolStripMenuItem Server_DiscoverMI;
         private System.Windows.Forms.ToolStripMenuItem Server_ConnectMI;

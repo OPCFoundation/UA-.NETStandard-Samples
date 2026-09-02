@@ -1,8 +1,8 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -28,14 +28,8 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Xml;
-using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
-using Quickstarts.DataTypes.Instances;
-using Quickstarts.DataTypes.Types;
 
 
 namespace Quickstarts.DataTypes
@@ -47,47 +41,20 @@ namespace Quickstarts.DataTypes
     /// Each server instance must have one instance of a StandardServer object which is
     /// responsible for reading the configuration file, creating the endpoints and dispatching
     /// incoming requests to the appropriate handler.
-    /// 
-    /// This sub-class specifies non-configurable metadata such as Product Name and initializes
+    ///
+    /// This sub-class specifies non-configurable metadata such as Product Name and registers
     /// the DataTypesNodeManager which provides access to the data exposed by the Server.
     /// </remarks>
     public partial class DataTypesServer : StandardServer
     {
         public DataTypesServer(ITelemetryContext telemetry) : base(telemetry)
         {
+            // register the node manager factory. the server creates the node manager
+            // from it while it builds the master node manager on startup.
+            AddNodeManager(new DataTypesNodeManagerFactory());
         }
 
         #region Overridden Methods
-        /// <summary>
-        /// Creates the node managers for the server.
-        /// </summary>
-        /// <remarks>
-        /// This method allows the sub-class create any additional node managers which it uses. The SDK
-        /// always creates a CoreNodeManager which handles the built-in nodes defined by the specification.
-        /// Any additional NodeManagers are expected to handle application specific nodes.
-        /// </remarks>
-        protected override MasterNodeManager CreateMasterNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        {
-            ILogger logger = server.Telemetry.CreateLogger<DataTypesServer>();
-            logger.LogInformation("Creating the Node Managers.");
-
-            // add the types defined in the quickstart information model to the factory. The
-            // vehicle types of the library are source generated from its model design, so
-            // they come with a registration extension of their own. The instance model is
-            // still built by the ModelCompiler - see Instances\README.md - and its types are
-            // picked up by reflection.
-            server.Factory.Builder.AddQuickstartsDataTypesTypes().Commit();
-            server.Factory.AddEncodeableTypes(this.GetType().Assembly);
-
-            List<INodeManager> nodeManagers = new List<INodeManager>();
-
-            // create the custom node managers.
-            nodeManagers.Add(new DataTypesNodeManager(server, configuration));
-
-            // create master node manager.
-            return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
-        }
-
         /// <summary>
         /// Loads the non-configurable properties for the application.
         /// </summary>

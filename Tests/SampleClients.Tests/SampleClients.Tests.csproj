@@ -29,11 +29,15 @@
     <ProjectReference Include="..\..\Workshop\DataAccess\Client\DataAccess Client.csproj" />
     <ProjectReference Include="..\..\Workshop\DataTypes\Client\DataTypes Client.csproj" />
     <ProjectReference Include="..\..\Workshop\Empty\Client\Empty Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\FileTransfer\Client\FileTransfer Client.csproj" />
     <ProjectReference Include="..\..\Workshop\HistoricalAccess\Client\HistoricalAccess Client.csproj" />
     <ProjectReference Include="..\..\Workshop\HistoricalEvents\Client\HistoricalEvents Client.csproj" />
     <ProjectReference Include="..\..\Workshop\Methods\Client\Methods Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\NodeManagement\Client\NodeManagement Client.csproj" />
     <ProjectReference Include="..\..\Workshop\PerfTest\Client\PerfTest Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\RoleManagement\Client\RoleManagement Client.csproj" />
     <ProjectReference Include="..\..\Workshop\SimpleEvents\Client\SimpleEvents Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\StateMachines\Client\StateMachines Client.csproj" />
     <ProjectReference Include="..\..\Workshop\UserAuthentication\Client\UserAuthentication Client.csproj" />
     <ProjectReference Include="..\..\Workshop\Views\Client\Views Client.csproj" />
     <ProjectReference Include="..\..\Samples\ReferenceClient\Reference Client.csproj" />

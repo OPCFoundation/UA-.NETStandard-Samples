@@ -3,11 +3,15 @@ taskkill /IM Quickstarts.BoilerServer.exe
 taskkill /IM Quickstarts.DataAccessServer.exe
 taskkill /IM Quickstarts.DataTypesServer.exe
 taskkill /IM Quickstarts.EmptyServer.exe
+taskkill /IM Quickstarts.FileTransferServer.exe
 taskkill /IM Quickstarts.HistoricalAccessServer.exe
 taskkill /IM Quickstarts.HistoricalEventsServer.exe
 taskkill /IM Quickstarts.MethodsServer.exe
+taskkill /IM Quickstarts.NodeManagementServer.exe
 taskkill /IM Quickstarts.PerfTestServer.exe
+taskkill /IM Quickstarts.RoleManagementServer.exe
 taskkill /IM Quickstarts.SimpleEventsServer.exe
+taskkill /IM Quickstarts.StateMachinesServer.exe
 taskkill /IM Quickstarts.UserAuthenticationServer.exe
 taskkill /IM Quickstarts.ViewsServer.exe
 

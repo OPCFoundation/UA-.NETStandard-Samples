@@ -177,8 +177,10 @@ namespace Opc.Ua.Sample.Controls
                 // there is no separate reconnect handler to cancel.
                 DetachSession(m_session);
 
-                await m_session.CloseAsync(ct);
+                ISession session = m_session;
                 m_session = null;
+
+                await ClientUtils.CloseAndDisposeAsync(session, ct);
             }
 
             ServerUrlLB.Text = "";

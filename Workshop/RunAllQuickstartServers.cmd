@@ -4,11 +4,15 @@ start Quickstarts.BoilerServer.exe
 start Quickstarts.DataAccessServer.exe
 start Quickstarts.DataTypesServer.exe
 start Quickstarts.EmptyServer.exe
+start Quickstarts.FileTransferServer.exe
 start Quickstarts.HistoricalAccessServer.exe
 start Quickstarts.HistoricalEventsServer.exe
 start Quickstarts.MethodsServer.exe
+start Quickstarts.NodeManagementServer.exe
 start Quickstarts.PerfTestServer.exe
+start Quickstarts.RoleManagementServer.exe
 start Quickstarts.SimpleEventsServer.exe
+start Quickstarts.StateMachinesServer.exe
 start Quickstarts.UserAuthenticationServer.exe
 start Quickstarts.ViewsServer.exe
 cd ..\..\Workshop

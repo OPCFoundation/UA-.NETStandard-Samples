@@ -131,6 +131,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "FileTransfer",
+                ServerProject = "Workshop/FileTransfer/Server/FileTransfer Server.csproj",
+                ServerConfig = "Workshop/FileTransfer/Server/Quickstarts.FileTransferServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62569/Quickstarts/FileTransferServer",
+                ClientProject = "Workshop/FileTransfer/Client/FileTransfer Client.csproj",
+                ClientConfig = "Workshop/FileTransfer/Client/Quickstarts.FileTransferClient.Config.xml",
+                ClientEndpointSource = "Workshop/FileTransfer/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "HistoricalAccess",
                 ServerProject = "Workshop/HistoricalAccess/Server/HistoricalAccess Server.csproj",
                 ServerConfig = "Workshop/HistoricalAccess/Server/HistoricalAccessServer.Config.xml",
@@ -161,6 +171,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "NodeManagement",
+                ServerProject = "Workshop/NodeManagement/Server/NodeManagement Server.csproj",
+                ServerConfig = "Workshop/NodeManagement/Server/Quickstarts.NodeManagementServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62575/Quickstarts/NodeManagementServer",
+                ClientProject = "Workshop/NodeManagement/Client/NodeManagement Client.csproj",
+                ClientConfig = "Workshop/NodeManagement/Client/Quickstarts.NodeManagementClient.Config.xml",
+                ClientEndpointSource = "Workshop/NodeManagement/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "PerfTest",
                 ServerProject = "Workshop/PerfTest/Server/PerfTest Server.csproj",
                 ServerConfig = "Workshop/PerfTest/Server/PerfTestServer.Config.xml",
@@ -171,6 +191,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "RoleManagement",
+                ServerProject = "Workshop/RoleManagement/Server/RoleManagement Server.csproj",
+                ServerConfig = "Workshop/RoleManagement/Server/Quickstarts.RoleManagementServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62573/Quickstarts/RoleManagementServer",
+                ClientProject = "Workshop/RoleManagement/Client/RoleManagement Client.csproj",
+                ClientConfig = "Workshop/RoleManagement/Client/Quickstarts.RoleManagementClient.Config.xml",
+                ClientEndpointSource = "Workshop/RoleManagement/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "SimpleEvents",
                 ServerProject = "Workshop/SimpleEvents/Server/SimpleEvents Server.csproj",
                 ServerConfig = "Workshop/SimpleEvents/Server/SimpleEventsServer.Config.xml",
@@ -178,6 +208,16 @@ namespace Opc.Ua.Samples.Tests
                 ClientProject = "Workshop/SimpleEvents/Client/SimpleEvents Client.csproj",
                 ClientConfig = "Workshop/SimpleEvents/Client/SimpleEventsClient.Config.xml",
                 ClientEndpointSource = "Workshop/SimpleEvents/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
+                Name = "StateMachines",
+                ServerProject = "Workshop/StateMachines/Server/StateMachines Server.csproj",
+                ServerConfig = "Workshop/StateMachines/Server/StateMachinesServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62571/Quickstarts/StateMachinesServer",
+                ClientProject = "Workshop/StateMachines/Client/StateMachines Client.csproj",
+                ClientConfig = "Workshop/StateMachines/Client/StateMachinesClient.Config.xml",
+                ClientEndpointSource = "Workshop/StateMachines/Client/MainForm.cs",
             },
             new SampleDefinition
             {

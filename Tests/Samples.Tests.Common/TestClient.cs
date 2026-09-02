@@ -27,6 +27,11 @@ namespace Opc.Ua.Samples.Tests
     /// </remarks>
     public sealed class TestClient : IAsyncDisposable
     {
+        /// <summary>
+        /// How long a teardown waits for the session to close before it disposes it instead.
+        /// </summary>
+        private static readonly TimeSpan kCloseTimeout = TimeSpan.FromSeconds(5);
+
         private readonly TemporaryPki m_pki;
         private readonly ApplicationInstance m_application;
 
@@ -95,7 +100,7 @@ namespace Opc.Ua.Samples.Tests
             IUserIdentity identity,
             CancellationToken ct = default)
         {
-            return await ConnectCoreAsync(endpointUrl, sessionName, identity, false, ct)
+            return await ConnectCoreAsync(endpointUrl, sessionName, identity, EndpointChoice.Any, ct)
                 .ConfigureAwait(false);
         }
 
@@ -110,7 +115,7 @@ namespace Opc.Ua.Samples.Tests
             string sessionName,
             CancellationToken ct = default)
         {
-            return await ConnectCoreAsync(endpointUrl, sessionName, null, false, ct)
+            return await ConnectCoreAsync(endpointUrl, sessionName, null, EndpointChoice.Any, ct)
                 .ConfigureAwait(false);
         }
 
@@ -129,15 +134,49 @@ namespace Opc.Ua.Samples.Tests
             IUserIdentity identity,
             CancellationToken ct = default)
         {
-            return await ConnectCoreAsync(endpointUrl, sessionName, identity, true, ct)
+            return await ConnectCoreAsync(endpointUrl, sessionName, identity, EndpointChoice.UnsecuredOnly, ct)
                 .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Opens a session on an encrypted endpoint and lets a refusal through.
+        /// </summary>
+        /// <remarks>
+        /// OPC UA Part 18 requires the Methods which change the role configuration of a
+        /// server to be called over an encrypted channel, so a test which exercises them has
+        /// to say which endpoint it wants rather than take the unsecured one the ordinary
+        /// connect prefers.
+        /// </remarks>
+        public static async Task<TestClient> ConnectEncryptedAsync(
+            string endpointUrl,
+            string sessionName,
+            IUserIdentity identity,
+            CancellationToken ct = default)
+        {
+            return await ConnectCoreAsync(endpointUrl, sessionName, identity, EndpointChoice.EncryptedOnly, ct)
+                .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Which endpoint of the server a connect is willing to use.
+        /// </summary>
+        private enum EndpointChoice
+        {
+            /// <summary>Any endpoint which accepts a session, least secure first.</summary>
+            Any,
+
+            /// <summary>Only the unsecured endpoint, and report what it answered.</summary>
+            UnsecuredOnly,
+
+            /// <summary>Only an encrypted endpoint, and report what it answered.</summary>
+            EncryptedOnly,
         }
 
         private static async Task<TestClient> ConnectCoreAsync(
             string endpointUrl,
             string sessionName,
             IUserIdentity identity,
-            bool unsecuredOnly,
+            EndpointChoice choice,
             CancellationToken ct)
         {
             TemporaryPki pki = null;
@@ -158,7 +197,7 @@ namespace Opc.Ua.Samples.Tests
                 EndpointDescription[] candidates = await SelectEndpointsAsync(configuration, endpointUrl, ct)
                     .ConfigureAwait(false);
 
-                if (unsecuredOnly)
+                if (choice == EndpointChoice.UnsecuredOnly)
                 {
                     candidates = candidates
                         .Where(endpoint => endpoint.SecurityMode == MessageSecurityMode.None
@@ -170,6 +209,21 @@ namespace Opc.Ua.Samples.Tests
                     {
                         throw new InvalidOperationException(
                             $"{endpointUrl} offers no unsecured endpoint to open a session on.");
+                    }
+                }
+                else if (choice == EndpointChoice.EncryptedOnly)
+                {
+                    candidates = candidates
+                        .Where(endpoint => endpoint.SecurityMode == MessageSecurityMode.SignAndEncrypt
+                            && !string.IsNullOrEmpty(endpoint.SecurityPolicyUri)
+                            && endpoint.SecurityPolicyUri != SecurityPolicies.None)
+                        .Take(1)
+                        .ToArray();
+
+                    if (candidates.Length == 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"{endpointUrl} offers no encrypted endpoint to open a session on.");
                     }
                 }
 
@@ -203,7 +257,7 @@ namespace Opc.Ua.Samples.Tests
                         pki = null;
                         return client;
                     }
-                    catch (ServiceResultException) when (unsecuredOnly)
+                    catch (ServiceResultException) when (choice != EndpointChoice.Any)
                     {
                         // the caller asked for one endpoint on purpose, because what the
                         // server answered is the thing it wants to look at
@@ -240,13 +294,24 @@ namespace Opc.Ua.Samples.Tests
         {
             if (Session != null)
             {
+                // the close is bounded: a session which is inside a reconnect attempt against
+                // a server that is gone only leaves that attempt when it runs out, and against
+                // an endpoint which accepts but never answers that is the OperationTimeout of
+                // the sample configuration - ten minutes. Disposing is what actually cancels
+                // the attempt, so a teardown must not wait for the close indefinitely.
+                using var bounded = new CancellationTokenSource(kCloseTimeout);
+
                 try
                 {
-                    await Session.CloseAsync(default).ConfigureAwait(false);
+                    await Session.CloseAsync(bounded.Token).ConfigureAwait(false);
                 }
                 catch (ServiceResultException)
                 {
                     // closing a session on a server which is already gone must not fail a test
+                }
+                catch (OperationCanceledException)
+                {
+                    // the server did not answer in time, the dispose below tears it down
                 }
 
                 await Session.DisposeAsync().ConfigureAwait(false);
