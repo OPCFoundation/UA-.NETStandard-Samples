@@ -161,6 +161,15 @@ dotnet run --project "Workshop/AlarmCondition/Server/AlarmCondition Server.cspro
 dotnet run --project "Workshop/AlarmCondition/Client/AlarmCondition Client.csproj"
 ```
 
+## Known gaps
+
+* **The audit window stays empty.** Every Part 9 Method raises the audit event the
+  specification asks for, and the server configuration now turns auditing on
+  (`AuditingEnabled`), which a server needs before it forwards an audit event at all. Even
+  so, no `AuditUpdateMethodEventType` reaches a subscriber, so *View → Audit Events...*
+  opens a window which never fills. The window itself works — it starts its streaming
+  subscription and tears it down again with the window.
+
 ## Notes for implementers
 
 * **Set the reference type after `Create`, not before.** Creating a node from its type model

@@ -733,10 +733,94 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// The alarm client keeps showing what the server reports, minute after minute.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A list which fills once and then freezes looks almost right - the conditions are
+        /// all there - but every button above it stops working, because what a condition
+        /// Method changes only becomes visible through the event it causes. That is what
+        /// this pins down: the newest timestamp in the list has to keep moving.
+        /// </para>
+        /// <para>
+        /// It is a client test rather than a node manager one because the freeze it guards
+        /// against was only ever seen with the server and the client in one process, under
+        /// the load of both. A fixture which subscribes from the outside kept receiving
+        /// events throughout.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public Task AlarmConditionClientKeepsReceivingEvents(CancellationToken ct)
+        {
+            return DriveAsync("AlarmCondition", async (form, session, phase, token) => {
+                phase.Enter("waiting for the conditions of the server");
+
+                var conditions = (ListView)WinFormsHarness.FindControl(form, "ConditionsLV");
+
+                Assert.That(conditions, Is.Not.Null, "The sample no longer shows a condition list.");
+
+                bool arrived = await SampleFormDriver.PumpUntilAsync(
+                    () => conditions.Items.Count > 0,
+                    s_step,
+                    token).ConfigureAwait(true);
+
+                Assert.That(arrived, Is.True, "The condition list never filled.");
+
+                string first = NewestTimeIn(conditions);
+
+                await TestContext.Out
+                    .WriteLineAsync($"{conditions.Items.Count} conditions, newest at {first}")
+                    .ConfigureAwait(true);
+
+                phase.Enter("watching the list for a while");
+
+                // the simulation of the server changes every alarm every eight to eleven
+                // seconds, so a list which is alive cannot stand still for twenty
+                bool moved = await SampleFormDriver.PumpUntilAsync(
+                    () => string.CompareOrdinal(NewestTimeIn(conditions), first) > 0,
+                    TimeSpan.FromSeconds(20),
+                    token).ConfigureAwait(true);
+
+                await TestContext.Out
+                    .WriteLineAsync($"{conditions.Items.Count} conditions, newest at {NewestTimeIn(conditions)}")
+                    .ConfigureAwait(true);
+
+                Assert.That(
+                    moved,
+                    Is.True,
+                    "The newest condition in the list is the same one as twenty seconds ago, so " +
+                    "the client stopped receiving events. Everything in the Conditions menu goes " +
+                    "dead with it: a Method still reaches the server, but nothing it changes ever " +
+                    "arrives back.");
+            }, ct);
+        }
+
+        /// <summary>
+        /// The latest time shown in the condition list, as text - the column is formatted
+        /// HH:mm:ss.fff, which sorts the same way it reads.
+        /// </summary>
+        private static string NewestTimeIn(ListView conditions)
+        {
+            string newest = string.Empty;
+
+            foreach (ListViewItem row in conditions.Items)
+            {
+                if (string.CompareOrdinal(row.SubItems[kTimeColumn].Text, newest) > 0)
+                {
+                    newest = row.SubItems[kTimeColumn].Text;
+                }
+            }
+
+            return newest;
+        }
+
+        /// <summary>
         /// The columns of the condition list which this fixture reads.
         /// </summary>
         private const int kSourceColumn = 0;
         private const int kConditionColumn = 1;
+        private const int kTimeColumn = 5;
         private const int kFlagsColumn = 7;
 
         /// <summary>

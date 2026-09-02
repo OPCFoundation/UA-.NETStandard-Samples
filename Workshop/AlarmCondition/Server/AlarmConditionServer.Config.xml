@@ -103,6 +103,11 @@
     <MaxRegistrationInterval>30000</MaxRegistrationInterval>
     <NodeManagerSaveFile>Opc.Ua.Server.nodes.xml</NodeManagerSaveFile>
     <MaxSubscriptionCount>50</MaxSubscriptionCount>
+
+    <!-- Every Part 9 condition Method raises the audit event the specification asks for,
+         and a server drops audit events while auditing is off. The audit window of the
+         sample client watches exactly those, so it stays empty without this. -->
+    <AuditingEnabled>true</AuditingEnabled>
   </ServerConfiguration>
 
   <Extensions>

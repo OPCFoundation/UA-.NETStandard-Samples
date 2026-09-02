@@ -121,11 +121,15 @@ namespace Quickstarts.AlarmConditionServer
                 m_source.ReAlarm(alarm.SymbolicName);
             }
 
-            UpdateMetrics();
-
-            await m_metrics
-                .ClearChangeMasksAsync(m_nodeManager.SystemContext, true, cancellationToken)
-                .ConfigureAwait(false);
+            // the masks are only cleared when a metric actually moved, so the node manager
+            // is not asked to walk the metrics subtree of every source once a second for
+            // values which mostly stand still.
+            if (UpdateMetrics())
+            {
+                await m_metrics
+                    .ClearChangeMasksAsync(m_nodeManager.SystemContext, true, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -648,31 +652,60 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Copies the tracked alarm rate into the AlarmMetrics object of the source.
         /// </summary>
-        private void UpdateMetrics()
+        /// <returns><c>true</c> when a metric changed and the node has to be published.</returns>
+        private bool UpdateMetrics()
         {
             lock (m_lock)
             {
-                short maximumRepeats = 0;
+                uint maximumRepeats = 0;
 
                 foreach (AlarmConditionState alarm in m_alarms.Values)
                 {
                     if (alarm.ReAlarmRepeatCount != null && alarm.ReAlarmRepeatCount.Value > maximumRepeats)
                     {
-                        maximumRepeats = alarm.ReAlarmRepeatCount.Value;
+                        maximumRepeats = (uint)alarm.ReAlarmRepeatCount.Value;
                     }
                 }
 
-                m_metrics.AlarmCount.Value = (uint)m_alarms.Count;
-                m_metrics.CurrentAlarmRate.Value = m_rateTracker.CurrentAlarmRate;
-                m_metrics.MaximumAlarmRate.Value = m_rateTracker.MaximumAlarmRate;
+                bool changed = Assign(m_metrics.AlarmCount, (uint)m_alarms.Count);
+
+                changed |= Assign(m_metrics.CurrentAlarmRate, m_rateTracker.CurrentAlarmRate);
+                changed |= Assign(m_metrics.MaximumAlarmRate, m_rateTracker.MaximumAlarmRate);
 
                 // MaximumReAlarmCount is optional in AlarmMetricsType, so the type model
                 // only materializes it on a server which asks for it.
-                if (m_metrics.MaximumReAlarmCount != null)
-                {
-                    m_metrics.MaximumReAlarmCount.Value = (uint)maximumRepeats;
-                }
+                changed |= Assign(m_metrics.MaximumReAlarmCount, maximumRepeats);
+
+                return changed;
             }
+        }
+
+        /// <summary>
+        /// Writes a value to a variable and reports whether that changed anything.
+        /// </summary>
+        private static bool Assign(BaseDataVariableState<uint> variable, uint value)
+        {
+            if (variable == null || variable.Value == value)
+            {
+                return false;
+            }
+
+            variable.Value = value;
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a value to a variable and reports whether that changed anything.
+        /// </summary>
+        private static bool Assign(BaseDataVariableState<double> variable, double value)
+        {
+            if (variable == null || variable.Value.Equals(value))
+            {
+                return false;
+            }
+
+            variable.Value = value;
+            return true;
         }
 
         /// <summary>

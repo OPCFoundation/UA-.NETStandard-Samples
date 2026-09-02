@@ -120,6 +120,12 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         private const string kMaintenanceMode = "MaintenanceMode";
 
+        /// <summary>
+        /// What the Help menu opens.
+        /// </summary>
+        private const string kHelpUrl =
+            "https://github.com/OPCFoundation/UA-.NETStandard-Samples/blob/master/Workshop/AlarmCondition/README.md";
+
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
 
@@ -255,8 +261,14 @@ namespace Quickstarts.AlarmConditionClient
 
                 await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
 
-                // send an initial refresh.
-                Conditions_RefreshMI_ClickAsync(sender, e);
+                // Send an initial refresh so the list starts out with everything the server
+                // retains rather than with whatever happens to change next. It is addressed
+                // to the item which was just created: a refresh of the whole subscription
+                // replays nothing while the server is still creating that item.
+                if (m_monitoredItem?.Item != null)
+                {
+                    await m_monitoredItem.Item.ConditionRefreshAsync();
+                }
 
                 ConditionsMI.Enabled = true;
                 ViewMI.Enabled = true;
@@ -391,8 +403,22 @@ namespace Quickstarts.AlarmConditionClient
 
                 await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
 
-                // send a refresh since previously filtered conditions may be now available.
-                Conditions_RefreshMI_ClickAsync(this, null);
+                // The rows which are up there belong to the filter which was just replaced,
+                // and the refresh below does not clear them: a refresh announces itself with
+                // a RefreshStartEventType, which is a SystemEventType and therefore does not
+                // pass a filter that asks for conditions. Without this the old rows stay on
+                // the screen and the new filter looks as if it did nothing.
+                ConditionsLV.Items.Clear();
+
+                // Send a refresh since previously filtered conditions may now be available.
+                // It is addressed to the item which was just created rather than to the
+                // subscription: a refresh of the whole subscription right after an item was
+                // swapped replays nothing, because the server has not finished creating the
+                // new item when the call arrives.
+                if (m_monitoredItem?.Item != null)
+                {
+                    await m_monitoredItem.Item.ConditionRefreshAsync(ct);
+                }
             }
         }
 
@@ -1498,7 +1524,11 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                Condition_Type_AllMI.Checked = Object.ReferenceEquals(sender, Conditions_Severity_AllMI);
+                // the entries pick one type set at a time, so the one which was clicked is
+                // the one which ends up checked. Comparing against the severity menu here -
+                // which is what this line used to do - left "All" unreachable: it could
+                // never be checked again once anything else had been picked.
+                Condition_Type_AllMI.Checked = Object.ReferenceEquals(sender, Condition_Type_AllMI);
                 Condition_Type_DialogsMI.Checked = Object.ReferenceEquals(sender, Condition_Type_DialogsMI);
                 Condition_Type_AlarmsMI.Checked = Object.ReferenceEquals(sender, Condition_Type_AlarmsMI);
                 Condition_Type_LimitAlarmsMI.Checked = Object.ReferenceEquals(sender, Condition_Type_LimitAlarmsMI);
@@ -1658,11 +1688,22 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + "\\WebHelp\\acclientoverview.htm");
+                // The compiled help this used to open ("WebHelp/acclientoverview.htm") has
+                // never been part of the repository, so the entry only ever produced an
+                // error box. The documentation of the sample is its README.
+                var browser = new System.Diagnostics.ProcessStartInfo(kHelpUrl) {
+                    UseShellExecute = true,
+                };
+
+                System.Diagnostics.Process.Start(browser)?.Dispose();
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                MessageBox.Show("Unable to launch help documentation. Error: " + ex.Message);
+                MessageBox.Show(
+                    Utils.Format("The documentation is at {0}{1}{1}{2}", kHelpUrl, Environment.NewLine, exception.Message),
+                    this.Text,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
         }
         #endregion
