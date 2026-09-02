@@ -288,10 +288,17 @@ is what every other sample in the repository uses.
 
 ### Known issues
 
-`s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests`) reports a
-listed sample as **ignored** rather than failed, and fails the moment it starts working, so
-an entry cannot rot. Both lists are used sparingly: a sample that is broken is worth fixing,
-not parking. Both lists are currently empty.
+`s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests` and
+`WorkshopClientSubscriptionTests`) reports a listed sample as **ignored** rather than failed,
+and fails the moment it starts working, so an entry cannot rot. The lists are used sparingly:
+a sample that is broken is worth fixing, not parking.
+
+Recorded right now, in the subscription list and as `KnownIssue` wrappers in
+`StateMachinesNodeManagerTests`: the StateMachines sample needs
+OPCFoundation/UA-.NETStandard#4368 (Executable/UserExecutable for state machine causes and
+the CurrentState/Id reporting that came with it), which landed one master build after the
+`2.0.262.32744-preview` package set this repository pins. The first newer package set lifts
+the entries, and the tests then fail until they are removed.
 
 ## What Tier 1.5 checks today
 
