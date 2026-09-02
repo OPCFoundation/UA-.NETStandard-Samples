@@ -8,6 +8,7 @@ start Quickstarts.FileTransferClient.exe
 start Quickstarts.HistoricalAccessClient.exe
 start Quickstarts.HistoricalEventsClient.exe
 start Quickstarts.MethodsClient.exe
+start Quickstarts.NodeManagementClient.exe
 start Quickstarts.PerfTestClient.exe
 start Quickstarts.RoleManagementClient.exe
 start Quickstarts.SimpleEventsClient.exe

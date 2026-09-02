@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\Workshop\HistoricalAccess\Server\HistoricalAccess Server.csproj" />
     <ProjectReference Include="..\..\Workshop\HistoricalEvents\Server\HistoricalEvents Server.csproj" />
     <ProjectReference Include="..\..\Workshop\Methods\Server\Methods Server.csproj" />
+    <ProjectReference Include="..\..\Workshop\NodeManagement\Server\NodeManagement Server.csproj" />
     <ProjectReference Include="..\..\Workshop\PerfTest\Server\PerfTest Server.csproj" />
     <ProjectReference Include="..\..\Workshop\RoleManagement\Server\RoleManagement Server.csproj" />
     <ProjectReference Include="..\..\Workshop\SimpleEvents\Server\SimpleEvents Server.csproj" />

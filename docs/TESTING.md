@@ -167,7 +167,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 0 checks today
 
-167 test cases, under a second, no network:
+175 test cases, under a second, no network:
 
 - every `*.Config.xml` in the repository loads and validates, and declares an application
   name, uri, type and security configuration
@@ -182,7 +182,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 1 checks today
 
-103 test cases, about 25 seconds. Eighteen of them start a sample server in process, from the
+108 test cases, about 35 seconds. Nineteen of them start a sample server in process, from the
 sample's own configuration file, and connect to it with a plain OPC UA client:
 
 - the server comes up on the endpoint the catalog claims
@@ -195,7 +195,7 @@ Only the opc.tcp endpoints are exercised; https base addresses are stripped in m
 the server starts, because they need their own bindings and would double the ports a test run
 occupies.
 
-All 18 servers pass. The first run of this tier found four that did not, all of them samples
+All 19 servers pass. The first run of this tier found four that did not, all of them samples
 which had not caught up with the value types the 2.0 stack introduced (`ArrayOf<T>`,
 `DateTimeUtc`, `NodeId` as a struct, the `Variant.From` overloads); they were fixed rather
 than parked:
@@ -294,7 +294,7 @@ not parking. Both lists are currently empty.
 
 ## What Tier 1.5 checks today
 
-122 test cases across 19 fixtures, about 1.5 minutes. One fixture per node manager, each
+136 test cases across 20 fixtures, about 2 minutes. One fixture per node manager, each
 starting its sample server once and driving it through an ordinary OPC UA session.
 
 **Everything is observed through the services a client would use.** No test reaches into a
@@ -314,6 +314,7 @@ What each fixture pins down, in one line:
 | Views | The same node browsed through two views shows two different sets of children |
 | SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing |
 | Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
+| NodeManagement | The four Part 4 §5.8 services over a real session: a client creates an object and a variable with attributes, gets a node id from the node manager or asks for one, is refused a duplicate browse name, a taken node id, a non-hierarchical reference and a parent outside the folder the sample opens, deletes what it added and is refused the model, references a node into a second folder and drops the reference again without deleting the node, sees the derived counter follow and a GeneralModelChangeEvent report the folder, and is refused everything on a node manager which never opted in |
 | RoleManagement | What a Part 18 Role is worth: an anonymous session browses the machine and is refused every value, an Observer reads but neither writes nor calls, an Operator does both, an Engineer sees a node an Observer cannot browse, UserRolePermissions reports what the session earns, the role configuration is refused to everyone but a SecurityAdmin on an encrypted channel, and a Role granted at runtime reaches an already open session |
 | UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session |
 | PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
@@ -401,7 +402,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-52 test cases, about two and a half minutes, Windows only. For each WinForms sample client
+54 test cases, about two and a half minutes, Windows only. For each WinForms sample client
 the test starts its sample server in process, then on a dedicated STA thread with a running
 message loop - but without ever showing a window:
 
@@ -443,6 +444,7 @@ the sample exists to show:
 | HistoricalAccess | points the history control at a recorded archive item and presses Go | the grid fills with the recorded values | `SampleClientActionTests` |
 | HistoricalEvents | connects | a live event reaches the list | `WorkshopClientSubscriptionTests` |
 | Methods | connects | the current state of the process arrives | `WorkshopClientSubscriptionTests` |
+| NodeManagement | adds an object, references it into the group, drops the reference, deletes the node | each of the four services changed the list it is supposed to change - and dropping the reference left the node where it was | `NodeManagementClientTests` |
 | PerfTest | connects, then presses Stop | the item update count leaves zero, and Stop ends the run | `SampleClientActionTests` |
 | Reference | browses into the static scalars and selects one | the attribute list holds the attributes of the node the tree selected | `SampleClientActionTests` |
 | RoleManagement | signs in as an Operator and presses Reset | the server answered Good and the set point is back at its default - the case which motivated all of this | `RoleManagementClientTests` |
