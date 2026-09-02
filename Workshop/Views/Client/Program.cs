@@ -61,7 +61,7 @@ namespace Quickstarts.ViewsClient
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Quickstarts.ViewsClient";
+                        options.ConfigurationFile = "Quickstarts.ViewsClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

@@ -181,6 +181,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "NodeManagement",
+                ServerProject = "Workshop/NodeManagement/Server/NodeManagement Server.csproj",
+                ServerConfig = "Workshop/NodeManagement/Server/Quickstarts.NodeManagementServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62575/Quickstarts/NodeManagementServer",
+                ClientProject = "Workshop/NodeManagement/Client/NodeManagement Client.csproj",
+                ClientConfig = "Workshop/NodeManagement/Client/Quickstarts.NodeManagementClient.Config.xml",
+                ClientEndpointSource = "Workshop/NodeManagement/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "PerfTest",
                 ServerProject = "Workshop/PerfTest/Server/PerfTest Server.csproj",
                 ServerConfig = "Workshop/PerfTest/Server/PerfTestServer.Config.xml",

@@ -41,6 +41,10 @@
     <Project Path="Workshop/Methods/Client/Methods Client.csproj" Id="10173201-4fb3-4250-a26e-aa11c3904c19" />
     <Project Path="Workshop/Methods/Server/Methods Server.csproj" Id="eab128ce-bb3e-4ae3-8731-30680a928040" />
   </Folder>
+  <Folder Name="/NodeManagement/">
+    <Project Path="Workshop/NodeManagement/Client/NodeManagement Client.csproj" />
+    <Project Path="Workshop/NodeManagement/Server/NodeManagement Server.csproj" />
+  </Folder>
   <Folder Name="/PerfTest/">
     <Project Path="Workshop/PerfTest/Client/PerfTest Client.csproj" Id="4566fa73-5d4f-4753-b13d-371a687a8247" />
     <Project Path="Workshop/PerfTest/Server/PerfTest Server.csproj" Id="a62e8fc4-a946-484e-bce8-5b9fc586f995" />

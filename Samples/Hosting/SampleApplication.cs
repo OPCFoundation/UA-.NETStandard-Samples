@@ -49,8 +49,7 @@ namespace Opc.Ua.Samples.Hosting
             m_logger = telemetry.CreateLogger<SampleApplication>();
 
             Instance = new ApplicationInstance(telemetry) {
-                ApplicationType = m_options.ApplicationType,
-                ConfigSectionName = m_options.ConfigSectionName
+                ApplicationType = m_options.ApplicationType
             };
 
             if (!string.IsNullOrEmpty(m_options.ApplicationName))
@@ -83,7 +82,10 @@ namespace Opc.Ua.Samples.Hosting
         internal async Task InitializeAsync(CancellationToken ct)
         {
             m_configuration = await Instance
-                .LoadApplicationConfigurationAsync(m_options.Silent, ct)
+                .LoadApplicationConfigurationAsync(
+                    SampleConfigurationFile.Resolve(m_options.ConfigurationFile),
+                    m_options.Silent,
+                    ct)
                 .ConfigureAwait(false);
 
             // what the configuration file cannot express, for example a certificate

@@ -154,6 +154,7 @@ namespace Opc.Ua.Samples.Hosting
             {
                 var telemetry = host.Services.GetRequiredService<ITelemetryContext>();
                 string caption = host.Services.GetService<SampleApplication>()?.Instance.ApplicationName
+                    ?? host.Services.GetService<SampleServerStartup>()?.ConfigurationOrNull?.ApplicationName
                     ?? Application.ProductName;
 
                 showException(telemetry, caption, exception);

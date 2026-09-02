@@ -61,7 +61,7 @@ namespace Quickstarts.Boiler.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "BoilerClient";
+                        options.ConfigurationFile = "BoilerClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

@@ -61,7 +61,7 @@ namespace Quickstarts.DataTypes
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "DataTypesClient";
+                        options.ConfigurationFile = "DataTypesClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

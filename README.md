@@ -77,6 +77,8 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [HistoricalEvents Client](Workshop/HistoricalEvents/Client) | **Client** | Queries and displays historical events from a HistoricalEvents server. |
 | [Methods Server](Workshop/Methods/Server) | **Server** | Exposes UA methods with various input/output arguments to demonstrate method invocation. |
 | [Methods Client](Workshop/Methods/Client) | **Client** | Discovers and calls UA methods on a Methods server. |
+| [NodeManagement Server](Workshop/NodeManagement/Server) | **Server** | Demonstrates the OPC UA Part 4 §5.8 NodeManagement service set: a node manager opts in with one property, and decides where clients may build, what they may not delete, and what a server-assigned NodeId looks like. See the [sample README](Workshop/NodeManagement/README.md). |
+| [NodeManagement Client](Workshop/NodeManagement/Client) | **Client** | Creates and deletes nodes and references in the running server, and follows the model change events which report what other clients did. |
 | [PerfTest Server](Workshop/PerfTest/Server) | **Server** | Performance test server that exposes a large number of monitored variables for throughput benchmarking. |
 | [PerfTest Client](Workshop/PerfTest/Client) | **Client** | Performance test client that subscribes to many variables and measures data-change throughput. |
 | [RoleManagement Server](Workshop/RoleManagement/Server) | **Server** | Demonstrates OPC UA Part 18 role-based security: identities earn Roles, RolePermissions on nodes decide what each Role may browse, read, write or call, and the RoleSet lets a SecurityAdmin change that at runtime. See the [sample README](Workshop/RoleManagement/README.md). |
@@ -109,6 +111,14 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 
 ## Getting Started
 All the tools you need for .Net Standard come with the .Net Core tools. See [here](https://docs.microsoft.com/en-us/dotnet/articles/core/getting-started) for what you need.
+
+## Preview NuGet packages
+
+The samples build against the preview packages of the OPC UA .NET Standard stack from the
+public [nuget.org](https://www.nuget.org/packages/OPCFoundation.NetStandard.Opc.Ua/) feed -
+no authentication or extra package source is needed. The version the samples currently build
+against is pinned in a single place, the `OpcUaNetStandardVersion` property in
+[targets.props](targets.props).
 
 ## Debugging the Opc.Ua.Core Nuget packages
 

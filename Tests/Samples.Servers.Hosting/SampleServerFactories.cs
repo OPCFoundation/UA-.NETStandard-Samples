@@ -55,6 +55,7 @@ namespace Opc.Ua.Samples.Tests
                 ["HistoricalAccess"] = telemetry => new Quickstarts.HistoricalAccessServer.HistoricalAccessServer(telemetry),
                 ["HistoricalEvents"] = telemetry => new Quickstarts.HistoricalEvents.Server.HistoricalEventsServer(telemetry),
                 ["Methods"] = telemetry => new Quickstarts.MethodsServer.MethodsServer(telemetry),
+                ["NodeManagement"] = telemetry => new Quickstarts.NodeManagement.Server.NodeManagementServer(telemetry),
                 ["PerfTest"] = telemetry => new Quickstarts.PerfTestServer.PerfTestServer(telemetry),
                 ["RoleManagement"] = telemetry => new Quickstarts.RoleManagement.Server.RoleManagementServer(telemetry),
                 ["SimpleEvents"] = telemetry => new Quickstarts.SimpleEvents.Server.SimpleEventsServer(telemetry),

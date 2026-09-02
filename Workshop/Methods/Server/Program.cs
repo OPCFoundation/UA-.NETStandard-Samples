@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -53,17 +53,14 @@ namespace Quickstarts.MethodsServer
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
 
-            // the generic host owns the configuration, the certificate, the logging
-            // and the lifetime of the server; the main form is created by the container
-            // from the services registered here.
-            SampleWinFormsHost.Run<ServerForm>(
+            // the generic host owns the logging and the lifetime of the sample; the
+            // server is hosted by the stack, its configuration is loaded straight from
+            // the configuration file, and the form shows the running server.
+            SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleApplication(options => {
-                        options.ApplicationType = ApplicationType.Server;
-                        options.ConfigSectionName = "Quickstarts.MethodsServer";
-                    })
-                    .AddSampleServer<MethodsServer>(),
+                    .AddSampleServer<MethodsServer>("Quickstarts.MethodsServer.Config.xml"),
+                ServerForm.Create,
                 ExceptionDlg.Show);
         }
     }

@@ -7,7 +7,9 @@ plumbing.
 
 ## What a sample looks like
 
-A Windows Forms server:
+A Windows Forms server hands its configuration XML file to the hosted server of the stack
+(`services.AddOpcUa().AddServer(configurationFile)` under the hood) and shows the running
+server in the shared server form:
 
 ```csharp
 [STAThread]
@@ -18,43 +20,87 @@ static void Main(string[] args)
 
     ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
 
-    SampleWinFormsHost.Run<ServerForm>(
+    SampleWinFormsHost.Run(
         args,
         services => services
-            .AddSampleApplication(options => {
-                options.ApplicationType = ApplicationType.Server;
-                options.ConfigSectionName = "BoilerServer";
-            })
-            .AddSampleServer<BoilerServer>(),
+            .AddSampleServer<BoilerServer>("BoilerServer.Config.xml"),
+        ServerForm.Create,
         ExceptionDlg.Show);
 }
 ```
 
-A Windows Forms client is the same without `AddSampleServer<T>()`, and a console sample builds
-its own host:
+A Windows Forms client loads the same kind of file eagerly, because its main form takes the
+`ApplicationConfiguration` in its constructor:
+
+```csharp
+SampleWinFormsHost.Run<MainForm>(
+    args,
+    services => services
+        .AddSampleApplication(options => {
+            options.ApplicationType = ApplicationType.Client;
+            options.ConfigurationFile = "BoilerClient.Config.xml";
+        }),
+    ExceptionDlg.Show);
+```
+
+A console server builds its own host on the same registration:
 
 ```csharp
 HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
 
-builder.Logging.AddConsole();
-builder.Services
-    .AddSampleApplication(options => { /* ... */ })
-    .AddSampleServer<AggregationServer>();
+builder.Logging.AddSampleConsole();
+builder.Services.AddSampleServer<AggregationServer>(
+    "Quickstarts.AggregationServer.Config.xml",
+    RejectUntrustedCertificatesLoudly);
 
 await builder.Build().RunAsync();
 ```
 
-## What it does
+## The server path: the hosted server of the stack
+
+`AddSampleServer<TServer>(configurationFile)` - and the overload taking a factory, for the
+servers which need databases or node managers - registers the server through the
+dependency injection surface of the stack: `services.AddOpcUa().AddServer(configurationFile)`
+loads the configuration XML document of the sample and owns the application instance, the
+certificate check and the server lifetime. Every setting in the file applies exactly as on the
+classic `ApplicationInstance` path. On top of the stack the sample registration adds what the
+samples rely on:
+
+1. the hosted server starts the server instance of the *container* (through
+   `IOpcUaServerFactory`), so the main form resolves the same running server -
+   also published as the shared `StandardServer`, which `ServerForm.Create` takes,
+2. the loaded `ApplicationConfiguration` is captured (through the loaded-configuration
+   callback of the stack) and registered for the forms,
+3. the log file the configuration names is attached the moment the file has been read,
+4. a readiness gate (`SampleServerReadyHostedService`, driven by an `IServerStartupTask`)
+   holds the start of the host until the server is listening, or fails it with the original
+   error - the hosted server of the stack is a `BackgroundService`, which by itself starts in
+   the background.
+
+The optional `configure` callback runs right after the file has been read and before
+certificates are checked, for the settings a configuration file cannot express, such as a
+certificate validation callback.
+
+## The client path: an eager `ApplicationInstance`
 
 `AddSampleApplication(...)` registers `SampleApplication`, and through it the
 `ApplicationInstance` and the `ApplicationConfiguration` of the sample, plus one
 `IHostedService` which owns the startup sequence:
 
-1. read the configuration named by `ConfigSectionName`,
+1. read the configuration file named by `ConfigurationFile`,
 2. apply `ConfigureConfiguration`, for settings the configuration file cannot express,
 3. attach the log file the configuration names,
 4. make sure the application instance certificate is usable,
-5. start the server the sample registered with `AddSampleServer<T>()`, and stop it on shutdown.
+5. start a server registered with the classic `AddSampleServer<T>()` (no file), and stop it
+   on shutdown.
+
+The client samples stay on this path on purpose: their forms take the loaded
+`ApplicationConfiguration` in their constructors, and the client controls create their
+sessions from it directly. The `AddClient(configurationFile)` surface of the stack loads the
+document lazily on the first session connect, which is after the forms already exist. The
+handful of samples whose user interface is built around the `ApplicationInstance` itself -
+the UA sample client and server, the GDS applications - keep this path for their servers
+too.
 
 `ITelemetryContext` comes from `services.AddOpcUa()` - the `ServiceProviderTelemetryContext` of
 the stack, which resolves the `ILoggerFactory` of the host. No sample declares a telemetry
@@ -86,8 +132,9 @@ thread a single threaded apartment - which the common dialogs, drag and drop and
 need - without a blocking wait in the entry point of the sample.
 
 The main form is created by the container, either by type
-(`ActivatorUtilities.CreateInstance<TMainForm>`) or through a factory, for the samples whose
-forms take arguments the container cannot know.
+(`ActivatorUtilities.CreateInstance<TMainForm>`) or through a factory - `ServerForm.Create`
+for the server samples, whose shared form takes the running `StandardServer` and the loaded
+configuration.
 
 Because the form is built by the container, a sample which needs a client of the stack lets the
 stack register it rather than constructing it. The Global Discovery Client is the one that does:
@@ -97,13 +144,3 @@ stack register it rather than constructing it. The Global Discovery Client is th
 `LocalDiscoveryServerClient` as constructor parameters. Which session those clients open is then
 one registration rather than three `new` expressions in a form constructor - and the container,
 not the form, owns their lifetime.
-
-## Why not `AddServer(options => ...)`
-
-The 2.0 dependency injection surface can describe a server entirely in code with
-`AddOpcUa().AddServer(o => ...)`, and the hosted service it registers then builds the
-`ApplicationConfiguration` from those options. The samples keep their `*.Config.xml` files
-instead: the files are part of what the samples demonstrate, the tests load them by path, and
-`OpcUaServerOptions` in `2.0.0-preview.2` has no way to hand a pre-loaded configuration to the
-hosted server. Everything else - the container, the generic host, the hosted lifetime, the
-dependency injection telemetry - is the surface the libraries ship.
