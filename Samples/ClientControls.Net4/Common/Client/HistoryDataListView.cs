@@ -630,7 +630,13 @@ namespace Opc.Ua.Client.Controls
 
                 m_configuration = await ReadConfigurationAsync(ct);
 
-                if (StatusCode.IsBad(m_configuration.Stepped.StatusCode))
+                // whether history can be read is what the access level of the node says,
+                // not whether it carries a HistoricalDataConfiguration companion object:
+                // Part 11 leaves that object optional, and plenty of servers historize a
+                // variable without one. Reading the companion object is still worth doing
+                // - it is what the archive limits below come from - but a node which does
+                // not have one keeps every read type it is entitled to.
+                if (!await IsHistoryReadableAsync(ct).ConfigureAwait(true))
                 {
                     this.ReadTypeCB.Enabled = false;
                     this.ReadTypeCB.SelectedItem = HistoryReadType.Subscribe;
@@ -945,6 +951,31 @@ namespace Opc.Ua.Client.Controls
             }
 
             return configuration;
+        }
+
+        /// <summary>
+        /// Returns whether the node the control points at offers its history.
+        /// </summary>
+        /// <remarks>
+        /// A variable says so in the history bit of its access level. Anything which is
+        /// not a variable - a folder, an object, a method - has no access level and no
+        /// history, and the control offers a live subscription for it instead.
+        /// </remarks>
+        private async Task<bool> IsHistoryReadableAsync(CancellationToken ct = default)
+        {
+            var nodesToRead = new List<ReadValueId> {
+                new() { NodeId = GetSelectedNode(), AttributeId = Attributes.AccessLevel },
+            };
+
+            ReadResponse response = await m_session
+                .ReadAsync(null, 0, TimestampsToReturn.Neither, nodesToRead, ct)
+                .ConfigureAwait(true);
+
+            DataValue accessLevel = response.Results.ToList()[0];
+
+            return StatusCode.IsGood(accessLevel.StatusCode) &&
+                accessLevel.WrappedValue.TryGetValue(out byte flags) &&
+                (flags & AccessLevels.HistoryRead) != 0;
         }
 
         /// <summary>
