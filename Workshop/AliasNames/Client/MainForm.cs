@@ -577,8 +577,9 @@ namespace Quickstarts.AliasNames.Client
         /// </summary>
         /// <remarks>
         /// Part 17 §6.3.1. A client which caches an inventory watches this instead of
-        /// re-reading the whole list: it changes whenever the category does. The standard
-        /// well known categories of this server do not expose it, which is itself worth
+        /// re-reading the whole list: it changes whenever the category does. A category
+        /// which does not expose the property at all - the well known ones of a server
+        /// which does not materialize its store - reports none, which is itself worth
         /// seeing in the field.
         /// </remarks>
         private async Task ShowLastChangeAsync(AliasNameClient category)

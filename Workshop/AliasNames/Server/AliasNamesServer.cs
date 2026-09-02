@@ -42,17 +42,20 @@ namespace Quickstarts.AliasNames.Server
     ///   <c>DiagnosticsNodeManager</c> already binds <c>TagVariables.FindAlias</c>, so from
     ///   that one call the standard node starts answering. A client needs no prior knowledge
     ///   of this server at all: <c>AliasNameClient.OpenStandardTagVariables</c> knows the
-    ///   NodeId from the specification.
+    ///   NodeId from the specification. What the published NodeSet does not contain is the
+    ///   optional Methods and an <c>AliasNameType</c> node per alias, so
+    ///   <see cref="AliasNamesConfigurationNodeManager"/> materializes them from the
+    ///   registered store while the address space is built.
     ///   </item>
     ///   <item>
     ///   <b>An application defined category tree.</b>
     ///   <see cref="ConfigurePlantCategories"/> builds a store whose root is a category of
     ///   this sample's own, with one nested sub-category per unit of the plant, and hands it
     ///   to an <see cref="AliasNameNodeManager"/>. That node manager owns a namespace and
-    ///   creates the <c>AliasNameCategoryType</c> nodes for the tree, so unlike the standard
-    ///   categories these are browsable and can carry the optional Part 17 Methods -
-    ///   <c>FindAliasVerbose</c>, <c>AddAliasesToCategory</c> and
-    ///   <c>DeleteAliasesFromCategory</c>.
+    ///   creates the <c>AliasNameCategoryType</c> nodes for the tree - browsable, nested, and
+    ///   carrying the optional Part 17 Methods <c>FindAliasVerbose</c>,
+    ///   <c>AddAliasesToCategory</c> and <c>DeleteAliasesFromCategory</c> - without any
+    ///   materialization call of the server's own.
     ///   </item>
     /// </list>
     /// <para>
@@ -179,24 +182,41 @@ namespace Quickstarts.AliasNames.Server
         }
 
         /// <summary>
-        /// Registers the store which serves the standard TagVariables category, and the
-        /// authenticator of the one demonstration account.
+        /// Registers the store which serves the standard TagVariables category, and hands the
+        /// server a configuration node manager which materializes it.
         /// </summary>
         /// <remarks>
-        /// The registry belongs to the running server, so this is the first moment it exists.
-        /// Registering here rather than in <c>CreateMasterNodeManager</c> also keeps the two
-        /// halves of the sample legible: the standard categories need nothing but a store and
-        /// a registration, while the application defined ones need a node manager.
+        /// <para>
+        /// This is the first hook which sees the running server, and it runs before any node
+        /// manager builds its address space - which is what the standard categories need. The
+        /// binder of <c>DiagnosticsNodeManager</c> queries the registry at every call, so a
+        /// store registered later would still answer <c>FindAlias</c>; but the nodes of §6.2
+        /// are created once, while the address space is built, so the store has to be there
+        /// by then.
+        /// </para>
         /// </remarks>
-        protected override void OnServerStarted(IServerInternal server)
+        protected override IMainNodeManagerFactory CreateMainNodeManagerFactory(
+            IServerInternal server,
+            ApplicationConfiguration configuration)
         {
-            base.OnServerStarted(server);
-
             m_standardTags = ConfigureStandardTagVariables();
 
             ((IAliasNameStoreRegistryProvider)server)
                 .AliasNameStoreRegistry
                 .Register(m_standardTags);
+
+            return new AliasNamesMainNodeManagerFactory(
+                base.CreateMainNodeManagerFactory(server, configuration),
+                server,
+                configuration);
+        }
+
+        /// <summary>
+        /// Registers the authenticator of the one demonstration account.
+        /// </summary>
+        protected override void OnServerStarted(IServerInternal server)
+        {
+            base.OnServerStarted(server);
 
             server.IdentityRegistry.Register(
                 new UserNamePasswordAuthenticator(AuthenticateUserNameAsync));
@@ -249,12 +269,12 @@ namespace Quickstarts.AliasNames.Server
         /// registering a store is the whole of the server side work.
         /// </para>
         /// <para>
-        /// What it cannot do is carry the optional Methods. The published NodeSet instantiates
-        /// only <c>FindAlias</c> on the well known categories, and creating the rest as nodes
-        /// takes the materialization pass which this SDK version does not ship yet, so the
-        /// descriptor declares <see cref="AliasNameCapabilities.None"/>: the mandatory Method,
-        /// and nothing that has no node to be called on. The application defined categories
-        /// below are where the optional Methods are demonstrated.
+        /// What the published NodeSet does not instantiate is the rest: the optional Methods
+        /// and the <c>AliasNameType</c> nodes §6.2 clients browse for. Those are created by
+        /// the materialization pass which <see cref="AliasNamesConfigurationNodeManager"/>
+        /// runs, and the capabilities declared here are what that pass creates - so the
+        /// standard category ends up with the same repertoire as the application defined ones
+        /// below.
         /// </para>
         /// </remarks>
         private static InMemoryAliasNameStore ConfigureStandardTagVariables()
@@ -262,7 +282,7 @@ namespace Quickstarts.AliasNames.Server
             var tagVariables = new AliasNameCategoryDescriptor(
                 Opc.Ua.ObjectIds.TagVariables,
                 new QualifiedName(Opc.Ua.BrowseNames.TagVariables),
-                AliasNameCapabilities.None);
+                AliasNameCapabilities.All);
 
             var store = new InMemoryAliasNameStore(new[] { tagVariables });
 
@@ -387,6 +407,78 @@ namespace Quickstarts.AliasNames.Server
         private InMemoryAliasNameStore m_standardTags;
         
         #endregion
+    }
+
+    /// <summary>
+    /// Hands the server a <see cref="AliasNamesConfigurationNodeManager"/> instead of the
+    /// standard one, and leaves everything else to the factory the base server built.
+    /// </summary>
+    internal sealed class AliasNamesMainNodeManagerFactory : IMainNodeManagerFactory
+    {
+        private readonly IMainNodeManagerFactory m_inner;
+        private readonly IServerInternal m_server;
+        private readonly ApplicationConfiguration m_configuration;
+
+        public AliasNamesMainNodeManagerFactory(
+            IMainNodeManagerFactory inner,
+            IServerInternal server,
+            ApplicationConfiguration configuration)
+        {
+            m_inner = inner;
+            m_server = server;
+            m_configuration = configuration;
+        }
+
+        /// <inheritdoc/>
+        public IConfigurationNodeManager CreateConfigurationNodeManager()
+            => new AliasNamesConfigurationNodeManager(m_server, m_configuration);
+
+        /// <inheritdoc/>
+        public ICoreNodeManager CreateCoreNodeManager(ushort namespaceIndex)
+            => m_inner.CreateCoreNodeManager(namespaceIndex);
+    }
+
+    /// <summary>
+    /// The node manager which owns the standard address space, asked to publish the aliases
+    /// of the registered stores as nodes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>ConfigurationNodeManager</c> loads <c>Opc.Ua.NodeSet2.xml</c>, which brings the
+    /// three well known categories of Part 17 §9 with their mandatory <c>FindAlias</c> and
+    /// nothing else. <c>MaterializeRegisteredAliasNameNodesAsync</c> is the opt-in pass which
+    /// creates the rest: the optional Methods a category's
+    /// <see cref="AliasNameCapabilities"/> declare, and one <c>AliasNameType</c> node per
+    /// alias, which is how a §6.2 client - the OPC Foundation CTT among them - discovers an
+    /// alias by browsing rather than by calling <c>FindAlias</c>.
+    /// </para>
+    /// <para>
+    /// The nodes are a snapshot taken here. A tag added through
+    /// <c>AddAliasesToCategory</c> afterwards is found by <c>FindAlias</c> and advances
+    /// <c>LastChange</c>, but gets no node until the server is restarted.
+    /// </para>
+    /// </remarks>
+    internal sealed class AliasNamesConfigurationNodeManager : ConfigurationNodeManager
+    {
+        public AliasNamesConfigurationNodeManager(
+            IServerInternal server,
+            ApplicationConfiguration configuration)
+            : base(server, configuration)
+        {
+        }
+
+        /// <inheritdoc/>
+        public override async ValueTask CreateAddressSpaceAsync(
+            IDictionary<NodeId, IList<IReference>> externalReferences,
+            CancellationToken cancellationToken = default)
+        {
+            // the standard categories have to exist before they can be filled in
+            await base.CreateAddressSpaceAsync(externalReferences, cancellationToken)
+                .ConfigureAwait(false);
+
+            await MaterializeRegisteredAliasNameNodesAsync(externalReferences, cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 
     /// <summary>

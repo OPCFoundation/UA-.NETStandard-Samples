@@ -46,13 +46,17 @@ side.
 | Where | `TagVariables` (`i=23479`), fixed by the specification | `PlantTags` and its sub-categories, in a namespace of the server's own |
 | Server does | seeds a store, registers it with `IAliasNameStoreRegistry` | hands a store to an `AliasNameNodeManager` |
 | Client needs to know | nothing — `AliasNameClient.OpenStandardTagVariables` knows the NodeId | the namespace uri and identifier, or it browses for them |
-| Browsable | no — the aliases live in the store, not the address space | yes — real `AliasNameCategoryType` nodes |
-| Methods | `FindAlias` only | `FindAlias`, `FindAliasVerbose`, `AddAliasesToCategory`, `DeleteAliasesFromCategory`, `LastChange` |
+| Browsable | only after the server materializes the store — the NodeSet ships the category, not its aliases | yes — real `AliasNameCategoryType` nodes |
+| Methods | `FindAlias` from the NodeSet; the optional ones once materialized | `FindAlias`, `FindAliasVerbose`, `AddAliasesToCategory`, `DeleteAliasesFromCategory`, `LastChange` |
 | Nesting | — | `PlantTags/Reactor` and `PlantTags/Boiler` |
 
 Registering a store with the server registry is the whole of the work for the standard case:
 the `DiagnosticsNodeManager` already binds `TagVariables.FindAlias`, so the standard node starts
-answering from that one call.
+answering from that one call. The sample goes one step further and calls
+`MaterializeRegisteredAliasNameNodesAsync` from its own `ConfigurationNodeManager`
+([`AliasNamesConfigurationNodeManager`](Server/AliasNamesServer.cs)), which creates what the
+NodeSet leaves out: the optional Methods the category's `AliasNameCapabilities` declare, and one
+browsable `AliasNameType` node per alias (§6.2, what the OPC Foundation CTT browses for).
 
 ### 2. A name resolves to a node, and a node back to a name
 
@@ -127,15 +131,15 @@ search. To try the mutation Methods, pick `secadmin` under **Sign in as** before
 * **Aliases are stored as `ExpandedNodeId` carrying a namespace uri**, not as `NodeId` with an
   index. That is what Part 17 §7.2 puts on the wire, and it survives a server restart which
   renumbers the namespace table.
-* **The standard well-known categories cannot carry the optional Methods** in this SDK version.
-  The published NodeSet instantiates only `FindAlias` on `Aliases`/`TagVariables`/`Topics`, and
-  creating the rest as nodes takes a materialization pass (`MaterializeRegisteredAliasNameNodes`)
-  which `2.0.0-preview.2` — the version this repository pins — does not ship. The sample's
-  standard descriptor therefore declares `AliasNameCapabilities.None`, and the optional Methods
-  are demonstrated on the application-defined categories, which do get them.
-* For the same reason the sample does not demonstrate **browsable `AliasNameType` nodes**
-  (§6.2) under the standard categories, which the OPC Foundation CTT browses for. That also
-  arrives with the materialization pass.
+* **A store has to be registered before the address space is built** if its categories are to
+  be materialized. `FindAlias` is bound late — the binder asks the registry at every call, so a
+  store registered at any time answers it — but the nodes of §6.2 are created once, while the
+  address space is built. The sample therefore registers its standard store in
+  `CreateMainNodeManagerFactory`, the first hook which sees the running server, rather than in
+  `OnServerStarted`.
+* **Materialized nodes are a snapshot.** A tag added through `AddAliasesToCategory` afterwards
+  is found by `FindAlias` and advances `LastChange`, but gets no `AliasNameType` node until the
+  server restarts. The browse view and the search results diverge until then.
 * `AliasNameClient` maps the Part 17 status codes onto ordinary .NET exceptions —
   `BadUserAccessDenied` becomes `UnauthorizedAccessException` and `BadNotSupported` becomes
   `NotSupportedException` — so the refusals this sample is about arrive as exceptions rather
@@ -162,11 +166,5 @@ above over a real session:
 ```bash
 dotnet test Tests/SampleNodeManagers.Tests --filter "FullyQualifiedName~AliasNamesNodeManagerTests"
 ```
-
-One of them is recorded as a **known issue** rather than asserted: a change in a nested category
-advances that category's `LastChange` but not its ancestors', so a client watching only the
-`PlantTags` root does not see that a tag changed in `Reactor`. Part 17 §6.3.1 asks for the
-ancestor to move as well. The test is written the right way round and reports itself as ignored
-until the stack fixes it, at which point it fails and asks for the note to be removed.
 
 See [docs/TESTING.md](../../docs/TESTING.md) for the tiers.

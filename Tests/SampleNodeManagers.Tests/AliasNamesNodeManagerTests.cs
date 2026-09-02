@@ -82,9 +82,49 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// A wildcard narrows the search the way Part 17 §6.3.2 defines it.
+        /// The standard TagVariables category carries the optional Methods and a browsable
+        /// node per tag, because the sample materializes its store.
         /// </summary>
         /// <remarks>
+        /// The published NodeSet gives the well known categories of Part 17 §9 nothing but
+        /// the mandatory <c>FindAlias</c>. What fills them in is the materialization pass the
+        /// sample's configuration node manager runs, and this is the difference it makes: the
+        /// optional Methods the category's capabilities declare, and one <c>AliasNameType</c>
+        /// node per alias - which is how a §6.2 client, the OPC Foundation CTT among them,
+        /// discovers an alias by browsing instead of by calling a Method.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task TheStandardTagVariablesCategoryIsBrowsable(CancellationToken ct)
+        {
+            IReadOnlyList<string> children = await BrowseNamesAsync(ObjectIds.TagVariables, ct)
+                .ConfigureAwait(false);
+
+            await ReportAsync("Browsing the standard TagVariables object", children)
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    children,
+                    Is.SupersetOf(new[] {
+                        Opc.Ua.BrowseNames.FindAlias,
+                        Opc.Ua.BrowseNames.FindAliasVerbose,
+                        Opc.Ua.BrowseNames.AddAliasesToCategory,
+                        Opc.Ua.BrowseNames.DeleteAliasesFromCategory,
+                        Opc.Ua.BrowseNames.LastChange,
+                    }),
+                    "The materialized category carries the optional Methods of §6.3 as well.");
+
+                Assert.That(
+                    children,
+                    Is.SupersetOf(PlantTags.All.Select(tag => tag.Alias)),
+                    "Every tag of the inventory is a browsable AliasNameType node.");
+            });
+        }
+
+        /// <summary>
+        /// A wildcard narrows the search the way Part 17 §6.3.2 defines it.
+        /// </summary>        /// <remarks>
         /// This is the entire point of the pattern argument: a client which wants the
         /// measured values of the plant asks for them by name shape, rather than reading the
         /// whole inventory and filtering it itself.
@@ -308,9 +348,9 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The optional Method of Part 17 §6.3.3, which only the application defined
-        /// categories of this sample expose: the well known nodes ship without it, so calling
-        /// it there would be a call on a Method node which does not exist.
+        /// The optional Method of Part 17 §6.3.3. The well known nodes ship without it, so
+        /// it is there only because the sample materializes its categories; on the
+        /// application defined ones the alias node manager creates it.
         /// </para>
         /// <para>
         /// What the verbose record adds over <c>FindAlias</c> is the category an entry was
@@ -515,23 +555,10 @@ namespace Opc.Ua.Samples.Tests
                     Is.Not.EqualTo(beforeReactor),
                     "The category which changed advances its LastChange.");
 
-                // Part 17 6.3.1 wants the parent to move as well, so that a client watching
-                // the root notices a change anywhere below it. The stack bumps the ancestors
-                // inside the store but does not write the new value through to the LastChange
-                // node of the parent category, so a client reading it sees the old one.
-                await KnownIssueAsync(
-                    () => {
-                        Assert.That(
-                            afterPlant,
-                            Is.Not.EqualTo(beforePlant),
-                            "A change in a nested category advances the LastChange of its parent too.");
-
-                        return Task.CompletedTask;
-                    },
-                    "The LastChange of an ancestor category is not updated when a nested " +
-                    "category changes, so a client which watches only the root misses the " +
-                    "change (UA-.NETStandard, Opc.Ua.Server.AliasNames).")
-                    .ConfigureAwait(false);
+                Assert.That(
+                    afterPlant,
+                    Is.Not.EqualTo(beforePlant),
+                    "A change in a nested category advances the LastChange of its parent too.");
             }
             finally
             {
