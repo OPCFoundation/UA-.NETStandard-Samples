@@ -61,6 +61,8 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [ConsoleAggregationServer](Workshop/Aggregation/ConsoleAggregationServer) | **Server** | Cross-platform console version of the Aggregation Server. |
 | [AlarmCondition Server](Workshop/AlarmCondition/Server) | **Server** | Demonstrates OPC UA Alarms & Conditions (A&C). Generates alarm events of various types. |
 | [AlarmCondition Client](Workshop/AlarmCondition/Client) | **Client** | Subscribes to and displays OPC UA alarm events from an A&C server. |
+| [AliasNames Server](Workshop/AliasNames/Server) | **Server** | Demonstrates OPC UA Part 17 alias names: a searchable index of the tag names people use, laid over an address space organized by structure, served both on the standard well-known categories and on an application-defined category tree. See the [sample README](Workshop/AliasNames/README.md). |
+| [AliasNames Client](Workshop/AliasNames/Client) | **Client** | Searches a Part 17 category by wildcard, resolves a tag name to a NodeId and back, and adds or deletes aliases at runtime. |
 | [Boiler Server](Workshop/Boiler/Server) | **Server** | Simulates a boiler process with UA object instances. Demonstrates object types, methods and data variables. |
 | [Boiler Client](Workshop/Boiler/Client) | **Client** | Connects to the Boiler Server to read boiler state and invoke control methods. |
 | [DataAccess Server](Workshop/DataAccess/Server) | **Server** | Demonstrates the OPC UA DataAccess profile with analog items, discrete items and array variables. |

@@ -1,5 +1,6 @@
 cd ..\bin\Debug
 start Quickstarts.AlarmConditionServer.exe
+start Quickstarts.AliasNamesServer.exe
 start Quickstarts.BoilerServer.exe
 start Quickstarts.DataAccessServer.exe
 start Quickstarts.DataTypesServer.exe

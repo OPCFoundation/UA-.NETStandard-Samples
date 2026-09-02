@@ -2,11 +2,15 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Quickstarts.FileTransferServer</RootNamespace>
-    <AssemblyName>Quickstarts.FileTransferServer</AssemblyName>
+    <RootNamespace>Quickstarts.AliasNames.Client</RootNamespace>
+    <AssemblyName>Quickstarts.AliasNamesClient</AssemblyName>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
+
+    <!-- the fluent accessors of the generator reference Opc.Ua.Server.Fluent, which a
+         client does not reference -->
+    <ModelSourceGeneratorOmitFluentApi>true</ModelSourceGeneratorOmitFluentApi>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>..\..\..\bin\Debug\</OutputPath>
@@ -18,17 +22,22 @@
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <Content Include="Quickstarts.FileTransferServer.Config.xml">
+
+    <!-- the client consumes the model of the server directly, so the browse names it uses
+         cannot drift away from the address space it talks to -->
+    <AdditionalFiles Include="..\Server\ModelDesign.xml" />
+    <AdditionalFiles Include="..\Server\ModelDesign.csv" />
+
+    <Content Include="Quickstarts.AliasNamesClient.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
+    <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
     <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
 

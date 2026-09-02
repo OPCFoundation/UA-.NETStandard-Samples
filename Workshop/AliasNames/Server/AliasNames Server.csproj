@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Quickstarts.FileTransferServer</RootNamespace>
-    <AssemblyName>Quickstarts.FileTransferServer</AssemblyName>
+    <RootNamespace>Quickstarts.AliasNames.Server</RootNamespace>
+    <AssemblyName>Quickstarts.AliasNamesServer</AssemblyName>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
@@ -18,7 +18,9 @@
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <Content Include="Quickstarts.FileTransferServer.Config.xml">
+    <AdditionalFiles Include="ModelDesign.xml" />
+    <AdditionalFiles Include="ModelDesign.csv" />
+    <Content Include="Quickstarts.AliasNamesServer.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>

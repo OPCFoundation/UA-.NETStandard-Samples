@@ -11,13 +11,13 @@ using System;
 using System.Windows.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua;
-using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
 using Opc.Ua.Samples.Hosting;
+using Opc.Ua.Server.Controls;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
-namespace Quickstarts.RoleManagement.Client
+namespace Quickstarts.AliasNames.Server
 {
     static class Program
     {
@@ -33,22 +33,21 @@ namespace Quickstarts.RoleManagement.Client
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
 
-            // the generic host owns the configuration, the certificate and the logging; the
-            // main form is created by the container from the services registered here.
-            SampleWinFormsHost.Run<MainForm>(
+            // the generic host owns the logging and the lifetime of the sample; the
+            // server is hosted by the stack, its configuration is loaded straight from
+            // the configuration file, and the form shows the running server.
+            SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleApplication(options => {
-                        options.ApplicationType = ApplicationType.Client;
-                        options.ConfigurationFile = "Quickstarts.RoleManagementClient.Config.xml";
-                    }),
+                    .AddSampleServer<AliasNamesServer>("Quickstarts.AliasNamesServer.Config.xml"),
+                ServerForm.Create,
                 ExceptionDlg.Show);
         }
     }
 
     /// <summary>
-    /// The <b>RoleManagement.Client</b> namespace contains a Quickstart Client which
-    /// demonstrates OPC UA Part 18 role based security.
+    /// The <b>AliasNames.Server</b> namespace contains a Quickstart Server which
+    /// demonstrates OPC UA Part 17 alias names.
     /// </summary>
     /// <exclude/>
     [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

@@ -17,7 +17,7 @@ using Opc.Ua.Samples.Hosting;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
-namespace Quickstarts.RoleManagement.Client
+namespace Quickstarts.AliasNames.Client
 {
     static class Program
     {
@@ -40,15 +40,15 @@ namespace Quickstarts.RoleManagement.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigurationFile = "Quickstarts.RoleManagementClient.Config.xml";
+                        options.ConfigurationFile = "Quickstarts.AliasNamesClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }
     }
 
     /// <summary>
-    /// The <b>RoleManagement.Client</b> namespace contains a Quickstart Client which
-    /// demonstrates OPC UA Part 18 role based security.
+    /// The <b>AliasNames.Client</b> namespace contains a Quickstart Client which
+    /// demonstrates OPC UA Part 17 alias names.
     /// </summary>
     /// <exclude/>
     [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
