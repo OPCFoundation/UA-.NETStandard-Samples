@@ -283,6 +283,14 @@ an in-memory ticket store - through
 of the GDS client loads ticket files and calls those Methods through the stack's `OnboardingClient`; type `tickets`
 at the prompt of the console GDS to see what the registrar holds.
 
+**What to pick in the file dialog.** A ticket is an `EncodedTicket` - a ByteString whose content Part 21 leaves to the
+device manufacturer. There is no standard file extension for one, and the sample cannot decode it either, because the
+companion model that defines the ticket types is not in the shipped packages (see the caveats below). The sample
+registrar therefore stores the blob **verbatim** and keys it by its SHA-256 hash, so **any file works as a stand-in** -
+which is why the dialog keeps an *All Files* entry alongside the conventional `*.ticket` / `*.tkt` / `*.bin`
+extensions. Pick any small file to see the round trip: register it, run `tickets` on the console GDS to see it listed,
+then unregister it again.
+
 Two caveats, both about the SDK rather than about Part 21: the Onboarding companion model ships as a design file in
 the stack repository but its generated node classes are not in the `Opc.Ua.Gds.Common` package, so the sample builds
 the nodes by hand under `BaseObjectType` in a namespace of its own; and the Method BrowseNames are created in

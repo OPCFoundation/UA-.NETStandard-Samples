@@ -94,9 +94,15 @@ namespace Opc.Ua.Gds.Client
                 // the requested certificate's domain list (SANs). See issue #741.
                 if (application?.RegistrationType == RegistrationType.ServerPush
                     && server.Endpoint != null
-                    && !server.Endpoint.Description.ServerCertificate.IsNull)
+                    && server.Endpoint.Description.ServerCertificate.Length > 0)
                 {
-                    certificate = GdsCertificateLoader.LoadCertificate(server.Endpoint.Description.ServerCertificate.ToArray());
+                    // Length, not IsNull: an EndpointDescription that carries no certificate
+                    // holds an empty ByteString rather than a null one, and a server only
+                    // fills the field for an Endpoint that requires encryption. Selecting a
+                    // SecurityPolicy=None Endpoint therefore used to hand an empty array to
+                    // the loader, which reports it as "ASN1 corrupted data".
+                    certificate = GdsCertificateLoader.LoadCertificate(
+                        server.Endpoint.Description.ServerCertificate.ToArray());
                 }
                 else if (application != null)
                 {
@@ -596,9 +602,11 @@ certificateRequest);
                     NodeId.Parse(m_application.ApplicationId),
                     requestId);
 
-                if (certificate.IsNull)
+                if (certificate.Length == 0)
                 {
-                    // request not done yet, try again in a few seconds
+                    // request not done yet, try again in a few seconds. Length rather than
+                    // IsNull: a GDS that answers a pending request with an empty ByteString
+                    // instead of a null one would otherwise fall through to the loader below.
                     return;
                 }
 

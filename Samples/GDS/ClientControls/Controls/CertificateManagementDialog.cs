@@ -271,7 +271,9 @@ namespace Opc.Ua.Gds.Client.Controls
         {
             ListViewItem item = SelectedItem;
 
-            if (item?.Tag is not ByteString certificate || certificate.IsNull)
+            // an empty slot has an empty - not a null - ByteString, so Length is what says
+            // whether there is a certificate to ask about.
+            if (item?.Tag is not ByteString certificate || certificate.Length == 0)
             {
                 return;
             }

@@ -171,14 +171,30 @@ namespace Opc.Ua.Gds.Client.Controls
         }
 
         /// <summary>
-        /// Adds ticket files to the list. A ticket is an opaque blob issued by the device
-        /// manufacturer; the sample only carries it, it does not interpret it.
+        /// Adds ticket files to the list.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A ticket is an <c>EncodedTicket</c> - a ByteString whose content Part 21 leaves to
+        /// the device manufacturer. There is no standard file extension for one, and the
+        /// sample cannot decode it either: the Onboarding companion model that defines
+        /// <c>BaseTicketType</c> and its subtypes is not part of the shipped GDS packages, so
+        /// there is nothing to parse it with. The registrar consequently stores the blob
+        /// verbatim and keys it by its SHA-256 hash.
+        /// </para>
+        /// <para>
+        /// The filter therefore leads with the extensions a manufacturer is likely to use but
+        /// keeps All Files, because any file is a valid stand-in - which is what the hint on
+        /// the dialog says, so an empty filter does not read as an oversight.
+        /// </para>
+        /// </remarks>
         private void AddButton_Click(object sender, EventArgs e)
         {
             using var dialog = new OpenFileDialog {
                 Title = "Select the onboarding ticket(s)",
-                Filter = "All Files (*.*)|*.*",
+                Filter =
+                    "Onboarding tickets (*.ticket;*.tkt;*.bin)|*.ticket;*.tkt;*.bin|" +
+                    "All Files (*.*)|*.*",
                 Multiselect = true,
                 CheckFileExists = true
             };

@@ -35,6 +35,7 @@ namespace Opc.Ua.Gds.Client.Controls
             this.ClearButton = new System.Windows.Forms.Button();
             this.AddButton = new System.Windows.Forms.Button();
             this.HeaderPanel = new System.Windows.Forms.Panel();
+            this.HintLabel = new System.Windows.Forms.Label();
             this.RegistrarTextBox = new System.Windows.Forms.Label();
             this.RegistrarLabel = new System.Windows.Forms.Label();
             this.StatusPanel = new System.Windows.Forms.Panel();
@@ -144,6 +145,18 @@ namespace Opc.Ua.Gds.Client.Controls
             this.HeaderPanel.Size = new System.Drawing.Size(684, 28);
             this.HeaderPanel.TabIndex = 6;
             //
+            // HintLabel
+            //
+            this.HintLabel.Dock = System.Windows.Forms.DockStyle.Top;
+            this.HintLabel.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.HintLabel.Location = new System.Drawing.Point(0, 28);
+            this.HintLabel.Name = "HintLabel";
+            this.HintLabel.Padding = new System.Windows.Forms.Padding(6, 0, 6, 4);
+            this.HintLabel.Size = new System.Drawing.Size(684, 32);
+            this.HintLabel.TabIndex = 8;
+            this.HintLabel.Text = "A ticket is an opaque blob issued by the device manufacturer. The sample registrar " +
+                "stores it verbatim and keys it by its SHA-256 hash, so any file can stand in for one.";
+            //
             // RegistrarLabel
             //
             this.RegistrarLabel.AutoSize = true;
@@ -222,6 +235,7 @@ namespace Opc.Ua.Gds.Client.Controls
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(684, 340);
             this.Controls.Add(this.TicketsListView);
+            this.Controls.Add(this.HintLabel);
             this.Controls.Add(this.HeaderPanel);
             this.Controls.Add(this.StatusPanel);
             this.Controls.Add(this.ButtonsPanel);
@@ -249,6 +263,7 @@ namespace Opc.Ua.Gds.Client.Controls
         private System.Windows.Forms.Panel HeaderPanel;
         private System.Windows.Forms.Label RegistrarTextBox;
         private System.Windows.Forms.Label RegistrarLabel;
+        private System.Windows.Forms.Label HintLabel;
         private System.Windows.Forms.Panel StatusPanel;
         private System.Windows.Forms.Label StatusLabel;
         private System.Windows.Forms.ListView TicketsListView;
