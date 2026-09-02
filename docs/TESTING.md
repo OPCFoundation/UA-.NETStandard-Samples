@@ -33,12 +33,12 @@ behaviour the sample was written to show. Tier 1 would not notice any of that.
 Three properties of the samples make headless testing cheap:
 
 1. **Server `Main` methods are UI-free until the last line.** Every sample server registers
-   itself with `AddSampleApplication(...)` / `AddSampleServer<XServer>()` and lets the generic
-   host do `LoadApplicationConfigurationAsync` -> `CheckApplicationInstanceCertificatesAsync` ->
-   `application.StartAsync(server)`; only *then* is the main form resolved from the container
-   and shown. See [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is
-   `public` and derives from `StandardServer`, so a test starts the real server object with the
-   real config file and never touches WinForms.
+   itself with `AddSampleServer<XServer>(configurationFile)` and lets the hosted server of the
+   stack load the configuration file, check the certificate and start the server; only *then*
+   is the main form resolved from the container and shown. See
+   [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is `public` and derives
+   from `StandardServer`, so a test starts the real server object with the real config file
+   and never touches WinForms.
 2. **Every WinForms client uses the same control under the same name.** All client
    `MainForm.Designer.cs` files declare `private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;`,
    and that control exposes `ConnectAsync()`, `Session` and `ConnectComplete`. One reflection
@@ -95,9 +95,10 @@ Tests redirect every store to a per-run temp directory and set
 `AutoAcceptUntrustedCertificates` on both sides, so a test run neither depends on nor pollutes
 machine state.
 
-**Configuration loading.** Tests load config files by explicit path rather than through
-`ConfigSectionName`. Under a test host the entry assembly is `testhost.exe`, so the
-`<app>.exe.config` lookup the samples rely on cannot resolve.
+**Configuration loading.** Tests load config files by explicit repository path. The samples
+name their `*.Config.xml` relative to the executable - directly in their service
+registrations since the move to the dependency-injection configuration loading - which under
+a test host would resolve against `testhost.exe`.
 
 **Modal dialogs are the enemy.** Sample clients funnel errors into a modal `ExceptionDlg`,
 which in CI hangs forever. The Tier 2 harness runs a watchdog that scans `Application.OpenForms`,

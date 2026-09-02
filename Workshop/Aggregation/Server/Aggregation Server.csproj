@@ -44,17 +44,17 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration" Version="2.0.0-preview.2" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration" Version="$(OpcUaNetStandardVersion)" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

@@ -59,7 +59,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "HistoricalEventsClient";
+                        options.ConfigurationFile = "HistoricalEventsClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

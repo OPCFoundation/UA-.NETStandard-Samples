@@ -61,7 +61,7 @@ namespace Quickstarts.EmptyClient
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Quickstarts.EmptyClient";
+                        options.ConfigurationFile = "Quickstarts.EmptyClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

@@ -77,7 +77,7 @@ namespace Opc.Ua.Gds.Server
             services
                 .AddSampleApplication(options => {
                     options.ApplicationType = ApplicationType.Server;
-                    options.ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer";
+                    options.ConfigurationFile = "Opc.Ua.GlobalDiscoveryServer.Config.xml";
                 })
                 .AddSingleton(CreateUserDatabase)
                 .AddSingleton<SqlApplicationsDatabase>()

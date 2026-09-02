@@ -38,7 +38,7 @@
       <Version>10.0.11</Version>
     </PackageReference>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
     </ItemGroup>
   <PropertyGroup />

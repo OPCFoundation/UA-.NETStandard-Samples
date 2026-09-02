@@ -61,7 +61,7 @@ namespace Quickstarts.SimpleEvents.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "SimpleEventsClient";
+                        options.ConfigurationFile = "SimpleEventsClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

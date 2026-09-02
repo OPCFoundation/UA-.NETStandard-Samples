@@ -110,6 +110,14 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 ## Getting Started
 All the tools you need for .Net Standard come with the .Net Core tools. See [here](https://docs.microsoft.com/en-us/dotnet/articles/core/getting-started) for what you need.
 
+## Preview NuGet packages
+
+The samples build against the preview packages of the OPC UA .NET Standard stack from the
+public [nuget.org](https://www.nuget.org/packages/OPCFoundation.NetStandard.Opc.Ua/) feed -
+no authentication or extra package source is needed. The version the samples currently build
+against is pinned in a single place, the `OpcUaNetStandardVersion` property in
+[targets.props](targets.props).
+
 ## Debugging the Opc.Ua.Core Nuget packages
 
 Since Nuget version 1.4.363.107 there is support for symbol snupkg packages on Nuget.Org and github source link. 

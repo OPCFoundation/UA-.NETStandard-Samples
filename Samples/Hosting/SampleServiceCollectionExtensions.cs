@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Opc.Ua;
 using Opc.Ua.Configuration;
 using Opc.Ua.Samples.Hosting;
+using Opc.Ua.Server;
+using Opc.Ua.Server.Hosting;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -70,6 +72,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// and the certificate of the application are in place, and stops it on
         /// shutdown.
         /// </summary>
+        /// <remarks>
+        /// This is the path for the samples whose user interface is built around the
+        /// <see cref="ApplicationInstance"/> registered by
+        /// <see cref="AddSampleApplication"/>. The other samples hand their
+        /// configuration file to the hosted server of the stack instead, see
+        /// <see cref="AddSampleServer{TServer}(IServiceCollection, string, Action{ApplicationConfiguration})"/>.
+        /// </remarks>
         /// <typeparam name="TServer">The server class of the sample.</typeparam>
         /// <param name="services">The service collection.</param>
         public static IServiceCollection AddSampleServer<TServer>(this IServiceCollection services)
@@ -103,6 +112,60 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Registers the server of a sample as a hosted OPC UA server of the stack,
+        /// with the configuration loaded from the configuration XML file of the
+        /// sample: <c>services.AddOpcUa().AddServer(configurationFile)</c>. The host
+        /// starts the server before the main form is created, and stops it on
+        /// shutdown.
+        /// </summary>
+        /// <typeparam name="TServer">The server class of the sample.</typeparam>
+        /// <param name="services">The service collection.</param>
+        /// <param name="configurationFile">The application configuration XML file of
+        /// the sample, for example <c>BoilerServer.Config.xml</c>.</param>
+        /// <param name="configure">Applied to the configuration right after it has
+        /// been read, for the settings the file cannot express, such as a certificate
+        /// validation callback.</param>
+        public static IServiceCollection AddSampleServer<TServer>(
+            this IServiceCollection services,
+            string configurationFile,
+            Action<ApplicationConfiguration> configure = null)
+            where TServer : StandardServer
+        {
+            ArgumentNullException.ThrowIfNull(services);
+
+            services.TryAddSingleton<TServer>();
+
+            return services.AddSampleServerHost<TServer>(configurationFile, configure);
+        }
+
+        /// <summary>
+        /// Registers the server of a sample as a hosted OPC UA server of the stack,
+        /// for a server which cannot be created by the container alone, for example
+        /// because it takes a database or a set of node managers.
+        /// </summary>
+        /// <typeparam name="TServer">The server class of the sample.</typeparam>
+        /// <param name="services">The service collection.</param>
+        /// <param name="configurationFile">The application configuration XML file of
+        /// the sample.</param>
+        /// <param name="factory">Creates the server.</param>
+        /// <param name="configure">Applied to the configuration right after it has
+        /// been read, for the settings the file cannot express.</param>
+        public static IServiceCollection AddSampleServer<TServer>(
+            this IServiceCollection services,
+            string configurationFile,
+            Func<IServiceProvider, TServer> factory,
+            Action<ApplicationConfiguration> configure = null)
+            where TServer : StandardServer
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(factory);
+
+            services.TryAddSingleton(factory);
+
+            return services.AddSampleServerHost<TServer>(configurationFile, configure);
+        }
+
+        /// <summary>
         /// Publishes an already registered server class as the server of the sample.
         /// </summary>
         private static IServiceCollection AddSampleServerCore<TServer>(this IServiceCollection services)
@@ -112,6 +175,54 @@ namespace Microsoft.Extensions.DependencyInjection
             // main forms of the samples are created by ActivatorUtilities, and every
             // additional base class makes their constructor selection ambiguous.
             services.AddSingleton<IServerBase>(provider => provider.GetRequiredService<TServer>());
+
+            return services;
+        }
+
+        /// <summary>
+        /// Hands an already registered server class and the configuration file of the
+        /// sample to the hosted server of the stack.
+        /// </summary>
+        private static IServiceCollection AddSampleServerHost<TServer>(
+            this IServiceCollection services,
+            string configurationFile,
+            Action<ApplicationConfiguration> configure)
+            where TServer : StandardServer
+        {
+            var startup = new SampleServerStartup();
+
+            services.AddSingleton(startup);
+            services.AddSingleton<IServerStartupTask>(startup);
+
+            // the forms of the server samples show the running server and take the
+            // shared StandardServer, so they do not have to know the server class.
+            services.AddSingleton<StandardServer>(
+                provider => provider.GetRequiredService<TServer>());
+            services.TryAddSingleton(
+                provider => provider.GetRequiredService<SampleServerStartup>().Configuration);
+
+            services
+                .AddOpcUa()
+                .AddServer(
+                    SampleConfigurationFile.Resolve(configurationFile),
+                    configuration => {
+                        // what the configuration file cannot express, for example a
+                        // certificate validation callback.
+                        configure?.Invoke(configuration);
+
+                        startup.OnConfigurationLoaded(configuration);
+                    });
+
+            // the hosted server creates its server through this factory: the instance
+            // of the sample from the container, which the main form resolves too.
+            services.Replace(ServiceDescriptor.Singleton<IOpcUaServerFactory>(
+                provider => new SampleServerFactory<TServer>(provider)));
+
+            // registered after the hosted server, so the start of the host returns
+            // with the server listening - which the samples and their tests rely on.
+            services.AddHostedService(provider => new SampleServerReadyHostedService(
+                provider.GetRequiredService<SampleServerStartup>(),
+                provider));
 
             return services;
         }

@@ -58,7 +58,7 @@ namespace Opc.Ua.Sample
                     .AddSampleApplication(options => {
                         options.ApplicationName = "UA Sample Client";
                         options.ApplicationType = ApplicationType.ClientAndServer;
-                        options.ConfigSectionName = "Opc.Ua.SampleClient";
+                        options.ConfigurationFile = "Opc.Ua.SampleClient.Config.xml";
                     })
                     .AddSampleServer<SampleServer>(),
                 CreateClientForm,

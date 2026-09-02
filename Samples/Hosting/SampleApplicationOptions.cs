@@ -17,10 +17,11 @@ namespace Opc.Ua.Samples.Hosting
     public sealed class SampleApplicationOptions
     {
         /// <summary>
-        /// The section of the app.config which names the configuration file of the
-        /// sample, for example <c>BoilerServer</c>.
+        /// The OPC UA application configuration XML file of the sample, for example
+        /// <c>BoilerClient.Config.xml</c>. A relative path is resolved against the
+        /// application directory and the current working directory.
         /// </summary>
-        public string ConfigSectionName { get; set; }
+        public string ConfigurationFile { get; set; }
 
         /// <summary>
         /// The name to report before the configuration has been read, for example in

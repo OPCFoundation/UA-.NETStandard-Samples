@@ -373,21 +373,19 @@ namespace Opc.Ua.Gds.Server
         {
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
 
-            // the generic host owns the configuration, the certificate and the
-            // lifetime of the server. A console sample logs to the console as well as
+            // the generic host owns the logging and the lifetime of the sample; the
+            // server is hosted by the stack, its configuration is loaded straight from
+            // the configuration file. A console sample logs to the console as well as
             // to the file the configuration names.
             HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
 
             builder.Logging.AddSampleConsole();
 
             builder.Services
-                .AddSampleApplication(options => {
-                    options.ApplicationName = "Global Discovery Server";
-                    options.ApplicationType = ApplicationType.Server;
-                    options.ConfigSectionName = "Opc.Ua.GlobalDiscoveryServer";
-                    options.ConfigureConfiguration = AcceptUntrustedCertificatesInteractively;
-                })
-                .AddSampleServer(CreateServer);
+                .AddSampleServer(
+                    "Opc.Ua.GlobalDiscoveryServer.Config.xml",
+                    CreateServer,
+                    AcceptUntrustedCertificatesInteractively);
 
             m_host = builder.Build();
             m_telemetry = m_host.Services.GetRequiredService<ITelemetryContext>();
@@ -396,7 +394,6 @@ namespace Opc.Ua.Gds.Server
 
             server = m_host.Services.GetRequiredService<AliasMergingGlobalDiscoverySampleServer>();
 
-            ApplicationInstance application = m_host.Services.GetRequiredService<ApplicationInstance>();
             ApplicationConfiguration config = m_host.Services.GetRequiredService<ApplicationConfiguration>();
 
             // keep the configuration and database so the interactive LDS scan
@@ -409,7 +406,7 @@ namespace Opc.Ua.Gds.Server
             m_aliasMerger.Start(config, m_database);
 
             // print endpoint info
-            IEnumerable<string> endpoints = application.Server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
+            IEnumerable<string> endpoints = server.GetEndpoints().ToArray().Select(e => e.EndpointUrl).Distinct();
             foreach (string endpoint in endpoints)
             {
                 Console.WriteLine(endpoint);
