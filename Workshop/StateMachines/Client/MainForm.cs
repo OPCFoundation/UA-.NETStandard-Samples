@@ -224,7 +224,7 @@ namespace Quickstarts.StateMachines.Client
         /// </summary>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            StopWatchingAsync().GetAwaiter().GetResult();
+            ClientUtils.WaitForTeardown(StopWatchingAsync);
             ConnectServerCTRL.Disconnect();
         }
         #endregion

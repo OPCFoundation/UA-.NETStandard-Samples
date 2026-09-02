@@ -402,7 +402,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-54 test cases, about two and a half minutes, Windows only. For each WinForms sample client
+55 test cases, about two and a half minutes, Windows only. For each WinForms sample client
 the test starts its sample server in process, then on a dedicated STA thread with a running
 message loop - but without ever showing a window:
 
@@ -413,7 +413,20 @@ message loop - but without ever showing a window:
 - waits two seconds so the sample's `async void` ConnectComplete handler can run, and for
   the samples that have one, asserts the control it enables afterwards is enabled - which is
   the proof that the sample's own logic ran, not just the shared control
-- disconnects and asserts the session was released
+- disconnects through the **synchronous** `connect.Disconnect()`, which is the entry point
+  the samples themselves use, and asserts the session was released
+- asserts the message loop still dispatches a callback posted to it, and that the control the
+  sample enabled after connecting is disabled again - which is the proof the disconnect was
+  reported and not just performed
+- closes the form, so that the `FormClosing` handler of the sample, the other caller which
+  cannot await, is covered as well
+
+One case, `DisconnectMenuItemLeavesTheWindowReacting`, goes one step further out and clicks
+the sample's own `Server_DisconnectMI` rather than driving the control, so that the click
+handler of the sample - which disposes its subscription first and only then asks the control
+to disconnect - is on the path too. It uses the Boiler client, and `ToolStripItem.PerformClick`
+works on a form which was never shown because, unlike `Button.PerformClick`, it is not gated
+on `CanSelect`.
 
 ### Every client is now driven past connect
 
@@ -475,10 +488,19 @@ are collected in `SampleFormDriver`:
   something has to be read from the state the sample keeps - which is why the PerfTest case
   watches the update timer rather than the Stop button. `Enabled` is not affected.
 
-Two more, which apply to any fixture here: the synchronous `connect.Disconnect()` deadlocks
-because it blocks the UI thread on work which needs the same message loop, so every fixture
-awaits `connect.DisconnectAsync(ct)`; and `ListViewItem.Selected` does not reliably reach a
-list which was never displayed, so a row is selected through `SelectedIndices`.
+One more, which applies to any fixture here: `ListViewItem.Selected` does not reliably reach
+a list which was never displayed, so a row is selected through `SelectedIndices`.
+
+The synchronous `connect.Disconnect()` used to be on that list. It blocked the UI thread on a
+close whose continuation was posted back to the very message loop it was blocking, so every
+fixture awaited `connect.DisconnectAsync(ct)` instead - and that is precisely why no test ever
+saw the bug the samples were shipping. The menu item and the `FormClosing` handler of all of
+them call the synchronous one, and neither can await, so clicking Server, Disconnect
+disconnected the session and then froze the window for good. It is fixed in the control now
+rather than avoided here: `Disconnect()` runs the close on a thread pool thread, where there
+is no synchronization context to post a continuation back to, and raises ConnectComplete on
+the thread of the caller so the sample still clears its display on the UI thread. Tier 2
+drives that entry point on purpose, and closes the form afterwards.
 
 `SubscribeControlTests` covers what a connect alone does not: it drives the subscription
 wizard of the shared `SubscribeDataListViewCtrl` against the Reference server the way a user

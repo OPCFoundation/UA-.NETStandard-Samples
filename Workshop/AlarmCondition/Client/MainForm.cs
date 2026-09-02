@@ -297,7 +297,7 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            DeleteSubscriptionAsync().GetAwaiter().GetResult();
+            ClientUtils.WaitForTeardown(DeleteSubscriptionAsync);
             ConnectServerCTRL.Disconnect();
         }
 

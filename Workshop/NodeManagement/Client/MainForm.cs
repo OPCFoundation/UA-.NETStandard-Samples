@@ -269,7 +269,7 @@ namespace Quickstarts.NodeManagement.Client
         {
             // the subscription goes first: closing a session which still carries one waits
             // for the publish pipeline to drain
-            DeleteSubscriptionAsync().GetAwaiter().GetResult();
+            ClientUtils.WaitForTeardown(DeleteSubscriptionAsync);
 
             ConnectServerCTRL.Disconnect();
         }
