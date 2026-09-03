@@ -89,10 +89,18 @@ namespace Opc.Ua.Gds.Server
             IServerInternal server,
             ApplicationConfiguration configuration,
             ITicketStore ticketStore)
-            : base(server, configuration, NamespaceUri)
+            : base(server, configuration, NamespaceUri, Opc.Ua.Onboarding.Namespaces.OpcUaOnboarding)
         {
             m_ticketStore = ticketStore ?? throw new ArgumentNullException(nameof(ticketStore));
         }
+
+        /// <summary>
+        /// The server table index of the Part 21 Onboarding namespace, which the Method
+        /// BrowseNames are created in - see <see cref="CreateTicketMethod"/>.
+        /// </summary>
+        private ushort OnboardingNamespaceIndex
+            => (ushort)SystemContext.NamespaceUris.GetIndex(
+                Opc.Ua.Onboarding.Namespaces.OpcUaOnboarding);
 
         /// <inheritdoc/>
         public override async ValueTask CreateAddressSpaceAsync(
@@ -140,8 +148,10 @@ namespace Opc.Ua.Gds.Server
         /// <remarks>
         /// <para>
         /// Two details are dictated by the SDK rather than by Part 21. The BrowseNames are
-        /// created in namespace 0, because <c>OnboardingClient</c> resolves the two Methods
-        /// with an ns=0 browse path and finds nothing otherwise. And the <c>Tickets</c>
+        /// created in the Part 21 Onboarding namespace, because the type-declaration
+        /// MethodId a generated <c>OnboardingClient</c> calls first does not exist on this
+        /// hand-built registrar, and the client's fallback then resolves the instance
+        /// Method with a browse path qualified by that namespace. And the <c>Tickets</c>
         /// argument is declared as a <c>ByteString</c> array rather than as the Part 21
         /// <c>EncodedTicket</c> alias: <c>MethodState</c> type-checks every input argument
         /// against the declared DataType, and ns=0 models <c>EncodedTicket</c> with
@@ -154,7 +164,7 @@ namespace Opc.Ua.Gds.Server
             #pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
             var method = new MethodState(parent) {
                 NodeId = new NodeId(name, NamespaceIndex),
-                BrowseName = new QualifiedName(name),
+                BrowseName = new QualifiedName(name, OnboardingNamespaceIndex),
                 DisplayName = new LocalizedText(name),
                 ReferenceTypeId = ReferenceTypeIds.HasComponent,
                 Executable = true,
