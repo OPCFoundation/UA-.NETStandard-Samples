@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<opc:ModelDesign
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:opc="http://opcfoundation.org/UA/ModelDesign.xsd"
+  xmlns:ua="http://opcfoundation.org/UA/"
+  xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+	xmlns="http://opcfoundation.org/Quickstarts/NodeManagement"
+  TargetNamespace="http://opcfoundation.org/Quickstarts/NodeManagement"
+>
+  <opc:Namespaces>
+    <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/</opc:Namespace>
+    <opc:Namespace Name="NodeManagement" Prefix="Quickstarts.NodeManagement" InternalPrefix="Quickstarts.NodeManagement">http://opcfoundation.org/Quickstarts/NodeManagement</opc:Namespace>
+  </opc:Namespaces>
+
+  <!--
+  The model of this sample is only the fixed frame around the part clients build themselves.
+  Devices is empty on startup and stays empty until a client calls AddNodes; Commissioned is
+  empty until a client calls AddReferences. Everything a reader is meant to look at is
+  therefore absent from this file on purpose - it arrives over the wire.
+  -->
+  <opc:Object SymbolicName="Plant" TypeDefinition="ua:FolderType">
+    <opc:Description>A plant whose contents are created by clients over the NodeManagement service set.</opc:Description>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+    <opc:Children>
+      <opc:Object SymbolicName="Devices" TypeDefinition="ua:FolderType">
+        <opc:Description>The folder clients add nodes to. The only place this server accepts AddNodes.</opc:Description>
+      </opc:Object>
+      <opc:Object SymbolicName="Commissioned" TypeDefinition="ua:FolderType">
+        <opc:Description>A group a client fills with AddReferences rather than with AddNodes.</opc:Description>
+      </opc:Object>
+      <opc:Variable SymbolicName="DeviceCount" DataType="ua:UInt32" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="Read">
+        <opc:Description>How many nodes clients have added to Devices. Maintained by the node manager.</opc:Description>
+      </opc:Variable>
+    </opc:Children>
+  </opc:Object>
+
+</opc:ModelDesign>

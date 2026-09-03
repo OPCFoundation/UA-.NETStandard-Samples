@@ -38,9 +38,9 @@ namespace Opc.Ua.Samples.Tests
     /// but from an explicit path and without touching the certificate stores of the machine.
     /// </summary>
     /// <remarks>
-    /// The samples locate their configuration through the ConfigSectionName of the
-    /// application, which resolves through the app.config of the executable. Under a test
-    /// host the executable is the test runner, so tests always load by path instead.
+    /// The samples name their configuration file relative to the executable, which under a
+    /// test host is the test runner, so tests always load by an explicit repository path
+    /// instead.
     /// </remarks>
     public static class SampleConfigurationLoader
     {

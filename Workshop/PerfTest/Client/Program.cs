@@ -61,7 +61,7 @@ namespace Quickstarts.PerfTestClient
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "PerfTestClient";
+                        options.ConfigurationFile = "PerfTestClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

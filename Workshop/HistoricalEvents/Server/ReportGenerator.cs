@@ -38,6 +38,17 @@ namespace Quickstarts.HistoricalEvents.Server
 {
     public class ReportGenerator : IDisposable
     {
+        /// <summary>
+        /// Guards the report tables.
+        /// </summary>
+        /// <remarks>
+        /// The simulation of the node manager writes new reports while the historian
+        /// provider reads and writes them on behalf of a client, and a DataSet is not
+        /// safe to use from several threads at once. Everything which touches the
+        /// tables holds this.
+        /// </remarks>
+        public object SyncRoot { get; } = new object();
+
         public void Dispose()
         {
             Dispose(true);
@@ -281,6 +292,171 @@ namespace Quickstarts.HistoricalEvents.Server
         }
 
         /// <summary>
+        /// Inserts, replaces or updates the report with the specified event id.
+        /// </summary>
+        /// <param name="reportType">The kind of report, which picks the table.</param>
+        /// <param name="eventId">The event id of the report, as a guid in string form.</param>
+        /// <param name="sourceTimestamp">The time the report was raised at.</param>
+        /// <param name="fields">The fields of the report, keyed by browse path.</param>
+        /// <param name="defaultWellId">The well to file the report under when its fields do not name one.</param>
+        /// <param name="performUpdateType">Whether the report may be created, replaced or both.</param>
+        /// <returns>What became of the report, as a Part 11 status code.</returns>
+        /// <remarks>
+        /// The columns of a report are typed and the fields of an incoming event are
+        /// not, so a field which is missing or of the wrong type falls back to the
+        /// default of its column rather than failing the whole write: a client which
+        /// selected fewer fields than the report has still writes a usable row.
+        ///
+        /// Which well a report belongs to is a column of it rather than a property of
+        /// the notifier it was written through, so a client which writes through the
+        /// well itself and leaves the field out has the well filled in for it.
+        /// </remarks>
+        public StatusCode WriteEvent(
+            ReportType reportType,
+            string eventId,
+            DateTime sourceTimestamp,
+            IReadOnlyDictionary<string, Variant> fields,
+            string defaultWellId,
+            PerformUpdateType performUpdateType)
+        {
+            DataTable table = m_dataset.Tables[(int)reportType];
+            DataRow existing = FindRow(table, eventId);
+
+            if (existing != null && performUpdateType == PerformUpdateType.Insert)
+            {
+                return StatusCodes.BadEntryExists;
+            }
+
+            if (existing == null && performUpdateType == PerformUpdateType.Replace)
+            {
+                return StatusCodes.BadNoEntryExists;
+            }
+
+            DataRow row = existing ?? table.NewRow();
+
+            row[Opc.Ua.BrowseNames.EventId] = eventId;
+            row[Opc.Ua.BrowseNames.Time] = sourceTimestamp != DateTime.MinValue ? sourceTimestamp : DateTime.UtcNow;
+            row[BrowseNames.NameWell] = GetText(fields, BrowseNames.NameWell, defaultWellId);
+            row[BrowseNames.UidWell] = GetText(fields, BrowseNames.UidWell, defaultWellId);
+            row[BrowseNames.TestDate] = GetTimestamp(fields, BrowseNames.TestDate, (DateTime)row[Opc.Ua.BrowseNames.Time]);
+            row[BrowseNames.TestReason] = GetText(fields, BrowseNames.TestReason);
+
+            if (reportType == ReportType.FluidLevelTest)
+            {
+                row[BrowseNames.FluidLevel] = GetNumber(fields, BrowseNames.FluidLevel);
+                row[BrowseNames.TestedBy] = GetText(fields, BrowseNames.TestedBy);
+                row[Opc.Ua.BrowseNames.EngineeringUnits] = GetEngineeringUnits(fields, BrowseNames.FluidLevel);
+            }
+            else
+            {
+                row[BrowseNames.TestDuration] = GetNumber(fields, BrowseNames.TestDuration);
+                row[BrowseNames.InjectedFluid] = GetText(fields, BrowseNames.InjectedFluid);
+                row[Opc.Ua.BrowseNames.EngineeringUnits] = GetEngineeringUnits(fields, BrowseNames.TestDuration);
+            }
+
+            if (existing == null)
+            {
+                table.Rows.Add(row);
+            }
+
+            m_dataset.AcceptChanges();
+
+            return existing == null ? StatusCodes.GoodEntryInserted : StatusCodes.GoodEntryReplaced;
+        }
+
+        /// <summary>
+        /// Returns the row of the report with the specified event id.
+        /// </summary>
+        private static DataRow FindRow(DataTable table, string eventId)
+        {
+            foreach (DataRow row in table.Rows)
+            {
+                if (String.Equals((string)row[Opc.Ua.BrowseNames.EventId], eventId, StringComparison.Ordinal))
+                {
+                    return row;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a text field of an incoming event, or the fallback when it is
+        /// missing or does not carry the type the column expects.
+        /// </summary>
+        private static string GetText(IReadOnlyDictionary<string, Variant> fields, string browseName, string fallback = null)
+        {
+            return TryGetField(fields, browseName, out Variant value) &&
+                value.TryGetValue(out string text) &&
+                !String.IsNullOrEmpty(text)
+                ? text
+                : fallback ?? String.Empty;
+        }
+
+        /// <summary>
+        /// Returns a measurement of an incoming event, zero when it is missing or
+        /// does not carry the type the column expects.
+        /// </summary>
+        private static double GetNumber(IReadOnlyDictionary<string, Variant> fields, string browseName)
+        {
+            return TryGetField(fields, browseName, out Variant value) && value.TryGetValue(out double number)
+                ? number
+                : 0.0;
+        }
+
+        /// <summary>
+        /// Returns a timestamp field of an incoming event, or the fallback when it is
+        /// missing or does not carry the type the column expects.
+        /// </summary>
+        private static DateTime GetTimestamp(IReadOnlyDictionary<string, Variant> fields, string browseName, DateTime fallback)
+        {
+            return TryGetField(fields, browseName, out Variant value) && value.TryGetValue(out DateTimeUtc timestamp)
+                ? (DateTime)timestamp
+                : fallback;
+        }
+
+        /// <summary>
+        /// Looks a field of an incoming event up by the browse path which addresses it.
+        /// </summary>
+        private static bool TryGetField(IReadOnlyDictionary<string, Variant> fields, string key, out Variant value)
+        {
+            if (fields != null)
+            {
+                return fields.TryGetValue(key, out value);
+            }
+
+            value = Variant.Null;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the unit of the measurement of an incoming event.
+        /// </summary>
+        /// <remarks>
+        /// The unit sits on the measurement rather than on the report, so a client
+        /// addresses it through the two segment browse path the framework keys it by.
+        /// The table stores the short name of it, which is what the report is built
+        /// back from.
+        /// </remarks>
+        private static string GetEngineeringUnits(IReadOnlyDictionary<string, Variant> fields, string measurement)
+        {
+            string key = measurement + "/" + Opc.Ua.BrowseNames.EngineeringUnits;
+
+            if (!TryGetField(fields, key, out Variant value))
+            {
+                return String.Empty;
+            }
+
+            if (value.TryGetValue(out ExtensionObject extension) &&
+                extension.TryGetValue(out EUInformation units))
+            {
+                return units.DisplayName.Text ?? String.Empty;
+            }
+
+            return value.TryGetValue(out string text) ? text : String.Empty;
+        }
+
+        /// <summary>
         /// Reads the report history for the specified time range.
         /// </summary>
         public DataView ReadHistoryForWellId(ReportType reportType, string uidWell, DateTime startTime, DateTime endTime)
@@ -458,11 +634,6 @@ namespace Quickstarts.HistoricalEvents.Server
             m_dataset.Tables[1].Rows.Add(row);
             m_dataset.AcceptChanges();
 
-            return row;
-        }
-
-        public DataRow UpdateeInjectionTestReport(DataRow row, IList<SimpleAttributeOperand> fields, IList<Variant> values)
-        {
             return row;
         }
 

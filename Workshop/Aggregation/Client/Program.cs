@@ -59,7 +59,7 @@ namespace AggregationClient
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Quickstarts.AggregationClient";
+                        options.ConfigurationFile = "Quickstarts.AggregationClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

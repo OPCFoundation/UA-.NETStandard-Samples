@@ -1307,7 +1307,7 @@ namespace Opc.Ua.Client.Controls
                 using var bounded = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 bounded.CancelAfter(timeout);
 
-                await session.CloseAsync((int)timeout.TotalMilliseconds, bounded.Token);
+                await session.CloseAsync((int)timeout.TotalMilliseconds, bounded.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -1321,8 +1321,32 @@ namespace Opc.Ua.Client.Controls
             }
             finally
             {
-                await session.DisposeAsync();
+                await session.DisposeAsync().ConfigureAwait(false);
             }
+        }
+
+        /// <summary>
+        /// Runs an asynchronous teardown from a synchronous callback and waits for it.
+        /// </summary>
+        /// <remarks>
+        /// FormClosing and Dispose cannot await, so a sample which releases something
+        /// asynchronously on its way out has to wait for it. Awaiting it on the UI thread
+        /// would deadlock: the continuation is posted back to the message loop which the
+        /// wait is blocking, and neither side moves again. Running the teardown on a thread
+        /// pool thread, where there is no synchronization context to post back to, is what
+        /// lets the wait complete.
+        ///
+        /// The teardown therefore runs off the UI thread and must not touch any control.
+        /// </remarks>
+        /// <param name="teardown">The teardown to run.</param>
+        public static void WaitForTeardown(Func<Task> teardown)
+        {
+            if (teardown == null)
+            {
+                throw new ArgumentNullException(nameof(teardown));
+            }
+
+            Task.Run(teardown).GetAwaiter().GetResult();
         }
         #endregion
 

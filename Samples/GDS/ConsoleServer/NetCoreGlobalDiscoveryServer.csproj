@@ -13,15 +13,20 @@
 
   <ItemGroup>
     <Compile Include="..\Common\GlobalDiscoveryServerAliasMerger.cs" Link="Common\GlobalDiscoveryServerAliasMerger.cs" />
-    <Compile Include="..\Common\AliasMergingGlobalDiscoverySampleServer.cs" Link="Common\AliasMergingGlobalDiscoverySampleServer.cs" />
+    <Compile Include="..\Common\SampleGlobalDiscoveryServer.cs" Link="Common\SampleGlobalDiscoveryServer.cs" />
+    <Compile Include="..\Common\GdsApplicationAdminUserDatabase.cs" Link="Common\GdsApplicationAdminUserDatabase.cs" />
+    <Compile Include="..\Common\GdsManagedApplicationsDataStore.cs" Link="Common\GdsManagedApplicationsDataStore.cs" />
+    <Compile Include="..\Common\SampleApplicationConfigurationFileProvider.cs" Link="Common\SampleApplicationConfigurationFileProvider.cs" />
+    <Compile Include="..\Common\SampleServerConfigurationResetProvider.cs" Link="Common\SampleServerConfigurationResetProvider.cs" />
+    <Compile Include="..\Common\DeviceRegistrarNodeManager.cs" Link="Common\DeviceRegistrarNodeManager.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="2.0.0-preview.2" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common" Version="2.0.0-preview.2" />
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="2.0.0-preview.2" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="$(OpcUaNetStandardVersion)" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Server.Common" Version="$(OpcUaNetStandardVersion)" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="$(OpcUaNetStandardVersion)" />
   </ItemGroup>
 
   <ItemGroup>

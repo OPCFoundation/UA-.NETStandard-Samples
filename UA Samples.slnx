@@ -3,6 +3,10 @@
     <Project Path="Workshop/AlarmCondition/Client/AlarmCondition Client.csproj" Id="a0c0ed57-9fa4-4aca-b29a-d34993f01eed" />
     <Project Path="Workshop/AlarmCondition/Server/AlarmCondition Server.csproj" Id="a3af1d7e-5cf9-4c1b-85ce-e363edc4b63a" />
   </Folder>
+  <Folder Name="/AliasNames/">
+    <Project Path="Workshop/AliasNames/Client/AliasNames Client.csproj" />
+    <Project Path="Workshop/AliasNames/Server/AliasNames Server.csproj" />
+  </Folder>
   <Folder Name="/Boiler/">
     <Project Path="Workshop/Boiler/Client/Boiler Client.csproj" Id="1e7cac90-126a-4078-8c49-bf1f2b9c80ae" />
     <Project Path="Workshop/Boiler/Server/Boiler Server.csproj" Id="0a0b2ed2-9940-44f2-83eb-5dd600cdb57d" />
@@ -36,6 +40,10 @@
   <Folder Name="/Methods/">
     <Project Path="Workshop/Methods/Client/Methods Client.csproj" Id="10173201-4fb3-4250-a26e-aa11c3904c19" />
     <Project Path="Workshop/Methods/Server/Methods Server.csproj" Id="eab128ce-bb3e-4ae3-8731-30680a928040" />
+  </Folder>
+  <Folder Name="/NodeManagement/">
+    <Project Path="Workshop/NodeManagement/Client/NodeManagement Client.csproj" />
+    <Project Path="Workshop/NodeManagement/Server/NodeManagement Server.csproj" />
   </Folder>
   <Folder Name="/PerfTest/">
     <Project Path="Workshop/PerfTest/Client/PerfTest Client.csproj" Id="4566fa73-5d4f-4753-b13d-371a687a8247" />

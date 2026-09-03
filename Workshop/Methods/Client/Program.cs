@@ -61,7 +61,7 @@ namespace Quickstarts.MethodsClient
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Quickstarts.MethodsClient";
+                        options.ConfigurationFile = "Quickstarts.MethodsClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }

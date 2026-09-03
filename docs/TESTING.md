@@ -33,12 +33,12 @@ behaviour the sample was written to show. Tier 1 would not notice any of that.
 Three properties of the samples make headless testing cheap:
 
 1. **Server `Main` methods are UI-free until the last line.** Every sample server registers
-   itself with `AddSampleApplication(...)` / `AddSampleServer<XServer>()` and lets the generic
-   host do `LoadApplicationConfigurationAsync` -> `CheckApplicationInstanceCertificatesAsync` ->
-   `application.StartAsync(server)`; only *then* is the main form resolved from the container
-   and shown. See [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is
-   `public` and derives from `StandardServer`, so a test starts the real server object with the
-   real config file and never touches WinForms.
+   itself with `AddSampleServer<XServer>(configurationFile)` and lets the hosted server of the
+   stack load the configuration file, check the certificate and start the server; only *then*
+   is the main form resolved from the container and shown. See
+   [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is `public` and derives
+   from `StandardServer`, so a test starts the real server object with the real config file
+   and never touches WinForms.
 2. **Every WinForms client uses the same control under the same name.** All client
    `MainForm.Designer.cs` files declare `private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;`,
    and that control exposes `ConnectAsync()`, `Session` and `ConnectComplete`. One reflection
@@ -95,9 +95,10 @@ Tests redirect every store to a per-run temp directory and set
 `AutoAcceptUntrustedCertificates` on both sides, so a test run neither depends on nor pollutes
 machine state.
 
-**Configuration loading.** Tests load config files by explicit path rather than through
-`ConfigSectionName`. Under a test host the entry assembly is `testhost.exe`, so the
-`<app>.exe.config` lookup the samples rely on cannot resolve.
+**Configuration loading.** Tests load config files by explicit repository path. The samples
+name their `*.Config.xml` relative to the executable - directly in their service
+registrations since the move to the dependency-injection configuration loading - which under
+a test host would resolve against `testhost.exe`.
 
 **Modal dialogs are the enemy.** Sample clients funnel errors into a modal `ExceptionDlg`,
 which in CI hangs forever. The Tier 2 harness runs a watchdog that scans `Application.OpenForms`,
@@ -167,7 +168,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 0 checks today
 
-167 test cases, under a second, no network:
+175 test cases, under a second, no network:
 
 - every `*.Config.xml` in the repository loads and validates, and declares an application
   name, uri, type and security configuration
@@ -182,7 +183,7 @@ there is no window station, a Linux machine or a container. The pipeline globs
 
 ## What Tier 1 checks today
 
-103 test cases, about 25 seconds. Eighteen of them start a sample server in process, from the
+108 test cases, about 35 seconds. Nineteen of them start a sample server in process, from the
 sample's own configuration file, and connect to it with a plain OPC UA client:
 
 - the server comes up on the endpoint the catalog claims
@@ -195,7 +196,7 @@ Only the opc.tcp endpoints are exercised; https base addresses are stripped in m
 the server starts, because they need their own bindings and would double the ports a test run
 occupies.
 
-All 18 servers pass. The first run of this tier found four that did not, all of them samples
+All 19 servers pass. The first run of this tier found four that did not, all of them samples
 which had not caught up with the value types the 2.0 stack introduced (`ArrayOf<T>`,
 `DateTimeUtc`, `NodeId` as a struct, the `Variant.From` overloads); they were fixed rather
 than parked:
@@ -294,7 +295,7 @@ not parking. Both lists are currently empty.
 
 ## What Tier 1.5 checks today
 
-122 test cases across 19 fixtures, about 1.5 minutes. One fixture per node manager, each
+136 test cases across 20 fixtures, about 2 minutes. One fixture per node manager, each
 starting its sample server once and driving it through an ordinary OPC UA session.
 
 **Everything is observed through the services a client would use.** No test reaches into a
@@ -314,7 +315,9 @@ What each fixture pins down, in one line:
 | Views | The same node browsed through two views shows two different sets of children |
 | SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing |
 | Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
+| NodeManagement | The four Part 4 §5.8 services over a real session: a client creates an object and a variable with attributes, gets a node id from the node manager or asks for one, is refused a duplicate browse name, a taken node id, a non-hierarchical reference and a parent outside the folder the sample opens, deletes what it added and is refused the model, references a node into a second folder and drops the reference again without deleting the node, sees the derived counter follow and a GeneralModelChangeEvent report the folder, and is refused everything on a node manager which never opted in |
 | RoleManagement | What a Part 18 Role is worth: an anonymous session browses the machine and is refused every value, an Observer reads but neither writes nor calls, an Operator does both, an Engineer sees a node an Observer cannot browse, UserRolePermissions reports what the session earns, the role configuration is refused to everyone but a SecurityAdmin on an encrypted channel, and a Role granted at runtime reaches an already open session |
+| AliasNames | What a Part 17 index is worth: the standard TagVariables object answers FindAlias for the whole plant, a wildcard narrows it, a tag name resolves to the node the browse path leads to and back again, the materialized alias nodes carry an AliasFor reference which reaches that same node, the standard category answers the optional FindAliasVerbose it was given, the application-defined category tree is browsable below the standard Aliases object and its nested categories serve only their own unit, FindAliasVerbose names the category an entry came from, and the tag list is editable at runtime by a SecurityAdmin on an encrypted channel and by nobody else |
 | UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session |
 | PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
 | DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths |
@@ -401,7 +404,7 @@ since the server started.
 
 ## What Tier 2 checks today
 
-52 test cases, about two and a half minutes, Windows only. For each WinForms sample client
+55 test cases, about two and a half minutes, Windows only. For each WinForms sample client
 the test starts its sample server in process, then on a dedicated STA thread with a running
 message loop - but without ever showing a window:
 
@@ -412,7 +415,20 @@ message loop - but without ever showing a window:
 - waits two seconds so the sample's `async void` ConnectComplete handler can run, and for
   the samples that have one, asserts the control it enables afterwards is enabled - which is
   the proof that the sample's own logic ran, not just the shared control
-- disconnects and asserts the session was released
+- disconnects through the **synchronous** `connect.Disconnect()`, which is the entry point
+  the samples themselves use, and asserts the session was released
+- asserts the message loop still dispatches a callback posted to it, and that the control the
+  sample enabled after connecting is disabled again - which is the proof the disconnect was
+  reported and not just performed
+- closes the form, so that the `FormClosing` handler of the sample, the other caller which
+  cannot await, is covered as well
+
+One case, `DisconnectMenuItemLeavesTheWindowReacting`, goes one step further out and clicks
+the sample's own `Server_DisconnectMI` rather than driving the control, so that the click
+handler of the sample - which disposes its subscription first and only then asks the control
+to disconnect - is on the path too. It uses the Boiler client, and `ToolStripItem.PerformClick`
+works on a form which was never shown because, unlike `Button.PerformClick`, it is not gated
+on `CanSelect`.
 
 ### Every client is now driven past connect
 
@@ -443,6 +459,7 @@ the sample exists to show:
 | HistoricalAccess | points the history control at a recorded archive item and presses Go | the grid fills with the recorded values | `SampleClientActionTests` |
 | HistoricalEvents | connects | a live event reaches the list | `WorkshopClientSubscriptionTests` |
 | Methods | connects | the current state of the process arrives | `WorkshopClientSubscriptionTests` |
+| NodeManagement | adds an object, references it into the group, drops the reference, deletes the node | each of the four services changed the list it is supposed to change - and dropping the reference left the node where it was | `NodeManagementClientTests` |
 | PerfTest | connects, then presses Stop | the item update count leaves zero, and Stop ends the run | `SampleClientActionTests` |
 | Reference | browses into the static scalars and selects one | the attribute list holds the attributes of the node the tree selected | `SampleClientActionTests` |
 | RoleManagement | signs in as an Operator and presses Reset | the server answered Good and the set point is back at its default - the case which motivated all of this | `RoleManagementClientTests` |
@@ -473,10 +490,19 @@ are collected in `SampleFormDriver`:
   something has to be read from the state the sample keeps - which is why the PerfTest case
   watches the update timer rather than the Stop button. `Enabled` is not affected.
 
-Two more, which apply to any fixture here: the synchronous `connect.Disconnect()` deadlocks
-because it blocks the UI thread on work which needs the same message loop, so every fixture
-awaits `connect.DisconnectAsync(ct)`; and `ListViewItem.Selected` does not reliably reach a
-list which was never displayed, so a row is selected through `SelectedIndices`.
+One more, which applies to any fixture here: `ListViewItem.Selected` does not reliably reach
+a list which was never displayed, so a row is selected through `SelectedIndices`.
+
+The synchronous `connect.Disconnect()` used to be on that list. It blocked the UI thread on a
+close whose continuation was posted back to the very message loop it was blocking, so every
+fixture awaited `connect.DisconnectAsync(ct)` instead - and that is precisely why no test ever
+saw the bug the samples were shipping. The menu item and the `FormClosing` handler of all of
+them call the synchronous one, and neither can await, so clicking Server, Disconnect
+disconnected the session and then froze the window for good. It is fixed in the control now
+rather than avoided here: `Disconnect()` runs the close on a thread pool thread, where there
+is no synchronization context to post a continuation back to, and raises ConnectComplete on
+the thread of the caller so the sample still clears its display on the UI thread. Tier 2
+drives that entry point on purpose, and closes the form afterwards.
 
 `SubscribeControlTests` covers what a connect alone does not: it drives the subscription
 wizard of the shared `SubscribeDataListViewCtrl` against the Reference server the way a user

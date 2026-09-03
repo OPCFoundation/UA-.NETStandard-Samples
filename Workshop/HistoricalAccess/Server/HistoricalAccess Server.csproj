@@ -57,25 +57,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
-      <Version>2.0.0-preview.2</Version>
+      <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
 
     <PackageReference
       Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
-      Version="2.0.0-preview.2"
+      Version="$(OpcUaNetStandardVersion)"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
-  </ItemGroup>
-  <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="UnderlyingSystem\UnderlyingSystemTagType.cs" />
-    <Compile Remove="UnderlyingSystem\UnderlyingSystemTag.cs" />
-    <Compile Remove="UnderlyingSystem\UnderlyingSystemSegment.cs" />
-    <Compile Remove="UnderlyingSystem\UnderlyingSystemDataType.cs" />
-    <Compile Remove="UnderlyingSystem\UnderlyingSystemBlock.cs" />
-    <Compile Remove="Model\SegmentState.cs" />
-    <Compile Remove="Model\SegmentBrowser.cs" />
-    <Compile Remove="Model\Namespaces.cs" />
-    <Compile Remove="Model\ModelUtils.cs" />
-    <Compile Remove="Model\BlockState.cs" />
   </ItemGroup>
 </Project>

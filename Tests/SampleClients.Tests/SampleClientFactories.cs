@@ -65,6 +65,7 @@ namespace Opc.Ua.Samples.Tests
         {
             var clients = new List<SampleClientUnderTest> {
                 Client("AlarmCondition", (configuration, telemetry) => new Quickstarts.AlarmConditionClient.MainForm(configuration, telemetry)),
+                Client("AliasNames", (configuration, telemetry) => new Quickstarts.AliasNames.Client.MainForm(configuration, telemetry), "FindBTN"),
                 Client("Boiler", (configuration, telemetry) => new Quickstarts.Boiler.Client.MainForm(configuration, telemetry), "BoilerCB"),
                 Client("DataAccess", (configuration, telemetry) => new Quickstarts.DataAccessClient.MainForm(configuration, telemetry), "BrowseNodesTV"),
                 Client("DataTypes", (configuration, telemetry) => new Quickstarts.DataTypes.MainForm(configuration, telemetry)),
@@ -73,6 +74,7 @@ namespace Opc.Ua.Samples.Tests
                 Client("HistoricalAccess", (configuration, telemetry) => new Quickstarts.HistoricalAccess.Client.MainForm(configuration, telemetry)),
                 Client("HistoricalEvents", (configuration, telemetry) => new Quickstarts.HistoricalEvents.Client.MainForm(configuration, telemetry)),
                 Client("Methods", (configuration, telemetry) => new Quickstarts.MethodsClient.MainForm(configuration, telemetry), "StartBTN"),
+                Client("NodeManagement", (configuration, telemetry) => new Quickstarts.NodeManagement.Client.MainForm(configuration, telemetry), "RefreshBTN"),
                 Client("PerfTest", (configuration, telemetry) => new Quickstarts.PerfTestClient.MainForm(configuration, telemetry)),
                 Client("RoleManagement", (configuration, telemetry) => new Quickstarts.RoleManagement.Client.MainForm(configuration, telemetry), "RefreshBTN"),
                 Client("SimpleEvents", (configuration, telemetry) => new Quickstarts.SimpleEvents.Client.MainForm(configuration, telemetry)),

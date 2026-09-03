@@ -53,17 +53,14 @@ namespace Quickstarts.Boiler.Server
 
             ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
 
-            // the generic host owns the configuration, the certificate, the logging and
-            // the lifetime of the server; the form is created by the container from the
-            // services it registers here.
-            SampleWinFormsHost.Run<ServerForm>(
+            // the generic host owns the logging and the lifetime of the sample; the
+            // server is hosted by the stack, its configuration is loaded straight from
+            // the configuration file, and the form shows the running server.
+            SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleApplication(options => {
-                        options.ApplicationType = ApplicationType.Server;
-                        options.ConfigSectionName = "BoilerServer";
-                    })
-                    .AddSampleServer<BoilerServer>(),
+                    .AddSampleServer<BoilerServer>("BoilerServer.Config.xml"),
+                ServerForm.Create,
                 ExceptionDlg.Show);
         }
     }

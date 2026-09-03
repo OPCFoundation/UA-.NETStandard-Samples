@@ -1,5 +1,6 @@
 cd ..\bin\Debug
 start Quickstarts.AlarmConditionServer.exe
+start Quickstarts.AliasNamesServer.exe
 start Quickstarts.BoilerServer.exe
 start Quickstarts.DataAccessServer.exe
 start Quickstarts.DataTypesServer.exe
@@ -8,6 +9,7 @@ start Quickstarts.FileTransferServer.exe
 start Quickstarts.HistoricalAccessServer.exe
 start Quickstarts.HistoricalEventsServer.exe
 start Quickstarts.MethodsServer.exe
+start Quickstarts.NodeManagementServer.exe
 start Quickstarts.PerfTestServer.exe
 start Quickstarts.RoleManagementServer.exe
 start Quickstarts.SimpleEventsServer.exe

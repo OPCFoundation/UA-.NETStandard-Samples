@@ -61,7 +61,7 @@ namespace Opc.Ua.Gds.Client
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Opc.Ua.GdsClient";
+                        options.ConfigurationFile = "Opc.Ua.GdsClient.Config.xml";
                     })
                     // the GDS, push configuration and local discovery clients the main form
                     // takes come from the stack's own registrations, on a managed session

@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
+    <!-- The OPC UA .NET Standard preview version the samples build against,
+         from the public nuget.org feed. -->
+    <OpcUaNetStandardVersion>2.0.0-preview.4</OpcUaNetStandardVersion>
   </PropertyGroup>
 
   <Choose>

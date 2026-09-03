@@ -54,6 +54,7 @@ namespace Opc.Ua.Gds.Client
             this.ServerStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.ServerStatusTime = new System.Windows.Forms.ToolStripStatusLabel();
             this.LeftPanel = new System.Windows.Forms.Panel();
+            this.OnboardingButton = new System.Windows.Forms.Button();
             this.SelectGdsButton = new System.Windows.Forms.Button();
             this.DiscoveryButton = new System.Windows.Forms.Button();
             this.ConfigurationButton = new System.Windows.Forms.Button();
@@ -145,6 +146,7 @@ namespace Opc.Ua.Gds.Client
             // LeftPanel
             // 
             this.LeftPanel.BackColor = System.Drawing.Color.MidnightBlue;
+            this.LeftPanel.Controls.Add(this.OnboardingButton);
             this.LeftPanel.Controls.Add(this.SelectGdsButton);
             this.LeftPanel.Controls.Add(this.DiscoveryButton);
             this.LeftPanel.Controls.Add(this.ConfigurationButton);
@@ -161,9 +163,23 @@ namespace Opc.Ua.Gds.Client
             this.LeftPanel.Name = "LeftPanel";
             this.LeftPanel.Size = new System.Drawing.Size(129, 482);
             this.LeftPanel.TabIndex = 5;
-            // 
+            //
+            // OnboardingButton
+            //
+            this.OnboardingButton.BackColor = System.Drawing.Color.MidnightBlue;
+            this.OnboardingButton.Dock = System.Windows.Forms.DockStyle.Top;
+            this.OnboardingButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.OnboardingButton.ForeColor = System.Drawing.Color.White;
+            this.OnboardingButton.Location = new System.Drawing.Point(0, 320);
+            this.OnboardingButton.Name = "OnboardingButton";
+            this.OnboardingButton.Size = new System.Drawing.Size(129, 32);
+            this.OnboardingButton.TabIndex = 10;
+            this.OnboardingButton.Text = "Onboarding";
+            this.OnboardingButton.UseVisualStyleBackColor = false;
+            this.OnboardingButton.Click += new System.EventHandler(this.OnboardingButton_Click);
+            //
             // SelectGdsButton
-            // 
+            //
             this.SelectGdsButton.BackColor = System.Drawing.Color.MidnightBlue;
             this.SelectGdsButton.Dock = System.Windows.Forms.DockStyle.Top;
             this.SelectGdsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -462,6 +478,7 @@ namespace Opc.Ua.Gds.Client
         private ApplicationTrustListControl TrustListPanel;
         private System.Windows.Forms.Button ConfigurationButton;
         private System.Windows.Forms.Button DiscoveryButton;
+        private System.Windows.Forms.Button OnboardingButton;
         private Opc.Ua.Gds.Client.Controls.DiscoveryControl DiscoveryPanel;
         private System.Windows.Forms.Button HttpsTrustListButton;
         private System.Windows.Forms.Button HttpsCertificateButton;

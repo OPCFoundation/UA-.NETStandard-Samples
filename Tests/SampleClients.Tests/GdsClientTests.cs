@@ -73,6 +73,13 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         private const string kGdsAdminUser = "appadmin";
 
+        /// <summary>
+        /// The user the sample global discovery server gives the SecurityAdmin and
+        /// ConfigureAdmin Roles to, and the only one its <c>ServerConfiguration</c> nodes are
+        /// visible to.
+        /// </summary>
+        private const string kGdsSystemAdminUser = "sysadmin";
+
         private const string kGdsAdminPassword = "demo";
 
         private static readonly TimeSpan s_startupTimeout = TimeSpan.FromSeconds(60);
@@ -211,6 +218,18 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.That(statusPanel, Is.Not.Null, "The form has no 'ServerStatusPanel'.");
 
+            phase.Enter("building the dialogs the sample opens on demand");
+
+            // the two v1.05.07 dialogs are not reached by the walk-through below - they are
+            // modal and would stall the harness - so they are at least built here. That runs
+            // their InitializeComponent, which is where a designer mistake shows up.
+            using (var certificates = new CertificateManagementDialog())
+            using (var onboarding = new DeviceOnboardingDialog())
+            {
+                _ = certificates.Handle;
+                _ = onboarding.Handle;
+            }
+
             // the GDS client manages servers it has no trust relationship with yet, so it
             // shows the certificate of every server it meets and asks the user to accept it.
             // Its own hook replaces the AutoAcceptUntrustedCertificates of the test PKI - the
@@ -221,6 +240,8 @@ namespace Opc.Ua.Samples.Tests
             try
             {
                 await ConnectToTheDirectoryAsync(gdsClient, gdsUrl, configuration, phase, ct).ConfigureAwait(true);
+                await ReadTheOptionalServerConfigurationSurfaceAsync(gdsClient, gdsUrl, phase, ct)
+                    .ConfigureAwait(true);
                 await ShowTheStatusOfTheManagedServerAsync(pushClient, statusPanel, managedServerUrl, phase, ct)
                     .ConfigureAwait(true);
             }
@@ -301,6 +322,23 @@ namespace Opc.Ua.Samples.Tests
                     found.ToArray().Select(entry => entry.ApplicationUri).ToArray(),
                     Has.Some.EqualTo(configuration.ApplicationUri),
                     "The directory does not report the application the client just registered.");
+
+                phase.Enter("listing the certificates the directory holds for the registration");
+
+                // OPC 10000-12 §7.9.8: the pull model gained a GetCertificates Method, so a
+                // client no longer has to guess what the GDS has issued for an application.
+                // A fresh registration has none yet - what is under test is that the sample
+                // reaches the Method at all and that the two arrays come back aligned.
+                (ArrayOf<NodeId> certificateTypeIds, ArrayOf<ByteString> certificates) =
+                    await gdsClient.GetCertificatesAsync(applicationId, NodeId.Null, ct)
+                        .ConfigureAwait(true);
+
+                Assert.That(
+                    certificateTypeIds.Count,
+                    Is.EqualTo(certificates.Count),
+                    "GetCertificates returned the certificate types and the certificates ragged.");
+
+                await RegisterAnOnboardingTicketAsync(gdsClient, phase, ct).ConfigureAwait(true);
             }
             finally
             {
@@ -309,6 +347,208 @@ namespace Opc.Ua.Samples.Tests
                 await gdsClient.UnregisterApplicationAsync(applicationId, CancellationToken.None)
                     .ConfigureAwait(true);
             }
+        }
+
+        /// <summary>
+        /// Reads the Optional OPC 10000-12 §7.10.3 / §7.10.13 / §7.10.20
+        /// <c>ServerConfiguration</c> members off the sample global discovery server.
+        /// </summary>
+        /// <remarks>
+        /// <c>ConfigurationNodeManager</c> suppresses every one of these unless the host hands
+        /// it a <c>ServerConfigurationOptions</c>, so finding them in the address space is
+        /// what proves the sample server configures them - and nothing else in the sample
+        /// would notice if that wiring were dropped.
+        /// </remarks>
+        private static async Task ReadTheOptionalServerConfigurationSurfaceAsync(
+            GlobalDiscoveryServerClient gdsClient,
+            string gdsUrl,
+            ClientPhase phase,
+            CancellationToken ct)
+        {
+            phase.Enter("reconnecting to the directory as the system administrator");
+
+            // the ServerConfiguration nodes of the sample GDS are only visible to the
+            // SecurityAdmin Role - the sample's own README points a user at 'sysadmin' for
+            // exactly this - so the push-management surface is read over a second session
+            // rather than over the registration one.
+            await gdsClient.DisconnectAsync(ct).ConfigureAwait(true);
+
+            gdsClient.AdminCredentials = new UserIdentity(
+                kGdsSystemAdminUser,
+                Encoding.UTF8.GetBytes(kGdsAdminPassword));
+
+            await gdsClient.ConnectAsync(gdsUrl, ct).ConfigureAwait(true);
+
+            phase.Enter("reading the Optional ServerConfiguration surface of the directory");
+
+            // the Optional members are looked up by BrowseName rather than by their
+            // well-known NodeId: several of them - SupportsTransactions and
+            // InApplicationSetup among them - have no well-known singleton-instance NodeId in
+            // the standard model, so browsing is the only way a client finds all of them, and
+            // it is what the sample's own status panel does.
+            var nodeToBrowse = new BrowseDescription {
+                NodeId = Opc.Ua.ObjectIds.ServerConfiguration,
+                BrowseDirection = BrowseDirection.Forward,
+                ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
+                IncludeSubtypes = true,
+                NodeClassMask = 0,
+                ResultMask = (uint)BrowseResultMask.All
+            };
+
+            var children = await Opc.Ua.Client.Controls.ClientUtils
+                .BrowseAsync(gdsClient.Session, nodeToBrowse, true, ct)
+                .ConfigureAwait(true);
+
+            string[] browseNames = children.Select(child => child.BrowseName.Name).ToArray();
+
+            await TestContext.Out
+                .WriteLineAsync($"Gds: ServerConfiguration exposes {string.Join(", ", browseNames)}")
+                .ConfigureAwait(true);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    browseNames,
+                    Has.Some.EqualTo("HasSecureElement"),
+                    "ServerConfiguration.HasSecureElement is not exposed, so the sample no " +
+                    "longer configures the Optional §7.10.3 surface.");
+
+                Assert.That(
+                    browseNames,
+                    Has.Some.EqualTo("InApplicationSetup"),
+                    "ServerConfiguration.InApplicationSetup is not exposed.");
+
+                Assert.That(
+                    browseNames,
+                    Has.Some.EqualTo("ResetToServerDefaults"),
+                    "ServerConfiguration.ResetToServerDefaults is not exposed, so the sample " +
+                    "no longer supplies an IServerConfigurationResetProvider.");
+
+                Assert.That(
+                    browseNames,
+                    Has.Some.EqualTo("ConfigurationFile"),
+                    "ServerConfiguration.ConfigurationFile is not exposed, so the sample no " +
+                    "longer supplies an IApplicationConfigurationFileProvider.");
+
+                Assert.That(
+                    browseNames,
+                    Has.Some.EqualTo("SupportsTransactions"),
+                    "ServerConfiguration.SupportsTransactions is not exposed, so the server " +
+                    "does not implement the §7.10.2 transaction model.");
+
+                Assert.That(
+                    browseNames,
+                    Has.Some.EqualTo("TransactionDiagnostics"),
+                    "ServerConfiguration.TransactionDiagnostics is not exposed.");
+            });
+
+            phase.Enter("browsing the ManagedApplications folder of the directory");
+
+            // §7.10.16: the sample fills this folder from its applications database while the
+            // address space is built, so on a directory that has never had a registration it
+            // is legitimately empty. What is asserted is that it is reachable at all - a
+            // ManagedApplications node manager that failed would leave the folder unreadable
+            // or the references dangling.
+            ReadResponse folder = await gdsClient.Session
+                .ReadAsync(
+                    null,
+                    0,
+                    TimestampsToReturn.Neither,
+                    [new ReadValueId {
+                        NodeId = Opc.Ua.ObjectIds.ManagedApplications,
+                        AttributeId = Attributes.BrowseName
+                    }],
+                    ct)
+                .ConfigureAwait(true);
+
+            Assert.That(
+                StatusCode.IsGood(folder.Results[0].StatusCode),
+                Is.True,
+                "The ManagedApplications folder is not readable on the directory.");
+
+            var managedApplications = new BrowseDescription {
+                NodeId = Opc.Ua.ObjectIds.ManagedApplications,
+                BrowseDirection = BrowseDirection.Forward,
+                ReferenceTypeId = ReferenceTypeIds.Organizes,
+                IncludeSubtypes = true,
+                NodeClassMask = (uint)NodeClass.Object,
+                ResultMask = (uint)BrowseResultMask.All
+            };
+
+            var managed = await Opc.Ua.Client.Controls.ClientUtils
+                .BrowseAsync(gdsClient.Session, managedApplications, true, ct)
+                .ConfigureAwait(true);
+
+            await TestContext.Out
+                .WriteLineAsync($"Gds: ManagedApplications holds {managed.Count} application(s)")
+                .ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Registers and removes an OPC 10000-21 onboarding ticket on the registrar the sample
+        /// global discovery server exposes.
+        /// </summary>
+        /// <remarks>
+        /// The registrar administration Object is found by BrowseName because the Onboarding
+        /// companion model is not part of the shipped GDS packages, so the sample server
+        /// builds the node in a namespace of its own - which is exactly what the client-side
+        /// dialog does.
+        /// </remarks>
+        private static async Task RegisterAnOnboardingTicketAsync(
+            GlobalDiscoveryServerClient gdsClient,
+            ClientPhase phase,
+            CancellationToken ct)
+        {
+            phase.Enter("finding the onboarding registrar of the directory");
+
+            var nodeToBrowse = new BrowseDescription {
+                NodeId = Opc.Ua.ObjectIds.ObjectsFolder,
+                BrowseDirection = BrowseDirection.Forward,
+                ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
+                IncludeSubtypes = true,
+                NodeClassMask = (uint)NodeClass.Object,
+                ResultMask = (uint)BrowseResultMask.All
+            };
+
+            var references = await Opc.Ua.Client.Controls.ClientUtils
+                .BrowseAsync(gdsClient.Session, nodeToBrowse, true, ct)
+                .ConfigureAwait(true);
+
+            ReferenceDescription registrar = references
+                .Find(reference => reference.BrowseName.Name == "DeviceRegistrarAdmin");
+
+            Assert.That(
+                registrar,
+                Is.Not.Null,
+                "The sample global discovery server no longer exposes the OPC 10000-21 " +
+                "registrar administration Object.");
+
+            phase.Enter("registering an onboarding ticket");
+
+            var client = new OnboardingClient(
+                gdsClient.Session,
+                ExpandedNodeId.ToNodeId(registrar.NodeId, gdsClient.Session.NamespaceUris),
+                NullTelemetry.Instance);
+
+            byte[][] tickets = [[1, 2, 3, 4]];
+
+            int[] registered = await client.RegisterTicketsAsync(tickets, ct).ConfigureAwait(true);
+
+            Assert.That(registered, Has.Length.EqualTo(1), "RegisterTickets did not report a result per ticket.");
+            Assert.That(
+                StatusCode.IsGood(new StatusCode((uint)registered[0])),
+                Is.True,
+                "The registrar rejected the ticket.");
+
+            phase.Enter("removing the onboarding ticket again");
+
+            int[] removed = await client.UnregisterTicketsAsync(tickets, CancellationToken.None)
+                .ConfigureAwait(true);
+
+            Assert.That(removed, Has.Length.EqualTo(1), "UnregisterTickets did not report a result per ticket.");
+            Assert.That(
+                StatusCode.IsGood(new StatusCode((uint)removed[0])),
+                Is.True,
+                "The registrar did not remove the ticket it had just accepted.");
         }
 
         /// <summary>
@@ -341,6 +581,13 @@ namespace Opc.Ua.Samples.Tests
             CancellationToken ct)
         {
             phase.Enter($"connecting to the managed server at {managedServerUrl}");
+
+            // OPC 10000-12 §7.10 gates the ServerConfiguration Methods on the SecurityAdmin
+            // Role, so the push client is given the credentials it elevates with before every
+            // such call - which is what SelectPushServerDialog asks the user for.
+            pushClient.AdminCredentials = new UserIdentity(
+                kGdsSystemAdminUser,
+                Encoding.UTF8.GetBytes(kGdsAdminPassword));
 
             await pushClient.ConnectAsync(managedServerUrl, ct).ConfigureAwait(true);
 
@@ -385,6 +632,82 @@ namespace Opc.Ua.Samples.Tests
                 reported,
                 Is.EqualTo(ServerState.Running.ToString()),
                 "The status panel does not show the state the managed server is in.");
+
+            await ShowThePushTransactionStateAsync(pushClient, statusPanel, phase, ct).ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Checks that the status panel reports the OPC 10000-12 v1.05.07 PushManagement
+        /// transaction state of the managed server, and that the sample can drive the Methods
+        /// that came with it.
+        /// </summary>
+        /// <remarks>
+        /// <c>SupportsTransactions</c> has no well-known singleton-instance NodeId, so the
+        /// panel resolves it by browse path - a step that silently yields nothing if the
+        /// server does not expose the Property, which is why the rendered text is asserted
+        /// rather than the read alone.
+        /// </remarks>
+        private static async Task ShowThePushTransactionStateAsync(
+            ServerPushConfigurationClient pushClient,
+            ServerStatusControl statusPanel,
+            ClientPhase phase,
+            CancellationToken ct)
+        {
+            phase.Enter("showing the PushManagement transaction state of the managed server");
+
+            var supportsTransactions = (Label)WinFormsHarness.FindControl(statusPanel, "SupportsTransactionsTextBox");
+
+            Assert.That(supportsTransactions, Is.Not.Null, "The status panel has no 'SupportsTransactionsTextBox'.");
+
+            Assert.That(
+                supportsTransactions.Text,
+                Does.StartWith("True"),
+                "The status panel does not report ServerConfiguration.SupportsTransactions of the managed server.");
+
+            var transactionResult = (Label)WinFormsHarness.FindControl(statusPanel, "TransactionResultTextBox");
+
+            Assert.That(transactionResult, Is.Not.Null, "The status panel has no 'TransactionResultTextBox'.");
+
+            // §7.10.17: before the first transaction the server reports Bad_OutOfService on
+            // the diagnostics children, which the panel shows instead of a value.
+            Assert.That(
+                transactionResult.Text,
+                Is.Not.EqualTo("---"),
+                "The status panel did not read ServerConfiguration.TransactionDiagnostics.");
+
+            phase.Enter("listing the certificates the managed server holds");
+
+            // §7.10.8: the push model's own GetCertificates, which the certificate dialog of
+            // the sample lists.
+            (ArrayOf<NodeId> certificateTypeIds, ArrayOf<ByteString> certificates) =
+                await pushClient.GetCertificatesAsync(pushClient.DefaultApplicationGroup, ct).ConfigureAwait(true);
+
+            Assert.That(
+                certificateTypeIds.Count,
+                Is.EqualTo(certificates.Count),
+                "GetCertificates returned the certificate types and the certificates ragged.");
+
+            phase.Enter("cancelling the changes the session has staged");
+
+            // §7.10.11: nothing was staged, so the server answers Bad_NothingToDo - which is
+            // the answer the Cancel Changes button of the panel swallows on purpose. The
+            // exception is caught by hand rather than with Assert.ThrowsAsync, which pumps a
+            // message loop of its own and cannot run on the harness thread.
+            StatusCode cancelled = StatusCodes.Good;
+
+            try
+            {
+                await pushClient.CancelChangesAsync(ct).ConfigureAwait(true);
+            }
+            catch (ServiceResultException refused)
+            {
+                cancelled = refused.StatusCode;
+            }
+
+            Assert.That(
+                cancelled,
+                Is.EqualTo(StatusCodes.BadNothingToDo),
+                "CancelChanges on a session with no open transaction did not answer Bad_NothingToDo.");
         }
     }
 }

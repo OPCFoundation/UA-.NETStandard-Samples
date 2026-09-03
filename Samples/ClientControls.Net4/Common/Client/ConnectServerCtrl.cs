@@ -497,24 +497,11 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Disconnects from the server.
+        /// Disconnects from the server and reports it.
         /// </summary>
         private async Task InternalDisconnectAsync(CancellationToken ct = default)
         {
-            // disconnect any existing session. Closing the managed session also stops its
-            // connection state machine, so there is no separate reconnect handler to cancel.
-            // The close is bounded: a session which is in the middle of a reconnect attempt
-            // against a server that is gone cannot close until that attempt has run out, and
-            // the sample must not wait for that. See ClientUtils.CloseAndDisposeAsync.
-            if (m_session != null)
-            {
-                DetachSession();
-
-                ISession session = m_session;
-                m_session = null;
-
-                await ClientUtils.CloseAndDisposeAsync(session, ct);
-            }
+            await CloseSessionAsync(ct).ConfigureAwait(false);
 
             // raise an event.
             DoConnectComplete(null);
@@ -523,12 +510,54 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Disconnects from the server.
         /// </summary>
+        /// <remarks>
+        /// The synchronous entry point exists for the callers which cannot await: the
+        /// Disconnect menu item of the samples, and their FormClosing handler, which the
+        /// event signature keeps synchronous. Both run on the UI thread.
+        /// </remarks>
         public void Disconnect()
         {
             UpdateStatus(false, DateTime.UtcNow, "Disconnected");
 
-            // stop any reconnect operation.
-            InternalDisconnectAsync().GetAwaiter().GetResult();
+            // Waiting for the close on the calling thread only works if the close does not
+            // need that thread to finish. Awaited here, it would: closing a session goes to
+            // the server, and the continuation of that await is posted back to the message
+            // loop which this very call is blocking, so neither side would ever move again.
+            // Task.Run puts the close on a thread pool thread, where there is no
+            // synchronization context to post back to, and the wait can complete.
+            Task.Run(() => CloseSessionAsync()).GetAwaiter().GetResult();
+
+            // reported here, on the thread of the caller, rather than from inside the task:
+            // the samples clear their display from this event and their FormClosing handler
+            // is already on the way out, so an event which is only marshalled back would
+            // arrive at a form which has gone. DoConnectComplete sees no marshalling is
+            // needed and raises it directly.
+            DoConnectComplete(null);
+        }
+
+        /// <summary>
+        /// Closes and releases the session of the control, without reporting it.
+        /// </summary>
+        /// <remarks>
+        /// Closing the managed session also stops its connection state machine, so there is
+        /// no separate reconnect handler to cancel. The close is bounded: a session which is
+        /// in the middle of a reconnect attempt against a server that is gone cannot close
+        /// until that attempt has run out, and the sample must not wait for that. See
+        /// ClientUtils.CloseAndDisposeAsync.
+        ///
+        /// Nothing here touches the controls, so it is safe to run off the UI thread.
+        /// </remarks>
+        private async Task CloseSessionAsync(CancellationToken ct = default)
+        {
+            if (m_session != null)
+            {
+                DetachSession();
+
+                ISession session = m_session;
+                m_session = null;
+
+                await ClientUtils.CloseAndDisposeAsync(session, ct).ConfigureAwait(false);
+            }
         }
 
         /// <summary>

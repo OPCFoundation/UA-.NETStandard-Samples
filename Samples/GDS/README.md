@@ -1,7 +1,7 @@
 # UA .Net Standard Global Discovery Server and Client
 
 ## Introduction
-This Global Discovery Server and Client implement the `Global Discovery and Certificate Management Server` profile as specified in the OPC Unified Architecture Specification Part 12: Discovery Release 1.03.
+This Global Discovery Server and Client implement the `Global Discovery and Certificate Management Server` profile as specified in the OPC Unified Architecture Specification Part 12: Discovery and Global Services, release 1.05.07. What v1.05.07 added over the earlier releases - the transactional push model, the new `GetCertificates` / `DeleteCertificate` / `CheckRevocationStatus` Methods, the `ApplicationAdmin` privilege, the `ManagedApplications` folder and the Optional `ServerConfiguration` members - is described under [OPC UA Part 12 v1.05.07 features](#opc-ua-part-12-v10507-features).
 
 The Solution is split into these projects:
 - **GlobalDiscoveryServer:** Global Discovery Server for .Net (Windows) that uses Entity Framework Core with a SQL server as registration and certificate database.
@@ -164,12 +164,12 @@ client can browse the aggregated aliases on the GDS exactly as it would on an in
 ### How the merge works
 The shared implementation lives in
 [`Samples/GDS/Common/GlobalDiscoveryServerAliasMerger.cs`](Common/GlobalDiscoveryServerAliasMerger.cs) and
-[`Samples/GDS/Common/AliasMergingGlobalDiscoverySampleServer.cs`](Common/AliasMergingGlobalDiscoverySampleServer.cs),
+[`Samples/GDS/Common/SampleGlobalDiscoveryServer.cs`](Common/SampleGlobalDiscoveryServer.cs),
 which are linked into both sample projects.
 
 1. **Master store.** `GlobalDiscoveryServerAliasMerger` owns an in-memory Part 17 `InMemoryAliasNameStore` laid out
    with the standard `Aliases` root and its `TagVariables` / `Topics` sub-categories. The
-   `AliasMergingGlobalDiscoverySampleServer` subclass registers this store with the server's
+   `SampleGlobalDiscoveryServer` subclass registers this store with the server's
    `IAliasNameStoreRegistry` in `OnServerStarted`, so the well-known alias nodes on the GDS dispatch through it.
 2. **Pull on registration.** When a server registers, the applications database raises a registration event and the
    merger connects **out to that server as a UA client** and calls the Part 17 `FindAlias` service (with the `%`
@@ -192,6 +192,111 @@ authenticated with the **GDS application instance certificate**. For the merge t
 Servers that require a named user or a user certificate to read their aliases are simply skipped, and the failure is
 logged; nothing else about registration is affected.
 
+## OPC UA Part 12 v1.05.07 features
+The stack implements the whole of OPC 10000-12 v1.05.07; these samples show what a host and a client have to do
+about it. Everything in this section works against both sample servers.
+
+### Transactional push management (§7.10.2, §7.10.9, §7.10.11, §7.10.17)
+Every Certificate and TrustList Method of `ServerConfiguration` is now **staged**: `UpdateCertificate`,
+`DeleteCertificate`, `CreateSelfSignedCertificate` and the TrustList updates change nothing until `ApplyChanges`
+commits them, and `CancelChanges` throws the pending work away. Only one Session may have a transaction open at a
+time; another one is told `Bad_TransactionPending`.
+
+The **Server Status** panel of the GDS client is where this becomes visible:
+- **Supports Transactions** — the `SupportsTransactions` Property (§7.10.2). It has no well-known
+  singleton-instance NodeId, so the panel resolves it by browse path.
+- **Transaction Result / Start / End / Affects** — the `TransactionDiagnostics` Object (§7.10.17). Its children
+  report `Bad_OutOfService` before the first transaction, `Bad_InvalidState` while one is open and `Good` once one
+  has completed, so the panel shows the StatusCode next to the value.
+- **Has Secure Element** and **In Application Setup** — the Optional identity Properties of §7.10.3.
+- **Apply Changes** commits the transaction, **Cancel Changes** discards it. Cancelling leaves the session up and
+  only refreshes the diagnostics; applying closes the sessions the change invalidated.
+
+### Certificate lists and per-slot Methods (§7.9.8, §7.9.11, §7.10.6 - §7.10.8)
+The **Certificates...** button on the `Certificate` panel of the GDS client opens a list of the certificates the
+other side holds, one row per CertificateType. What it offers depends on the registration type:
+- **Pull management** — the list comes from the GDS `GetCertificates` Method (§7.9.8), and **Check Revocation**
+  calls `CheckRevocationStatus` (§7.9.11), which answers with a StatusCode *and* the `ValidityTime` until which
+  that answer holds.
+- **Push management** — the list comes from the `ServerConfiguration.GetCertificates` Method (§7.10.8).
+  **Delete (staged)** calls `DeleteCertificate` (§7.10.7) and **Create Self-Signed (staged)** calls
+  `CreateSelfSignedCertificate` (§7.10.6), which gives a server a working certificate with no CA involved at all.
+  Both only stage their change - commit it with `Apply Changes` on the Server Status panel, or drop it with
+  `Cancel Changes`.
+
+Note that `GetCertificates` is the one §7.10 Method that does **not** read a null CertificateGroup as the
+`DefaultApplicationGroup`; the group has to be named or the server answers `Bad_InvalidArgument`.
+
+### The ApplicationAdmin privilege (§7.2)
+`ApplicationAdmin` sits between `DiscoveryAdmin` (may administer *every* application) and `ApplicationSelfAdmin`
+(may administer only the application whose certificate authenticated the channel): the holder may administer a
+configured *subset* of the registered applications.
+
+The role alone grants nothing - the GDS also has to know *which* applications. That mapping is what
+[`Samples/GDS/Common/GdsApplicationAdminUserDatabase.cs`](Common/GdsApplicationAdminUserDatabase.cs) adds: it
+decorates the user database of either sample server with an `IGdsUserDatabase` implementation and keeps the grants
+in a small JSON file next to it, so neither the JSON nor the SQL user store needs a schema change. From there the
+stack does the rest: `GlobalDiscoverySampleServer` seeds `GdsRoleBasedIdentity.AdministeredApplicationIds` during
+user-name authentication and `AuthorizationHelper` checks every Method call against it.
+
+Type `admins` at the prompt of the console GDS to list the current grants and bind registered applications to a
+user. The standard user **ApplicationAdmin** (PW **demo**) holds the role and starts out with no grants.
+
+### The ManagedApplications folder (§7.10.14 - §7.10.16)
+A GDS may expose the configuration of the *other* applications it manages, each as an `ApplicationConfigurationType`
+instance under the well-known `ManagedApplications` folder, with a `ConfigurationFile` that follows the
+`CloseAndUpdate` / `ConfirmUpdate` lifecycle. The stack's `DefaultManagedApplicationsNodeManager` builds those
+nodes; [`Samples/GDS/Common/GdsManagedApplicationsDataStore.cs`](Common/GdsManagedApplicationsDataStore.cs) answers
+the two questions it cannot answer on its own - which applications to expose (every application registered with this
+GDS) and where their configuration lives (a file per application under the GDS database store path). Writes are
+guarded by an optimistic-concurrency check on the configuration version.
+
+The folder is filled while the address space is built, so applications registered afterwards appear on the next
+restart.
+
+### The Optional ServerConfiguration surface (§7.10.3, §7.10.13, §7.10.20)
+`ConfigurationNodeManager` suppresses each of these members unless the host configures it, so the sample servers
+hand it a `ServerConfigurationOptions`:
+- **`HasSecureElement`** — `false`: the samples keep their private keys in the file system, not in a TPM.
+- **`InApplicationSetup`** — `false`: the GDS is commissioned, not in the OPC 10000-21 setup state.
+- **`ResetToServerDefaults`** (§7.10.13) — backed by
+  [`SampleServerConfigurationResetProvider`](Common/SampleServerConfigurationResetProvider.cs), which restores the
+  trusted-peer store to the snapshot taken at start-up. The specification leaves "default settings" vendor-defined;
+  the sample reads it as "undo the trust decisions made while this server was running" and deliberately leaves the
+  application instance certificate and the CA material alone. The server shuts down after the reset.
+- **`ConfigurationFile`** (§7.10.20) — backed by
+  [`SampleApplicationConfigurationFileProvider`](Common/SampleApplicationConfigurationFileProvider.cs), which serves
+  the GDS's own configuration XML over the standard `FileType` read/update flow. It requires confirmation: the
+  previous file is kept until the client reconnects and calls `ConfirmUpdate`, and restored if it does not. A
+  configuration written this way takes effect on the next server start.
+
+These nodes are only visible to the **SecurityAdmin** Role - log in as **sysadmin** to browse them.
+
+### Device onboarding (OPC 10000-21)
+Part 21 provisioning starts with *tickets*: signed blobs a manufacturer issues to name the devices a customer may
+onboard. The customer loads them into a registrar, and a device that later presents a matching identity is accepted
+without an administrator registering it by hand.
+
+The sample servers expose the registrar administration Object - `RegisterTickets` and `UnregisterTickets`, bound to
+an in-memory ticket store - through
+[`Samples/GDS/Common/DeviceRegistrarNodeManager.cs`](Common/DeviceRegistrarNodeManager.cs). The **Onboarding** panel
+of the GDS client loads ticket files and calls those Methods through the stack's `OnboardingClient`; type `tickets`
+at the prompt of the console GDS to see what the registrar holds.
+
+**What to pick in the file dialog.** A ticket is an `EncodedTicket` - a ByteString whose content Part 21 leaves to the
+device manufacturer. There is no standard file extension for one, and the sample cannot decode it either, because the
+companion model that defines the ticket types is not in the shipped packages (see the caveats below). The sample
+registrar therefore stores the blob **verbatim** and keys it by its SHA-256 hash, so **any file works as a stand-in** -
+which is why the dialog keeps an *All Files* entry alongside the conventional `*.ticket` / `*.tkt` / `*.bin`
+extensions. Pick any small file to see the round trip: register it, run `tickets` on the console GDS to see it listed,
+then unregister it again.
+
+Two caveats, both about the SDK rather than about Part 21: the Onboarding companion model ships as a design file in
+the stack repository but its generated node classes are not in the `Opc.Ua.Gds.Common` package, so the sample builds
+the nodes by hand under `BaseObjectType` in a namespace of its own; and the Method BrowseNames are created in
+namespace 0 because `OnboardingClient` resolves them with an ns=0 browse path. The device-facing `ProvideIdentities`
+flow is not part of the sample.
+
 ## GDS Users
 The sample GDS servers only implement the username/password authentication. The following combinations can be used to connect to the servers:
 - **DiscoveryAdmin**
@@ -202,9 +307,13 @@ The sample GDS servers only implement the username/password authentication. The 
   - PW: **demo**
   - This Role grants rights to request or revoke any Certificate, update any TrustList or assign CertificateGroups to OPC UA Applications.
   - see spec (Roles and Privileges Part 2)[https://reference.opcfoundation.org/GDS/v105/docs/7.2]
+- **ApplicationAdmin**
+  - PW: **demo**
+  - This Role grants rights to administer a *configured set* of registered applications - not all of them, which is what DiscoveryAdmin does. The set is empty until it is granted with the `admins` command of the console GDS, see [The ApplicationAdmin privilege](#the-applicationadmin-privilege-72).
+  - see spec (Roles and Privileges Part 2)[https://reference.opcfoundation.org/GDS/v105/docs/7.2]
 - **System Administrator:** 
   - Username: **sysadmin**, PW: **demo**
-  - This user is defined for server push management and has the ability to access the server configuration nodes of the GDS server to update the server certificate and the trust lists. Server push configuration management is not a requirement for a GDS server and only supported here to demonstrate the functionality.
+  - This user is defined for server push management and has the ability to access the server configuration nodes of the GDS server to update the server certificate and the trust lists. Server push configuration management is not a requirement for a GDS server and only supported here to demonstrate the functionality. It is also the only user the Optional `ServerConfiguration` members are visible to.
   - Roles: CertificateAuthorityAdmin, DiscoveryAdmin, SecurityAdmin, ConfigureAdmin 
 *Deprecated*
 - **GDS Administrator:** 
@@ -310,5 +419,13 @@ Push configuration requires server configuration node support and a session with
 8. Press the `Trust List` button. `Reload`the trust list from the managed server. Manage the certificates and `Merge with GDS` to add the GDS CA certificate to the trust list. `Push To Server` to save the updated trust list on the server.
 8. Press the `Server Status` button and then press `Apply Changes` to update the security settings on the server. After a regular certificate update the managed server may require a reboot or at least closes all sessions and requires a reconnect. Press the `green arrow` connect button to reconnect to the server using the new certificate.  
 9. Press the `Certificate` button and inspect the new CA signed certificate to verify the new certificate is being used for the new session.
+
+Nothing between step 3 and step 8 has actually changed the server: every Certificate and TrustList Method of the
+v1.05.07 push model only *stages* its work, and `Apply Changes` is what commits it. The `Server Status` panel shows
+where the transaction stands (`Supports Transactions`, `Transaction Result`, `Transaction Start / End`,
+`Transaction Affects`), and `Cancel Changes` next to `Apply Changes` throws the staged work away without touching
+the server. Use the `Certificates...` button on the `Certificate` panel to see which certificate the server has in
+which slot, to empty a slot, or to have the server create a self-signed certificate for one - see
+[Certificate lists and per-slot Methods](#certificate-lists-and-per-slot-methods-798-7911-7106---7108).
 
 

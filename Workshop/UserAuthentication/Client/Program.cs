@@ -61,7 +61,7 @@ namespace Quickstarts.UserAuthenticationClient
                 services => services
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
-                        options.ConfigSectionName = "Quickstarts.UserAuthenticationClient";
+                        options.ConfigurationFile = "Quickstarts.UserAuthenticationClient.Config.xml";
                     }),
                 ExceptionDlg.Show);
         }
