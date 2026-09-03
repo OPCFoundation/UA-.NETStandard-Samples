@@ -229,10 +229,23 @@ namespace Opc.Ua.Samples.Tests
                     "An empty grid means the read never reached the server, or the sample handed " +
                     "the control a node which is not historized.");
 
+                await TestContext.Out
+                    .WriteLineAsync($"read type after pointing at the item: {history.ReadType}")
+                    .ConfigureAwait(true);
+
+                string[] columns = results.Columns
+                    .Cast<DataGridViewColumn>()
+                    .Select(column => $"{column.Name}({(column.Visible ? "shown" : "hidden")})")
+                    .ToArray();
+
+                await TestContext.Out
+                    .WriteLineAsync($"columns: {string.Join(", ", columns)}")
+                    .ConfigureAwait(true);
+
                 string[] values = results.Rows
                     .Cast<DataGridViewRow>()
                     .Take(3)
-                    .Select(row => $"{row.Cells[0].Value} = {row.Cells[2].Value}")
+                    .Select(row => string.Join(" | ", row.Cells.Cast<DataGridViewCell>().Select(cell => cell.Value)))
                     .ToArray();
 
                 await TestContext.Out
@@ -240,9 +253,18 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(true);
 
                 Assert.That(
-                    results.Rows[0].Cells[2].Value?.ToString(),
-                    Is.Not.Null.And.Not.Empty,
-                    "A row of the grid has to carry the value that was recorded, not only a timestamp.");
+                    history.ReadType,
+                    Is.EqualTo(HistoryDataListView.HistoryReadType.Raw),
+                    "The control has to stay on a raw history read. Falling back to Subscribe means " +
+                    "it could not read the historical configuration of the item, and the grid then " +
+                    "fills with live monitored item values instead of recorded ones.");
+
+                Assert.That(
+                    values[0],
+                    Does.Not.Contain("WaitingForInitialData"),
+                    "The rows have to come from the archive. BadWaitingForInitialData is what a " +
+                    "monitored item reports before its first data change, so it means the grid is " +
+                    "showing a subscription rather than history.");
             }, ct);
         }
         #endregion

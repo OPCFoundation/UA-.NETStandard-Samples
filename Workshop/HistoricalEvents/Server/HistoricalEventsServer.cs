@@ -28,6 +28,8 @@
  * ======================================================================*/
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
 
@@ -74,6 +76,39 @@ namespace Quickstarts.HistoricalEvents.Server
             // TBD - All applications have software certificates that need to added to the properties.
 
             return properties;
+        }
+
+        /// <summary>
+        /// Advertises the event history this server offers.
+        /// </summary>
+        /// <remarks>
+        /// The diagnostics node manager rolls the capabilities of every registered
+        /// historian provider up into the HistoryServerCapabilities node on startup,
+        /// but that roll-up only covers the data half of that node - the flags which
+        /// describe reading and writing values. The event flags are set here, once
+        /// the whole address space exists, and the event notifier of the server
+        /// object is then derived again so that it advertises the event history the
+        /// way the flags now describe it.
+        /// </remarks>
+        protected override async ValueTask OnNodeManagerStartedAsync(
+            IServerInternal server,
+            CancellationToken cancellationToken = default)
+        {
+            await base.OnNodeManagerStartedAsync(server, cancellationToken).ConfigureAwait(false);
+
+            HistoryServerCapabilitiesState capabilities = await server.DiagnosticsNodeManager
+                .GetDefaultHistoryCapabilitiesAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            capabilities.AccessHistoryEventsCapability.Value = true;
+            capabilities.InsertEventCapability.Value = true;
+            capabilities.ReplaceEventCapability.Value = true;
+            capabilities.UpdateEventCapability.Value = true;
+            capabilities.DeleteEventCapability.Value = true;
+
+            await server.DiagnosticsNodeManager
+                .UpdateServerEventNotifierAsync(cancellationToken)
+                .ConfigureAwait(false);
         }
         #endregion
     }

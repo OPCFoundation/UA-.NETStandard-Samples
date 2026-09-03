@@ -201,9 +201,38 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <summary>
+        /// Commits everything written to the archive since the last commit.
+        /// </summary>
+        /// <remarks>
+        /// Every update accepts its own changes unless the caller asked it not to,
+        /// which is how a batch of them is made to succeed or fail as a whole: the
+        /// caller commits once at the end, or discards the lot with
+        /// <see cref="RollbackChanges"/>.
+        /// </remarks>
+        public void CommitChanges()
+        {
+            m_archiveItem.DataSet.AcceptChanges();
+        }
+
+        /// <summary>
+        /// Discards everything written to the archive since the last commit.
+        /// </summary>
+        public void RollbackChanges()
+        {
+            m_archiveItem.DataSet.RejectChanges();
+        }
+
+        /// <summary>
         /// Updates the history.
         /// </summary>
-        public uint UpdateHistory(ServerSystemContext context, DataValue value, PerformUpdateType performUpdateType)
+        /// <param name="context">The context of the operation.</param>
+        /// <param name="value">The value to insert or replace.</param>
+        /// <param name="performUpdateType">Whether the value may be inserted, replaced or both.</param>
+        /// <param name="commit">
+        /// Whether to commit the change. A caller which applies a batch of values
+        /// atomically passes false and commits or rolls the whole batch back itself.
+        /// </param>
+        public uint UpdateHistory(ServerSystemContext context, DataValue value, PerformUpdateType performUpdateType, bool commit = true)
         {
             bool replaced = false;
 
@@ -296,8 +325,12 @@ namespace Quickstarts.HistoricalAccessServer
                 m_archiveItem.DataSet.Tables[0].Rows.Add(row);
             }
 
-            // accept all changes.
-            m_archiveItem.DataSet.AcceptChanges();
+            // accept all changes, unless the caller is applying a batch of them and
+            // wants to decide about the batch as a whole.
+            if (commit)
+            {
+                m_archiveItem.DataSet.AcceptChanges();
+            }
 
             return StatusCodes.Good.Code;
         }

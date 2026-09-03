@@ -71,9 +71,9 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [DataTypes Client](Workshop/DataTypes/Client) | **Client** | Reads custom structured data types from a DataTypes server. |
 | [FileTransfer Server](Workshop/FileTransfer/Server) | **Server** | Publishes a directory of the host as an OPC UA file system (Part 5 Annex C / Part 20 `FileType` and `FileDirectoryType`), using the file system node manager of the SDK. See the [sample overview](Workshop/FileTransfer/README.md). |
 | [FileTransfer Client](Workshop/FileTransfer/Client) | **Client** | Browses the file system of a server and uploads, downloads, creates and deletes files and directories. Works against any server which offers `Server/FileSystem`. |
-| [HistoricalAccess Server](Workshop/HistoricalAccess/Server) | **Server** | Stores historical data for variables and supports UA HistoricalAccess services (ReadRaw, ReadProcessed, etc.). |
-| [HistoricalAccess Client](Workshop/HistoricalAccess/Client) | **Client** | Queries and displays historical data from a HistoricalAccess server. |
-| [HistoricalEvents Server](Workshop/HistoricalEvents/Server) | **Server** | Stores historical events and supports UA HistoricalAccess for events. |
+| [HistoricalAccess Server](Workshop/HistoricalAccess/Server) | **Server** | Serves a file based archive of past values through the historian provider model of the SDK (raw, modified, at-time, processed, annotations, updates and deletes). See the [sample overview](Workshop/HistoricalAccess/README.md). |
+| [HistoricalAccess Client](Workshop/HistoricalAccess/Client) | **Client** | Reads, aggregates, annotates and rewrites the history of a variable on any server, through `session.Historian()`. |
+| [HistoricalEvents Server](Workshop/HistoricalEvents/Server) | **Server** | Serves an archive of well test reports as event history through an `IHistorianEventProvider`, including writing and deleting events. |
 | [HistoricalEvents Client](Workshop/HistoricalEvents/Client) | **Client** | Queries and displays historical events from a HistoricalEvents server. |
 | [Methods Server](Workshop/Methods/Server) | **Server** | Exposes UA methods with various input/output arguments to demonstrate method invocation. |
 | [Methods Client](Workshop/Methods/Client) | **Client** | Discovers and calls UA methods on a Methods server. |

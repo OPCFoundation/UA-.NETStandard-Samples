@@ -46,6 +46,8 @@ namespace Opc.Ua.Samples.Tests
 
         private static readonly DateTime HistoryEnd = new(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        private static int s_backdatedReports;
+
         /// <summary>
         /// The areas and the wells underneath them are served.
         /// </summary>
@@ -240,39 +242,128 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// Writing to the event history is refused as not implemented.
+        /// A report written into the event history comes back out of it.
         /// </summary>
         /// <remarks>
-        /// The sample validates the request and then says plainly that it does not do this,
-        /// which is what lets a client tell "not supported" apart from "went wrong".
+        /// The historian provider of the sample implements the write half of Part 11
+        /// event history, so a client can backfill reports which were raised while it
+        /// was not connected. The filter of the write and of the read that checks it
+        /// are the same: the fields of an event travel in the order its select clauses
+        /// name them.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
-        public async Task UpdatingTheEventHistoryIsNotImplemented(CancellationToken ct)
+        public async Task AnInsertedReportIsReadBackFromHistory(CancellationToken ct)
         {
             NodeId platforms = await ResolvePlatformsAsync(ct).ConfigureAwait(false);
 
-            var details = new UpdateEventDetails {
-                NodeId = platforms,
-                PerformInsertReplace = PerformUpdateType.Insert,
-                Filter = StandardFilter(),
-                EventData = ArrayOf<HistoryEventFieldList>.Empty,
-            };
+            EventFilter filter = ReportFilter();
+            ByteString eventId = NewEventId();
+            DateTime raised = BackdatedTime();
 
-            HistoryUpdateResponse response = await Session
-                .HistoryUpdateAsync(null, new List<ExtensionObject> { new(details) }, ct)
+            (StatusCode result, IReadOnlyList<StatusCode> perEvent) = await HistoryOps
+                .UpdateEventsAsync(
+                    Session,
+                    platforms,
+                    PerformUpdateType.Insert,
+                    filter,
+                    [FluidLevelReport(eventId, raised, "Well_24412", 42.0)],
+                    ct)
                 .ConfigureAwait(false);
 
-            StatusCode result = response.Results.ToList()[0].StatusCode;
-
             await TestContext.Out
-                .WriteLineAsync($"Updating the event history: {result}")
+                .WriteLineAsync($"Inserting a report: {result} / {string.Join(", ", perEvent)}")
                 .ConfigureAwait(false);
 
             Assert.That(
-                result,
-                Is.EqualTo((StatusCode)StatusCodes.BadNotImplemented),
-                "The sample says plainly that it does not write event history.");
+                perEvent[0],
+                Is.EqualTo((StatusCode)StatusCodes.GoodEntryInserted),
+                "The server has to accept a report which is not in the history yet.");
+
+            HistoryReadOutcome outcome = await HistoryOps
+                .ReadEventsAsync(Session, platforms, raised.AddSeconds(-1), raised.AddSeconds(1), 0, filter, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                Find(outcome, eventId),
+                Is.Not.Null,
+                "The report which was inserted has to be in the history it was inserted into.");
+        }
+
+        /// <summary>
+        /// Inserting the same report twice is refused the second time.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task InsertingTheSameReportTwiceIsRefused(CancellationToken ct)
+        {
+            NodeId platforms = await ResolvePlatformsAsync(ct).ConfigureAwait(false);
+
+            EventFilter filter = ReportFilter();
+            HistoryEventFieldList report = FluidLevelReport(NewEventId(), BackdatedTime(), "Well_48306", 7.0);
+
+            await HistoryOps
+                .UpdateEventsAsync(Session, platforms, PerformUpdateType.Insert, filter, [report], ct)
+                .ConfigureAwait(false);
+
+            (_, IReadOnlyList<StatusCode> perEvent) = await HistoryOps
+                .UpdateEventsAsync(Session, platforms, PerformUpdateType.Insert, filter, [report], ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Inserting the same report again: {string.Join(", ", perEvent)}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                perEvent[0],
+                Is.EqualTo((StatusCode)StatusCodes.BadEntryExists),
+                "An event id which is already in the history cannot be inserted again.");
+        }
+
+        /// <summary>
+        /// A report can be deleted out of the event history again.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnInsertedReportCanBeDeletedAgain(CancellationToken ct)
+        {
+            NodeId platforms = await ResolvePlatformsAsync(ct).ConfigureAwait(false);
+
+            EventFilter filter = ReportFilter();
+            ByteString eventId = NewEventId();
+            DateTime raised = BackdatedTime();
+
+            await HistoryOps
+                .UpdateEventsAsync(
+                    Session,
+                    platforms,
+                    PerformUpdateType.Insert,
+                    filter,
+                    [FluidLevelReport(eventId, raised, "Well_86234", 13.0)],
+                    ct)
+                .ConfigureAwait(false);
+
+            (StatusCode result, IReadOnlyList<StatusCode> perEvent) = await HistoryOps
+                .DeleteEventsAsync(Session, platforms, [eventId], ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Deleting the report again: {result} / {string.Join(", ", perEvent)}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                perEvent[0],
+                Is.EqualTo((StatusCode)StatusCodes.Good),
+                "A report which is in the history has to be deletable.");
+
+            HistoryReadOutcome outcome = await HistoryOps
+                .ReadEventsAsync(Session, platforms, raised.AddSeconds(-1), raised.AddSeconds(1), 0, filter, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                Find(outcome, eventId),
+                Is.Null,
+                "The report which was deleted must be gone from the history.");
         }
 
         /// <summary>
@@ -303,6 +394,125 @@ namespace Opc.Ua.Samples.Tests
                 perEvent[0],
                 Is.EqualTo((StatusCode)StatusCodes.BadEventIdUnknown),
                 "An event id which is not in the history cannot be deleted.");
+        }
+
+        /// <summary>
+        /// The server advertises that its event history can be read and written.
+        /// </summary>
+        /// <remarks>
+        /// The roll-up of the registered historian providers only covers the data half
+        /// of the HistoryServerCapabilities node, so the sample server sets the event
+        /// flags of it once the address space is up. A client reads them to find out
+        /// what it may attempt at all.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ServerAdvertisesItsEventHistoryCapabilities(CancellationToken ct)
+        {
+            foreach (NodeId capability in new[] {
+                VariableIds.HistoryServerCapabilities_AccessHistoryEventsCapability,
+                VariableIds.HistoryServerCapabilities_InsertEventCapability,
+                VariableIds.HistoryServerCapabilities_ReplaceEventCapability,
+                VariableIds.HistoryServerCapabilities_UpdateEventCapability,
+                VariableIds.HistoryServerCapabilities_DeleteEventCapability,
+            })
+            {
+                DataValue value = await SessionOps
+                    .ReadAttributeAsync(Session, capability, Attributes.Value, ct)
+                    .ConfigureAwait(false);
+
+                await TestContext.Out
+                    .WriteLineAsync($"{capability}: {value.WrappedValue}")
+                    .ConfigureAwait(false);
+
+                Assert.That(
+                    value.WrappedValue.TryGetValue(out bool supported) && supported,
+                    Is.True,
+                    $"The server has to advertise {capability} for its event history.");
+            }
+        }
+
+        /// <summary>
+        /// The event id of a report from an answer, or null when it is not in it.
+        /// </summary>
+        private static HistoryEventFieldList Find(HistoryReadOutcome outcome, ByteString eventId)
+        {
+            return outcome.Events.FirstOrDefault(
+                candidate => candidate.EventFields.Count > 0 &&
+                    candidate.EventFields[0].TryGetValue(out ByteString candidateId) &&
+                    candidateId == eventId);
+        }
+
+        /// <summary>
+        /// An event id in the sixteen byte form the sample archive keys its reports by.
+        /// </summary>
+        private static ByteString NewEventId()
+        {
+            return Guid.NewGuid().ToByteArray().ToByteString();
+        }
+
+        /// <summary>
+        /// A moment far enough in the past that the reports the simulation generates
+        /// while a test runs cannot land on it, and distinct for every report a run
+        /// writes so that two of them never collide.
+        /// </summary>
+        private static DateTime BackdatedTime()
+        {
+            return new DateTime(2020, 6, 1, 12, 0, 0, DateTimeKind.Utc)
+                .AddSeconds(Interlocked.Increment(ref s_backdatedReports));
+        }
+
+        /// <summary>
+        /// A fluid level test report, with its fields in the order
+        /// <see cref="ReportFilter"/> names them.
+        /// </summary>
+        private HistoryEventFieldList FluidLevelReport(
+            ByteString eventId,
+            DateTime raised,
+            string uidWell,
+            double fluidLevel)
+        {
+            ushort ns = NamespaceIndex(Quickstarts.HistoricalEvents.Namespaces.HistoricalEvents);
+
+            return new HistoryEventFieldList {
+                EventFields = new[] {
+                    Variant.From(eventId),
+                    Variant.From(new NodeId(ReportObjectTypes.FluidLevelTestReportType, ns)),
+                    Variant.From(uidWell),
+                    Variant.From((DateTimeUtc)raised),
+                    Variant.From(uidWell),
+                    Variant.From(uidWell),
+                    Variant.From(fluidLevel),
+                }.ToArrayOf(),
+            };
+        }
+
+        /// <summary>
+        /// A filter which selects the fields a well test report is written with.
+        /// </summary>
+        /// <remarks>
+        /// The event type has to be among them: it is what tells the archive which of
+        /// its report tables an incoming event belongs in.
+        /// </remarks>
+        private EventFilter ReportFilter()
+        {
+            ushort ns = NamespaceIndex(Quickstarts.HistoricalEvents.Namespaces.HistoricalEvents);
+
+            SimpleAttributeOperand[] operands = new[] {
+                new QualifiedName(Opc.Ua.BrowseNames.EventId),
+                new QualifiedName(Opc.Ua.BrowseNames.EventType),
+                new QualifiedName(Opc.Ua.BrowseNames.SourceName),
+                new QualifiedName(Opc.Ua.BrowseNames.Time),
+                new QualifiedName(ReportBrowseNames.NameWell, ns),
+                new QualifiedName(ReportBrowseNames.UidWell, ns),
+                new QualifiedName(ReportBrowseNames.FluidLevel, ns),
+            }.Select(name => new SimpleAttributeOperand {
+                TypeDefinitionId = ObjectTypeIds.BaseEventType,
+                AttributeId = Attributes.Value,
+                BrowsePath = new[] { name }.ToArrayOf(),
+            }).ToArray();
+
+            return new EventFilter { SelectClauses = operands.ToArrayOf() };
         }
 
         /// <summary>
