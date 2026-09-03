@@ -123,8 +123,72 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// A materialized alias node actually reaches the node it stands for.
+        /// </summary>
+        /// <remarks>
+        /// That the node exists under the category is only half of Part 17 §6.2. What makes it
+        /// an alias rather than an empty placeholder is the <c>AliasFor</c> reference of §8.2,
+        /// and the target it names has to be the node the structural browse path leads to -
+        /// otherwise a §6.2 client which discovers the alias by browsing ends up somewhere
+        /// else than one which called <c>FindAlias</c>.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AMaterializedAliasNodeReachesTheNodeItStandsFor(CancellationToken ct)
+        {
+            NodeId aliasNode = await ChildAsync(ObjectIds.TagVariables, "TIC101_PV", ct)
+                .ConfigureAwait(false);
+
+            IReadOnlyList<ReferenceDescription> targets = await SessionOps
+                .BrowseAsync(Session, aliasNode, ct, referenceTypeId: ReferenceTypeIds.AliasFor)
+                .ConfigureAwait(false);
+
+            Assert.That(targets, Is.Not.Empty, "The alias node has an AliasFor reference to its target.");
+
+            NodeId target = ExpandedNodeId.ToNodeId(targets[0].NodeId, Session.NamespaceUris);
+
+            NodeId browsed = await ResolveAsync(ct, Plant, Reactor, TemperatureMeasurement)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"TIC101_PV --AliasFor--> {target}, browse path -> {browsed}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                target,
+                Is.EqualTo(browsed),
+                "AliasFor points at the node the structural browse path leads to.");
+        }
+
+        /// <summary>
+        /// The optional Methods the standard category gained are not just nodes: they answer.
+        /// </summary>
+        /// <remarks>
+        /// Materialization creates the Method nodes at the NodeIds the OPC Foundation reserves
+        /// for them, but a node a client cannot call is worth nothing. This calls the one which
+        /// the well known categories ship without, on the standard category rather than on the
+        /// sample's own, which is the case a client with no prior knowledge of this server hits.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task TheStandardCategoryAnswersTheOptionalVerboseMethod(CancellationToken ct)
+        {
+            AliasNameClient standard = AliasNameClient.OpenStandardTagVariables(Session);
+
+            IReadOnlyList<AliasNameVerboseDataType> found = await standard
+                .FindAliasVerboseAsync("TIC101_PV", null, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                NamesOf(found),
+                Is.EquivalentTo(new[] { "TIC101_PV" }),
+                "FindAliasVerbose answers on the standard category, not only on the sample's own.");
+        }
+
+        /// <summary>
         /// A wildcard narrows the search the way Part 17 §6.3.2 defines it.
-        /// </summary>        /// <remarks>
+        /// </summary>
+        /// <remarks>
         /// This is the entire point of the pattern argument: a client which wants the
         /// measured values of the plant asks for them by name shape, rather than reading the
         /// whole inventory and filtering it itself.
