@@ -34,93 +34,109 @@ using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Opc.Ua.Server.Fluent;
 
 namespace MemoryBuffer
 {
     /// <summary>
     /// The factory to create the node manager for memory buffers.
     /// </summary>
+    /// <remarks>
+    /// The factory is written by hand because the node manager needs the buffer
+    /// configuration from the application configuration, and the generated
+    /// constructor is the only place the generated partial sees the configuration:
+    /// nothing keeps it for <see cref="MemoryBufferNodeManager.Configure"/>. The
+    /// factory parses the extension and hands it to the constructor which chains
+    /// to the generated one. It advertises the same two namespaces the generated
+    /// constructor reports.
+    /// </remarks>
     public class MemoryBufferNodeManagerFactory : IAsyncNodeManagerFactory
     {
         /// <inheritdoc/>
         public ValueTask<IAsyncNodeManager> CreateAsync(IServerInternal server, ApplicationConfiguration configuration, CancellationToken cancellationToken = default)
         {
+            // use suitable defaults if no configuration exists.
+            MemoryBufferConfiguration bufferConfiguration =
+                configuration.ParseExtension<MemoryBufferConfiguration>() ??
+                new MemoryBufferConfiguration();
+
 #pragma warning disable CA2000 // Justification: ownership of the node manager transfers to the caller.
-            return new ValueTask<IAsyncNodeManager>(new MemoryBufferNodeManager(server, configuration));
+            return new ValueTask<IAsyncNodeManager>(new MemoryBufferNodeManager(server, configuration, bufferConfiguration));
 #pragma warning restore CA2000
         }
 
         /// <inheritdoc/>
-        public ArrayOf<string> NamespacesUris
-        {
-            get
-            {
-                var nameSpaces = new List<string> {
-                    Namespaces.MemoryBuffer,
-                    Namespaces.MemoryBuffer + "/Instance"
-                };
-                return nameSpaces;
-            }
-        }
+        public ArrayOf<string> NamespacesUris => [Namespaces.MemoryBuffer, Namespaces.MemoryBuffer + "/Instance"];
     }
 
     /// <summary>
     /// A node manager for a variety of memory buffers.
     /// </summary>
     /// <remarks>
-    /// The buffers publish their values straight into the monitored items, so this
-    /// node manager stays a hand-written <see cref="AsyncCustomNodeManager"/> and
-    /// takes over the per-item monitored item overrides instead of opting in to
-    /// the fluent surface: the tags do not exist as nodes, and the standard
-    /// machinery must stay out of the loop.
+    /// <para>
+    /// The <c>[NodeManager]</c> attribute opts this partial class in to source
+    /// generation: the generator emits a sibling partial which derives from
+    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
+    /// <c>MemoryBufferDesign.xml</c> - the MemoryBuffers folder below the Objects
+    /// folder - and calls <see cref="Configure"/> once the address space is in
+    /// place. The generated constructor reports the instance namespace named by
+    /// <c>AdditionalNamespaceUris</c> next to the namespace of the type model, so
+    /// the master node manager routes the buffers and their tags here from the
+    /// start. The factory stays hand-written, see
+    /// <see cref="MemoryBufferNodeManagerFactory"/> for why.
+    /// </para>
+    /// <para>
+    /// The buffers publish their values straight into the monitored items and the
+    /// tags do not exist as nodes: a tag is synthesized from its node id for the
+    /// duration of one service call. The fluent surface has no hook for either -
+    /// there is no way to resolve a node id which is not a predefined node, and no
+    /// way to refuse a monitored item at creation or to take over its
+    /// modification, deletion and monitoring mode changes (tracked as SDK issues
+    /// OPCFoundation/UA-.NETStandard#4397 and OPCFoundation/UA-.NETStandard#4399).
+    /// Until those land, this partial keeps the <see cref="GetManagerHandleAsync"/>
+    /// override and the four monitored item overrides, which the generated partial
+    /// leaves free: it only owns the predefined node loading, the address space
+    /// creation and the node added, node removed and monitored item created hooks.
+    /// </para>
     /// </remarks>
-    public class MemoryBufferNodeManager : AsyncCustomNodeManager
+    [NodeManager(
+        NamespaceUri = "http://samples.org/UA/MemoryBuffer",
+        AdditionalNamespaceUris = new[] { "http://samples.org/UA/MemoryBuffer/Instance" },
+        GenerateFactory = false)]
+    public partial class MemoryBufferNodeManager
     {
         #region Constructors
         /// <summary>
-        /// Initializes the node manager.
+        /// Initializes the node manager with the buffers to expose.
         /// </summary>
-        public MemoryBufferNodeManager(IServerInternal server, ApplicationConfiguration configuration)
+        /// <remarks>
+        /// Chains to the generated constructor, which reports both namespaces to
+        /// the base node manager and installs this node manager as the node id
+        /// factory of the system context.
+        /// </remarks>
+        public MemoryBufferNodeManager(IServerInternal server, ApplicationConfiguration configuration, MemoryBufferConfiguration bufferConfiguration)
         :
-            base(server, configuration, Namespaces.MemoryBuffer, Namespaces.MemoryBuffer + "/Instance")
+            this(server, configuration)
         {
-            SystemContext.NodeIdFactory = this;
-
-            Server.Factory.AddEncodeableTypes(typeof(MemoryBufferNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(MemoryBufferNodeManager).Namespace, StringComparison.Ordinal)));
-
-            // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<MemoryBufferConfiguration>();
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new MemoryBufferConfiguration();
-            }
-
+            m_configuration = bufferConfiguration ?? new MemoryBufferConfiguration();
             m_buffers = new Dictionary<string, MemoryBufferState>();
         }
         #endregion
 
-        #region INodeManager Members
+        #region Configure
         /// <summary>
-        /// Loads the predefined nodes generated from the model design.
-        /// </summary>
-        protected override ValueTask<NodeStateCollection> LoadPredefinedNodesAsync(ISystemContext context, CancellationToken cancellationToken = default)
-        {
-            return new ValueTask<NodeStateCollection>(new NodeStateCollection().AddMemoryBuffer(context));
-        }
-
-        /// <summary>
-        /// Does any initialization required before the address space can be used.
+        /// Creates the buffers the configuration declares once the predefined
+        /// nodes are in place.
         /// </summary>
         /// <remarks>
-        /// The externalReferences is an out parameter that allows the node manager to link to nodes
-        /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
-        /// should have a reference to the root folder node(s) exposed by this node manager.
+        /// The buffers are created imperatively rather than through the builder:
+        /// their node ids have to be the buffer names in the instance namespace,
+        /// because the tags are addressed as <c>buffer[offset]</c> in that namespace,
+        /// and the builder would mint ids of its own.
         /// </remarks>
-        public override async ValueTask CreateAddressSpaceAsync(IDictionary<NodeId, IList<IReference>> externalReferences, CancellationToken cancellationToken = default)
+        partial void Configure(INodeManagerBuilder builder)
         {
-            await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
+            Server.Factory.AddEncodeableTypes(typeof(MemoryBufferNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(MemoryBufferNodeManager).Namespace, StringComparison.Ordinal)));
 
             BaseInstanceState root = FindPredefinedNode<BaseInstanceState>(
                 new NodeId(Objects.MemoryBuffers, NamespaceIndexes[0]));
@@ -155,10 +171,15 @@ namespace MemoryBuffer
 
                     // link to root.
                     root.AddChild(bufferNode);
+
+                    // store it and its properties in the pre-defined nodes dictionary for easy look up.
+                    AddPredefinedNodeSynchronously(bufferNode);
                 }
             }
         }
+        #endregion
 
+        #region INodeManager Members
         /// <summary>
         /// Returns a unique handle for the node.
         /// </summary>
