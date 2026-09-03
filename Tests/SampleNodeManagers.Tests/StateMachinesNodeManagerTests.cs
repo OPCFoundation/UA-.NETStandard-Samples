@@ -146,6 +146,7 @@ namespace Opc.Ua.Samples.Tests
         {
             string state = await ReadOperationStateNameAsync(ct).ConfigureAwait(false);
             NodeId stateId = await ReadOperationStateIdAsync(ct).ConfigureAwait(false);
+            NodeId offNode = await OperationStateNodeAsync("Off", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
@@ -155,7 +156,7 @@ namespace Opc.Ua.Samples.Tests
 
                 Assert.That(
                     stateId,
-                    Is.EqualTo(OperationState(StateMachinesNodeManager.OffState)),
+                    Is.EqualTo(offNode),
                     "CurrentState/Id has to name the state node of the machine's own namespace.");
             });
         }
@@ -190,6 +191,7 @@ namespace Opc.Ua.Samples.Tests
 
             string running = await ReadOperationStateNameAsync(ct).ConfigureAwait(false);
             NodeId runningId = await ReadOperationStateIdAsync(ct).ConfigureAwait(false);
+            NodeId runningNode = await OperationStateNodeAsync("Running", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
@@ -198,7 +200,7 @@ namespace Opc.Ua.Samples.Tests
                     "Start has to move the machine from Idle to Running.");
                 Assert.That(
                     runningId,
-                    Is.EqualTo(OperationState(StateMachinesNodeManager.RunningState)),
+                    Is.EqualTo(runningNode),
                     "CurrentState/Id has to follow the state.");
             });
 
@@ -471,9 +473,21 @@ namespace Opc.Ua.Samples.Tests
         }
 
         #region Helpers
-        private NodeId OperationState(uint stateId)
+        /// <summary>
+        /// The node of one of the Operation machine's states, found by browsing for it.
+        /// </summary>
+        /// <remarks>
+        /// The state nodes are materialized by the stack, which mints their NodeIds from the
+        /// machine's own identifier and the state's browse name rather than from the numeric
+        /// id the sample declared - that number stays on the node as its state number. So the
+        /// node is browsed for by name instead of being computed, which is also what a client
+        /// comparing CurrentState/Id against a state would have to do.
+        /// </remarks>
+        private async Task<NodeId> OperationStateNodeAsync(string stateName, CancellationToken ct)
         {
-            return new NodeId(stateId, NamespaceIndex(StateMachinesNamespace));
+            NodeId machine = await OperationNodeAsync(ct).ConfigureAwait(false);
+
+            return await ChildAsync(machine, stateName, ct).ConfigureAwait(false);
         }
 
         private Task<NodeId> OperationNodeAsync(CancellationToken ct)
