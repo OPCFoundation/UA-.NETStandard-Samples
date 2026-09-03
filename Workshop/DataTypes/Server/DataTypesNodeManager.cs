@@ -27,95 +27,97 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-using System.Reflection;
+// the generated partial of the node manager loads the instance model through the
+// AddQuickstartsDataTypesInstances extension, which the generator emits into the
+// namespace of the model design (Quickstarts.DataTypes.Instances). It calls the
+// extension unqualified, and that only resolves when the namespace of the model
+// encloses the one of the node manager - here it is the other way round, so the
+// namespace is imported for the whole compilation.
+global using Quickstarts.DataTypes.Instances;
+
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
-using Opc.Ua.Server;
+using Opc.Ua.Server.Fluent;
 using Quickstarts.DataTypes.Types;
 
 namespace Quickstarts.DataTypes
 {
-    /// <summary>
-    /// The factory the server registers to create the node manager.
-    /// </summary>
-    public class DataTypesNodeManagerFactory : IAsyncNodeManagerFactory
-    {
-        /// <inheritdoc/>
-        public ValueTask<IAsyncNodeManager> CreateAsync(
-            IServerInternal server,
-            ApplicationConfiguration configuration,
-            CancellationToken cancellationToken = default)
-        {
-#pragma warning disable CA2000 // Justification: ownership of the node manager transfers to the caller.
-            return new ValueTask<IAsyncNodeManager>(
-                new DataTypesNodeManager(server, configuration));
-#pragma warning restore CA2000
-        }
-
-        /// <inheritdoc/>
-        public ArrayOf<string> NamespacesUris =>
-        [
-            Quickstarts.DataTypes.Namespaces.DataTypes,
-            Quickstarts.DataTypes.Types.Namespaces.DataTypes,
-            Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances
-        ];
-    }
-
     /// <summary>
     /// A node manager for a server that exposes custom data types.
     /// </summary>
     /// <remarks>
     /// The sample serves two models from one node manager: the vehicle type
     /// model compiled into the shared DataTypes Library, and the parking lot
-    /// instances compiled into this assembly. Loading both node sets into the
-    /// same manager is what links the instances to their types.
+    /// instances compiled into this assembly. Both are built by the OPC UA
+    /// source generator from their model designs; the instance model subtypes
+    /// the vehicle structures and uses the driver type across the project
+    /// boundary, and the generated code refers to the types of the library.
+    /// <para>
+    /// The <c>[NodeManager]</c> attribute opts this partial class in to source
+    /// generation: the generator emits a sibling partial which loads the
+    /// predefined nodes generated from <c>ModelDesign2.xml</c> and calls
+    /// <c>Configure</c> once the address space is in place, and it
+    /// emits the <c>DataTypesNodeManagerFactory</c> the server registers to
+    /// create this node manager. The attribute selects the instance model by
+    /// its namespace URI - spelled out because the generated Namespaces
+    /// constants are produced by the same generator that reads this
+    /// attribute - and names the two further namespaces the node manager
+    /// serves: the type model of the library, and the namespace of the
+    /// server itself. Loading both models into the same manager is what
+    /// links the instances to their types.
+    /// </para>
     /// </remarks>
-    public class DataTypesNodeManager : AsyncCustomNodeManager
+    [NodeManager(
+        NamespaceUri = "http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances",
+        AdditionalNamespaceUris = new[] {
+            Quickstarts.DataTypes.Types.Namespaces.DataTypes,
+            Quickstarts.DataTypes.Namespaces.DataTypes
+        })]
+    public partial class DataTypesNodeManager
     {
-        #region Constructors
-        /// <summary>
-        /// Initializes the node manager.
-        /// </summary>
-        public DataTypesNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-        :
-            base(server, configuration,
-                Quickstarts.DataTypes.Namespaces.DataTypes,
-                Quickstarts.DataTypes.Types.Namespaces.DataTypes,
-                Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances)
-        {
-            // register the encodeable types of both models so the values of the
-            // custom structures can be decoded and encoded by the server. the
-            // vehicle types of the library are source generated from its model
-            // design and come with a registration extension of their own; the
-            // instance model is still built by the ModelCompiler and its types
-            // are picked up by reflection.
-            Server.Factory.Builder.AddQuickstartsDataTypesTypes().Commit();
-            Server.Factory.AddEncodeableTypes(typeof(DataTypesNodeManager).GetTypeInfo().Assembly);
-        }
-        #endregion
-
         #region Overridden Methods
         /// <summary>
-        /// Loads the node sets of both models from their embedded resources and
-        /// adds them to the set of predefined nodes.
+        /// Registers the encodeable types of both models and adds the nodes of
+        /// the vehicle type model before the instance model generated into this
+        /// assembly is loaded.
         /// </summary>
-        protected override ValueTask<NodeStateCollection> LoadPredefinedNodesAsync(
+        /// <remarks>
+        /// The generated partial only loads the model it was generated from,
+        /// so the nodes of the type model the instances depend on are added
+        /// here, in dependency order, from the extension the generator emitted
+        /// into the library. The base call then loads the instance model and
+        /// links both to the rest of the address space. The sample has nothing
+        /// to wire in <c>Configure</c>: the values of the parking lot are what
+        /// the model declares, and reading and writing them is what the base
+        /// node manager does on its own.
+        /// </remarks>
+        protected override async ValueTask LoadPredefinedNodesAsync(
             ISystemContext context,
+            IDictionary<NodeId, IList<IReference>> externalReferences,
             CancellationToken cancellationToken = default)
         {
-            NodeStateCollection predefinedNodes = new NodeStateCollection();
+            // register the encodeable types of both models so the values of the
+            // custom structures can be decoded and encoded by the server. both
+            // models are source generated from their model designs and come with
+            // a registration extension of their own. the generated node sets keep
+            // the default values of the model as encoded XML which is decoded when
+            // the nodes are created, so the types have to be known before that.
+            Server.Factory.Builder
+                .AddQuickstartsDataTypesTypes()
+                .AddQuickstartsDataTypesInstances()
+                .Commit();
 
-            predefinedNodes.LoadFromBinaryResource(context,
-                "Quickstarts.DataTypes.Types.Quickstarts.DataTypes.Types.PredefinedNodes.uanodes",
-                typeof(Quickstarts.DataTypes.Types.VehicleType).Assembly,
-                true);
-            predefinedNodes.LoadFromBinaryResource(context,
-                "Quickstarts.DataTypes.Instances.Quickstarts.DataTypes.Instances.PredefinedNodes.uanodes",
-                typeof(DataTypesNodeManager).GetTypeInfo().Assembly,
-                true);
+            NodeStateCollection typeNodes = new NodeStateCollection()
+                .AddQuickstartsDataTypesTypes(context);
 
-            return new ValueTask<NodeStateCollection>(predefinedNodes);
+            foreach (NodeState node in typeNodes)
+            {
+                await AddPredefinedNodeAsync(context, node, cancellationToken).ConfigureAwait(false);
+            }
+
+            await base.LoadPredefinedNodesAsync(context, externalReferences, cancellationToken).ConfigureAwait(false);
         }
         #endregion
     }
