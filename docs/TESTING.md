@@ -353,9 +353,16 @@ enabling, and the refresh replays one dialog per source until somebody answers i
 
 ### Recorded issues
 
-Nothing is recorded as a known issue right now: the last two entries paid out when their
-node managers were migrated. The mechanism stays, because it is what made that happen. An
-expectation written the way the sample is *meant* to behave is reported as **ignored**
+Two expectations are recorded right now, both in `DataTypesNodeManagerTests`: the structure
+default value of `ParkingLot/DriverOfTheMonth/PrimaryVehicle` arrives as an extension object
+without a `TypeId`, and the registered activator therefore cannot turn it back into a
+`BicycleType`. The source generator of 2.0.0-preview.4 emits a design's structured
+`DefaultValue` as bare XML, and the XML decoder of the stack leaves an extension object
+without a `TypeId` undecoded
+([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401)); the
+entries pay out when the stack ships the fix. Before that the last two entries paid out when
+their node managers were migrated. The mechanism stays, because it is what made that happen.
+An expectation written the way the sample is *meant* to behave is reported as **ignored**
 through `KnownIssue.RecordAsync`, and - like `s_knownIssues` in Tier 1 - an entry fails the
 moment it starts passing, so it cannot rot. That has already happened six times. Three were
 expectations that were wrong about the harness rather than about the sample, one of them

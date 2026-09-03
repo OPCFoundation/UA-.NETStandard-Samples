@@ -47,8 +47,10 @@ no `TypeId`, and the XML decoder of the SDK only resolves a body by its type id,
 its element name (`XmlDecoder.ReadExtensionObjectBody`). The structured default values
 of the sample - the driver's `PrimaryVehicle`, the `VehiclesInLot` - therefore load as raw
 XML with a null type id, which a client cannot decode; values a client writes round-trip
-as before. Two of the node manager tests of the sample fail because of it until the SDK
-resolves such bodies by their XML name.
+as before. Two of the node manager tests of the sample record this as a known issue
+([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401))
+and start failing the moment the SDK resolves such bodies, which is when the wrappers come
+off.
 
 ## How to integrate new information model into OPC Server
 
