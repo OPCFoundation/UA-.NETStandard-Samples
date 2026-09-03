@@ -158,6 +158,52 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// An archive item carries the companion object which describes how its
+        /// history was recorded.
+        /// </summary>
+        /// <remarks>
+        /// Part 11 §5.2.3 hangs a HistoricalDataConfigurationType object off the
+        /// variable with a HasHistoricalConfiguration reference, and clients decide
+        /// what to offer from it: the shared history control of this repository reads
+        /// Stepped through exactly this browse path and falls back to a live
+        /// subscription for a node which does not answer, so an item whose companion
+        /// object is unreachable silently loses every history feature in the UI.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ItemsCarryTheirHistoricalConfiguration(CancellationToken ct)
+        {
+            NodeId item = await ResolveSampleItemAsync(ct).ConfigureAwait(false);
+
+            NodeId stepped = await ResolveFromAsync(
+                item,
+                ct,
+                new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration),
+                new QualifiedName(Opc.Ua.BrowseNames.Stepped)).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"HA Configuration/Stepped of the double item: {stepped}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                stepped,
+                Is.Not.EqualTo(NodeId.Null),
+                "An archive item has to expose HA Configuration/Stepped, or a client cannot " +
+                "tell that its history is worth reading.");
+
+            DataValue value = await SessionOps.ReadValueAsync(Session, stepped, ct).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Stepped = {value.WrappedValue} ({value.StatusCode})")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(value.StatusCode),
+                Is.True,
+                $"Reading Stepped of an archive item failed: {value.StatusCode}");
+        }
+
+        /// <summary>
         /// A raw read returns the recorded values in order.
         /// </summary>
         [Test]
