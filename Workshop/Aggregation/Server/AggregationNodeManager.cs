@@ -34,6 +34,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AggregationModel;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
@@ -148,11 +149,25 @@ namespace AggregationServer
     /// <remarks>
     /// The <c>[NodeManager]</c> attribute opts this partial class in to source
     /// generation: the generator emits a sibling partial which derives from
-    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
-    /// <c>Model/ModelDesign.xml</c> and calls <see cref="Configure"/> once the
-    /// address space is in place. The factory stays hand written
+    /// <c>FluentNodeManagerBase</c>, loads the predefined nodes generated from
+    /// <c>Model/ModelDesign.xml</c>, calls <see cref="Configure"/> once the
+    /// address space is in place and then publishes the references Configure
+    /// made to nodes of other node managers. The factory stays hand written
     /// (<c>GenerateFactory = false</c>) because the server creates one manager
     /// per aggregated endpoint, with arguments a generated factory cannot know.
+    ///
+    /// The fluent builder covers the part of the address space this manager
+    /// owns outright: the root folder and the status object below it.
+    /// Everything else is a proxy over an address space which is materialised
+    /// lazily, one node per operation, from the aggregated server - and the
+    /// builder wires behaviour to nodes which exist when Configure runs. The
+    /// service overrides below therefore stay: browsing
+    /// (<see cref="OnCreateBrowser"/>), handle resolution and validation, the
+    /// batched Read, Write and Call forwarding, the monitored item hooks and
+    /// the event subscription forwarding. The SDK has no fluent counterpart
+    /// for a node handle resolver, for manager level batch fallbacks or for an
+    /// asynchronous monitored item completion callback; the issues
+    /// OPCFoundation/UA-.NETStandard#4397, #4398 and #4399 track those hooks.
     /// </remarks>
     [NodeManager(GenerateFactory = false)]
     public partial class AggregationNodeManager
@@ -223,11 +238,6 @@ namespace AggregationServer
                 m_metadataUpdateCancellation?.Cancel();
                 m_metadataUpdateCancellation?.Dispose();
                 m_metadataUpdateCancellation = null;
-                if (m_sessionManager != null)
-                {
-                    m_sessionManager.SessionClosing -= SessionManager_SessionClosing;
-                    m_sessionManager = null;
-                }
                 m_root = null;
                 m_status = null;
             }
@@ -261,19 +271,13 @@ namespace AggregationServer
         /// <remarks>
         /// The server creates one node manager per aggregated endpoint but the
         /// aggregation type model must only be published once, by the first
-        /// instance. The external reference dictionary is remembered so
-        /// <see cref="Configure"/> can link the dynamically created root to the
-        /// Objects folder and the Server object: the master node manager
-        /// distributes the dictionary only after every node manager created its
-        /// address space, so entries added during Configure are honoured.
+        /// instance.
         /// </remarks>
         protected override async ValueTask LoadPredefinedNodesAsync(
             ISystemContext context,
             IDictionary<NodeId, IList<IReference>> externalReferences,
             CancellationToken cancellationToken = default)
         {
-            m_externalReferences = externalReferences;
-
             if (m_ownsTypeModel)
             {
                 await base.LoadPredefinedNodesAsync(context, externalReferences, cancellationToken).ConfigureAwait(false);
@@ -303,42 +307,37 @@ namespace AggregationServer
             root.EventNotifier = EventNotifiers.SubscribeToEvents;
             root.OnCreateBrowser = OnCreateBrowser;
 
-            // link root to objects folder and to the server object.
-            root.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
-            AddExternalReference(ObjectIds.ObjectsFolder, ReferenceTypeIds.Organizes, false, root.NodeId, m_externalReferences);
-
-            root.AddReference(Opc.Ua.ReferenceTypeIds.HasNotifier, true, ObjectIds.Server);
-            AddExternalReference(ObjectIds.Server, ReferenceTypeIds.HasNotifier, false, root.NodeId, m_externalReferences);
-
             AddPredefinedNodeSynchronously(root);
 
-            // create the status object which reports the connection to the aggregated server.
-            AggregationModel.AggregatedServerStatusState status = m_status = new AggregationModel.AggregatedServerStatusState(null);
+            // place the root below the objects folder and make it a notifier of the
+            // server object. both are nodes of other node managers, so only the inverse
+            // references are added here: the generated partial publishes the forward
+            // references to their owners once Configure returns, and registers the
+            // root as a root notifier on the way.
+            builder.Node(root.NodeId)
+                .UnderObjectsFolder()
+                .AddReference(ReferenceTypeIds.HasNotifier, true, ObjectIds.Server);
 
-            status.Create(
-                SystemContext,
-                GenerateNodeId(),
-                new QualifiedName("Status", NamespaceIndex),
-                LocalizedText.Null,
-                true);
+            // create the status object which reports the connection to the aggregated
+            // server. the generated factory builds the properties the type declares and
+            // assigns their node ids through New; the builder hangs the object below the
+            // root and registers it. the property values are updated through the bound
+            // updaters, which report the change to monitored items themselves.
+            var statusName = new QualifiedName("Status", NamespaceIndex);
 
-            status.EndpointUrl.Value = m_endpoint.EndpointUrl.ToString();
-            status.Status.Value = StatusCodes.BadNotConnected;
-            status.ConnectTime.Value = DateTime.MinValue;
+            m_status = builder.Node(root.NodeId)
+                .CreateInstance(statusName, parent => SystemContext.CreateInstanceOfAggregatedServerStatusType(parent, statusName))
+                .Configure(status => {
+                    // the builder attaches the object as a component; a folder organizes.
+                    status.Node.ReferenceTypeId = ReferenceTypeIds.Organizes;
 
-            status.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, root.NodeId);
-            root.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, status.NodeId);
+                    status.Properties().EndpointUrl().Bind(out m_endpointUrl);
+                    status.Properties().Status().Bind(out m_connectionStatus);
+                    status.Properties().ConnectTime().Bind(out m_connectTime);
+                })
+                .Node;
 
-            AddPredefinedNodeSynchronously(status);
-
-            // Close the downstream session that was opened for a client session
-            // as soon as that client session is closed, so connections to the
-            // underlying servers are not leaked when clients disconnect (issue #26).
-            m_sessionManager = Server.SessionManager;
-            if (m_sessionManager != null)
-            {
-                m_sessionManager.SessionClosing += SessionManager_SessionClosing;
-            }
+            ReportConnectionState(StatusCodes.BadNotConnected, DateTimeUtc.MinValue);
 
             // periodically connect to the aggregated server and refresh its
             // metadata. the loop replaces the timer of the synchronous manager
@@ -634,23 +633,10 @@ namespace AggregationServer
                     continue;
                 }
 
+                // only nodes of the aggregated server get this far: the handles of
+                // the local nodes carry their node, so the base class reads those
+                // itself and never asks for them to be validated.
                 ReadValueId nodeToRead = nodesToRead[handle.Index];
-
-                // read local nodes directly.
-                if (PredefinedNodes.ContainsKey(source.NodeId))
-                {
-                    DataValue value = values[handle.Index];
-                    (errors[handle.Index], value) = await source.ReadAttributeAsync(
-                        context,
-                        nodeToRead.AttributeId,
-                        nodeToRead.ParsedIndexRange,
-                        nodeToRead.DataEncoding,
-                        value,
-                        cancellationToken).ConfigureAwait(false);
-                    values[handle.Index] = value;
-
-                    continue;
-                }
 
                 ReadValueId request = (ReadValueId)nodeToRead.MemberwiseClone();
                 request.NodeId = m_mapper.ToRemoteId(nodeToRead.NodeId);
@@ -744,32 +730,9 @@ namespace AggregationServer
                     continue;
                 }
 
+                // only nodes of the aggregated server get this far, for the same
+                // reason as in ReadAsync.
                 WriteValue nodeToWrite = nodesToWrite[handle.Index];
-
-                // write local nodes directly.
-                if (PredefinedNodes.ContainsKey(source.NodeId))
-                {
-                    await m_writeSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                    try
-                    {
-                        // write the attribute value.
-                        errors[handle.Index] = await source.WriteAttributeAsync(
-                            context,
-                            nodeToWrite.AttributeId,
-                            nodeToWrite.ParsedIndexRange,
-                            nodeToWrite.Value,
-                            cancellationToken).ConfigureAwait(false);
-
-                        // updates to source finished - report changes to monitored items.
-                        await source.ClearChangeMasksAsync(context, false, cancellationToken).ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        m_writeSemaphore.Release();
-                    }
-
-                    continue;
-                }
 
                 WriteValue request = (WriteValue)nodeToWrite.MemberwiseClone();
                 request.NodeId = m_mapper.ToRemoteId(nodeToWrite.NodeId);
@@ -1745,10 +1708,7 @@ namespace AggregationServer
                     m_root.DisplayName = new LocalizedText(m_root.BrowseName.Name);
                     await m_root.ClearChangeMasksAsync(SystemContext, false, cancellationToken).ConfigureAwait(false);
 
-                    m_status.EndpointUrl.Value = m_endpoint.EndpointUrl.ToString();
-                    m_status.Status.Value = StatusCodes.Good;
-                    m_status.ConnectTime.Value = DateTime.UtcNow;
-                    await m_status.ClearChangeMasksAsync(SystemContext, true, cancellationToken).ConfigureAwait(false);
+                    ReportConnectionState(StatusCodes.Good, DateTimeUtc.Now);
                 }
                 return clientSession;
             }
@@ -1773,10 +1733,7 @@ namespace AggregationServer
                     m_root.DisplayName = new LocalizedText(m_endpoint.EndpointUrl.ToString() + $" Status: ({trimmedMessage})");
                     await m_root.ClearChangeMasksAsync(SystemContext, false, CancellationToken.None).ConfigureAwait(false);
 
-                    m_status.EndpointUrl.Value = m_endpoint.EndpointUrl.ToString();
-                    m_status.Status.Value = StatusCodes.BadNotConnected;
-                    m_status.ConnectTime.Value = DateTime.MinValue;
-                    await m_status.ClearChangeMasksAsync(SystemContext, true, CancellationToken.None).ConfigureAwait(false);
+                    ReportConnectionState(StatusCodes.BadNotConnected, DateTimeUtc.MinValue);
                 }
 
                 throw new ServiceResultException(StatusCodes.BadNotConnected, "Server not connected.");
@@ -1932,13 +1889,9 @@ namespace AggregationServer
         }
 
         /// <summary>
-        /// Returns the subscription used to forward monitored items to the
-        /// aggregated server, creating it on first use. The caller must hold the
-        /// subscription lock of the client session.
-        /// </summary>
-        /// <summary>
         /// Returns the subscription this client session forwards to the aggregated
-        /// server, creating it on first use.
+        /// server, creating it on first use. The caller must hold the subscription
+        /// lock of the client session.
         /// </summary>
         /// <remarks>
         /// The handler is created here rather than cached anywhere: it closes over the
@@ -2054,36 +2007,49 @@ namespace AggregationServer
 
         /// <summary>
         /// Closes the downstream session opened for a client session when that
-        /// client session is closed on the aggregation server (issue #26).
+        /// client session is closed on the aggregation server, so connections to
+        /// the underlying servers are not leaked when clients disconnect (issue #26).
         /// </summary>
-        private void SessionManager_SessionClosing(Opc.Ua.Server.ISession session, Opc.Ua.Server.SessionEventReason reason)
+        /// <remarks>
+        /// The master node manager tells every node manager about the closing
+        /// session, so there is no session manager event to subscribe to.
+        /// </remarks>
+        public override ValueTask SessionClosingAsync(
+            OperationContext context,
+            NodeId sessionId,
+            bool deleteSubscriptions,
+            CancellationToken cancellationToken = default)
         {
-            NodeId clientSessionId = session?.Id ?? NodeId.Null;
-            if (clientSessionId.IsNull)
+            AggregationClientSession clientSession = null;
+
+            if (!sessionId.IsNull)
             {
-                return;
+                lock (m_clientsLock)
+                {
+                    // never tear down the internal metadata session.
+                    if (m_clients.TryGetValue(sessionId, out clientSession) &&
+                        clientSession != null &&
+                        !clientSession.IsMetaDataSession)
+                    {
+                        m_clients.Remove(sessionId);
+                    }
+                    else
+                    {
+                        clientSession = null;
+                    }
+                }
             }
 
-            AggregationClientSession clientSession;
-            lock (m_clientsLock)
+            if (clientSession != null)
             {
-                if (!m_clients.TryGetValue(clientSessionId, out clientSession) || clientSession == null)
-                {
-                    return;
-                }
-
-                // never tear down the internal metadata session.
-                if (clientSession.IsMetaDataSession)
-                {
-                    return;
-                }
-
-                m_clients.Remove(clientSessionId);
+                // the close of the downstream session is bounded but may still take
+                // seconds, and the master node manager waits for every node manager
+                // before the client session is gone, so it runs on a background task
+                // which outlives the service call and its token.
+                _ = Task.Run(() => CloseDownstreamSessionAsync(sessionId, clientSession), CancellationToken.None);
             }
 
-            // Event sinks must not block the session manager thread, so close the
-            // downstream session on a background task.
-            _ = Task.Run(() => CloseDownstreamSessionAsync(clientSessionId, clientSession));
+            return base.SessionClosingAsync(context, sessionId, deleteSubscriptions, cancellationToken);
         }
 
         /// <summary>
@@ -2210,6 +2176,21 @@ namespace AggregationServer
         }
 
         /// <summary>
+        /// Reports the state of the connection to the aggregated server through
+        /// the status object.
+        /// </summary>
+        /// <remarks>
+        /// The endpoint url is reported again on every change because the
+        /// endpoint may have been updated from the server while connecting.
+        /// </remarks>
+        private void ReportConnectionState(StatusCode status, DateTimeUtc connectTime)
+        {
+            m_endpointUrl.SetValue(m_endpoint.EndpointUrl.ToString());
+            m_connectionStatus.SetValue(status);
+            m_connectTime.SetValue(connectTime);
+        }
+
+        /// <summary>
         /// Generates a new node id.
         /// </summary>
         private NodeId GenerateNodeId()
@@ -2226,18 +2207,19 @@ namespace AggregationServer
         private readonly Dictionary<NodeId, AggregationClientSession> m_clients;
         private readonly object m_clientsLock;
         private readonly uint m_sessionTimeout;
-        private Opc.Ua.Server.ISessionManager m_sessionManager;
         private AggregatedTypeCache m_typeCache;
         private volatile bool m_typeCacheInitialized;
         private CancellationTokenSource m_metadataUpdateCancellation;
-        private IDictionary<NodeId, IList<IReference>> m_externalReferences;
         private NamespaceMapper m_mapper;
         // Justification: the nodes are owned by the predefined node table and
         // released by DeleteAddressSpaceAsync of the base class.
 #pragma warning disable CA2213
         private FolderState m_root;
-        private AggregationModel.AggregatedServerStatusState m_status;
+        private AggregatedServerStatusState m_status;
 #pragma warning restore CA2213
+        private IValueUpdater<string> m_endpointUrl;
+        private IValueUpdater<StatusCode> m_connectionStatus;
+        private IValueUpdater<DateTimeUtc> m_connectTime;
         #endregion
     }
 
