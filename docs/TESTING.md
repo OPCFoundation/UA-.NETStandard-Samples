@@ -33,12 +33,15 @@ behaviour the sample was written to show. Tier 1 would not notice any of that.
 Three properties of the samples make headless testing cheap:
 
 1. **Server `Main` methods are UI-free until the last line.** Every sample server registers
-   itself with `AddSampleServer<XServer>(configurationFile)` and lets the hosted server of the
+   itself through a composition root next to its entry point (`AddXServer()` in
+   `XServerHosting.cs`: the server class, its configuration file and its node managers, the
+   latter registered with the server builder of the stack) and lets the hosted server of the
    stack load the configuration file, check the certificate and start the server; only *then*
    is the main form resolved from the container and shown. See
-   [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is `public` and derives
-   from `StandardServer`, so a test starts the real server object with the real config file
-   and never touches WinForms.
+   [`Samples/Hosting`](../Samples/Hosting/README.md). A test hosts the sample through that
+   same composition root in a generic host with the real config file, so it exercises the
+   real server object, the real node manager registration and the real bootstrap, and never
+   touches WinForms.
 2. **Every WinForms client uses the same control under the same name.** All client
    `MainForm.Designer.cs` files declare `private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;`,
    and that control exposes `ConnectAsync()`, `Session` and `ConnectComplete`. One reflection
@@ -82,8 +85,9 @@ tiers iterate that table, so a sample that is not in the catalog is not tested; 
 additionally globs the repo for `*.Config.xml` so new configs cannot be silently forgotten.
 
 Two factory tables pair those entries with the sample code: `SampleServerFactories`
-(`Samples.Servers.Hosting`) knows how each sample creates its server, `SampleClientFactories`
-(`SampleClients.Tests`) how each creates its main form. Both are written out rather than
+(`Samples.Servers.Hosting`) knows the composition root each sample server is registered
+with (`services.AddXServer(configurationFile, configure)`), `SampleClientFactories`
+(`SampleClients.Tests`) how each client creates its main form. Both are written out rather than
 resolved by reflection on purpose: renaming or removing a sample then breaks the build of the
 tests, which is the earliest and clearest moment to notice. A sample without a factory has to
 be listed as a known gap, so it cannot drop out unnoticed.
