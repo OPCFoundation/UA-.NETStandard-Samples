@@ -109,7 +109,7 @@ namespace Opc.Ua.Samples.Tests
                 ct: ct).ConfigureAwait(false);
 
             await using SampleServerHost managedServer = await SampleServerHost
-                .StartAsync(kManagedServerSample, managed.Sample.ServerConfig, managed.CreateServer, ct)
+                .StartAsync(kManagedServerSample, managed.Sample.ServerConfig, managed.ConfigureServices, ct)
                 .ConfigureAwait(false);
 
             var phase = new ClientPhase();

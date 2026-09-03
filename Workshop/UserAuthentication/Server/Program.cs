@@ -59,7 +59,7 @@ namespace Quickstarts.UserAuthenticationServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<UserAuthenticationServer>("Quickstarts.UserAuthenticationServer.Config.xml"),
+                    .AddUserAuthenticationServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

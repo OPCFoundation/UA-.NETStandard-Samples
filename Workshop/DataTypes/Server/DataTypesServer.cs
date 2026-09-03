@@ -49,9 +49,6 @@ namespace Quickstarts.DataTypes
     {
         public DataTypesServer(ITelemetryContext telemetry) : base(telemetry)
         {
-            // register the node manager factory. the server creates the node manager
-            // from it while it builds the master node manager on startup.
-            AddNodeManager(new DataTypesNodeManagerFactory());
         }
 
         #region Overridden Methods

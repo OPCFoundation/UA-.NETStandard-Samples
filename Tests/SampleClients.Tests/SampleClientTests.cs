@@ -214,7 +214,7 @@ namespace Opc.Ua.Samples.Tests
                 .Single(entry => entry.Sample.Name == client.Sample.Name);
 
             await using SampleServerHost host = await SampleServerHost
-                .StartAsync(client.Sample.Name, server.Sample.ServerConfig, server.CreateServer, ct)
+                .StartAsync(client.Sample.Name, server.Sample.ServerConfig, server.ConfigureServices, ct)
                 .ConfigureAwait(false);
 
             await WinFormsHarness.RunAsync(
@@ -294,7 +294,7 @@ namespace Opc.Ua.Samples.Tests
                 .Single(entry => entry.Sample.Name == client.Sample.Name);
 
             await using SampleServerHost host = await SampleServerHost
-                .StartAsync(client.Sample.Name, server.Sample.ServerConfig, server.CreateServer, ct)
+                .StartAsync(client.Sample.Name, server.Sample.ServerConfig, server.ConfigureServices, ct)
                 .ConfigureAwait(false);
 
             DialogWatchdog watchdog = null;

@@ -59,7 +59,7 @@ namespace Quickstarts.DataTypes
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<DataTypesServer>("DataTypesServer.Config.xml"),
+                    .AddDataTypesServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

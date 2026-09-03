@@ -84,7 +84,7 @@ namespace Opc.Ua.Samples.Tests
                 .StartAsync(
                     server.Sample.Name,
                     server.Sample.ServerConfig,
-                    server.CreateServer,
+                    server.ConfigureServices,
                     configure: ConfigureServer)
                 .ConfigureAwait(false);
 

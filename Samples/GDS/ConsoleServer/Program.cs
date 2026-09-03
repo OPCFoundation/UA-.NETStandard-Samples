@@ -543,6 +543,13 @@ namespace Opc.Ua.Gds.Server
             builder.Logging.AddSampleConsole();
 
             builder.Services
+                // the OPC 10000-12 §7.10.16 ManagedApplications folder and the OPC 10000-21
+                // onboarding registrar: the stores they are backed by, and the node managers
+                // which serve them, registered with the container like the server itself.
+                .AddSingleton<IConfigurationDataStore>(CreateManagedApplicationsDataStore)
+                .AddSingleton<ITicketStore, MemoryTicketStore>()
+                .AddSampleNodeManager<ManagedApplicationsNodeManagerFactory>()
+                .AddSampleNodeManager<DeviceRegistrarNodeManagerFactory>()
                 .AddSampleServer(
                     "Opc.Ua.GlobalDiscoveryServer.Config.xml",
                     CreateServer,
@@ -620,9 +627,10 @@ namespace Opc.Ua.Gds.Server
             // server's AliasNames into a master list served by this GDS.
             m_aliasMerger = new GlobalDiscoveryServerAliasMerger(telemetry);
 
-            // OPC 10000-21: the onboarding tickets the registrar accepts. In memory here -
-            // a production registrar persists them.
-            m_ticketStore = new MemoryTicketStore();
+            // OPC 10000-21: the onboarding tickets the registrar accepts, kept so the
+            // interactive commands can list them. In memory here - a production registrar
+            // persists them.
+            m_ticketStore = provider.GetRequiredService<ITicketStore>();
 
             m_resetProvider = new SampleServerConfigurationResetProvider(config, telemetry);
 
@@ -636,14 +644,26 @@ namespace Opc.Ua.Gds.Server
                 telemetry,
                 m_aliasMerger,
                 true,
-                new GdsManagedApplicationsDataStore(
-                    database,
-                    Path.Combine(
-                        Path.GetDirectoryName(databaseStorePath) ?? string.Empty,
-                        "ManagedApplications"),
-                    telemetry),
-                m_ticketStore,
                 CreateServerConfigurationOptions(config, telemetry));
+        }
+
+        /// <summary>
+        /// Backs the OPC 10000-12 §7.10.16 ManagedApplications folder with the GDS database,
+        /// next to the database file. Resolved by the node manager factory once the server
+        /// - and with it the database - exists.
+        /// </summary>
+        private IConfigurationDataStore CreateManagedApplicationsDataStore(IServiceProvider provider)
+        {
+            ApplicationConfiguration config = provider.GetRequiredService<ApplicationConfiguration>();
+            GlobalDiscoveryServerConfiguration gdsConfiguration = config.ParseExtension<GlobalDiscoveryServerConfiguration>();
+            string databaseStorePath = Utils.ReplaceSpecialFolderNames(gdsConfiguration.DatabaseStorePath);
+
+            return new GdsManagedApplicationsDataStore(
+                m_database,
+                Path.Combine(
+                    Path.GetDirectoryName(databaseStorePath) ?? string.Empty,
+                    "ManagedApplications"),
+                provider.GetRequiredService<ITelemetryContext>());
         }
 
         /// <summary>

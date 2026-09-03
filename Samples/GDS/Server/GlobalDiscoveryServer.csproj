@@ -35,6 +35,7 @@
     <Compile Include="..\Common\SampleApplicationConfigurationFileProvider.cs" Link="Common\SampleApplicationConfigurationFileProvider.cs" />
     <Compile Include="..\Common\SampleServerConfigurationResetProvider.cs" Link="Common\SampleServerConfigurationResetProvider.cs" />
     <Compile Include="..\Common\DeviceRegistrarNodeManager.cs" Link="Common\DeviceRegistrarNodeManager.cs" />
+    <Compile Include="..\Common\GdsNodeManagerFactories.cs" Link="Common\GdsNodeManagerFactories.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.11" />

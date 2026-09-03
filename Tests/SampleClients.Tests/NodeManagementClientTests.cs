@@ -67,7 +67,7 @@ namespace Opc.Ua.Samples.Tests
                 .Single(entry => entry.Sample.Name == kSample);
 
             await using SampleServerHost host = await SampleServerHost
-                .StartAsync(kSample, server.Sample.ServerConfig, server.CreateServer, ct)
+                .StartAsync(kSample, server.Sample.ServerConfig, server.ConfigureServices, ct)
                 .ConfigureAwait(false);
 
             await WinFormsHarness.RunAsync(

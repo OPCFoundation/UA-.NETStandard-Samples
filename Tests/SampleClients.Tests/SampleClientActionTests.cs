@@ -900,7 +900,7 @@ namespace Opc.Ua.Samples.Tests
                 .Single(entry => entry.Sample.Name == sampleName);
 
             await using SampleServerHost host = await SampleServerHost
-                .StartAsync(sampleName, server.Sample.ServerConfig, server.CreateServer, ct)
+                .StartAsync(sampleName, server.Sample.ServerConfig, server.ConfigureServices, ct)
                 .ConfigureAwait(false);
 
             DialogWatchdog watchdog = null;

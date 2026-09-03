@@ -66,7 +66,7 @@ namespace Quickstarts.HistoricalEvents.Server
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<HistoricalEventsServer>("HistoricalEventsServer.Config.xml"),
+                    .AddHistoricalEventsServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }
