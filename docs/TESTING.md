@@ -288,10 +288,15 @@ is what every other sample in the repository uses.
 
 ### Known issues
 
-`s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests`) reports a
-listed sample as **ignored** rather than failed, and fails the moment it starts working, so
-an entry cannot rot. Both lists are used sparingly: a sample that is broken is worth fixing,
-not parking. Both lists are currently empty.
+`s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests` and
+`WorkshopClientSubscriptionTests`) reports a listed sample as **ignored** rather than failed,
+and fails the moment it starts working, so an entry cannot rot. The lists are used sparingly:
+a sample that is broken is worth fixing, not parking.
+
+Recorded right now, in the subscription list: the StateMachines client never sees its Start
+cause become executable once the machine is Idle. It fails identically on every current
+package set, so it is a defect in how the sample and the stack report Executable for causes,
+not a package-lag issue - worth fixing, at which point the entry pays out.
 
 ## What Tier 1.5 checks today
 
