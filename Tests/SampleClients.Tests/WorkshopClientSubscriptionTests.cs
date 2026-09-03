@@ -153,15 +153,9 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         private static readonly IReadOnlyDictionary<string, string> s_knownIssues =
             new Dictionary<string, string>(StringComparer.Ordinal) {
-                // the client reads the Executable attribute to decide which causes to
-                // offer, and the server only reports it per state with UA-.NETStandard
-                // #4368 - which landed one master build after the 2.0.262.32744-preview
-                // package set this repository pins, and every later GitHub Packages
-                // publish failed on an unrelated signing error. The first newer package
-                // set lifts this.
-                ["StateMachines"] =
-                    "offering the causes needs UA-.NETStandard #4368, which is newer " +
-                    "than the 2.0.262.32744-preview packages the samples build against",
+                // empty on purpose: the one entry this list ever had - the StateMachines
+                // client, whose cause offering needed UA-.NETStandard #4368 - paid out
+                // when the packages caught up with that change.
             };
 
         [Test]
