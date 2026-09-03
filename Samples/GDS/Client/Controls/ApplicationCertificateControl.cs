@@ -94,9 +94,15 @@ namespace Opc.Ua.Gds.Client
                 // the requested certificate's domain list (SANs). See issue #741.
                 if (application?.RegistrationType == RegistrationType.ServerPush
                     && server.Endpoint != null
-                    && !server.Endpoint.Description.ServerCertificate.IsNull)
+                    && server.Endpoint.Description.ServerCertificate.Length > 0)
                 {
-                    certificate = GdsCertificateLoader.LoadCertificate(server.Endpoint.Description.ServerCertificate.ToArray());
+                    // Length, not IsNull: an EndpointDescription that carries no certificate
+                    // holds an empty ByteString rather than a null one, and a server only
+                    // fills the field for an Endpoint that requires encryption. Selecting a
+                    // SecurityPolicy=None Endpoint therefore used to hand an empty array to
+                    // the loader, which reports it as "ASN1 corrupted data".
+                    certificate = GdsCertificateLoader.LoadCertificate(
+                        server.Endpoint.Description.ServerCertificate.ToArray());
                 }
                 else if (application != null)
                 {
@@ -198,6 +204,41 @@ namespace Opc.Ua.Gds.Client
         private async void NewKeyPairFromDerButton_Click(object sender, EventArgs e)
         {
             await CreatePfxFromCertificateInfoAsync().ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Opens the certificate list of the GDS (pull) or of the managed server (push).
+        /// </summary>
+        /// <remarks>
+        /// OPC 10000-12 v1.05.07 added a <c>GetCertificates</c> Method to both models
+        /// (§7.9.8 and §7.10.8), so a client no longer has to infer what a server holds from
+        /// the certificate its endpoint happens to present. The dialog also drives the
+        /// per-slot Methods that came with it - see
+        /// <see cref="Controls.CertificateManagementDialog"/>. A push Method only stages its
+        /// change, so a staged change leaves <c>Apply Changes</c> enabled here.
+        /// </remarks>
+        private void CertificatesButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
+                bool staged = new Controls.CertificateManagementDialog().ShowDialog(
+                    Parent,
+                    m_gds,
+                    m_server,
+                    m_application,
+                    m_telemetry);
+                #pragma warning restore CA2000
+
+                if (staged)
+                {
+                    ApplyChangesButton.Enabled = true;
+                }
+            }
+            catch (Exception exception)
+            {
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, exception);
+            }
         }
 
         /// <summary>
@@ -561,9 +602,11 @@ certificateRequest);
                     NodeId.Parse(m_application.ApplicationId),
                     requestId);
 
-                if (certificate.IsNull)
+                if (certificate.Length == 0)
                 {
-                    // request not done yet, try again in a few seconds
+                    // request not done yet, try again in a few seconds. Length rather than
+                    // IsNull: a GDS that answers a pending request with an empty ByteString
+                    // instead of a null one would otherwise fall through to the loader below.
                     return;
                 }
 
