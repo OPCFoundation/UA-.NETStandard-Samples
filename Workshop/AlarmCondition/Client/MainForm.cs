@@ -36,6 +36,7 @@ using System.Windows.Forms;
 using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Alarms;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Client.Subscriptions;
 using System.Threading.Tasks;
@@ -114,8 +115,30 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         private static readonly TimeSpan kApplyTimeout = TimeSpan.FromSeconds(10);
 
+        /// <summary>
+        /// The browse name the sample server gives the flag which suppresses a source.
+        /// </summary>
+        private const string kMaintenanceMode = "MaintenanceMode";
+
+        /// <summary>
+        /// What the Help menu opens.
+        /// </summary>
+        private const string kHelpUrl =
+            "https://github.com/OPCFoundation/UA-.NETStandard-Samples/blob/master/Workshop/AlarmCondition/README.md";
+
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
+
+        /// <summary>
+        /// The typed client for the Part 9 Methods of a condition.
+        /// </summary>
+        /// <remarks>
+        /// One facade for every condition Method the form offers. It delegates each call to
+        /// the source generated proxy of the type which declares the Method, so the form
+        /// never has to know a Method NodeId or which type a Method comes from, and it
+        /// picks the "2" variant of a Method by itself when a comment is supplied.
+        /// </remarks>
+        private AlarmClient m_alarms;
 #pragma warning disable CA2213 // Justification: disposed asynchronously by DeleteSubscriptionAsync.
         private ISubscription m_subscription;
 #pragma warning restore CA2213
@@ -196,6 +219,7 @@ namespace Quickstarts.AlarmConditionClient
                 {
                     m_subscription = null;
                     m_monitoredItem = null;
+                    m_alarms = null;
 
                     if (m_auditEventForm != null)
                     {
@@ -213,6 +237,8 @@ namespace Quickstarts.AlarmConditionClient
                 {
                     m_connectedOnce = true;
                 }
+
+                m_alarms = m_session.GetAlarmClient(m_telemetry);
 
                 // create the default subscription. The V2 engine takes the settings through an
                 // options monitor and creates the subscription on the server on its own worker.
@@ -235,8 +261,14 @@ namespace Quickstarts.AlarmConditionClient
 
                 await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
 
-                // send an initial refresh.
-                Conditions_RefreshMI_ClickAsync(sender, e);
+                // Send an initial refresh so the list starts out with everything the server
+                // retains rather than with whatever happens to change next. It is addressed
+                // to the item which was just created: a refresh of the whole subscription
+                // replays nothing while the server is still creating that item.
+                if (m_monitoredItem?.Item != null)
+                {
+                    await m_monitoredItem.Item.ConditionRefreshAsync();
+                }
 
                 ConditionsMI.Enabled = true;
                 ViewMI.Enabled = true;
@@ -274,6 +306,7 @@ namespace Quickstarts.AlarmConditionClient
                 // survives the reconnect together with its monitored items, so neither the
                 // subscription nor the item has to be replaced here.
                 m_session = ConnectServerCTRL.Session;
+                m_alarms = m_session.GetAlarmClient(m_telemetry);
 
                 if (m_auditEventForm != null)
                 {
@@ -370,8 +403,22 @@ namespace Quickstarts.AlarmConditionClient
 
                 await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
 
-                // send a refresh since previously filtered conditions may be now available.
-                Conditions_RefreshMI_ClickAsync(this, null);
+                // The rows which are up there belong to the filter which was just replaced,
+                // and the refresh below does not clear them: a refresh announces itself with
+                // a RefreshStartEventType, which is a SystemEventType and therefore does not
+                // pass a filter that asks for conditions. Without this the old rows stay on
+                // the screen and the new filter looks as if it did nothing.
+                ConditionsLV.Items.Clear();
+
+                // Send a refresh since previously filtered conditions may now be available.
+                // It is addressed to the item which was just created rather than to the
+                // subscription: a refresh of the whole subscription right after an item was
+                // swapped replays nothing, because the server has not finished creating the
+                // new item when the call arrives.
+                if (m_monitoredItem?.Item != null)
+                {
+                    await m_monitoredItem.Item.ConditionRefreshAsync(ct);
+                }
             }
         }
 
@@ -401,7 +448,8 @@ namespace Quickstarts.AlarmConditionClient
                 }
                 catch (ServiceResultException exception)
                 {
-                    item.SubItems[8].Text = Utils.Format("{0}", exception.StatusCode);
+                    // the comment column doubles as the status of the last call on the row
+                    item.SubItems[9].Text = Utils.Format("{0}", exception.StatusCode);
                 }
             }
         }
@@ -413,12 +461,9 @@ namespace Quickstarts.AlarmConditionClient
         private Task EnableDisableConditionAsync(bool enable, CancellationToken ct = default)
         {
             return ForEachSelectedConditionAsync(
-                (condition, token) => {
-                    var client = new ConditionTypeClient(m_session, condition.NodeId, m_telemetry);
-                    return enable
-                        ? client.EnableAsync(token).AsTask()
-                        : client.DisableAsync(token).AsTask();
-                },
+                (condition, token) => enable
+                    ? m_alarms.EnableAsync(condition.NodeId, token).AsTask()
+                    : m_alarms.DisableAsync(condition.NodeId, token).AsTask(),
                 ct);
         }
 
@@ -439,8 +484,8 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 await ForEachSelectedConditionAsync(
-                    (condition, token) => new ConditionTypeClient(m_session, condition.NodeId, m_telemetry)
-                        .AddCommentAsync(condition.EventId.Value, new LocalizedText(comment), token)
+                    (condition, token) => m_alarms
+                        .AddCommentAsync(condition.NodeId, condition.EventId.Value, new LocalizedText(comment), token)
                         .AsTask(),
                     ct);
             }
@@ -463,8 +508,8 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 await ForEachSelectedConditionAsync(
-                    (condition, token) => new AcknowledgeableConditionTypeClient(m_session, condition.NodeId, m_telemetry)
-                        .AcknowledgeAsync(condition.EventId.Value, new LocalizedText(comment), token)
+                    (condition, token) => m_alarms
+                        .AcknowledgeAsync(condition.NodeId, condition.EventId.Value, new LocalizedText(comment), token)
                         .AsTask(),
                     ct);
             }
@@ -487,43 +532,205 @@ namespace Quickstarts.AlarmConditionClient
                 }
 
                 await ForEachSelectedConditionAsync(
-                    (condition, token) => new AcknowledgeableConditionTypeClient(m_session, condition.NodeId, m_telemetry)
-                        .ConfirmAsync(condition.EventId.Value, new LocalizedText(comment), token)
+                    (condition, token) => m_alarms
+                        .ConfirmAsync(condition.NodeId, condition.EventId.Value, new LocalizedText(comment), token)
                         .AsTask(),
                     ct);
             }
         }
 
         /// <summary>
-        /// Confirms the selected conditions.
+        /// Shelves or unshelves the selected conditions.
         /// </summary>
+        /// <remarks>
+        /// The shelving Methods live on the ShelvingState object of an alarm, but Part 9
+        /// 5.8.10.4 lets a client call them with the ConditionId instead, which is what the
+        /// facade does. Nothing has to be browsed to find the state machine.
+        /// </remarks>
         private Task ShelveAsync(bool shelving, bool oneShot, double shelvingTime, CancellationToken ct = default)
         {
             return ForEachSelectedConditionAsync(
                 (condition, token) => {
-                    // check if the node supports shelving. The event already carries the
-                    // NodeId of the ShelvingState object, so no browse is needed here -
-                    // AlarmConditionTypeClient.GetShelvingStateAsync resolves it from the
-                    // server when the client does not have it.
-                    if (condition.FindChild(
-                            m_session.SystemContext,
-                            new QualifiedName(BrowseNames.ShelvingState)) is not BaseObjectState shelvingState)
-                    {
-                        return Task.CompletedTask;
-                    }
-
-                    var client = new ShelvedStateMachineTypeClient(m_session, shelvingState.NodeId, m_telemetry);
-
                     if (!shelving)
                     {
-                        return client.UnshelveAsync(token).AsTask();
+                        return m_alarms.UnshelveAsync(condition.NodeId, token).AsTask();
                     }
 
                     return oneShot
-                        ? client.OneShotShelveAsync(token).AsTask()
-                        : client.TimedShelveAsync(shelvingTime, token).AsTask();
+                        ? m_alarms.OneShotShelveAsync(condition.NodeId, token).AsTask()
+                        : m_alarms.TimedShelveAsync(condition.NodeId, shelvingTime, token).AsTask();
                 },
                 ct);
+        }
+
+        /// <summary>
+        /// Silences the audible annunciation of the selected alarms.
+        /// </summary>
+        private Task SilenceAsync(CancellationToken ct = default)
+        {
+            return ForEachSelectedConditionAsync(
+                (condition, token) => m_alarms.SilenceAsync(condition.NodeId, token).AsTask(),
+                ct);
+        }
+
+        /// <summary>
+        /// Suppresses or unsuppresses the selected alarms.
+        /// </summary>
+        /// <remarks>
+        /// A suppressed alarm keeps following its process condition but stops asking for
+        /// attention. The comment picks the Suppress2 / Unsuppress2 variant of the Method
+        /// by itself when the operator supplied one.
+        /// </remarks>
+        private async Task SuppressAsync(bool suppressing, CancellationToken ct = default)
+        {
+            LocalizedText comment = PromptForComment();
+
+            if (comment.IsNull)
+            {
+                return;
+            }
+
+            await ForEachSelectedConditionAsync(
+                (condition, token) => suppressing
+                    ? m_alarms.SuppressAsync(condition.NodeId, comment, token).AsTask()
+                    : m_alarms.UnsuppressAsync(condition.NodeId, comment, token).AsTask(),
+                ct);
+        }
+
+        /// <summary>
+        /// Takes the selected alarms out of service or places them back in service.
+        /// </summary>
+        private async Task SetOutOfServiceAsync(bool outOfService, CancellationToken ct = default)
+        {
+            LocalizedText comment = PromptForComment();
+
+            if (comment.IsNull)
+            {
+                return;
+            }
+
+            await ForEachSelectedConditionAsync(
+                (condition, token) => outOfService
+                    ? m_alarms.RemoveFromServiceAsync(condition.NodeId, comment, token).AsTask()
+                    : m_alarms.PlaceInServiceAsync(condition.NodeId, comment, token).AsTask(),
+                ct);
+        }
+
+        /// <summary>
+        /// Clears the latch of the selected alarms.
+        /// </summary>
+        /// <remarks>
+        /// A latching alarm keeps asking for attention after the process condition which
+        /// raised it is gone. The server refuses the reset until the alarm is inactive,
+        /// acknowledged and confirmed, and the refusal shows up in the comment column of
+        /// the row it belongs to.
+        /// </remarks>
+        private async Task ResetAsync(CancellationToken ct = default)
+        {
+            LocalizedText comment = PromptForComment();
+
+            if (comment.IsNull)
+            {
+                return;
+            }
+
+            await ForEachSelectedConditionAsync(
+                (condition, token) => m_alarms.ResetAsync(condition.NodeId, comment, token).AsTask(),
+                ct);
+        }
+
+        /// <summary>
+        /// Shows the alarm groups the selected condition belongs to.
+        /// </summary>
+        private async Task ShowGroupMembershipsAsync(ConditionState condition, CancellationToken ct = default)
+        {
+            ArrayOf<NodeId> groups = await m_alarms.GetGroupMembershipsAsync(condition.NodeId, ct);
+
+            var names = new List<string>();
+
+            // the array is a span based collection, which cannot be enumerated across an
+            // await, so the node ids are taken out of it before anything is looked up.
+            foreach (NodeId group in groups.ToArray())
+            {
+                INode node = await m_session.NodeCache.FindAsync(group, ct);
+                names.Add(node != null ? Utils.Format("{0}", node) : Utils.Format("{0}", group));
+            }
+
+            MessageBox.Show(
+                names.Count == 0
+                    ? "The condition does not belong to any alarm group."
+                    : String.Join(Environment.NewLine, names),
+                Utils.Format("Groups of {0}", condition.ConditionName?.Value),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        /// <summary>
+        /// Turns the maintenance flag of the source which reported a condition on or off.
+        /// </summary>
+        /// <remarks>
+        /// The flag is an ordinary variable next to the alarms of the source, and the
+        /// server watches it with an alarm suppression group: while it is set, every alarm
+        /// of the source reports itself as suppressed. The default filter of this form
+        /// leaves suppressed conditions out, so the alarms of the source disappear from the
+        /// list until the flag is cleared again - which is the whole point of the pattern.
+        /// </remarks>
+        private async Task ToggleMaintenanceModeAsync(ConditionState condition, CancellationToken ct = default)
+        {
+            NodeId sourceId = condition.SourceNode.Value;
+
+            if (sourceId.IsNull)
+            {
+                return;
+            }
+
+            // the flag sits in the same namespace as the source which owns it, so the
+            // relative path is built against a table which has that namespace at index one.
+            var namespaceUris = new NamespaceTable();
+            namespaceUris.Append(m_session.NamespaceUris.GetString(sourceId.NamespaceIndex));
+
+            List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
+                m_session,
+                sourceId,
+                namespaceUris,
+                ct,
+                Utils.Format("1:{0}", kMaintenanceMode));
+
+            if (nodes.Count == 0 || nodes[0].IsNull)
+            {
+                MessageBox.Show(
+                    "The source of this condition does not offer a maintenance flag.",
+                    this.Text,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                return;
+            }
+
+            DataValue current = await m_session.ReadValueAsync(nodes[0], ct);
+
+            bool maintenance = current.WrappedValue.TryGetValue(out bool flag) && flag;
+
+            var valuesToWrite = new List<WriteValue> {
+                new WriteValue {
+                    NodeId = nodes[0],
+                    AttributeId = Attributes.Value,
+                    Value = new DataValue(Variant.From(!maintenance)),
+                },
+            };
+
+            WriteResponse response = await m_session.WriteAsync(null, valuesToWrite, ct);
+
+            StatusCode result = response.Results.ToArray()[0];
+
+            if (StatusCode.IsBad(result))
+            {
+                MessageBox.Show(
+                    Utils.Format("The maintenance flag could not be written: {0}", result),
+                    this.Text,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
         }
 
         /// <summary>
@@ -535,10 +742,75 @@ namespace Quickstarts.AlarmConditionClient
             return ForEachSelectedConditionAsync(
                 (condition, token) => condition is not DialogConditionState dialog
                     ? Task.CompletedTask
-                    : new DialogConditionTypeClient(m_session, dialog.NodeId, m_telemetry)
-                        .RespondAsync(selectedResponse, token)
-                        .AsTask(),
+                    : m_alarms.RespondAsync(dialog.NodeId, selectedResponse, token).AsTask(),
                 ct);
+        }
+
+        /// <summary>
+        /// Renders the Part 9 states of a condition as a short list of flags.
+        /// </summary>
+        /// <remarks>
+        /// The two state variables are optional, so a condition which does not carry one
+        /// simply has nothing to say about it. Only the states which are set are listed,
+        /// which keeps the column short enough to read at a glance.
+        /// </remarks>
+        private static string FormatConditionFlags(ConditionState condition)
+        {
+            var flags = new List<string>();
+
+            void Add(TwoStateVariableState state, string name)
+            {
+                if (state != null && state.Id != null && state.Id.Value)
+                {
+                    flags.Add(name);
+                }
+            }
+
+            if (condition is AlarmConditionState alarm)
+            {
+                Add(alarm.ActiveState, "Active");
+                Add(alarm.LatchedState, "Latched");
+                Add(alarm.SilenceState, "Silenced");
+                Add(alarm.SuppressedState, "Suppressed");
+                Add(alarm.OutOfServiceState, "OutOfService");
+
+                if (alarm.ShelvingState?.CurrentState?.Id != null &&
+                    alarm.ShelvingState.CurrentState.Id.Value != ObjectIds.ShelvedStateMachineType_Unshelved)
+                {
+                    flags.Add(Utils.Format("{0}", alarm.ShelvingState.CurrentState.Value));
+                }
+            }
+
+            if (condition is AcknowledgeableConditionState acknowledgeable)
+            {
+                if (acknowledgeable.AckedState?.Id?.Value == false)
+                {
+                    flags.Add("Unacked");
+                }
+
+                if (acknowledgeable.ConfirmedState?.Id?.Value == false)
+                {
+                    flags.Add("Unconfirmed");
+                }
+            }
+
+            return String.Join(", ", flags);
+        }
+
+        /// <summary>
+        /// Asks the operator for the comment which accompanies a condition Method.
+        /// </summary>
+        /// <returns>The comment, or a null text when the operator cancelled.</returns>
+        private static LocalizedText PromptForComment()
+        {
+            using (var dialog = new AddCommentDlg())
+            {
+#pragma warning disable CA1849 // Justification: Sample dialog API is synchronous and preserves current WinForms flow.
+                string comment = dialog.ShowDialog(String.Empty);
+#pragma warning restore CA1849
+
+                return comment == null ? LocalizedText.Null : new LocalizedText(comment);
+            }
         }
         #endregion
 
@@ -674,6 +946,7 @@ namespace Quickstarts.AlarmConditionClient
                     item.SubItems.Add(String.Empty); // Severity
                     item.SubItems.Add(String.Empty); // Time
                     item.SubItems.Add(String.Empty); // State
+                    item.SubItems.Add(String.Empty); // Flags
                     item.SubItems.Add(String.Empty); // Message
                     item.SubItems.Add(String.Empty); // Comment
 
@@ -753,24 +1026,27 @@ namespace Quickstarts.AlarmConditionClient
                     item.SubItems[6].Text = null;
                 }
 
+                // Flags
+                item.SubItems[7].Text = FormatConditionFlags(condition);
+
                 // Message
                 if (condition.Message != null)
                 {
-                    item.SubItems[7].Text = Utils.Format("{0}", condition.Message.Value);
+                    item.SubItems[8].Text = Utils.Format("{0}", condition.Message.Value);
                 }
                 else
                 {
-                    item.SubItems[7].Text = null;
+                    item.SubItems[8].Text = null;
                 }
 
                 // Comment
                 if (condition.Comment != null)
                 {
-                    item.SubItems[8].Text = Utils.Format("{0}", condition.Comment.Value);
+                    item.SubItems[9].Text = Utils.Format("{0}", condition.Comment.Value);
                 }
                 else
                 {
-                    item.SubItems[8].Text = null;
+                    item.SubItems[9].Text = null;
                 }
 
                 item.Tag = condition;
@@ -885,6 +1161,11 @@ namespace Quickstarts.AlarmConditionClient
                 Conditions_RespondMI.Enabled = connected;
                 Conditions_ShelvingMI.Enabled = connected;
                 Conditions_MonitorMI.Enabled = connected;
+                Conditions_SilenceMI.Enabled = connected;
+                Conditions_SuppressionMI.Enabled = connected;
+                Conditions_ResetMI.Enabled = connected;
+                Conditions_GroupMembershipsMI.Enabled = connected;
+                Conditions_MaintenanceModeMI.Enabled = connected;
 
                 if (ConditionsLV.SelectedItems.Count == 0)
                 {
@@ -896,12 +1177,19 @@ namespace Quickstarts.AlarmConditionClient
                     Conditions_RespondMI.Enabled = false;
                     Conditions_ShelvingMI.Enabled = false;
                     Conditions_MonitorMI.Enabled = false;
+                    Conditions_SilenceMI.Enabled = false;
+                    Conditions_SuppressionMI.Enabled = false;
+                    Conditions_ResetMI.Enabled = false;
+                    Conditions_GroupMembershipsMI.Enabled = false;
+                    Conditions_MaintenanceModeMI.Enabled = false;
                 }
 
                 if (ConditionsLV.SelectedItems.Count > 1)
                 {
                     Conditions_RespondMI.Enabled = false;
                     Conditions_MonitorMI.Enabled = false;
+                    Conditions_GroupMembershipsMI.Enabled = false;
+                    Conditions_MaintenanceModeMI.Enabled = false;
                 }
             }
             catch (Exception exception)
@@ -954,6 +1242,154 @@ namespace Quickstarts.AlarmConditionClient
             try
             {
                 await ConfirmAsync();
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Click event of the Conditions_SilenceMI control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private async void Conditions_SilenceMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                await SilenceAsync();
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Click event of the Conditions_SuppressMI control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private async void Conditions_SuppressMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                await SuppressAsync(true);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Click event of the Conditions_UnsuppressMI control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private async void Conditions_UnsuppressMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                await SuppressAsync(false);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Click event of the Conditions_RemoveFromServiceMI control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private async void Conditions_RemoveFromServiceMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                await SetOutOfServiceAsync(true);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Click event of the Conditions_PlaceInServiceMI control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private async void Conditions_PlaceInServiceMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                await SetOutOfServiceAsync(false);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Click event of the Conditions_ResetMI control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private async void Conditions_ResetMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                await ResetAsync();
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Click event of the Conditions_GroupMembershipsMI control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private async void Conditions_GroupMembershipsMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (ConditionsLV.SelectedItems.Count != 1 ||
+                    ConditionsLV.SelectedItems[0].Tag is not ConditionState condition)
+                {
+                    return;
+                }
+
+                await ShowGroupMembershipsAsync(condition);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Click event of the Conditions_MaintenanceModeMI control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private async void Conditions_MaintenanceModeMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (ConditionsLV.SelectedItems.Count != 1 ||
+                    ConditionsLV.SelectedItems[0].Tag is not ConditionState condition)
+                {
+                    return;
+                }
+
+                await ToggleMaintenanceModeAsync(condition);
             }
             catch (Exception exception)
             {
@@ -1088,7 +1524,11 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                Condition_Type_AllMI.Checked = Object.ReferenceEquals(sender, Conditions_Severity_AllMI);
+                // the entries pick one type set at a time, so the one which was clicked is
+                // the one which ends up checked. Comparing against the severity menu here -
+                // which is what this line used to do - left "All" unreachable: it could
+                // never be checked again once anything else had been picked.
+                Condition_Type_AllMI.Checked = Object.ReferenceEquals(sender, Condition_Type_AllMI);
                 Condition_Type_DialogsMI.Checked = Object.ReferenceEquals(sender, Condition_Type_DialogsMI);
                 Condition_Type_AlarmsMI.Checked = Object.ReferenceEquals(sender, Condition_Type_AlarmsMI);
                 Condition_Type_LimitAlarmsMI.Checked = Object.ReferenceEquals(sender, Condition_Type_LimitAlarmsMI);
@@ -1248,11 +1688,22 @@ namespace Quickstarts.AlarmConditionClient
         {
             try
             {
-                System.Diagnostics.Process.Start(Path.GetDirectoryName(Application.ExecutablePath) + "\\WebHelp\\acclientoverview.htm");
+                // The compiled help this used to open ("WebHelp/acclientoverview.htm") has
+                // never been part of the repository, so the entry only ever produced an
+                // error box. The documentation of the sample is its README.
+                var browser = new System.Diagnostics.ProcessStartInfo(kHelpUrl) {
+                    UseShellExecute = true,
+                };
+
+                System.Diagnostics.Process.Start(browser)?.Dispose();
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                MessageBox.Show("Unable to launch help documentation. Error: " + ex.Message);
+                MessageBox.Show(
+                    Utils.Format("The documentation is at {0}{1}{1}{2}", kHelpUrl, Environment.NewLine, exception.Message),
+                    this.Text,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
         }
         #endregion

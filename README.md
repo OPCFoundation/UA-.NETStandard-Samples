@@ -59,17 +59,21 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [Aggregation Server](Workshop/Aggregation/Server) | **Server** | Aggregates multiple OPC UA servers into a single namespace. Browse aggregated servers via the Aggregation Client or any OPC UA client. |
 | [Aggregation Client](Workshop/Aggregation/Client) | **Client** | Connects to an Aggregation Server and browses its aggregated address space. |
 | [ConsoleAggregationServer](Workshop/Aggregation/ConsoleAggregationServer) | **Server** | Cross-platform console version of the Aggregation Server. |
-| [AlarmCondition Server](Workshop/AlarmCondition/Server) | **Server** | Demonstrates OPC UA Alarms & Conditions (A&C). Generates alarm events of various types. |
-| [AlarmCondition Client](Workshop/AlarmCondition/Client) | **Client** | Subscribes to and displays OPC UA alarm events from an A&C server. |
+| [AlarmCondition Server](Workshop/AlarmCondition/Server) | **Server** | Demonstrates OPC UA Part 9 Alarms & Conditions: areas and sources which route events, latching trip alarms, re-alarming, silencing, the two suppression patterns and alarm metrics. See the [sample README](Workshop/AlarmCondition/README.md). |
+| [AlarmCondition Client](Workshop/AlarmCondition/Client) | **Client** | Subscribes to alarm events, shows the Part 9 state of each condition, and calls every condition Method through the typed `AlarmClient`. |
+| [AliasNames Server](Workshop/AliasNames/Server) | **Server** | Demonstrates OPC UA Part 17 alias names: a searchable index of the tag names people use, laid over an address space organized by structure, served both on the standard well-known categories and on an application-defined category tree. See the [sample README](Workshop/AliasNames/README.md). |
+| [AliasNames Client](Workshop/AliasNames/Client) | **Client** | Searches a Part 17 category by wildcard, resolves a tag name to a NodeId and back, and adds or deletes aliases at runtime. |
 | [Boiler Server](Workshop/Boiler/Server) | **Server** | Simulates a boiler process with UA object instances. Demonstrates object types, methods and data variables. |
 | [Boiler Client](Workshop/Boiler/Client) | **Client** | Connects to the Boiler Server to read boiler state and invoke control methods. |
 | [DataAccess Server](Workshop/DataAccess/Server) | **Server** | Demonstrates the OPC UA DataAccess profile with analog items, discrete items and array variables. |
 | [DataAccess Client](Workshop/DataAccess/Client) | **Client** | Reads and writes DataAccess items (analog/discrete) on a DataAccess server. |
 | [DataTypes Server](Workshop/DataTypes/Server) | **Server** | Demonstrates how to define and expose custom structured data types in OPC UA. |
 | [DataTypes Client](Workshop/DataTypes/Client) | **Client** | Reads custom structured data types from a DataTypes server. |
-| [HistoricalAccess Server](Workshop/HistoricalAccess/Server) | **Server** | Stores historical data for variables and supports UA HistoricalAccess services (ReadRaw, ReadProcessed, etc.). |
-| [HistoricalAccess Client](Workshop/HistoricalAccess/Client) | **Client** | Queries and displays historical data from a HistoricalAccess server. |
-| [HistoricalEvents Server](Workshop/HistoricalEvents/Server) | **Server** | Stores historical events and supports UA HistoricalAccess for events. |
+| [FileTransfer Server](Workshop/FileTransfer/Server) | **Server** | Publishes a directory of the host as an OPC UA file system (Part 5 Annex C / Part 20 `FileType` and `FileDirectoryType`), using the file system node manager of the SDK. See the [sample overview](Workshop/FileTransfer/README.md). |
+| [FileTransfer Client](Workshop/FileTransfer/Client) | **Client** | Browses the file system of a server and uploads, downloads, creates and deletes files and directories. Works against any server which offers `Server/FileSystem`. |
+| [HistoricalAccess Server](Workshop/HistoricalAccess/Server) | **Server** | Serves a file based archive of past values through the historian provider model of the SDK (raw, modified, at-time, processed, annotations, updates and deletes). See the [sample overview](Workshop/HistoricalAccess/README.md). |
+| [HistoricalAccess Client](Workshop/HistoricalAccess/Client) | **Client** | Reads, aggregates, annotates and rewrites the history of a variable on any server, through `session.Historian()`. |
+| [HistoricalEvents Server](Workshop/HistoricalEvents/Server) | **Server** | Serves an archive of well test reports as event history through an `IHistorianEventProvider`, including writing and deleting events. |
 | [HistoricalEvents Client](Workshop/HistoricalEvents/Client) | **Client** | Queries and displays historical events from a HistoricalEvents server. |
 | [Methods Server](Workshop/Methods/Server) | **Server** | Exposes UA methods with various input/output arguments to demonstrate method invocation. |
 | [Methods Client](Workshop/Methods/Client) | **Client** | Discovers and calls UA methods on a Methods server. |

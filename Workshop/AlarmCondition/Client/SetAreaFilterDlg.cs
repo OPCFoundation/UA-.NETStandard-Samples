@@ -68,7 +68,12 @@ namespace Quickstarts.AlarmConditionClient
             TreeNode root = new TreeNode(BrowseNames.Server);
             root.Nodes.Add(new TreeNode());
             BrowseTV.Nodes.Add(root);
-            root.Expand();
+
+            // The root is expanded once the dialog is on the screen. Expanding it here, on a
+            // tree view whose window handle does not exist yet, marks the node as expanded
+            // without ever raising BeforeExpand - so the browse never runs, and the node
+            // cannot be expanded afterwards either, because it already counts as expanded.
+            Shown += (sender, e) => root.Expand();
 
             // display the dialog.
             if (ShowDialog() != DialogResult.OK)

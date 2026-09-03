@@ -45,17 +45,6 @@ namespace Opc.Ua.Samples.Tests
         private const string StateMachinesNamespace =
             Quickstarts.StateMachines.Server.Namespaces.StateMachines;
 
-        /// <summary>
-        /// Why CurrentState/Id does not follow the model yet: the sample needs
-        /// UA-.NETStandard #4368 (state reporting for fluent state machines), which
-        /// landed one master build after the 2.0.262.32744-preview package set this
-        /// repository pins - and every later GitHub Packages publish failed on an
-        /// unrelated signing error. The first newer package set lifts this.
-        /// </summary>
-        private const string kStateReportingIssue =
-            "CurrentState/Id needs UA-.NETStandard #4368, which is newer than the " +
-            "2.0.262.32744-preview packages the samples build against.";
-
         private QualifiedName Machine => Name(StateMachinesNamespace, "Machine");
         private QualifiedName Operation => Name(StateMachinesNamespace, "Operation");
         private QualifiedName Program => Name(StateMachinesNamespace, "Program");
@@ -157,21 +146,19 @@ namespace Opc.Ua.Samples.Tests
         {
             string state = await ReadOperationStateNameAsync(ct).ConfigureAwait(false);
             NodeId stateId = await ReadOperationStateIdAsync(ct).ConfigureAwait(false);
+            NodeId offNode = await OperationStateNodeAsync("Off", ct).ConfigureAwait(false);
 
-            Assert.That(
-                state,
-                Is.EqualTo("Off"),
-                "The Operation machine has to start in Off.");
+            Assert.Multiple(() => {
+                Assert.That(
+                    state,
+                    Is.EqualTo("Off"),
+                    "The Operation machine has to start in Off.");
 
-            await KnownIssueAsync(
-                () => {
-                    Assert.That(
-                        stateId,
-                        Is.EqualTo(OperationState(StateMachinesNodeManager.OffState)),
-                        "CurrentState/Id has to name the state node of the machine's own namespace.");
-                    return Task.CompletedTask;
-                },
-                kStateReportingIssue).ConfigureAwait(false);
+                Assert.That(
+                    stateId,
+                    Is.EqualTo(offNode),
+                    "CurrentState/Id has to name the state node of the machine's own namespace.");
+            });
         }
 
         /// <summary>
@@ -204,11 +191,18 @@ namespace Opc.Ua.Samples.Tests
 
             string running = await ReadOperationStateNameAsync(ct).ConfigureAwait(false);
             NodeId runningId = await ReadOperationStateIdAsync(ct).ConfigureAwait(false);
+            NodeId runningNode = await OperationStateNodeAsync("Running", ct).ConfigureAwait(false);
 
-            Assert.That(
-                running,
-                Is.EqualTo("Running"),
-                "Start has to move the machine from Idle to Running.");
+            Assert.Multiple(() => {
+                Assert.That(
+                    running,
+                    Is.EqualTo("Running"),
+                    "Start has to move the machine from Idle to Running.");
+                Assert.That(
+                    runningId,
+                    Is.EqualTo(runningNode),
+                    "CurrentState/Id has to follow the state.");
+            });
 
             await CallOperationAsync(StateMachinesNodeManager.StopCause, ct).ConfigureAwait(false);
 
@@ -224,18 +218,6 @@ namespace Opc.Ua.Samples.Tests
                 after - before,
                 Is.EqualTo(3u),
                 "The transition observer has to see all three transitions.");
-
-            // checked last, so the known issue does not keep the rest of the test
-            // from proving the transitions themselves work
-            await KnownIssueAsync(
-                () => {
-                    Assert.That(
-                        runningId,
-                        Is.EqualTo(OperationState(StateMachinesNodeManager.RunningState)),
-                        "CurrentState/Id has to follow the state.");
-                    return Task.CompletedTask;
-                },
-                kStateReportingIssue).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -491,9 +473,21 @@ namespace Opc.Ua.Samples.Tests
         }
 
         #region Helpers
-        private NodeId OperationState(uint stateId)
+        /// <summary>
+        /// The node of one of the Operation machine's states, found by browsing for it.
+        /// </summary>
+        /// <remarks>
+        /// The state nodes are materialized by the stack, which mints their NodeIds from the
+        /// machine's own identifier and the state's browse name rather than from the numeric
+        /// id the sample declared - that number stays on the node as its state number. So the
+        /// node is browsed for by name instead of being computed, which is also what a client
+        /// comparing CurrentState/Id against a state would have to do.
+        /// </remarks>
+        private async Task<NodeId> OperationStateNodeAsync(string stateName, CancellationToken ct)
         {
-            return new NodeId(stateId, NamespaceIndex(StateMachinesNamespace));
+            NodeId machine = await OperationNodeAsync(ct).ConfigureAwait(false);
+
+            return await ChildAsync(machine, stateName, ct).ConfigureAwait(false);
         }
 
         private Task<NodeId> OperationNodeAsync(CancellationToken ct)

@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<opc:ModelDesign
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:opc="http://opcfoundation.org/UA/ModelDesign.xsd"
+  xmlns:ua="http://opcfoundation.org/UA/"
+  xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+	xmlns="http://opcfoundation.org/Quickstarts/AliasNames"
+  TargetNamespace="http://opcfoundation.org/Quickstarts/AliasNames"
+>
+  <opc:Namespaces>
+    <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/</opc:Namespace>
+    <opc:Namespace Name="AliasNames" Prefix="Quickstarts.AliasNames" InternalPrefix="Quickstarts.AliasNames">http://opcfoundation.org/Quickstarts/AliasNames</opc:Namespace>
+  </opc:Namespaces>
+
+  <!--
+  This model is the part of the sample which is NOT interesting, and that is the point of
+  Part 17. It is a plant laid out the way a plant is laid out - by where a signal physically
+  is - with browse names taken from the engineering documentation. Nothing in it is named the
+  way an operator, a historian tag list or an MES integration names it.
+
+  The alias names which make these nodes findable under the tag names people actually use are
+  not in this file at all. They are seeded into an alias name store in AliasNamesServer, and
+  served through the Part 17 categories. A tag can be renamed, re-pointed or added at runtime
+  without this model changing, which is exactly why the two are kept apart.
+  -->
+  <opc:Object SymbolicName="Plant" TypeDefinition="ua:FolderType">
+    <opc:Description>A plant whose signals are addressed by structure rather than by tag name.</opc:Description>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+    <opc:Children>
+
+      <opc:Object SymbolicName="Reactor" TypeDefinition="ua:BaseObjectType">
+        <opc:Description>The reactor unit. Its instruments are TIC101, PIC102 and SIC103.</opc:Description>
+        <opc:Children>
+          <opc:Variable SymbolicName="TemperatureMeasurement" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="Read">
+            <opc:Description>The measured reactor temperature, in degrees Celsius.</opc:Description>
+          </opc:Variable>
+          <opc:Variable SymbolicName="TemperatureSetpoint" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
+            <opc:Description>The requested reactor temperature, in degrees Celsius.</opc:Description>
+          </opc:Variable>
+          <opc:Variable SymbolicName="PressureMeasurement" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="Read">
+            <opc:Description>The measured reactor pressure, in bar.</opc:Description>
+          </opc:Variable>
+          <opc:Variable SymbolicName="AgitatorSpeed" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
+            <opc:Description>The requested agitator speed, in revolutions per minute.</opc:Description>
+          </opc:Variable>
+        </opc:Children>
+      </opc:Object>
+
+      <opc:Object SymbolicName="Boiler" TypeDefinition="ua:BaseObjectType">
+        <opc:Description>The boiler unit. Its instruments are PIC201, FIC202 and HS203.</opc:Description>
+        <opc:Children>
+          <opc:Variable SymbolicName="SteamPressure" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="Read">
+            <opc:Description>The measured steam pressure, in bar.</opc:Description>
+          </opc:Variable>
+          <opc:Variable SymbolicName="FeedwaterFlow" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="Read">
+            <opc:Description>The measured feedwater flow, in cubic metres per hour.</opc:Description>
+          </opc:Variable>
+          <opc:Variable SymbolicName="BurnerEnabled" DataType="ua:Boolean" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
+            <opc:Description>Whether the burner is released to fire.</opc:Description>
+          </opc:Variable>
+        </opc:Children>
+      </opc:Object>
+
+    </opc:Children>
+  </opc:Object>
+
+</opc:ModelDesign>

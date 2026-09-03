@@ -37,6 +37,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Sql;
+using Opc.Ua.Gds.Server.Onboarding;
 using Opc.Ua.Samples.Hosting;
 using Opc.Ua.Server;
 using Opc.Ua.Server.Controls;
@@ -80,11 +81,58 @@ namespace Opc.Ua.Gds.Server
                     options.ConfigurationFile = "Opc.Ua.GlobalDiscoveryServer.Config.xml";
                 })
                 .AddSingleton(CreateUserDatabase)
+                .AddSingleton(CreateApplicationAdminUserDatabase)
                 .AddSingleton<SqlApplicationsDatabase>()
                 .AddSingleton(provider => new GlobalDiscoveryServerAliasMerger(
                     provider.GetRequiredService<ITelemetryContext>()))
+                .AddSingleton(provider => new SampleServerConfigurationResetProvider(
+                    provider.GetRequiredService<ApplicationConfiguration>(),
+                    provider.GetRequiredService<ITelemetryContext>()))
                 .AddSampleServer(CreateServer)
-                .AddHostedService<AliasMergerHostedService>();
+                .AddHostedService<AliasMergerHostedService>()
+                .AddHostedService<SecurityDefaultsHostedService>();
+        }
+
+        /// <summary>
+        /// Adds the OPC 10000-12 §7.2 <c>ApplicationAdmin</c> privilege to the SQL user
+        /// database.
+        /// </summary>
+        /// <remarks>
+        /// The per-user application grants live in a small JSON file beside the GDS PKI
+        /// rather than in the SQL database, so the sample does not have to extend the
+        /// Entity Framework schema.
+        /// </remarks>
+        private static GdsApplicationAdminUserDatabase CreateApplicationAdminUserDatabase(
+            IServiceProvider provider)
+        {
+            ApplicationConfiguration configuration = provider.GetRequiredService<ApplicationConfiguration>();
+
+            return new GdsApplicationAdminUserDatabase(
+                provider.GetRequiredService<SqlUsersDatabase>(),
+                System.IO.Path.Combine(GetStateDirectory(configuration), "gdsapplicationadmins.json"));
+        }
+
+        /// <summary>
+        /// Returns the directory the sample keeps its own state in - one level above the GDS
+        /// PKI, falling back to the directory of the configuration file.
+        /// </summary>
+        private static string GetStateDirectory(ApplicationConfiguration configuration)
+        {
+            GlobalDiscoveryServerConfiguration gdsConfiguration =
+                configuration.ParseExtension<GlobalDiscoveryServerConfiguration>();
+
+            string authorities = Utils.ReplaceSpecialFolderNames(gdsConfiguration?.AuthoritiesStorePath);
+
+            // .../GDS/PKI/authorities -> .../GDS
+            string pki = String.IsNullOrEmpty(authorities)
+                ? null
+                : System.IO.Path.GetDirectoryName(authorities);
+
+            string root = String.IsNullOrEmpty(pki) ? null : System.IO.Path.GetDirectoryName(pki);
+
+            return String.IsNullOrEmpty(root)
+                ? System.IO.Path.GetDirectoryName(configuration.SourceFilePath) ?? "."
+                : root;
         }
 
         /// <summary>
@@ -104,24 +152,45 @@ namespace Opc.Ua.Gds.Server
         }
 
         /// <summary>
-        /// Creates the server, which merges the AliasNames list of every server which
-        /// registers with it into a master list of its own (issue #274).
+        /// Creates the server: the GDS directory and CA, the AliasNames master list
+        /// (issue #274), the OPC 10000-12 §7.10.16 ManagedApplications folder, the Optional
+        /// §7.10.3 ServerConfiguration surface and the OPC 10000-21 onboarding registrar.
         /// </summary>
-        private static AliasMergingGlobalDiscoverySampleServer CreateServer(IServiceProvider provider)
+        private static SampleGlobalDiscoveryServer CreateServer(IServiceProvider provider)
         {
             SqlApplicationsDatabase database = provider.GetRequiredService<SqlApplicationsDatabase>();
             ITelemetryContext telemetry = provider.GetRequiredService<ITelemetryContext>();
+            ApplicationConfiguration configuration = provider.GetRequiredService<ApplicationConfiguration>();
 
-            return new AliasMergingGlobalDiscoverySampleServer(
+            return new SampleGlobalDiscoveryServer(
                 database,
                 database,
                 #pragma warning disable CA2000 // Justification: Certificate group ownership is transferred to the server.
                 new CertificateGroup(telemetry),
                 #pragma warning restore CA2000
-                provider.GetRequiredService<SqlUsersDatabase>(),
+                provider.GetRequiredService<GdsApplicationAdminUserDatabase>(),
                 telemetry,
                 provider.GetRequiredService<GlobalDiscoveryServerAliasMerger>(),
-                true);
+                true,
+                new GdsManagedApplicationsDataStore(
+                    database,
+                    System.IO.Path.Combine(GetStateDirectory(configuration), "ManagedApplications"),
+                    telemetry),
+                new MemoryTicketStore(),
+                new ServerConfigurationOptions {
+                    // the sample keeps its private keys in the file system, not in a TPM or
+                    // secure element - reporting that honestly is the point of the Property.
+                    HasSecureElement = false,
+
+                    // the GDS is commissioned, not in the OPC 10000-21 setup state.
+                    InApplicationSetup = false,
+
+                    ResetProvider = provider.GetRequiredService<SampleServerConfigurationResetProvider>(),
+
+                    ConfigurationFileProvider = new SampleApplicationConfigurationFileProvider(
+                        configuration.SourceFilePath,
+                        telemetry)
+                });
         }
 
         /// <summary>
@@ -130,7 +199,7 @@ namespace Opc.Ua.Gds.Server
         private static System.Windows.Forms.Form CreateServerForm(IServiceProvider provider)
         {
             return new ServerForm(
-                provider.GetRequiredService<AliasMergingGlobalDiscoverySampleServer>(),
+                provider.GetRequiredService<SampleGlobalDiscoveryServer>(),
                 provider.GetRequiredService<ApplicationConfiguration>(),
                 provider.GetRequiredService<ITelemetryContext>());
         }
@@ -187,6 +256,37 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
+        /// <summary>
+        /// Records the trust decisions the server starts with, so the OPC 10000-12 §7.10.13
+        /// <c>ResetToServerDefaults</c> Method has a defined state to return to.
+        /// </summary>
+        /// <remarks>
+        /// Registered after the server so the snapshot is taken once the server is up but
+        /// before it has served a client.
+        /// </remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Created by the generic host.")]
+        private sealed class SecurityDefaultsHostedService : IHostedService
+        {
+            private readonly SampleServerConfigurationResetProvider m_resetProvider;
+
+            public SecurityDefaultsHostedService(SampleServerConfigurationResetProvider resetProvider)
+            {
+                m_resetProvider = resetProvider;
+            }
+
+            /// <inheritdoc/>
+            public Task StartAsync(CancellationToken cancellationToken)
+            {
+                return m_resetProvider.CaptureDefaultsAsync(cancellationToken);
+            }
+
+            /// <inheritdoc/>
+            public Task StopAsync(CancellationToken cancellationToken)
+            {
+                return Task.CompletedTask;
+            }
+        }
+
         private static bool ConfigureUsers(SqlUsersDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
@@ -199,6 +299,7 @@ namespace Opc.Ua.Gds.Server
                 userDatabase.DeleteUser("sysadmin");
                 userDatabase.DeleteUser("DiscoveryAdmin");
                 userDatabase.DeleteUser("CertificateAuthorityAdmin");
+                userDatabase.DeleteUser("ApplicationAdmin");
 
                 //Create new admin user
                 string username = InputDlg.Show("Please specify user name of the application admin user:", false);
@@ -226,6 +327,7 @@ namespace Opc.Ua.Gds.Server
                 userDatabase.DeleteUser("sysadmin");
                 userDatabase.DeleteUser("DiscoveryAdmin");
                 userDatabase.DeleteUser("CertificateAuthorityAdmin");
+                userDatabase.DeleteUser("ApplicationAdmin");
 
                 //create standard users
                 userDatabase.CreateUser(
@@ -249,6 +351,13 @@ namespace Opc.Ua.Gds.Server
                     Encoding.UTF8.GetBytes("demo"),
                     [Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin]);
 
+                // OPC 10000-12 §7.2: an ApplicationAdmin may administer the applications it
+                // was granted and no others. The role alone grants nothing - the grants are
+                // stored per user by GdsApplicationAdminUserDatabase.
+                userDatabase.CreateUser(
+                    "ApplicationAdmin",
+                    Encoding.UTF8.GetBytes("demo"),
+                    [Role.AuthenticatedUser, GdsRole.ApplicationAdmin]);
             }
             return createStandardUsers;
         }

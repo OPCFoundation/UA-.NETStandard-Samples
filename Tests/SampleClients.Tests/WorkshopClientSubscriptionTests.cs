@@ -241,6 +241,14 @@ namespace Opc.Ua.Samples.Tests
             // their notification callbacks back to the UI thread and need one to do so
             CreateHandles(form);
 
+            // A sample which throws reports it in a message box, and a modal dialog on the
+            // thread this test drives blocks the message loop - every wait below then runs out
+            // and reports that a control never changed, which says nothing about why. The
+            // watchdog closes the dialog and keeps what it said, so the complaint itself
+            // becomes the failure.
+            using var watchdog = new DialogWatchdog();
+            watchdog.Start();
+
             ConnectServerCtrl connect = WinFormsHarness.GetConnectControl(form);
 
             ISession session = await connect
@@ -262,10 +270,28 @@ namespace Opc.Ua.Samples.Tests
 
                 if (client.Arrange != null)
                 {
-                    await client.Arrange(form, ct).ConfigureAwait(true);
+                    try
+                    {
+                        await client.Arrange(form, ct).ConfigureAwait(true);
+                    }
+                    catch (Exception) when (watchdog.Captured.Count > 0)
+                    {
+                        // the sample complained while it was being set up, and whatever the
+                        // arrange step then observed is a consequence of that. Report the
+                        // complaint instead, which is the failure a reader can act on.
+                        Assert.Fail(
+                            $"The {client.Name} client reported an error while it was driven: " +
+                            string.Join(" | ", watchdog.Captured));
+                    }
                 }
 
                 bool arrived = await WaitAsync(() => client.HasNotification(form), ct).ConfigureAwait(true);
+
+                // a complaint the sample made is the better failure, so it is reported first
+                Assert.That(
+                    watchdog.Captured,
+                    Is.Empty,
+                    $"The {client.Name} client reported an error while it was driven.");
 
                 Assert.That(
                     arrived,

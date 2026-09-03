@@ -65,6 +65,7 @@ namespace Opc.Ua.Samples.Tests
         {
             var clients = new List<SampleClientUnderTest> {
                 Client("AlarmCondition", (configuration, telemetry) => new Quickstarts.AlarmConditionClient.MainForm(configuration, telemetry)),
+                Client("AliasNames", (configuration, telemetry) => new Quickstarts.AliasNames.Client.MainForm(configuration, telemetry), "FindBTN"),
                 Client("Boiler", (configuration, telemetry) => new Quickstarts.Boiler.Client.MainForm(configuration, telemetry), "BoilerCB"),
                 Client("DataAccess", (configuration, telemetry) => new Quickstarts.DataAccessClient.MainForm(configuration, telemetry), "BrowseNodesTV"),
                 Client("DataTypes", (configuration, telemetry) => new Quickstarts.DataTypes.MainForm(configuration, telemetry)),

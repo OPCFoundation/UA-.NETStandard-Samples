@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Opc.Ua.Server.Alarms;
 
 namespace Quickstarts.AlarmConditionServer
 {
@@ -97,7 +98,19 @@ namespace Quickstarts.AlarmConditionServer
 
             // create the table to store the available sources.
             m_sources = new Dictionary<string, SourceState>();
+
+            // one engine decides the group suppression of every source of the server. It
+            // has to exist before the first source is created, because a source registers
+            // its group with it as soon as its alarms exist.
+            m_suppressionEngine = new AlarmSuppressionEngine();
         }
+        #endregion
+
+        #region Public Interface
+        /// <summary>
+        /// The engine which applies the Part 9 suppression patterns to the alarm groups.
+        /// </summary>
+        public AlarmSuppressionEngine SuppressionEngine => m_suppressionEngine;
         #endregion
 
         #region IDisposable Members
@@ -115,6 +128,9 @@ namespace Quickstarts.AlarmConditionServer
 
                 m_simulationTimer?.Dispose();
                 m_simulationTimer = null;
+
+                m_suppressionEngine?.Dispose();
+                m_suppressionEngine = null;
             }
 
             base.Dispose(disposing);
@@ -186,6 +202,12 @@ namespace Quickstarts.AlarmConditionServer
 
         private async void OnRaiseSystemEvents(object state)
         {
+            // the same cycle drives what Part 9 leaves to the application: the re-alarm
+            // reminders and the alarm metrics of every source. It runs in its own try
+            // because the events below are dropped by a server which has auditing turned
+            // off, and a sample must not lose its simulation over that.
+            await RunSimulationCycleAsync().ConfigureAwait(false);
+
             try
             {
 #pragma warning disable CA2000 // Justification: Event state ownership is transferred to Server.ReportEventAsync.
@@ -223,6 +245,33 @@ namespace Quickstarts.AlarmConditionServer
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error in OnRaiseSystemEvents");
+            }
+        }
+
+        /// <summary>
+        /// Gives every source the tick it needs to run its re-alarm reminders and to
+        /// refresh its alarm metrics.
+        /// </summary>
+        private async Task RunSimulationCycleAsync()
+        {
+            try
+            {
+                SourceState[] sources;
+
+                lock (m_sources)
+                {
+                    sources = new SourceState[m_sources.Count];
+                    m_sources.Values.CopyTo(sources, 0);
+                }
+
+                foreach (SourceState source in sources)
+                {
+                    await source.OnSimulationTickAsync().ConfigureAwait(false);
+                }
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Unexpected error running the alarm simulation cycle");
             }
         }
 
@@ -478,6 +527,7 @@ namespace Quickstarts.AlarmConditionServer
         private Dictionary<string, AreaState> m_areas;
         private Dictionary<string, SourceState> m_sources;
         private Timer m_simulationTimer;
+        private AlarmSuppressionEngine m_suppressionEngine;
         #endregion
     }
 }

@@ -25,6 +25,7 @@
   <!-- the sample clients under test -->
   <ItemGroup>
     <ProjectReference Include="..\..\Workshop\AlarmCondition\Client\AlarmCondition Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\AliasNames\Client\AliasNames Client.csproj" />
     <ProjectReference Include="..\..\Workshop\Boiler\Client\Boiler Client.csproj" />
     <ProjectReference Include="..\..\Workshop\DataAccess\Client\DataAccess Client.csproj" />
     <ProjectReference Include="..\..\Workshop\DataTypes\Client\DataTypes Client.csproj" />

@@ -58,6 +58,17 @@ namespace Quickstarts.HistoricalAccessServer
     /// per item settings recorded in the archive files - stepped interpolation and
     /// the aggregate configuration - are honoured, the way the sample always did.
     ///
+    /// Two of the interfaces implemented here are offers rather than obligations, and
+    /// the framework of this SDK version does not take either up: the atomic update
+    /// path of <see cref="IHistorianTransactionalProvider"/> has no caller yet, and
+    /// <see cref="IHistorianBulkInsertProvider"/> is reached only from the automatic
+    /// value capture pipeline, which this sample does not use because its archive is
+    /// filled from files rather than from live values. They are implemented anyway,
+    /// because what a store has to do to honour them is the part worth showing: the
+    /// batch is what a store with real transactions commits or discards as a whole,
+    /// and it is where the cost of a write - the lock and the reload, not the value -
+    /// is paid once instead of once per value.
+    ///
     /// The provider also feeds the server-wide HistoryServerCapabilities flags: the
     /// diagnostics node manager asks every registered provider for its capabilities
     /// once the address space exists and rolls the answers up into the capability
@@ -71,6 +82,8 @@ namespace Quickstarts.HistoricalAccessServer
     public sealed class ArchiveHistorianProvider :
         HistorianProviderBase,
         IHistorianDataProvider,
+        IHistorianTransactionalProvider,
+        IHistorianBulkInsertProvider,
         IHistorianModifiedProvider,
         IHistorianAtTimeProvider,
         IHistorianProcessedProvider,
@@ -239,6 +252,87 @@ namespace Quickstarts.HistoricalAccessServer
                 m_logger.LogError(e, "Unexpected error deleting the history of {NodeId}.", nodeId);
                 return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, timestamps.Count));
             }
+        }
+        #endregion
+
+        #region IHistorianTransactionalProvider Members
+        /// <inheritdoc/>
+        public ValueTask<IList<StatusCode>> InsertAtomicAsync(
+            HistorianOperationContext context,
+            NodeId nodeId,
+            IList<DataValue> values,
+            CancellationToken ct)
+        {
+            return UpdateDataAtomicAsync(context, nodeId, values, PerformUpdateType.Insert);
+        }
+
+        /// <inheritdoc/>
+        public ValueTask<IList<StatusCode>> ReplaceAtomicAsync(
+            HistorianOperationContext context,
+            NodeId nodeId,
+            IList<DataValue> values,
+            CancellationToken ct)
+        {
+            return UpdateDataAtomicAsync(context, nodeId, values, PerformUpdateType.Replace);
+        }
+
+        /// <inheritdoc/>
+        public ValueTask<IList<StatusCode>> UpdateAtomicAsync(
+            HistorianOperationContext context,
+            NodeId nodeId,
+            IList<DataValue> values,
+            CancellationToken ct)
+        {
+            return UpdateDataAtomicAsync(context, nodeId, values, PerformUpdateType.Update);
+        }
+        #endregion
+
+        #region IHistorianBulkInsertProvider Members
+        /// <inheritdoc/>
+        /// <remarks>
+        /// The archive lock and the reload of an item are what an insert costs here,
+        /// not the writing of the value, so a batch takes the lock once and reloads
+        /// each item once however many values are meant for it.
+        /// </remarks>
+        public ValueTask<IReadOnlyDictionary<NodeId, IList<StatusCode>>> InsertBatchAsync(
+            HistorianOperationContext context,
+            IReadOnlyDictionary<NodeId, IList<DataValue>> batch,
+            CancellationToken ct)
+        {
+            if (batch == null)
+            {
+                throw new ArgumentNullException(nameof(batch));
+            }
+
+            var results = new Dictionary<NodeId, IList<StatusCode>>(batch.Count);
+
+            try
+            {
+                lock (m_system.SyncRoot)
+                {
+                    foreach (KeyValuePair<NodeId, IList<DataValue>> entry in batch)
+                    {
+                        // the batch covers several nodes, so the node the context
+                        // carries cannot be the one this entry is about.
+                        ArchiveItemState item = ResolveById(context, entry.Key);
+
+                        results[entry.Key] = item == null || !TryReload(item, context)
+                            ? RepeatStatus(StatusCodes.BadNodeIdUnknown, entry.Value.Count)
+                            : UpdateItem(item, context, entry.Value, PerformUpdateType.Insert);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Unexpected error inserting a batch of {Count} nodes into the archive.", batch.Count);
+
+                foreach (KeyValuePair<NodeId, IList<DataValue>> entry in batch)
+                {
+                    results[entry.Key] = RepeatStatus(StatusCodes.BadUnexpectedError, entry.Value.Count);
+                }
+            }
+
+            return new ValueTask<IReadOnlyDictionary<NodeId, IList<StatusCode>>>(results);
         }
         #endregion
 
@@ -597,7 +691,18 @@ namespace Quickstarts.HistoricalAccessServer
                 return context.Node as ArchiveItemState;
             }
 
-            // no node in the address space: resolve the identifier of an item.
+            return ResolveById(context, nodeId);
+        }
+
+        /// <summary>
+        /// Returns the archive item with the given node id.
+        /// </summary>
+        /// <remarks>
+        /// An operation which covers several nodes at once cannot go through the one
+        /// node the context carries, so it resolves every node id for itself.
+        /// </remarks>
+        private ArchiveItemState ResolveById(HistorianOperationContext context, NodeId nodeId)
+        {
             ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
 
             if (parsedNodeId == null ||
@@ -668,14 +773,8 @@ namespace Quickstarts.HistoricalAccessServer
                         return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadNodeIdUnknown, values.Count));
                     }
 
-                    StatusCode[] results = new StatusCode[values.Count];
-
-                    for (int ii = 0; ii < values.Count; ii++)
-                    {
-                        results[ii] = item.UpdateHistory(context.SystemContext, values[ii], performUpdateType);
-                    }
-
-                    return new ValueTask<IList<StatusCode>>(results);
+                    return new ValueTask<IList<StatusCode>>(
+                        UpdateItem(item, context, values, performUpdateType));
                 }
             }
             catch (Exception e)
@@ -683,6 +782,83 @@ namespace Quickstarts.HistoricalAccessServer
                 m_logger.LogError(e, "Unexpected error updating the history of {NodeId}.", nodeId);
                 return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, values.Count));
             }
+        }
+
+        /// <summary>
+        /// Applies a batch of values to one item as a whole: either every value is
+        /// in the archive when the call returns, or none of them is.
+        /// </summary>
+        /// <remarks>
+        /// The archive of an item is a DataSet, which keeps every write pending
+        /// until it is told to accept it, so a batch is applied value by value and
+        /// then either committed or discarded in one go. That is the same guarantee
+        /// a store with real transactions would give, reached with what this one has.
+        ///
+        /// A value which fails answers with the reason it failed; the others answer
+        /// with BadHistoryOperationUnsupported, because nothing became of them - the
+        /// convention the in memory historian of the SDK uses for a batch it rolled
+        /// back.
+        /// </remarks>
+        private ValueTask<IList<StatusCode>> UpdateDataAtomicAsync(
+            HistorianOperationContext context,
+            NodeId nodeId,
+            IList<DataValue> values,
+            PerformUpdateType performUpdateType)
+        {
+            try
+            {
+                lock (m_system.SyncRoot)
+                {
+                    ArchiveItemState item = Resolve(context, nodeId);
+
+                    if (item == null || !TryReload(item, context))
+                    {
+                        return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadNodeIdUnknown, values.Count));
+                    }
+
+                    StatusCode[] results = UpdateItem(item, context, values, performUpdateType, commit: false);
+                    int failed = Array.FindIndex(results, StatusCode.IsBad);
+
+                    if (failed < 0)
+                    {
+                        item.CommitChanges();
+                        return new ValueTask<IList<StatusCode>>(results);
+                    }
+
+                    item.RollbackChanges();
+
+                    StatusCode reason = results[failed];
+                    Array.Fill(results, (StatusCode)StatusCodes.BadHistoryOperationUnsupported);
+                    results[failed] = reason;
+
+                    return new ValueTask<IList<StatusCode>>(results);
+                }
+            }
+            catch (Exception e)
+            {
+                m_logger.LogError(e, "Unexpected error updating the history of {NodeId} atomically.", nodeId);
+                return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, values.Count));
+            }
+        }
+
+        /// <summary>
+        /// Writes the values of one item, one status per value.
+        /// </summary>
+        private static StatusCode[] UpdateItem(
+            ArchiveItemState item,
+            HistorianOperationContext context,
+            IList<DataValue> values,
+            PerformUpdateType performUpdateType,
+            bool commit = true)
+        {
+            StatusCode[] results = new StatusCode[values.Count];
+
+            for (int ii = 0; ii < values.Count; ii++)
+            {
+                results[ii] = item.UpdateHistory(context.SystemContext, values[ii], performUpdateType, commit);
+            }
+
+            return results;
         }
 
         /// <summary>

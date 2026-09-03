@@ -540,6 +540,27 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
+        /// <summary>
+        /// Opens the OPC 10000-21 onboarding ticket administration of the connected GDS.
+        /// </summary>
+        /// <remarks>
+        /// The registrar administration Object lives on the GDS itself, so the dialog runs on
+        /// the GDS session rather than on the push session of a managed server.
+        /// </remarks>
+        private void OnboardingButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
+                new DeviceOnboardingDialog().ShowDialog(this, m_gds?.Session, m_telemetry);
+                #pragma warning restore CA2000
+            }
+            catch (Exception ex)
+            {
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
+            }
+        }
+
         private void RegistrationPanel_ServerRequired(object sender, SelectServerEventArgs e)
         {
             try
