@@ -677,6 +677,208 @@ namespace Opc.Ua.Samples.Tests
         }
         #endregion
 
+        #region AlarmCondition
+        /// <summary>
+        /// The alarm client silences an alarm and shows that the server accepted it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="WorkshopClientSubscriptionTests"/> proves that this client fills its
+        /// list; what it cannot prove is that the condition Methods behind the menu still
+        /// reach the server. Silence is the shortest of the Part 9 Methods to press - it
+        /// takes no argument and asks the operator nothing - so it is the one which pins
+        /// down the whole path: the facade the form calls, the Method NodeId the generated
+        /// proxy fills in, the handler on the server, and the event which comes back and
+        /// repaints the row.
+        /// </para>
+        /// <para>
+        /// The dialog conditions of the sample are skipped: a dialog is a condition without
+        /// a SilenceState, and calling Silence on one is correctly refused.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public Task AlarmConditionClientSilencesAnAlarm(CancellationToken ct)
+        {
+            return DriveAsync("AlarmCondition", async (form, session, phase, token) => {
+                phase.Enter("waiting for an alarm which is not silenced yet");
+
+                var conditions = WinFormsHarness.FindControl(form, "ConditionsLV") as ListView;
+
+                Assert.That(conditions, Is.Not.Null, "The sample no longer shows a condition list.");
+
+                bool arrived = await SampleFormDriver.PumpUntilAsync(
+                    () => FindAudibleAlarm(conditions) != null,
+                    s_step,
+                    token).ConfigureAwait(true);
+
+                Assert.That(
+                    arrived,
+                    Is.True,
+                    "No alarm which could be silenced arrived. The sample server reports one " +
+                    "every few seconds, so an empty list means the subscription never delivered.");
+
+                ListViewItem row = FindAudibleAlarm(conditions);
+                string condition = row.SubItems[kConditionColumn].Text;
+
+                await TestContext.Out
+                    .WriteLineAsync($"Silencing '{row.SubItems[kSourceColumn].Text}/{condition}'")
+                    .ConfigureAwait(true);
+
+                phase.Enter("silencing the alarm through the condition menu");
+
+                Assert.That(
+                    SampleFormDriver.TrySelectRow(conditions, row.Index),
+                    Is.True,
+                    "The alarm could not be selected.");
+
+                Assert.That(
+                    SampleFormDriver.TryInvokeHandler(form, "Conditions_SilenceMI_ClickAsync", null),
+                    Is.True,
+                    "The sample no longer has a handler for its Silence menu item.");
+
+                bool silenced = await SampleFormDriver.PumpUntilAsync(
+                    () => FlagsOf(conditions, condition).Contains("Silenced", StringComparison.Ordinal),
+                    s_step,
+                    token).ConfigureAwait(true);
+
+                await TestContext.Out
+                    .WriteLineAsync($"'{condition}' now reports: {FlagsOf(conditions, condition)}")
+                    .ConfigureAwait(true);
+
+                Assert.That(
+                    silenced,
+                    Is.True,
+                    "Silencing an alarm has to come back as an event which puts the alarm into " +
+                    "the silenced state, and the client has to show it.");
+            }, ct);
+        }
+
+        /// <summary>
+        /// The alarm client keeps showing what the server reports, minute after minute.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A list which fills once and then freezes looks almost right - the conditions are
+        /// all there - but every button above it stops working, because what a condition
+        /// Method changes only becomes visible through the event it causes. That is what
+        /// this pins down: the newest timestamp in the list has to keep moving.
+        /// </para>
+        /// <para>
+        /// It is a client test rather than a node manager one because the freeze it guards
+        /// against was only ever seen with the server and the client in one process, under
+        /// the load of both. A fixture which subscribes from the outside kept receiving
+        /// events throughout.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public Task AlarmConditionClientKeepsReceivingEvents(CancellationToken ct)
+        {
+            return DriveAsync("AlarmCondition", async (form, session, phase, token) => {
+                phase.Enter("waiting for the conditions of the server");
+
+                var conditions = (ListView)WinFormsHarness.FindControl(form, "ConditionsLV");
+
+                Assert.That(conditions, Is.Not.Null, "The sample no longer shows a condition list.");
+
+                bool arrived = await SampleFormDriver.PumpUntilAsync(
+                    () => conditions.Items.Count > 0,
+                    s_step,
+                    token).ConfigureAwait(true);
+
+                Assert.That(arrived, Is.True, "The condition list never filled.");
+
+                string first = NewestTimeIn(conditions);
+
+                await TestContext.Out
+                    .WriteLineAsync($"{conditions.Items.Count} conditions, newest at {first}")
+                    .ConfigureAwait(true);
+
+                phase.Enter("watching the list for a while");
+
+                // the simulation of the server changes every alarm every eight to eleven
+                // seconds, so a list which is alive cannot stand still for twenty
+                bool moved = await SampleFormDriver.PumpUntilAsync(
+                    () => string.CompareOrdinal(NewestTimeIn(conditions), first) > 0,
+                    TimeSpan.FromSeconds(20),
+                    token).ConfigureAwait(true);
+
+                await TestContext.Out
+                    .WriteLineAsync($"{conditions.Items.Count} conditions, newest at {NewestTimeIn(conditions)}")
+                    .ConfigureAwait(true);
+
+                Assert.That(
+                    moved,
+                    Is.True,
+                    "The newest condition in the list is the same one as twenty seconds ago, so " +
+                    "the client stopped receiving events. Everything in the Conditions menu goes " +
+                    "dead with it: a Method still reaches the server, but nothing it changes ever " +
+                    "arrives back.");
+            }, ct);
+        }
+
+        /// <summary>
+        /// The latest time shown in the condition list, as text - the column is formatted
+        /// HH:mm:ss.fff, which sorts the same way it reads.
+        /// </summary>
+        private static string NewestTimeIn(ListView conditions)
+        {
+            string newest = string.Empty;
+
+            foreach (ListViewItem row in conditions.Items)
+            {
+                if (string.CompareOrdinal(row.SubItems[kTimeColumn].Text, newest) > 0)
+                {
+                    newest = row.SubItems[kTimeColumn].Text;
+                }
+            }
+
+            return newest;
+        }
+
+        /// <summary>
+        /// The columns of the condition list which this fixture reads.
+        /// </summary>
+        private const int kSourceColumn = 0;
+        private const int kConditionColumn = 1;
+        private const int kTimeColumn = 5;
+        private const int kFlagsColumn = 7;
+
+        /// <summary>
+        /// The first alarm of the list which carries a silence state and is not silenced.
+        /// </summary>
+        private static ListViewItem FindAudibleAlarm(ListView conditions)
+        {
+            foreach (ListViewItem candidate in conditions.Items)
+            {
+                if (candidate.Tag is AlarmConditionState alarm &&
+                    alarm.SilenceState?.Id?.Value == false)
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The flags the list shows for a condition, by the name in its condition column.
+        /// </summary>
+        private static string FlagsOf(ListView conditions, string condition)
+        {
+            foreach (ListViewItem candidate in conditions.Items)
+            {
+                if (candidate.SubItems[kConditionColumn].Text == condition)
+                {
+                    return candidate.SubItems[kFlagsColumn].Text;
+                }
+            }
+
+            return string.Empty;
+        }
+        #endregion
+
         #region Helpers
         /// <summary>
         /// Starts the sample's server, builds the client's real main form, connects it and

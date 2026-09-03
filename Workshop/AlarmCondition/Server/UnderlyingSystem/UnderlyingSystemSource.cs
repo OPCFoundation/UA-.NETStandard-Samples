@@ -306,6 +306,107 @@ namespace Quickstarts.AlarmConditionServer
         }
 
         /// <summary>
+        /// Silences the audible annunciation of an alarm.
+        /// </summary>
+        /// <param name="alarmName">Name of the alarm.</param>
+        /// <param name="recordNumber">The record number.</param>
+        public void SilenceAlarm(string alarmName, uint recordNumber)
+        {
+            ChangeAlarmState(
+                alarmName,
+                recordNumber,
+                UnderlyingSystemAlarmStates.Silenced,
+                true,
+                "The alarm was silenced.");
+        }
+
+        /// <summary>
+        /// Suppresses or unsuppresses an alarm.
+        /// </summary>
+        /// <param name="alarmName">Name of the alarm.</param>
+        /// <param name="recordNumber">The record number.</param>
+        /// <param name="suppressing">if set to <c>true</c> the alarm is suppressed.</param>
+        public void SuppressAlarm(string alarmName, uint recordNumber, bool suppressing)
+        {
+            ChangeAlarmState(
+                alarmName,
+                recordNumber,
+                UnderlyingSystemAlarmStates.Suppressed,
+                suppressing,
+                "The alarm was " + (suppressing ? "suppressed." : "unsuppressed."));
+        }
+
+        /// <summary>
+        /// Takes an alarm out of service or places it back in service.
+        /// </summary>
+        /// <param name="alarmName">Name of the alarm.</param>
+        /// <param name="recordNumber">The record number.</param>
+        /// <param name="outOfService">if set to <c>true</c> the alarm is out of service.</param>
+        public void SetAlarmOutOfService(string alarmName, uint recordNumber, bool outOfService)
+        {
+            ChangeAlarmState(
+                alarmName,
+                recordNumber,
+                UnderlyingSystemAlarmStates.OutOfService,
+                outOfService,
+                "The alarm was " + (outOfService ? "removed from service." : "placed in service."));
+        }
+
+        /// <summary>
+        /// Clears the latch of an alarm.
+        /// </summary>
+        /// <param name="alarmName">Name of the alarm.</param>
+        /// <param name="recordNumber">The record number.</param>
+        /// <remarks>
+        /// The preconditions of the Reset Method - enabled, inactive, acknowledged and
+        /// confirmed - are checked by the stack before the alarm gets here.
+        /// </remarks>
+        public void ResetAlarm(string alarmName, uint recordNumber)
+        {
+            ChangeAlarmState(
+                alarmName,
+                recordNumber,
+                UnderlyingSystemAlarmStates.Latched,
+                false,
+                "The alarm was reset.");
+        }
+
+        /// <summary>
+        /// Repeats the annunciation of an alarm which stayed active and unacknowledged.
+        /// </summary>
+        /// <param name="alarmName">Name of the alarm.</param>
+        /// <remarks>
+        /// A re-alarm withdraws the acknowledgement and the silence so that the alarm
+        /// asks for the operator's attention again (OPC UA Part 9 5.8.13).
+        /// </remarks>
+        public void ReAlarm(string alarmName)
+        {
+            UnderlyingSystemAlarm snapshot = null;
+
+            lock (m_alarms)
+            {
+                UnderlyingSystemAlarm alarm = FindAlarm(alarmName, 0);
+
+                if (alarm != null)
+                {
+                    alarm.SetStateBits(
+                        UnderlyingSystemAlarmStates.Acknowledged | UnderlyingSystemAlarmStates.Silenced,
+                        false);
+
+                    alarm.Time = DateTime.UtcNow;
+                    alarm.Reason = "The alarm was re-alarmed.";
+
+                    snapshot = alarm.CreateSnapshot();
+                }
+            }
+
+            if (snapshot != null)
+            {
+                ReportAlarmChange(snapshot);
+            }
+        }
+
+        /// <summary>
         /// Reports the current state of all conditions.
         /// </summary>
         public void Refresh()
@@ -451,6 +552,48 @@ namespace Quickstarts.AlarmConditionServer
         }
 
         /// <summary>
+        /// Sets or clears state bits of a single alarm and reports the change.
+        /// </summary>
+        /// <param name="alarmName">Name of the alarm.</param>
+        /// <param name="recordNumber">The record number; 0 for the live alarm.</param>
+        /// <param name="bits">The bits to change.</param>
+        /// <param name="isSet">if set to <c>true</c> the bits are set; otherwise cleared.</param>
+        /// <param name="reason">The reason reported with the resulting event.</param>
+        /// <remarks>
+        /// The Part 9 Methods which the stack implements - Silence, Suppress, Unsuppress,
+        /// RemoveFromService, PlaceInService and Reset - are routed here so that the
+        /// underlying system stays the single owner of the alarm state. The stack applies
+        /// the same transition to the UA node afterwards, which makes the two agree.
+        /// </remarks>
+        private void ChangeAlarmState(
+            string alarmName,
+            uint recordNumber,
+            UnderlyingSystemAlarmStates bits,
+            bool isSet,
+            string reason)
+        {
+            UnderlyingSystemAlarm snapshot = null;
+
+            lock (m_alarms)
+            {
+                UnderlyingSystemAlarm alarm = FindAlarm(alarmName, recordNumber);
+
+                if (alarm != null && alarm.SetStateBits(bits, isSet))
+                {
+                    alarm.Time = DateTime.UtcNow;
+                    alarm.Reason = reason;
+
+                    snapshot = alarm.CreateSnapshot();
+                }
+            }
+
+            if (snapshot != null)
+            {
+                ReportAlarmChange(snapshot);
+            }
+        }
+
+        /// <summary>
         /// Reports a change to an alarm record.
         /// </summary>
         /// <param name="alarm">The alarm.</param>
@@ -492,6 +635,17 @@ namespace Quickstarts.AlarmConditionServer
 
                     alarm.SetStateBits(UnderlyingSystemAlarmStates.Active, true);
                     alarm.SetStateBits(UnderlyingSystemAlarmStates.Acknowledged | UnderlyingSystemAlarmStates.Confirmed, false);
+
+                    // a new activation makes the alarm audible again, and latches it if it
+                    // is the kind of alarm which latches. This is what the stack does to
+                    // SilenceState and LatchedState in AlarmConditionState.SetActiveState.
+                    alarm.SetStateBits(UnderlyingSystemAlarmStates.Silenced, false);
+
+                    if (alarm.AlarmType == "TripAlarm")
+                    {
+                        alarm.SetStateBits(UnderlyingSystemAlarmStates.Latched, true);
+                    }
+
                     alarm.Severity = EventSeverity.Low;
                     alarm.ActiveTime = DateTime.UtcNow;
 

@@ -76,8 +76,9 @@ namespace Quickstarts.AlarmConditionClient
         /// <param name="ct">The cancellation token.</param>
         public async Task InitializeAsync(ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
         {
-            InitializeComponent();
-
+            // the constructor has already built the controls; calling it again adds a second
+            // copy of every one of them, which is what used to put two tool strips and two
+            // lists on top of each other.
             m_session = session;
             m_telemetry = telemetry;
 

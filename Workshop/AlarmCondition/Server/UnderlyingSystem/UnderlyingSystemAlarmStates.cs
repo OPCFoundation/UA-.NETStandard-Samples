@@ -103,6 +103,31 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// The condition has deleted.
         /// </summary>
-        Deleted = 0x400
+        Deleted = 0x400,
+
+        /// <summary>
+        /// The alarm latched when it went active and stays latched until it is reset.
+        /// </summary>
+        /// <remarks>
+        /// A latching alarm (OPC UA Part 9 4.8) keeps the operator's attention after the
+        /// process condition which raised it is gone. The system clears the bit only when
+        /// the Reset Method is called, which is why it is tracked here and not derived
+        /// from the active state.
+        /// </remarks>
+        Latched = 0x800,
+
+        /// <summary>
+        /// The audible annunciation of the alarm was silenced by an operator.
+        /// </summary>
+        /// <remarks>
+        /// Silencing is undone by the system on the next activation and by a re-alarm, so
+        /// the bit belongs to the alarm rather than to the operator who set it.
+        /// </remarks>
+        Silenced = 0x1000,
+
+        /// <summary>
+        /// The alarm was taken out of service, usually because its source is being serviced.
+        /// </summary>
+        OutOfService = 0x2000
     }
 }

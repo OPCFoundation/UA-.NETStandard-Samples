@@ -59,8 +59,8 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [Aggregation Server](Workshop/Aggregation/Server) | **Server** | Aggregates multiple OPC UA servers into a single namespace. Browse aggregated servers via the Aggregation Client or any OPC UA client. |
 | [Aggregation Client](Workshop/Aggregation/Client) | **Client** | Connects to an Aggregation Server and browses its aggregated address space. |
 | [ConsoleAggregationServer](Workshop/Aggregation/ConsoleAggregationServer) | **Server** | Cross-platform console version of the Aggregation Server. |
-| [AlarmCondition Server](Workshop/AlarmCondition/Server) | **Server** | Demonstrates OPC UA Alarms & Conditions (A&C). Generates alarm events of various types. |
-| [AlarmCondition Client](Workshop/AlarmCondition/Client) | **Client** | Subscribes to and displays OPC UA alarm events from an A&C server. |
+| [AlarmCondition Server](Workshop/AlarmCondition/Server) | **Server** | Demonstrates OPC UA Part 9 Alarms & Conditions: areas and sources which route events, latching trip alarms, re-alarming, silencing, the two suppression patterns and alarm metrics. See the [sample README](Workshop/AlarmCondition/README.md). |
+| [AlarmCondition Client](Workshop/AlarmCondition/Client) | **Client** | Subscribes to alarm events, shows the Part 9 state of each condition, and calls every condition Method through the typed `AlarmClient`. |
 | [AliasNames Server](Workshop/AliasNames/Server) | **Server** | Demonstrates OPC UA Part 17 alias names: a searchable index of the tag names people use, laid over an address space organized by structure, served both on the standard well-known categories and on an application-defined category tree. See the [sample README](Workshop/AliasNames/README.md). |
 | [AliasNames Client](Workshop/AliasNames/Client) | **Client** | Searches a Part 17 category by wildcard, resolves a tag name to a NodeId and back, and adds or deletes aliases at runtime. |
 | [Boiler Server](Workshop/Boiler/Server) | **Server** | Simulates a boiler process with UA object instances. Demonstrates object types, methods and data variables. |

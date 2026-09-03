@@ -92,6 +92,16 @@ namespace Quickstarts.AlarmConditionClient
             this.Conditions_ManualShelveMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Conditions_OneShotShelveMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Conditions_TimedShelveMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Conditions_SilenceMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Conditions_SuppressionMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Conditions_SuppressMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Conditions_UnsuppressMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.Conditions_RemoveFromServiceMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Conditions_PlaceInServiceMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Conditions_ResetMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Conditions_GroupMembershipsMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Conditions_MaintenanceModeMI = new System.Windows.Forms.ToolStripMenuItem();
             this.ViewMI = new System.Windows.Forms.ToolStripMenuItem();
             this.View_AuditEventsMI = new System.Windows.Forms.ToolStripMenuItem();
             this.HelpMI = new System.Windows.Forms.ToolStripMenuItem();
@@ -106,6 +116,7 @@ namespace Quickstarts.AlarmConditionClient
             this.SeverityCH = new System.Windows.Forms.ColumnHeader();
             this.TimeCH = new System.Windows.Forms.ColumnHeader();
             this.StateCH = new System.Windows.Forms.ColumnHeader();
+            this.FlagsCH = new System.Windows.Forms.ColumnHeader();
             this.MessageCH = new System.Windows.Forms.ColumnHeader();
             this.CommentCH = new System.Windows.Forms.ColumnHeader();
             this.ConnectServerCTRL = new Opc.Ua.Client.Controls.ConnectServerCtrl();
@@ -190,7 +201,12 @@ namespace Quickstarts.AlarmConditionClient
             this.Conditions_AcknowledgeMI,
             this.Conditions_ConfirmMI,
             this.Conditions_RespondMI,
-            this.Conditions_ShelvingMI});
+            this.Conditions_ShelvingMI,
+            this.Conditions_SilenceMI,
+            this.Conditions_SuppressionMI,
+            this.Conditions_ResetMI,
+            this.Conditions_GroupMembershipsMI,
+            this.Conditions_MaintenanceModeMI});
             this.ConditionsMI.Name = "ConditionsMI";
             this.ConditionsMI.Size = new System.Drawing.Size(69, 20);
             this.ConditionsMI.Text = "Conditions";
@@ -397,7 +413,80 @@ namespace Quickstarts.AlarmConditionClient
             this.Conditions_TimedShelveMI.Size = new System.Drawing.Size(154, 22);
             this.Conditions_TimedShelveMI.Text = "Timed Shelve...";
             this.Conditions_TimedShelveMI.Click += new System.EventHandler(this.Conditions_TimedShelveMI_ClickAsync);
-            // 
+            //
+            // Conditions_SilenceMI
+            //
+            this.Conditions_SilenceMI.Name = "Conditions_SilenceMI";
+            this.Conditions_SilenceMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_SilenceMI.Text = "Silence";
+            this.Conditions_SilenceMI.Click += new System.EventHandler(this.Conditions_SilenceMI_ClickAsync);
+            //
+            // Conditions_SuppressionMI
+            //
+            this.Conditions_SuppressionMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.Conditions_SuppressMI,
+            this.Conditions_UnsuppressMI,
+            this.toolStripSeparator3,
+            this.Conditions_RemoveFromServiceMI,
+            this.Conditions_PlaceInServiceMI});
+            this.Conditions_SuppressionMI.Name = "Conditions_SuppressionMI";
+            this.Conditions_SuppressionMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_SuppressionMI.Text = "Suppression";
+            //
+            // Conditions_SuppressMI
+            //
+            this.Conditions_SuppressMI.Name = "Conditions_SuppressMI";
+            this.Conditions_SuppressMI.Size = new System.Drawing.Size(196, 22);
+            this.Conditions_SuppressMI.Text = "Suppress...";
+            this.Conditions_SuppressMI.Click += new System.EventHandler(this.Conditions_SuppressMI_ClickAsync);
+            //
+            // Conditions_UnsuppressMI
+            //
+            this.Conditions_UnsuppressMI.Name = "Conditions_UnsuppressMI";
+            this.Conditions_UnsuppressMI.Size = new System.Drawing.Size(196, 22);
+            this.Conditions_UnsuppressMI.Text = "Unsuppress...";
+            this.Conditions_UnsuppressMI.Click += new System.EventHandler(this.Conditions_UnsuppressMI_ClickAsync);
+            //
+            // toolStripSeparator3
+            //
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(193, 6);
+            //
+            // Conditions_RemoveFromServiceMI
+            //
+            this.Conditions_RemoveFromServiceMI.Name = "Conditions_RemoveFromServiceMI";
+            this.Conditions_RemoveFromServiceMI.Size = new System.Drawing.Size(196, 22);
+            this.Conditions_RemoveFromServiceMI.Text = "Remove From Service...";
+            this.Conditions_RemoveFromServiceMI.Click += new System.EventHandler(this.Conditions_RemoveFromServiceMI_ClickAsync);
+            //
+            // Conditions_PlaceInServiceMI
+            //
+            this.Conditions_PlaceInServiceMI.Name = "Conditions_PlaceInServiceMI";
+            this.Conditions_PlaceInServiceMI.Size = new System.Drawing.Size(196, 22);
+            this.Conditions_PlaceInServiceMI.Text = "Place In Service...";
+            this.Conditions_PlaceInServiceMI.Click += new System.EventHandler(this.Conditions_PlaceInServiceMI_ClickAsync);
+            //
+            // Conditions_ResetMI
+            //
+            this.Conditions_ResetMI.Name = "Conditions_ResetMI";
+            this.Conditions_ResetMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_ResetMI.Text = "Reset...";
+            this.Conditions_ResetMI.Click += new System.EventHandler(this.Conditions_ResetMI_ClickAsync);
+            //
+            // Conditions_GroupMembershipsMI
+            //
+            this.Conditions_GroupMembershipsMI.Name = "Conditions_GroupMembershipsMI";
+            this.Conditions_GroupMembershipsMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_GroupMembershipsMI.Text = "Group Memberships...";
+            this.Conditions_GroupMembershipsMI.Click += new System.EventHandler(this.Conditions_GroupMembershipsMI_ClickAsync);
+            //
+            // Conditions_MaintenanceModeMI
+            //
+            this.Conditions_MaintenanceModeMI.Name = "Conditions_MaintenanceModeMI";
+            this.Conditions_MaintenanceModeMI.Size = new System.Drawing.Size(157, 22);
+            this.Conditions_MaintenanceModeMI.Text = "Toggle Maintenance Mode";
+            this.Conditions_MaintenanceModeMI.Click += new System.EventHandler(this.Conditions_MaintenanceModeMI_ClickAsync);
+            //
             // ViewMI
             // 
             this.ViewMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -455,6 +544,7 @@ namespace Quickstarts.AlarmConditionClient
             this.SeverityCH,
             this.TimeCH,
             this.StateCH,
+            this.FlagsCH,
             this.MessageCH,
             this.CommentCH});
             this.ConditionsLV.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -493,9 +583,13 @@ namespace Quickstarts.AlarmConditionClient
             this.TimeCH.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // StateCH
-            // 
+            //
             this.StateCH.Text = "State";
-            // 
+            //
+            // FlagsCH
+            //
+            this.FlagsCH.Text = "Flags";
+            //
             // MessageCH
             // 
             this.MessageCH.Text = "Message";
@@ -590,6 +684,17 @@ namespace Quickstarts.AlarmConditionClient
         private System.Windows.Forms.ToolStripMenuItem Conditions_ConfirmMI;
         private System.Windows.Forms.ToolStripMenuItem Conditions_RespondMI;
         private System.Windows.Forms.ToolStripMenuItem Conditions_ShelvingMI;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_SilenceMI;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_SuppressionMI;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_SuppressMI;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_UnsuppressMI;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_RemoveFromServiceMI;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_PlaceInServiceMI;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_ResetMI;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_GroupMembershipsMI;
+        private System.Windows.Forms.ToolStripMenuItem Conditions_MaintenanceModeMI;
+        private System.Windows.Forms.ColumnHeader FlagsCH;
         private System.Windows.Forms.ToolStripMenuItem Conditions_MonitorMI;
         private System.Windows.Forms.ColumnHeader ConditionNameCH;
         private System.Windows.Forms.ToolStripMenuItem Conditions_UnshelveMI;
