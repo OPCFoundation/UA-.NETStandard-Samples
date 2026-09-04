@@ -44,8 +44,9 @@ namespace Quickstarts.AlarmConditionServer
         /// <summary>
         /// Initializes a new instance of the <see cref="UnderlyingSystem"/> class.
         /// </summary>
-        public UnderlyingSystem(ITelemetryContext telemetry)
+        public UnderlyingSystem(ITelemetryContext telemetry, TimeProvider timeProvider = null)
         {
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_sources = new Dictionary<string, UnderlyingSystemSource>();
             m_logger = telemetry.CreateLogger<UnderlyingSystem>();
         }
@@ -176,7 +177,11 @@ namespace Quickstarts.AlarmConditionServer
                     m_simulationTimer = null;
                 }
 
-                m_simulationTimer = new Timer(DoSimulation, null, 1000, 1000);
+                m_simulationTimer = m_timeProvider.CreateTimer(
+                    DoSimulation,
+                    null,
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1));
             }
         }
 
@@ -229,7 +234,8 @@ namespace Quickstarts.AlarmConditionServer
         #region Private Fields
         private object m_lock = new object();
         private Dictionary<string, UnderlyingSystemSource> m_sources;
-        private Timer m_simulationTimer;
+        private ITimer m_simulationTimer;
+        private readonly TimeProvider m_timeProvider;
         private long m_simulationCounter;
         private ILogger m_logger;
         #endregion

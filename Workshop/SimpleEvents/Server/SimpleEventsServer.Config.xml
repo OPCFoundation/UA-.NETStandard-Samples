@@ -55,7 +55,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62562/Quickstarts/SimpleEventsServer</ua:String>
       <ua:String>opc.tcp://localhost:62563/Quickstarts/SimpleEventsServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>

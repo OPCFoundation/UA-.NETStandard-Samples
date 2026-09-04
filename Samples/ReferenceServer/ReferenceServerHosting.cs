@@ -47,6 +47,15 @@ namespace Microsoft.Extensions.DependencyInjection
             string configurationFile = null,
             Action<ApplicationConfiguration> configure = null)
         {
+            ArgumentNullException.ThrowIfNull(services);
+
+            // the configuration file lists an opc.https base address next to the opc.tcp
+            // one, and the server advertises the https-uabinary profile. Every transport
+            // other than opc.tcp has to be registered: the stack skips a base address
+            // whose scheme has no listener factory, so without this the reference server
+            // would advertise an endpoint nobody answers.
+            services.AddOpcUa().AddHttpsTransport();
+
             return services.AddSampleServer<ReferenceServer>(
                 configurationFile ?? ConfigurationFile,
                 server => {

@@ -52,7 +52,6 @@
 
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62572/Quickstarts/RoleManagementServer</ua:String>
       <ua:String>opc.tcp://localhost:62573/Quickstarts/RoleManagementServer</ua:String>
     </BaseAddresses>
 

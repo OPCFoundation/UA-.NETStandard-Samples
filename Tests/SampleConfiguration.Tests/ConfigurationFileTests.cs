@@ -70,6 +70,58 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// The samples which register a transport binding beyond the opc.tcp one every
+        /// server gets from <c>AddOpcUa()</c>, and may therefore declare a base address
+        /// of another scheme.
+        /// </summary>
+        /// <remarks>
+        /// The stack creates a listener only for a scheme whose factory is registered,
+        /// and skips a base address of any other scheme without raising an error - the
+        /// server then advertises a discovery url nobody answers. Keeping the two in
+        /// step is what this list is for: a sample belongs here once its composition
+        /// root calls <c>AddHttpsTransport()</c> or <c>AddWssTransport()</c>.
+        /// </remarks>
+        private static readonly HashSet<string> s_samplesWithExtraTransports =
+            new(System.StringComparer.OrdinalIgnoreCase)
+            {
+                // Samples/ReferenceServer/ReferenceServerHosting.cs
+                "Samples/ReferenceServer/Quickstarts.ReferenceServer.Config.xml",
+                // Samples/Server.Net4/Program.cs
+                "Samples/Server.Net4/Opc.Ua.SampleServer.Config.xml",
+                // Samples/Client.Net4/Program.cs
+                "Samples/Client.Net4/Opc.Ua.SampleClient.Config.xml",
+            };
+
+        [Test]
+        [TestCaseSource(nameof(ConfigurationFiles))]
+        public async Task BaseAddressesOnlyUseRegisteredTransports(string relativePath)
+        {
+            using var pki = new TemporaryPki(relativePath);
+
+            ApplicationConfiguration configuration =
+                await SampleConfigurationLoader.LoadAsync(relativePath, pki).ConfigureAwait(false);
+
+            if (s_samplesWithExtraTransports.Contains(relativePath.Replace('\\', '/')))
+            {
+                Assert.Pass("The sample registers the transports its base addresses need.");
+            }
+
+            IEnumerable<string> foreign = SampleConfigurationLoader
+                .GetBaseAddresses(configuration)
+                .Where(address => !address.StartsWith(
+                    Utils.UriSchemeOpcTcp,
+                    System.StringComparison.OrdinalIgnoreCase));
+
+            Assert.That(
+                foreign,
+                Is.Empty,
+                $"{relativePath} declares a base address whose transport the sample does not register, " +
+                "so the stack skips the listener and the server advertises an endpoint nobody answers. " +
+                "Either register the transport and add the sample to s_samplesWithExtraTransports, " +
+                "or drop the base address.");
+        }
+
+        /// <summary>
         /// Guards the guard: a configuration which is not valid has to fail, otherwise the
         /// test above would pass for every sample no matter what its configuration says.
         /// </summary>

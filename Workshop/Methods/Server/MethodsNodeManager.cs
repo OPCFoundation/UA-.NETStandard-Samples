@@ -71,6 +71,12 @@ namespace Quickstarts.MethodsServer
         :
             base(server, configuration, Namespaces.Methods)
         {
+            // the clock of the server, so that the simulated process runs on the same
+            // time source as the rest of the server and a test can drive it with a
+            // FakeTimeProvider. ITimeProviderProvider is the opt-in seam for this; an
+            // IServerInternal which does not implement it falls back to the system clock.
+            m_timeProvider = (server as ITimeProviderProvider)?.TimeProvider
+                ?? TimeProvider.System;
         }
         #endregion
 
@@ -212,9 +218,10 @@ namespace Quickstarts.MethodsServer
         }
 
         private object m_processLock = new object();
+        private readonly TimeProvider m_timeProvider;
         private uint m_state;
         private uint m_finalState;
-        private Timer m_processTimer;
+        private ITimer m_processTimer;
         private PropertyState<uint> m_stateNode;
 
         /// <summary>
@@ -275,7 +282,11 @@ namespace Quickstarts.MethodsServer
                 // start the process.
                 m_state = initialState;
                 m_finalState = finalState;
-                m_processTimer = new Timer(OnUpdateProcess, null, 1000, 1000);
+                m_processTimer = m_timeProvider.CreateTimer(
+                    OnUpdateProcess,
+                    null,
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1));
 
                 // the calling function sets default values for all output arguments.
                 // only need to update them here.

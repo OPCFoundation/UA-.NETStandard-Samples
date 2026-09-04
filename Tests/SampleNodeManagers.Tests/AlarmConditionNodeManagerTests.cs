@@ -858,7 +858,7 @@ namespace Opc.Ua.Samples.Tests
             DataValue rate = await SessionOps.ReadValueAsync(Session, currentRate, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"AlarmCount={count.Value}, CurrentAlarmRate={rate.Value}")
+                .WriteLineAsync($"AlarmCount={count.WrappedValue}, CurrentAlarmRate={rate.WrappedValue}")
                 .ConfigureAwait(false);
 
             Assert.That(

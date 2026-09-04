@@ -48,8 +48,4 @@
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
   </ItemGroup>
-  <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="FilterDefinitionField.cs" />
-    <Compile Remove="FilterDefinition.cs" />
-  </ItemGroup>
 </Project>

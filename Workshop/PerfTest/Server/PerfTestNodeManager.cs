@@ -27,6 +27,7 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -102,7 +103,14 @@ namespace Quickstarts.PerfTestServer
         {
             await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
 
-            m_system.Initialize(Server.Telemetry);
+            // the clock of the server, so that the update loop of the simulated registers
+            // runs on the same time source as the rest of the server and a test can drive
+            // it with a FakeTimeProvider. ITimeProviderProvider is the opt-in seam for
+            // reaching it; an IServerInternal which does not implement it falls back to
+            // the system clock.
+            m_system.Initialize(
+                Server.Telemetry,
+                (Server as ITimeProviderProvider)?.TimeProvider ?? TimeProvider.System);
 
             IList<MemoryRegister> registers = m_system.GetRegisters();
 

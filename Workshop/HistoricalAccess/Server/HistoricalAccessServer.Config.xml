@@ -51,7 +51,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62549/Quickstarts/HistoricalAccessServer</ua:String>
       <ua:String>opc.tcp://localhost:62550/Quickstarts/HistoricalAccessServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>

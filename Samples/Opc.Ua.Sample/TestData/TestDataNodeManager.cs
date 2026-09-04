@@ -120,7 +120,16 @@ namespace TestData
             m_lastUsedId = m_configuration.NextUnusedId - 1;
 
             // create the object used to access the test system.
-            m_system = new TestDataSystem(this, server.NamespaceUris, server.ServerUris, server.Telemetry);
+            // the clock of the server, so that sampling and the archive run on the same
+            // time source as the rest of the server and a test can drive them with a
+            // FakeTimeProvider. ITimeProviderProvider is the opt-in seam for reaching it;
+            // an IServerInternal which does not implement it falls back to the system clock.
+            m_system = new TestDataSystem(
+                this,
+                server.NamespaceUris,
+                server.ServerUris,
+                server.Telemetry,
+                (server as ITimeProviderProvider)?.TimeProvider ?? TimeProvider.System);
 
             // update the default context.
             SystemContext.SystemHandle = m_system;

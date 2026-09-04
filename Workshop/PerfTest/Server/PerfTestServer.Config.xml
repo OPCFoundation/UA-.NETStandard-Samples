@@ -49,7 +49,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62558/Quickstarts/PerfTestServer</ua:String>
       <ua:String>opc.tcp://localhost:62559/Quickstarts/PerfTestServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>

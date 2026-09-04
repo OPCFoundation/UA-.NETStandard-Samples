@@ -56,16 +56,18 @@ namespace TestData
         public TestDataSystem(ITestDataSystemCallback callback,
                               NamespaceTable namespaceUris,
                               StringTable serverUris,
-                              ITelemetryContext telemetry)
+                              ITelemetryContext telemetry,
+                              TimeProvider timeProvider = null)
         {
             m_callback = callback;
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_logger = telemetry.CreateLogger<TestDataSystem>();
             m_minimumSamplingInterval = Int32.MaxValue;
             m_monitoredNodes = new Dictionary<uint, BaseVariableState>();
             m_generator = new Opc.Ua.Test.DataGenerator(null, telemetry);
             m_generator.NamespaceUris = namespaceUris;
             m_generator.ServerUris = serverUris;
-            m_historyArchive = new HistoryArchive(telemetry);
+            m_historyArchive = new HistoryArchive(telemetry, m_timeProvider);
         }
 
         /// <summary>
@@ -775,7 +777,11 @@ namespace TestData
                         m_timer = null;
                     }
 
-                    m_timer = new Timer(DoSample, null, m_minimumSamplingInterval, m_minimumSamplingInterval);
+                    m_timer = m_timeProvider.CreateTimer(
+                        DoSample,
+                        null,
+                        TimeSpan.FromMilliseconds(m_minimumSamplingInterval),
+                        TimeSpan.FromMilliseconds(m_minimumSamplingInterval));
                 }
             }
         }
@@ -786,7 +792,7 @@ namespace TestData
             {
                 if (m_logger.IsEnabled(LogLevel.Trace))
                 {
-                    m_logger.LogTrace("DoSample HiRes={HiResNow:ss.ffff} Now={Now:ss.ffff}", DateTime.UtcNow, DateTime.UtcNow);
+                    m_logger.LogTrace("DoSample Now={Now:ss.ffff}", m_timeProvider.GetUtcNow().UtcDateTime);
                 }
 
                 Queue<Sample> samples = new Queue<Sample>();
@@ -861,7 +867,8 @@ namespace TestData
         private Opc.Ua.Test.DataGenerator m_generator;
         private int m_minimumSamplingInterval;
         private Dictionary<uint, BaseVariableState> m_monitoredNodes;
-        private Timer m_timer;
+        private ITimer m_timer;
+        private readonly TimeProvider m_timeProvider;
         private StatusCode m_systemStatus;
         private HistoryArchive m_historyArchive;
         #endregion

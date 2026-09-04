@@ -11,6 +11,7 @@ using System;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
+using Opc.Ua.Server;
 using Opc.Ua.Server.Fluent;
 
 namespace Quickstarts.AliasNames.Server
@@ -57,10 +58,22 @@ namespace Quickstarts.AliasNames.Server
             SetValue(m_feedwaterFlow, Variant.From(43.5));
             SetValue(builder.Plant.Boiler.BurnerEnabled.Node, Variant.From(true));
 
+            // the clock of the server, so that the simulation and the timestamps it writes
+            // run on the same time source as the rest of the server and a test can drive
+            // them with a FakeTimeProvider. ITimeProviderProvider is the opt-in seam for
+            // reaching it; an IServerInternal which does not implement it falls back to
+            // the system clock.
+            m_timeProvider = (Server as ITimeProviderProvider)?.TimeProvider
+                ?? TimeProvider.System;
+
             // one timer for the whole plant: the measurements wander a little around their
             // seeded values so that a client which resolved a tag name can see the node it
             // landed on is live
-            m_simulation = new Timer(OnSimulate, null, kSimulationPeriod, kSimulationPeriod);
+            m_simulation = m_timeProvider.CreateTimer(
+                OnSimulate,
+                null,
+                kSimulationPeriod,
+                kSimulationPeriod);
         }
         #endregion
 
@@ -121,7 +134,7 @@ namespace Quickstarts.AliasNames.Server
         private void SetValue(BaseVariableState node, Variant value)
         {
             node.Value = value;
-            node.Timestamp = DateTimeUtc.Now;
+            node.Timestamp = new DateTimeUtc(m_timeProvider.GetUtcNow().UtcDateTime);
             node.ClearChangeMasks(SystemContext, false);
         }
         #endregion
@@ -130,13 +143,14 @@ namespace Quickstarts.AliasNames.Server
         /// <summary>
         /// How often the measured values move.
         /// </summary>
-        private const int kSimulationPeriod = 1000;
+        private static readonly TimeSpan kSimulationPeriod = TimeSpan.FromSeconds(1);
 
+        private TimeProvider m_timeProvider = TimeProvider.System;
         private BaseVariableState m_temperature;
         private BaseVariableState m_pressure;
         private BaseVariableState m_steamPressure;
         private BaseVariableState m_feedwaterFlow;
-        private Timer m_simulation;
+        private ITimer m_simulation;
         private int m_step;
         #endregion
     }

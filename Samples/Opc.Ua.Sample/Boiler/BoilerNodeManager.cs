@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using Opc.Ua;
+using Opc.Ua.Server;
 using Opc.Ua.Server.Fluent;
 
 namespace Boiler
@@ -138,6 +139,13 @@ namespace Boiler
         /// </summary>
         private void StartSimulation(BoilerState boiler)
         {
+            // the clock of the server, so that the simulation runs on the same time source
+            // as the rest of the server and a test can drive it with a FakeTimeProvider.
+            // ITimeProviderProvider is the opt-in seam for reaching it; an IServerInternal
+            // which does not implement it falls back to the system clock.
+            boiler.TimeProvider = (Server as ITimeProviderProvider)?.TimeProvider
+                ?? TimeProvider.System;
+
             MethodState start = boiler.Simulation.Start;
             ArrayOf<Variant> inputArguments = ArrayOf<Variant>.Empty;
             List<Variant> outputArguments = new List<Variant>();

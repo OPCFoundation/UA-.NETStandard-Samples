@@ -47,8 +47,9 @@ namespace MemoryBuffer
         /// <summary>
         /// Initializes the buffer from the configuration.
         /// </summary>
-        public MemoryBufferState(ISystemContext context, MemoryBufferInstance configuration) : base(null)
+        public MemoryBufferState(ISystemContext context, MemoryBufferInstance configuration, TimeProvider timeProvider = null) : base(null)
         {
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             Initialize(context);
 
             string dataType = "UInt32";
@@ -480,7 +481,11 @@ namespace MemoryBuffer
                 if (m_monitoringTable == null)
                 {
                     m_monitoringTable = new MemoryBufferMonitoredItem[elementCount][];
-                    m_scanTimer = new Timer(DoScan, null, 100, 100);
+                    m_scanTimer = m_timeProvider.CreateTimer(
+                        DoScan,
+                        null,
+                        TimeSpan.FromMilliseconds(100),
+                        TimeSpan.FromMilliseconds(100));
                 }
 
                 int elementOffet = (int)(tag.Offset / ElementSize);
@@ -670,7 +675,8 @@ namespace MemoryBuffer
         private int m_maximumScanRate;
         private byte[] m_buffer;
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA2213:Disposable fields should be disposed", Justification = "Sample code preserves existing public API and behavior.")]
-        private Timer m_scanTimer;
+        private ITimer m_scanTimer;
+        private readonly TimeProvider m_timeProvider;
         private int m_updateCount;
         private int m_itemCount;
         #endregion

@@ -51,7 +51,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62547/Quickstarts/DataAccessServer</ua:String>
       <ua:String>opc.tcp://localhost:62548/Quickstarts/DataAccessServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>
