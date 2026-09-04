@@ -34,6 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
+    <ProjectReference Include="..\..\..\Samples\Client.Common\Opc.Ua.Samples.Client.csproj" />
     <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
     <ProjectReference Include="..\..\Common\Quickstart Library.csproj" />
   </ItemGroup>
@@ -47,9 +48,5 @@
       Version="$(OpcUaNetStandardVersion)"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />
-  </ItemGroup>
-  <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="FilterDefinitionField.cs" />
-    <Compile Remove="FilterDefinition.cs" />
   </ItemGroup>
 </Project>

@@ -29,19 +29,22 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Text;
-using Opc.Ua;
-using Opc.Ua.Client;
-using Opc.Ua.Client.Controls;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using Opc.Ua;
+using Opc.Ua.Client.Controls;
+using Quickstarts.HistoricalEvents.Client.Model;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
     /// <summary>
-    /// Prompts the user to select an area to use as an event filter.
+    /// Prompts the user to select an event type to use as an event filter.
     /// </summary>
+    /// <remarks>
+    /// The dialog only renders: the model browses the subtypes of a type when a node of
+    /// the tree is expanded, and describes the fields of a type when one is selected.
+    /// </remarks>
     public partial class SelectTypeDlg : Form
     {
         #region Constructors
@@ -55,19 +58,22 @@ namespace Quickstarts.HistoricalEvents.Client
         #endregion
 
         #region Private Fields
-        private ISession m_session;
+        private HistoricalEventsClientModel m_model;
         private NodeId m_rootId;
         #endregion
 
         #region Public Interface
         /// <summary>
-        /// Displays the available areas in a tree view.
+        /// Displays the event types below a root in a tree view.
         /// </summary>
-        /// <param name="session">The session.</param>
-        /// <returns></returns>
-        public async Task<TypeDeclaration> ShowDialogAsync(ISession session, NodeId rootId, string caption, CancellationToken ct = default)
+        /// <param name="model">The model which browses the types.</param>
+        /// <param name="rootId">The root of the tree. BaseEventType when null.</param>
+        /// <param name="caption">The caption of the dialog.</param>
+        /// <param name="ct">The cancellation token.</param>
+        /// <returns>The selected type with its fields, or null when the dialog was cancelled.</returns>
+        public async Task<TypeDeclaration> ShowDialogAsync(HistoricalEventsClientModel model, NodeId rootId, string caption, CancellationToken ct = default)
         {
-            m_session = session;
+            m_model = model ?? throw new ArgumentNullException(nameof(model));
 
             // set the caption.
             if (!String.IsNullOrEmpty(caption))
@@ -84,7 +90,7 @@ namespace Quickstarts.HistoricalEvents.Client
             m_rootId = rootId;
 
             // display root.
-            TreeNode root = new TreeNode(await session.NodeCache.GetDisplayTextAsync(rootId, ct));
+            var root = new TreeNode(await m_model.GetDisplayTextAsync(rootId, ct));
             root.Nodes.Add(new TreeNode());
             BrowseTV.Nodes.Add(root);
             root.Expand();
@@ -102,25 +108,15 @@ namespace Quickstarts.HistoricalEvents.Client
                 return null;
             }
 
-            // get the currently selected event.
-            NodeId typeId = m_rootId;
-            ReferenceDescription reference = BrowseTV.SelectedNode.Tag as ReferenceDescription;
-
-            if (reference != null)
-            {
-                typeId = (NodeId)reference.NodeId;
-            }
-
-            TypeDeclaration declaration = new TypeDeclaration();
-            declaration.NodeId = typeId;
-            declaration.Declarations = new List<InstanceDeclaration>();
+            var declaration = new TypeDeclaration {
+                NodeId = SelectedTypeId(BrowseTV.SelectedNode),
+                Declarations = new List<InstanceDeclaration>(),
+            };
 
             // update selected fields.
             for (int ii = 0; ii < DeclarationsLV.Items.Count; ii++)
             {
-                InstanceDeclaration instance = DeclarationsLV.Items[ii].Tag as InstanceDeclaration;
-
-                if (instance != null)
+                if (DeclarationsLV.Items[ii].Tag is InstanceDeclaration instance)
                 {
                     declaration.Declarations.Add(instance);
                 }
@@ -132,6 +128,19 @@ namespace Quickstarts.HistoricalEvents.Client
         #endregion
 
         #region Private Methods
+        /// <summary>
+        /// The type a node of the tree stands for: the root for the root node, the browsed
+        /// reference for every other one.
+        /// </summary>
+        private NodeId SelectedTypeId(TreeNode node)
+        {
+            if (node.Tag is ReferenceDescription reference)
+            {
+                return (NodeId)reference.NodeId;
+            }
+
+            return m_rootId;
+        }
         #endregion
 
         #region Event Handlers
@@ -156,7 +165,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                ClientUtils.HandleException(m_model?.Telemetry, this.Text, exception);
             }
         }
 
@@ -179,24 +188,13 @@ namespace Quickstarts.HistoricalEvents.Client
 
                 OkBTN.Enabled = true;
 
-                // get the currently selected event.
-                NodeId typeId = m_rootId;
-                ReferenceDescription reference = e.Node.Tag as ReferenceDescription;
-
-                if (reference != null)
-                {
-                    typeId = (NodeId)reference.NodeId;
-                }
-
-                // get the instance declarations.
-                List<InstanceDeclaration> instances = await ModelUtils.CollectInstanceDeclarationsForTypeAsync(m_session, typeId);
+                // get the instance declarations of the selected type.
+                TypeDeclaration type = await m_model.DescribeEventTypeAsync(SelectedTypeId(e.Node));
 
                 // populate the list box.
-                for (int ii = 0; ii < instances.Count; ii++)
+                foreach (InstanceDeclaration instance in type.Declarations)
                 {
-                    InstanceDeclaration instance = instances[ii];
-
-                    ListViewItem item = new ListViewItem(instance.DisplayPath);
+                    var item = new ListViewItem(instance.DisplayPath);
                     item.SubItems.Add(instance.DataTypeDisplayText);
                     item.SubItems.Add(instance.Description);
                     item.Tag = instance;
@@ -212,7 +210,7 @@ namespace Quickstarts.HistoricalEvents.Client
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                ClientUtils.HandleException(m_model?.Telemetry, this.Text, exception);
             }
         }
 
@@ -225,47 +223,23 @@ namespace Quickstarts.HistoricalEvents.Client
         {
             try
             {
-                ReferenceDescription reference = (ReferenceDescription)e.Node.Tag;
                 e.Node.Nodes.Clear();
 
-                // browse HasEventSource to display the sources but it won't be possible to select them.
-                BrowseDescription nodeToBrowse = new BrowseDescription();
+                // add the subtypes to the control.
+                IReadOnlyList<ReferenceDescription> references = await m_model.BrowseSubtypesAsync(SelectedTypeId(e.Node));
 
-                nodeToBrowse.NodeId = Opc.Ua.ObjectTypeIds.BaseEventType;
-                nodeToBrowse.BrowseDirection = BrowseDirection.Forward;
-                nodeToBrowse.ReferenceTypeId = ReferenceTypeIds.HasSubtype;
-                nodeToBrowse.IncludeSubtypes = false;
-                nodeToBrowse.NodeClassMask = 0;
-                nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
-
-                if (reference != null)
+                foreach (ReferenceDescription reference in references)
                 {
-                    nodeToBrowse.NodeId = (NodeId)reference.NodeId;
-                }
-
-                // add the childen to the control.
-                var references = await FormUtils.BrowseAsync(m_session, nodeToBrowse, false);
-
-                for (int ii = 0; ii < references.Count; ii++)
-                {
-                    reference = references[ii];
-
-                    // ignore out of server references.
-                    if (reference.NodeId.IsAbsolute)
-                    {
-                        continue;
-                    }
-
-                    TreeNode child = new TreeNode(reference.ToString());
+                    // the placeholder child is what gives the node its expand button.
+                    var child = new TreeNode(reference.ToString()) { Tag = reference };
                     child.Nodes.Add(new TreeNode());
-                    child.Tag = reference;
 
                     e.Node.Nodes.Add(child);
                 }
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                ClientUtils.HandleException(m_model?.Telemetry, this.Text, exception);
             }
         }
         #endregion

@@ -183,7 +183,7 @@ namespace Quickstarts.DataAccessClient
             this.NextBTN.TabIndex = 18;
             this.NextBTN.Text = "Next";
             this.NextBTN.UseVisualStyleBackColor = true;
-            this.NextBTN.Click += new System.EventHandler(this.NextBTN_Click);
+            this.NextBTN.Click += new System.EventHandler(this.NextBTN_ClickAsync);
             // 
             // GoBTN
             // 
@@ -193,7 +193,7 @@ namespace Quickstarts.DataAccessClient
             this.GoBTN.TabIndex = 17;
             this.GoBTN.Text = "Go";
             this.GoBTN.UseVisualStyleBackColor = true;
-            this.GoBTN.Click += new System.EventHandler(this.GoBTN_Click);
+            this.GoBTN.Click += new System.EventHandler(this.GoBTN_ClickAsync);
             // 
             // ResampleIntervalLB
             // 

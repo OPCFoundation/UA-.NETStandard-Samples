@@ -28,27 +28,23 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using System.ServiceModel;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-
-using Opc.Ua;
-using Opc.Ua.Client;
-using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using Opc.Ua;
+using Opc.Ua.Client.Controls;
+using Quickstarts.DataAccessClient.Model;
 
 namespace Quickstarts.DataAccessClient
 {
     /// <summary>
-    /// Prompts the user to create a new secure channel.
+    /// Prompts the user for a history read and shows the values page by page.
     /// </summary>
+    /// <remarks>
+    /// The dialog owns the Go/Next/Stop state machine of a paged read: Go starts a read,
+    /// Next fetches the next page with the continuation point of the last one, Stop
+    /// releases that continuation point. The reads themselves are done by the model.
+    /// </remarks>
     public partial class ReadHistoryDlg : Form
     {
         /// <summary>
@@ -80,22 +76,24 @@ namespace Quickstarts.DataAccessClient
             Processed
         }
 
-        private ISession m_session;
+        private DataAccessClientModel m_model;
         private NodeId m_nodeId;
-        private HistoryReadResult m_result;
+        private ByteString m_continuationPoint;
         private int m_index;
 
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
+        /// <param name="model">The model which reads the history.</param>
+        /// <param name="nodeId">The variable whose history is read.</param>
+        /// <param name="displayText">The text the window shows for the variable.</param>
+        /// <param name="ct">The cancellation token.</param>
+        public async Task<bool> ShowDialogAsync(DataAccessClientModel model, NodeId nodeId, string displayText, CancellationToken ct = default)
         {
-            m_session = session;
+            m_model = model ?? throw new ArgumentNullException(nameof(model));
             m_nodeId = nodeId;
 
             // update the title.
-            string displayText = await session.NodeCache.GetDisplayTextAsync(nodeId, ct);
-
             if (!String.IsNullOrEmpty(displayText))
             {
                 this.Text = Utils.Format("{0} [{1}]", this.Text, displayText);
@@ -106,7 +104,7 @@ namespace Quickstarts.DataAccessClient
 
             try
             {
-                startTime = (await ReadFirstDateAsync(ct)).ToLocalTime();
+                startTime = (await m_model.ReadFirstTimestampAsync(nodeId, ct)).ToLocalTime();
             }
             catch (Exception)
             {
@@ -131,38 +129,38 @@ namespace Quickstarts.DataAccessClient
             return ShowDialog() == DialogResult.OK;
         }
 
-        private void ShowResults()
+        /// <summary>
+        /// Shows a page of values and moves the buttons to the state of the read.
+        /// </summary>
+        private void ShowResults(HistoryPage page)
         {
-            GoBTN.Visible = (m_result == null || m_result.ContinuationPoint.IsNull);
-            NextBTN.Visible = !GoBTN.Visible;
-            StopBTN.Enabled = (m_result != null && !m_result.ContinuationPoint.IsNull);
+            m_continuationPoint = page?.ContinuationPoint ?? default;
 
-            if (m_result == null)
+            bool hasMore = page != null && page.HasMore;
+
+            GoBTN.Visible = !hasMore;
+            NextBTN.Visible = hasMore;
+            StopBTN.Enabled = hasMore;
+
+            if (page == null)
             {
                 return;
             }
 
-            HistoryData results = ExtensionObject.ToEncodeable(m_result.HistoryData) as HistoryData;
-
-            if (results == null)
+            foreach (DataValue value in page.Values)
             {
-                return;
-            }
-
-            for (int ii = 0; ii < results.DataValues.Count; ii++)
-            {
-                StatusCode status = results.DataValues[ii].StatusCode;
+                StatusCode status = value.StatusCode;
 
                 string index = Utils.Format("[{0}]", m_index++);
-                string timestamp = results.DataValues[ii].SourceTimestamp.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss");
-                string value = Utils.Format("{0}", results.DataValues[ii].WrappedValue);
+                string timestamp = value.SourceTimestamp.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss");
+                string text = Utils.Format("{0}", value.WrappedValue);
                 string quality = Utils.Format("{0}", (StatusCode)status.CodeBits);
                 string historyInfo = Utils.Format("{0:X2}", (int)status.AggregateBits);
 
                 ListViewItem item = new ListViewItem(index);
 
                 item.SubItems.Add(timestamp);
-                item.SubItems.Add(value);
+                item.SubItems.Add(text);
                 item.SubItems.Add(quality);
                 item.SubItems.Add(historyInfo);
 
@@ -176,162 +174,38 @@ namespace Quickstarts.DataAccessClient
             }
         }
 
+        /// <summary>
+        /// Tells the server that the rest of the current read is not wanted.
+        /// </summary>
         private async Task ReleaseContinuationPointsAsync(CancellationToken ct = default)
         {
-            ReadRawModifiedDetails details = new ReadRawModifiedDetails();
+            ByteString continuationPoint = m_continuationPoint;
 
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = m_nodeId;
+            m_continuationPoint = default;
 
-            if (m_result != null)
+            if (!continuationPoint.IsNull && continuationPoint.Length > 0)
             {
-                nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
+                await m_model.ReleaseContinuationPointAsync(m_nodeId, continuationPoint, ct);
             }
 
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Source,
-                true,
-                nodesToRead,
-                ct);
-
-            var results = response.Results.ToList();
-            var diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            m_result = null;
-
-            ShowResults();
+            ShowResults(null);
         }
 
-        private async Task<DateTime> ReadFirstDateAsync(CancellationToken ct = default)
-        {
-            ReadRawModifiedDetails details = new ReadRawModifiedDetails();
-            details.StartTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            details.EndTime = DateTime.Today.AddDays(1);
-            details.IsReadModified = false;
-            details.NumValuesPerNode = 1;
-            details.ReturnBounds = false;
-
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = m_nodeId;
-
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Source,
-                false,
-                nodesToRead,
-                ct);
-
-            var results = response.Results.ToList();
-            var diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                return DateTime.MinValue;
-            }
-
-            HistoryData data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
-
-            if (results == null)
-            {
-                return DateTime.MinValue;
-            }
-
-            DateTime startTime = (DateTime)data.DataValues[0].SourceTimestamp;
-
-            if (!results[0].ContinuationPoint.IsNull)
-            {
-                nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
-
-                response = await m_session.HistoryReadAsync(
-                    null,
-                    new ExtensionObject(details),
-                    TimestampsToReturn.Source,
-                    true,
-                    nodesToRead,
-                    ct);
-
-                results = response.Results.ToList();
-                diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                Session.ValidateResponse(results, nodesToRead);
-                Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-            }
-
-            return startTime;
-        }
-
+        /// <summary>
+        /// Reads the next page of the raw or modified history.
+        /// </summary>
         private async Task ReadRawAsync(bool isReadModified, CancellationToken ct = default)
         {
-            ReadRawModifiedDetails details = new ReadRawModifiedDetails();
-            details.StartTime = DateTime.MinValue;
-            details.EndTime = DateTime.MinValue;
-            details.IsReadModified = isReadModified;
-            details.NumValuesPerNode = 0;
-            details.ReturnBounds = ReturnBoundsCK.Checked;
+            var request = new RawHistoryRequest(
+                StartTimeCK.Checked ? StartTimeDP.Value.ToUniversalTime() : DateTime.MinValue,
+                EndTimeCK.Checked ? EndTimeDP.Value.ToUniversalTime() : DateTime.MinValue,
+                MaxReturnValuesCK.Checked ? (uint)MaxReturnValuesNP.Value : 0,
+                ReturnBoundsCK.Checked,
+                isReadModified);
 
-            if (StartTimeCK.Checked)
-            {
-                details.StartTime = StartTimeDP.Value.ToUniversalTime();
-            }
+            HistoryPage page = await m_model.ReadRawAsync(m_nodeId, request, m_continuationPoint, ct);
 
-            if (EndTimeCK.Checked)
-            {
-                details.EndTime = EndTimeDP.Value.ToUniversalTime();
-            }
-
-            if (MaxReturnValuesCK.Checked)
-            {
-                details.NumValuesPerNode = (uint)MaxReturnValuesNP.Value;
-            }
-
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = m_nodeId;
-
-            if (m_result != null)
-            {
-                nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
-            }
-
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Source,
-                false,
-                nodesToRead,
-                ct);
-
-            var results = response.Results.ToList();
-            var diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(results[0].StatusCode);
-            }
-
-            m_result = results[0];
-
-            ShowResults();
+            ShowResults(page);
         }
 
         private Task ReadAtTimeAsync(CancellationToken ct = default)
@@ -339,13 +213,11 @@ namespace Quickstarts.DataAccessClient
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Reads the next page of the aggregated history.
+        /// </summary>
         private async Task ReadProcessedAsync(CancellationToken ct = default)
         {
-            ReadProcessedDetails details = new ReadProcessedDetails();
-            details.StartTime = StartTimeDP.Value.ToUniversalTime();
-            details.EndTime = EndTimeDP.Value.ToUniversalTime();
-            details.ProcessingInterval = (double)ResampleIntervalNP.Value;
-
             NodeId aggregateId = NodeId.Null;
 
             switch ((string)AggregateCB.SelectedItem)
@@ -359,41 +231,15 @@ namespace Quickstarts.DataAccessClient
                 case BrowseNames.AggregateFunction_Total: { aggregateId = ObjectIds.AggregateFunction_Total; break; }
             }
 
-            details.AggregateType = new[] { aggregateId }.ToArrayOf();
+            var request = new ProcessedHistoryRequest(
+                StartTimeDP.Value.ToUniversalTime(),
+                EndTimeDP.Value.ToUniversalTime(),
+                (double)ResampleIntervalNP.Value,
+                aggregateId);
 
-            HistoryReadValueId nodeToRead = new HistoryReadValueId();
-            nodeToRead.NodeId = m_nodeId;
+            HistoryPage page = await m_model.ReadProcessedAsync(m_nodeId, request, m_continuationPoint, ct);
 
-            if (m_result != null)
-            {
-                nodeToRead.ContinuationPoint = m_result.ContinuationPoint;
-            }
-
-            List<HistoryReadValueId> nodesToRead = new List<HistoryReadValueId>();
-            nodesToRead.Add(nodeToRead);
-
-            HistoryReadResponse response = await m_session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Source,
-                false,
-                nodesToRead,
-                ct);
-
-            var results = response.Results.ToList();
-            var diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            Session.ValidateResponse(results, nodesToRead);
-            Session.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(results[0].StatusCode);
-            }
-
-            m_result = results[0];
-
-            ShowResults();
+            ShowResults(page);
         }
 
         private Task ReadAsync(CancellationToken ct = default)
@@ -423,31 +269,31 @@ namespace Quickstarts.DataAccessClient
             return Task.CompletedTask;
         }
 
-        private void GoBTN_Click(object sender, EventArgs e)
+        private async void GoBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
                 m_index = 0;
                 ResultsLV.Items.Clear();
-                m_result = null;
+                m_continuationPoint = default;
 
-                ReadAsync();
+                await ReadAsync();
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, "Error Reading History", exception);
+                ClientUtils.HandleException(m_model.Telemetry, "Error Reading History", exception);
             }
         }
 
-        private void NextBTN_Click(object sender, EventArgs e)
+        private async void NextBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                ReadAsync();
+                await ReadAsync();
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, "Error Reading History", exception);
+                ClientUtils.HandleException(m_model.Telemetry, "Error Reading History", exception);
             }
         }
 
@@ -459,7 +305,7 @@ namespace Quickstarts.DataAccessClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, "Error Reading History", exception);
+                ClientUtils.HandleException(m_model.Telemetry, "Error Reading History", exception);
             }
         }
 
