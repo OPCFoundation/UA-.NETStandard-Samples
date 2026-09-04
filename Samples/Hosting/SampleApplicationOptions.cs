@@ -36,18 +36,6 @@ namespace Opc.Ua.Samples.Hosting
         public ApplicationType ApplicationType { get; set; } = ApplicationType.Client;
 
         /// <summary>
-        /// Whether a missing or invalid application instance certificate stops the
-        /// sample instead of only being reported.
-        /// </summary>
-        public bool RequireApplicationCertificate { get; set; } = true;
-
-        /// <summary>
-        /// Whether the configuration is loaded without asking the user about
-        /// problems it finds.
-        /// </summary>
-        public bool Silent { get; set; }
-
-        /// <summary>
         /// Applied to the configuration right after it has been read, and before the
         /// certificate is checked and the server is started. For the settings which
         /// the configuration file cannot express, such as a certificate validation

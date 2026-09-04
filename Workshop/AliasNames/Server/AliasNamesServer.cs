@@ -9,10 +9,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
+using Opc.Ua.Samples.Hosting;
 using Opc.Ua.Server;
 using Opc.Ua.Server.AliasNames;
 
@@ -62,9 +62,20 @@ namespace Quickstarts.AliasNames.Server
     /// Both stores serve the same tags, so the sample client can put the two side by side and
     /// show what each way can and cannot do.
     /// </para>
+    /// <para>
+    /// This is the one workshop sample with a server class of its own. The plant categories,
+    /// the SecurityAdmin Role of the sample account and the way that account logs in are all
+    /// registered on the server builder of the stack, in <c>AliasNamesServerHosting</c>. The
+    /// standard category is the exception: its alias nodes are materialized by the
+    /// configuration node manager while the address space is built, so its store has to be
+    /// registered before that - and the store registrations of the stack
+    /// (<c>AddAliasNameStore</c>) are made after the node managers have started. Until the
+    /// stack materializes registered stores itself (UA-.NETStandard #4410), the two hooks
+    /// below are what it takes.
+    /// </para>
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Sample server type name intentionally mirrors the namespace.")]
-    public partial class AliasNamesServer : StandardServer
+    public class AliasNamesServer : SampleServer
     {
         #region Constants
         /// <summary>
@@ -109,11 +120,15 @@ namespace Quickstarts.AliasNames.Server
 
         #region Constructors
         /// <summary>
-        /// Creates the server. Its node managers are registered with the host by the hosting composition root of the sample.
+        /// Creates the server. Its node managers, roles and authenticators are registered
+        /// with the host by the composition root of the sample.
         /// </summary>
-        public AliasNamesServer(ITelemetryContext telemetry) : base(telemetry)
+        public AliasNamesServer(
+            IServiceProvider services,
+            ITelemetryContext telemetry,
+            TimeProvider timeProvider)
+            : base(services, telemetry, timeProvider)
         {
-
         }
         #endregion
 
@@ -136,44 +151,6 @@ namespace Quickstarts.AliasNames.Server
         #endregion
 
         #region Overridden Methods
-        /// <summary>
-        /// Grants the SecurityAdmin Role to the one account which is allowed to change the
-        /// alias inventory.
-        /// </summary>
-        /// <remarks>
-        /// The base implementation hands out a <see cref="RoleManager"/> already carrying the
-        /// well known Roles of Part 3 §4.9.2 and the default identity mapping rules. The only
-        /// thing this sample adds is the rule which makes the <c>secadmin</c> account hold
-        /// SecurityAdmin, because that is the Role the alias mutation Methods check for.
-        /// </remarks>
-        protected override IRoleManager CreateRoleManager(
-            IServerInternal server,
-            ApplicationConfiguration configuration)
-        {
-            IRoleManager roleManager = base.CreateRoleManager(server, configuration);
-
-            NodeId roleId = ExpandedNodeId.ToNodeId(
-                Opc.Ua.Server.Role.SecurityAdmin.RoleId,
-                server.NamespaceUris);
-
-            ServiceResult result = roleManager.AddIdentity(
-                roleId,
-                new IdentityMappingRuleType {
-                    CriteriaType = IdentityCriteriaType.UserName,
-                    Criteria = SecurityAdminUser,
-                });
-
-            if (ServiceResult.IsBad(result))
-            {
-                throw ServiceResultException.Create(
-                    result.StatusCode.Code,
-                    "Could not grant the SecurityAdmin role to '{0}'.",
-                    SecurityAdminUser);
-            }
-
-            return roleManager;
-        }
-
         /// <summary>
         /// Registers the store which serves the standard TagVariables category, and hands the
         /// server a configuration node manager which materializes it.
@@ -202,34 +179,6 @@ namespace Quickstarts.AliasNames.Server
                 base.CreateMainNodeManagerFactory(server, configuration),
                 server,
                 configuration);
-        }
-
-        /// <summary>
-        /// Registers the authenticator of the one demonstration account.
-        /// </summary>
-        protected override void OnServerStarted(IServerInternal server)
-        {
-            base.OnServerStarted(server);
-
-            server.IdentityRegistry.Register(
-                new UserNamePasswordAuthenticator(AuthenticateUserNameAsync));
-        }
-
-        /// <summary>
-        /// Loads the non-configurable properties for the application.
-        /// </summary>
-        protected override ServerProperties LoadServerProperties()
-        {
-            var properties = new ServerProperties {
-                ManufacturerName = "OPC Foundation",
-                ProductName = "Quickstart AliasNames Server",
-                ProductUri = "http://opcfoundation.org/Quickstart/AliasNamesServer/v1.0",
-                SoftwareVersion = Utils.GetAssemblySoftwareVersion(),
-                BuildNumber = Utils.GetAssemblyBuildNumber(),
-                BuildDate = Utils.GetAssemblyTimestamp(),
-            };
-
-            return properties;
         }
 
         /// <summary>
@@ -366,39 +315,10 @@ namespace Quickstarts.AliasNames.Server
                 serverUri: null,
                 referenceTypeId: ReferenceTypeIds.AliasFor);
         }
-
-        /// <summary>
-        /// Accepts the one demonstration account, whose password is its user name.
-        /// </summary>
-        /// <remarks>
-        /// The password arrives encrypted with the server's certificate, and
-        /// <see cref="UserNameIdentityTokenHandler.DecryptedPassword"/> is what holds the
-        /// plain text after the stack decrypted it.
-        /// </remarks>
-        private ValueTask<IUserIdentity> AuthenticateUserNameAsync(
-            UserNameIdentityTokenHandler handler,
-            CancellationToken ct)
-        {
-            string password = handler.DecryptedPassword != null
-                ? Encoding.UTF8.GetString(handler.DecryptedPassword)
-                : null;
-
-            if (string.Equals(handler.UserName, SecurityAdminUser, StringComparison.Ordinal) &&
-                string.Equals(password, SecurityAdminUser, StringComparison.Ordinal))
-            {
-                return new ValueTask<IUserIdentity>(new UserIdentity(handler));
-            }
-
-            throw ServiceResultException.Create(
-                StatusCodes.BadUserAccessDenied,
-                "'{0}' is not the sample account, or the password is wrong.",
-                handler.UserName);
-        }
         #endregion
 
         #region Private Fields
         private InMemoryAliasNameStore m_standardTags;
-        
         #endregion
     }
 
@@ -524,8 +444,8 @@ namespace Quickstarts.AliasNames.Server
                     // sets it to say out loud that it is not turning the check off.
                     RequireSecurityAdminForMutations = true,
 
-                    // the standard TagVariables store is registered separately in
-                    // OnServerStarted; this store serves categories of the sample's own, and
+                    // the standard TagVariables store is registered separately by the server
+                    // class; this store serves categories of the sample's own, and
                     // registering it as well is what lets a client reach them through the
                     // server-wide registry rather than only through this node manager.
                     RegisterWithServerRegistry = true,
