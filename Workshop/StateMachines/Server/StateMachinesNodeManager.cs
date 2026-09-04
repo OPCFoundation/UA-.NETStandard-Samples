@@ -147,6 +147,13 @@ namespace Quickstarts.StateMachines.Server
         /// <summary>The Reset method, and the id of the cause it triggers.</summary>
         public const uint ResetCause = 106;
 
+        /// <summary>
+        /// The StartBatch method of the Production machine, and the id of the cause it
+        /// triggers. A sub state machine has causes of its own, and they are numbered from
+        /// the same range: the cause id is the numeric identifier of the method node.
+        /// </summary>
+        public const uint StartBatchCause = 111;
+
         // The states and transitions of the Operation machine. They are numbered from a range
         // of their own: the framework materializes a node per state and per transition, and
         // the number becomes its StateNumber or TransitionNumber, so a state id which is also
@@ -181,6 +188,29 @@ namespace Quickstarts.StateMachines.Server
 
         /// <summary>Faulted to Idle, caused by Reset or by the automatic reset.</summary>
         public const uint FaultedToIdleTransition = 2006;
+
+        // The states and transitions of the Production machine, which runs below the Running
+        // state of the Operation machine. They are numbered from a range of their own, but
+        // only for the reader: a sub state machine has its own state and transition tables,
+        // so the numbers would not collide with the ones above even if they were reused.
+
+        /// <summary>Material for the next batch is being loaded.</summary>
+        public const uint LoadingState = 3001;
+
+        /// <summary>The batch is being processed.</summary>
+        public const uint ProcessingState = 3002;
+
+        /// <summary>The finished batch is being taken out.</summary>
+        public const uint UnloadingState = 3003;
+
+        /// <summary>Loading to Processing, caused by StartBatch.</summary>
+        public const uint LoadingToProcessingTransition = 4001;
+
+        /// <summary>Processing to Unloading, taken when the batch is done.</summary>
+        public const uint ProcessingToUnloadingTransition = 4002;
+
+        /// <summary>Unloading to Loading, taken when the batch has been taken out.</summary>
+        public const uint UnloadingToLoadingTransition = 4003;
         #endregion
 
         #region Timings
@@ -193,6 +223,16 @@ namespace Quickstarts.StateMachines.Server
         /// How long the Program machine runs before it completes on its own.
         /// </summary>
         public static readonly TimeSpan ProgramRunDuration = TimeSpan.FromSeconds(15);
+
+        /// <summary>
+        /// How long a batch of the Production machine takes once it was started.
+        /// </summary>
+        public static readonly TimeSpan BatchDuration = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// How long the Production machine takes to unload a finished batch.
+        /// </summary>
+        public static readonly TimeSpan UnloadDuration = TimeSpan.FromSeconds(3);
         #endregion
 
         #region Constructors
@@ -333,11 +373,24 @@ namespace Quickstarts.StateMachines.Server
         /// Builds the Operation machine, which has no type definition of its own.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Everything the machine is, is in this one chain: the states, the transitions
-        /// between them, which method call causes which transition, and the behaviour which
-        /// hangs off entering and leaving a state. The builder freezes the definition as soon
-        /// as the first lifecycle method is called - <c>WithInitialState</c> below - and
-        /// creates the node in the address space at that point.
+        /// between them, which method call causes which transition, the behaviour which hangs
+        /// off entering and leaving a state, and the machine which runs below one of the
+        /// states. The builder freezes the definition as soon as the first lifecycle method
+        /// is called - <c>WithInitialState</c> below - and creates the node in the address
+        /// space at that point.
+        /// </para>
+        /// <para>
+        /// Creating the node is also what materializes the Part 16 model of the machine: a
+        /// <c>StateType</c> node per state carrying its <c>StateNumber</c>, a
+        /// <c>TransitionType</c> node per transition carrying its <c>TransitionNumber</c> and
+        /// the §4.4.11 <c>FromState</c> / <c>ToState</c> / <c>HasEffect</c> references, the
+        /// <c>HasCause</c> reference each <c>WithCause</c> adds, and the <c>AvailableStates</c>
+        /// / <c>AvailableTransitions</c> properties which list them. That is what lets
+        /// <c>CurrentState/Id</c> name a node a client can browse to, instead of an identifier
+        /// which resolves to nothing.
+        /// </para>
         /// </remarks>
         private void CreateOperationStateMachine(BaseObjectState machine)
         {
@@ -432,7 +485,97 @@ namespace Quickstarts.StateMachines.Server
                     fromStateId: FaultedState,
                     timeout: AutomaticResetDelay,
                     transitionId: FaultedToIdleTransition,
-                    causeId: ResetCause);
+                    causeId: ResetCause)
+
+                // one of the four states has a machine of its own below it.
+                .WithSubStateMachine(
+                    parentStateId: RunningState,
+                    browseName: new QualifiedName("Production", NamespaceIndex),
+                    configure: ConfigureProductionStateMachine,
+
+                    // every run starts at the beginning: leaving Running takes the child back
+                    // to Loading. With preserveOnReentry: true it would come back where it
+                    // stopped instead, which is what a machine whose sub state survives a
+                    // pause - a tool changer, a heater - wants.
+                    preserveOnReentry: false);
+        }
+
+        /// <summary>
+        /// Declares the Production machine, which runs while the Operation machine is Running.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// OPC 10000-16 §5.2.3 nests machines through <c>HasSubStateMachine</c>, which is how
+        /// the standard alarms model <c>ExclusiveLimitAlarmType.LimitState</c>. The reference
+        /// hangs off the parent <i>state</i> node - Running - rather than off the machine, and
+        /// the child is a component of the parent machine, so a client which browses Operation
+        /// finds Production next to the states and reaches it from the Running state node.
+        /// </para>
+        /// <para>
+        /// The framework owns the lifecycle of the child: entering Running activates it and
+        /// resets it to its initial state, leaving Running suspends it. While it is suspended
+        /// its <c>CurrentState</c> and <c>LastTransition</c> read <c>Bad_StateNotActive</c>
+        /// (§4.4.6), its causes are not executable and a transition driven anyway is refused.
+        /// Nothing in this sample has to write that logic.
+        /// </para>
+        /// </remarks>
+        private void ConfigureProductionStateMachine(
+            StateMachineBuilder<FluentFiniteStateMachineState> production)
+        {
+            production
+                // the same call the parent makes, for the same reason: the child mints state
+                // and transition nodes of its own, and they belong in the namespace of the
+                // sample rather than in the OPC UA one the element namespace defaults to.
+                .UseElementNamespace(Namespaces.StateMachines)
+
+                .AddState(LoadingState, "Loading", isInitial: true)
+                .AddState(ProcessingState, "Processing")
+                .AddState(UnloadingState, "Unloading")
+
+                .AddTransition(
+                    LoadingToProcessingTransition,
+                    "LoadingToProcessing",
+                    from: LoadingState,
+                    to: ProcessingState)
+                .AddTransition(
+                    ProcessingToUnloadingTransition,
+                    "ProcessingToUnloading",
+                    from: ProcessingState,
+                    to: UnloadingState)
+                .AddTransition(
+                    UnloadingToLoadingTransition,
+                    "UnloadingToLoading",
+                    from: UnloadingState,
+                    to: LoadingState)
+
+                .OnCause(StartBatchCause, from: LoadingState, transition: LoadingToProcessingTransition);
+
+            // reading StateMachine freezes the definition and creates the child node, which is
+            // what the method has to be a child of before WithCause can find it. The declared
+            // initial state is not applied here: a sub state machine only enters it when its
+            // parent enters the state it hangs off.
+            FluentFiniteStateMachineState machine = production.StateMachine;
+
+            AddCauseMethod(machine, StartBatchCause, "StartBatch");
+
+            production
+                .WithCause(new NodeId(StartBatchCause, NamespaceIndex))
+
+                // the rest of the batch runs without anybody asking for it. Both timers are
+                // armed by the transition which enters their state, so a suspended child -
+                // which is not in any state at all - has none of them running.
+                .WithTimedTransition(
+                    fromStateId: ProcessingState,
+                    timeout: BatchDuration,
+                    transitionId: ProcessingToUnloadingTransition)
+                .WithTimedTransition(
+                    fromStateId: UnloadingState,
+                    timeout: UnloadDuration,
+                    transitionId: UnloadingToLoadingTransition)
+
+                .OnTransition(
+                    (context, stateMachine, fromState, toState)
+                        => LogTransition("Production", fromState, toState));
         }
 
         /// <summary>

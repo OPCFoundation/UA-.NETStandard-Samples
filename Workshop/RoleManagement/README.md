@@ -7,7 +7,7 @@ all of that while the server is running.
 
 | Project | What it is |
 |---------|------------|
-| [Server](Server) | A `StandardServer` with six protected nodes and a Role configuration |
+| [Server](Server) | A hosted OPC UA server with six protected nodes and a Role configuration |
 | [Client](Client) | A Windows Forms client which signs in as different accounts, manages the RoleSet and watches the audit trail |
 
 Endpoints: `opc.tcp://localhost:62573/Quickstarts/RoleManagementServer` and
@@ -29,15 +29,16 @@ The server keeps six demonstration accounts. The password of each is its own use
 | `guest` | none beyond `AuthenticatedUser` |
 | *(nobody)* | `ConfigureAdmin` — earned by a **certificate**, not by an account |
 
-`RoleManagementServer.CreateRoleManager` adds one Part 18 §4.4.3 identity mapping rule per
-account (`CriteriaType = UserName`, `Criteria = <account>`) to the default
-`Opc.Ua.Server.RoleManager`, which already carries the nine well known Roles of Part 3 §4.9.2.
-Nothing else is needed: when a Session activates, the session manager asks the Role manager
-which Roles the authenticated identity earns and wraps the identity in a `RoleBasedIdentity`
-that carries them.
+`SampleUsers.ConfigureRoles`, registered on the server builder with `ConfigureRoles(…)`, adds
+one Part 18 §4.4.3 identity mapping rule per account (`CriteriaType = UserName`,
+`Criteria = <account>`) to the default `Opc.Ua.Server.RoleManager`, which already carries the
+nine well known Roles of Part 3 §4.9.2. Nothing else is needed: when a Session activates, the
+session manager asks the Role manager which Roles the authenticated identity earns and wraps
+the identity in a `RoleBasedIdentity` that carries them.
 
-Authentication is separate and much simpler — `AuthenticateUserNameAsync` only checks the
-password. Which Role that identity is worth is not its business.
+Authentication is separate and much simpler — `SampleUsers.AuthenticateAsync`, registered with
+`AddIdentityAuthenticator(…)`, only checks the password. Which Role that identity is worth is
+not its business.
 
 > Part 18 §4.3 gives the `Anonymous` Role both the `Anonymous` and the `AuthenticatedUser`
 > criteria, so **every** Session holds it. A node which names `Anonymous` in its permissions
@@ -64,7 +65,7 @@ person. Its configuration uses two more parts of Part 18:
 >
 > The criteria string is a normalised subject: `Name="Value"` pairs separated by slashes, in
 > the order CN, O, OU, DC, L, S, C. The sample writes it out in
-> `RoleManagementServer.WorkstationCertificateSubject`, with the host name in the `DC`
+> `SampleUsers.WorkstationCertificateSubject`, with the host name in the `DC`
 > because that is what the stack substitutes for `DC=localhost`. Client and server therefore
 > have to run on the same machine, which is what a Quickstart does.
 
@@ -206,9 +207,12 @@ on the encrypted endpoints.
   §4.4.2 says a field left at its default value is ignored during the comparison — so a rule
   which constrains the security mode alone matches everything but cannot be stored. The
   server copies the endpoint descriptions it actually advertises instead, which is why that
-  part of the Role configuration runs in `OnServerStarted` rather than in
-  `CreateRoleManager`: the URLs are not known before the start, and the comparison is an
-  exact string match.
+  part of the Role configuration runs as an `IServerStartupTask` (`WorkstationEndpoints`)
+  rather than in `SampleUsers.ConfigureRoles`: the URLs are not known before the start, and
+  the comparison is an exact string match. Declaring the wildcard in the role configuration
+  of the stack would be worse than either, because it applies its endpoint entries without
+  looking at what `AddEndpoint` answered — the Role would end up granted everywhere.
+  ([UA-.NETStandard#4412](https://github.com/OPCFoundation/UA-.NETStandard/issues/4412))
 * `ApplyRestrictionsToBrowse` covers a Browse of the restricted node itself, and a
   `TranslateBrowsePathsToNodeIds` which starts there, but not the reference to it in its
   parent's browse result: that per-reference filter applies role permissions only.

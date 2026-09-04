@@ -73,7 +73,7 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         private static IdentityMappingRuleType WorkstationRule => new IdentityMappingRuleType {
             CriteriaType = IdentityCriteriaType.X509Subject,
-            Criteria = Quickstarts.RoleManagement.Server.RoleManagementServer.WorkstationCertificateSubject,
+            Criteria = Quickstarts.RoleManagement.Server.SampleUsers.WorkstationCertificateSubject,
         };
 
         #region Tests

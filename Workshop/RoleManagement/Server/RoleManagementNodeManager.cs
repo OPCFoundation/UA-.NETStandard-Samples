@@ -158,8 +158,9 @@ namespace Quickstarts.RoleManagement.Server
             // The service code belongs to the maintenance workstation rather than to a user:
             // the ConfigureAdmin Role which owns it is granted by the certificate of the
             // client application and only on the encrypted endpoint, which is configured in
-            // RoleManagementServer.CreateRoleManager. The node itself carries no restriction,
-            // so what a Session may do with it is decided by that Role configuration alone.
+            // SampleUsers.ConfigureRoles and WorkstationEndpoints. The node itself carries no
+            // restriction, so what a Session may do with it is decided by that Role
+            // configuration alone.
             Protect(
                 serviceCode,
                 (Role.Engineer, PermissionType.Browse | PermissionType.Read),

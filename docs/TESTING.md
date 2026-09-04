@@ -476,7 +476,7 @@ the sample exists to show:
 | RoleManagement | signs in as an Operator and presses Reset | the server answered Good and the set point is back at its default - the case which motivated all of this | `RoleManagementClientTests` |
 | Sample | opens a session through the modal dialog | a `ManagedSession` on the V2 engine, and a filled browse tree | `SampleClientFormTests` |
 | SimpleEvents | connects | an event reaches the list | `WorkshopClientSubscriptionTests` |
-| StateMachines | powers the machine on and starts it | a transition of the machine it powered on reaches the list | `WorkshopClientSubscriptionTests` |
+| StateMachines | powers the machine on and starts it | a transition reaches the list, the states and transitions of the machine are listed, and the sub state machine of the Running state is active | `WorkshopClientSubscriptionTests` |
 | UserAuthentication | writes the log file path anonymously, then impersonates an unknown account | the write is refused with `BadUserAccessDenied` and the sample reports it; the refused impersonation leaves the session's identity alone | `SampleClientActionTests` |
 | Views | selects the engineering view and presses Change | the operations nodes are gone from the re-browse and the engineering ones are still there | `SampleClientActionTests` |
 
