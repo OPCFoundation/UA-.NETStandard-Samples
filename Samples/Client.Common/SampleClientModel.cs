@@ -296,8 +296,23 @@ namespace Opc.Ua.Samples.Client
         public async ValueTask DisposeAsync()
         {
             await DetachAsync().ConfigureAwait(false);
+            await DisposeAsyncCore().ConfigureAwait(false);
             m_lifecycle.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases what the model owns beyond the session, after it has detached.
+        /// </summary>
+        /// <remarks>
+        /// For the rare model which holds something of its own rather than something of
+        /// the session - everything which belongs to the session is released by
+        /// <see cref="OnDetachingAsync"/>, which also runs when the window disconnects
+        /// without closing.
+        /// </remarks>
+        protected virtual ValueTask DisposeAsyncCore()
+        {
+            return ValueTask.CompletedTask;
         }
 
         /// <summary>

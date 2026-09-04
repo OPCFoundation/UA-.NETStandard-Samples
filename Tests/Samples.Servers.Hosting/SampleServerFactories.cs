@@ -54,6 +54,7 @@ namespace Opc.Ua.Samples.Tests
                 ["NodeManagement"] = (services, file, configure) => services.AddNodeManagementServer(file, configure),
                 ["PerfTest"] = (services, file, configure) => services.AddPerfTestServer(file, configure),
                 ["RoleManagement"] = (services, file, configure) => services.AddRoleManagementServer(file, configure),
+                ["RuntimeNodeSets"] = (services, file, configure) => services.AddRuntimeNodeSetsServer(file, configure),
                 ["SimpleEvents"] = (services, file, configure) => services.AddSimpleEventsServer(file, configure),
                 ["StateMachines"] = (services, file, configure) => services.AddStateMachinesServer(file, configure),
                 ["UserAuthentication"] = (services, file, configure) => services.AddUserAuthenticationServer(file, configure),

@@ -52,6 +52,85 @@ as before. Two of the node manager tests of the sample record this as a known is
 and start failing the moment the SDK resolves such bodies, which is when the wrappers come
 off.
 
+## Schemas at run time
+
+The client can hand any of the server's data types to the SDK and get an **XSD, an OPC
+Binary dictionary or a JSON Schema** back. *Schemas* in the menu, once connected, opens a
+list of every data type the server declares outside the standard address space, and shows
+the document for the selected one in the selected encoding.
+
+A schema is made out of one thing: the type's `DataTypeDefinition`. That definition can
+reach a client two ways, and the model tries both:
+
+| Route | Where the definition comes from |
+|---|---|
+| Compiled | The generated class the client built from the shared model design, through `IDataTypeDefinitionSource.GetDataTypeDefinition` - no browse needed |
+| Browsed | The `DataTypeDefinition` **Attribute** of the data type node, read off the wire |
+
+`BicycleType` is the one which makes the point: it is declared in `ModelDesign2.xml`, which
+only the server compiles. The client has no class for it, has never heard of it before it
+connects, and produces its schema anyway. That is also the case a
+[runtime NodeSet](../RuntimeNodeSets/README.md) creates - a server which read its model out
+of a NodeSet2 document at run time publishes exactly the same Attribute.
+
+> **On 2.0.0-preview.4 only the browsed route carries anything.** The ModelDesign source
+> generator does not implement `IDataTypeDefinitionSource` on the structures it emits - a
+> generated `CarType` has the right `TypeId` but no `GetDataTypeDefinition` - so the
+> compiled branch of `DataTypesClientModel` registers nothing and every type in the list is
+> marked *browsed*. The branch is kept because that interface is the supported way to reach
+> a compiled definition, and `ACompiledTypeCarriesItsOwnDefinition` in the model tests
+> records the gap: it is ignored today and starts failing the moment the generator emits
+> the interface. Raised upstream as
+> [UA-.NETStandard#4424](https://github.com/OPCFoundation/UA-.NETStandard/issues/4424).
+
+### The three pieces
+
+```csharp
+// 1. the generators are internal to the stack and are reached through the registration
+var services = new ServiceCollection();
+services.AddOpcUa().AddSchemaGeneration();
+
+ServiceProvider provider = services.BuildServiceProvider();
+ISchemaProvider schemas = provider.GetRequiredService<ISchemaProvider>();
+DataTypeDefinitionRegistry registry = provider.GetRequiredService<DataTypeDefinitionRegistry>();
+
+// 2. the registry is what the provider resolves a type id from - fill it from either source
+registry.Add(new UaTypeDescription(nodeId, browseName, source.GetDataTypeDefinition(namespaceUris), namespaceUri));
+registry.TryAddDataType(dataTypeNode, session.NamespaceUris);   // from a browsed node
+
+// 3. and then the document
+string xsd = schemas.CreateSchema(description, UaSchemaFormat.Xsd, UaSchemaScope.Type).ToSchemaString();
+```
+
+`UaSchemaScope` is worth a sentence. `Type` produces a document for one type **and the
+closure of the types it depends on** - the schema of `CarType` carries `VehicleType` and
+`EngineType` with it, because a document which referred to them without defining them would
+validate nothing. `Namespace` produces the dictionary of every type of the namespace
+instead, which is what a server publishes as its type dictionary.
+
+`UaSchemaFormat` has four values: `Xsd`, `Bsd`, and `JsonCompact`/`JsonVerbose` for the two
+flavours of the Part 6 JSON encoding.
+
+### Notes for implementers
+
+* **The generators are internal**
+  ([UA-.NETStandard#4424](https://github.com/OPCFoundation/UA-.NETStandard/issues/4424)).
+  `DefaultSchemaProvider` is public and takes an `IEnumerable<IUaSchemaGenerator>`, but
+  `XsdSchemaGenerator`, `BsdSchemaGenerator` and `JsonSchemaGenerator` are not, so
+  `AddSchemaGeneration()` on a service collection is the only way to a working provider on
+  2.0.0-preview.4. A client which is built around a host container registers it there and
+  takes an `ISchemaProvider` in a constructor; the window of this sample creates its model
+  itself, so [`DataTypesClientModel`](Client/Model/DataTypesClientModel.cs) owns the
+  registration.
+* **The registry resolves by `NodeId`, and `ISchemaProvider.TryGetSchema` does not**
+  ([UA-.NETStandard#4423](https://github.com/OPCFoundation/UA-.NETStandard/issues/4423)).
+  A type added with `TryAddDataType` is keyed by `NodeId`, and `TryGetSchema` only takes an
+  `ExpandedNodeId` - which `NodeId.ToExpandedNodeId` builds with a namespace *uri*, the one
+  form the registry does not index. Resolve the description yourself and call
+  `CreateSchema`, the way the model does.
+* **An abstract type has no definition.** Reading `DataTypeDefinition` on one answers a bad
+  status, and `TryAddDataType` returns false. Skipping those is normal, not an error.
+
 ## How to integrate new information model into OPC Server
 
 This documentation explains how to add a custom information model to OPC Server based on UA-.NETStandard stack. It will use the DataTypes server example as reference but the general steps are the same for every UA-.NETStandard stack based OPC Server.

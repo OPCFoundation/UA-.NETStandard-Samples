@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The control surface of the sample, and itself a runtime NodeSet2 document: the
+     whole sample server is built from XML and a handful of callbacks, with no source
+     generation anywhere.
+
+     This model is loaded once at start up and is never reloaded or removed. That
+     matters: a lifecycle operation is initiated from the Load/Reload/Remove methods
+     below, and the node manager which handles the initiating request has to be a
+     different one from the node manager being replaced. See RuntimeNodeSetController. -->
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+  <NamespaceUris>
+    <Uri>http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Control/</Uri>
+  </NamespaceUris>
+  <Models>
+    <Model ModelUri="http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Control/" Version="1.0.0" PublicationDate="2026-01-15T00:00:00Z">
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05.04" PublicationDate="2024-04-25T00:00:00Z" />
+    </Model>
+  </Models>
+  <Aliases>
+    <Alias Alias="Boolean">i=1</Alias>
+    <Alias Alias="Int32">i=6</Alias>
+    <Alias Alias="Int64">i=8</Alias>
+    <Alias Alias="String">i=12</Alias>
+    <Alias Alias="Argument">i=296</Alias>
+    <Alias Alias="Organizes">i=35</Alias>
+    <Alias Alias="HasTypeDefinition">i=40</Alias>
+    <Alias Alias="HasSubtype">i=45</Alias>
+    <Alias Alias="HasProperty">i=46</Alias>
+    <Alias Alias="HasComponent">i=47</Alias>
+  </Aliases>
+
+  <!-- Which of the four ways of publishing a generation the caller wants. The names
+       are the names of the INodeManagerLifecycle methods behind them. -->
+  <UADataType NodeId="ns=1;i=1050" BrowseName="1:ReloadMode">
+    <DisplayName>ReloadMode</DisplayName>
+    <References>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=29</Reference>
+    </References>
+    <Definition Name="1:ReloadMode">
+      <Field Name="Reload" Value="0">
+        <Description>Drains the requests in flight, then swaps. Monitored items on the old generation are deleted.</Description>
+      </Field>
+      <Field Name="ShadowReload" Value="1">
+        <Description>Swaps at once for new requests and lets the old generation keep serving the monitored items it already has.</Description>
+      </Field>
+      <Field Name="ImmediateReload" Value="2">
+        <Description>Swaps at once and invalidates the monitored items of the old generation with BadNodeIdUnknown.</Description>
+      </Field>
+    </Definition>
+  </UADataType>
+
+  <UAObject NodeId="ns=1;i=1000" BrowseName="1:ModelControl">
+    <DisplayName>ModelControl</DisplayName>
+    <Description>Loads, reloads and removes the vendor NodeSet while the server runs.</Description>
+    <References>
+      <Reference ReferenceType="HasComponent">ns=1;i=1001</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1002</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1003</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1010</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1020</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1030</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=61</Reference>
+      <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
+    </References>
+  </UAObject>
+
+  <UAVariable NodeId="ns=1;i=1001" BrowseName="1:LoadedRevision" ParentNodeId="ns=1;i=1000" DataType="String" AccessLevel="1">
+    <DisplayName>LoadedRevision</DisplayName>
+    <Description>The revision of the vendor NodeSet that is published, or an empty string while none is.</Description>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1000</Reference>
+    </References>
+    <Value>
+      <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd" />
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1002" BrowseName="1:Generation" ParentNodeId="ns=1;i=1000" DataType="Int64" AccessLevel="1">
+    <DisplayName>Generation</DisplayName>
+    <Description>The generation counter of the live registration, or 0 while none is published.</Description>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1000</Reference>
+    </References>
+    <Value>
+      <Int64 xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">0</Int64>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1003" BrowseName="1:AvailableRevisions" ParentNodeId="ns=1;i=1000" DataType="String" ValueRank="1" ArrayDimensions="0" AccessLevel="1">
+    <DisplayName>AvailableRevisions</DisplayName>
+    <Description>The revisions the server has NodeSet2 files for.</Description>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1000</Reference>
+    </References>
+    <Value>
+      <ListOfString xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd" />
+    </Value>
+  </UAVariable>
+
+  <UAMethod NodeId="ns=1;i=1010" BrowseName="1:Load" ParentNodeId="ns=1;i=1000">
+    <DisplayName>Load</DisplayName>
+    <Description>Publishes a revision of the vendor NodeSet. Fails when one is already published.</Description>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=1011</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1000</Reference>
+    </References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;i=1011" BrowseName="InputArguments" ParentNodeId="ns=1;i=1010" DataType="Argument" ValueRank="1" ArrayDimensions="1">
+    <DisplayName>InputArguments</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=1010</Reference>
+    </References>
+    <Value>
+      <ListOfExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">
+        <ExtensionObject>
+          <TypeId>
+            <Identifier>i=297</Identifier>
+          </TypeId>
+          <Body>
+            <Argument>
+              <Name>revision</Name>
+              <DataType>
+                <Identifier>i=12</Identifier>
+              </DataType>
+              <ValueRank>-1</ValueRank>
+              <ArrayDimensions />
+              <Description>
+                <Locale />
+                <Text>One of AvailableRevisions.</Text>
+              </Description>
+            </Argument>
+          </Body>
+        </ExtensionObject>
+      </ListOfExtensionObject>
+    </Value>
+  </UAVariable>
+
+  <UAMethod NodeId="ns=1;i=1020" BrowseName="1:Reload" ParentNodeId="ns=1;i=1000">
+    <DisplayName>Reload</DisplayName>
+    <Description>Replaces the published generation with another revision, in one of the three reload modes.</Description>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=1021</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1000</Reference>
+    </References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;i=1021" BrowseName="InputArguments" ParentNodeId="ns=1;i=1020" DataType="Argument" ValueRank="1" ArrayDimensions="2">
+    <DisplayName>InputArguments</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=1020</Reference>
+    </References>
+    <Value>
+      <ListOfExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">
+        <ExtensionObject>
+          <TypeId>
+            <Identifier>i=297</Identifier>
+          </TypeId>
+          <Body>
+            <Argument>
+              <Name>revision</Name>
+              <DataType>
+                <Identifier>i=12</Identifier>
+              </DataType>
+              <ValueRank>-1</ValueRank>
+              <ArrayDimensions />
+              <Description>
+                <Locale />
+                <Text>One of AvailableRevisions.</Text>
+              </Description>
+            </Argument>
+          </Body>
+        </ExtensionObject>
+        <ExtensionObject>
+          <TypeId>
+            <Identifier>i=297</Identifier>
+          </TypeId>
+          <Body>
+            <Argument>
+              <Name>mode</Name>
+              <DataType>
+                <Identifier>ns=1;i=1050</Identifier>
+              </DataType>
+              <ValueRank>-1</ValueRank>
+              <ArrayDimensions />
+              <Description>
+                <Locale />
+                <Text>Reload, ShadowReload or ImmediateReload.</Text>
+              </Description>
+            </Argument>
+          </Body>
+        </ExtensionObject>
+      </ListOfExtensionObject>
+    </Value>
+  </UAVariable>
+
+  <UAMethod NodeId="ns=1;i=1030" BrowseName="1:Remove" ParentNodeId="ns=1;i=1000">
+    <DisplayName>Remove</DisplayName>
+    <Description>Takes the vendor NodeSet off the running server. Its namespace stays in the namespace table.</Description>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1000</Reference>
+    </References>
+  </UAMethod>
+</UANodeSet>
