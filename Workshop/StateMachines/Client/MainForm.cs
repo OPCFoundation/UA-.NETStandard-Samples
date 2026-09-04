@@ -203,7 +203,7 @@ namespace Quickstarts.StateMachines.Client
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
@@ -212,6 +212,12 @@ namespace Quickstarts.StateMachines.Client
                 // keep running and there is nothing to re-create here.
                 m_session = ConnectServerCTRL.Session;
                 EnableControls(true);
+
+                // EnableControls only knows that there is a session again, so it offers every
+                // cause. Which of them the machines actually permit has to be read back before
+                // the user can press one, or this client offers a cause the server refuses -
+                // and the machine may well have moved while the connection was down.
+                await RefreshPermittedCausesAsync();
             }
             catch (Exception exception)
             {
