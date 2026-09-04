@@ -93,7 +93,7 @@ namespace AggregationServer
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Sample server disposes the field during shutdown.")]
     public class MyServer
     {
-        AggregationServer server;
+        StandardServer server;
         IHost host;
         // a completed task until the status thread is started, so a failure between
         // the server being created and the thread starting still shuts down cleanly.
@@ -195,17 +195,9 @@ namespace AggregationServer
 
             await host.StartAsync().ConfigureAwait(false);
 
-            server = host.Services.GetRequiredService<AggregationServer>();
+            server = host.Services.GetRequiredService<StandardServer>();
 
             ApplicationConfiguration config = host.Services.GetRequiredService<ApplicationConfiguration>();
-
-            // print reverse connect info
-            Console.WriteLine("Reverse Connect Clients:");
-            var reverseConnections = server.GetReverseConnections();
-            foreach (var connection in reverseConnections)
-            {
-                Console.WriteLine(connection.Key);
-            }
 
             // print endpoint info
             Console.WriteLine("Server Endpoints:");
@@ -269,7 +261,7 @@ namespace AggregationServer
 
         private async Task StatusThreadAsync()
         {
-            AggregationServer serverStatus = server;
+            StandardServer serverStatus = server;
             while (serverStatus != null)
             {
                 if (DateTime.UtcNow - lastEventTime > TimeSpan.FromMilliseconds(6000))

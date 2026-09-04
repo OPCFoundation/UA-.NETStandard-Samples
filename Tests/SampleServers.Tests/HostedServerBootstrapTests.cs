@@ -14,6 +14,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
+using Opc.Ua.Configuration;
+using Opc.Ua.Samples.Hosting;
 using Opc.Ua.Server;
 using Quickstarts.Boiler.Server;
 
@@ -22,7 +24,7 @@ namespace Opc.Ua.Samples.Tests
     /// <summary>
     /// Tier 1, the bootstrap of the hosted samples: the server samples hand their
     /// configuration file to the hosted server of the stack through
-    /// <c>services.AddSampleServer&lt;TServer&gt;(configurationFile)</c>.
+    /// <c>services.AddSampleServer(configurationFile, configureServer)</c>.
     /// </summary>
     /// <remarks>
     /// The samples rely on promises the shared bootstrap makes on top of the stack:
@@ -61,7 +63,7 @@ namespace Opc.Ua.Samples.Tests
             {
                 await host.StartAsync(ct).ConfigureAwait(false);
 
-                BoilerServer server = host.Services.GetRequiredService<BoilerServer>();
+                SampleServer server = host.Services.GetRequiredService<SampleServer>();
 
                 Assert.That(
                     host.Services.GetRequiredService<StandardServer>(),
@@ -113,6 +115,63 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// A sample whose user interface is built around its <see cref="ApplicationInstance"/>
+        /// registers the application first and runs its server on it: the same
+        /// builder callback, no configuration file of its own, and the hosted server
+        /// of the stack starts the server on the instance the forms take.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AServerRunsOnTheApplicationInstanceOfTheSample(CancellationToken ct)
+        {
+            using var pki = new TemporaryPki("BoilerApplicationBootstrap");
+
+            HostApplicationBuilder builder = Host.CreateEmptyApplicationBuilder(
+                new HostApplicationBuilderSettings());
+            builder.Services.AddLogging();
+
+            builder.Services
+                .AddSampleApplication(options => {
+                    options.ApplicationType = ApplicationType.Server;
+                    options.ConfigurationFile =
+                        RepositoryLayout.PathOf("Workshop/Boiler/Server/BoilerServer.Config.xml");
+                    options.ConfigureConfiguration = pki.Redirect;
+                })
+                .AddSampleServer(server => server.AddNodeManager<BoilerNodeManagerFactory>());
+
+            IHost host = builder.Build();
+
+            try
+            {
+                await host.StartAsync(ct).ConfigureAwait(false);
+
+                ApplicationInstance application = host.Services.GetRequiredService<ApplicationInstance>();
+                StandardServer server = host.Services.GetRequiredService<StandardServer>();
+
+                Assert.Multiple(() => {
+                    Assert.That(
+                        application.Server,
+                        Is.SameAs(server),
+                        "The hosted server of the stack has to run on the application instance of the sample.");
+                    Assert.That(
+                        host.Services.GetRequiredService<ApplicationConfiguration>(),
+                        Is.SameAs(application.ApplicationConfiguration),
+                        "The forms take the configuration the application instance loaded.");
+                    Assert.That(
+                        server.CurrentState,
+                        Is.EqualTo(ServerState.Running),
+                        "The start of the host has to return with the server running.");
+                });
+
+                await host.StopAsync(ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                await DisposeAsync(host).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
         /// A configuration file which cannot be loaded fails the start of the host
         /// with the original error, instead of hanging the readiness gate forever.
         /// </summary>
@@ -151,7 +210,7 @@ namespace Opc.Ua.Samples.Tests
             // stack resolves its loggers from
             builder.Services.AddLogging();
 
-            builder.Services.AddSampleServer<BoilerServer>(
+            builder.Services.AddBoilerServer(
                 configurationFile,
                 configuration => pki?.Redirect(configuration));
 

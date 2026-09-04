@@ -10,22 +10,20 @@
 using System;
 using Opc.Ua;
 using Opc.Ua.Server;
-using Opc.Ua.Server.Hosting;
 using Quickstarts.ReferenceServer;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// The composition root of the reference server sample: the server class, its
-    /// configuration file and the node managers of the quickstart library the server
-    /// is made of.
+    /// The composition root of the reference server sample: the server of the
+    /// quickstart library of the stack, its configuration file and the node managers
+    /// of that library the server is made of.
     /// </summary>
     /// <remarks>
-    /// The quickstart library hands out its node manager factories as instances, so
-    /// they are registered with the container the way the server builder of the stack
-    /// registers a factory type: as node manager registrations the hosted server hands
-    /// to the server before it starts. The entry point of the sample and the tests which
-    /// host it share this one registration.
+    /// The reference server is the one server class of the stack itself - the
+    /// quickstart library ships it, together with its node manager factories as
+    /// instances - so this is the one sample which names a server class. The entry
+    /// point of the sample and the tests which host it share this one registration.
     /// </remarks>
     public static class ReferenceServerHosting
     {
@@ -51,16 +49,6 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ArgumentNullException.ThrowIfNull(services);
 
-            foreach (INodeManagerFactory factory in Quickstarts.Servers.Utils.NodeManagerFactories)
-            {
-                services.AddSingleton(new OpcUaServerNodeManagerRegistration(factory));
-            }
-
-            foreach (IAsyncNodeManagerFactory factory in Quickstarts.Servers.Utils.AsyncNodeManagerFactories)
-            {
-                services.AddSingleton(new OpcUaServerNodeManagerRegistration(factory));
-            }
-
             // the configuration file lists an opc.https base address next to the opc.tcp
             // one, and the server advertises the https-uabinary profile. Every transport
             // other than opc.tcp has to be registered: the stack skips a base address
@@ -68,9 +56,19 @@ namespace Microsoft.Extensions.DependencyInjection
             // would advertise an endpoint nobody answers.
             services.AddOpcUa().AddHttpsTransport();
 
-            return services.AddSampleServer(
+            return services.AddSampleServer<ReferenceServer>(
                 configurationFile ?? ConfigurationFile,
-                provider => new ReferenceServer(provider.GetRequiredService<ITelemetryContext>()),
+                server => {
+                    foreach (INodeManagerFactory factory in Quickstarts.Servers.Utils.NodeManagerFactories)
+                    {
+                        server.AddNodeManager(factory);
+                    }
+
+                    foreach (IAsyncNodeManagerFactory factory in Quickstarts.Servers.Utils.AsyncNodeManagerFactories)
+                    {
+                        server.AddNodeManager(factory);
+                    }
+                },
                 configure);
         }
     }

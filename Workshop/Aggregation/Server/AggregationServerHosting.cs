@@ -8,6 +8,7 @@
  * ======================================================================*/
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AggregationServer;
@@ -15,22 +16,22 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Server;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// The composition root of the Aggregation server sample: the server class, its
-    /// configuration file and the node managers the server is made of.
+    /// The composition root of the Aggregation server sample: its configuration file
+    /// and the node managers the server is made of.
     /// </summary>
     /// <remarks>
     /// The server aggregates one downstream server per endpoint of its configuration,
     /// with one <see cref="AggregationNodeManagerFactory"/> each. How many there are is
     /// only known once the configuration is loaded, which is why the factories are not
-    /// registered as types with the server builder of the stack but added by the
-    /// server factory of the container, which runs with the configuration loaded and
-    /// right before the hosted server starts the server. The entry points of the
-    /// WinForms and the console variant of the sample and the tests which host it
-    /// share this one registration.
+    /// registered as types but created right before the server starts, with the
+    /// configuration loaded - see <c>AddNodeManagers</c>. The sample has no server class
+    /// of its own. The entry points of the WinForms and the console variant of the
+    /// sample and the tests which host it share this one registration.
     /// </remarks>
     public static class AggregationServerHosting
     {
@@ -61,47 +62,43 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddSampleServer(
                 configurationFile ?? ConfigurationFile,
-                CreateServer,
+                server => server.AddNodeManagers(CreateNodeManagerFactories),
                 configure);
 
             // registered after the hosted server: the reverse connect manager is created
-            // for the loaded configuration when the server is, and started once the
-            // server listens.
+            // for the loaded configuration when the node managers are, and started once
+            // the server listens.
             services.AddHostedService(provider => provider.GetRequiredService<AggregationReverseConnect>());
 
             return services;
         }
 
         /// <summary>
-        /// Creates the server with one aggregation node manager per configured endpoint.
-        /// Only the first one publishes the aggregation type model.
+        /// One aggregation node manager per configured endpoint. Only the first one
+        /// publishes the aggregation type model.
         /// </summary>
-        private static AggregationServer.AggregationServer CreateServer(IServiceProvider provider)
+        private static IEnumerable<IAsyncNodeManagerFactory> CreateNodeManagerFactories(IServiceProvider provider)
         {
             ApplicationConfiguration configuration = provider.GetRequiredService<ApplicationConfiguration>();
             ReverseConnectManager reverseConnectManager = provider
                 .GetRequiredService<AggregationReverseConnect>()
                 .GetOrCreate(configuration);
 
-            var server = new AggregationServer.AggregationServer(provider.GetRequiredService<ITelemetryContext>());
-
             ConfiguredEndpointCollection endpoints = configuration.ParseExtension<ConfiguredEndpointCollection>();
 
             bool ownsTypeModel = true;
             foreach (ConfiguredEndpoint endpoint in endpoints.Endpoints)
             {
-                server.AddNodeManager(new AggregationNodeManagerFactory(endpoint, reverseConnectManager, ownsTypeModel));
+                yield return new AggregationNodeManagerFactory(endpoint, reverseConnectManager, ownsTypeModel);
                 ownsTypeModel = false;
             }
-
-            return server;
         }
     }
 
     /// <summary>
     /// Owns the reverse connect manager the aggregation node managers connect to their
     /// downstream servers through, when the configuration asks for reverse connections:
-    /// created with the server, started with the host, disposed with it.
+    /// created with the node managers, started with the host, disposed with it.
     /// </summary>
     internal sealed class AggregationReverseConnect : IHostedService, IAsyncDisposable
     {
@@ -112,6 +109,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public AggregationReverseConnect(ITelemetryContext telemetry)
         {
             ArgumentNullException.ThrowIfNull(telemetry);
+
             m_telemetry = telemetry;
         }
 

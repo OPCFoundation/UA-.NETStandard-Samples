@@ -93,9 +93,10 @@ namespace Opc.Ua.Gds.Server
                 // which serve them, registered with the container like the server itself.
                 .AddSingleton<IConfigurationDataStore>(CreateManagedApplicationsDataStore)
                 .AddSingleton<ITicketStore, MemoryTicketStore>()
-                .AddSampleNodeManager<ManagedApplicationsNodeManagerFactory>()
-                .AddSampleNodeManager<DeviceRegistrarNodeManagerFactory>()
-                .AddSampleServer(CreateServer)
+                .AddSingleton(CreateServer)
+                .AddSampleServer<SampleGlobalDiscoveryServer>(server => server
+                    .AddNodeManager<ManagedApplicationsNodeManagerFactory>()
+                    .AddNodeManager<DeviceRegistrarNodeManagerFactory>())
                 .AddHostedService<AliasMergerHostedService>()
                 .AddHostedService<SecurityDefaultsHostedService>();
         }

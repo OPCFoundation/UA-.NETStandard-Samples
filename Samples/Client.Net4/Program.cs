@@ -61,8 +61,7 @@ namespace Opc.Ua.Sample
                             options.ApplicationType = ApplicationType.ClientAndServer;
                             options.ConfigurationFile = "Opc.Ua.SampleClient.Config.xml";
                         })
-                        .AddSampleServer<SampleServer>()
-                        .AddUaSampleServerNodeManagers();
+                        .AddSampleServer(server => server.AddUaSampleServer());
 
                     // the configuration file lists an https base address next to the
                     // opc.tcp one. Every transport other than opc.tcp has to be
