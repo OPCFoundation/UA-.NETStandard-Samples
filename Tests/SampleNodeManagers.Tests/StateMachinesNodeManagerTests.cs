@@ -117,12 +117,16 @@ namespace Opc.Ua.Samples.Tests
                     "The machine object lost one of its children.");
 
                 // CurrentState is what a client reads, LastTransition what it subscribes to,
-                // and the six methods are the causes of the declared transitions.
+                // the six methods are the causes of the declared transitions, the two
+                // Available* properties list the model of the machine, and Production is the
+                // machine which runs below the Running state.
                 Assert.That(
                     operationChildren,
                     Is.SupersetOf(new[] {
                         "CurrentState", "LastTransition",
                         "PowerOn", "PowerOff", "Start", "Stop", "Fault", "Reset",
+                        "AvailableStates", "AvailableTransitions",
+                        "Production",
                     }),
                     "The Operation state machine lost a child.");
 
@@ -159,6 +163,310 @@ namespace Opc.Ua.Samples.Tests
                     Is.EqualTo(offNode),
                     "CurrentState/Id has to name the state node of the machine's own namespace.");
             });
+        }
+
+        /// <summary>
+        /// Every state and every transition the sample declared is a node a client can browse
+        /// to, and the machine lists them through the two optional Available properties.
+        /// </summary>
+        /// <remarks>
+        /// A machine which materializes none of them can only be read: <c>CurrentState/Id</c>
+        /// names a node which does not exist, <c>GetAvailableStatesAsync</c> and
+        /// <c>GetAvailableTransitionsAsync</c> answer nothing, and a state has nowhere to hang
+        /// a sub state machine off. The builder mints the nodes from the declaration, so the
+        /// sample declares its machine once and serves the whole Part 16 model of it.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task OperationMachineMaterializesItsStatesAndTransitions(CancellationToken ct)
+        {
+            NodeId operationId = await OperationNodeAsync(ct).ConfigureAwait(false);
+
+            IReadOnlyList<NodeId> availableStates = await ReadNodeIdsAsync(
+                operationId,
+                BrowseNames.AvailableStates,
+                ct).ConfigureAwait(false);
+
+            IReadOnlyList<NodeId> availableTransitions = await ReadNodeIdsAsync(
+                operationId,
+                BrowseNames.AvailableTransitions,
+                ct).ConfigureAwait(false);
+
+            // the declared model, in declaration order, and the number each element carries
+            var states = new (string Name, uint Number)[] {
+                ("Off", StateMachinesNodeManager.OffState),
+                ("Idle", StateMachinesNodeManager.IdleState),
+                ("Running", StateMachinesNodeManager.RunningState),
+                ("Faulted", StateMachinesNodeManager.FaultedState),
+            };
+
+            var transitions = new (string Name, uint Number)[] {
+                ("OffToIdle", StateMachinesNodeManager.OffToIdleTransition),
+                ("IdleToOff", StateMachinesNodeManager.IdleToOffTransition),
+                ("IdleToRunning", StateMachinesNodeManager.IdleToRunningTransition),
+                ("RunningToIdle", StateMachinesNodeManager.RunningToIdleTransition),
+                ("RunningToFaulted", StateMachinesNodeManager.RunningToFaultedTransition),
+                ("FaultedToIdle", StateMachinesNodeManager.FaultedToIdleTransition),
+            };
+
+            await AssertElementsAsync(
+                operationId,
+                availableStates,
+                states,
+                BrowseNames.StateNumber,
+                BrowseNames.AvailableStates,
+                ct).ConfigureAwait(false);
+
+            await AssertElementsAsync(
+                operationId,
+                availableTransitions,
+                transitions,
+                BrowseNames.TransitionNumber,
+                BrowseNames.AvailableTransitions,
+                ct).ConfigureAwait(false);
+
+            // OPC 10000-16 §4.4.10: the state a machine activates into is an InitialStateType,
+            // which is how a client tells it apart from the other states.
+            NodeId offNode = await OperationStateNodeAsync("Off", ct).ConfigureAwait(false);
+            NodeId idleNode = await OperationStateNodeAsync("Idle", ct).ConfigureAwait(false);
+
+            NodeId offType = await SessionOps
+                .GetTypeDefinitionAsync(Session, offNode, ct).ConfigureAwait(false);
+            NodeId idleType = await SessionOps
+                .GetTypeDefinitionAsync(Session, idleNode, ct).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    offType,
+                    Is.EqualTo(ObjectTypeIds.InitialStateType),
+                    "The initial state has to be an InitialStateType.");
+
+                Assert.That(
+                    idleType,
+                    Is.EqualTo(ObjectTypeIds.StateType),
+                    "Every other state is a StateType.");
+            });
+        }
+
+        /// <summary>
+        /// A transition node names the two states it runs between, the event it reports and
+        /// the method which causes it, the way OPC 10000-16 §4.4.11 asks for.
+        /// </summary>
+        /// <remarks>
+        /// This is what a client needs to draw the machine without knowing it: the states come
+        /// from AvailableStates, and the transitions between them from the FromState / ToState
+        /// references of the nodes AvailableTransitions names. HasCause adds which method call
+        /// takes each of them, which is more than the Executable attribute says - that one only
+        /// answers for the state the machine is in right now.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task TransitionNodesCarryTheirEndpointsCauseAndEffect(CancellationToken ct)
+        {
+            NodeId operationId = await OperationNodeAsync(ct).ConfigureAwait(false);
+            NodeId idleToRunning = await ChildAsync(operationId, "IdleToRunning", ct)
+                .ConfigureAwait(false);
+
+            NodeId idleNode = await OperationStateNodeAsync("Idle", ct).ConfigureAwait(false);
+            NodeId runningNode = await OperationStateNodeAsync("Running", ct).ConfigureAwait(false);
+            NodeId startMethod = await ChildAsync(operationId, "Start", ct).ConfigureAwait(false);
+
+            IReadOnlyList<NodeId> fromState = await TargetsAsync(
+                idleToRunning, ReferenceTypeIds.FromState, ct).ConfigureAwait(false);
+            IReadOnlyList<NodeId> toState = await TargetsAsync(
+                idleToRunning, ReferenceTypeIds.ToState, ct).ConfigureAwait(false);
+            IReadOnlyList<NodeId> hasCause = await TargetsAsync(
+                idleToRunning, ReferenceTypeIds.HasCause, ct).ConfigureAwait(false);
+            IReadOnlyList<NodeId> hasEffect = await TargetsAsync(
+                idleToRunning, ReferenceTypeIds.HasEffect, ct).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    fromState,
+                    Is.EqualTo(new[] { idleNode }),
+                    "IdleToRunning has to start at the Idle state node.");
+                Assert.That(
+                    toState,
+                    Is.EqualTo(new[] { runningNode }),
+                    "IdleToRunning has to end at the Running state node.");
+                Assert.That(
+                    hasCause,
+                    Is.EqualTo(new[] { startMethod }),
+                    "The cause of IdleToRunning is the Start method the sample bound to it.");
+                Assert.That(
+                    hasEffect,
+                    Is.EqualTo(new[] { ObjectTypeIds.TransitionEventType }),
+                    "A transition reports a TransitionEventType, and says so with HasEffect.");
+            });
+        }
+
+        /// <summary>
+        /// The Running state has a machine of its own below it, referenced the way OPC
+        /// 10000-16 §4.4.16 asks for: from the state node rather than from the machine.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task RunningStateOwnsTheProductionSubStateMachine(CancellationToken ct)
+        {
+            NodeId operationId = await OperationNodeAsync(ct).ConfigureAwait(false);
+            NodeId runningNode = await OperationStateNodeAsync("Running", ct).ConfigureAwait(false);
+            NodeId productionId = await ProductionNodeAsync(ct).ConfigureAwait(false);
+
+            IReadOnlyList<NodeId> fromState = await TargetsAsync(
+                runningNode, ReferenceTypeIds.HasSubStateMachine, ct).ConfigureAwait(false);
+            IReadOnlyList<NodeId> fromMachine = await TargetsAsync(
+                operationId, ReferenceTypeIds.HasSubStateMachine, ct).ConfigureAwait(false);
+
+            IReadOnlyList<string> productionChildren = await BrowseNamesAsync(productionId, ct)
+                .ConfigureAwait(false);
+
+            await ReportAsync("Production", productionChildren).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    fromState,
+                    Is.EqualTo(new[] { productionId }),
+                    "The sub state machine hangs off the state it belongs to.");
+
+                Assert.That(
+                    fromMachine,
+                    Is.Empty,
+                    "A sub state machine is not referenced from the machine root: a client " +
+                    "which browsed it there could not tell which state it belongs to.");
+
+                // the child is a machine like any other: its own states, its own transitions,
+                // its own cause method and the two variables which report where it is.
+                Assert.That(
+                    productionChildren,
+                    Is.SupersetOf(new[] {
+                        "CurrentState", "LastTransition",
+                        "Loading", "Processing", "Unloading",
+                        "LoadingToProcessing", "ProcessingToUnloading", "UnloadingToLoading",
+                        "AvailableStates", "AvailableTransitions",
+                        "StartBatch",
+                    }),
+                    "The Production state machine lost a child.");
+            });
+        }
+
+        /// <summary>
+        /// The Production machine only exists while the Operation machine is Running: outside
+        /// of it there is no state to read and no cause to call.
+        /// </summary>
+        /// <remarks>
+        /// OPC 10000-16 §4.4.6 has an inactive sub state machine report its state variables
+        /// with <see cref="StatusCodes.BadStateNotActive"/> rather than with a stale value, so
+        /// that a client cannot mistake where the child stopped for where it is. The framework
+        /// applies it from the parent's transitions - the sample declares which state the child
+        /// belongs to and writes none of it.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ProductionMachineIsNotActiveWhileTheMachineIsNotRunning(CancellationToken ct)
+        {
+            // the fixture left the Operation machine in Off, which is not the state the
+            // Production machine belongs to
+            DataValue suspended = await ReadProductionStateAsync(ct).ConfigureAwait(false);
+            CallMethodResult refused = await CallStartBatchRawAsync(ct).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"Production/CurrentState while Off -> {suspended.StatusCode}, " +
+                    $"StartBatch() -> {refused.StatusCode}")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    suspended.StatusCode,
+                    Is.EqualTo((StatusCode)StatusCodes.BadStateNotActive),
+                    "The state of a suspended sub state machine has to read Bad_StateNotActive.");
+
+                Assert.That(
+                    refused.StatusCode,
+                    Is.EqualTo((StatusCode)StatusCodes.BadNotExecutable),
+                    "A cause of a suspended sub state machine must not be executable.");
+            });
+
+            await CallOperationAsync(StateMachinesNodeManager.PowerOnCause, ct).ConfigureAwait(false);
+            await CallOperationAsync(StateMachinesNodeManager.StartCause, ct).ConfigureAwait(false);
+
+            DataValue active = await ReadProductionStateAsync(ct).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    StatusCode.IsGood(active.StatusCode),
+                    Is.True,
+                    $"Entering Running has to activate the child: {active.StatusCode}");
+
+                Assert.That(
+                    StateName(active),
+                    Is.EqualTo("Loading"),
+                    "An activated sub state machine enters the state it declared as its initial one.");
+            });
+
+            await CallOperationAsync(StateMachinesNodeManager.StopCause, ct).ConfigureAwait(false);
+
+            Assert.That(
+                (await ReadProductionStateAsync(ct).ConfigureAwait(false)).StatusCode,
+                Is.EqualTo((StatusCode)StatusCodes.BadStateNotActive),
+                "Leaving Running has to suspend the child again.");
+        }
+
+        /// <summary>
+        /// The Production machine runs a batch of its own while the Operation machine stays in
+        /// one state, and starts over when the parent leaves Running and comes back.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ProductionMachineRunsABatchAndStartsOverOnReentry(CancellationToken ct)
+        {
+            await CallOperationAsync(StateMachinesNodeManager.PowerOnCause, ct).ConfigureAwait(false);
+            await CallOperationAsync(StateMachinesNodeManager.StartCause, ct).ConfigureAwait(false);
+
+            await CallStartBatchAsync(ct).ConfigureAwait(false);
+
+            Assert.That(
+                await ReadProductionStateNameAsync(ct).ConfigureAwait(false),
+                Is.EqualTo("Processing"),
+                "StartBatch has to move the child out of Loading.");
+
+            // the rest of the batch is the child's own business: two timed transitions carry it
+            // through unloading and back to Loading while the parent stays in Running.
+            string unloading = await Poll.UntilAsync(
+                token => ReadProductionStateNameAsync(token),
+                state => state == "Unloading",
+                "the batch to be processed",
+                timeout: StateMachinesNodeManager.BatchDuration + TimeSpan.FromSeconds(20),
+                ct: ct).ConfigureAwait(false);
+
+            string loading = await Poll.UntilAsync(
+                token => ReadProductionStateNameAsync(token),
+                state => state == "Loading",
+                "the batch to be unloaded",
+                timeout: StateMachinesNodeManager.UnloadDuration + TimeSpan.FromSeconds(20),
+                ct: ct).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(unloading, Is.EqualTo("Unloading"));
+                Assert.That(loading, Is.EqualTo("Loading"));
+            });
+
+            // the parent stays where it is through all of that
+            Assert.That(
+                await ReadOperationStateNameAsync(ct).ConfigureAwait(false),
+                Is.EqualTo("Running"),
+                "A transition of the child must not move the parent.");
+
+            // and a run which is interrupted starts over rather than resuming: that is what
+            // the sample asked for with preserveOnReentry: false.
+            await CallStartBatchAsync(ct).ConfigureAwait(false);
+            await CallOperationAsync(StateMachinesNodeManager.StopCause, ct).ConfigureAwait(false);
+            await CallOperationAsync(StateMachinesNodeManager.StartCause, ct).ConfigureAwait(false);
+
+            Assert.That(
+                await ReadProductionStateNameAsync(ct).ConfigureAwait(false),
+                Is.EqualTo("Loading"),
+                "The child has to start over when the parent re-enters Running.");
         }
 
         /// <summary>
@@ -495,6 +803,120 @@ namespace Opc.Ua.Samples.Tests
             return ResolveAsync(ct, Machine, Operation);
         }
 
+        /// <summary>
+        /// The sub state machine which runs below the Running state.
+        /// </summary>
+        private async Task<NodeId> ProductionNodeAsync(CancellationToken ct)
+        {
+            NodeId operationId = await OperationNodeAsync(ct).ConfigureAwait(false);
+
+            return await ChildAsync(operationId, "Production", ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Reads a NodeId array property of a node - AvailableStates or AvailableTransitions.
+        /// </summary>
+        private async Task<IReadOnlyList<NodeId>> ReadNodeIdsAsync(
+            NodeId parent,
+            string browseName,
+            CancellationToken ct)
+        {
+            NodeId listId = await ChildAsync(parent, browseName, ct).ConfigureAwait(false);
+
+            DataValue value = await SessionOps.ReadValueAsync(Session, listId, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(value.StatusCode),
+                Is.True,
+                $"Reading {browseName} failed: {value.StatusCode}");
+
+            return value.WrappedValue.TryGetValue(out ArrayOf<NodeId> nodes)
+                ? nodes.ToArray()
+                : [];
+        }
+
+        /// <summary>
+        /// Holds the states or the transitions of a machine to what the sample declared: the
+        /// Available property lists exactly the nodes below the machine, in declaration order,
+        /// and each of them carries the number the sample gave it.
+        /// </summary>
+        private async Task AssertElementsAsync(
+            NodeId machineId,
+            IReadOnlyList<NodeId> available,
+            IReadOnlyList<(string Name, uint Number)> declared,
+            string numberBrowseName,
+            string what,
+            CancellationToken ct)
+        {
+            var browsed = new List<NodeId>(declared.Count);
+            var numbers = new List<uint>(declared.Count);
+
+            foreach ((string name, uint _) in declared)
+            {
+                NodeId elementId = await ChildAsync(machineId, name, ct).ConfigureAwait(false);
+
+                browsed.Add(elementId);
+                numbers.Add(await ReadElementNumberAsync(elementId, numberBrowseName, ct)
+                    .ConfigureAwait(false));
+            }
+
+            await ReportAsync(
+                what,
+                declared.Select((element, index) => $"{element.Name}={numbers[index]}"))
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    available,
+                    Is.EqualTo(browsed),
+                    $"{what} has to list the nodes of the machine, in declaration order.");
+
+                Assert.That(
+                    numbers,
+                    Is.EqualTo(declared.Select(element => element.Number)),
+                    $"Every node has to carry its {numberBrowseName}.");
+            });
+        }
+
+        private async Task<uint> ReadElementNumberAsync(
+            NodeId elementId,
+            string numberBrowseName,
+            CancellationToken ct)
+        {
+            NodeId numberId = await ChildAsync(elementId, numberBrowseName, ct)
+                .ConfigureAwait(false);
+
+            DataValue value = await SessionOps.ReadValueAsync(Session, numberId, ct)
+                .ConfigureAwait(false);
+
+            return value.WrappedValue.ConvertTo(BuiltInType.UInt32).TryGetValue(out uint number)
+                ? number
+                : 0;
+        }
+
+        /// <summary>
+        /// The nodes one non hierarchical reference of a node points at.
+        /// </summary>
+        private async Task<IReadOnlyList<NodeId>> TargetsAsync(
+            NodeId nodeId,
+            NodeId referenceTypeId,
+            CancellationToken ct)
+        {
+            IReadOnlyList<ReferenceDescription> references = await SessionOps
+                .BrowseAsync(
+                    Session,
+                    nodeId,
+                    ct,
+                    referenceTypeId: referenceTypeId,
+                    includeSubtypes: false)
+                .ConfigureAwait(false);
+
+            return references
+                .Select(reference => ExpandedNodeId.ToNodeId(reference.NodeId, Session.NamespaceUris))
+                .ToArray();
+        }
+
         private Task<NodeId> ProgramNodeAsync(CancellationToken ct)
         {
             return ResolveAsync(ct, Machine, Program);
@@ -520,6 +942,29 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             return value.WrappedValue.TryGetValue(out LocalizedText text) ? text.Text : null;
+        }
+
+        /// <summary>
+        /// Reads CurrentState of the Production machine, status code and all: while the child
+        /// is suspended the status is what carries the answer.
+        /// </summary>
+        private async Task<DataValue> ReadProductionStateAsync(CancellationToken ct)
+        {
+            NodeId productionId = await ProductionNodeAsync(ct).ConfigureAwait(false);
+            NodeId stateId = await ChildAsync(productionId, BrowseNames.CurrentState, ct)
+                .ConfigureAwait(false);
+
+            return await SessionOps.ReadValueAsync(Session, stateId, ct).ConfigureAwait(false);
+        }
+
+        private async Task<string> ReadProductionStateNameAsync(CancellationToken ct)
+        {
+            return StateName(await ReadProductionStateAsync(ct).ConfigureAwait(false));
+        }
+
+        private static string StateName(DataValue state)
+        {
+            return state.WrappedValue.TryGetValue(out LocalizedText text) ? text.Text : null;
         }
 
         private async Task<NodeId> ReadOperationStateIdAsync(CancellationToken ct)
@@ -631,6 +1076,39 @@ namespace Opc.Ua.Samples.Tests
                 StatusCode.IsGood(result.StatusCode),
                 Is.True,
                 $"Calling the cause {causeId} failed: {result.StatusCode}");
+        }
+
+        /// <summary>
+        /// Calls the cause of the Production machine and reports the result.
+        /// </summary>
+        /// <remarks>
+        /// The method belongs to the sub state machine rather than to the Operation machine,
+        /// so it is called on the child object: Part 4 has the object of a Call name the node
+        /// the method is a child of.
+        /// </remarks>
+        private async Task<CallMethodResult> CallStartBatchRawAsync(CancellationToken ct)
+        {
+            NodeId productionId = await ProductionNodeAsync(ct).ConfigureAwait(false);
+
+            return await SessionOps
+                .CallAsync(
+                    Session,
+                    productionId,
+                    new NodeId(
+                        StateMachinesNodeManager.StartBatchCause,
+                        NamespaceIndex(StateMachinesNamespace)),
+                    ct)
+                .ConfigureAwait(false);
+        }
+
+        private async Task CallStartBatchAsync(CancellationToken ct)
+        {
+            CallMethodResult result = await CallStartBatchRawAsync(ct).ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(result.StatusCode),
+                Is.True,
+                $"Calling StartBatch failed: {result.StatusCode}");
         }
 
         /// <summary>

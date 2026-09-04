@@ -62,6 +62,15 @@ namespace Quickstarts.StateMachines.Client
     /// source generated <see cref="ProgramStateMachineTypeClient"/> proxy exposes its causes
     /// as <c>StartAsync</c>, <c>SuspendAsync</c> and so on.
     /// </para>
+    /// <para>
+    /// The vendor machine is also hierarchical, and the window shows the two halves of that.
+    /// <c>GetAvailableStatesAsync</c> and <c>GetAvailableTransitionsAsync</c> read the model a
+    /// Part 16 machine publishes - a node per state and per transition, each with its number -
+    /// and <c>GetSubStateMachineAsync</c> follows the <c>HasSubStateMachine</c> reference of a
+    /// state node to the machine which runs while the parent is in it.
+    /// <c>ObserveEffectiveStateAsync</c> then streams both machines at once, so a transition
+    /// of either is reported as one combined snapshot.
+    /// </para>
     /// </remarks>
     public partial class MainForm : Form
     {
@@ -108,9 +117,17 @@ namespace Quickstarts.StateMachines.Client
         private CancellationTokenSource m_cts;
         private FiniteStateMachineTypeClient m_operation;
         private ProgramStateMachineTypeClient m_program;
+
+        /// <summary>
+        /// The machine which runs below one of the states of the Operation machine, found
+        /// through the HasSubStateMachine reference of that state rather than by name.
+        /// </summary>
+        private FiniteStateMachineTypeClient m_production;
+
         private NodeId m_interlockNode;
         private readonly Dictionary<Button, NodeId> m_causes = new();
         private readonly Dictionary<Button, NodeId> m_programCauses = new();
+        private readonly Dictionary<Button, NodeId> m_productionCauses = new();
         private bool m_updatingInterlock;
         #endregion
 
@@ -289,9 +306,15 @@ namespace Quickstarts.StateMachines.Client
 
             await ResolveProgramCausesAsync(ct);
 
+            // what the Operation machine is made of, and which of its states has a machine of
+            // its own below it. That is where m_production comes from.
+            await ShowMachineModelAsync(ct);
+            await ResolveProductionCauseAsync(ct);
+
             // where the machines are right now, before anything moves them.
             ShowSnapshot(kOperation, await m_operation.GetCurrentFiniteStateAsync(ct), append: false);
             ShowSnapshot(kProgram, await m_program.GetCurrentFiniteStateAsync(ct), append: false);
+            await ShowProductionAsync(null, ct);
             await ReadInterlockAsync(ct);
 
             // the streaming subscription lives as long as the connection: the underlying OPC
@@ -308,8 +331,20 @@ namespace Quickstarts.StateMachines.Client
 
             // nothing is awaited here on purpose: both enumerations run for as long as the
             // client is connected, and cancelling the token is what unsubscribes them.
-            _ = PumpTransitionsAsync(kOperation, m_operation, m_cts.Token);
-            _ = PumpTransitionsAsync(kProgram, m_program, m_cts.Token);
+            //
+            // The Operation machine is watched through ObserveEffectiveStateAsync, which
+            // subscribes to the machine and to the sub state machines of its states at once
+            // and reports a transition of any of them; the Program machine has no sub state
+            // machine, so watching it as one machine is all there is to do.
+            _ = PumpTransitionsAsync(
+                kOperation,
+                m_operation.ObserveEffectiveStateAsync(m_streaming, m_telemetry, null, m_cts.Token),
+                m_cts.Token);
+
+            _ = PumpTransitionsAsync(
+                kProgram,
+                m_program.ObserveFiniteTransitionsAsync(m_streaming, null, m_cts.Token),
+                m_cts.Token);
 
             EnableControls(true);
 
@@ -354,6 +389,140 @@ namespace Quickstarts.StateMachines.Client
         }
 
         /// <summary>
+        /// Shows what the Operation machine is made of, and finds its sub state machine.
+        /// </summary>
+        /// <remarks>
+        /// Nothing here is browsed by hand. A Part 16 machine publishes its own model through
+        /// the optional <c>AvailableStates</c> and <c>AvailableTransitions</c> properties,
+        /// which name one node per state and per transition, and the two Get methods read them
+        /// together with the number each node carries. A server which materializes none of
+        /// them answers with nothing, and this list stays empty instead of the client falling
+        /// back to guessing what the machine can do.
+        /// </remarks>
+        private async Task ShowMachineModelAsync(CancellationToken ct)
+        {
+            ModelLV.Items.Clear();
+            m_production = null;
+
+            IReadOnlyList<FiniteStateInfo> states = await m_operation
+                .GetAvailableStatesAsync(ct);
+
+            IReadOnlyList<FiniteTransitionInfo> transitions = await m_operation
+                .GetAvailableTransitionsAsync(ct);
+
+            foreach (FiniteStateInfo state in states)
+            {
+                // OPC 10000-16 §4.4.16 hangs HasSubStateMachine off the state node rather than
+                // off the machine, because a machine can have one per state. So a client looks
+                // for it there, with the NodeId AvailableStates just gave it.
+                FiniteStateMachineTypeClient subMachine = await m_operation
+                    .GetSubStateMachineAsync(state.NodeId, m_telemetry, ct);
+
+                string subMachineName = string.Empty;
+
+                if (subMachine != null)
+                {
+                    subMachineName = await ReadBrowseNameAsync(subMachine.ObjectId, ct);
+
+                    // the sample's server declares exactly one, below its Running state.
+                    m_production = subMachine;
+                }
+
+                AddModelItem("State", state.BrowseName, state.StateNumber, state.NodeId, subMachineName);
+            }
+
+            foreach (FiniteTransitionInfo transition in transitions)
+            {
+                AddModelItem(
+                    "Transition",
+                    transition.BrowseName,
+                    transition.TransitionNumber,
+                    transition.NodeId,
+                    string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Adds one state or transition of the machine to the model list.
+        /// </summary>
+        private void AddModelItem(
+            string kind,
+            QualifiedName browseName,
+            uint number,
+            NodeId nodeId,
+            string subMachine)
+        {
+            var item = new ListViewItem(kind);
+
+            item.SubItems.Add(browseName.Name ?? string.Empty);
+            item.SubItems.Add(number.ToString(CultureInfo.CurrentCulture));
+
+            // the NodeId is worth showing: it is what CurrentState/Id and LastTransition/Id
+            // answer with, and a machine which materializes no nodes has nothing to put here.
+            item.SubItems.Add(nodeId.ToString());
+            item.SubItems.Add(subMachine);
+
+            ModelLV.Items.Add(item);
+        }
+
+        /// <summary>
+        /// Resolves the cause of the sub state machine, if the server has one.
+        /// </summary>
+        /// <remarks>
+        /// A sub state machine has causes of its own, and they are methods of the child rather
+        /// than of the machine the client started from.
+        /// </remarks>
+        private async Task ResolveProductionCauseAsync(CancellationToken ct)
+        {
+            m_productionCauses.Clear();
+
+            if (m_production == null)
+            {
+                return;
+            }
+
+            var wellKnownNamespaceUris = new NamespaceTable();
+            wellKnownNamespaceUris.Append(Namespaces.StateMachines);
+
+            List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
+                m_session,
+                m_production.ObjectId,
+                wellKnownNamespaceUris,
+                ct,
+                "1:StartBatch");
+
+            if (nodes.Count > 0 && !nodes[0].IsNull)
+            {
+                m_productionCauses[StartBatchBTN] = nodes[0];
+            }
+        }
+
+        /// <summary>
+        /// The browse name of a node, as text.
+        /// </summary>
+        private async Task<string> ReadBrowseNameAsync(NodeId nodeId, CancellationToken ct)
+        {
+            var nodesToRead = new[] {
+                new ReadValueId { NodeId = nodeId, AttributeId = Attributes.BrowseName },
+            }.ToArrayOf();
+
+            ReadResponse response = await m_session.ReadAsync(
+                null,
+                0,
+                TimestampsToReturn.Neither,
+                nodesToRead,
+                ct);
+
+            List<DataValue> results = response.Results.ToList();
+
+            ClientBase.ValidateResponse(results, nodesToRead.ToArray());
+
+            return results[0].WrappedValue.TryGetValue(out QualifiedName browseName)
+                ? browseName.Name
+                : string.Empty;
+        }
+
+        /// <summary>
         /// Offers only the causes which apply to the state each machine is in right now.
         /// </summary>
         /// <remarks>
@@ -363,12 +532,15 @@ namespace Quickstarts.StateMachines.Client
         /// <c>Executable</c> and <c>UserExecutable</c> attributes of the method nodes, which
         /// the sample server answers from <c>IsCausePermitted</c>. Reading them after every
         /// transition keeps the buttons in step with the machine, and keeps this client
-        /// correct if the server ever changes its state table.
+        /// correct if the server ever changes its state table. The cause of the sub state
+        /// machine is answered the same way, and applies in none of its states while the
+        /// machine is suspended.
         /// </remarks>
         private async Task RefreshPermittedCausesAsync(CancellationToken ct = default)
         {
             List<KeyValuePair<Button, NodeId>> causes = m_causes
                 .Concat(m_programCauses)
+                .Concat(m_productionCauses)
                 .ToList();
 
             if (m_session == null || causes.Count == 0)
@@ -407,22 +579,20 @@ namespace Quickstarts.StateMachines.Client
         /// Reports every transition of one state machine until the client disconnects.
         /// </summary>
         /// <remarks>
-        /// <c>ObserveFiniteTransitionsAsync</c> subscribes to <c>CurrentState/Id</c> and yields
-        /// a snapshot of the state and the transition variables per change, so the window sees
-        /// consistent data per transition and never has to assemble it from single values.
+        /// Both streams subscribe to <c>CurrentState/Id</c> and yield a snapshot of the state
+        /// and the transition variables per change, so the window sees consistent data per
+        /// transition and never has to assemble it from single values. The effective state
+        /// stream of a hierarchical machine yields the same snapshot with the state of the
+        /// active sub state machine attached to it.
         /// </remarks>
         private async Task PumpTransitionsAsync(
             string name,
-            FiniteStateMachineTypeClient stateMachine,
+            IAsyncEnumerable<FiniteStateSnapshot> snapshots,
             CancellationToken ct)
         {
-            IStreamingSubscription streaming = m_streaming;
-
             try
             {
-                await foreach (FiniteStateSnapshot snapshot in stateMachine
-                    .ObserveFiniteTransitionsAsync(streaming, null, ct)
-                    .ConfigureAwait(false))
+                await foreach (FiniteStateSnapshot snapshot in snapshots.ConfigureAwait(false))
                 {
                     if (ct.IsCancellationRequested || IsDisposed)
                     {
@@ -469,8 +639,10 @@ namespace Quickstarts.StateMachines.Client
             m_cts = null;
             m_operation = null;
             m_program = null;
+            m_production = null;
             m_causes.Clear();
             m_programCauses.Clear();
+            m_productionCauses.Clear();
 
             if (cts != null)
             {
@@ -524,6 +696,36 @@ namespace Quickstarts.StateMachines.Client
                 // here rather than waiting for the transition to come back on the stream: the
                 // buttons then follow the user's own action immediately.
                 await RefreshPermittedCausesAsync();
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Starts a batch of the sub state machine.
+        /// </summary>
+        /// <remarks>
+        /// The cause belongs to the machine below the Running state, so the call names that
+        /// object: the parent knows nothing about the methods of its child. Which is also why
+        /// the button is only offered while the child is active - a suspended sub state
+        /// machine reports none of its causes as executable.
+        /// </remarks>
+        private async void StartBatchBTN_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (m_session == null || m_production == null ||
+                    !m_productionCauses.TryGetValue(StartBatchBTN, out NodeId methodId))
+                {
+                    return;
+                }
+
+                await m_session.CallAsync(m_production.ObjectId, methodId, default);
+
+                await RefreshPermittedCausesAsync();
+                await ShowProductionAsync(null);
             }
             catch (Exception exception)
             {
@@ -670,6 +872,11 @@ namespace Quickstarts.StateMachines.Client
             {
                 ShowSnapshot(name, snapshot, append: true);
 
+                if (name == kOperation)
+                {
+                    await ShowProductionAsync(snapshot.SubMachine);
+                }
+
                 await RefreshPermittedCausesAsync();
             }
             catch (Exception exception)
@@ -698,6 +905,14 @@ namespace Quickstarts.StateMachines.Client
             {
                 OperationStateTB.Text = state;
                 OperationTransitionTB.Text = transition;
+
+                // where a hierarchical machine is, is both states at once: the row records
+                // them together, so a transition of the child is not mistaken for one of the
+                // parent standing still.
+                if (snapshot.SubMachine != null)
+                {
+                    state = $"{state} / {DescribeSubMachine(snapshot.SubMachine)}";
+                }
             }
             else
             {
@@ -722,6 +937,48 @@ namespace Quickstarts.StateMachines.Client
         }
 
         /// <summary>
+        /// Shows where the sub state machine of the Operation machine is.
+        /// </summary>
+        /// <remarks>
+        /// The effective state stream only carries the child while the parent is in the state
+        /// the child belongs to, and drops what a child reports while the parent is elsewhere -
+        /// otherwise a machine which is not running would appear to be producing. So a yield
+        /// without a sub machine is the moment to ask the child itself, which is also what
+        /// answers <c>Bad_StateNotActive</c> while it is suspended.
+        /// </remarks>
+        private async Task ShowProductionAsync(
+            FiniteStateSnapshot fromStream,
+            CancellationToken ct = default)
+        {
+            if (m_production == null)
+            {
+                ProductionStateTB.Text = "(no sub state machine)";
+                return;
+            }
+
+            FiniteStateSnapshot snapshot = fromStream
+                ?? await m_production.GetCurrentFiniteStateAsync(ct);
+
+            ProductionStateTB.Text = DescribeSubMachine(snapshot);
+        }
+
+        /// <summary>
+        /// The state of a sub state machine, or why there is none to report.
+        /// </summary>
+        private static string DescribeSubMachine(FiniteStateSnapshot snapshot)
+        {
+            // OPC 10000-16 §4.4.6: a suspended sub state machine reports its state variables
+            // with Bad_StateNotActive rather than with the state it stopped in, so the status
+            // is the answer and the value below it means nothing.
+            if (StatusCode.IsBad(snapshot.Status))
+            {
+                return $"({snapshot.Status})";
+            }
+
+            return snapshot.CurrentState.Text ?? string.Empty;
+        }
+
+        /// <summary>
         /// Enables the controls which need a session.
         /// </summary>
         private void EnableControls(bool enabled)
@@ -734,6 +991,9 @@ namespace Quickstarts.StateMachines.Client
             StopBTN.Enabled = enabled;
             FaultBTN.Enabled = enabled;
             ResetBTN.Enabled = enabled;
+
+            // only a server which has a sub state machine has a cause to offer for it
+            StartBatchBTN.Enabled = enabled && m_productionCauses.Count > 0;
 
             ProgramStartBTN.Enabled = enabled;
             ProgramSuspendBTN.Enabled = enabled;

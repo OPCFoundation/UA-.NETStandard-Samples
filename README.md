@@ -85,8 +85,8 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [RoleManagement Client](Workshop/RoleManagement/Client) | **Client** | Connects as different accounts to see how the address space and the permissions change, and manages the RoleSet of the server. |
 | [SimpleEvents Server](Workshop/SimpleEvents/Server) | **Server** | Generates simple OPC UA events to demonstrate event subscriptions. |
 | [SimpleEvents Client](Workshop/SimpleEvents/Client) | **Client** | Subscribes to and displays simple events from an events server. |
-| [StateMachines Server](Workshop/StateMachines/Server) | **Server** | Demonstrates OPC UA Part 16 state machines: one declared with the fluent `StateMachineBuilder` (states, transitions, causes, guards, timed transitions) and the standard `ProgramStateMachineType` with behaviour attached to it. |
-| [StateMachines Client](Workshop/StateMachines/Client) | **Client** | Drives both state machines of a StateMachines server and streams their transitions as they happen. |
+| [StateMachines Server](Workshop/StateMachines/Server) | **Server** | Demonstrates OPC UA Part 16 state machines: one declared with the fluent `StateMachineBuilder` (states, transitions, causes, guards, timed transitions and a sub state machine below one of its states) and the standard `ProgramStateMachineType` with behaviour attached to it. |
+| [StateMachines Client](Workshop/StateMachines/Client) | **Client** | Drives both state machines of a StateMachines server, reads the states and transitions each of them declares, and streams the transitions of a machine and of its sub state machine as they happen. |
 | [UserAuthentication Server](Workshop/UserAuthentication/Server) | **Server** | Demonstrates OPC UA user authentication with username/password and certificate-based identity tokens. |
 | [UserAuthentication Client](Workshop/UserAuthentication/Client) | **Client** | Connects using different user identity tokens (anonymous, username, certificate) to a UserAuthentication server. |
 | [Views Server](Workshop/Views/Server) | **Server** | Demonstrates OPC UA Views — subsets of the address space exposed as named views. |
