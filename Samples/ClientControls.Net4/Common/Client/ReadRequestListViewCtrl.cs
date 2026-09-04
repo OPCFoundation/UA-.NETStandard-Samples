@@ -38,13 +38,14 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
-    public partial class ReadRequestListViewCtrl : UserControl
+    public partial class ReadRequestListViewCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -251,7 +252,7 @@ namespace Opc.Ua.Client.Controls
 
                     // edit the parameters.
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    ReadValueId[] results = await new EditReadValueIdDlg().ShowDialogAsync(m_session, default, nodeToRead);
+                    ReadValueId[] results = await Windows.Create<EditReadValueIdDlg>().ShowDialogAsync(m_session, default, nodeToRead);
                     #pragma warning restore CA2000
 
                     if (results != null)
@@ -285,7 +286,7 @@ namespace Opc.Ua.Client.Controls
                         DataValue value = (DataValue)source.Row[6];
 
                         #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                        await new EditComplexValueDlg().ShowDialogAsync(
+                        await Windows.Create<EditComplexValueDlg>().ShowDialogAsync(
                         #pragma warning restore CA2000
                             m_session,
                             NodeId.Null,
@@ -310,7 +311,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    ReadValueId[] results = await new EditReadValueIdDlg().ShowDialogAsync(m_session, default, nodesToRead.ToArray());
+                    ReadValueId[] results = await Windows.Create<EditReadValueIdDlg>().ShowDialogAsync(m_session, default, nodesToRead.ToArray());
                     #pragma warning restore CA2000
 
                     if (results != null)

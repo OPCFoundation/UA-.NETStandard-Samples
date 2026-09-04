@@ -36,13 +36,14 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control with button that displays edit array dialog.
     /// </summary>
-    public partial class SelectUrlsCtrl : UserControl
+    public partial class SelectUrlsCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -154,7 +155,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            bool edited = new EditArrayDlg().TryShowDialog(m_telemetry, Variant.From((ArrayOf<string>)strings), BuiltInType.String, false, null, out Variant result);
+            bool edited = Windows.Create<EditArrayDlg>().TryShowDialog(Variant.From((ArrayOf<string>)strings), BuiltInType.String, false, null, out Variant result);
             #pragma warning restore CA2000
 
             if (!edited)

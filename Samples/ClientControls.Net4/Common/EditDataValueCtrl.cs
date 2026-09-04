@@ -36,13 +36,14 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
-    public partial class EditDataValueCtrl : UserControl
+    public partial class EditDataValueCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>

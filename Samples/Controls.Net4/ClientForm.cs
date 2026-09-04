@@ -40,10 +40,11 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class ClientForm : Form
+    public partial class ClientForm : SampleForm
     {
         #region Private Fields
         private ISession m_session;
@@ -418,7 +419,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                _ = new PerformanceTestDlg().ShowDialog(
+                _ = Windows.Create<PerformanceTestDlg>().ShowDialog(
                 #pragma warning restore CA2000
                     m_configuration,
                     m_endpoints,
@@ -440,7 +441,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true, m_telemetry);
+                ConfiguredEndpoint endpoint = Windows.Create<ConfiguredServerListDlg>().ShowDialog(m_configuration, true);
                 #pragma warning restore CA2000
 
                 if (endpoint != null)
@@ -460,7 +461,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                ServerOnNetwork serverOnNetwork = new DiscoveredServerOnNetworkListDlg().ShowDialog(null, m_configuration, m_telemetry);
+                ServerOnNetwork serverOnNetwork = Windows.Create<DiscoveredServerOnNetworkListDlg>().ShowDialog(null, m_configuration);
                 #pragma warning restore CA2000
 
                 if (serverOnNetwork != null)

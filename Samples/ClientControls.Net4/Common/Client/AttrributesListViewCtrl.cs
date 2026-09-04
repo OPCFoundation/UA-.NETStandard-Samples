@@ -38,13 +38,14 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control which displays browse tree.
     /// </summary>
-    public partial class AttributesListViewCtrl : UserControl
+    public partial class AttributesListViewCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -322,7 +323,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                await new EditComplexValueDlg().ShowDialogAsync(
+                await Windows.Create<EditComplexValueDlg>().ShowDialogAsync(
                 #pragma warning restore CA2000
                     m_session,
                     info.NodeToRead.NodeId,

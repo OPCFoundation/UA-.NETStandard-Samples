@@ -36,13 +36,14 @@ using System.Xml;
 using System.Xml.Serialization;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to edit a value.
     /// </summary>
-    public partial class EditAnnotationDlg : Form
+    public partial class EditAnnotationDlg : SampleForm
     {
         #region Constructors
         /// <summary>

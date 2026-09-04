@@ -35,6 +35,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 
@@ -43,28 +44,34 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// A dialog used to edit a NodeId.
     /// </summary>
-    public partial class NodeIdValueEditDlg : Form
+    public partial class NodeIdValueEditDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="NodeIdValueEditDlg"/> class.
         /// </summary>
-        public NodeIdValueEditDlg()
+        public NodeIdValueEditDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
+
+        #region Private Fields
+        private readonly ITelemetryContext m_telemetry;
+        #endregion
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public NodeId ShowDialog(ISession session, NodeId value, ITelemetryContext telemetry)
+        public NodeId ShowDialog(ISession session, NodeId value)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
-            ValueCTRL.Telemetry = telemetry;
+            ValueCTRL.Telemetry = m_telemetry;
             ValueCTRL.Browser = new Browser(session);
             ValueCTRL.RootId = (NodeId)Objects.RootFolder;
             ValueCTRL.Identifier = value;
@@ -80,11 +87,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ExpandedNodeId ShowDialog(ISession session, ExpandedNodeId value, ITelemetryContext telemetry)
+        public ExpandedNodeId ShowDialog(ISession session, ExpandedNodeId value)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
-            ValueCTRL.Telemetry = telemetry;
+            ValueCTRL.Telemetry = m_telemetry;
             ValueCTRL.Browser = new Browser(session);
             ValueCTRL.RootId = (NodeId)Objects.RootFolder;
             ValueCTRL.Identifier = ExpandedNodeId.ToNodeId(value, session.NamespaceUris);

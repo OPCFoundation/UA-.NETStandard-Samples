@@ -40,13 +40,14 @@ using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Runtime.Serialization;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control which displays a list of endpoints
     /// </summary>
-    public partial class EndpointSelectorCtrl : UserControl
+    public partial class EndpointSelectorCtrl : SampleUserControl
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="EndpointSelectorCtrl"/> class.
@@ -216,7 +217,7 @@ namespace Opc.Ua.Client.Controls
 
                 // modify configuration.
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true, m_telemetry);
+                ConfiguredEndpoint endpoint = Windows.Create<ConfiguredServerListDlg>().ShowDialog(m_configuration, true);
                 #pragma warning restore CA2000
 
                 if (endpoint == null)

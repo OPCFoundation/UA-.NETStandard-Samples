@@ -33,6 +33,7 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -43,17 +44,19 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// Prompts the user to edit a value.
     /// </summary>
-    public partial class EditSubscriptionDlg : Form
+    public partial class EditSubscriptionDlg : SampleForm
     {
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public EditSubscriptionDlg()
+        public EditSubscriptionDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -69,11 +72,10 @@ namespace Opc.Ua.Client.Controls
         /// monitor and applies a change as soon as the monitor is reconfigured, so this replaces
         /// the classic edit-then-ModifyAsync pair the dialog used to be half of.
         /// </remarks>
-        public bool ShowDialog(OptionsMonitor<SubscriptionOptions> options, ITelemetryContext telemetry)
+        public bool ShowDialog(OptionsMonitor<SubscriptionOptions> options)
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            m_telemetry = telemetry;
             SubscriptionOptions settings = options.CurrentValue;
 
             PublishingIntervalUP.Value = (decimal)settings.PublishingInterval.TotalMilliseconds;

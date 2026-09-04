@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
-    public partial class HeaderBranding : UserControl
+    public partial class HeaderBranding : SampleUserControl
     {
         public HeaderBranding()
         {

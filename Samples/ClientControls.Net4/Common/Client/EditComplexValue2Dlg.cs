@@ -38,13 +38,14 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to edit a value.
     /// </summary>
-    public partial class EditComplexValue2Dlg : Form
+    public partial class EditComplexValue2Dlg : SampleForm
     {
         #region Constructors
         /// <summary>

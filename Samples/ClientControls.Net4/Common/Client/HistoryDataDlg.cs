@@ -38,13 +38,14 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Allows the user to read and update history for a variable.
     /// </summary>
-    public partial class HistoryDataDlg : Form, ISessionForm
+    public partial class HistoryDataDlg : SampleForm, ISessionForm
     {
         private ITelemetryContext m_telemetry;
         #region Constructors

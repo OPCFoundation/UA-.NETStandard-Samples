@@ -38,13 +38,14 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
-    public partial class WriteRequestListViewCtrl : UserControl
+    public partial class WriteRequestListViewCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -325,7 +326,7 @@ namespace Opc.Ua.Client.Controls
 
                 // prompt use to edit new value.
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, nodeToWrite, m_telemetry);
+                WriteValue result = await Windows.Create<EditWriteValueDlg>().ShowDialogAsync(m_session, nodeToWrite);
                 #pragma warning restore CA2000
 
                 if (result != null)
@@ -352,7 +353,7 @@ namespace Opc.Ua.Client.Controls
                     WriteValue value = (WriteValue)source.Row[0];
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    WriteValue result = await new EditWriteValueDlg().ShowDialogAsync(m_session, value, m_telemetry);
+                    WriteValue result = await Windows.Create<EditWriteValueDlg>().ShowDialogAsync(m_session, value);
                     #pragma warning restore CA2000
 
                     if (result != null)
@@ -387,7 +388,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     // prompt use to edit value.
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    Variant? value = await new EditComplexValueDlg().ShowDialogAsync(
+                    Variant? value = await Windows.Create<EditComplexValueDlg>().ShowDialogAsync(
                     #pragma warning restore CA2000
                         m_session,
                         nodeToWrite.NodeId,

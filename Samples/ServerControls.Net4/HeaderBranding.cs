@@ -6,10 +6,11 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Server.Controls
 {
-    public partial class HeaderBranding : UserControl
+    public partial class HeaderBranding : SampleUserControl
     {
         public HeaderBranding()
         {

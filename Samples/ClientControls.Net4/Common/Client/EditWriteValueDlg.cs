@@ -35,20 +35,21 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to edit a value.
     /// </summary>
-    public partial class EditWriteValueDlg : Form
+    public partial class EditWriteValueDlg : SampleForm
     {
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public EditWriteValueDlg()
+        public EditWriteValueDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -58,6 +59,8 @@ namespace Opc.Ua.Client.Controls
             {
                 AttributeCB.Items.Add(Attributes.GetBrowseName(attributeId));
             }
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -68,10 +71,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the write request parameters for the set of nodes provided.
         /// </summary>
-        public async Task<WriteValue> ShowDialogAsync(ISession session, WriteValue nodeToWrite, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<WriteValue> ShowDialogAsync(ISession session, WriteValue nodeToWrite, CancellationToken ct = default)
         {
-            m_telemetry = telemetry;
-            NodeBTN.ChangeSession(session, telemetry);
+            NodeBTN.ChangeSession(session, m_telemetry);
             NodeBTN.SelectedReference = null;
 
             // fill in the control.

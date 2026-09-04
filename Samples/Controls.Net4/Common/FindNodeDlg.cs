@@ -36,13 +36,14 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class FindNodeDlg : Form
+    public partial class FindNodeDlg : SampleForm
     {
         public FindNodeDlg()
         {

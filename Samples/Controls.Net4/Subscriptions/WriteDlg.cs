@@ -36,6 +36,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -44,32 +45,35 @@ using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class WriteDlg : Form
+    public partial class WriteDlg : SampleForm
     {
         #region Constructors
-        public WriteDlg()
+        public WriteDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private ISession m_session;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowAsync(ISession session, IList<WriteValue> values, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task ShowAsync(ISession session, IList<WriteValue> values, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_session = session;
 
-            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, telemetry, ct);
-            WriteValuesCTRL.Initialize(session, values, telemetry);
+            await BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, m_telemetry, ct);
+            WriteValuesCTRL.Initialize(session, values, m_telemetry);
 
             MoveBTN_ClickAsync(BackBTN, null);
 

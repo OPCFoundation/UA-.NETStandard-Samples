@@ -37,13 +37,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A base class for tree controls.
     /// </summary>
-    public partial class BaseTreeCtrl : UserControl
+    public partial class BaseTreeCtrl : SampleUserControl
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseTreeCtrl"/> class.

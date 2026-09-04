@@ -35,13 +35,14 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control which is used to edit a value.
     /// </summary>
-    public partial class EditValueCtrl : UserControl
+    public partial class EditValueCtrl : SampleUserControl
     {
         /// <summary>
         /// Initializes the object.

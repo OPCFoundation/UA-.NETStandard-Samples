@@ -29,13 +29,14 @@
 
 using System;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A dialog to edit a numeric value held in a Variant.
     /// </summary>
-    public partial class NumericValueEditDlg : Form
+    public partial class NumericValueEditDlg : SampleForm
     {
         #region Constructors
         /// <summary>

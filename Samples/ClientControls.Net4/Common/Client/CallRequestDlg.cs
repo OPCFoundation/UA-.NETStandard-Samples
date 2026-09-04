@@ -37,13 +37,14 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Allows the user to edit and issue call requests.
     /// </summary>
-    public partial class CallRequestDlg : Form, ISessionForm
+    public partial class CallRequestDlg : SampleForm, ISessionForm
     {
         #region Constructors
         /// <summary>

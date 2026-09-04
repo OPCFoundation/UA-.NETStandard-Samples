@@ -36,13 +36,14 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control with button that displays edit array dialog.
     /// </summary>
-    public partial class SelectProfileCtrl : UserControl
+    public partial class SelectProfileCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -128,7 +129,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            Opc.Ua.Security.ListOfSecurityProfiles profiles = new SelectProfileDlg().ShowDialog(Profiles, null);
+            Opc.Ua.Security.ListOfSecurityProfiles profiles = Windows.Create<SelectProfileDlg>().ShowDialog(Profiles, null);
             #pragma warning restore CA2000
 
             if (profiles == null)

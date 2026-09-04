@@ -34,20 +34,21 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Threading;
 using Opc.Ua.Security.Certificates;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to edit a ApplicationDescription.
     /// </summary>
-    public partial class CertificateDlg : Form
+    public partial class CertificateDlg : SampleForm
     {
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
 
         /// <summary>
         /// Contructs the object.
         /// </summary>
-        public CertificateDlg()
+        public CertificateDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -55,15 +56,16 @@ namespace Opc.Ua.Client.Controls
             PrivateKeyCB.Items.Add("No");
             PrivateKeyCB.Items.Add("Yes");
             PrivateKeyCB.SelectedIndex = 0;
+
+            m_telemetry = telemetry;
         }
 
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(CertificateIdentifier certificateIdentifier, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(CertificateIdentifier certificateIdentifier, CancellationToken ct = default)
         {
-            m_telemetry = telemetry;
-            CertificateStoreCTRL.Telemetry = telemetry;
+            CertificateStoreCTRL.Telemetry = m_telemetry;
             CertificateStoreCTRL.StoreType = null;
             CertificateStoreCTRL.StorePath = null;
             PrivateKeyCB.SelectedIndex = 0;
@@ -140,9 +142,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public bool ShowDialog(X509Certificate2 certificate, ITelemetryContext telemetry)
+        public bool ShowDialog(X509Certificate2 certificate)
         {
-            CertificateStoreCTRL.Telemetry = telemetry;
+            CertificateStoreCTRL.Telemetry = m_telemetry;
             CertificateStoreCTRL.StoreType = null;
             CertificateStoreCTRL.StorePath = null;
             PrivateKeyCB.SelectedIndex = 0;

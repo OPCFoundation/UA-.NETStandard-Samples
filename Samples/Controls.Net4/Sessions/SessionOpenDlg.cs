@@ -39,23 +39,26 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class SessionOpenDlg : Form
+    public partial class SessionOpenDlg : SampleForm
     {
         #region Constructors
-        public SessionOpenDlg()
+        public SessionOpenDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private ApplicationConfiguration m_configuration;
         private ConfiguredEndpoint m_endpoint;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         private ISession m_session;
         private const string m_BrowseCertificates = "<Browse...>";
         private static uint m_Counter = 0;
@@ -74,7 +77,7 @@ namespace Opc.Ua.Sample.Controls
         /// </remarks>
         /// <returns>The open session, or null if the user cancelled the dialog.</returns>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public ISession ShowDialog(ApplicationConfiguration configuration, ConfiguredEndpoint endpoint, IList<string> preferredLocales, ITelemetryContext telemetry)
+        public ISession ShowDialog(ApplicationConfiguration configuration, ConfiguredEndpoint endpoint, IList<string> preferredLocales)
         {
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
             if (endpoint == null) throw new ArgumentNullException(nameof(endpoint));
@@ -82,7 +85,6 @@ namespace Opc.Ua.Sample.Controls
             m_configuration = configuration;
             m_endpoint = endpoint;
             m_preferredLocales = preferredLocales;
-            m_telemetry = telemetry;
             m_session = null;
 
             UserIdentityTypeCB.Items.Clear();

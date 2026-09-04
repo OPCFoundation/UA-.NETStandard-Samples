@@ -35,13 +35,14 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to enter a user name/password.
     /// </summary>
-    public partial class UserNamePasswordDlg : Form
+    public partial class UserNamePasswordDlg : SampleForm
     {
         /// <summary>
         /// Contructs the object.

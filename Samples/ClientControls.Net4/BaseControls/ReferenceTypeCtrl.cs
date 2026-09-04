@@ -38,13 +38,14 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays a drop down list of reference types.
     /// </summary>
-    public partial class ReferenceTypeCtrl : UserControl
+    public partial class ReferenceTypeCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>

@@ -156,7 +156,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                FilterOperand operand = new FilterOperandEditDlg().ShowDialog(m_session, m_elements, m_index, null, Telemetry);
+                FilterOperand operand = Windows.Create<FilterOperandEditDlg>().ShowDialog(m_session, m_elements, m_index, null);
                 #pragma warning restore CA2000
 
                 if (operand == null)

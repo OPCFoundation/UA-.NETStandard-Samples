@@ -35,28 +35,31 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Allows the user to browse a list of servers.
     /// </summary>
-    public partial class ConfiguredServerListDlg : Form
+    public partial class ConfiguredServerListDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Initializes the dialog.
         /// </summary>
-        public ConfiguredServerListDlg()
+        public ConfiguredServerListDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private ConfiguredEndpoint m_endpoint;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         private ApplicationConfiguration m_configuration;
         #endregion
 
@@ -64,17 +67,15 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ConfiguredEndpoint ShowDialog(ApplicationConfiguration configuration, bool createNew, ITelemetryContext telemetry)
+        public ConfiguredEndpoint ShowDialog(ApplicationConfiguration configuration, bool createNew)
         {
             m_configuration = configuration;
             m_endpoint = null;
-            m_telemetry = telemetry;
-
             // create a default collection if none provided.
             if (createNew)
             {
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                ApplicationDescription server = new DiscoveredServerListDlg().ShowDialog(null, m_configuration, telemetry);
+                ApplicationDescription server = Windows.Create<DiscoveredServerListDlg>().ShowDialog(null, m_configuration);
                 #pragma warning restore CA2000
 
                 if (server != null)
@@ -85,7 +86,7 @@ namespace Opc.Ua.Client.Controls
                 return null;
             }
 
-            ServersCTRL.Initialize(null, configuration, telemetry);
+            ServersCTRL.Initialize(null, configuration, m_telemetry);
 
             OkBTN.Enabled = false;
 

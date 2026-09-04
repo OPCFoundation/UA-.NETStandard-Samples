@@ -36,16 +36,17 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class FilterOperandEditDlg : Form
+    public partial class FilterOperandEditDlg : SampleForm
     {
         #region Constructors
-        public FilterOperandEditDlg()
+        public FilterOperandEditDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -61,11 +62,14 @@ namespace Opc.Ua.Sample.Controls
             }
 
             AttributeIdCB.Items.AddRange(Attributes.BrowseNames.ToArray());
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private ISession m_session;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -76,8 +80,7 @@ namespace Opc.Ua.Sample.Controls
             ISession session,
             IList<ContentFilterElement> elements,
             int index,
-            FilterOperand operand,
-            ITelemetryContext telemetry)
+            FilterOperand operand)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (elements == null) throw new ArgumentNullException(nameof(elements));
@@ -85,7 +88,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
 
 
-            TypeDefinitionIdCTRL.Telemetry = telemetry;
+            TypeDefinitionIdCTRL.Telemetry = m_telemetry;
             TypeDefinitionIdCTRL.Browser = new Browser(session);
             TypeDefinitionIdCTRL.RootId = new NodeId(ObjectTypes.BaseEventType);
 

@@ -30,6 +30,7 @@
 using System;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -39,21 +40,24 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// A dialog to view or edit a complex value held in a Variant.
     /// </summary>
-    public partial class ComplexValueEditDlg : Form
+    public partial class ComplexValueEditDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="ComplexValueEditDlg"/> class.
         /// </summary>
-        public ComplexValueEditDlg()
+        public ComplexValueEditDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
+            ValueCTRL.Telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -61,12 +65,10 @@ namespace Opc.Ua.Client.Controls
         /// Displays the dialog. Returns false if the user cancelled the edit;
         /// otherwise returns the edited value in <paramref name="result"/>.
         /// </summary>
-        public bool TryShowDialog(Variant value, ITelemetryContext telemetry, out Variant result)
+        public bool TryShowDialog(Variant value, out Variant result)
         {
-            m_telemetry = telemetry;
             result = Variant.Null;
 
-            ValueCTRL.Telemetry = telemetry;
             _ = ValueCTRL.ShowValueAsync(value);
 
             if (ShowDialog() != DialogResult.OK)
@@ -84,12 +86,10 @@ namespace Opc.Ua.Client.Controls
         /// user cancelled the edit; otherwise returns the edited array value
         /// in <paramref name="result"/>.
         /// </summary>
-        public bool TryShowDialog(WriteValue value, ITelemetryContext telemetry, out Variant result)
+        public bool TryShowDialog(WriteValue value, out Variant result)
         {
-            m_telemetry = telemetry;
             result = Variant.Null;
 
-            ValueCTRL.Telemetry = telemetry;
             _ = ValueCTRL.ShowValueAsync(value);
 
             if (ShowDialog() != DialogResult.OK)
@@ -104,11 +104,8 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays a data value with its status code and timestamps.
         /// </summary>
-        public void ShowDialog(DataValue value, ITelemetryContext telemetry)
+        public void ShowDialog(DataValue value)
         {
-            m_telemetry = telemetry;
-
-            ValueCTRL.Telemetry = telemetry;
             _ = ValueCTRL.ShowValueAsync(value);
 
             ShowDialog();

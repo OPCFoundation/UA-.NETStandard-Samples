@@ -35,6 +35,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -43,10 +44,10 @@ using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class BrowseOptionsDlg : Form
+    public partial class BrowseOptionsDlg : SampleForm
     {
         #region Constructors
-        public BrowseOptionsDlg()
+        public BrowseOptionsDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -57,26 +58,27 @@ namespace Opc.Ua.Sample.Controls
             }
 
             BrowseDirectionCB.SelectedIndex = 0;
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private Browser m_browser;
         private ISession m_session;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(Browser browser, ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(Browser browser, ISession session, CancellationToken ct = default)
         {
             if (browser == null) throw new ArgumentNullException(nameof(browser));
 
             m_browser = browser;
             m_session = session;
-            m_telemetry = telemetry;
             await ReferenceTypeCTRL.InitializeAsync(m_session, NodeId.Null, ct);
 
             ViewIdTB.Text = null;
@@ -157,7 +159,7 @@ namespace Opc.Ua.Sample.Controls
                 browser.IncludeSubtypes = true;
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(browser, new NodeId(Objects.ViewsFolder), m_session, m_telemetry);
+                ReferenceDescription reference = await Windows.Create<SelectNodeDlg>().ShowDialogAsync(browser, new NodeId(Objects.ViewsFolder), m_session);
                 #pragma warning restore CA2000
 
                 if (reference != null)

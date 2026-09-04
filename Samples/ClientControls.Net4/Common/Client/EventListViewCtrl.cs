@@ -39,13 +39,14 @@ using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
-    public partial class EventListViewCtrl : UserControl
+    public partial class EventListViewCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -314,7 +315,7 @@ namespace Opc.Ua.Client.Controls
                     DataRowView source = row.DataBoundItem as DataRowView;
                     EventFieldList e2 = (EventFieldList)source.Row[0];
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    new ViewEventDetailsDlg().ShowDialog(m_filter, new List<Variant>(e2.EventFields.ToArray()));
+                    Windows.Create<ViewEventDetailsDlg>().ShowDialog(m_filter, new List<Variant>(e2.EventFields.ToArray()));
                     #pragma warning restore CA2000
                     break;
                 }

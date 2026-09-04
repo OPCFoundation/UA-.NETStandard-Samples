@@ -39,19 +39,20 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Searches for the servers in a GDS.
     /// </summary>
-    public partial class GdsDiscoverServersDlg : Form
+    public partial class GdsDiscoverServersDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Constructs the form.
         /// </summary>
-        public GdsDiscoverServersDlg()
+        public GdsDiscoverServersDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -75,6 +76,8 @@ namespace Opc.Ua.Client.Controls
             MachineNameCB.SelectedIndex = 0;
             ApplicationUriCB.SelectedIndex = 0;
             ProductUriCB.SelectedIndex = 0;
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -90,7 +93,7 @@ namespace Opc.Ua.Client.Controls
 
         #region Private Fields
         private ApplicationDescription m_application;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Private Constants
@@ -121,9 +124,8 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Shows the dialog.
         /// </summary>
-        public async Task<ApplicationDescription> ShowDialogAsync(ApplicationConfiguration configuration, bool showSearchPanel, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<ApplicationDescription> ShowDialogAsync(ApplicationConfiguration configuration, bool showSearchPanel, CancellationToken ct = default)
         {
-            m_telemetry = telemetry;
             List<string> urls = new List<string>();
 
             foreach (EndpointDescription endpoint in configuration.ClientConfiguration.DiscoveryServers)
@@ -142,7 +144,7 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                await ServerCTRL.ConnectAsync(telemetry, ct: ct);
+                await ServerCTRL.ConnectAsync(m_telemetry, ct: ct);
             }
             catch (Exception exception)
             {

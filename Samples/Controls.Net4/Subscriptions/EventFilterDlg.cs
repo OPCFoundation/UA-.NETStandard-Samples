@@ -36,25 +36,28 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class EventFilterDlg : Form
+    public partial class EventFilterDlg : SampleForm
     {
         #region Constructors
-        public EventFilterDlg()
+        public EventFilterDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private ISession m_session;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         private EventFilter m_filter;
         #endregion
 
@@ -62,19 +65,18 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public EventFilter ShowDialog(ISession session, ITelemetryContext telemetry, EventFilter filter, bool editWhereClause)
+        public EventFilter ShowDialog(ISession session, EventFilter filter, bool editWhereClause)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (filter == null) throw new ArgumentNullException(nameof(filter));
 
             m_session = session;
-            m_telemetry = telemetry;
             m_filter = filter;
 
-            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, NodeId.Null, telemetry);
+            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.EventTypes, NodeId.Null, m_telemetry);
             SelectClauseCTRL.Initialize(session, filter.SelectClauses.ToList());
-            ContentFilterCTRL.Initialize(session, filter.WhereClause, telemetry);
-            FilterOperandsCTRL.Initialize(session, null, -1, telemetry);
+            ContentFilterCTRL.Initialize(session, filter.WhereClause, m_telemetry);
+            FilterOperandsCTRL.Initialize(session, null, -1, m_telemetry);
 
             MoveBTN_Click((editWhereClause) ? NextBTN : BackBTN, null);
 

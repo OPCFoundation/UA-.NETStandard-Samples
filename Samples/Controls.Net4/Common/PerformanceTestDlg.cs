@@ -41,6 +41,7 @@ using System.ServiceModel;
 using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
 using System.IO;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -52,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// Prompts the user to create a new secure channel.
     /// </summary>
-    public partial class PerformanceTestDlg : Form
+    public partial class PerformanceTestDlg : SampleForm
     {
         public PerformanceTestDlg()
         {

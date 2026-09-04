@@ -36,6 +36,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -44,24 +45,28 @@ using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class ReadValueEditDlg : Form
+    public partial class ReadValueEditDlg : SampleForm
     {
-        public ReadValueEditDlg()
+        public ReadValueEditDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
             AttributeIdCB.Items.AddRange(Attributes.BrowseNames.ToArray());
+
+            m_telemetry = telemetry;
         }
+
+        private readonly ITelemetryContext m_telemetry;
 
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(ISession session, ReadValueId valueId, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, ReadValueId valueId, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (valueId == null) throw new ArgumentNullException(nameof(valueId));
 
-            NodeIdCTRL.Telemetry = telemetry;
+            NodeIdCTRL.Telemetry = m_telemetry;
             NodeIdCTRL.Browser = new Browser(session);
 
             INode node = await session.NodeCache.FindAsync(valueId.NodeId, ct);

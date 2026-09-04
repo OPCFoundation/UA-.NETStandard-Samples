@@ -971,7 +971,7 @@ namespace Opc.Ua.Client.Controls
                     LocalizedText localizedText = state.Value.GetLocalizedText();
 
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    string text = new StringValueEditDlg().ShowDialog(localizedText.Text);
+                    string text = Windows.Create<StringValueEditDlg>().ShowDialog(localizedText.Text);
                     #pragma warning restore CA2000
 
                     if (text == null)
@@ -984,7 +984,7 @@ namespace Opc.Ua.Client.Controls
                 else
                 {
                     #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    if (!new SimpleValueEditDlg().TryShowDialog(state.Value, Telemetry, out editedValue))
+                    if (!Windows.Create<SimpleValueEditDlg>().TryShowDialog(state.Value, out editedValue))
                     #pragma warning restore CA2000
                     {
                         return;

@@ -210,7 +210,7 @@ namespace Opc.Ua.Sample.Controls
                 FilterOperator op = element.FilterOperator;
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new FilterOperatorEditDlg().ShowDialog(ref op))
+                if (!Windows.Create<FilterOperatorEditDlg>().ShowDialog(ref op))
                 #pragma warning restore CA2000
                 {
                     return;
@@ -244,7 +244,7 @@ namespace Opc.Ua.Sample.Controls
             try
             {
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser, new NodeId(ObjectTypes.BaseEventType), m_session, Telemetry);
+                ReferenceDescription reference = await Windows.Create<SelectNodeDlg>().ShowDialogAsync(m_browser, new NodeId(ObjectTypes.BaseEventType), m_session);
                 #pragma warning restore CA2000
 
                 if (reference != null)
@@ -431,7 +431,7 @@ namespace Opc.Ua.Sample.Controls
 
                 // edit the value.
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new SimpleValueEditDlg().TryShowDialog(currentValue, Telemetry, out Variant value))
+                if (!Windows.Create<SimpleValueEditDlg>().TryShowDialog(currentValue, out Variant value))
                 #pragma warning restore CA2000
                 {
                     return;

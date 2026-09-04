@@ -33,37 +33,39 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to edit a value.
     /// </summary>
-    public partial class EditDataValueDlg : Form
+    public partial class EditDataValueDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public EditDataValueDlg()
+        public EditDataValueDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private DataValue m_value;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Prompts the user to edit a value.
         /// </summary>
-        public Variant ShowDialog(Variant value, string caption, ITelemetryContext telemetry)
+        public Variant ShowDialog(Variant value, string caption)
         {
-            m_telemetry = telemetry;
             if (caption != null)
             {
                 this.Text = caption;

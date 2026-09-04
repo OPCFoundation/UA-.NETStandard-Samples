@@ -36,13 +36,14 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control with button that displays an open file dialog.
     /// </summary>
-    public partial class SelectFileCtrl : UserControl
+    public partial class SelectFileCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>

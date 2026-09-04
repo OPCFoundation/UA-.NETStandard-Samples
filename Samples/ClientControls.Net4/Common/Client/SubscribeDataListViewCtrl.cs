@@ -41,6 +41,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.MonitoredItems;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -52,7 +53,7 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
-    public partial class SubscribeDataListViewCtrl : UserControl
+    public partial class SubscribeDataListViewCtrl : SampleUserControl
     {
         /// <summary>
         /// How long the control waits for the subscription engine to apply the item changes.
@@ -577,7 +578,7 @@ namespace Opc.Ua.Client.Controls
                 MonitoredItemHandle handle = m_subscription.Add(selected?.Settings ?? new MonitoredItemOptions());
 
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_subscription.Session, handle, false, m_telemetry))
+                if (await Windows.Create<EditMonitoredItemDlg>().ShowDialogAsync(m_subscription.Session, handle, false))
                 #pragma warning restore CA2000
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
@@ -615,7 +616,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_subscription.Session, handle, false, m_telemetry))
+                if (await Windows.Create<EditMonitoredItemDlg>().ShowDialogAsync(m_subscription.Session, handle, false))
                 #pragma warning restore CA2000
                 {
                     await UpdateRowAsync(handle.Row, handle);
@@ -668,7 +669,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                m_EditComplexValueDlg = new EditComplexValueDlg();
+                m_EditComplexValueDlg = Windows.Create<EditComplexValueDlg>();
                 m_EditComplexValueDlg.Tag = handle;
 
                 await m_EditComplexValueDlg.ShowDialogAsync(
@@ -726,7 +727,7 @@ namespace Opc.Ua.Client.Controls
 
                 MonitoringMode oldMonitoringMode = handles[0].Settings.MonitoringMode;
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                MonitoringMode newMonitoringMode = new EditMonitoredItemDlg().ShowDialog(oldMonitoringMode);
+                MonitoringMode newMonitoringMode = Windows.Create<EditMonitoredItemDlg>().ShowDialog(oldMonitoringMode);
                 #pragma warning restore CA2000
 
                 if (oldMonitoringMode != newMonitoringMode)
@@ -755,7 +756,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                if (new EditSubscriptionDlg().ShowDialog(m_subscription.Options, m_telemetry))
+                if (Windows.Create<EditSubscriptionDlg>().ShowDialog(m_subscription.Options))
                 #pragma warning restore CA2000
                 {
                     // the engine applies the new options on its own worker, so the revised values

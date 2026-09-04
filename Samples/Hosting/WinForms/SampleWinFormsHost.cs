@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Samples.Hosting
 {
@@ -44,7 +45,7 @@ namespace Opc.Ua.Samples.Hosting
             => Run(
                 args,
                 configureServices,
-                provider => ActivatorUtilities.CreateInstance<TMainForm>(provider),
+                provider => provider.GetRequiredService<IWindowFactory>().Create<TMainForm>(),
                 showException);
 
         /// <summary>
@@ -66,6 +67,10 @@ namespace Opc.Ua.Samples.Hosting
             ArgumentNullException.ThrowIfNull(showException);
 
             HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
+
+            // the forms of the sample create the dialogs they open from the container.
+            builder.Services.AddSampleWindows();
+
             configureServices(builder.Services);
 
             IHost host = builder.Build();

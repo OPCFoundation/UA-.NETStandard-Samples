@@ -36,6 +36,7 @@ using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -46,14 +47,14 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// Prompts the user to edit a value.
     /// </summary>
-    public partial class EditMonitoredItemDlg : Form
+    public partial class EditMonitoredItemDlg : SampleForm
     {
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public EditMonitoredItemDlg()
+        public EditMonitoredItemDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -80,6 +81,8 @@ namespace Opc.Ua.Client.Controls
             TriggerTypeCB.Items.Add(DataChangeTrigger.Status);
             TriggerTypeCB.Items.Add(DataChangeTrigger.StatusValueTimestamp);
             TriggerTypeCB.SelectedIndex = 0;
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -110,17 +113,16 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Prompts the user to edit the monitored item.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(ISession session, MonitoredItemHandle handle, bool isEvent, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, MonitoredItemHandle handle, bool isEvent, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(handle);
 
-            m_telemetry = telemetry;
             MonitoredItemOptions settings = handle.Settings;
             bool created = handle.Created;
 
             if (!created)
             {
-                NodeBTN.ChangeSession(session, telemetry);
+                NodeBTN.ChangeSession(session, m_telemetry);
                 await NodeBTN.SetSelectedNodeIdAsync(settings.StartNodeId, ct);
             }
 

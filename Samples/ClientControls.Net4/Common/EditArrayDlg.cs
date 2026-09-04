@@ -33,6 +33,7 @@ using System.Windows.Forms;
 using System.Data;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -40,13 +41,13 @@ namespace Opc.Ua.Client.Controls
     /// Prompts the user to edit a one dimensional array value held in a
     /// Variant, one element per row.
     /// </summary>
-    public partial class EditArrayDlg : Form
+    public partial class EditArrayDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public EditArrayDlg()
+        public EditArrayDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -59,6 +60,8 @@ namespace Opc.Ua.Client.Controls
             m_dataset.Tables[0].DefaultView.Sort = "Index";
 
             ArrayDV.DataSource = m_dataset.Tables[0];
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -67,7 +70,7 @@ namespace Opc.Ua.Client.Controls
         private DataSet m_dataset;
         #pragma warning restore CA2213
         private BuiltInType m_dataType;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -77,14 +80,12 @@ namespace Opc.Ua.Client.Controls
         /// <paramref name="result"/>.
         /// </summary>
         public bool TryShowDialog(
-            ITelemetryContext telemetry,
             Variant value,
             BuiltInType dataType,
             bool readOnly,
             string caption,
             out Variant result)
         {
-            m_telemetry = telemetry;
             result = Variant.Null;
 
             if (caption != null)

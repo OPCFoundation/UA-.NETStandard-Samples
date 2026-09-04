@@ -179,7 +179,7 @@ namespace Opc.Ua.Sample.Controls
             monitoredItem.DisplayName = monitoredItem.Name;
 
             #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session, monitoredItem, Telemetry))
+            if (!Windows.Create<MonitoredItemEditDlg>().ShowDialog(m_subscription.Session, monitoredItem))
             #pragma warning restore CA2000
             {
                 return null;
@@ -476,7 +476,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session, monitoredItem, monitoredItem.Created, Telemetry))
+                if (!Windows.Create<MonitoredItemEditDlg>().ShowDialog(m_subscription.Session, monitoredItem, monitoredItem.Created))
                 #pragma warning restore CA2000
                 {
                     return;
@@ -534,7 +534,7 @@ namespace Opc.Ua.Sample.Controls
                     MonitoringMode monitoringMode = monitoredItems[0].Settings.MonitoringMode;
 
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    if (!new SetMonitoringModeDlg().ShowDialog(ref monitoringMode))
+                    if (!Windows.Create<SetMonitoringModeDlg>().ShowDialog(ref monitoringMode))
                     #pragma warning restore CA2000
                     {
                         return;
@@ -593,7 +593,7 @@ namespace Opc.Ua.Sample.Controls
                 IList<MonitoredItemHandle> linksToRemove;
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new SetTriggeringDlg().ShowDialog(m_subscription, triggeringItem, out linksToAdd, out linksToRemove))
+                if (!Windows.Create<SetTriggeringDlg>().ShowDialog(m_subscription, triggeringItem, out linksToAdd, out linksToRemove))
                 #pragma warning restore CA2000
                 {
                     return;
@@ -779,7 +779,7 @@ namespace Opc.Ua.Sample.Controls
                     if (monitoredItems[0].NodeClass == NodeClass.Variable || monitoredItems[0].NodeClass == NodeClass.VariableType)
                     {
                         #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                        if (!new DataChangeFilterEditDlg().ShowDialog(m_subscription.Session, monitoredItems[0]))
+                        if (!Windows.Create<DataChangeFilterEditDlg>().ShowDialog(m_subscription.Session, monitoredItems[0]))
                         #pragma warning restore CA2000
                         {
                             return;
@@ -788,7 +788,7 @@ namespace Opc.Ua.Sample.Controls
                     else
                     {
                         #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session, Telemetry, monitoredItems[0].Settings.Filter as EventFilter, false);
+                        EventFilter filter = Windows.Create<EventFilterDlg>().ShowDialog(m_subscription.Session, monitoredItems[0].Settings.Filter as EventFilter, false);
                         #pragma warning restore CA2000
 
                         if (filter == null)
@@ -828,7 +828,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (!m_dialogs.TryGetValue(monitoredItem, out dialog))
                 {
-                    m_dialogs[monitoredItem] = dialog = new MonitoredItemDlg();
+                    m_dialogs[monitoredItem] = dialog = Windows.Create<MonitoredItemDlg>();
                     dialog.FormClosing += new FormClosingEventHandler(MonitoredItemDlg_FormClosing);
                 }
 

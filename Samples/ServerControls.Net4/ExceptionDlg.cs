@@ -34,13 +34,14 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Server.Controls
 {
     /// <summary>
     /// A dialog that displays an exception trace in an HTML page.
     /// </summary>
-    public partial class ExceptionDlg : Form
+    public partial class ExceptionDlg : SampleForm
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ExceptionDlg"/> class.

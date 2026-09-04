@@ -34,19 +34,20 @@ using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to select an area to use as an event filter.
     /// </summary>
-    public partial class SetTypeDlg : Form
+    public partial class SetTypeDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public SetTypeDlg()
+        public SetTypeDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -56,13 +57,15 @@ namespace Opc.Ua.Client.Controls
 
             StructureTypeBTN.RootId = Opc.Ua.DataTypeIds.Structure;
             StructureTypeBTN.ReferenceTypeIds = new NodeId[] { Opc.Ua.ReferenceTypeIds.HasSubtype };
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private SetTypeResult m_result;
         private TypeInfo m_typeInfo;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region SetTypeResult Class
@@ -99,11 +102,9 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the available areas in a tree view.
         /// </summary>
-        public SetTypeResult ShowDialog(ITelemetryContext telemetry, TypeInfo typeInfo, int[] dimensions)
+        public SetTypeResult ShowDialog(TypeInfo typeInfo, int[] dimensions)
         {
             m_typeInfo = typeInfo;
-            m_telemetry = telemetry;
-
             StructureTypeLB.Visible = false;
             StructureTypeTB.Visible = false;
             StructureTypeBTN.Visible = false;

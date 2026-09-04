@@ -39,25 +39,28 @@ using Opc.Ua.Security.Certificates;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to edit a ComPseudoServerDlg.
     /// </summary>
-    public partial class ConfiguredServerDlg : Form
+    public partial class ConfiguredServerDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Initializes the dialog.
         /// </summary>
-        public ConfiguredServerDlg()
+        public ConfiguredServerDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
             m_userIdentities = new Dictionary<string, UserIdentityToken>();
             m_statusObject = new StatusObject((int)StatusChannel.MaxStatusChannels);
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -330,6 +333,10 @@ namespace Opc.Ua.Client.Controls
         private bool m_showAllOptions;
         private StatusObject m_statusObject;
         private ILogger m_logger = LoggerUtils.Null.Logger;
+
+        #region Private Fields
+        private readonly ITelemetryContext m_telemetry;
+        #endregion
         #endregion
 
         #region Public Interface
@@ -351,11 +358,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ConfiguredEndpoint ShowDialog(ApplicationDescription server, ApplicationConfiguration configuration, ITelemetryContext telemetry)
+        public ConfiguredEndpoint ShowDialog(ApplicationDescription server, ApplicationConfiguration configuration)
         {
             if (server == null) throw new ArgumentNullException(nameof(server));
 
-            m_logger = telemetry.CreateLogger<ConfiguredServerDlg>();
+            m_logger = m_telemetry.CreateLogger<ConfiguredServerDlg>();
 
             m_configuration = configuration;
 

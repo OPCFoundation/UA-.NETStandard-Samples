@@ -41,13 +41,15 @@ using System.IO;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Server.Controls
 {
     /// <summary>
     /// The primary form displayed by the application.
     /// </summary>
-    public partial class ServerForm : Form
+    public partial class ServerForm : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -59,10 +61,27 @@ namespace Opc.Ua.Server.Controls
         }
 
         /// <summary>
-        /// Creates a form which displays the status for a UA server.
+        /// Creates the form which shows the state of the running server of a sample.
         /// </summary>
-        public ServerForm(StandardServer server, ApplicationConfiguration configuration, ITelemetryContext telemetry, bool showCertificateValidationDialog = true)
+        /// <remarks>
+        /// The constructor the container uses: the running server, the configuration it
+        /// was started with and what the sample asked the form to do all come from the
+        /// registrations of the sample.
+        /// </remarks>
+        /// <param name="server">The running server of the sample.</param>
+        /// <param name="configuration">The configuration the server was started with.</param>
+        /// <param name="telemetry">The telemetry of the sample.</param>
+        /// <param name="options">What the form does beyond showing the server.</param>
+        [ActivatorUtilitiesConstructor]
+        public ServerForm(
+            StandardServer server,
+            ApplicationConfiguration configuration,
+            ITelemetryContext telemetry,
+            IOptions<ServerFormOptions> options)
         {
+            ArgumentNullException.ThrowIfNull(configuration);
+            ArgumentNullException.ThrowIfNull(options);
+
             InitializeComponent();
 
             m_server = server;
@@ -71,7 +90,7 @@ namespace Opc.Ua.Server.Controls
             m_logger = telemetry.CreateLogger<ServerForm>();
             this.ServerDiagnosticsCTRL.Initialize(m_server, m_configuration);
 
-            if (showCertificateValidationDialog &&
+            if (options.Value.ShowCertificateValidationDialog &&
                 !configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
             {
                 configuration.CertificateManager.AcceptError =
@@ -82,21 +101,6 @@ namespace Opc.Ua.Server.Controls
             this.Icon = TrayIcon.Icon = ServerUtils.GetAppIcon();
         }
 
-
-        /// <summary>
-        /// Creates the form for a sample whose server is hosted by the stack: the
-        /// running server and the configuration it was started with come from the
-        /// container. The samples pass this method to their Windows Forms host.
-        /// </summary>
-        /// <param name="provider">The container of the sample.</param>
-        public static Form Create(IServiceProvider provider)
-        {
-            return new ServerForm(
-                provider.GetRequiredService<StandardServer>(),
-                provider.GetRequiredService<ApplicationConfiguration>(),
-                provider.GetRequiredService<ITelemetryContext>(),
-                showCertificateValidationDialog: false);
-        }
 
         /// <summary>
         /// Creates a form which displays the status for a UA server.

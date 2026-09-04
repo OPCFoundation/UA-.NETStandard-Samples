@@ -35,13 +35,14 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A dialog to edit a date/time value
     /// </summary>
-    public partial class DateTimeValueEditDlg : Form
+    public partial class DateTimeValueEditDlg : SampleForm
     {
         #region Constructors
         /// <summary>

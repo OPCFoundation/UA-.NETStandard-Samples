@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Bindings;
 
@@ -44,7 +45,7 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// Prompts the user to create a new secure channel.
     /// </summary>
-    public partial class EndpointViewDlg : Form
+    public partial class EndpointViewDlg : SampleForm
     {
         public EndpointViewDlg()
         {

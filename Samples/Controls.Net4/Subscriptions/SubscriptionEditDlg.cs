@@ -40,6 +40,7 @@ using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -47,7 +48,7 @@ namespace Opc.Ua.Sample.Controls
     // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
     using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
 
-    public partial class SubscriptionEditDlg : Form
+    public partial class SubscriptionEditDlg : SampleForm
     {
         public SubscriptionEditDlg()
         {

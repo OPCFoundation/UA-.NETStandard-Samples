@@ -35,13 +35,14 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to answer a yes-no question.
     /// </summary>
-    public partial class YesNoDlg : Form
+    public partial class YesNoDlg : SampleForm
     {
         /// <summary>
         /// Contructs the object.

@@ -35,6 +35,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -44,14 +45,14 @@ namespace Opc.Ua.Client.Controls
     /// a cancelled edit separately: the async overload returns null and the
     /// synchronous overloads return false.
     /// </summary>
-    public partial class EditComplexValueDlg : Form
+    public partial class EditComplexValueDlg : SampleForm
     {
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public EditComplexValueDlg()
+        public EditComplexValueDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -62,6 +63,8 @@ namespace Opc.Ua.Client.Controls
             }
 
             SetTypeCB.SelectedItem = BuiltInType.String;
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -80,8 +83,6 @@ namespace Opc.Ua.Client.Controls
             string caption,
             CancellationToken ct = default)
         {
-            m_telemetry = session?.MessageContext?.Telemetry;
-
             if (!String.IsNullOrEmpty(caption))
             {
                 this.Text = caption;
@@ -114,7 +115,6 @@ namespace Opc.Ua.Client.Controls
             string caption,
             out Variant result)
         {
-            m_telemetry = session?.MessageContext?.Telemetry;
             result = Variant.Null;
 
             if (!String.IsNullOrEmpty(caption))

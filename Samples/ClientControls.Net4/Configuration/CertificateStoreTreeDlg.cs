@@ -35,32 +35,34 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to edit a ApplicationDescription.
     /// </summary>
-    public partial class CertificateStoreTreeDlg : Form
+    public partial class CertificateStoreTreeDlg : SampleForm
     {
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
 
         /// <summary>
         /// Contructs the object.
         /// </summary>
-        public CertificateStoreTreeDlg()
+        public CertificateStoreTreeDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
 
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public CertificateStoreIdentifier ShowDialog(CertificateStoreIdentifier stor, ITelemetryContext telemetry)
+        public CertificateStoreIdentifier ShowDialog(CertificateStoreIdentifier stor)
         {
-            m_telemetry = telemetry;
-            ContainersCTRL.Initialize(telemetry);
+            ContainersCTRL.Initialize(m_telemetry);
 
             if (ShowDialog() != DialogResult.OK)
             {

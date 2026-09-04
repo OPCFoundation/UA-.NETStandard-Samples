@@ -39,13 +39,14 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
-    public partial class TypeFieldsListViewCtrl : UserControl
+    public partial class TypeFieldsListViewCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>

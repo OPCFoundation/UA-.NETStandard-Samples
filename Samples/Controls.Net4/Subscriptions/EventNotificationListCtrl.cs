@@ -328,7 +328,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                new ComplexValueEditDlg().TryShowDialog(Variant.From(itemEvent.Notification.Fields), Telemetry, out _);
+                Windows.Create<ComplexValueEditDlg>().TryShowDialog(Variant.From(itemEvent.Notification.Fields), out _);
                 #pragma warning restore CA2000
             }
             catch (Exception exception)

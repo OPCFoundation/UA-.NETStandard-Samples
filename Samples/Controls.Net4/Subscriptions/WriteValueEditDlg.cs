@@ -36,6 +36,7 @@ using System.Text;
 using System.Linq;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using System.Threading;
@@ -43,24 +44,28 @@ using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class WriteValueEditDlg : Form
+    public partial class WriteValueEditDlg : SampleForm
     {
-        public WriteValueEditDlg()
+        public WriteValueEditDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
 
             AttributeIdCB.Items.AddRange(Attributes.BrowseNames.ToArray());
+
+            m_telemetry = telemetry;
         }
+
+        private readonly ITelemetryContext m_telemetry;
 
         /// <summary>
         /// Prompts the user to specify the browse options.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(ISession session, WriteValue value, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(ISession session, WriteValue value, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            NodeIdCTRL.Telemetry = telemetry;
+            NodeIdCTRL.Telemetry = m_telemetry;
             NodeIdCTRL.Browser = new Browser(session);
 
             INode node = await session.NodeCache.FindAsync(value.NodeId, ct);

@@ -35,6 +35,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -47,7 +48,7 @@ namespace Opc.Ua.Sample.Controls
     // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
     using SubscriptionState = Opc.Ua.Client.Subscriptions.SubscriptionState;
 
-    public partial class MonitoredItemDlg : Form
+    public partial class MonitoredItemDlg : SampleForm
     {
         #region Constructors
         public MonitoredItemDlg()
