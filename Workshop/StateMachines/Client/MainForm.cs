@@ -44,11 +44,20 @@ namespace Quickstarts.StateMachines.Client
     /// The main form of the state machines Quickstart client.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The window owns the shared connect control and hands the session it opens to the
     /// <see cref="StateMachinesClientModel"/>, which resolves the two machines, streams
     /// their transitions and reads which causes they permit. The window only maps its
     /// buttons to the causes of the model, records the transitions the model reports and
     /// enables the buttons the model says apply.
+    /// </para>
+    /// <para>
+    /// The vendor machine on the left of the window is hierarchical, and the window shows
+    /// the two halves of that: the model of the machine the server publishes - a row per
+    /// state and per transition, each with its number, and the sub state machine a state
+    /// owns - and where that sub state machine is, which the model streams together with
+    /// the parent. The Part 16 client API which reads all of that lives in the model.
+    /// </para>
     /// </remarks>
     public partial class MainForm : Form
     {
@@ -81,6 +90,7 @@ namespace Quickstarts.StateMachines.Client
             // events on this thread and the handlers below can touch the controls directly
             m_model = new StateMachinesClientModel(telemetry);
             m_model.TransitionObserved += Model_TransitionObserved;
+            m_model.ProductionStateChanged += Model_ProductionStateChanged;
             m_model.PermittedCausesChanged += Model_PermittedCausesChanged;
             m_model.Error += Model_Error;
 
@@ -191,13 +201,17 @@ namespace Quickstarts.StateMachines.Client
                 }
 
                 TransitionsLV.Items.Clear();
+                ModelLV.Items.Clear();
 
-                // the model resolves both machines, reads where they are, starts the streams
-                // and reads which causes apply; all of that is known when it returns.
+                // the model resolves both machines, reads what the Operation machine is made
+                // of and where the machines are, starts the streams and reads which causes
+                // apply; all of that is known when it returns.
                 await m_model.AttachAsync(session);
 
+                ShowModel(m_model.OperationModel);
                 ShowSnapshot(m_model.OperationState, append: false);
                 ShowSnapshot(m_model.ProgramState, append: false);
+                ShowProduction(m_model.ProductionState);
                 ShowInterlock(m_model.InterlockClear);
 
                 EnableControls(true);
@@ -279,6 +293,31 @@ namespace Quickstarts.StateMachines.Client
                 }
 
                 await m_model.CallOperationCauseAsync(cause);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Starts a batch of the sub state machine.
+        /// </summary>
+        /// <remarks>
+        /// The cause belongs to the machine below the Running state, and the model calls it
+        /// on that object. The button is only offered while the child is active: a suspended
+        /// sub state machine reports none of its causes as executable.
+        /// </remarks>
+        private async void StartBatchBTN_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!m_model.IsConnected)
+                {
+                    return;
+                }
+
+                await m_model.CallProductionCauseAsync(ProductionCause.StartBatch);
             }
             catch (Exception exception)
             {
@@ -388,6 +427,19 @@ namespace Quickstarts.StateMachines.Client
         }
 
         /// <summary>
+        /// Shows where the sub state machine is now.
+        /// </summary>
+        private void Model_ProductionStateChanged(object sender, ProductionStateChangedEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            ShowProduction(e.Snapshot);
+        }
+
+        /// <summary>
         /// Offers the causes the model found to apply.
         /// </summary>
         private void Model_PermittedCausesChanged(object sender, PermittedCausesChangedEventArgs e)
@@ -411,6 +463,29 @@ namespace Quickstarts.StateMachines.Client
             }
 
             ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
+        }
+
+        /// <summary>
+        /// Lists what the Operation machine is made of: a row per state and per transition.
+        /// </summary>
+        private void ShowModel(IReadOnlyList<StateMachineModelRow> rows)
+        {
+            ModelLV.Items.Clear();
+
+            foreach (StateMachineModelRow row in rows)
+            {
+                var item = new ListViewItem(row.Kind.ToString());
+
+                item.SubItems.Add(row.BrowseName);
+                item.SubItems.Add(row.Number.ToString(CultureInfo.CurrentCulture));
+
+                // the NodeId is worth showing: it is what CurrentState/Id and LastTransition/Id
+                // answer with, and a machine which materializes no nodes has nothing to put here.
+                item.SubItems.Add(row.NodeId.ToString());
+                item.SubItems.Add(row.SubMachineName);
+
+                ModelLV.Items.Add(item);
+            }
         }
 
         /// <summary>
@@ -443,11 +518,24 @@ namespace Quickstarts.StateMachines.Client
                 snapshot.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff", CultureInfo.CurrentCulture));
 
             item.SubItems.Add(snapshot.Machine.ToString());
-            item.SubItems.Add(snapshot.State);
+
+            // where a hierarchical machine is, is both states at once: the row records them
+            // together, so a transition of the child is not mistaken for one of the parent
+            // standing still.
+            item.SubItems.Add(snapshot.Describe());
             item.SubItems.Add(snapshot.Transition);
 
             TransitionsLV.Items.Add(item);
             item.EnsureVisible();
+        }
+
+        /// <summary>
+        /// Shows where the sub state machine of the Operation machine is, or that the
+        /// server has none.
+        /// </summary>
+        private void ShowProduction(SubStateMachineSnapshot snapshot)
+        {
+            ProductionStateTB.Text = StateMachinesClientModel.DescribeProduction(snapshot);
         }
 
         /// <summary>
@@ -481,6 +569,10 @@ namespace Quickstarts.StateMachines.Client
             {
                 entry.Value.Enabled = causes.IsPermitted(entry.Key);
             }
+
+            // only a server which has a sub state machine has a cause to offer for it, and
+            // only while that machine is active
+            StartBatchBTN.Enabled = causes.IsPermitted(ProductionCause.StartBatch);
         }
 
         /// <summary>
@@ -499,6 +591,9 @@ namespace Quickstarts.StateMachines.Client
             {
                 button.Enabled = enabled;
             }
+
+            // only a server which has a sub state machine has a cause to offer for it
+            StartBatchBTN.Enabled = enabled && m_model.SubStateMachineName != null;
         }
         #endregion
     }

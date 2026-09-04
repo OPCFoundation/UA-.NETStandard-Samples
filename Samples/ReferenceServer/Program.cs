@@ -65,19 +65,6 @@ namespace Quickstarts.ReferenceServer
         }
 
         /// <summary>
-        /// Creates the reference server, with the node managers of the quickstart
-        /// library added to it.
-        /// </summary>
-        private static ReferenceServer CreateReferenceServer(IServiceProvider provider)
-        {
-            var server = new ReferenceServer(provider.GetRequiredService<ITelemetryContext>());
-
-            Quickstarts.Servers.Utils.AddDefaultNodeManagers(server);
-
-            return server;
-        }
-
-        /// <summary>
         /// Creates the main form, which shows the certificate validation dialog when
         /// the extension of the configuration asks for it.
         /// </summary>

@@ -152,7 +152,15 @@ namespace MemoryBuffer
 
                     // create a new buffer.
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    MemoryBufferState bufferNode = new MemoryBufferState(SystemContext, instance);
+                    // the clock of the server, so that the scan loop runs on the same time
+                    // source as the rest of the server and a test can drive it with a
+                    // FakeTimeProvider. ITimeProviderProvider is the opt-in seam for
+                    // reaching it; an IServerInternal which does not implement it falls
+                    // back to the system clock.
+                    MemoryBufferState bufferNode = new MemoryBufferState(
+                        SystemContext,
+                        instance,
+                        (Server as ITimeProviderProvider)?.TimeProvider ?? TimeProvider.System);
                     #pragma warning restore CA2000
 
                     // assign node ids.

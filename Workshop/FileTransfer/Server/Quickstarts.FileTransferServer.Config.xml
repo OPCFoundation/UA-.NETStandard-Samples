@@ -51,7 +51,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62568/Quickstarts/FileTransferServer</ua:String>
       <ua:String>opc.tcp://localhost:62569/Quickstarts/FileTransferServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>

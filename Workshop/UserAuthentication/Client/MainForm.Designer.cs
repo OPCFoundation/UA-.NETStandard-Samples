@@ -87,15 +87,6 @@ namespace Quickstarts.UserAuthenticationClient
             this.CertificateImpersonateBTN = new System.Windows.Forms.Button();
             this.CertificatePasswordLB = new System.Windows.Forms.Label();
             this.CertificateTB = new System.Windows.Forms.TextBox();
-            this.KerberosTAB = new System.Windows.Forms.TabPage();
-            this.KerberosDomainLB = new System.Windows.Forms.Label();
-            this.KerberosDomainTB = new System.Windows.Forms.TextBox();
-            this.KereberosTokenLB = new System.Windows.Forms.Label();
-            this.KerberosPasswordTB = new System.Windows.Forms.TextBox();
-            this.KerberosUserNameTB = new System.Windows.Forms.TextBox();
-            this.KerberosUserNameLB = new System.Windows.Forms.Label();
-            this.KerberosImpersonateBTN = new System.Windows.Forms.Button();
-            this.KerberosPasswordLB = new System.Windows.Forms.Label();
             this.AnonymousTAB = new System.Windows.Forms.TabPage();
             this.AnonymousImpersonateBTN = new System.Windows.Forms.Button();
             this.AnonymousTokenLB = new System.Windows.Forms.Label();
@@ -108,7 +99,6 @@ namespace Quickstarts.UserAuthenticationClient
             this.tabControl1.SuspendLayout();
             this.UserNameTAB.SuspendLayout();
             this.CertificateTAB.SuspendLayout();
-            this.KerberosTAB.SuspendLayout();
             this.AnonymousTAB.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -244,7 +234,6 @@ namespace Quickstarts.UserAuthenticationClient
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Controls.Add(this.UserNameTAB);
             this.tabControl1.Controls.Add(this.CertificateTAB);
-            this.tabControl1.Controls.Add(this.KerberosTAB);
             this.tabControl1.Controls.Add(this.AnonymousTAB);
             this.tabControl1.Location = new System.Drawing.Point(22, 20);
             this.tabControl1.Name = "tabControl1";
@@ -410,103 +399,9 @@ namespace Quickstarts.UserAuthenticationClient
             this.CertificateTB.Name = "CertificateTB";
             this.CertificateTB.Size = new System.Drawing.Size(267, 20);
             this.CertificateTB.TabIndex = 5;
-            // 
-            // KerberosTAB
-            // 
-            this.KerberosTAB.Controls.Add(this.KerberosDomainLB);
-            this.KerberosTAB.Controls.Add(this.KerberosDomainTB);
-            this.KerberosTAB.Controls.Add(this.KereberosTokenLB);
-            this.KerberosTAB.Controls.Add(this.KerberosPasswordTB);
-            this.KerberosTAB.Controls.Add(this.KerberosUserNameTB);
-            this.KerberosTAB.Controls.Add(this.KerberosUserNameLB);
-            this.KerberosTAB.Controls.Add(this.KerberosImpersonateBTN);
-            this.KerberosTAB.Controls.Add(this.KerberosPasswordLB);
-            this.KerberosTAB.Location = new System.Drawing.Point(4, 22);
-            this.KerberosTAB.Name = "KerberosTAB";
-            this.KerberosTAB.Padding = new System.Windows.Forms.Padding(3);
-            this.KerberosTAB.Size = new System.Drawing.Size(761, 213);
-            this.KerberosTAB.TabIndex = 2;
-            this.KerberosTAB.Text = "Kerberos";
-            this.KerberosTAB.UseVisualStyleBackColor = true;
-            // 
-            // KerberosDomainLB
-            // 
-            this.KerberosDomainLB.AutoSize = true;
-            this.KerberosDomainLB.Location = new System.Drawing.Point(7, 68);
-            this.KerberosDomainLB.Name = "KerberosDomainLB";
-            this.KerberosDomainLB.Size = new System.Drawing.Size(43, 13);
-            this.KerberosDomainLB.TabIndex = 12;
-            this.KerberosDomainLB.Text = "Domain";
-            // 
-            // KerberosDomainTB
-            // 
-            this.KerberosDomainTB.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.KerberosDomainTB.Location = new System.Drawing.Point(77, 65);
-            this.KerberosDomainTB.Name = "KerberosDomainTB";
-            this.KerberosDomainTB.Size = new System.Drawing.Size(302, 20);
-            this.KerberosDomainTB.TabIndex = 13;
-            // 
-            // KereberosTokenLB
-            // 
-            this.KereberosTokenLB.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.KereberosTokenLB.Location = new System.Drawing.Point(7, 126);
-            this.KereberosTokenLB.Name = "KereberosTokenLB";
-            this.KereberosTokenLB.Size = new System.Drawing.Size(372, 84);
-            this.KereberosTokenLB.TabIndex = 21;
-            this.KereberosTokenLB.Text = "Kerberos Token";
-            // 
-            // KerberosPasswordTB
-            // 
-            this.KerberosPasswordTB.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.KerberosPasswordTB.Location = new System.Drawing.Point(77, 39);
-            this.KerberosPasswordTB.Name = "KerberosPasswordTB";
-            this.KerberosPasswordTB.PasswordChar = '*';
-            this.KerberosPasswordTB.Size = new System.Drawing.Size(302, 20);
-            this.KerberosPasswordTB.TabIndex = 6;
-            // 
-            // KerberosUserNameTB
-            // 
-            this.KerberosUserNameTB.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.KerberosUserNameTB.Location = new System.Drawing.Point(77, 13);
-            this.KerberosUserNameTB.Name = "KerberosUserNameTB";
-            this.KerberosUserNameTB.Size = new System.Drawing.Size(302, 20);
-            this.KerberosUserNameTB.TabIndex = 5;
-            // 
-            // KerberosUserNameLB
-            // 
-            this.KerberosUserNameLB.AutoSize = true;
-            this.KerberosUserNameLB.Location = new System.Drawing.Point(7, 16);
-            this.KerberosUserNameLB.Name = "KerberosUserNameLB";
-            this.KerberosUserNameLB.Size = new System.Drawing.Size(60, 13);
-            this.KerberosUserNameLB.TabIndex = 1;
-            this.KerberosUserNameLB.Text = "User Name";
-            // 
-            // KerberosImpersonateBTN
-            // 
-            this.KerberosImpersonateBTN.Location = new System.Drawing.Point(10, 91);
-            this.KerberosImpersonateBTN.Name = "KerberosImpersonateBTN";
-            this.KerberosImpersonateBTN.Size = new System.Drawing.Size(91, 23);
-            this.KerberosImpersonateBTN.TabIndex = 11;
-            this.KerberosImpersonateBTN.Text = "Impersonate";
-            this.KerberosImpersonateBTN.UseVisualStyleBackColor = true;
-            this.KerberosImpersonateBTN.Click += new System.EventHandler(this.KerberosImpersonateBTN_Click);
-            // 
-            // KerberosPasswordLB
-            // 
-            this.KerberosPasswordLB.AutoSize = true;
-            this.KerberosPasswordLB.Location = new System.Drawing.Point(7, 42);
-            this.KerberosPasswordLB.Name = "KerberosPasswordLB";
-            this.KerberosPasswordLB.Size = new System.Drawing.Size(53, 13);
-            this.KerberosPasswordLB.TabIndex = 2;
-            this.KerberosPasswordLB.Text = "Password";
-            // 
+            //
             // AnonymousTAB
-            // 
+            //
             this.AnonymousTAB.Controls.Add(this.AnonymousImpersonateBTN);
             this.AnonymousTAB.Controls.Add(this.AnonymousTokenLB);
             this.AnonymousTAB.Location = new System.Drawing.Point(4, 22);
@@ -596,8 +491,6 @@ namespace Quickstarts.UserAuthenticationClient
             this.UserNameTAB.PerformLayout();
             this.CertificateTAB.ResumeLayout(false);
             this.CertificateTAB.PerformLayout();
-            this.KerberosTAB.ResumeLayout(false);
-            this.KerberosTAB.PerformLayout();
             this.AnonymousTAB.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -623,28 +516,19 @@ namespace Quickstarts.UserAuthenticationClient
         private System.Windows.Forms.Label UserNameLB;
         private System.Windows.Forms.TextBox PreferredLocalesTB;
         private System.Windows.Forms.Label PreferredLocalesLB;
-        private System.Windows.Forms.TextBox KerberosPasswordTB;
-        private System.Windows.Forms.Label KerberosUserNameLB;
-        private System.Windows.Forms.Label KerberosPasswordLB;
-        private System.Windows.Forms.TextBox KerberosUserNameTB;
-        private System.Windows.Forms.Button KerberosImpersonateBTN;
         private System.Windows.Forms.TextBox CertificatePasswordTB;
         private System.Windows.Forms.Label CertificateLB;
         private System.Windows.Forms.Label CertificatePasswordLB;
         private System.Windows.Forms.TextBox CertificateTB;
         private System.Windows.Forms.Button CertificateImpersonateBTN;
-        private System.Windows.Forms.Label KerberosDomainLB;
-        private System.Windows.Forms.TextBox KerberosDomainTB;
         private System.Windows.Forms.Button CertificateBrowseBTN;
         private System.Windows.Forms.Button AnonymousImpersonateBTN;
         private System.Windows.Forms.Label UserNameTokenLB;
         private System.Windows.Forms.Label CertificateTokenLB;
         private System.Windows.Forms.Label AnonymousTokenLB;
-        private System.Windows.Forms.Label KereberosTokenLB;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage UserNameTAB;
         private System.Windows.Forms.TabPage CertificateTAB;
-        private System.Windows.Forms.TabPage KerberosTAB;
         private System.Windows.Forms.TabPage AnonymousTAB;
         private System.Windows.Forms.TextBox LogFilePathTB;
         private System.Windows.Forms.Label LogFilePathLB;

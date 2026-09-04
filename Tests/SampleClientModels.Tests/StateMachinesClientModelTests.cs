@@ -8,6 +8,7 @@
  * ======================================================================*/
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -265,6 +266,211 @@ namespace Opc.Ua.Samples.Tests
             Assert.ThrowsAsync<InvalidOperationException>(
                 () => Model.CallOperationCauseAsync(OperationCause.PowerOn),
                 "A detached model has no session to call on.");
+        }
+
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AttachReadsTheModelOfTheOperationMachine(CancellationToken ct)
+        {
+            Assert.Multiple(() => {
+                Assert.That(Model.OperationModel, Is.Empty, "A detached model already knows a model.");
+                Assert.That(Model.SubStateMachineName, Is.Null, "A detached model already knows a sub state machine.");
+            });
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            IReadOnlyList<StateMachineModelRow> rows = Model.OperationModel;
+            List<StateMachineModelRow> states = rows.Where(row => row.Kind == StateMachineElement.State).ToList();
+            List<StateMachineModelRow> transitions = rows.Where(row => row.Kind == StateMachineElement.Transition).ToList();
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    states.Select(state => state.BrowseName),
+                    Is.EquivalentTo(new[] { "Off", "Idle", "Running", "Faulted" }),
+                    "AvailableStates names the four states of the machine.");
+                Assert.That(
+                    transitions.Select(transition => transition.BrowseName),
+                    Is.SupersetOf(new[] { "OffToIdle", "IdleToRunning", "RunningToIdle" }),
+                    "AvailableTransitions names the transitions between them.");
+                Assert.That(
+                    rows.Select(row => row.Number),
+                    Is.Unique.And.All.Not.EqualTo(0u),
+                    "Every state and transition carries a number of its own.");
+                Assert.That(
+                    rows.Select(row => row.NodeId.IsNull),
+                    Has.All.False,
+                    "Every row names the node CurrentState/Id or LastTransition/Id answers with.");
+            });
+
+            // the number and the node of a row are the ones the state node carries
+            StateMachineModelRow running = states.Single(state => state.BrowseName == "Running");
+            NodeId runningId = await PathAsync(ct, "Machine", "Operation", "Running").ConfigureAwait(false);
+            NodeId numberId = await ChildAsync(runningId, BrowseNames.StateNumber, ct).ConfigureAwait(false);
+            DataValue number = await SessionOps.ReadValueAsync(Session, numberId, ct).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(running.NodeId, Is.EqualTo(runningId), "The row names the state node.");
+                Assert.That(
+                    number.WrappedValue.TryGetValue(out uint stateNumber) ? stateNumber : 0u,
+                    Is.EqualTo(running.Number),
+                    "The row carries the StateNumber of the state node.");
+            });
+
+            // exactly one state has a machine of its own below it, found through the
+            // HasSubStateMachine reference of the state node rather than by name
+            Assert.Multiple(() => {
+                Assert.That(
+                    rows.Where(row => row.SubMachineName.Length > 0).Select(row => row.BrowseName),
+                    Is.EqualTo(new[] { "Running" }),
+                    "Only the Running state owns a sub state machine.");
+                Assert.That(running.SubMachineName, Is.EqualTo("Production"), "The sub state machine is named by its browse name.");
+                Assert.That(Model.SubStateMachineName, Is.EqualTo("Production"), "The model names the sub state machine it found.");
+            });
+        }
+
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task StartBatchIsPermittedOnlyWhileTheMachineIsRunning(CancellationToken ct)
+        {
+            var causes = new EventSink<PermittedCausesChangedEventArgs>();
+            Model.PermittedCausesChanged += causes.Handle;
+
+            Assert.That(
+                PermittedCauses.All.IsPermitted(ProductionCause.StartBatch),
+                Is.True,
+                "Until the attributes were read every cause counts as permitted.");
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            Assert.That(
+                Model.PermittedCauses.IsPermitted(ProductionCause.StartBatch),
+                Is.False,
+                "The sub state machine is suspended while the parent is Off, so its cause is not permitted.");
+
+            await Model.CallOperationCauseAsync(OperationCause.PowerOn, ct).ConfigureAwait(false);
+
+            Assert.That(
+                Model.PermittedCauses.IsPermitted(ProductionCause.StartBatch),
+                Is.False,
+                "The sub state machine is still suspended while the parent is Idle.");
+
+            // and the server refuses the call itself, not only through the attribute
+            ServiceResultException refused = Assert.ThrowsAsync<ServiceResultException>(
+                () => Model.CallProductionCauseAsync(ProductionCause.StartBatch, ct),
+                "A cause of a suspended sub state machine has to be refused.");
+
+            Assert.That(
+                (StatusCode)refused.StatusCode,
+                Is.EqualTo((StatusCode)StatusCodes.BadNotExecutable),
+                "A cause of a suspended sub state machine is not executable.");
+
+            await Model.CallOperationCauseAsync(OperationCause.Start, ct).ConfigureAwait(false);
+
+            // entering Running activates the child, and the re-read after the call or after
+            // the transition on the stream offers its cause
+            await causes
+                .WaitForAsync(
+                    read => read.Causes.IsPermitted(ProductionCause.StartBatch),
+                    "entering Running did not offer StartBatch",
+                    kTransitionTimeout,
+                    ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                Model.PermittedCauses.IsPermitted(ProductionCause.StartBatch),
+                Is.True,
+                "The property follows the re-read.");
+
+            await Model.CallProductionCauseAsync(ProductionCause.StartBatch, ct).ConfigureAwait(false);
+
+            Assert.That(
+                Model.ProductionState?.State,
+                Is.EqualTo("Processing"),
+                "StartBatch has to move the child out of Loading, and the call reads that back before it returns.");
+        }
+
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ProductionStateFollowsTheParentInAndOutOfRunning(CancellationToken ct)
+        {
+            var transitions = new EventSink<TransitionObservedEventArgs>();
+            var production = new EventSink<ProductionStateChangedEventArgs>();
+            Model.TransitionObserved += transitions.Handle;
+            Model.ProductionStateChanged += production.Handle;
+
+            Assert.That(Model.ProductionState, Is.Null, "A detached model already knows a production state.");
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            SubStateMachineSnapshot suspended = Model.ProductionState;
+
+            Assert.That(suspended, Is.Not.Null, "The attach reads where the sub state machine is.");
+
+            Assert.Multiple(() => {
+                Assert.That(suspended.IsActive, Is.False, "The child is suspended while the parent is Off.");
+                Assert.That(
+                    suspended.Status,
+                    Is.EqualTo((StatusCode)StatusCodes.BadStateNotActive),
+                    "OPC 10000-16 §4.4.6 has a suspended sub state machine answer Bad_StateNotActive.");
+                Assert.That(
+                    suspended.Describe(),
+                    Does.StartWith("(").And.Contain("BadStateNotActive"),
+                    "A suspended machine is described by its status, not by a stale state.");
+                Assert.That(
+                    StateMachinesClientModel.DescribeProduction(null),
+                    Is.EqualTo("(no sub state machine)"),
+                    "A server without a sub state machine is described as such.");
+            });
+
+            await Model.CallOperationCauseAsync(OperationCause.PowerOn, ct).ConfigureAwait(false);
+            await Model.CallOperationCauseAsync(OperationCause.Start, ct).ConfigureAwait(false);
+
+            await production
+                .WaitForAsync(
+                    changed => changed.Snapshot.IsActive && changed.Snapshot.State == "Loading",
+                    "the child entering Loading was not reported",
+                    kTransitionTimeout,
+                    ct)
+                .ConfigureAwait(false);
+
+            // the effective state stream carries the child with the parent, so the row of the
+            // transition records both states at once
+            TransitionObservedEventArgs running = await transitions
+                .WaitForAsync(
+                    transition => transition.Snapshot.Machine == StateMachineKind.Operation
+                        && transition.Snapshot.State == "Running"
+                        && transition.Snapshot.SubMachine?.IsActive == true,
+                    "the effective state stream did not carry the active child with the parent",
+                    kTransitionTimeout,
+                    ct)
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(running.Snapshot.Describe(), Is.EqualTo("Running / Loading"));
+                Assert.That(Model.ProductionState.IsActive, Is.True, "The property follows the stream.");
+                Assert.That(Model.ProductionState.State, Is.EqualTo("Loading"));
+            });
+
+            int seen = production.Count;
+
+            await Model.CallOperationCauseAsync(OperationCause.Stop, ct).ConfigureAwait(false);
+
+            // leaving Running suspends the child again; the stream yields without it, and the
+            // model asks the child itself
+            bool suspendedAgain = await WaitUntilAsync(
+                () => production.Events.Skip(seen).Any(changed => !changed.Snapshot.IsActive),
+                "the child being suspended again was not reported",
+                kTransitionTimeout,
+                ct).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(suspendedAgain, Is.True, "Leaving Running has to suspend the child again.");
+                Assert.That(Model.ProductionState.IsActive, Is.False, "The property follows the stream.");
+                Assert.That(
+                    Model.ProductionState.Status,
+                    Is.EqualTo((StatusCode)StatusCodes.BadStateNotActive),
+                    "A suspended child answers Bad_StateNotActive.");
+            });
         }
 
         #region Helpers

@@ -232,7 +232,11 @@ namespace Opc.Ua.Sample.Controls
 
                 if (argument.Value == null)
                 {
-                    BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
+                    // the type tree may have to be read from the server, so the async
+                    // overload is the one to take on a path which is already async.
+                    BuiltInType builtInType = await TypeInfo
+                        .GetBuiltInTypeAsync(argument.DataType, m_session.TypeTree, ct)
+                        .ConfigureAwait(true);
                     Variant defaultValue;
 
                     // create a default instance for structured types.

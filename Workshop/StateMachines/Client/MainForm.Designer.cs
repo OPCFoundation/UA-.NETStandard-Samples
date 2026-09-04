@@ -71,6 +71,9 @@ namespace Quickstarts.StateMachines.Client
             this.OperationStateTB = new System.Windows.Forms.TextBox();
             this.OperationTransitionLB = new System.Windows.Forms.Label();
             this.OperationTransitionTB = new System.Windows.Forms.TextBox();
+            this.ProductionStateLB = new System.Windows.Forms.Label();
+            this.ProductionStateTB = new System.Windows.Forms.TextBox();
+            this.StartBatchBTN = new System.Windows.Forms.Button();
             this.InterlockCB = new System.Windows.Forms.CheckBox();
             this.PowerOnBTN = new System.Windows.Forms.Button();
             this.PowerOffBTN = new System.Windows.Forms.Button();
@@ -93,6 +96,12 @@ namespace Quickstarts.StateMachines.Client
             this.MachineCH = new System.Windows.Forms.ColumnHeader();
             this.StateCH = new System.Windows.Forms.ColumnHeader();
             this.TransitionCH = new System.Windows.Forms.ColumnHeader();
+            this.ModelLV = new System.Windows.Forms.ListView();
+            this.KindCH = new System.Windows.Forms.ColumnHeader();
+            this.ElementCH = new System.Windows.Forms.ColumnHeader();
+            this.NumberCH = new System.Windows.Forms.ColumnHeader();
+            this.ElementNodeCH = new System.Windows.Forms.ColumnHeader();
+            this.SubMachineCH = new System.Windows.Forms.ColumnHeader();
             this.ConnectServerCTRL = new Opc.Ua.Client.Controls.ConnectServerCtrl();
             this.clientHeaderBranding1 = new Opc.Ua.Client.Controls.HeaderBranding();
             this.MenuBar.SuspendLayout();
@@ -167,13 +176,14 @@ namespace Quickstarts.StateMachines.Client
             // MainPN
             //
             this.MainPN.Controls.Add(this.TransitionsLV);
+            this.MainPN.Controls.Add(this.ModelLV);
             this.MainPN.Controls.Add(this.ProgramGB);
             this.MainPN.Controls.Add(this.OperationGB);
             this.MainPN.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainPN.Location = new System.Drawing.Point(0, 122);
             this.MainPN.Name = "MainPN";
             this.MainPN.Padding = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.MainPN.Size = new System.Drawing.Size(884, 402);
+            this.MainPN.Size = new System.Drawing.Size(884, 496);
             this.MainPN.TabIndex = 3;
             //
             // OperationGB
@@ -185,13 +195,16 @@ namespace Quickstarts.StateMachines.Client
             this.OperationGB.Controls.Add(this.PowerOffBTN);
             this.OperationGB.Controls.Add(this.PowerOnBTN);
             this.OperationGB.Controls.Add(this.InterlockCB);
+            this.OperationGB.Controls.Add(this.StartBatchBTN);
+            this.OperationGB.Controls.Add(this.ProductionStateTB);
+            this.OperationGB.Controls.Add(this.ProductionStateLB);
             this.OperationGB.Controls.Add(this.OperationTransitionTB);
             this.OperationGB.Controls.Add(this.OperationTransitionLB);
             this.OperationGB.Controls.Add(this.OperationStateTB);
             this.OperationGB.Controls.Add(this.OperationStateLB);
             this.OperationGB.Location = new System.Drawing.Point(8, 8);
             this.OperationGB.Name = "OperationGB";
-            this.OperationGB.Size = new System.Drawing.Size(430, 172);
+            this.OperationGB.Size = new System.Drawing.Size(430, 190);
             this.OperationGB.TabIndex = 1;
             this.OperationGB.TabStop = false;
             this.OperationGB.Text = "Operation - declared with the builder";
@@ -230,16 +243,44 @@ namespace Quickstarts.StateMachines.Client
             this.OperationTransitionTB.Size = new System.Drawing.Size(150, 20);
             this.OperationTransitionTB.TabIndex = 3;
             //
+            // ProductionStateLB
+            //
+            this.ProductionStateLB.AutoSize = true;
+            this.ProductionStateLB.Location = new System.Drawing.Point(12, 78);
+            this.ProductionStateLB.Name = "ProductionStateLB";
+            this.ProductionStateLB.Size = new System.Drawing.Size(85, 13);
+            this.ProductionStateLB.TabIndex = 4;
+            this.ProductionStateLB.Text = "Production state";
+            //
+            // ProductionStateTB
+            //
+            this.ProductionStateTB.Location = new System.Drawing.Point(110, 75);
+            this.ProductionStateTB.Name = "ProductionStateTB";
+            this.ProductionStateTB.ReadOnly = true;
+            this.ProductionStateTB.Size = new System.Drawing.Size(150, 20);
+            this.ProductionStateTB.TabIndex = 5;
+            //
+            // StartBatchBTN
+            //
+            this.StartBatchBTN.Enabled = false;
+            this.StartBatchBTN.Location = new System.Drawing.Point(270, 73);
+            this.StartBatchBTN.Name = "StartBatchBTN";
+            this.StartBatchBTN.Size = new System.Drawing.Size(90, 23);
+            this.StartBatchBTN.TabIndex = 6;
+            this.StartBatchBTN.Text = "StartBatch";
+            this.StartBatchBTN.UseVisualStyleBackColor = true;
+            this.StartBatchBTN.Click += new System.EventHandler(this.StartBatchBTN_ClickAsync);
+            //
             // InterlockCB
             //
             this.InterlockCB.AutoSize = true;
             this.InterlockCB.Checked = true;
             this.InterlockCB.CheckState = System.Windows.Forms.CheckState.Checked;
             this.InterlockCB.Enabled = false;
-            this.InterlockCB.Location = new System.Drawing.Point(15, 79);
+            this.InterlockCB.Location = new System.Drawing.Point(15, 104);
             this.InterlockCB.Name = "InterlockCB";
             this.InterlockCB.Size = new System.Drawing.Size(200, 17);
-            this.InterlockCB.TabIndex = 4;
+            this.InterlockCB.TabIndex = 7;
             this.InterlockCB.Text = "Safety interlock clear (guards Start)";
             this.InterlockCB.UseVisualStyleBackColor = true;
             this.InterlockCB.CheckedChanged += new System.EventHandler(this.InterlockCB_CheckedChangedAsync);
@@ -247,10 +288,10 @@ namespace Quickstarts.StateMachines.Client
             // PowerOnBTN
             //
             this.PowerOnBTN.Enabled = false;
-            this.PowerOnBTN.Location = new System.Drawing.Point(15, 106);
+            this.PowerOnBTN.Location = new System.Drawing.Point(15, 130);
             this.PowerOnBTN.Name = "PowerOnBTN";
             this.PowerOnBTN.Size = new System.Drawing.Size(75, 23);
-            this.PowerOnBTN.TabIndex = 5;
+            this.PowerOnBTN.TabIndex = 8;
             this.PowerOnBTN.Text = "PowerOn";
             this.PowerOnBTN.UseVisualStyleBackColor = true;
             this.PowerOnBTN.Click += new System.EventHandler(this.OperationCauseBTN_ClickAsync);
@@ -258,10 +299,10 @@ namespace Quickstarts.StateMachines.Client
             // PowerOffBTN
             //
             this.PowerOffBTN.Enabled = false;
-            this.PowerOffBTN.Location = new System.Drawing.Point(96, 106);
+            this.PowerOffBTN.Location = new System.Drawing.Point(96, 130);
             this.PowerOffBTN.Name = "PowerOffBTN";
             this.PowerOffBTN.Size = new System.Drawing.Size(75, 23);
-            this.PowerOffBTN.TabIndex = 6;
+            this.PowerOffBTN.TabIndex = 9;
             this.PowerOffBTN.Text = "PowerOff";
             this.PowerOffBTN.UseVisualStyleBackColor = true;
             this.PowerOffBTN.Click += new System.EventHandler(this.OperationCauseBTN_ClickAsync);
@@ -269,10 +310,10 @@ namespace Quickstarts.StateMachines.Client
             // StartBTN
             //
             this.StartBTN.Enabled = false;
-            this.StartBTN.Location = new System.Drawing.Point(177, 106);
+            this.StartBTN.Location = new System.Drawing.Point(177, 130);
             this.StartBTN.Name = "StartBTN";
             this.StartBTN.Size = new System.Drawing.Size(75, 23);
-            this.StartBTN.TabIndex = 7;
+            this.StartBTN.TabIndex = 10;
             this.StartBTN.Text = "Start";
             this.StartBTN.UseVisualStyleBackColor = true;
             this.StartBTN.Click += new System.EventHandler(this.OperationCauseBTN_ClickAsync);
@@ -280,10 +321,10 @@ namespace Quickstarts.StateMachines.Client
             // StopBTN
             //
             this.StopBTN.Enabled = false;
-            this.StopBTN.Location = new System.Drawing.Point(15, 135);
+            this.StopBTN.Location = new System.Drawing.Point(15, 159);
             this.StopBTN.Name = "StopBTN";
             this.StopBTN.Size = new System.Drawing.Size(75, 23);
-            this.StopBTN.TabIndex = 8;
+            this.StopBTN.TabIndex = 11;
             this.StopBTN.Text = "Stop";
             this.StopBTN.UseVisualStyleBackColor = true;
             this.StopBTN.Click += new System.EventHandler(this.OperationCauseBTN_ClickAsync);
@@ -291,10 +332,10 @@ namespace Quickstarts.StateMachines.Client
             // FaultBTN
             //
             this.FaultBTN.Enabled = false;
-            this.FaultBTN.Location = new System.Drawing.Point(96, 135);
+            this.FaultBTN.Location = new System.Drawing.Point(96, 159);
             this.FaultBTN.Name = "FaultBTN";
             this.FaultBTN.Size = new System.Drawing.Size(75, 23);
-            this.FaultBTN.TabIndex = 9;
+            this.FaultBTN.TabIndex = 12;
             this.FaultBTN.Text = "Fault";
             this.FaultBTN.UseVisualStyleBackColor = true;
             this.FaultBTN.Click += new System.EventHandler(this.OperationCauseBTN_ClickAsync);
@@ -302,10 +343,10 @@ namespace Quickstarts.StateMachines.Client
             // ResetBTN
             //
             this.ResetBTN.Enabled = false;
-            this.ResetBTN.Location = new System.Drawing.Point(177, 135);
+            this.ResetBTN.Location = new System.Drawing.Point(177, 159);
             this.ResetBTN.Name = "ResetBTN";
             this.ResetBTN.Size = new System.Drawing.Size(75, 23);
-            this.ResetBTN.TabIndex = 10;
+            this.ResetBTN.TabIndex = 13;
             this.ResetBTN.Text = "Reset";
             this.ResetBTN.UseVisualStyleBackColor = true;
             this.ResetBTN.Click += new System.EventHandler(this.OperationCauseBTN_ClickAsync);
@@ -323,7 +364,7 @@ namespace Quickstarts.StateMachines.Client
             this.ProgramGB.Controls.Add(this.ProgramStateLB);
             this.ProgramGB.Location = new System.Drawing.Point(446, 8);
             this.ProgramGB.Name = "ProgramGB";
-            this.ProgramGB.Size = new System.Drawing.Size(430, 172);
+            this.ProgramGB.Size = new System.Drawing.Size(430, 190);
             this.ProgramGB.TabIndex = 2;
             this.ProgramGB.TabStop = false;
             this.ProgramGB.Text = "Program - the state machine of OPC 10000-10";
@@ -428,10 +469,10 @@ namespace Quickstarts.StateMachines.Client
             this.StateCH,
             this.TransitionCH});
             this.TransitionsLV.FullRowSelect = true;
-            this.TransitionsLV.Location = new System.Drawing.Point(8, 190);
+            this.TransitionsLV.Location = new System.Drawing.Point(8, 326);
             this.TransitionsLV.Name = "TransitionsLV";
-            this.TransitionsLV.Size = new System.Drawing.Size(868, 202);
-            this.TransitionsLV.TabIndex = 3;
+            this.TransitionsLV.Size = new System.Drawing.Size(868, 158);
+            this.TransitionsLV.TabIndex = 4;
             this.TransitionsLV.UseCompatibleStateImageBehavior = false;
             this.TransitionsLV.View = System.Windows.Forms.View.Details;
             //
@@ -454,6 +495,50 @@ namespace Quickstarts.StateMachines.Client
             //
             this.TransitionCH.Text = "Last transition";
             this.TransitionCH.Width = 340;
+            //
+            // ModelLV
+            //
+            this.ModelLV.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top
+            | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.ModelLV.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.KindCH,
+            this.ElementCH,
+            this.NumberCH,
+            this.ElementNodeCH,
+            this.SubMachineCH});
+            this.ModelLV.FullRowSelect = true;
+            this.ModelLV.Location = new System.Drawing.Point(8, 206);
+            this.ModelLV.Name = "ModelLV";
+            this.ModelLV.Size = new System.Drawing.Size(868, 112);
+            this.ModelLV.TabIndex = 3;
+            this.ModelLV.UseCompatibleStateImageBehavior = false;
+            this.ModelLV.View = System.Windows.Forms.View.Details;
+            //
+            // KindCH
+            //
+            this.KindCH.Text = "Element";
+            this.KindCH.Width = 80;
+            //
+            // ElementCH
+            //
+            this.ElementCH.Text = "Name";
+            this.ElementCH.Width = 170;
+            //
+            // NumberCH
+            //
+            this.NumberCH.Text = "Number";
+            this.NumberCH.Width = 70;
+            //
+            // ElementNodeCH
+            //
+            this.ElementNodeCH.Text = "NodeId";
+            this.ElementNodeCH.Width = 350;
+            //
+            // SubMachineCH
+            //
+            this.SubMachineCH.Text = "Sub state machine";
+            this.SubMachineCH.Width = 180;
             //
             // ConnectServerCTRL
             //
@@ -490,7 +575,7 @@ namespace Quickstarts.StateMachines.Client
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(884, 546);
+            this.ClientSize = new System.Drawing.Size(884, 640);
             this.Controls.Add(this.MainPN);
             this.Controls.Add(this.ConnectServerCTRL);
             this.Controls.Add(this.StatusBar);
@@ -528,6 +613,9 @@ namespace Quickstarts.StateMachines.Client
         private System.Windows.Forms.TextBox OperationStateTB;
         private System.Windows.Forms.Label OperationTransitionLB;
         private System.Windows.Forms.TextBox OperationTransitionTB;
+        private System.Windows.Forms.Label ProductionStateLB;
+        private System.Windows.Forms.TextBox ProductionStateTB;
+        private System.Windows.Forms.Button StartBatchBTN;
         private System.Windows.Forms.CheckBox InterlockCB;
         private System.Windows.Forms.Button PowerOnBTN;
         private System.Windows.Forms.Button PowerOffBTN;
@@ -550,6 +638,12 @@ namespace Quickstarts.StateMachines.Client
         private System.Windows.Forms.ColumnHeader MachineCH;
         private System.Windows.Forms.ColumnHeader StateCH;
         private System.Windows.Forms.ColumnHeader TransitionCH;
+        private System.Windows.Forms.ListView ModelLV;
+        private System.Windows.Forms.ColumnHeader KindCH;
+        private System.Windows.Forms.ColumnHeader ElementCH;
+        private System.Windows.Forms.ColumnHeader NumberCH;
+        private System.Windows.Forms.ColumnHeader ElementNodeCH;
+        private System.Windows.Forms.ColumnHeader SubMachineCH;
         private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;
         private Opc.Ua.Client.Controls.HeaderBranding clientHeaderBranding1;
     }

@@ -62,6 +62,14 @@ namespace Quickstarts.HistoricalAccessServer
         {
             this.AliasRoot = "HDA";
 
+            // the clock of the server, so that the simulated history and the timestamps it
+            // writes run on the same time source as the rest of the server and a test can
+            // drive them with a FakeTimeProvider. ITimeProviderProvider is the opt-in seam
+            // for reaching it; an IServerInternal which does not implement it falls back
+            // to the system clock.
+            m_timeProvider = (server as ITimeProviderProvider)?.TimeProvider
+                ?? TimeProvider.System;
+
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<HistoricalAccessServerConfiguration>();
 
@@ -372,7 +380,7 @@ namespace Quickstarts.HistoricalAccessServer
                     // check if the node needs to be initialized from disk.
                     ArchiveItemState item = source.GetHierarchyRoot() as ArchiveItemState;
 
-                    if (item != null && item.ArchiveItem.LastLoadTime.AddMinutes(10) < DateTime.UtcNow)
+                    if (item != null && item.ArchiveItem.LastLoadTime.AddMinutes(10) < m_timeProvider.GetUtcNow().UtcDateTime)
                     {
                         item.LoadConfiguration(context, Server.Telemetry);
                     }
@@ -417,14 +425,14 @@ namespace Quickstarts.HistoricalAccessServer
             MonitoredItem sampledItem = monitoredItem as MonitoredItem;
             AggregateFilter filter = sampledItem?.Filter as AggregateFilter;
 
-            if (filter == null || filter.StartTime >= DateTime.UtcNow.AddMilliseconds(-filter.ProcessingInterval))
+            if (filter == null || filter.StartTime >= m_timeProvider.GetUtcNow().UtcDateTime.AddMilliseconds(-filter.ProcessingInterval))
             {
                 return base.ReadInitialValue(context, handle, monitoredItem);
             }
 
             try
             {
-                foreach (DataValue value in m_historian.ReadRawWindow(SystemContext, item, (DateTime)filter.StartTime, DateTime.UtcNow))
+                foreach (DataValue value in m_historian.ReadRawWindow(SystemContext, item, (DateTime)filter.StartTime, m_timeProvider.GetUtcNow().UtcDateTime))
                 {
                     sampledItem.QueueValue(value, ServiceResult.Good);
                 }
@@ -458,7 +466,11 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (m_simulationTimer == null)
                     {
-                        m_simulationTimer = new Timer(DoSimulation, null, 500, 500);
+                        m_simulationTimer = m_timeProvider.CreateTimer(
+                            DoSimulation,
+                            null,
+                            TimeSpan.FromMilliseconds(500),
+                            TimeSpan.FromMilliseconds(500));
                     }
                 }
             }
@@ -501,7 +513,7 @@ namespace Quickstarts.HistoricalAccessServer
             if (item == null)
             {
                 // no historial data so must start in the future.
-                while (filterToUse.StartTime < DateTime.UtcNow)
+                while (filterToUse.StartTime < m_timeProvider.GetUtcNow().UtcDateTime)
                 {
                     filterToUse.StartTime = filterToUse.StartTime.AddMilliseconds(filterToUse.ProcessingInterval);
                 }
@@ -528,7 +540,7 @@ namespace Quickstarts.HistoricalAccessServer
                 }
 
                 // ensure the buffer does not get overfilled.
-                while (filterToUse.StartTime.AddMilliseconds(queueSize * filterToUse.ProcessingInterval) < DateTime.UtcNow)
+                while (filterToUse.StartTime.AddMilliseconds(queueSize * filterToUse.ProcessingInterval) < m_timeProvider.GetUtcNow().UtcDateTime)
                 {
                     filterToUse.StartTime = filterToUse.StartTime.AddMilliseconds(filterToUse.ProcessingInterval);
                 }
@@ -547,7 +559,7 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         protected override async ValueTask OnMonitoredItemDeletedAsync(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem, CancellationToken cancellationToken = default)
         {
-            Timer timerToDispose = null;
+            ITimer timerToDispose = null;
 
             lock (m_system.SyncRoot)
             {
@@ -625,7 +637,7 @@ namespace Quickstarts.HistoricalAccessServer
                 {
                     foreach (ArchiveItemState item in m_monitoredItems.Values)
                     {
-                        if (item.ArchiveItem.LastLoadTime.AddSeconds(10) < DateTime.UtcNow)
+                        if (item.ArchiveItem.LastLoadTime.AddSeconds(10) < m_timeProvider.GetUtcNow().UtcDateTime)
                         {
                             item.LoadConfiguration(SystemContext, Server.Telemetry);
                         }
@@ -651,7 +663,8 @@ namespace Quickstarts.HistoricalAccessServer
         private UnderlyingSystem m_system;
         private HistoricalAccessServerConfiguration m_configuration;
         private ArchiveHistorianProvider m_historian;
-        private Timer m_simulationTimer;
+        private readonly TimeProvider m_timeProvider;
+        private ITimer m_simulationTimer;
         private Dictionary<string, ArchiveItemState> m_monitoredItems;
         #endregion
     }

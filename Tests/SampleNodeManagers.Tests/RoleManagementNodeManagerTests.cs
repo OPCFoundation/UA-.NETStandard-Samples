@@ -51,7 +51,30 @@ namespace Opc.Ua.Samples.Tests
         private QualifiedName SetPoint => Name(RoleManagementNamespace, "SetPoint");
         private QualifiedName Calibration => Name(RoleManagementNamespace, "Calibration");
         private QualifiedName MaintenanceNote => Name(RoleManagementNamespace, "MaintenanceNote");
+        private QualifiedName ServiceCode => Name(RoleManagementNamespace, "ServiceCode");
         private QualifiedName Reset => Name(RoleManagementNamespace, "Reset");
+
+        /// <summary>
+        /// The subject name the maintenance workstation of the sample creates its application
+        /// instance certificate with, as the configuration file of the sample client spells
+        /// it. The stack replaces DC=localhost with the host name.
+        /// </summary>
+        private const string WorkstationSubject =
+            "CN=Quickstart RoleManagement Client, C=US, S=Arizona, O=OPC Foundation, DC=localhost";
+
+        /// <summary>
+        /// The Role the sample grants for the certificate of the maintenance workstation.
+        /// </summary>
+        private static NodeId WorkstationRole => ObjectIds.WellKnownRole_ConfigureAdmin;
+
+        /// <summary>
+        /// The identity mapping rule the server adds for the workstation certificate at
+        /// startup, which two of the fixtures below take away and put back.
+        /// </summary>
+        private static IdentityMappingRuleType WorkstationRule => new IdentityMappingRuleType {
+            CriteriaType = IdentityCriteriaType.X509Subject,
+            Criteria = Quickstarts.RoleManagement.Server.SampleUsers.WorkstationCertificateSubject,
+        };
 
         #region Tests
         /// <summary>
@@ -224,14 +247,10 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.That(calibrationId.IsNull, Is.False, "The Engineer has to be able to resolve the calibration.");
 
-            StatusCode write = await SessionOps
-                .WriteValueAsync(engineer.Session, calibrationId, Variant.From(0.5), ct)
-                .ConfigureAwait(false);
-
-            Assert.That(
-                StatusCode.IsGood(write),
-                Is.True,
-                $"The Engineer Role carries Write on the calibration: {write}");
+            // What the Engineer may then do with the value is a separate question, because
+            // the calibration also carries an AccessRestrictions attribute which the two
+            // sessions here cannot satisfy: both of them are on the unsecured endpoint.
+            // AnEncryptedChannelIsRequiredWhateverTheRole is where the value is read.
         }
 
         /// <summary>
@@ -324,14 +343,14 @@ namespace Opc.Ua.Samples.Tests
                 .ConnectEncryptedAsync(EndpointUrl, "engineer adds an identity", UserOf("engineer1"), ct)
                 .ConfigureAwait(false);
 
-            CallMethodResult byEngineer = await CallAsync(engineer, addIdentityId, rule, ct).ConfigureAwait(false);
+            CallMethodResult byEngineer = await CallAsync(engineer, ObjectIds.WellKnownRole_Operator, addIdentityId, rule, ct).ConfigureAwait(false);
 
             // a SecurityAdmin, but on the unsecured endpoint: the right Role, the wrong channel
             await using TestClient unsecured = await TestClient
                 .ConnectWithIdentityAsync(EndpointUrl, "admin without encryption", UserOf("secadmin"), ct)
                 .ConfigureAwait(false);
 
-            CallMethodResult unencrypted = await CallAsync(unsecured, addIdentityId, rule, ct).ConfigureAwait(false);
+            CallMethodResult unencrypted = await CallAsync(unsecured, ObjectIds.WellKnownRole_Operator, addIdentityId, rule, ct).ConfigureAwait(false);
 
             await TestContext.Out
                 .WriteLineAsync(
@@ -495,6 +514,518 @@ namespace Opc.Ua.Samples.Tests
                 Is.True,
                 $"Removing the Role again failed: {removed.StatusCode}");
         }
+
+        /// <summary>
+        /// AccessRestrictions refuse an unencrypted channel whatever Roles the Session holds.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Part 3 5.2.11 AccessRestrictions is the other half of the access story, and the
+        /// master node manager checks it after the role permissions. It says nothing about
+        /// who the Session is: the Engineer below holds Browse, Read and Write on the
+        /// calibration in both halves of this test, and is refused on the first one purely
+        /// because the channel is not encrypted.
+        /// </para>
+        /// <para>
+        /// The two nodes differ in one bit. The calibration carries EncryptionRequired only,
+        /// so a Browse still finds it and the value is refused. The maintenance note carries
+        /// ApplyRestrictionsToBrowse on top, so browsing the node itself is refused too.
+        /// </para>
+        /// <para>
+        /// What ApplyRestrictionsToBrowse does <b>not</b> do in 2.0.0-preview.4 is take the
+        /// node out of the reference list of its parent: the per reference filter of a Browse
+        /// applies role permissions only, so the maintenance note is still listed below the
+        /// machine on an unencrypted channel and only the browse of the node itself is
+        /// refused. The assertion below is written for what the stack does today.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnEncryptedChannelIsRequiredWhateverTheRole(CancellationToken ct)
+        {
+            NodeId machineId = await ResolveAsync(ct, Machine).ConfigureAwait(false);
+
+            await using TestClient plain = await TestClient
+                .ConnectWithIdentityAsync(EndpointUrl, "engineer without encryption", UserOf("engineer1"), ct)
+                .ConfigureAwait(false);
+
+            IReadOnlyList<string> unencrypted = await SessionOps
+                .BrowseNamesAsync(plain.Session, machineId, ct)
+                .ConfigureAwait(false);
+
+            await ReportAsync("An Engineer on the unsecured endpoint browses", unencrypted)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                unencrypted,
+                Does.Contain("Calibration"),
+                "EncryptionRequired on its own does not apply to Browse.");
+
+            NodeId maintenanceNoteId = await SessionOps
+                .ResolveFromAsync(plain.Session, machineId, ct, MaintenanceNote)
+                .ConfigureAwait(false);
+
+            StatusCode browsedUnencrypted = await BrowseStatusAsync(plain, maintenanceNoteId, ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Unencrypted, browsing the maintenance note answered {browsedUnencrypted}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                browsedUnencrypted,
+                Is.EqualTo((StatusCode)StatusCodes.BadSecurityModeInsufficient),
+                "ApplyRestrictionsToBrowse extends the restriction to the Browse service, for a " +
+                "Role which holds Browse on the node exactly as for one which does not.");
+
+            NodeId calibrationId = await SessionOps
+                .ResolveFromAsync(plain.Session, machineId, ct, Calibration)
+                .ConfigureAwait(false);
+
+            DataValue refusedRead = await SessionOps
+                .ReadValueAsync(plain.Session, calibrationId, ct)
+                .ConfigureAwait(false);
+
+            StatusCode refusedWrite = await SessionOps
+                .WriteValueAsync(plain.Session, calibrationId, Variant.From(0.5), ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"Unencrypted, an Engineer read the calibration {refusedRead.StatusCode} " +
+                    $"and wrote it {refusedWrite}")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    refusedRead.StatusCode,
+                    Is.EqualTo((StatusCode)StatusCodes.BadSecurityModeInsufficient),
+                    "The Engineer holds Read on the calibration; the channel is what is wrong, " +
+                    "and BadUserAccessDenied would send a client looking for the wrong fix.");
+
+                Assert.That(
+                    refusedWrite,
+                    Is.EqualTo((StatusCode)StatusCodes.BadSecurityModeInsufficient),
+                    "The same restriction covers the write.");
+            });
+
+            // the same account on the encrypted endpoint: nothing about the Roles changed
+            await using TestClient secure = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "engineer with encryption", UserOf("engineer1"), ct)
+                .ConfigureAwait(false);
+
+            IReadOnlyList<string> encrypted = await SessionOps
+                .BrowseNamesAsync(secure.Session, machineId, ct)
+                .ConfigureAwait(false);
+
+            await ReportAsync("An Engineer on the encrypted endpoint browses", encrypted)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                encrypted,
+                Does.Contain("MaintenanceNote"),
+                "The maintenance note is part of the address space of an encrypted channel.");
+
+            NodeId secureNoteId = await SessionOps
+                .ResolveFromAsync(secure.Session, machineId, ct, MaintenanceNote)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                await BrowseStatusAsync(secure, secureNoteId, ct).ConfigureAwait(false),
+                Is.EqualTo((StatusCode)StatusCodes.Good),
+                "Over an encrypted channel the same node browses normally.");
+
+            NodeId secureCalibrationId = await SessionOps
+                .ResolveFromAsync(secure.Session, machineId, ct, Calibration)
+                .ConfigureAwait(false);
+
+            StatusCode write = await SessionOps
+                .WriteValueAsync(secure.Session, secureCalibrationId, Variant.From(0.5), ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(write),
+                Is.True,
+                $"The Engineer Role carries Write on the calibration: {write}");
+        }
+
+        /// <summary>
+        /// A Role earned by the certificate of the client application, on one endpoint only.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Two Part 18 features at once, because the sample configures them on the same Role
+        /// and each one is the negative case of the other. The X509Subject identity criteria
+        /// of 4.4.3 matches the subject of the application instance certificate the client
+        /// sent in CreateSession - so the Role belongs to the software on that workstation
+        /// and an anonymous Session from it holds the Role. The Endpoints filter of 4.4.1 is
+        /// evaluated before any identity rule is, so the same certificate on the unsecured
+        /// endpoint earns nothing.
+        /// </para>
+        /// <para>
+        /// Note which certificate this is. The criteria is named after X.509 and Part 18
+        /// allows reading it as a user certificate, but the stack matches it against the
+        /// client's <b>application instance</b> certificate, which is also the only one it
+        /// has on a Session opened with an anonymous or a user name token.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task TheWorkstationCertificateEarnsARoleOnTheEncryptedEndpointOnly(CancellationToken ct)
+        {
+            NodeId machineId = await ResolveAsync(ct, Machine).ConfigureAwait(false);
+
+            await using TestClient workstation = await TestClient
+                .ConnectWithCertificateAsync(
+                    EndpointUrl, "maintenance workstation", null, WorkstationSubject, encrypted: true, ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"The workstation certificate says {workstation.ApplicationCertificateSubject}, " +
+                    $"and the server was configured with {WorkstationRule.Criteria}")
+                .ConfigureAwait(false);
+
+            IReadOnlyList<string> asWorkstation = await SessionOps
+                .BrowseNamesAsync(workstation.Session, machineId, ct)
+                .ConfigureAwait(false);
+
+            await ReportAsync("The maintenance workstation browses", asWorkstation).ConfigureAwait(false);
+
+            Assert.That(
+                asWorkstation,
+                Does.Contain("ServiceCode"),
+                "An anonymous Session whose client certificate matches the X509Subject rule of " +
+                "the ConfigureAdmin Role has to hold that Role. Compare the two subjects above: " +
+                "the criteria is a normalised subject and has to match the certificate exactly.");
+
+            NodeId serviceCodeId = await SessionOps
+                .ResolveFromAsync(workstation.Session, machineId, ct, ServiceCode)
+                .ConfigureAwait(false);
+
+            StatusCode write = await SessionOps
+                .WriteValueAsync(workstation.Session, serviceCodeId, Variant.From("SVC-0815"), ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(write),
+                Is.True,
+                $"The ConfigureAdmin Role carries Write on the service code: {write}");
+
+            // a different client on the same encrypted endpoint: right endpoint, wrong subject
+            await using TestClient stranger = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "another client", null, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                await SessionOps.BrowseNamesAsync(stranger.Session, machineId, ct).ConfigureAwait(false),
+                Does.Not.Contain("ServiceCode"),
+                "A client whose certificate carries a different subject earns nothing.");
+
+            // the workstation certificate on the unsecured endpoint: right subject, wrong
+            // endpoint - and on an unsecured channel the server has no client certificate to
+            // match in the first place
+            await using TestClient offEndpoint = await TestClient
+                .ConnectWithCertificateAsync(
+                    EndpointUrl, "workstation without encryption", null, WorkstationSubject, encrypted: false, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                await SessionOps.BrowseNamesAsync(offEndpoint.Session, machineId, ct).ConfigureAwait(false),
+                Does.Not.Contain("ServiceCode"),
+                "The Endpoints filter of the ConfigureAdmin Role names the encrypted endpoints only.");
+        }
+
+        /// <summary>
+        /// A Thumbprint criteria names one certificate rather than a family of them.
+        /// </summary>
+        /// <remarks>
+        /// The counterpart of the X509Subject rule the server configures at startup: both
+        /// clients below carry the same subject, and only the one whose thumbprint the
+        /// SecurityAdmin registered earns the Role. This also exercises the criteria on the
+        /// write path, because the rule is added over OPC UA through the AddIdentity Method
+        /// of the Role rather than in the configuration of the server.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AThumbprintCriteriaGrantsTheRoleToOneCertificate(CancellationToken ct)
+        {
+            NodeId machineId = await ResolveAsync(ct, Machine).ConfigureAwait(false);
+
+            await using TestClient admin = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "security admin registers a certificate", UserOf("secadmin"), ct)
+                .ConfigureAwait(false);
+
+            await using TestClient registered = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "the registered client", null, ct)
+                .ConfigureAwait(false);
+
+            await using TestClient sibling = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "a client with the same subject", null, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                registered.ApplicationCertificateThumbprint,
+                Is.Not.EqualTo(sibling.ApplicationCertificateThumbprint),
+                "The two clients have to differ by certificate for this test to say anything.");
+
+            var rule = new IdentityMappingRuleType {
+                CriteriaType = IdentityCriteriaType.Thumbprint,
+                Criteria = registered.ApplicationCertificateThumbprint,
+            };
+
+            CallMethodResult added = await AddIdentityAsync(admin, WorkstationRole, rule, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(added.StatusCode),
+                Is.True,
+                $"Adding a Thumbprint rule failed: {added.StatusCode}. " +
+                $"The criteria was '{rule.Criteria}', which Part 18 4.4.3 requires to be " +
+                "upper case hexadecimal with no separators.");
+
+            try
+            {
+                Assert.Multiple(async () => {
+                    Assert.That(
+                        await SessionOps.BrowseNamesAsync(registered.Session, machineId, ct).ConfigureAwait(false),
+                        Does.Contain("ServiceCode"),
+                        "The Session whose certificate was registered has to hold the Role, and " +
+                        "Part 18 4.4.1 requires it to pick the change up without reconnecting.");
+
+                    Assert.That(
+                        await SessionOps.BrowseNamesAsync(sibling.Session, machineId, ct).ConfigureAwait(false),
+                        Does.Not.Contain("ServiceCode"),
+                        "A Thumbprint names one certificate, not every certificate with that subject.");
+                });
+            }
+            finally
+            {
+                CallMethodResult removed = await RemoveIdentityAsync(admin, WorkstationRole, rule, ct)
+                    .ConfigureAwait(false);
+
+                Assert.That(
+                    StatusCode.IsGood(removed.StatusCode),
+                    Is.True,
+                    $"Removing the Thumbprint rule again failed: {removed.StatusCode}");
+            }
+
+            Assert.That(
+                await SessionOps.BrowseNamesAsync(registered.Session, machineId, ct).ConfigureAwait(false),
+                Does.Not.Contain("ServiceCode"),
+                "Removing the rule has to take the Role away from the open Session again.");
+        }
+
+        /// <summary>
+        /// CustomConfiguration is what lets a Role with no identity rules be granted at all.
+        /// </summary>
+        /// <remarks>
+        /// Part 18 4.4.1: "If this Property is an empty array and CustomConfiguration is not
+        /// TRUE, then the Role cannot be granted to any Session." Taking the one identity
+        /// rule of the ConfigureAdmin Role away therefore switches the Role off entirely -
+        /// until the flag is set, at which point what is left of its configuration, the
+        /// Endpoints filter, is enough on its own and every Session on an encrypted endpoint
+        /// holds it.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task CustomConfigurationGrantsARoleWhichHasNoIdentities(CancellationToken ct)
+        {
+            NodeId machineId = await ResolveAsync(ct, Machine).ConfigureAwait(false);
+
+            await using TestClient admin = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "security admin sets CustomConfiguration", UserOf("secadmin"), ct)
+                .ConfigureAwait(false);
+
+            NodeId flagId = await SessionOps
+                .ResolveFromAsync(admin.Session, WorkstationRole, ct, new QualifiedName("CustomConfiguration"))
+                .ConfigureAwait(false);
+
+            Assert.That(
+                flagId.IsNull,
+                Is.False,
+                "The ConfigureAdmin Role has to expose a CustomConfiguration property.");
+
+            await using TestClient plain = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "an ordinary encrypted client", null, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                await SessionOps.BrowseNamesAsync(plain.Session, machineId, ct).ConfigureAwait(false),
+                Does.Not.Contain("ServiceCode"),
+                "Before the flag is set the Role is granted by its identity rule only.");
+
+            CallMethodResult removed = await RemoveIdentityAsync(admin, WorkstationRole, WorkstationRule, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                StatusCode.IsGood(removed.StatusCode),
+                Is.True,
+                $"Removing the X509Subject rule the server configured failed: {removed.StatusCode}. " +
+                $"The rule was '{WorkstationRule.Criteria}'.");
+
+            try
+            {
+                StatusCode set = await SessionOps
+                    .WriteValueAsync(admin.Session, flagId, Variant.From(true), ct)
+                    .ConfigureAwait(false);
+
+                Assert.That(
+                    StatusCode.IsGood(set),
+                    Is.True,
+                    $"A SecurityAdmin on an encrypted channel may write CustomConfiguration: {set}");
+
+                try
+                {
+                    Assert.That(
+                        await SessionOps.BrowseNamesAsync(plain.Session, machineId, ct).ConfigureAwait(false),
+                        Does.Contain("ServiceCode"),
+                        "With CustomConfiguration set and no identity rules left, the Endpoints " +
+                        "filter is the whole of the Role configuration, so every Session on an " +
+                        "encrypted endpoint holds it.");
+                }
+                finally
+                {
+                    StatusCode reset = await SessionOps
+                        .WriteValueAsync(admin.Session, flagId, Variant.From(false), ct)
+                        .ConfigureAwait(false);
+
+                    Assert.That(
+                        StatusCode.IsGood(reset),
+                        Is.True,
+                        $"Clearing CustomConfiguration again failed: {reset}");
+                }
+            }
+            finally
+            {
+                CallMethodResult restored = await AddIdentityAsync(admin, WorkstationRole, WorkstationRule, ct)
+                    .ConfigureAwait(false);
+
+                Assert.That(
+                    StatusCode.IsGood(restored.StatusCode),
+                    Is.True,
+                    $"Putting the X509Subject rule of the server back failed: {restored.StatusCode}");
+            }
+
+            Assert.That(
+                await SessionOps.BrowseNamesAsync(plain.Session, machineId, ct).ConfigureAwait(false),
+                Does.Not.Contain("ServiceCode"),
+                "Clearing the flag has to close the Role again.");
+        }
+
+        /// <summary>
+        /// Every change to the role configuration is reported as an audit event.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The stack reports a RoleMappingRuleChangedAuditEventType from the RoleSet binding
+        /// for each of the Part 18 4.4 Methods, successful or not - but only when the server
+        /// has AuditingEnabled, which is the one line this sample adds to its configuration
+        /// file. Without it a change which should be audited looks exactly like one which is
+        /// not, so the flag and this fixture belong together.
+        /// </para>
+        /// <para>
+        /// This is recorded as a known issue because no audit event of any type reaches a
+        /// client in 2.0.0-preview.4, on this sample or on any other. Measured: the server
+        /// reports Server.Auditing as true, AddIdentity answers Good, and a subscription on
+        /// the Server object receives a GeneralModelChangeEvent from that same object - so
+        /// the event path itself works - while neither the RoleMappingRuleChanged event of
+        /// this fixture nor an AuditCreateSessionEvent from opening a session arrives.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ChangingTheRoleConfigurationIsAudited(CancellationToken ct)
+        {
+            var rule = new IdentityMappingRuleType {
+                CriteriaType = IdentityCriteriaType.UserName,
+                Criteria = "guest",
+            };
+
+            await using TestClient admin = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "security admin under audit", UserOf("secadmin"), ct)
+                .ConfigureAwait(false);
+
+            await using EventCapture audit = await EventCapture
+                .CreateAsync(
+                    admin.Session,
+                    ObjectIds.Server,
+                    ct,
+                    ObjectTypeIds.RoleMappingRuleChangedAuditEventType,
+                    [new QualifiedName("Status")],
+                    [new QualifiedName("MethodId")])
+                .ConfigureAwait(false);
+
+            DataValue auditing = await SessionOps
+                .ReadValueAsync(admin.Session, VariableIds.Server_Auditing, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                auditing.WrappedValue.TryGetValue(out bool enabled) && enabled,
+                Is.True,
+                $"The sample configures AuditingEnabled, so Server.Auditing has to read true: " +
+                $"{auditing.WrappedValue} ({auditing.StatusCode})");
+
+            CallMethodResult added = await AddIdentityAsync(admin, ObjectIds.WellKnownRole_Operator, rule, ct)
+                .ConfigureAwait(false);
+
+            try
+            {
+                Assert.That(
+                    StatusCode.IsGood(added.StatusCode),
+                    Is.True,
+                    $"AddIdentity failed: {added.StatusCode}");
+
+                await KnownIssueAsync(
+                    async () => {
+                        CapturedEvent reported = await audit
+                            .WaitAsync(
+                                candidate => candidate.Field(BrowseNames.SourceNode)
+                                    .TryGetValue(out NodeId source) &&
+                                    source == ObjectIds.WellKnownRole_Operator,
+                                TimeSpan.FromSeconds(20),
+                                "the server has to audit a change to the role configuration",
+                                ct)
+                            .ConfigureAwait(false);
+
+                        await TestContext.Out
+                            .WriteLineAsync($"The server audited: {reported}")
+                            .ConfigureAwait(false);
+
+                        Assert.Multiple(() => {
+                            Assert.That(
+                                reported.EventType,
+                                Is.EqualTo(ObjectTypeIds.RoleMappingRuleChangedAuditEventType),
+                                "The filter asked for that type and its subtypes.");
+
+                            Assert.That(
+                                reported.Field("Status").TryGetValue(out bool succeeded) && succeeded,
+                                Is.True,
+                                "The audit event of a change which was applied reports Status true.");
+
+                            Assert.That(
+                                reported.Field("MethodId").TryGetValue(out NodeId methodId) && !methodId.IsNull,
+                                Is.True,
+                                "An AuditUpdateMethodEventType names the Method which was called.");
+                        });
+                    },
+                    "2.0.0-preview.4 delivers no audit event to a subscription on the Server " +
+                    "object. Server.Auditing reads true and the Method answered Good, and a " +
+                    "GeneralModelChangeEvent from the same object does arrive, so this is not " +
+                    "the configuration of the sample and not the event path.")
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                CallMethodResult removed = await RemoveIdentityAsync(
+                    admin, ObjectIds.WellKnownRole_Operator, rule, ct).ConfigureAwait(false);
+
+                Assert.That(
+                    StatusCode.IsGood(removed.StatusCode),
+                    Is.True,
+                    $"Removing the identity rule again failed: {removed.StatusCode}");
+            }
+        }
         #endregion
 
         #region Private Methods
@@ -512,6 +1043,36 @@ namespace Opc.Ua.Samples.Tests
         private Task<TestClient> ConnectAsAsync(string userName, CancellationToken ct)
         {
             return TestClient.ConnectAsync(EndpointUrl, userName, UserOf(userName), ct);
+        }
+
+        /// <summary>
+        /// Browses a node and returns what the server answered, good or bad.
+        /// </summary>
+        /// <remarks>
+        /// SessionOps.BrowseAsync throws on a bad browse result, and the bad result is the
+        /// thing an AccessRestrictions fixture is looking at.
+        /// </remarks>
+        private static async Task<StatusCode> BrowseStatusAsync(
+            TestClient client,
+            NodeId nodeId,
+            CancellationToken ct)
+        {
+            var nodesToBrowse = new List<BrowseDescription> {
+                new BrowseDescription {
+                    NodeId = nodeId,
+                    BrowseDirection = BrowseDirection.Forward,
+                    ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
+                    IncludeSubtypes = true,
+                    NodeClassMask = 0,
+                    ResultMask = (uint)BrowseResultMask.All,
+                },
+            };
+
+            BrowseResponse response = await client.Session
+                .BrowseAsync(null, null, 0, nodesToBrowse, ct)
+                .ConfigureAwait(false);
+
+            return response.Results.ToArray()[0].StatusCode;
         }
 
         private static async Task<double> ReadDoubleAsync(TestClient client, NodeId nodeId, CancellationToken ct)
@@ -598,7 +1159,7 @@ namespace Opc.Ua.Samples.Tests
                     string.Join(", ", children));
             }
 
-            return await CallAsync(client, methodId, rule, ct).ConfigureAwait(false);
+            return await CallAsync(client, roleId, methodId, rule, ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -607,13 +1168,14 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         private static Task<CallMethodResult> CallAsync(
             TestClient client,
+            NodeId roleId,
             NodeId methodId,
             IdentityMappingRuleType rule,
             CancellationToken ct)
         {
             return SessionOps.CallAsync(
                 client.Session,
-                ObjectIds.WellKnownRole_Operator,
+                roleId,
                 methodId,
                 ct,
                 Variant.From(new ExtensionObject(rule)));

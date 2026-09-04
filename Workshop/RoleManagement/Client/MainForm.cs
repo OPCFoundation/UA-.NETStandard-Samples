@@ -9,6 +9,7 @@
 
 using System;
 using System.Drawing;
+using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
@@ -26,13 +27,19 @@ namespace Quickstarts.RoleManagement.Client
     /// <para>
     /// The window owns the shared connect control and hands the session it opens to the
     /// <see cref="RoleManagementClientModel"/>, which reads the machine and the RoleSet as
-    /// the Session sees them and offers the Part 18 operations. The window only renders
-    /// what the model found into its two lists, translates each button into one model call,
-    /// and puts what the server answered into the status bar.
+    /// the Session sees them, offers the Part 18 operations and streams the audit trail.
+    /// The window only renders what the model found into its three lists, translates each
+    /// button into one model call, and puts what the server answered into the status bar.
     /// </para>
     /// <para>
-    /// The buttons are deliberately left enabled for every account, because seeing the
-    /// server answer BadUserAccessDenied or BadSecurityModeInsufficient is the point.
+    /// The upper list is the machine as the current Session sees it: the nodes it may
+    /// browse, the values it may read, the AccessRestrictions each of them carries, and
+    /// what its UserRolePermissions say it may do with them. The middle list is the RoleSet
+    /// with its Endpoints filters, CustomConfiguration flags and identity rules; the
+    /// buttons are deliberately left enabled for every account, because seeing the server
+    /// answer BadUserAccessDenied or BadSecurityModeInsufficient is the point. The lower
+    /// list is the audit trail the server reports for those changes - it stays empty
+    /// against 2.0.0-preview.4, which the model explains.
     /// </para>
     /// </remarks>
     public partial class MainForm : Form
@@ -57,6 +64,7 @@ namespace Quickstarts.RoleManagement.Client
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
             m_telemetry = telemetry;
+            m_configuration = configuration;
 
             ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62573/Quickstarts/RoleManagementServer";
@@ -65,6 +73,7 @@ namespace Quickstarts.RoleManagement.Client
             // created here, on the thread of the window, so that the model raises its
             // events on this thread and the handlers below can touch the controls directly
             m_model = new RoleManagementClientModel(telemetry);
+            m_model.AuditEventReceived += Model_AuditEventReceived;
             m_model.Error += Model_Error;
 
             // the accounts the sample server knows, and the Role each of them earns. The
@@ -78,11 +87,22 @@ namespace Quickstarts.RoleManagement.Client
             IdentityCB.SelectedIndex = 0;
             IdentityCB.SelectedIndexChanged += IdentityCB_SelectedIndexChanged;
 
+            // the three Part 18 4.4.3 identity criteria this sample can produce; the model
+            // fills the text box with what this client would present for each of them
+            foreach (IdentityCriteriaType criteriaType in RoleManagementClientModel.CriteriaTypes)
+            {
+                CriteriaCB.Items.Add(criteriaType);
+            }
+
+            CriteriaCB.SelectedIndex = 0;
+            CriteriaCB.SelectedIndexChanged += CriteriaCB_SelectedIndexChangedAsync;
+
             UpdateIdentityHint();
         }
         #endregion
 
         #region Private Fields
+        private readonly ApplicationConfiguration m_configuration;
         private readonly ITelemetryContext m_telemetry;
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
         private readonly RoleManagementClientModel m_model;
@@ -108,8 +128,8 @@ namespace Quickstarts.RoleManagement.Client
         /// Disconnects from the current session.
         /// </summary>
         /// <remarks>
-        /// The model is detached first: it releases what it holds of the session before
-        /// the control closes it.
+        /// The model is detached first: it stops the audit trail and deletes its
+        /// subscription before the control closes the session.
         /// </remarks>
         private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
@@ -162,6 +182,29 @@ namespace Quickstarts.RoleManagement.Client
         }
 
         /// <summary>
+        /// Fills the criteria box with something the chosen criteria type accepts.
+        /// </summary>
+        /// <remarks>
+        /// The two certificate criteria are matched against the application instance
+        /// certificate of the <b>client</b>, so the model fills them in from this client's
+        /// own configuration. Granting a Role for one of them and reconnecting is how the
+        /// sample shows a Role which belongs to a machine rather than to a person.
+        /// </remarks>
+        private async void CriteriaCB_SelectedIndexChangedAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                RoleUserTB.Text = await m_model.CriteriaOfAsync(
+                    SelectedCriteriaType(),
+                    m_configuration.SecurityConfiguration);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
         /// Updates the display after connecting to or disconnecting from the server.
         /// </summary>
         private async void Server_ConnectCompleteAsync(object sender, EventArgs e)
@@ -175,11 +218,13 @@ namespace Quickstarts.RoleManagement.Client
                     await m_model.DetachAsync();
                     NodesLV.Items.Clear();
                     RolesLV.Items.Clear();
+                    AuditLV.Items.Clear();
                     SetButtonsEnabled(false);
                     return;
                 }
 
-                // the model resolves the machine of the server while it attaches
+                // the model resolves the machine of the server and subscribes to the
+                // audit trail while it attaches
                 await m_model.AttachAsync(session);
 
                 SetButtonsEnabled(true);
@@ -307,7 +352,7 @@ namespace Quickstarts.RoleManagement.Client
         }
 
         /// <summary>
-        /// Grants the selected Role to the user in the text box.
+        /// Grants the selected Role to the identity in the text box.
         /// </summary>
         private async void AddIdentityBTN_ClickAsync(object sender, EventArgs e)
         {
@@ -320,7 +365,7 @@ namespace Quickstarts.RoleManagement.Client
 
                 var role = (RoleEntry)RolesLV.SelectedItems[0].Tag;
 
-                Report(await m_model.AddIdentityAsync(role, RoleUserTB.Text));
+                Report(await m_model.AddIdentityAsync(role, SelectedCriteriaType(), RoleUserTB.Text));
 
                 await RefreshAsync();
             }
@@ -331,7 +376,7 @@ namespace Quickstarts.RoleManagement.Client
         }
 
         /// <summary>
-        /// Revokes the selected Role from the user in the text box.
+        /// Revokes the selected Role from the identity in the text box.
         /// </summary>
         private async void RemoveIdentityBTN_ClickAsync(object sender, EventArgs e)
         {
@@ -344,7 +389,35 @@ namespace Quickstarts.RoleManagement.Client
 
                 var role = (RoleEntry)RolesLV.SelectedItems[0].Tag;
 
-                Report(await m_model.RemoveIdentityAsync(role, RoleUserTB.Text));
+                Report(await m_model.RemoveIdentityAsync(role, SelectedCriteriaType(), RoleUserTB.Text));
+
+                await RefreshAsync();
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Flips the CustomConfiguration flag of the selected Role.
+        /// </summary>
+        /// <remarks>
+        /// What the flag reads comes from the last refresh, which is what the row carries;
+        /// the model writes the opposite and explains what the flag is for.
+        /// </remarks>
+        private async void CustomConfigBTN_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!m_model.IsConnected || RolesLV.SelectedItems.Count == 0)
+                {
+                    return;
+                }
+
+                var role = (RoleEntry)RolesLV.SelectedItems[0].Tag;
+
+                Report(await m_model.SetCustomConfigurationAsync(role, !role.CustomConfiguration));
 
                 await RefreshAsync();
             }
@@ -374,6 +447,35 @@ namespace Quickstarts.RoleManagement.Client
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
+        }
+
+        /// <summary>
+        /// Shows one audit event, newest first.
+        /// </summary>
+        /// <remarks>
+        /// The model raises this on the thread of the window, so the list is written
+        /// directly. An event can still arrive after the window was closed.
+        /// </remarks>
+        private void Model_AuditEventReceived(object sender, AuditEventReceivedEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            AuditEventEntry entry = e.Event;
+
+            string time = entry.TimeUtc.HasValue
+                ? entry.TimeUtc.Value.ToLocalTime().ToString("HH:mm:ss.fff", CultureInfo.CurrentCulture)
+                : string.Empty;
+
+            var item = new ListViewItem(time);
+
+            item.SubItems.Add(entry.EventTypeName);
+            item.SubItems.Add(entry.SourceName);
+            item.SubItems.Add(entry.Message);
+
+            AuditLV.Items.Insert(0, item);
         }
 
         /// <summary>
@@ -411,6 +513,7 @@ namespace Quickstarts.RoleManagement.Client
 
                 item.SubItems.Add(node.Value);
                 item.SubItems.Add(node.Status);
+                item.SubItems.Add(node.Restrictions);
                 item.SubItems.Add(node.Permissions);
 
                 NodesLV.Items.Add(item);
@@ -423,10 +526,22 @@ namespace Quickstarts.RoleManagement.Client
                 var item = new ListViewItem(role.Name) { Tag = role };
 
                 item.SubItems.Add(role.Granted ? "yes" : string.Empty);
+                item.SubItems.Add(role.Endpoints);
+                item.SubItems.Add(role.CustomConfiguration ? "yes" : string.Empty);
                 item.SubItems.Add(role.Identities);
 
                 RolesLV.Items.Add(item);
             }
+        }
+
+        /// <summary>
+        /// The identity criteria type the drop down is on.
+        /// </summary>
+        private IdentityCriteriaType SelectedCriteriaType()
+        {
+            return CriteriaCB.SelectedItem is IdentityCriteriaType selected
+                ? selected
+                : IdentityCriteriaType.UserName;
         }
 
         /// <summary>
@@ -455,6 +570,7 @@ namespace Quickstarts.RoleManagement.Client
             AddIdentityBTN.Enabled = enabled;
             RemoveIdentityBTN.Enabled = enabled;
             AddRoleBTN.Enabled = enabled;
+            CustomConfigBTN.Enabled = enabled;
         }
 
         /// <summary>

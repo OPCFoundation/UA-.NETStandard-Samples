@@ -85,10 +85,6 @@ namespace Quickstarts.UserAuthenticationClient
             PreferredLocalesTB.Text = "de,es,en";
             SetAvailableUserTokens(null);
 
-            KerberosUserNameTB.Text = "Operator";
-            KerberosPasswordTB.Text = "operator";
-            KerberosDomainTB.Text = "GEMS";
-
             UserNameTokenLB.Text =
             "UserName/Password tokens can be used with any password based system including Windows.\r\n" +
             "The main disadvantage is client must trust the server with its password.\r\n" +
@@ -103,11 +99,6 @@ namespace Quickstarts.UserAuthenticationClient
             "Certificate tokens use a X509 certicate associated with a user.\r\n" +
             "These could come from a smart card and identify a user account.\r\n" +
             "Tokens must be signed when sent to the server.";
-
-            KereberosTokenLB.Text =
-            "Kereberos tokens allow use of Windows domain credentials without\r\n" +
-            "requiring the client to explictly enter a password.\r\n" +
-            "The token must be encrypted when sent to the server.";
         }
         #endregion
 
@@ -310,27 +301,6 @@ namespace Quickstarts.UserAuthenticationClient
         }
 
         /// <summary>
-        /// Changes the identity of the session to a Kerberos token.
-        /// </summary>
-        private async void KerberosImpersonateBTN_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (!m_model.IsConnected)
-                {
-                    return;
-                }
-
-                Report(await m_model.ImpersonateWithKerberosAsync(
-                    UserAuthenticationClientModel.ParseLocales(PreferredLocalesTB.Text)));
-            }
-            catch (Exception exception)
-            {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
-            }
-        }
-
-        /// <summary>
         /// Writes the log file path in the box to the server.
         /// </summary>
         private async void ChangeLogFileBTN_ClickAsync(object sender, EventArgs e)
@@ -377,7 +347,6 @@ namespace Quickstarts.UserAuthenticationClient
             AnonymousTAB.Enabled = false;
             UserNameTAB.Enabled = false;
             CertificateTAB.Enabled = false;
-            KerberosTAB.Enabled = false;
 
             if (policies == null)
             {
@@ -413,17 +382,10 @@ namespace Quickstarts.UserAuthenticationClient
                     }
                 }
 
-                if (policy.TokenType == UserTokenType.IssuedToken)
-                {
-                    if (!KerberosTAB.Enabled)
-                    {
-                        if (policy.IssuedTokenType == "http://docs.oasis-open.org/wss/oasis-wss-kerberos-token-profile-1.1")
-                        {
-                            KerberosTAB.Tag = policy;
-                            KerberosTAB.Enabled = true;
-                        }
-                    }
-                }
+                // a server which advertises an IssuedToken policy names the endpoint of
+                // its token issuer in the policy. Obtaining the token from that issuer
+                // is outside the scope of this sample; see docs/IdentityProviders.md in
+                // the stack for the flows it supports.
             }
         }
 

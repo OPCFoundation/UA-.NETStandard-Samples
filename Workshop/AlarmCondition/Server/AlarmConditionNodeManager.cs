@@ -96,7 +96,14 @@ namespace Quickstarts.AlarmConditionServer
                 server.Telemetry.CreateLogger<AlarmConditionServerNodeManager>(),
                 Namespaces.AlarmCondition)
         {
-            SystemContext.SystemHandle = m_system = new UnderlyingSystem(server.Telemetry);
+            // the clock of the server, so that the simulation and the timestamps it writes
+            // run on the same time source as the rest of the server and a test can drive
+            // them with a FakeTimeProvider. ITimeProviderProvider is the opt-in seam for
+            // reaching it; an IServerInternal which does not implement it falls back to
+            // the system clock.
+            SystemContext.SystemHandle = m_system = new UnderlyingSystem(
+                server.Telemetry,
+                (server as ITimeProviderProvider)?.TimeProvider ?? TimeProvider.System);
 
             // get the configuration for the node manager.
             m_configuration = configuration.ParseExtension<AlarmConditionServerConfiguration>();

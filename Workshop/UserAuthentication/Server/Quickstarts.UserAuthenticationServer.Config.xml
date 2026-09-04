@@ -51,7 +51,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62564/Quickstarts/UserAuthenticationServer</ua:String>
       <ua:String>opc.tcp://localhost:62565/Quickstarts/UserAuthenticationServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>
@@ -84,24 +83,18 @@
       </ua:UserTokenPolicy>
 
       <!--
-      The ServicePrincipalName (SPN) for the UA Server must be specified as the IssuerEndpointUrl
-      
-      The ServicePrincipalName (SPN) must be registered with the Kerberos Ticket Granting Server (e.g. Windows Domain Controller).
-      The SPN identifies the host that UA server is running on and the name of the application.
-      A domain admin must grant delegate permission to the domain account that the UA server runs under.
-      That can be done with the setspn.exe utility:
-      
-      setspn -U -S <hostname>/<exename> <domain accountname>
-      setspn -C -S <hostname>/<exename> <hostname>
-      
-      The latter form is used if the UA server runs a Windows Service using the built in Windows Service account.   
+      This sample used to advertise an IssuedToken policy for the WS-Security Kerberos
+      token profile. The token provider it needed (System.IdentityModel.Selectors) does
+      not exist on modern .NET, so the policy promised something no client could deliver
+      and every attempt to use it was rejected.
+
+      A server which wants issued tokens today registers an authenticator for them with
+      the identity registry, the same way this sample registers the user name and the
+      X.509 one, and advertises the endpoint of its token issuer as the
+      IssuerEndpointUrl. See docs/IdentityProviders.md in the stack for the OAuth2 /
+      OIDC / JWT flows the stack supports, and docs/AuthorizationService.md for issuing
+      the tokens from a GDS.
       -->
-      <ua:UserTokenPolicy>
-        <ua:TokenType>IssuedToken_3</ua:TokenType>
-        <ua:IssuedTokenType>http://docs.oasis-open.org/wss/oasis-wss-kerberos-token-profile-1.1</ua:IssuedTokenType>
-        <ua:IssuerEndpointUrl>Aquamarine/Opc.Ua.UserAuthenticationServer</ua:IssuerEndpointUrl>
-      </ua:UserTokenPolicy>
-      
     </UserTokenPolicies>
     <DiagnosticsEnabled>false</DiagnosticsEnabled>
     <MaxSessionCount>100</MaxSessionCount>

@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.ModelChange;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.Streaming;
 using Opc.Ua.Samples.Client;
@@ -97,7 +98,8 @@ namespace Quickstarts.NodeManagement.Client.Model
         private const double kInitialValue = 0.0;
 
         private StreamingSubscription m_streaming;
-        private SubscriptionPump m_pump;
+        private ModelChangeTracker m_modelChanges;
+        private readonly EventHandler<ModelChangedEventArgs> m_onModelChanged;
 
         /// <summary>
         /// Creates the model.
@@ -106,6 +108,7 @@ namespace Quickstarts.NodeManagement.Client.Model
         public NodeManagementClientModel(ITelemetryContext telemetry)
             : base(telemetry)
         {
+            m_onModelChanged = OnModelChanged;
         }
 
         /// <summary>
@@ -565,8 +568,18 @@ namespace Quickstarts.NodeManagement.Client.Model
         }
 
         /// <summary>
-        /// Subscribes to the model change events of the server.
+        /// Starts tracking the model changes of the server.
         /// </summary>
+        /// <remarks>
+        /// A client of a server whose address space is built by its clients cannot assume
+        /// that what it read is still true. Part 5 9.32 answers that with the model change
+        /// events, and the stack answers it with <see cref="ModelChangeTracker"/>: it owns
+        /// the event filter, the subscription on the Server object and the decoding of the
+        /// Changes field, reports the changes as a structured payload, refreshes the
+        /// namespace table when one of them needs it, and - the part a hand written pump
+        /// tends to forget - evicts the changed nodes from the <c>INodeCache</c>, so that
+        /// the next read does not answer out of a stale cache.
+        /// </remarks>
         private async Task CreateSubscriptionAsync(ISession session)
         {
             await DeleteSubscriptionAsync().ConfigureAwait(false);
@@ -580,99 +593,57 @@ namespace Quickstarts.NodeManagement.Client.Model
 
             m_streaming = new StreamingSubscription(manager, SampleSession.DefaultSubscriptionOptions);
 
-            // nothing is awaited here on purpose: the enumeration runs for as long as the
-            // model is attached, and stopping the pump is what unsubscribes it
-            m_pump = new SubscriptionPump();
-            m_pump.Run(ct => PumpModelChangesAsync(m_streaming, ct));
+            // the node cache and the namespace table of the session are handed to the
+            // tracker so that it can keep both consistent with what the server reports.
+            m_modelChanges = new ModelChangeTracker(
+                m_streaming,
+                session.NodeCache,
+                Logger,
+                session as INamespaceTableRefresher);
+
+            m_modelChanges.ModelChanged += m_onModelChanged;
+
+            await m_modelChanges.StartTrackingAsync().ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Raises <see cref="ModelChanged"/> whenever the server reports that its model changed.
-        /// </summary>
-        private async Task PumpModelChangesAsync(IStreamingSubscription streaming, CancellationToken ct)
-        {
-            var options = new MonitoredItemOptions {
-                StartNodeId = ObjectIds.Server,
-                AttributeId = Attributes.EventNotifier,
-                SamplingInterval = TimeSpan.Zero,
-                QueueSize = 1000,
-                DiscardOldest = true,
-            };
-
-            try
-            {
-                await foreach (EventNotification notification in streaming
-                    .SubscribeEventsAsync(ObjectIds.Server, ModelChangeFilter(), options, ct)
-                    .ConfigureAwait(false))
-                {
-                    if (ct.IsCancellationRequested)
-                    {
-                        return;
-                    }
-
-                    // the enumeration runs on a publish worker; the base class posts the
-                    // event to the thread the model was created on
-                    Raise(ModelChanged, EventArgs.Empty);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // the model was detached.
-            }
-            catch (Exception exception)
-            {
-                // the pump has no caller to throw to
-                ReportError("Reading the model change events", exception);
-            }
-        }
-
-        /// <summary>
-        /// A filter which accepts nothing but GeneralModelChangeEvents.
+        /// Raises <see cref="ModelChanged"/> when the tracker reports a change.
         /// </summary>
         /// <remarks>
-        /// One select clause is enough for a client which only wants to know that something
-        /// changed. The Changes field of the event would name the nodes, and is worth reading
-        /// for an address space too large to browse again.
+        /// This model reports "something changed" and lets the window read everything
+        /// again, because everything it shows fits on one form. A client with a large
+        /// address space would hand on <see cref="ModelChangedEventArgs.Changes"/> and
+        /// refresh only what they name, and only rebuild the whole of it when
+        /// <see cref="ModelChangedEventArgs.RequiresFullCacheInvalidation"/> says the server
+        /// could not say what changed. The tracker raises this on a publish worker; the
+        /// base class posts it to the thread the model was created on.
         /// </remarks>
-        private static EventFilter ModelChangeFilter()
+        private void OnModelChanged(object sender, ModelChangedEventArgs e)
         {
-            var filter = new EventFilter {
-                SelectClauses = new[] {
-                    new SimpleAttributeOperand {
-                        TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                        AttributeId = Attributes.Value,
-                        BrowsePath = new[] { new QualifiedName(BrowseNames.EventType) }.ToArrayOf(),
-                    },
-                }.ToArrayOf(),
-            };
-
-            filter.WhereClause = new ContentFilter();
-            filter.WhereClause.Push(
-                FilterOperator.OfType,
-                Variant.From(ObjectTypeIds.GeneralModelChangeEventType));
-
-            return filter;
+            Raise(ModelChanged, EventArgs.Empty);
         }
 
         /// <summary>
-        /// Stops the stream and deletes the subscription on the server.
+        /// Stops tracking and deletes the subscription on the server.
         /// </summary>
         /// <remarks>
-        /// The enumeration ends first, so that nothing is reported after the detach returns.
+        /// The tracker ends first, so that nothing is reported after the detach returns.
         /// Done before the session is closed: closing a session which still carries a
         /// subscription waits for the publish pipeline to drain.
         /// </remarks>
         private async Task DeleteSubscriptionAsync()
         {
-            SubscriptionPump pump = m_pump;
+            ModelChangeTracker modelChanges = m_modelChanges;
             StreamingSubscription streaming = m_streaming;
 
-            m_pump = null;
+            m_modelChanges = null;
             m_streaming = null;
 
-            if (pump != null)
+            if (modelChanges != null)
             {
-                await pump.DisposeAsync().ConfigureAwait(false);
+                modelChanges.ModelChanged -= m_onModelChanged;
+
+                await modelChanges.DisposeAsync().ConfigureAwait(false);
             }
 
             if (streaming != null)

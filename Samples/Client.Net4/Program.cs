@@ -54,14 +54,22 @@ namespace Opc.Ua.Sample
             // server, and the container creates the client form.
             SampleWinFormsHost.Run(
                 args,
-                services => services
-                    .AddSampleApplication(options => {
-                        options.ApplicationName = "UA Sample Client";
-                        options.ApplicationType = ApplicationType.ClientAndServer;
-                        options.ConfigurationFile = "Opc.Ua.SampleClient.Config.xml";
-                    })
-                    .AddSampleServer<SampleServer>()
-                    .AddUaSampleServerNodeManagers(),
+                services => {
+                    services
+                        .AddSampleApplication(options => {
+                            options.ApplicationName = "UA Sample Client";
+                            options.ApplicationType = ApplicationType.ClientAndServer;
+                            options.ConfigurationFile = "Opc.Ua.SampleClient.Config.xml";
+                        })
+                        .AddSampleServer(server => server.AddUaSampleServer());
+
+                    // the configuration file lists an https base address next to the
+                    // opc.tcp one. Every transport other than opc.tcp has to be
+                    // registered: the stack skips a base address whose scheme has no
+                    // listener, so without this the sample would advertise an endpoint
+                    // nobody answers.
+                    services.AddOpcUa().AddHttpsTransport();
+                },
                 CreateClientForm,
                 ExceptionDlg.Show);
         }

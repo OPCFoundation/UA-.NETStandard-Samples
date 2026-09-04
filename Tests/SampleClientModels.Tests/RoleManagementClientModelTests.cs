@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Opc.Ua.Configuration;
 using Opc.Ua.Samples.Client;
 using Quickstarts.RoleManagement.Client.Model;
 
@@ -20,9 +21,9 @@ namespace Opc.Ua.Samples.Tests
 {
     /// <summary>
     /// What the RoleManagement client exists to show, asked of its model without the
-    /// window: the same machine looks different to each account, an Operator may reset it,
-    /// an Observer may not, and the RoleSet is only changed by a SecurityAdmin over an
-    /// encrypted channel.
+    /// window: the same machine looks different to each account and to each channel, an
+    /// Operator may reset it, an Observer may not, and the RoleSet is only changed by a
+    /// SecurityAdmin over an encrypted channel.
     /// </summary>
     /// <remarks>
     /// The session of the fixture is anonymous. A test which needs an account opens a
@@ -207,6 +208,261 @@ namespace Opc.Ua.Samples.Tests
                         .ConfigureAwait(false);
                 }
             }
+        }
+
+        /// <summary>
+        /// The criteria the model offers for each identity criteria type are what a Part 18
+        /// 4.4.3 rule accepts: an account, an upper case thumbprint, a normalised subject.
+        /// </summary>
+        /// <remarks>
+        /// The certificate criteria are read off an application instance certificate, so a
+        /// client application with one is built the way the sample client builds its own.
+        /// No session is involved: the window fills its text box before it connects.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task CriteriaStringsAreWellFormedForEveryType(CancellationToken ct)
+        {
+            Assert.That(
+                RoleManagementClientModel.CriteriaTypes,
+                Is.EqualTo(new[] {
+                    IdentityCriteriaType.UserName,
+                    IdentityCriteriaType.Thumbprint,
+                    IdentityCriteriaType.X509Subject,
+                }),
+                "The model offers the three criteria types the sample server can match.");
+
+            // the normalisation on its own, against the subject the sample client's
+            // configuration file spells out - in the order Part 18 4.4.3 requires, not the
+            // order the certificate carries the parts in
+            Assert.That(
+                RoleManagementClientModel.Part18Subject(
+                    "CN=Quickstart RoleManagement Client, C=US, S=Arizona, O=OPC Foundation, DC=host"),
+                Is.EqualTo("CN=\"Quickstart RoleManagement Client\"/O=\"OPC Foundation\"/DC=\"host\"/S=\"Arizona\"/C=\"US\""));
+
+            using var pki = new TemporaryPki("client-RoleManagement-criteria");
+
+            (ApplicationInstance application, ApplicationConfiguration configuration) =
+                await TestClient.CreateApplicationAsync(pki, ct).ConfigureAwait(false);
+
+            await using (application.ConfigureAwait(false))
+            {
+                SecurityConfiguration security = configuration.SecurityConfiguration;
+
+                string userName = await Model
+                    .CriteriaOfAsync(IdentityCriteriaType.UserName, security, ct)
+                    .ConfigureAwait(false);
+
+                string thumbprint = await Model
+                    .CriteriaOfAsync(IdentityCriteriaType.Thumbprint, security, ct)
+                    .ConfigureAwait(false);
+
+                string subject = await Model
+                    .CriteriaOfAsync(IdentityCriteriaType.X509Subject, security, ct)
+                    .ConfigureAwait(false);
+
+                await TestContext.Out
+                    .WriteLineAsync($"UserName='{userName}', Thumbprint='{thumbprint}', X509Subject='{subject}'")
+                    .ConfigureAwait(false);
+
+                Assert.Multiple(() => {
+                    Assert.That(userName, Is.EqualTo(RoleManagementClientModel.DefaultUserCriteria));
+
+                    Assert.That(
+                        thumbprint,
+                        Does.Match("^[0-9A-F]{40,}$"),
+                        "Part 18 4.4.3 requires a Thumbprint to be upper case hexadecimal with no separators.");
+
+                    Assert.That(
+                        subject,
+                        Does.StartWith("CN=\"Sample Test Client\"/O=\"OPC Foundation\"/DC=\""),
+                        "An X509Subject has to be the normalised Name=\"Value\" form, CN first.");
+
+                    Assert.That(subject, Does.EndWith("/S=\"Arizona\"/C=\"US\""));
+
+                    Assert.That(
+                        subject,
+                        Does.Match("^([A-Za-z]+=\"[^\"]*\")(/[A-Za-z]+=\"[^\"]*\")*$"),
+                        "An X509Subject is a sequence of Name=\"Value\" pairs separated by slashes.");
+                });
+            }
+        }
+
+        /// <summary>
+        /// A node which demands an encrypted channel says so - with its status on the wrong
+        /// channel and with its AccessRestrictions on the right one.
+        /// </summary>
+        /// <remarks>
+        /// The Operator holds Browse and Read on the maintenance note in both sessions. What
+        /// changes is the channel, and the two entries have to make the difference visible:
+        /// BadSecurityModeInsufficient means reconnect with security, where
+        /// BadUserAccessDenied would mean sign in as somebody else. The restrictions text
+        /// stays empty on the unencrypted channel, because reading the attribute is checked
+        /// against the restrictions too.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task TheRestrictedNodesSayWhyTheyRefuse(CancellationToken ct)
+        {
+            await using (SignedIn unsecured = await SignInAsync("operator1", encrypted: false, ct).ConfigureAwait(false))
+            {
+                MachineNodeEntry note = await MaintenanceNoteAsync(unsecured.Model, ct).ConfigureAwait(false);
+
+                await TestContext.Out
+                    .WriteLineAsync($"Unencrypted: status '{note.Status}', restrictions '{note.Restrictions}'")
+                    .ConfigureAwait(false);
+
+                Assert.Multiple(() => {
+                    Assert.That(
+                        note.Status,
+                        Is.EqualTo(((StatusCode)StatusCodes.BadSecurityModeInsufficient).ToString()),
+                        "An Operator holds Read on the maintenance note, so the refusal has to " +
+                        "name the channel rather than the user.");
+
+                    Assert.That(
+                        note.Restrictions,
+                        Is.Empty,
+                        "A Session on an unencrypted channel may not read the AccessRestrictions either.");
+                });
+            }
+
+            await using SignedIn encrypted = await SignInAsync("operator1", encrypted: true, ct).ConfigureAwait(false);
+
+            MachineNodeEntry readable = await MaintenanceNoteAsync(encrypted.Model, ct).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Encrypted: status '{readable.Status}', restrictions '{readable.Restrictions}'")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    readable.Status,
+                    Is.EqualTo(((StatusCode)StatusCodes.Good).ToString()),
+                    "The same account reads the note over an encrypted channel.");
+
+                Assert.That(
+                    readable.Restrictions,
+                    Does.Contain(nameof(AccessRestrictionType.EncryptionRequired)),
+                    "A Session which may touch the node at all has to be able to read the " +
+                    "AccessRestrictions which apply to it.");
+            });
+        }
+
+        /// <summary>
+        /// A SecurityAdmin flips the CustomConfiguration flag of a Role, and the role list
+        /// reflects it; the same account on the unsecured channel is refused.
+        /// </summary>
+        /// <remarks>
+        /// The ConfigureAdmin Role is the one the sample restricts to its encrypted
+        /// endpoints, so its entry also shows what the Endpoints filter of a Role looks
+        /// like next to the "any" of the well known Roles.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task SecurityAdminFlipsCustomConfigurationOverAnEncryptedChannel(CancellationToken ct)
+        {
+            const string roleName = "ConfigureAdmin";
+
+            await using (SignedIn unsecured = await SignInAsync("secadmin", encrypted: false, ct).ConfigureAwait(false))
+            {
+                RoleManagementSnapshot seen = await unsecured.Model.RefreshAsync(ct).ConfigureAwait(false);
+
+                RoleEntry role = seen.Roles.Single(candidate => candidate.Name == roleName);
+
+                OperationResult refused = await unsecured.Model
+                    .SetCustomConfigurationAsync(role, true, ct)
+                    .ConfigureAwait(false);
+
+                await TestContext.Out
+                    .WriteLineAsync($"CustomConfiguration without encryption: {refused}")
+                    .ConfigureAwait(false);
+
+                Assert.That(
+                    refused.Status,
+                    Is.EqualTo((StatusCode)StatusCodes.BadSecurityModeInsufficient),
+                    "Part 18 4.4 reserves the role configuration for an encrypted channel, and " +
+                    "the refusal has to name the channel rather than the user.");
+            }
+
+            await using SignedIn admin = await SignInAsync("secadmin", encrypted: true, ct).ConfigureAwait(false);
+
+            RoleManagementSnapshot before = await admin.Model.RefreshAsync(ct).ConfigureAwait(false);
+
+            RoleEntry configureAdmin = before.Roles.Single(candidate => candidate.Name == roleName);
+            RoleEntry operatorRole = before.Roles.Single(candidate => candidate.Name == "Operator");
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"{roleName}: endpoints '{configureAdmin.Endpoints}', custom {configureAdmin.CustomConfiguration}, " +
+                    $"identities '{configureAdmin.Identities}'; Operator: endpoints '{operatorRole.Endpoints}'")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(configureAdmin.CustomConfiguration, Is.False, "The sample does not ship the flag set.");
+
+                Assert.That(
+                    configureAdmin.Endpoints,
+                    Is.Not.EqualTo("any").And.Not.EqualTo("(not visible)").And.Not.Empty,
+                    "The sample restricts ConfigureAdmin to its encrypted endpoints, and a " +
+                    "SecurityAdmin may read that filter.");
+
+                Assert.That(operatorRole.Endpoints, Is.EqualTo("any"), "The well known Roles are granted on every endpoint.");
+
+                Assert.That(
+                    configureAdmin.Identities,
+                    Does.Contain(nameof(IdentityCriteriaType.X509Subject)),
+                    "The server maps the workstation certificate onto ConfigureAdmin.");
+            });
+
+            OperationResult set = await admin.Model
+                .SetCustomConfigurationAsync(configureAdmin, true, ct)
+                .ConfigureAwait(false);
+
+            try
+            {
+                Assert.That(set.Succeeded, Is.True, $"Setting the flag over an encrypted channel failed: {set}");
+                Assert.That(set.ToString(), Does.Contain($"CustomConfiguration of {roleName} := True"));
+
+                RoleManagementSnapshot after = await admin.Model.RefreshAsync(ct).ConfigureAwait(false);
+
+                Assert.That(
+                    after.Roles.Single(candidate => candidate.Name == roleName).CustomConfiguration,
+                    Is.True,
+                    "The role list has to reflect the flag after a refresh.");
+            }
+            finally
+            {
+                // the server is per fixture, so the Role is left as it was found
+                OperationResult cleared = await admin.Model
+                    .SetCustomConfigurationAsync(configureAdmin, false, ct)
+                    .ConfigureAwait(false);
+
+                Assert.That(cleared.Succeeded, Is.True, $"Clearing the flag again failed: {cleared}");
+            }
+
+            RoleManagementSnapshot restored = await admin.Model.RefreshAsync(ct).ConfigureAwait(false);
+
+            Assert.That(
+                restored.Roles.Single(candidate => candidate.Name == roleName).CustomConfiguration,
+                Is.False,
+                "Clearing the flag has to show in the role list again.");
+        }
+
+        /// <summary>
+        /// The maintenance note as the model sees it after a refresh.
+        /// </summary>
+        private static async Task<MachineNodeEntry> MaintenanceNoteAsync(RoleManagementClientModel model, CancellationToken ct)
+        {
+            RoleManagementSnapshot snapshot = await model.RefreshAsync(ct).ConfigureAwait(false);
+
+            MachineNodeEntry note = snapshot.Nodes.FirstOrDefault(node => node.Name == "MaintenanceNote");
+
+            Assert.That(
+                note,
+                Is.Not.Null,
+                "The machine has no MaintenanceNote. It has: " + string.Join(", ", snapshot.Nodes.Select(node => node.Name)));
+
+            return note;
         }
 
         /// <summary>

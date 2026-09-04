@@ -180,7 +180,7 @@ namespace Opc.Ua.Samples.Tests
 
         [Test]
         [CancelAfter(kTimeout)]
-        public async Task DetachTakesTheRenewHandlerOffTheSession(CancellationToken ct)
+        public async Task DetachForgetsTheNodeAndThePolicies(CancellationToken ct)
         {
             await AttachAsync(ct).ConfigureAwait(false);
             await Model.DetachAsync().ConfigureAwait(false);

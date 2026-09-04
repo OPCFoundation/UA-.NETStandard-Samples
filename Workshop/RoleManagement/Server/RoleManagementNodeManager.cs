@@ -37,6 +37,14 @@ namespace Quickstarts.RoleManagement.Server
     /// does not see the node at all: an Observer browsing the machine finds three children,
     /// an Engineer finds five.
     /// </para>
+    /// <para>
+    /// Two of the nodes also carry an AccessRestrictions attribute, which is the other half
+    /// of the Part 3 5.2.11 access story and is checked by
+    /// <c>MasterNodeManager.ValidateAccessRestrictions</c> alongside the role permissions. It
+    /// says nothing about who the Session is: it is a property of the channel, and a node
+    /// which demands an encrypted one answers BadSecurityModeInsufficient to every Session on
+    /// an unencrypted channel, however many Roles that Session holds.
+    /// </para>
     /// </remarks>
     [NodeManager]
     public partial class RoleManagementNodeManager
@@ -46,6 +54,11 @@ namespace Quickstarts.RoleManagement.Server
         /// The set point the Reset method restores.
         /// </summary>
         private const double kDefaultSetPoint = 20.0;
+
+        /// <summary>
+        /// The value of the service code, which only the maintenance workstation may change.
+        /// </summary>
+        private const string kDefaultServiceCode = "SVC-4711";
         #endregion
 
         #region Configure
@@ -57,6 +70,7 @@ namespace Quickstarts.RoleManagement.Server
             BaseVariableState temperature = builder.Machine.Temperature.Node;
             BaseVariableState calibration = builder.Machine.Calibration.Node;
             BaseVariableState maintenanceNote = builder.Machine.MaintenanceNote.Node;
+            BaseVariableState serviceCode = builder.Machine.ServiceCode.Node;
 
             // the set point is the only node the sample keeps, because the Reset method has
             // to put it back
@@ -66,6 +80,7 @@ namespace Quickstarts.RoleManagement.Server
             SetValue(m_setPoint, Variant.From(kDefaultSetPoint));
             SetValue(calibration, Variant.From(0.25));
             SetValue(maintenanceNote, Variant.From("Filter replaced during the last service."));
+            SetValue(serviceCode, Variant.From(kDefaultServiceCode));
 
             // Everybody who reaches the server may see that the machine is there. Without
             // Browse on the object itself none of its children would be reachable either.
@@ -115,6 +130,14 @@ namespace Quickstarts.RoleManagement.Server
                 (Role.Engineer, PermissionType.Browse | PermissionType.Read | PermissionType.Write),
                 (Role.Supervisor, PermissionType.Browse | PermissionType.Read));
 
+            // ... and on top of that it may only be read over an encrypted channel. This is
+            // the plain EncryptionRequired restriction: a Browse still finds the node, so an
+            // Engineer on the unsecured endpoint sees the calibration and is refused its
+            // value with BadSecurityModeInsufficient rather than BadUserAccessDenied. The
+            // difference matters to a client, which can tell the user to reconnect instead
+            // of telling it to ask for a different account.
+            Restrict(calibration, AccessRestrictionType.EncryptionRequired);
+
             // The maintenance log: written by a Supervisor, readable by the two Roles which
             // work on the machine.
             Protect(
@@ -122,6 +145,26 @@ namespace Quickstarts.RoleManagement.Server
                 (Role.Operator, PermissionType.Browse | PermissionType.Read),
                 (Role.Engineer, PermissionType.Browse | PermissionType.Read),
                 (Role.Supervisor, PermissionType.Browse | PermissionType.Read | PermissionType.Write));
+
+            // ApplyRestrictionsToBrowse extends the same restriction to the Browse service,
+            // so this node is not in the address space of an unencrypted channel at all -
+            // for an Operator, who holds Browse and Read on it, exactly as for anyone else.
+            // Without the flag a restriction only covers the services which touch the value.
+            Restrict(
+                maintenanceNote,
+                AccessRestrictionType.EncryptionRequired |
+                AccessRestrictionType.ApplyRestrictionsToBrowse);
+
+            // The service code belongs to the maintenance workstation rather than to a user:
+            // the ConfigureAdmin Role which owns it is granted by the certificate of the
+            // client application and only on the encrypted endpoint, which is configured in
+            // SampleUsers.ConfigureRoles and WorkstationEndpoints. The node itself carries no
+            // restriction, so what a Session may do with it is decided by that Role
+            // configuration alone.
+            Protect(
+                serviceCode,
+                (Role.Engineer, PermissionType.Browse | PermissionType.Read),
+                (Role.ConfigureAdmin, PermissionType.Browse | PermissionType.Read | PermissionType.Write));
 
             // Calling a Method needs the Call permission, which is separate from Write: an
             // Observer sees the method and is refused the call.
@@ -185,6 +228,30 @@ namespace Quickstarts.RoleManagement.Server
                 .ToArrayOf();
 
             node.OnReadUserRolePermissions = OnReadUserRolePermissions;
+        }
+
+        /// <summary>
+        /// Writes the AccessRestrictions attribute of a node.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// AccessRestrictions and RolePermissions answer different questions and are checked
+        /// one after the other: the master node manager validates the role permissions first
+        /// and the restrictions afterwards, so a Session which is refused for both hears
+        /// about the Role. Restrictions are about the channel - SigningRequired,
+        /// EncryptionRequired, SessionRequired - and no Role can talk its way past one.
+        /// </para>
+        /// <para>
+        /// A server which wants a whole namespace to be reachable only over an encrypted
+        /// channel sets DefaultAccessRestrictions on its NamespaceMetadata node instead of
+        /// repeating the attribute per node; the master node manager falls back to that when
+        /// a node carries none. This sample sets every node explicitly because the point here
+        /// is to see which node carries what.
+        /// </para>
+        /// </remarks>
+        private static void Restrict(NodeState node, AccessRestrictionType restrictions)
+        {
+            node.AccessRestrictions = restrictions;
         }
 
         /// <summary>

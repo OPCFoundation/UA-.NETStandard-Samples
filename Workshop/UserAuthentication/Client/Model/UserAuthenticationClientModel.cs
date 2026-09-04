@@ -59,8 +59,6 @@ namespace Quickstarts.UserAuthenticationClient.Model
         /// </remarks>
         private const uint kLogFilePathIdentifier = 2;
 
-        private readonly RenewUserIdentityEventHandler m_renewUserIdentity;
-
         /// <summary>
         /// Creates the model.
         /// </summary>
@@ -68,7 +66,6 @@ namespace Quickstarts.UserAuthenticationClient.Model
         public UserAuthenticationClientModel(ITelemetryContext telemetry)
             : base(telemetry)
         {
-            m_renewUserIdentity = Session_RenewUserIdentity;
         }
 
         /// <summary>
@@ -268,26 +265,6 @@ namespace Quickstarts.UserAuthenticationClient.Model
                 ct);
         }
 
-        /// <summary>
-        /// Changes the identity of the session to a Kerberos token.
-        /// </summary>
-        /// <remarks>
-        /// Kerberos tokens allow use of Windows domain credentials without requiring the
-        /// client to explicitly enter a password. The token must be encrypted when sent to
-        /// the server. The token providers this needs are not available on modern .NET, so
-        /// the attempt is answered with a refusal.
-        /// </remarks>
-        /// <param name="preferredLocales">The locales to ask the server for.</param>
-        /// <param name="ct">The cancellation token.</param>
-        public Task<OperationResult> ImpersonateWithKerberosAsync(string[] preferredLocales, CancellationToken ct = default)
-        {
-            return ImpersonateAsync(
-                "Impersonating with a Kerberos token",
-                GetKerberosToken,
-                preferredLocales,
-                ct);
-        }
-
         /// <inheritdoc/>
         protected override Task OnAttachedAsync(CancellationToken ct)
         {
@@ -302,24 +279,12 @@ namespace Quickstarts.UserAuthenticationClient.Model
             UserTokenPolicies = session.ConfiguredEndpoint?.Description?.UserIdentityTokens.ToArray()
                 ?? Array.Empty<UserTokenPolicy>();
 
-            // a Kerberos token cannot be reused on a reconnect and has to be issued again
-            session.RenewUserIdentity += m_renewUserIdentity;
-
             return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
         protected override Task OnDetachingAsync()
         {
-            // the managed session outlives what this model wired into it, so the handler
-            // is taken off again rather than left behind on a session another model may get
-            ISession session = Session;
-
-            if (session != null)
-            {
-                session.RenewUserIdentity -= m_renewUserIdentity;
-            }
-
             LogFileNodeId = NodeId.Null;
             UserTokenPolicies = Array.Empty<UserTokenPolicy>();
 
@@ -332,9 +297,8 @@ namespace Quickstarts.UserAuthenticationClient.Model
         /// </summary>
         /// <remarks>
         /// The token is created inside the call rather than passed in, so that a token
-        /// which cannot be created - a certificate file which does not open, a Kerberos
-        /// provider which is not there - is reported the same way as one the server
-        /// refuses.
+        /// which cannot be created - a certificate file which does not open, for instance -
+        /// is reported the same way as one the server refuses.
         /// </remarks>
         private async Task<OperationResult> ImpersonateAsync(
             string what,
@@ -367,30 +331,6 @@ namespace Quickstarts.UserAuthenticationClient.Model
             {
                 session.ReturnDiagnostics = DiagnosticsMasks.None;
             }
-        }
-
-        /// <summary>
-        /// Called when a Kerberos token needs to be renewed before a reconnect.
-        /// </summary>
-        private IUserIdentity Session_RenewUserIdentity(ISession session, IUserIdentity identity)
-        {
-            if (identity == null || identity.TokenType != UserTokenType.IssuedToken)
-            {
-                return identity;
-            }
-
-            return GetKerberosToken();
-        }
-
-        /// <summary>
-        /// Requests a Kerberos token for the current Windows user.
-        /// </summary>
-        private static IUserIdentity GetKerberosToken()
-        {
-            // Kerberos WS-Security token providers (System.IdentityModel.Selectors) are not
-            // available on modern .NET. This path is stubbed out under the .NET 10 upgrade (Option C).
-            throw new NotSupportedException(
-                "Kerberos issued tokens (System.IdentityModel) are not supported on this platform.");
         }
 
         /// <summary>

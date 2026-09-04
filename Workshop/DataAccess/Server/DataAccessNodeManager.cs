@@ -76,7 +76,14 @@ namespace Quickstarts.DataAccessServer
         {
             this.AliasRoot = "DA";
 
-            SystemContext.SystemHandle = m_system = new UnderlyingSystem(server.Telemetry);
+            // the clock of the server, so that the simulation and the timestamps it writes
+            // run on the same time source as the rest of the server and a test can drive
+            // them with a FakeTimeProvider. ITimeProviderProvider is the opt-in seam for
+            // reaching it; an IServerInternal which does not implement it falls back to
+            // the system clock.
+            SystemContext.SystemHandle = m_system = new UnderlyingSystem(
+                server.Telemetry,
+                (server as ITimeProviderProvider)?.TimeProvider ?? TimeProvider.System);
 
             // create the table to store the cached blocks.
             m_blocks = new NodeIdDictionary<BlockState>();

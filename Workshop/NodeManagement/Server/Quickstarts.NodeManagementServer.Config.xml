@@ -52,7 +52,6 @@
 
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62574/Quickstarts/NodeManagementServer</ua:String>
       <ua:String>opc.tcp://localhost:62575/Quickstarts/NodeManagementServer</ua:String>
     </BaseAddresses>
 

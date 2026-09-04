@@ -57,6 +57,7 @@ namespace Quickstarts.RoleManagement.Client
             this.NodeCH = new System.Windows.Forms.ColumnHeader();
             this.ValueCH = new System.Windows.Forms.ColumnHeader();
             this.StatusCH = new System.Windows.Forms.ColumnHeader();
+            this.RestrictionsCH = new System.Windows.Forms.ColumnHeader();
             this.PermissionsCH = new System.Windows.Forms.ColumnHeader();
             this.NodesButtonsPN = new System.Windows.Forms.Panel();
             this.RefreshBTN = new System.Windows.Forms.Button();
@@ -67,13 +68,23 @@ namespace Quickstarts.RoleManagement.Client
             this.RolesLV = new System.Windows.Forms.ListView();
             this.RoleCH = new System.Windows.Forms.ColumnHeader();
             this.GrantedCH = new System.Windows.Forms.ColumnHeader();
+            this.EndpointsCH = new System.Windows.Forms.ColumnHeader();
+            this.CustomCH = new System.Windows.Forms.ColumnHeader();
             this.IdentitiesCH = new System.Windows.Forms.ColumnHeader();
             this.RolesButtonsPN = new System.Windows.Forms.Panel();
+            this.CriteriaCB = new System.Windows.Forms.ComboBox();
             this.RoleUserTB = new System.Windows.Forms.TextBox();
             this.AddIdentityBTN = new System.Windows.Forms.Button();
             this.RemoveIdentityBTN = new System.Windows.Forms.Button();
             this.NewRoleTB = new System.Windows.Forms.TextBox();
             this.AddRoleBTN = new System.Windows.Forms.Button();
+            this.CustomConfigBTN = new System.Windows.Forms.Button();
+            this.AuditGB = new System.Windows.Forms.GroupBox();
+            this.AuditLV = new System.Windows.Forms.ListView();
+            this.AuditTimeCH = new System.Windows.Forms.ColumnHeader();
+            this.AuditEventCH = new System.Windows.Forms.ColumnHeader();
+            this.AuditSourceCH = new System.Windows.Forms.ColumnHeader();
+            this.AuditMessageCH = new System.Windows.Forms.ColumnHeader();
             this.ConnectServerCTRL = new Opc.Ua.Client.Controls.ConnectServerCtrl();
             this.clientHeaderBranding1 = new Opc.Ua.Client.Controls.HeaderBranding();
             this.MenuBar.SuspendLayout();
@@ -83,6 +94,7 @@ namespace Quickstarts.RoleManagement.Client
             this.NodesButtonsPN.SuspendLayout();
             this.RolesGB.SuspendLayout();
             this.RolesButtonsPN.SuspendLayout();
+            this.AuditGB.SuspendLayout();
             this.SuspendLayout();
             //
             // MenuBar
@@ -196,11 +208,12 @@ namespace Quickstarts.RoleManagement.Client
             //
             this.MainPN.Controls.Add(this.NodesGB);
             this.MainPN.Controls.Add(this.RolesGB);
+            this.MainPN.Controls.Add(this.AuditGB);
             this.MainPN.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainPN.Location = new System.Drawing.Point(0, 152);
             this.MainPN.Name = "MainPN";
             this.MainPN.Padding = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.MainPN.Size = new System.Drawing.Size(884, 442);
+            this.MainPN.Size = new System.Drawing.Size(884, 586);
             this.MainPN.TabIndex = 3;
             //
             // NodesGB
@@ -221,6 +234,7 @@ namespace Quickstarts.RoleManagement.Client
             this.NodeCH,
             this.ValueCH,
             this.StatusCH,
+            this.RestrictionsCH,
             this.PermissionsCH});
             this.NodesLV.Dock = System.Windows.Forms.DockStyle.Fill;
             this.NodesLV.FullRowSelect = true;
@@ -247,6 +261,11 @@ namespace Quickstarts.RoleManagement.Client
             //
             this.StatusCH.Text = "Status";
             this.StatusCH.Width = 180;
+            //
+            // RestrictionsCH
+            //
+            this.RestrictionsCH.Text = "Access restrictions";
+            this.RestrictionsCH.Width = 200;
             //
             // PermissionsCH
             //
@@ -312,7 +331,7 @@ namespace Quickstarts.RoleManagement.Client
             this.RolesGB.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.RolesGB.Location = new System.Drawing.Point(2, 234);
             this.RolesGB.Name = "RolesGB";
-            this.RolesGB.Size = new System.Drawing.Size(880, 208);
+            this.RolesGB.Size = new System.Drawing.Size(880, 228);
             this.RolesGB.TabIndex = 1;
             this.RolesGB.TabStop = false;
             this.RolesGB.Text = "The RoleSet of the server (Part 18)";
@@ -322,6 +341,8 @@ namespace Quickstarts.RoleManagement.Client
             this.RolesLV.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.RoleCH,
             this.GrantedCH,
+            this.EndpointsCH,
+            this.CustomCH,
             this.IdentitiesCH});
             this.RolesLV.Dock = System.Windows.Forms.DockStyle.Fill;
             this.RolesLV.FullRowSelect = true;
@@ -329,7 +350,7 @@ namespace Quickstarts.RoleManagement.Client
             this.RolesLV.Location = new System.Drawing.Point(3, 16);
             this.RolesLV.MultiSelect = false;
             this.RolesLV.Name = "RolesLV";
-            this.RolesLV.Size = new System.Drawing.Size(874, 157);
+            this.RolesLV.Size = new System.Drawing.Size(874, 149);
             this.RolesLV.TabIndex = 0;
             this.RolesLV.UseCompatibleStateImageBehavior = false;
             this.RolesLV.View = System.Windows.Forms.View.Details;
@@ -342,41 +363,62 @@ namespace Quickstarts.RoleManagement.Client
             // GrantedCH
             //
             this.GrantedCH.Text = "Granted to this session";
-            this.GrantedCH.Width = 150;
+            this.GrantedCH.Width = 130;
+            //
+            // EndpointsCH
+            //
+            this.EndpointsCH.Text = "Endpoints";
+            this.EndpointsCH.Width = 90;
+            //
+            // CustomCH
+            //
+            this.CustomCH.Text = "Custom";
+            this.CustomCH.Width = 70;
             //
             // IdentitiesCH
             //
             this.IdentitiesCH.Text = "Identities";
-            this.IdentitiesCH.Width = 520;
+            this.IdentitiesCH.Width = 400;
             //
             // RolesButtonsPN
             //
+            this.RolesButtonsPN.Controls.Add(this.CriteriaCB);
             this.RolesButtonsPN.Controls.Add(this.RoleUserTB);
             this.RolesButtonsPN.Controls.Add(this.AddIdentityBTN);
             this.RolesButtonsPN.Controls.Add(this.RemoveIdentityBTN);
             this.RolesButtonsPN.Controls.Add(this.NewRoleTB);
             this.RolesButtonsPN.Controls.Add(this.AddRoleBTN);
+            this.RolesButtonsPN.Controls.Add(this.CustomConfigBTN);
             this.RolesButtonsPN.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.RolesButtonsPN.Location = new System.Drawing.Point(3, 173);
+            this.RolesButtonsPN.Location = new System.Drawing.Point(3, 165);
             this.RolesButtonsPN.Name = "RolesButtonsPN";
-            this.RolesButtonsPN.Size = new System.Drawing.Size(874, 32);
+            this.RolesButtonsPN.Size = new System.Drawing.Size(874, 60);
             this.RolesButtonsPN.TabIndex = 1;
+            //
+            // CriteriaCB
+            //
+            this.CriteriaCB.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CriteriaCB.FormattingEnabled = true;
+            this.CriteriaCB.Location = new System.Drawing.Point(3, 5);
+            this.CriteriaCB.Name = "CriteriaCB";
+            this.CriteriaCB.Size = new System.Drawing.Size(110, 21);
+            this.CriteriaCB.TabIndex = 0;
             //
             // RoleUserTB
             //
-            this.RoleUserTB.Location = new System.Drawing.Point(3, 6);
+            this.RoleUserTB.Location = new System.Drawing.Point(119, 6);
             this.RoleUserTB.Name = "RoleUserTB";
-            this.RoleUserTB.Size = new System.Drawing.Size(120, 20);
-            this.RoleUserTB.TabIndex = 0;
+            this.RoleUserTB.Size = new System.Drawing.Size(300, 20);
+            this.RoleUserTB.TabIndex = 1;
             this.RoleUserTB.Text = "guest";
             //
             // AddIdentityBTN
             //
             this.AddIdentityBTN.Enabled = false;
-            this.AddIdentityBTN.Location = new System.Drawing.Point(129, 4);
+            this.AddIdentityBTN.Location = new System.Drawing.Point(425, 4);
             this.AddIdentityBTN.Name = "AddIdentityBTN";
             this.AddIdentityBTN.Size = new System.Drawing.Size(150, 23);
-            this.AddIdentityBTN.TabIndex = 1;
+            this.AddIdentityBTN.TabIndex = 2;
             this.AddIdentityBTN.Text = "Grant selected role";
             this.AddIdentityBTN.UseVisualStyleBackColor = true;
             this.AddIdentityBTN.Click += new System.EventHandler(this.AddIdentityBTN_ClickAsync);
@@ -384,32 +426,92 @@ namespace Quickstarts.RoleManagement.Client
             // RemoveIdentityBTN
             //
             this.RemoveIdentityBTN.Enabled = false;
-            this.RemoveIdentityBTN.Location = new System.Drawing.Point(285, 4);
+            this.RemoveIdentityBTN.Location = new System.Drawing.Point(581, 4);
             this.RemoveIdentityBTN.Name = "RemoveIdentityBTN";
             this.RemoveIdentityBTN.Size = new System.Drawing.Size(150, 23);
-            this.RemoveIdentityBTN.TabIndex = 2;
+            this.RemoveIdentityBTN.TabIndex = 3;
             this.RemoveIdentityBTN.Text = "Revoke selected role";
             this.RemoveIdentityBTN.UseVisualStyleBackColor = true;
             this.RemoveIdentityBTN.Click += new System.EventHandler(this.RemoveIdentityBTN_ClickAsync);
             //
             // NewRoleTB
             //
-            this.NewRoleTB.Location = new System.Drawing.Point(465, 6);
+            this.NewRoleTB.Location = new System.Drawing.Point(3, 34);
             this.NewRoleTB.Name = "NewRoleTB";
-            this.NewRoleTB.Size = new System.Drawing.Size(120, 20);
-            this.NewRoleTB.TabIndex = 3;
+            this.NewRoleTB.Size = new System.Drawing.Size(110, 20);
+            this.NewRoleTB.TabIndex = 4;
             this.NewRoleTB.Text = "Maintenance";
             //
             // AddRoleBTN
             //
             this.AddRoleBTN.Enabled = false;
-            this.AddRoleBTN.Location = new System.Drawing.Point(591, 4);
+            this.AddRoleBTN.Location = new System.Drawing.Point(119, 32);
             this.AddRoleBTN.Name = "AddRoleBTN";
             this.AddRoleBTN.Size = new System.Drawing.Size(130, 23);
-            this.AddRoleBTN.TabIndex = 4;
+            this.AddRoleBTN.TabIndex = 5;
             this.AddRoleBTN.Text = "Add role";
             this.AddRoleBTN.UseVisualStyleBackColor = true;
             this.AddRoleBTN.Click += new System.EventHandler(this.AddRoleBTN_ClickAsync);
+            //
+            // CustomConfigBTN
+            //
+            this.CustomConfigBTN.Enabled = false;
+            this.CustomConfigBTN.Location = new System.Drawing.Point(255, 32);
+            this.CustomConfigBTN.Name = "CustomConfigBTN";
+            this.CustomConfigBTN.Size = new System.Drawing.Size(220, 23);
+            this.CustomConfigBTN.TabIndex = 6;
+            this.CustomConfigBTN.Text = "Toggle CustomConfiguration";
+            this.CustomConfigBTN.UseVisualStyleBackColor = true;
+            this.CustomConfigBTN.Click += new System.EventHandler(this.CustomConfigBTN_ClickAsync);
+            //
+            // AuditGB
+            //
+            this.AuditGB.Controls.Add(this.AuditLV);
+            this.AuditGB.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.AuditGB.Location = new System.Drawing.Point(2, 462);
+            this.AuditGB.Name = "AuditGB";
+            this.AuditGB.Size = new System.Drawing.Size(880, 124);
+            this.AuditGB.TabIndex = 2;
+            this.AuditGB.TabStop = false;
+            this.AuditGB.Text = "Audit events reported by the server";
+            //
+            // AuditLV
+            //
+            this.AuditLV.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.AuditTimeCH,
+            this.AuditEventCH,
+            this.AuditSourceCH,
+            this.AuditMessageCH});
+            this.AuditLV.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.AuditLV.FullRowSelect = true;
+            this.AuditLV.HideSelection = false;
+            this.AuditLV.Location = new System.Drawing.Point(3, 16);
+            this.AuditLV.MultiSelect = false;
+            this.AuditLV.Name = "AuditLV";
+            this.AuditLV.Size = new System.Drawing.Size(874, 105);
+            this.AuditLV.TabIndex = 0;
+            this.AuditLV.UseCompatibleStateImageBehavior = false;
+            this.AuditLV.View = System.Windows.Forms.View.Details;
+            //
+            // AuditTimeCH
+            //
+            this.AuditTimeCH.Text = "Time";
+            this.AuditTimeCH.Width = 140;
+            //
+            // AuditEventCH
+            //
+            this.AuditEventCH.Text = "Event";
+            this.AuditEventCH.Width = 240;
+            //
+            // AuditSourceCH
+            //
+            this.AuditSourceCH.Text = "Source";
+            this.AuditSourceCH.Width = 200;
+            //
+            // AuditMessageCH
+            //
+            this.AuditMessageCH.Text = "Message";
+            this.AuditMessageCH.Width = 280;
             //
             // ConnectServerCTRL
             //
@@ -446,7 +548,7 @@ namespace Quickstarts.RoleManagement.Client
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(884, 616);
+            this.ClientSize = new System.Drawing.Size(884, 760);
             this.Controls.Add(this.MainPN);
             this.Controls.Add(this.ConnectServerCTRL);
             this.Controls.Add(this.IdentityPN);
@@ -468,6 +570,7 @@ namespace Quickstarts.RoleManagement.Client
             this.RolesGB.ResumeLayout(false);
             this.RolesButtonsPN.ResumeLayout(false);
             this.RolesButtonsPN.PerformLayout();
+            this.AuditGB.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -494,6 +597,7 @@ namespace Quickstarts.RoleManagement.Client
         private System.Windows.Forms.ColumnHeader NodeCH;
         private System.Windows.Forms.ColumnHeader ValueCH;
         private System.Windows.Forms.ColumnHeader StatusCH;
+        private System.Windows.Forms.ColumnHeader RestrictionsCH;
         private System.Windows.Forms.ColumnHeader PermissionsCH;
         private System.Windows.Forms.Panel NodesButtonsPN;
         private System.Windows.Forms.Button RefreshBTN;
@@ -504,13 +608,23 @@ namespace Quickstarts.RoleManagement.Client
         private System.Windows.Forms.ListView RolesLV;
         private System.Windows.Forms.ColumnHeader RoleCH;
         private System.Windows.Forms.ColumnHeader GrantedCH;
+        private System.Windows.Forms.ColumnHeader EndpointsCH;
+        private System.Windows.Forms.ColumnHeader CustomCH;
         private System.Windows.Forms.ColumnHeader IdentitiesCH;
         private System.Windows.Forms.Panel RolesButtonsPN;
+        private System.Windows.Forms.ComboBox CriteriaCB;
         private System.Windows.Forms.TextBox RoleUserTB;
         private System.Windows.Forms.Button AddIdentityBTN;
         private System.Windows.Forms.Button RemoveIdentityBTN;
         private System.Windows.Forms.TextBox NewRoleTB;
         private System.Windows.Forms.Button AddRoleBTN;
+        private System.Windows.Forms.Button CustomConfigBTN;
+        private System.Windows.Forms.GroupBox AuditGB;
+        private System.Windows.Forms.ListView AuditLV;
+        private System.Windows.Forms.ColumnHeader AuditTimeCH;
+        private System.Windows.Forms.ColumnHeader AuditEventCH;
+        private System.Windows.Forms.ColumnHeader AuditSourceCH;
+        private System.Windows.Forms.ColumnHeader AuditMessageCH;
         private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;
         private Opc.Ua.Client.Controls.HeaderBranding clientHeaderBranding1;
     }
