@@ -39,7 +39,6 @@ using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Samples.Client;
 using System.Threading.Tasks;
 using System.Threading;
-using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Sample.Controls
 {
