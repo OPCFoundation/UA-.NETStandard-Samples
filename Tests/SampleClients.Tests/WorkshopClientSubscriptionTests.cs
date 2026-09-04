@@ -365,6 +365,56 @@ namespace Opc.Ua.Samples.Tests
                 Is.True,
                 "Start is declared for Idle, so the client has to offer it once the machine " +
                 "has been powered on.");
+
+            // the client also reads the model of the machine - a row per state and per
+            // transition - which a server materializes only if it exposes AvailableStates and
+            // AvailableTransitions.
+            Assert.That(
+                HasRows(form, "ModelLV"),
+                Is.True,
+                "The StateMachines client did not read the states and transitions of the " +
+                "machine, so the server does not publish them.");
+
+            // Running has a machine of its own below it, which is suspended until the parent
+            // gets there: the client offers its cause only once it is active.
+            var startBatch = (Button)WinFormsHarness.FindControl(form, "StartBatchBTN");
+
+            Assert.That(
+                startBatch,
+                Is.Not.Null,
+                "The StateMachines client no longer has a 'StartBatchBTN'. Rename it here too.");
+
+            Assert.That(
+                startBatch.Enabled,
+                Is.False,
+                "The sub state machine is not active while the machine is Idle, so none of " +
+                "its causes may be offered.");
+
+            SampleFormDriver.TryInvokeHandler(form, "OperationCauseBTN_ClickAsync", start);
+
+            bool producing = await WaitAsync(() => startBatch.Enabled, ct).ConfigureAwait(true);
+
+            Assert.That(
+                producing,
+                Is.True,
+                "Entering Running has to activate the sub state machine, and the client has " +
+                "to offer the cause of the machine it activated.");
+
+            Control production = WinFormsHarness.FindControl(form, "ProductionStateTB");
+
+            Assert.That(
+                production,
+                Is.Not.Null,
+                "The StateMachines client no longer has a 'ProductionStateTB'. Rename it here too.");
+
+            bool loading = await WaitAsync(() => production.Text == "Loading", ct)
+                .ConfigureAwait(true);
+
+            Assert.That(
+                loading,
+                Is.True,
+                "The client has to show the state of the sub state machine, which starts over " +
+                $"in Loading whenever the parent enters Running. It showed '{production.Text}'.");
         }
 
         /// <summary>
