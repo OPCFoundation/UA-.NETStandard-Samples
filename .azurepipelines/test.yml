@@ -47,6 +47,34 @@ jobs:
       # results, so repeating them here makes dotnet test reject the command line.
       # No category is filtered out: the tier 2 client tests are tagged RequiresDesktop
       # and this job runs on a Windows agent, which is what they need.
-      arguments: '--no-build --configuration Release'
+      # --collect + --settings turn on the coverlet 'XPlat Code Coverage' data
+      # collector, which writes a coverage.cobertura.xml per test project. The
+      # exclusions (test and harness assemblies) live in coverlet.runsettings.xml.
+      arguments: '--no-build --configuration Release --collect:"XPlat Code Coverage" --settings $(Build.SourcesDirectory)/Tests/coverlet.runsettings.xml'
       publishTestResults: true
       testRunTitle: 'Sample smoke tests'
+  # Merge the per-project Cobertura fragments into a single report so the Code
+  # Coverage tab shows one consolidated result instead of one per test project.
+  - task: DotNetCoreCLI@2
+    displayName: Install ReportGenerator
+    inputs:
+      command: custom
+      custom: tool
+      arguments: install --tool-path $(Agent.TempDirectory)/tools dotnet-reportgenerator-globaltool
+  - task: PowerShell@2
+    displayName: Merge Code Coverage
+    inputs:
+      pwsh: true
+      targetType: inline
+      script: |
+        & '$(Agent.TempDirectory)/tools/reportgenerator' `
+          "-reports:$(Agent.TempDirectory)/**/coverage.cobertura.xml" `
+          "-targetdir:$(Build.SourcesDirectory)/CodeCoverage" `
+          "-reporttypes:Cobertura;HtmlInline_AzurePipelines" `
+          "-title:UA .NET Standard Samples Coverage" `
+          "-assemblyfilters:-*.Tests;-Samples.Tests.Common;-Samples.Servers.Hosting"
+  - task: PublishCodeCoverageResults@2
+    displayName: Publish Code Coverage
+    condition: succeededOrFailed()
+    inputs:
+      summaryFileLocation: '$(Build.SourcesDirectory)/CodeCoverage/Cobertura.xml'

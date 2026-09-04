@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- The test projects and their shared harness are not the code under
+               test; the samples are. Keep both out of the numbers. -->
+          <Exclude>[*.Tests]*,[Samples.Tests.Common]*,[Samples.Servers.Hosting]*</Exclude>
+          <!-- [Assembly-Filter]Type-Filter -->
+          <Include></Include>
+          <ExcludeByAttribute>ObsoleteAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/*.g.cs</ExcludeByFile>
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>false</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SkipAutoProps>true</SkipAutoProps>
+          <DeterministicReport>false</DeterministicReport>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
