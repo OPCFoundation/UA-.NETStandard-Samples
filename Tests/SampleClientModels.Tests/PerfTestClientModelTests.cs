@@ -142,6 +142,182 @@ namespace Opc.Ua.Samples.Tests
             Assert.That(Model.TakeMessages(), Is.Empty, "Taking the messages has to clear them, or the window shows them twice.");
         }
 
+        /// <summary>
+        /// The unbounded monitored item mode: one logical subscription holds more items
+        /// than a single server side subscription is allowed to, by spreading them over
+        /// partition subscriptions the caller never has to know about.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ABoundPerPartitionSpreadsTheItemsOverSeveralPartitions(CancellationToken ct)
+        {
+            // a bound far below the real limit of the server forces the split which a
+            // server with a low MaxMonitoredItemsPerSubscription would force by itself
+            Model.MaxMonitoredItemsPerPartition = 25;
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            PerfTestPartitionStatistics partitions = Model.ReadPartitions();
+
+            await TestContext.Out
+                .WriteLineAsync($"100 items landed in {partitions.PartitionCount} partition(s).")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                partitions.PartitionCount,
+                Is.GreaterThan(1),
+                "A bound of 25 items per partition did not split the 100 items of the test.");
+
+            // and the items really are monitored: the updates arrive, and from more than
+            // one server side subscription
+            PerfTestPartitionStatistics counted = await Poll.UntilAsync(
+                _ => {
+                    Model.ReadStatistics();
+                    return Task.FromResult(Model.ReadPartitions());
+                },
+                statistics => statistics.UpdatesPerPartition.Count > 1,
+                "updates arrived from at most one partition",
+                kUpdateTimeout,
+                ct: ct).ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    counted.UpdatesPerPartition.Select(partition => partition.Value),
+                    Has.All.GreaterThan(0),
+                    "A partition was reported which delivered no update at all.");
+                Assert.That(
+                    counted.UpdatesPerPartition.Select(partition => partition.Key).Distinct().Count(),
+                    Is.EqualTo(counted.UpdatesPerPartition.Count),
+                    "The same server side subscription id was reported twice.");
+            });
+        }
+
+        /// <summary>
+        /// The common case stays the fast path: a block of items which fits into one
+        /// server side subscription is not partitioned.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnItemCountBelowTheBoundStaysInOnePartition(CancellationToken ct)
+        {
+            Model.MaxMonitoredItemsPerPartition = 1000;
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            Assert.That(
+                Model.ReadPartitions().PartitionCount,
+                Is.EqualTo(1),
+                "100 items were split even though a thousand fit into one partition.");
+        }
+
+        /// <summary>
+        /// Affinity is the promise items which take part in a triggering relationship
+        /// depend on: <c>SetTriggering</c> is scoped to one server side subscription, so a
+        /// group which shares a tag must not be split across partitions.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnAffinityGroupIsKeptWithinOnePartition(CancellationToken ct)
+        {
+            // 100 items in groups of 10, into partitions of 20: two whole groups fill a
+            // partition exactly, so the next group starts the next one and nothing is left
+            // over. A bound which is a multiple of the group size is what makes that work.
+            Model.MaxMonitoredItemsPerPartition = 20;
+            Model.AffinityGroupSize = 10;
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            PerfTestPartitionStatistics partitions = Model.ReadPartitions();
+            string[] messages = Model.TakeMessages();
+
+            await TestContext.Out
+                .WriteLineAsync($"Ten affinity groups landed in {partitions.PartitionCount} partition(s).")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(partitions.PartitionCount, Is.GreaterThan(1), "The bound per partition did not split the items.");
+                Assert.That(
+                    messages,
+                    Has.None.Contains("refused"),
+                    "Groups of ten did not fill partitions of twenty cleanly: " + string.Join(" / ", messages));
+            });
+
+            await Poll.UntilAsync(
+                _ => Task.FromResult(Model.ReadStatistics()),
+                statistics => statistics.TotalItemUpdateCount > 0,
+                "no item update arrived",
+                kUpdateTimeout,
+                ct: ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// The strict half of the contract: a group is pinned to the partition its first
+        /// item landed in, and the engine refuses the rest of it rather than split it.
+        /// </summary>
+        /// <remarks>
+        /// This is the trap a caller has to plan around. A group is not placed as a unit -
+        /// the items arrive one at a time and the first one of a group decides its
+        /// partition - so a bound which is not a multiple of the group size lets a group
+        /// start near the end of a partition and lose its tail. 100 items in groups of ten
+        /// into partitions of 25 refuses fifteen of them.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AGroupWhichDoesNotFitTheRemainingSpaceIsRefused(CancellationToken ct)
+        {
+            Model.MaxMonitoredItemsPerPartition = 25;
+            Model.AffinityGroupSize = 10;
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            string[] messages = Model.TakeMessages();
+
+            await TestContext.Out
+                .WriteLineAsync("The tester logged: " + string.Join(" / ", messages))
+                .ConfigureAwait(false);
+
+            Assert.That(
+                messages,
+                Has.Some.Contains("refused"),
+                "A group was split across partitions instead of being refused, so the affinity contract was not kept.");
+        }
+
+        /// <summary>
+        /// A group larger than a whole partition can never be placed.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnAffinityGroupLargerThanAPartitionIsRefused(CancellationToken ct)
+        {
+            Model.MaxMonitoredItemsPerPartition = 10;
+            Model.AffinityGroupSize = 25;
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            string[] messages = Model.TakeMessages();
+
+            await TestContext.Out
+                .WriteLineAsync("The tester logged: " + string.Join(" / ", messages))
+                .ConfigureAwait(false);
+
+            Assert.That(
+                messages,
+                Has.Some.Contains("refused"),
+                "A group of twenty five was placed into partitions of ten, so the affinity contract was not kept.");
+        }
+
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ADetachedModelReportsNoPartitions(CancellationToken ct)
+        {
+            Assert.That(Model.ReadPartitions(), Is.EqualTo(PerfTestPartitionStatistics.Empty));
+
+            await AttachAsync(ct).ConfigureAwait(false);
+            await Model.StopAsync(ct).ConfigureAwait(false);
+
+            Assert.That(Model.ReadPartitions(), Is.EqualTo(PerfTestPartitionStatistics.Empty), "A stopped test still reports partitions.");
+        }
+
         [Test]
         [CancelAfter(kTimeout)]
         public async Task StopEndsTheTestButKeepsTheSession(CancellationToken ct)

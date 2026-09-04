@@ -36,6 +36,7 @@ using System.IO;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Samples.Client;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -390,6 +391,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 SessionSaveMI.Enabled = true;
                 SessionLoadMI.Enabled = true;
+                ExportNodeSetMI.Enabled = session.Connected;
                 SetLocaleMI.Enabled = true;
                 DeleteMI.Enabled = true;
                 ReadMI.Enabled = true;
@@ -1252,6 +1254,81 @@ namespace Opc.Ua.Sample.Controls
 
                 // remember file path.
                 m_filePath = dialog.FileName;
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+
+        /// <summary>
+        /// Writes the address space of the selected session to a NodeSet2 XML file.
+        /// </summary>
+        /// <remarks>
+        /// The client side of the NodeSet export browses the server, turns the
+        /// <see cref="INode"/> representations it collected into the node states the
+        /// NodeSet2 encoder understands and writes the file. The result imports with the
+        /// same NodeSet2 reader a server loads its model with, which is what makes this
+        /// useful for documenting or replaying the address space of a server.
+        /// </remarks>
+        private async void ExportNodeSetMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                ISession session = SelectedTag as ISession;
+
+                if (session == null || !session.Connected)
+                {
+                    return;
+                }
+
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
+                SaveFileDialog dialog = new SaveFileDialog();
+                #pragma warning restore CA2000
+
+                dialog.CheckFileExists = false;
+                dialog.CheckPathExists = true;
+                dialog.DefaultExt = ".xml";
+                dialog.Filter = "NodeSet2 Files (*.NodeSet2.xml)|*.NodeSet2.xml|XML Files (*.xml)|*.xml|All Files (*.*)|*.*";
+                dialog.ValidateNames = true;
+                dialog.Title = "Export the Address Space";
+                dialog.FileName = Utils.Format("{0}.NodeSet2.xml", session.SessionName);
+                dialog.RestoreDirectory = true;
+
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                // the whole address space below the Objects folder, values included: a
+                // sample export is a snapshot a user wants to read, not a type library.
+                var settings = new NodeSetExportSettings {
+                    StartNodeId = ObjectIds.ObjectsFolder,
+                    NodeOptions = NodeSetExportOptions.Complete,
+                };
+
+                Cursor = Cursors.WaitCursor;
+
+                NodeSetExportResult result;
+
+                try
+                {
+                    result = await NodeSetExport.ExportToFileAsync(session, dialog.FileName, settings);
+                }
+                finally
+                {
+                    Cursor = Cursors.Default;
+                }
+
+                MessageBox.Show(
+                    Utils.Format(
+                        "Exported {0} nodes of {1} namespace(s) to\r\n{2}",
+                        result.NodeCount,
+                        result.NamespaceUris.Count,
+                        result.FilePath),
+                    "Export the Address Space",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
             catch (Exception exception)
             {

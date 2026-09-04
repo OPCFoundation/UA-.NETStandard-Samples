@@ -47,6 +47,7 @@ namespace Opc.Ua.Sample.Controls
     // the V2 subscription engine reuses names the classic engine already has in the
     // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
     using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+    using SetTriggeringResult = Opc.Ua.Client.Subscriptions.SetTriggeringResult;
 
     public partial class MonitoredItemConfigCtrl : Opc.Ua.Client.Controls.BaseListCtrl
     {
@@ -90,6 +91,7 @@ namespace Opc.Ua.Sample.Controls
             new object[] { "Queue Size",                HorizontalAlignment.Center, null       },
             new object[] { "Revised Queue Size",        HorizontalAlignment.Center, null        },
             new object[] { "Discard Oldest",            HorizontalAlignment.Center, "True"     },
+            new object[] { "Triggered By",              HorizontalAlignment.Left,   ""         },
             new object[] { "Status",                    HorizontalAlignment.Left,   ""         },
         };
         #endregion
@@ -325,6 +327,9 @@ namespace Opc.Ua.Sample.Controls
                 EditMI.Enabled = ItemsLV.SelectedItems.Count == 1;
                 DeleteMI.Enabled = ItemsLV.SelectedItems.Count > 0;
                 SetMonitoringModeMI.Enabled = ItemsLV.SelectedItems.Count > 0;
+
+                // triggering links one item to others, so there has to be another one.
+                SetTriggeringMI.Enabled = ItemsLV.SelectedItems.Count == 1 && m_subscription.Items.Count > 1;
                 SetFilterMI.Enabled = ItemsLV.SelectedItems.Count == 1;
                 SetSamplingIntervalMI.Enabled = ItemsLV.SelectedItems.Count == 1;
                 MonitorMI.Enabled = ItemsLV.SelectedItems.Count == 1;
@@ -371,7 +376,8 @@ namespace Opc.Ua.Sample.Controls
 
             listItem.SubItems[11].Text = String.Format("{0}", revisedQueueSize);
             listItem.SubItems[12].Text = String.Format("{0}", settings.DiscardOldest);
-            listItem.SubItems[13].Text = String.Format("{0}", monitoredItem?.Error);
+            listItem.SubItems[13].Text = SetTriggeringDlg.GetTriggeredByDisplayText(m_subscription, handle);
+            listItem.SubItems[14].Text = String.Format("{0}", monitoredItem?.Error);
 
             listItem.ForeColor = Color.Gray;
 
@@ -547,6 +553,212 @@ namespace Opc.Ua.Sample.Controls
             catch (Exception exception)
             {
                 GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+
+        /// <summary>
+        /// Links the selected item to the items it should make report.
+        /// </summary>
+        /// <remarks>
+        /// Both halves of the triggering API of the V2 engine are here, because a
+        /// subscription dialog needs both. Items which already exist on the server go
+        /// through the imperative <c>SetTriggeringAsync</c>, which is the only path that
+        /// reports a status code per link and therefore the only one that can tell the user
+        /// that the server rejected one. Items which are only staged - the wizard collected
+        /// them but the engine has not created them yet - have no server side item to link,
+        /// so their intent is written declaratively into the <c>TriggeredByNames</c> of the
+        /// options they will be created with; the engine issues the <c>SetTriggering</c>
+        /// itself once both ends exist, and replays it after a reconnect or a recreate.
+        /// </remarks>
+        private async void SetTriggeringMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (m_subscription == null)
+                {
+                    return;
+                }
+
+                MonitoredItemHandle[] monitoredItems = (MonitoredItemHandle[])GetSelectedItems(typeof(MonitoredItemHandle));
+
+                if (monitoredItems.Length != 1)
+                {
+                    return;
+                }
+
+                MonitoredItemHandle triggeringItem = monitoredItems[0];
+
+                IList<MonitoredItemHandle> linksToAdd;
+                IList<MonitoredItemHandle> linksToRemove;
+
+                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
+                if (!new SetTriggeringDlg().ShowDialog(m_subscription, triggeringItem, out linksToAdd, out linksToRemove))
+                #pragma warning restore CA2000
+                {
+                    return;
+                }
+
+                // the imperative path needs both ends to exist on the server.
+                bool imperative = triggeringItem.Created;
+
+                var itemsToAdd = new List<IMonitoredItem>();
+                var itemsToRemove = new List<IMonitoredItem>();
+                var addedItems = new List<MonitoredItemHandle>();
+                var removedItems = new List<MonitoredItemHandle>();
+
+                foreach (MonitoredItemHandle handle in linksToAdd)
+                {
+                    if (imperative && handle.Created)
+                    {
+                        itemsToAdd.Add(handle.Item);
+                        addedItems.Add(handle);
+                    }
+                    else
+                    {
+                        Declare(handle, triggeringItem.Name, true);
+                    }
+                }
+
+                foreach (MonitoredItemHandle handle in linksToRemove)
+                {
+                    if (imperative && handle.Created)
+                    {
+                        itemsToRemove.Add(handle.Item);
+                        removedItems.Add(handle);
+                    }
+                    else
+                    {
+                        Declare(handle, triggeringItem.Name, false);
+                    }
+                }
+
+                if (itemsToAdd.Count > 0 || itemsToRemove.Count > 0)
+                {
+                    SetTriggeringResult result = await m_subscription.Subscription.SetTriggeringAsync(
+                        triggeringItem.Item,
+                        itemsToAdd,
+                        itemsToRemove);
+
+                    ReportTriggeringResult(triggeringItem, result, addedItems, removedItems);
+                }
+
+                await ApplyChangesAsync(false);
+            }
+            catch (ArgumentException exception)
+            {
+                // SetTriggering is scoped to one server side subscription (Part 4 §5.13.6),
+                // so a subscription which grew past the per subscription cap and was split
+                // over partitions cannot link an item in one partition to an item in
+                // another. Items which have to be linked are kept together by giving them
+                // the same MonitoredItemOptions.Affinity when they are created.
+                MessageBox.Show(
+                    "The items of this subscription are spread over more than one server side " +
+                    "subscription, and triggering only works within one of them.\r\n\r\n" +
+                    "Give the items which have to be linked the same MonitoredItemOptions.Affinity " +
+                    "when they are created, so the engine keeps them in one partition.\r\n\r\n" +
+                    exception.Message,
+                    "Set Triggering",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            catch (Exception exception)
+            {
+                GuiUtils.HandleException(Telemetry, this.Text, MethodBase.GetCurrentMethod(), exception);
+            }
+        }
+
+        /// <summary>
+        /// Adds or removes a triggering item name in the options a staged item will be
+        /// created with, which is the declarative half of the triggering API.
+        /// </summary>
+        private static void Declare(MonitoredItemHandle handle, string triggeringItemName, bool add)
+        {
+            handle.Configure(options => {
+                var names = new List<string>();
+
+                if (options.TriggeredByNames != null)
+                {
+                    names.AddRange(options.TriggeredByNames);
+                }
+
+                names.Remove(triggeringItemName);
+
+                if (add)
+                {
+                    names.Add(triggeringItemName);
+                }
+
+                return options with { TriggeredByNames = names };
+            });
+        }
+
+        /// <summary>
+        /// Reports the links the server refused.
+        /// </summary>
+        /// <remarks>
+        /// Per Part 4 §5.13.5.4 the per-link code to expect is <c>Bad_MonitoredItemIdInvalid</c>.
+        /// The engine rolls the desired state of a refused link back, so the grid keeps
+        /// showing what the server actually holds.
+        /// </remarks>
+        private void ReportTriggeringResult(
+            MonitoredItemHandle triggeringItem,
+            SetTriggeringResult result,
+            IList<MonitoredItemHandle> addedItems,
+            IList<MonitoredItemHandle> removedItems)
+        {
+            var errors = new List<string>();
+
+            if (result == null)
+            {
+                return;
+            }
+
+            if (StatusCode.IsBad(result.ServiceResult))
+            {
+                errors.Add(Utils.Format("SetTriggering: {0}", result.ServiceResult));
+            }
+
+            CollectTriggeringErrors(result.AddResults, addedItems, "link", errors);
+            CollectTriggeringErrors(result.RemoveResults, removedItems, "unlink", errors);
+
+            if (errors.Count > 0)
+            {
+                MessageBox.Show(
+                    Utils.Format(
+                        "The server refused part of the triggering request for {0}:\r\n\r\n{1}",
+                        triggeringItem.DisplayName,
+                        String.Join("\r\n", errors)),
+                    "Set Triggering",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Pairs the per link statuses with the items they were requested for; the engine
+        /// returns them in the order of the request.
+        /// </summary>
+        private static void CollectTriggeringErrors(
+            IReadOnlyList<(IMonitoredItem Item, StatusCode Status)> results,
+            IList<MonitoredItemHandle> handles,
+            string operation,
+            IList<string> errors)
+        {
+            if (results == null)
+            {
+                return;
+            }
+
+            for (int ii = 0; ii < results.Count; ii++)
+            {
+                if (StatusCode.IsGood(results[ii].Status))
+                {
+                    continue;
+                }
+
+                string name = (ii < handles.Count) ? handles[ii].DisplayName : results[ii].Item?.Name;
+
+                errors.Add(Utils.Format("Could not {0} {1}: {2}", operation, name, results[ii].Status));
             }
         }
 

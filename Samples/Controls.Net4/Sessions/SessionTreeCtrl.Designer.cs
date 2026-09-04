@@ -63,6 +63,7 @@ namespace Opc.Ua.Sample.Controls
             this.NewWindowMI = new System.Windows.Forms.ToolStripMenuItem();
             this.SessionSaveMI = new System.Windows.Forms.ToolStripMenuItem();
             this.SessionLoadMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.ExportNodeSetMI = new System.Windows.Forms.ToolStripMenuItem();
             this.DeleteMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Separator01 = new System.Windows.Forms.ToolStripSeparator();
             this.BrowseMI = new System.Windows.Forms.ToolStripMenuItem();
@@ -97,6 +98,7 @@ namespace Opc.Ua.Sample.Controls
             this.SetLocaleMI,
             this.SessionSaveMI,
             this.SessionLoadMI,
+            this.ExportNodeSetMI,
             this.DeleteMI,
             this.Separator01,
             this.BrowseMI,
@@ -133,6 +135,14 @@ namespace Opc.Ua.Sample.Controls
             this.SessionLoadMI.Size = new System.Drawing.Size(183, 22);
             this.SessionLoadMI.Text = "Load Subscriptions...";
             this.SessionLoadMI.Click += new System.EventHandler(this.SessionLoadMI_ClickAsync);
+            //
+            // ExportNodeSetMI
+            //
+            this.ExportNodeSetMI.Name = "ExportNodeSetMI";
+            this.ExportNodeSetMI.Size = new System.Drawing.Size(183, 22);
+            this.ExportNodeSetMI.Text = "Export NodeSet2...";
+            this.ExportNodeSetMI.ToolTipText = "Browses the address space of the server and writes it to a NodeSet2 XML file.";
+            this.ExportNodeSetMI.Click += new System.EventHandler(this.ExportNodeSetMI_ClickAsync);
             // 
             // DeleteMI
             // 
@@ -299,6 +309,7 @@ namespace Opc.Ua.Sample.Controls
         private System.Windows.Forms.ToolStripMenuItem SubscriptionMonitorMI;
         private System.Windows.Forms.ToolStripMenuItem SessionSaveMI;
         private System.Windows.Forms.ToolStripMenuItem SessionLoadMI;
+        private System.Windows.Forms.ToolStripMenuItem ExportNodeSetMI;
         private System.Windows.Forms.ToolStripMenuItem NewWindowMI;
         private System.Windows.Forms.ToolStripMenuItem BrowseObjectTypesMI;
         private System.Windows.Forms.ToolStripMenuItem BrowseVariableTypesMI;

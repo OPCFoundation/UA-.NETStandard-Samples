@@ -8,6 +8,7 @@
  * ======================================================================*/
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
@@ -44,6 +45,25 @@ namespace Quickstarts.PerfTestClient.Model
     }
 
     /// <summary>
+    /// How the monitored items of a running test are spread over the server side
+    /// subscriptions the V2 engine created for them.
+    /// </summary>
+    /// <param name="PartitionCount">How many server side subscriptions carry the items;
+    /// one while the whole block fits into a single subscription.</param>
+    /// <param name="UpdatesPerPartition">The item updates each partition delivered since
+    /// the test started, by the server side subscription id.</param>
+    public sealed record PerfTestPartitionStatistics(
+        int PartitionCount,
+        IReadOnlyList<KeyValuePair<uint, int>> UpdatesPerPartition)
+    {
+        /// <summary>
+        /// What a model which is not running reports.
+        /// </summary>
+        public static PerfTestPartitionStatistics Empty { get; } =
+            new PerfTestPartitionStatistics(0, Array.Empty<KeyValuePair<uint, int>>());
+    }
+
+    /// <summary>
     /// The client model of the PerfTest client: subscribes to a block of register items as
     /// soon as it is attached and counts the updates which arrive.
     /// </summary>
@@ -76,6 +96,30 @@ namespace Quickstarts.PerfTestClient.Model
         /// How many register items the subscription monitors. Set before attaching.
         /// </summary>
         public int ItemCount { get; set; } = 100;
+
+        /// <summary>
+        /// The upper bound of monitored items per server side partition subscription;
+        /// zero lets the engine discover the effective limit of the server. Set before
+        /// attaching.
+        /// </summary>
+        public int MaxMonitoredItemsPerPartition { get; set; }
+
+        /// <summary>
+        /// Whether the subscription stays bound to one server side subscription, so that
+        /// items beyond the server cap fail instead of moving to a new partition. Set
+        /// before attaching.
+        /// </summary>
+        public bool DisableUnboundedItemMode { get; set; }
+
+        /// <summary>
+        /// How many consecutive items share an affinity tag and are therefore guaranteed
+        /// to land in the same partition; zero for no affinity. Set before attaching.
+        /// </summary>
+        /// <remarks>
+        /// This is what items which take part in a triggering relationship need, because
+        /// <c>SetTriggering</c> is scoped to one server side subscription.
+        /// </remarks>
+        public int AffinityGroupSize { get; set; }
 
         /// <summary>
         /// Whether a test is running right now.
@@ -142,6 +186,23 @@ namespace Quickstarts.PerfTestClient.Model
             return m_tester?.GetMessages() ?? Array.Empty<string>();
         }
 
+        /// <summary>
+        /// How the items of the running test are spread over server side subscriptions.
+        /// </summary>
+        public PerfTestPartitionStatistics ReadPartitions()
+        {
+            Tester tester = m_tester;
+
+            if (tester == null)
+            {
+                return PerfTestPartitionStatistics.Empty;
+            }
+
+            tester.GetPartitions(out int partitionCount, out IReadOnlyList<KeyValuePair<uint, int>> updatesPerPartition);
+
+            return new PerfTestPartitionStatistics(partitionCount, updatesPerPartition);
+        }
+
         /// <inheritdoc/>
         protected override async Task OnAttachedAsync(CancellationToken ct)
         {
@@ -150,6 +211,9 @@ namespace Quickstarts.PerfTestClient.Model
             var tester = new Tester {
                 SamplingRate = SamplingRate,
                 ItemCount = ItemCount,
+                MaxMonitoredItemsPerPartition = MaxMonitoredItemsPerPartition,
+                DisableUnboundedItemMode = DisableUnboundedItemMode,
+                AffinityGroupSize = AffinityGroupSize,
             };
 
             await tester.StartAsync(RequireSession(), Telemetry).ConfigureAwait(false);

@@ -232,12 +232,24 @@
     <MaxTrustListSize>0</MaxTrustListSize>
     <MultiCastDnsEnabled>false</MultiCastDnsEnabled>
 
-    <!--  Reverse connection parameters for aggregation server sample -->
     <!--
+      Reverse connect: the server dials the client instead of waiting to be called, which is
+      what a firewall in front of the server forces. The Reference Client listens on the same
+      port and picks the connection up under Server > Reverse Connect; see Docs/ReverseConnect.md
+      and OPC UA Part 6, 7.1.3.
+
+      Port 65301 belongs to this pair. The aggregation server sample uses 65300 for the
+      connections it accepts, so the two can run side by side.
+
+      Until a client listens the server keeps offering a connection every ConnectInterval, which
+      is what the specification asks of a server: it has to maintain an available socket to each
+      configured client. Remove the ReverseConnectClient entry, or set Enabled to false, to stop
+      a server which nobody calls from retrying.
+    -->
     <ReverseConnect>
       <Clients>
         <ReverseConnectClient>
-          <EndpointUrl>opc.tcp://localhost:65300</EndpointUrl>
+          <EndpointUrl>opc.tcp://localhost:65301</EndpointUrl>
           <MaxSessionCount>0</MaxSessionCount>
           <Enabled>true</Enabled>
         </ReverseConnectClient>
@@ -246,7 +258,6 @@
       <ConnectTimeout>30000</ConnectTimeout>
       <RejectTimeout>60000</RejectTimeout>
     </ReverseConnect>
-    -->
 
     <OperationLimits>
       <MaxNodesPerRead>2500</MaxNodesPerRead>

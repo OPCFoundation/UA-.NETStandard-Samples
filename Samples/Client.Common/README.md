@@ -122,6 +122,14 @@ The Boiler client is the reference implementation; the Empty client is the templ
   answered.
 - `SampleSessionFactory`: opens the managed session the connect control opens, for callers
   without a window (the model tests).
+- `NodeSetExport`: browses a connected server and writes its address space to a NodeSet2 XML
+  file, which is what the `Export NodeSet2...` commands of the Reference Client and the UA
+  Sample Client run. `NodeSetExportSettings` decides how far the browse reaches and whether
+  the OPC UA namespace comes along; the stack does the writing.
+- `ReverseConnectListener`: the client half of a reverse connection - listens on the client
+  endpoints of the configuration and hands out the connections servers open to it, so a
+  session can be created on a socket the server opened. Used by
+  `Server > Reverse Connect` of the [Reference Client](../ReferenceClient/README.md).
 
 ## Testing a model
 
