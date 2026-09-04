@@ -31,13 +31,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using Opc.Ua.Client.FileSystem;
+using Opc.Ua.Samples.Client;
+using Quickstarts.FileTransferClient.Model;
 
 namespace Quickstarts.FileTransferClient
 {
@@ -46,18 +46,16 @@ namespace Quickstarts.FileTransferClient
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The client speaks to the server through <see cref="FileSystemClient"/>, the
-    /// <c>System.IO</c> shaped wrapper the SDK puts around the <c>FileType</c> /
-    /// <c>FileDirectoryType</c> model of OPC UA Part 5 Annex C and Part 20. Browsing,
-    /// reading, writing, creating and deleting all go through it - the sample never issues
-    /// a Call or a Read of its own.
+    /// The window owns the shared connect control and hands the session it opens to the
+    /// <see cref="FileTransferClientModel"/>, which browses, reads, writes, creates and
+    /// deletes through the file system client of the SDK. The window only keeps the tree
+    /// of directories the user opened, lists the entries of the selected one, and moves the
+    /// progress bar while a transfer runs.
     /// </para>
     /// <para>
-    /// Paths are never spelled out. The node manager of a server puts its file system in a
-    /// namespace of its own, so the path of an entry carries a namespace prefix whose index
-    /// only that server knows - <c>/2:SampleFiles/2:Reports</c> and not
-    /// <c>/SampleFiles/Reports</c>. The client therefore browses for what it wants and
-    /// keeps the <see cref="UaFileSystemInfo.FullPath"/> the server handed it.
+    /// The tree is the place the user browsed to, and it is kept across a reconnect: a
+    /// managed session keeps its <see cref="ISession"/>, so the paths the model handed out
+    /// stay valid and nothing has to be rebuilt.
     /// </para>
     /// </remarks>
     public partial class MainForm : Form
@@ -83,33 +81,31 @@ namespace Quickstarts.FileTransferClient
             this.Icon = ClientUtils.GetAppIcon();
             m_telemetry = telemetry;
 
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
+            ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62569/Quickstarts/FileTransferServer";
-            this.Text = m_configuration.ApplicationName;
+            this.Text = configuration.ApplicationName;
+
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new FileTransferClientModel(telemetry);
+            m_model.Error += Model_Error;
+
+            // Progress<T> reports on the thread it was created on, so the bar is moved
+            // from the transfer without the transfer knowing about the window
+            m_progress = new Progress<TransferProgress>(progress =>
+                ReportTransfer(progress.Copied, progress.Total, progress.What));
         }
         #endregion
 
         #region Private Fields
-        /// <summary>
-        /// The size of a single read or write while a file is transferred.
-        /// </summary>
-        /// <remarks>
-        /// The client chunks a transfer anyway - it never asks for more than the server
-        /// allows in one ByteString - so this only decides how often the progress bar moves.
-        /// </remarks>
-        private const int kTransferBufferSize = 32 * 1024;
-
         /// <summary>
         /// The text of the node which stands for the file system of the server.
         /// </summary>
         private const string kRootText = "FileSystem";
 
         private readonly ITelemetryContext m_telemetry;
-        private ApplicationConfiguration m_configuration;
-        private ISession m_session;
-        private FileSystemClient m_fileSystem;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed by CancelTransfers, which the form calls when it closes.")]
-        private CancellationTokenSource m_cancellation;
+        private readonly FileTransferClientModel m_model;
+        private readonly IProgress<TransferProgress> m_progress;
 
         /// <summary>
         /// Counts the directory listings which were started, so a listing can tell whether
@@ -155,10 +151,15 @@ namespace Quickstarts.FileTransferClient
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        /// <remarks>
+        /// The model is detached first: it stops the transfers before the control closes
+        /// the session.
+        /// </remarks>
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -189,15 +190,21 @@ namespace Quickstarts.FileTransferClient
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
 
-                if (m_session == null)
+                if (session == null)
                 {
+                    await m_model.DetachAsync();
                     Clear();
                     return;
                 }
 
-                await OpenFileSystemAsync();
+                Clear();
+
+                // the model opens the file system of the server while it attaches
+                await m_model.AttachAsync(session);
+
+                await ShowRootAsync();
             }
             catch (Exception exception)
             {
@@ -212,6 +219,7 @@ namespace Quickstarts.FileTransferClient
         {
             try
             {
+                m_model.NotifyReconnectStarting();
                 EnableCommands(false);
             }
             catch (Exception exception)
@@ -225,26 +233,16 @@ namespace Quickstarts.FileTransferClient
         /// </summary>
         /// <remarks>
         /// A managed session keeps its <see cref="ISession"/> across a reconnect, so the
-        /// file system client and the tree which was browsed with it are still valid and
-        /// the user keeps their place. Rebuilding them here would throw the tree away and
-        /// drop the selection back to the root every time the connection hiccups.
-        /// Only a session which really was replaced is worth starting over from.
+        /// file system client of the model and the tree which was browsed with it are still
+        /// valid and the user keeps their place. Rebuilding the tree here would throw it
+        /// away and drop the selection back to the root every time the connection hiccups.
         /// </remarks>
         private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
-                ISession session = ConnectServerCTRL.Session;
-
-                if (ReferenceEquals(session, m_session) && m_fileSystem != null)
-                {
-                    EnableCommands(true);
-                    return;
-                }
-
-                m_session = session;
-
-                await OpenFileSystemAsync();
+                await m_model.NotifyReconnectCompletedAsync();
+                EnableCommands(m_model.IsConnected);
             }
             catch (Exception exception)
             {
@@ -287,9 +285,9 @@ namespace Quickstarts.FileTransferClient
         /// </summary>
         private void EntriesLV_SelectedIndexChanged(object sender, EventArgs e)
         {
-            UaFileSystemInfo entry = SelectedEntry();
+            FileSystemEntry entry = SelectedEntry();
 
-            DownloadBTN.Enabled = entry is UaFileInfo;
+            DownloadBTN.Enabled = entry != null && !entry.IsDirectory;
             DeleteBTN.Enabled = entry != null;
         }
 
@@ -300,15 +298,20 @@ namespace Quickstarts.FileTransferClient
         {
             try
             {
-                UaFileSystemInfo entry = SelectedEntry();
+                FileSystemEntry entry = SelectedEntry();
 
-                if (entry is UaDirectoryInfo directory)
+                if (entry == null)
                 {
-                    await OpenSubdirectoryAsync(directory);
+                    return;
                 }
-                else if (entry is UaFileInfo file)
+
+                if (entry.IsDirectory)
                 {
-                    await DownloadAsync(file);
+                    await OpenSubdirectoryAsync(entry);
+                }
+                else
+                {
+                    await DownloadAsync(entry);
                 }
             }
             catch (Exception exception)
@@ -324,16 +327,7 @@ namespace Quickstarts.FileTransferClient
         {
             try
             {
-                TreeNode node = DirectoriesTV.SelectedNode;
-
-                if (node != null)
-                {
-                    ((DirectoryTag)node.Tag).Loaded = false;
-                    node.Nodes.Clear();
-
-                    await LoadSubdirectoriesAsync(node);
-                    await ShowDirectoryAsync(node);
-                }
+                await RefreshSelectedDirectoryAsync();
             }
             catch (Exception exception)
             {
@@ -348,9 +342,11 @@ namespace Quickstarts.FileTransferClient
         {
             try
             {
-                if (SelectedEntry() is UaFileInfo file)
+                FileSystemEntry entry = SelectedEntry();
+
+                if (entry != null && !entry.IsDirectory)
                 {
-                    await DownloadAsync(file);
+                    await DownloadAsync(entry);
                 }
             }
             catch (Exception exception)
@@ -381,7 +377,7 @@ namespace Quickstarts.FileTransferClient
         {
             try
             {
-                UaFileSystemInfo entry = SelectedEntry();
+                FileSystemEntry entry = SelectedEntry();
 
                 if (entry == null)
                 {
@@ -400,9 +396,7 @@ namespace Quickstarts.FileTransferClient
                     return;
                 }
 
-                // a directory the user picked may well have content, and the server removes
-                // it in one operation rather than the client walking the tree
-                await m_fileSystem.DeleteAsync(entry.FullPath, entry.IsDirectory, Token());
+                await m_model.DeleteAsync(entry.FullPath, entry.IsDirectory);
 
                 await RefreshSelectedDirectoryAsync();
             }
@@ -420,20 +414,16 @@ namespace Quickstarts.FileTransferClient
             try
             {
                 string name = NewFolderTB.Text.Trim();
+                string directory = CurrentDirectory();
 
-                if (name.Length == 0 || CurrentDirectory() == null)
+                if (name.Length == 0 || directory == null)
                 {
                     return;
                 }
 
-                // the server picks the namespace of the browse name, so the leaf of the path
-                // is handed over as a plain name
-                UaDirectoryInfo created = await m_fileSystem.CreateDirectoryAsync(
-                    UaPath.Combine(CurrentDirectory(), name),
-                    createIntermediate: false,
-                    Token());
+                string created = await m_model.CreateDirectoryAsync(directory, name);
 
-                Status($"Created {created.FullPath}.");
+                Status($"Created {created}.");
 
                 NewFolderTB.Text = string.Empty;
 
@@ -448,28 +438,39 @@ namespace Quickstarts.FileTransferClient
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; a transfer which is half way through is cancelled by that. Only then
+        /// does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            CancelTransfers();
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
+        }
+
+        /// <summary>
+        /// Reports a failure on a background path of the model.
+        /// </summary>
+        private void Model_Error(object sender, ModelErrorEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
         }
         #endregion
 
         #region Private Methods
         /// <summary>
-        /// Opens the file system of the server and shows its root.
+        /// Shows the root of the file system of the server.
         /// </summary>
-        private async Task OpenFileSystemAsync()
+        private async Task ShowRootAsync()
         {
-            Clear();
-
-            // the standard Server/FileSystem object, which is where a server publishes the
-            // directories it offers
-            m_fileSystem = FileSystemClient.OpenServerFileSystem(m_session);
-            m_cancellation = new CancellationTokenSource();
-
             var root = new TreeNode(kRootText) {
-                Tag = new DirectoryTag { Path = UaPath.Root },
+                Tag = new DirectoryTag { Path = FileTransferClientModel.RootPath },
             };
 
             DirectoriesTV.Nodes.Add(root);
@@ -507,8 +508,7 @@ namespace Quickstarts.FileTransferClient
 
             try
             {
-                await foreach (UaDirectoryInfo directory in
-                    m_fileSystem.EnumerateDirectoriesAsync(tag.Path, Token()))
+                foreach (DirectoryEntry directory in await m_model.ListDirectoriesAsync(tag.Path))
                 {
                     var child = new TreeNode(directory.Name) {
                         Tag = new DirectoryTag { Path = directory.FullPath },
@@ -558,9 +558,9 @@ namespace Quickstarts.FileTransferClient
             var tag = (DirectoryTag)node.Tag;
             var rows = new List<ListViewItem>();
 
-            await foreach (UaFileSystemInfo entry in m_fileSystem.EnumerateAsync(tag.Path, Token()))
+            foreach (FileSystemEntry entry in await m_model.ListEntriesAsync(tag.Path))
             {
-                rows.Add(await DescribeAsync(entry));
+                rows.Add(Describe(entry));
             }
 
             if (browse != m_browse)
@@ -588,29 +588,22 @@ namespace Quickstarts.FileTransferClient
         /// <summary>
         /// Turns an entry into the row which describes it.
         /// </summary>
-        /// <remarks>
-        /// The metadata of a file - its size, when it was last written, whether it may be
-        /// written at all - are properties of the FileType instance, and reading them is a
-        /// round trip of its own, which is what RefreshAsync does.
-        /// </remarks>
-        private static async Task<ListViewItem> DescribeAsync(UaFileSystemInfo entry)
+        private static ListViewItem Describe(FileSystemEntry entry)
         {
             var row = new ListViewItem(entry.Name) { Tag = entry };
 
-            if (entry is UaFileInfo file)
-            {
-                await file.RefreshAsync();
-
-                row.SubItems.Add("File");
-                row.SubItems.Add(file.Size.ToString(CultureInfo.CurrentCulture));
-                row.SubItems.Add(
-                    file.LastModifiedTime?.ToString(CultureInfo.CurrentCulture) ?? string.Empty);
-            }
-            else
+            if (entry.IsDirectory)
             {
                 row.SubItems.Add("Folder");
                 row.SubItems.Add(string.Empty);
                 row.SubItems.Add(string.Empty);
+            }
+            else
+            {
+                row.SubItems.Add("File");
+                row.SubItems.Add(entry.Size.ToString(CultureInfo.CurrentCulture));
+                row.SubItems.Add(
+                    entry.LastModified?.ToString(CultureInfo.CurrentCulture) ?? string.Empty);
             }
 
             row.SubItems.Add(entry.FullPath);
@@ -621,7 +614,7 @@ namespace Quickstarts.FileTransferClient
         /// <summary>
         /// Selects the tree node of a subdirectory of the current one.
         /// </summary>
-        private async Task OpenSubdirectoryAsync(UaDirectoryInfo directory)
+        private async Task OpenSubdirectoryAsync(FileSystemEntry directory)
         {
             TreeNode parent = DirectoriesTV.SelectedNode;
 
@@ -646,7 +639,7 @@ namespace Quickstarts.FileTransferClient
         /// <summary>
         /// Copies a file of the server into a file the user picks.
         /// </summary>
-        private async Task DownloadAsync(UaFileInfo file)
+        private async Task DownloadAsync(FileSystemEntry file)
         {
             using var dialog = new SaveFileDialog {
                 Title = "Download from the server",
@@ -659,21 +652,24 @@ namespace Quickstarts.FileTransferClient
                 return;
             }
 
-            await file.RefreshAsync(Token());
-
-            // the file is opened for reading on the server and read in chunks; a large file
-            // never has to fit into memory on either side
-            await using UaFileStream source = await file.OpenReadAsync(Token());
-
             using var target = new FileStream(
                 dialog.FileName,
                 FileMode.Create,
                 FileAccess.Write,
                 FileShare.None);
 
-            long copied = await CopyAsync(source, target, (long)file.Size, "Downloading");
+            BeginTransfer();
 
-            Status($"Downloaded {copied} bytes from {file.FullPath}.");
+            try
+            {
+                long copied = await m_model.DownloadAsync(file.FullPath, target, m_progress);
+
+                Status($"Downloaded {copied} bytes from {file.FullPath}.");
+            }
+            finally
+            {
+                EndTransfer();
+            }
         }
 
         /// <summary>
@@ -700,70 +696,26 @@ namespace Quickstarts.FileTransferClient
 
             var local = new FileInfo(dialog.FileName);
 
-            // creating the file and writing it are two steps: the server names the new node,
-            // and the path it answers with is the one the transfer then writes to
-            UaFileInfo file = await m_fileSystem.CreateFileAsync(
-                UaPath.Combine(directory, local.Name),
-                createIntermediate: false,
-                Token());
+            using var source = new FileStream(
+                local.FullName,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read);
 
-            await using (UaFileStream target = await file.OpenWriteAsync(Token()))
-            {
-                using var source = new FileStream(
-                    local.FullName,
-                    FileMode.Open,
-                    FileAccess.Read,
-                    FileShare.Read);
-
-                long copied = await CopyAsync(source, target, local.Length, "Uploading");
-
-                Status($"Uploaded {copied} bytes to {file.FullPath}.");
-            }
-
-            await RefreshSelectedDirectoryAsync();
-        }
-
-        /// <summary>
-        /// Copies one stream into the other and moves the progress bar while it does.
-        /// </summary>
-        /// <remarks>
-        /// Only the asynchronous members of <see cref="UaFileStream"/> are used: the
-        /// synchronous ones block on the asynchronous ones, which on the thread of a
-        /// Windows Forms application is a deadlock waiting to happen.
-        /// </remarks>
-        private async Task<long> CopyAsync(Stream source, Stream target, long total, string what)
-        {
-            byte[] buffer = new byte[kTransferBufferSize];
-            long copied = 0;
-
-            BeginTransfer(total, what);
+            BeginTransfer();
 
             try
             {
-                while (true)
-                {
-                    int read = await source.ReadAsync(buffer.AsMemory(), Token());
+                string created = await m_model.UploadAsync(directory, local.Name, source, local.Length, m_progress);
 
-                    if (read == 0)
-                    {
-                        break;
-                    }
-
-                    await target.WriteAsync(buffer.AsMemory(0, read), Token());
-
-                    copied += read;
-
-                    ReportTransfer(copied, total, what);
-                }
-
-                await target.FlushAsync(Token());
+                Status($"Uploaded {local.Length} bytes to {created}.");
             }
             finally
             {
                 EndTransfer();
             }
 
-            return copied;
+            await RefreshSelectedDirectoryAsync();
         }
 
         /// <summary>
@@ -798,11 +750,11 @@ namespace Quickstarts.FileTransferClient
         /// <summary>
         /// The entry which is currently selected in the list.
         /// </summary>
-        private UaFileSystemInfo SelectedEntry()
+        private FileSystemEntry SelectedEntry()
         {
             return EntriesLV.SelectedItems.Count == 0
                 ? null
-                : EntriesLV.SelectedItems[0].Tag as UaFileSystemInfo;
+                : EntriesLV.SelectedItems[0].Tag as FileSystemEntry;
         }
 
         /// <summary>
@@ -810,10 +762,6 @@ namespace Quickstarts.FileTransferClient
         /// </summary>
         private void Clear()
         {
-            CancelTransfers();
-
-            m_fileSystem = null;
-
             DirectoriesTV.Nodes.Clear();
             EntriesLV.Items.Clear();
 
@@ -821,50 +769,29 @@ namespace Quickstarts.FileTransferClient
             Status(string.Empty);
         }
 
-        /// <summary>
-        /// Stops a transfer which is still running and forgets its token source.
-        /// </summary>
-        private void CancelTransfers()
-        {
-            CancellationTokenSource cancellation = m_cancellation;
-
-            m_cancellation = null;
-
-            if (cancellation != null)
-            {
-                cancellation.Cancel();
-                cancellation.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// The token which stops the operations of this form when it closes.
-        /// </summary>
-        private CancellationToken Token()
-        {
-            return m_cancellation?.Token ?? CancellationToken.None;
-        }
-
         private void EnableCommands(bool enabled)
         {
             RefreshBTN.Enabled = enabled;
             UploadBTN.Enabled = enabled;
             NewFolderBTN.Enabled = enabled;
-            DownloadBTN.Enabled = enabled && SelectedEntry() is UaFileInfo;
+            DownloadBTN.Enabled = enabled && SelectedEntry() is { IsDirectory: false };
             DeleteBTN.Enabled = enabled && SelectedEntry() != null;
         }
 
-        private void BeginTransfer(long total, string what)
+        private void BeginTransfer()
         {
             TransferPB.Minimum = 0;
             TransferPB.Maximum = 100;
             TransferPB.Value = 0;
-
-            ReportTransfer(0, total, what);
         }
 
         private void ReportTransfer(long copied, long total, string what)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             TransferPB.Value = total <= 0
                 ? 100
                 : (int)Math.Min(100, copied * 100 / total);

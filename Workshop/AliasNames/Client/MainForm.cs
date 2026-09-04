@@ -8,52 +8,34 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
-using Opc.Ua.Client.AliasNames;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.Client;
+using Quickstarts.AliasNames.Client.Model;
 
 namespace Quickstarts.AliasNames.Client
 {
-    // The source generator emits a Quickstarts.AliasNames.BrowseNames for the model of the
-    // server. This namespace is a child of that one, so it would win over the standard set of
-    // the same name: both are named apart here.
-    using ModelNames = Quickstarts.AliasNames.BrowseNames;
-    using ObjectIds = Opc.Ua.ObjectIds;
-
     /// <summary>
     /// The main form of the OPC UA Part 17 alias names Quickstart client.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The form puts the two ways of finding a node side by side, because Part 17 only makes
-    /// sense as the difference between them.
+    /// The window owns the shared connect control and hands the session it opens to the
+    /// <see cref="AliasNamesClientModel"/>, which browses the plant, names its signals from
+    /// the alias inventory, and searches the categories. The window only renders what the
+    /// model found into its two lists, translates each button into one model call, and
+    /// puts the outcome into the status bar.
     /// </para>
     /// <para>
-    /// The upper list is the plant as an ordinary client sees it: the result of browsing down
-    /// from the Objects folder. Every row is a node found by structure, and its last column is
-    /// the tag name that node answers to - which the client did not browse for, because the
-    /// name is not in the address space. It asked an
-    /// <see cref="AliasNameResolver"/> to map the node back to a name.
-    /// </para>
-    /// <para>
-    /// The lower half is the search that runs the other way, and is the reason a client would
-    /// use Part 17 at all: given a name, or a wildcard over names, which nodes are meant? Pick
-    /// a category, type a pattern, and the server answers from an index it keeps beside the
-    /// address space. Nothing in the search knows how the plant is laid out.
-    /// </para>
-    /// <para>
-    /// The two mutation buttons show the other half of the specification: a tag list is
-    /// configuration, not a compile time constant. They are left enabled for every account on
-    /// purpose, because seeing the server answer <c>BadUserAccessDenied</c> to an anonymous
-    /// session is as much a part of the sample as seeing it succeed for an administrator.
+    /// The upper list is the plant as an ordinary client sees it, with the tag name of each
+    /// node in the last column; the lower half is the search that runs the other way. The
+    /// two mutation buttons are left enabled for every account on purpose, because seeing
+    /// the server refuse an anonymous session is as much a part of the sample as seeing it
+    /// succeed for an administrator.
     /// </para>
     /// </remarks>
     public partial class MainForm : Form
@@ -79,29 +61,41 @@ namespace Quickstarts.AliasNames.Client
             this.Icon = ClientUtils.GetAppIcon();
             m_telemetry = telemetry;
 
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
+            ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62577/Quickstarts/AliasNamesServer";
-            this.Text = m_configuration.ApplicationName;
+            this.Text = configuration.ApplicationName;
+
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new AliasNamesClientModel(telemetry);
+            m_model.Error += Model_Error;
 
             // the two accounts of the sample server. Which one is signed in decides only
             // whether the mutation Methods are allowed - searching is open to everyone.
-            IdentityCB.Items.AddRange(new object[] { kAnonymous, kSecurityAdmin });
+            foreach (string account in AliasNamesClientModel.Accounts)
+            {
+                IdentityCB.Items.Add(account);
+            }
+
             IdentityCB.SelectedIndex = 0;
             IdentityCB.SelectedIndexChanged += IdentityCB_SelectedIndexChanged;
 
             // the categories this client can search. The standard one needs no prior
             // knowledge of the server; the other three are this server's own.
-            CategoryCB.Items.AddRange(new object[] {
-                new CategoryChoice("TagVariables (standard, i=23479)", null),
-                new CategoryChoice("PlantTags (application defined)", AliasCategories.PlantTags),
-                new CategoryChoice("PlantTags/Reactor", AliasCategories.Reactor),
-                new CategoryChoice("PlantTags/Boiler", AliasCategories.Boiler),
-            });
+            foreach (AliasCategoryChoice category in AliasNamesClientModel.Categories)
+            {
+                CategoryCB.Items.Add(category);
+            }
 
             CategoryCB.SelectedIndex = 0;
 
             UpdateIdentityHint();
         }
+        #endregion
+
+        #region Private Fields
+        private readonly ITelemetryContext m_telemetry;
+        private readonly AliasNamesClientModel m_model;
         #endregion
 
         #region Event Handlers
@@ -123,10 +117,15 @@ namespace Quickstarts.AliasNames.Client
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        /// <remarks>
+        /// The model is detached first: it releases the resolver before the control closes
+        /// the session.
+        /// </remarks>
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -157,11 +156,7 @@ namespace Quickstarts.AliasNames.Client
         {
             try
             {
-                string account = IdentityCB.SelectedItem as string;
-
-                ConnectServerCTRL.UserIdentity = string.Equals(account, kAnonymous, StringComparison.Ordinal)
-                    ? null
-                    : new UserIdentity(account, Encoding.UTF8.GetBytes(account));
+                ConnectServerCTRL.UserIdentity = AliasNamesClientModel.IdentityFor(IdentityCB.SelectedItem as string);
 
                 UpdateIdentityHint();
             }
@@ -178,12 +173,11 @@ namespace Quickstarts.AliasNames.Client
         {
             try
             {
-                await ReleaseResolverAsync().ConfigureAwait(true);
+                ISession session = ConnectServerCTRL.Session;
 
-                m_session = ConnectServerCTRL.Session;
-
-                if (m_session == null)
+                if (session == null)
                 {
+                    await m_model.DetachAsync();
                     PlantLV.Items.Clear();
                     AliasLV.Items.Clear();
                     LastChangeLB.Text = string.Empty;
@@ -191,19 +185,12 @@ namespace Quickstarts.AliasNames.Client
                     return;
                 }
 
-                // the reverse mapping of the upper list. The standard category holds every tag
-                // of the plant, so one resolver over it answers for the whole address space.
-                //
-                // The refresh mode is left at its default, Manual: the resolver then loads the
-                // inventory once and reloads it when this form asks. The automatic modes are
-                // worth having when a server's tag list changes under a long lived client, but
-                // they cost a poll or a subscription, and this form re-reads on every refresh
-                // anyway.
-                m_resolver = new AliasNameResolver(AliasNameClient.OpenStandardTagVariables(m_session));
+                // the model opens its resolver over the standard category while it attaches
+                await m_model.AttachAsync(session);
 
                 SetButtonsEnabled(true);
 
-                await RefreshAsync().ConfigureAwait(true);
+                await RefreshAsync();
             }
             catch (Exception exception)
             {
@@ -218,6 +205,7 @@ namespace Quickstarts.AliasNames.Client
         {
             try
             {
+                m_model.NotifyReconnectStarting();
                 SetButtonsEnabled(false);
             }
             catch (Exception exception)
@@ -233,13 +221,13 @@ namespace Quickstarts.AliasNames.Client
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                await m_model.NotifyReconnectCompletedAsync();
 
-                SetButtonsEnabled(m_session != null);
+                SetButtonsEnabled(m_model.IsConnected);
 
-                if (m_session != null)
+                if (m_model.IsConnected)
                 {
-                    await RefreshAsync().ConfigureAwait(true);
+                    await RefreshAsync();
                 }
             }
             catch (Exception exception)
@@ -251,8 +239,13 @@ namespace Quickstarts.AliasNames.Client
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; only then does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
         }
 
@@ -263,7 +256,7 @@ namespace Quickstarts.AliasNames.Client
         {
             try
             {
-                await RefreshAsync().ConfigureAwait(true);
+                await RefreshAsync();
             }
             catch (Exception exception)
             {
@@ -276,7 +269,14 @@ namespace Quickstarts.AliasNames.Client
         /// </summary>
         private async void FindBTN_ClickAsync(object sender, EventArgs e)
         {
-            await SearchAsync(verbose: false).ConfigureAwait(true);
+            try
+            {
+                await SearchAsync(verbose: false);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
         }
 
         /// <summary>
@@ -284,7 +284,14 @@ namespace Quickstarts.AliasNames.Client
         /// </summary>
         private async void FindVerboseBTN_ClickAsync(object sender, EventArgs e)
         {
-            await SearchAsync(verbose: true).ConfigureAwait(true);
+            try
+            {
+                await SearchAsync(verbose: true);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
         }
 
         /// <summary>
@@ -294,9 +301,9 @@ namespace Quickstarts.AliasNames.Client
         {
             try
             {
-                if (m_session != null)
+                if (m_model.IsConnected)
                 {
-                    await SearchAsync(verbose: false).ConfigureAwait(true);
+                    await SearchAsync(verbose: false);
                 }
             }
             catch (Exception exception)
@@ -308,56 +315,31 @@ namespace Quickstarts.AliasNames.Client
         /// <summary>
         /// Gives the node selected in the plant list another tag name.
         /// </summary>
-        /// <remarks>
-        /// The target is taken from the upper list rather than typed, because that is the
-        /// realistic direction: an engineer looking at a signal decides what the control
-        /// system calls it. The name goes into whichever category is selected below.
-        /// </remarks>
         private async void AddAliasBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                if (m_session == null || PlantLV.SelectedItems.Count == 0)
+                if (!m_model.IsConnected)
                 {
-                    Report("Adding an alias", "select a node in the plant first");
                     return;
                 }
 
-                string name = NewAliasTB.Text?.Trim();
+                PlantEntry node = PlantLV.SelectedItems.Count == 0
+                    ? null
+                    : (PlantEntry)PlantLV.SelectedItems[0].Tag;
 
-                if (string.IsNullOrEmpty(name))
+                Outcome outcome = await m_model.AddAliasAsync(node, SelectedCategory(), NewAliasTB.Text);
+
+                Report(outcome);
+
+                if (!outcome.Failed)
                 {
-                    Report("Adding an alias", "type a tag name first");
-                    return;
+                    await RefreshAsync();
                 }
-
-                var node = (PlantRow)PlantLV.SelectedItems[0].Tag;
-
-                AliasNameClient category = OpenSelectedCategory();
-
-                var request = new AliasNameAddRequest(
-                    name,
-                    NodeId.ToExpandedNodeId(node.NodeId, m_session.NamespaceUris),
-
-                    // no server uri: the target is a node of the server being talked to
-                    null,
-
-                    // the Part 17 8.2 reference type which says "this name stands for that
-                    // node". A store may hold other reference types, but only this one is an
-                    // alias association.
-                    ReferenceTypeIds.AliasFor);
-
-                IReadOnlyList<StatusCode> results = await category
-                    .AddAliasesToCategoryAsync(new[] { request }, default)
-                    .ConfigureAwait(true);
-
-                Report($"Adding '{name}' for {node.Path}", results[0]);
-
-                await RefreshAsync().ConfigureAwait(true);
             }
             catch (Exception exception)
             {
-                ReportRefusal("Adding an alias", exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
 
@@ -368,30 +350,41 @@ namespace Quickstarts.AliasNames.Client
         {
             try
             {
-                if (m_session == null || AliasLV.SelectedItems.Count == 0)
+                if (!m_model.IsConnected)
                 {
-                    Report("Deleting an alias", "select a search result first");
                     return;
                 }
 
-                var alias = (AliasRow)AliasLV.SelectedItems[0].Tag;
+                AliasEntry alias = AliasLV.SelectedItems.Count == 0
+                    ? null
+                    : (AliasEntry)AliasLV.SelectedItems[0].Tag;
 
-                AliasNameClient category = OpenSelectedCategory();
+                Outcome outcome = await m_model.DeleteAliasAsync(alias, SelectedCategory());
 
-                IReadOnlyList<StatusCode> results = await category
-                    .DeleteAliasesFromCategoryAsync(
-                        new[] { new AliasNameDeleteRequest(alias.Name, alias.Target) },
-                        default)
-                    .ConfigureAwait(true);
+                Report(outcome);
 
-                Report($"Deleting '{alias.Name}'", results[0]);
-
-                await RefreshAsync().ConfigureAwait(true);
+                if (!outcome.Failed)
+                {
+                    await RefreshAsync();
+                }
             }
             catch (Exception exception)
             {
-                ReportRefusal("Deleting an alias", exception);
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
+        }
+
+        /// <summary>
+        /// Reports a failure on a background path of the model.
+        /// </summary>
+        private void Model_Error(object sender, ModelErrorEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
         }
         #endregion
 
@@ -401,65 +394,28 @@ namespace Quickstarts.AliasNames.Client
         /// </summary>
         private async Task RefreshAsync()
         {
-            if (m_session == null)
+            if (!m_model.IsConnected)
             {
                 return;
             }
 
             // the inventory may have changed, so the cached reverse mapping is dropped
-            m_resolver?.Invalidate();
+            m_model.Invalidate();
 
-            await LoadPlantAsync().ConfigureAwait(true);
-            await SearchAsync(verbose: false).ConfigureAwait(true);
-        }
-
-        /// <summary>
-        /// Fills the upper list by browsing the plant, and names each node from the alias
-        /// inventory.
-        /// </summary>
-        private async Task LoadPlantAsync()
-        {
             PlantLV.Items.Clear();
 
-            NodeId plantId = await ResolveModelNodeAsync(ModelNames.Plant).ConfigureAwait(true);
-
-            if (plantId.IsNull)
+            foreach (PlantEntry node in await m_model.LoadPlantAsync())
             {
-                return;
+                var item = new ListViewItem(node.Path) { Tag = node };
+
+                item.SubItems.Add(node.NodeId.ToString());
+                item.SubItems.Add(node.Value);
+                item.SubItems.Add(node.TagName);
+
+                PlantLV.Items.Add(item);
             }
 
-            foreach (ReferenceDescription unit in
-                await BrowseAsync(plantId, NodeClass.Object).ConfigureAwait(true))
-            {
-                NodeId unitId = ExpandedNodeId.ToNodeId(unit.NodeId, m_session.NamespaceUris);
-
-                foreach (ReferenceDescription signal in
-                    await BrowseAsync(unitId, NodeClass.Variable).ConfigureAwait(true))
-                {
-                    NodeId signalId = ExpandedNodeId.ToNodeId(signal.NodeId, m_session.NamespaceUris);
-
-                    var row = new PlantRow {
-                        Path = $"{unit.BrowseName.Name}/{signal.BrowseName.Name}",
-                        NodeId = signalId,
-                    };
-
-                    DataValue value = await ReadAsync(signalId).ConfigureAwait(true);
-
-                    var item = new ListViewItem(row.Path) { Tag = row };
-
-                    item.SubItems.Add(signalId.ToString());
-                    item.SubItems.Add(StatusCode.IsGood(value.StatusCode)
-                        ? value.WrappedValue.ToString()
-                        : value.StatusCode.ToString());
-
-                    // the column the sample is about: the node was found by structure, and
-                    // this is the name the alias inventory knows it by. Nothing was browsed
-                    // to get it - the name does not exist in the address space.
-                    item.SubItems.Add(await ResolveAliasNameAsync(signalId).ConfigureAwait(true));
-
-                    PlantLV.Items.Add(item);
-                }
-            }
+            await SearchAsync(verbose: false);
         }
 
         /// <summary>
@@ -467,332 +423,53 @@ namespace Quickstarts.AliasNames.Client
         /// </summary>
         private async Task SearchAsync(bool verbose)
         {
-            if (m_session == null)
+            if (!m_model.IsConnected)
             {
                 return;
             }
 
-            try
+            AliasLV.Items.Clear();
+
+            AliasSearchResult result = await m_model.SearchAsync(SelectedCategory(), PatternTB.Text, verbose);
+
+            LastChangeLB.Text = result.LastChange;
+
+            foreach (AliasEntry alias in result.Aliases)
             {
-                AliasLV.Items.Clear();
+                var item = new ListViewItem(alias.Name) { Tag = alias };
 
-                AliasNameClient category = OpenSelectedCategory();
+                item.SubItems.Add(alias.ResolvesTo);
+                item.SubItems.Add(alias.Value);
+                item.SubItems.Add(alias.Category);
+                item.SubItems.Add(alias.ServerUris);
 
-                string pattern = string.IsNullOrEmpty(PatternTB.Text) ? "%" : PatternTB.Text;
-
-                await ShowLastChangeAsync(category).ConfigureAwait(true);
-
-                if (verbose)
-                {
-                    IReadOnlyList<AliasNameVerboseDataType> found = await category
-                        .FindAliasVerboseAsync(pattern, null, default)
-                        .ConfigureAwait(true);
-
-                    foreach (AliasNameVerboseDataType alias in found)
-                    {
-                        await AddAliasRowAsync(
-                            alias.AliasName.Name,
-                            alias.ReferencedNodes.ToArray(),
-                            NameOfCategory(alias.AliasNameCategoryId),
-                            alias.ServerUris.ToArray()).ConfigureAwait(true);
-                    }
-
-                    Report($"FindAliasVerbose('{pattern}')", $"{found.Count} alias(es)");
-                }
-                else
-                {
-                    IReadOnlyList<AliasNameDataType> found = await category
-                        .FindAliasAsync(pattern, null, default)
-                        .ConfigureAwait(true);
-
-                    foreach (AliasNameDataType alias in found)
-                    {
-                        await AddAliasRowAsync(
-                            alias.AliasName.Name,
-                            alias.ReferencedNodes.ToArray(),
-
-                            // FindAlias does not say which category an entry came from, nor
-                            // whether its target is remote. That is what the verbose variant
-                            // is for, and the two empty columns are the difference.
-                            string.Empty,
-                            Array.Empty<string>()).ConfigureAwait(true);
-                    }
-
-                    Report($"FindAlias('{pattern}')", $"{found.Count} alias(es)");
-                }
+                AliasLV.Items.Add(item);
             }
-            catch (Exception exception)
-            {
-                ReportRefusal("Searching", exception);
-            }
+
+            Report(result.Outcome);
         }
 
         /// <summary>
-        /// Adds one search result to the lower list, with the value of its target.
+        /// The category picked in the drop down.
         /// </summary>
-        private async Task AddAliasRowAsync(
-            string name,
-            IReadOnlyList<ExpandedNodeId> targets,
-            string category,
-            IReadOnlyList<string> serverUris)
+        private AliasCategoryChoice SelectedCategory()
         {
-            ExpandedNodeId target = targets.Count > 0 ? targets[0] : ExpandedNodeId.Null;
-
-            var row = new AliasRow { Name = name, Target = target };
-
-            var item = new ListViewItem(name) { Tag = row };
-
-            if (target.IsNull)
-            {
-                item.SubItems.Add(string.Empty);
-                item.SubItems.Add(string.Empty);
-            }
-            else
-            {
-                NodeId nodeId = ExpandedNodeId.ToNodeId(target, m_session.NamespaceUris);
-
-                item.SubItems.Add(nodeId.IsNull ? target.ToString() : nodeId.ToString());
-
-                // reading the target is what proves the search answered with a usable
-                // address rather than just a matching string
-                DataValue value = nodeId.IsNull
-                    ? DataValue.FromStatusCode(StatusCodes.BadNodeIdUnknown)
-                    : await ReadAsync(nodeId).ConfigureAwait(true);
-
-                item.SubItems.Add(StatusCode.IsGood(value.StatusCode)
-                    ? value.WrappedValue.ToString()
-                    : value.StatusCode.ToString());
-            }
-
-            item.SubItems.Add(category);
-            item.SubItems.Add(string.Join(
-                ", ",
-                serverUris.Where(uri => !string.IsNullOrEmpty(uri))));
-
-            AliasLV.Items.Add(item);
+            return (AliasCategoryChoice)CategoryCB.SelectedItem;
         }
 
         /// <summary>
-        /// Shows the VersionTime of the selected category, or why there is none.
+        /// Puts the outcome of an operation into the status bar.
         /// </summary>
         /// <remarks>
-        /// Part 17 §6.3.1. A client which caches an inventory watches this instead of
-        /// re-reading the whole list: it changes whenever the category does. A category
-        /// which does not expose the property at all - the well known ones of a server
-        /// which does not materialize its store - reports none, which is itself worth
-        /// seeing in the field.
+        /// The status bar rather than a message box: half the point of this sample is
+        /// trying an operation as one account after another and comparing the answers,
+        /// and a modal dialog between every click makes that tedious. It also keeps the
+        /// buttons drivable from a test.
         /// </remarks>
-        private async Task ShowLastChangeAsync(AliasNameClient category)
+        private void Report(Outcome outcome)
         {
-            try
-            {
-                uint? lastChange = await category.ReadLastChangeAsync(default).ConfigureAwait(true);
-
-                LastChangeLB.Text = lastChange.HasValue
-                    ? $"LastChange {lastChange.Value}"
-                    : "no LastChange";
-            }
-            catch (Exception)
-            {
-                LastChangeLB.Text = "no LastChange";
-            }
-        }
-
-        /// <summary>
-        /// The alias name of a node, or an empty cell when the inventory does not name it.
-        /// </summary>
-        private async Task<string> ResolveAliasNameAsync(NodeId nodeId)
-        {
-            if (m_resolver == null)
-            {
-                return string.Empty;
-            }
-
-            try
-            {
-                return await m_resolver
-                    .ResolveAliasNameAsync(NodeId.ToExpandedNodeId(nodeId, m_session.NamespaceUris), default)
-                    .ConfigureAwait(true)
-                    ?? string.Empty;
-            }
-            catch (Exception)
-            {
-                // a node the inventory does not cover is an ordinary outcome, not an error
-                return string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// Opens the category selected in the drop down.
-        /// </summary>
-        /// <remarks>
-        /// The standard entry costs no round trip at all - <c>OpenStandardTagVariables</c>
-        /// knows the NodeId of the category and of its FindAlias Method from Part 17 §9.3.
-        /// An application defined category is addressed by the namespace uri and identifier
-        /// the server publishes it under.
-        /// </remarks>
-        private AliasNameClient OpenSelectedCategory()
-        {
-            var choice = (CategoryChoice)CategoryCB.SelectedItem;
-
-            if (choice.CategoryName == null)
-            {
-                return AliasNameClient.OpenStandardTagVariables(m_session);
-            }
-
-            return new AliasNameClient(
-                m_session,
-                AliasCategories.NodeIdOf(choice.CategoryName, m_session.NamespaceUris));
-        }
-
-        /// <summary>
-        /// The readable name of a category NodeId reported by a verbose search.
-        /// </summary>
-        private static string NameOfCategory(NodeId categoryId)
-        {
-            if (categoryId.IsNull)
-            {
-                return string.Empty;
-            }
-
-            // the categories of this server carry their name as a string identifier, which
-            // reads better in a column than the whole node id
-            return categoryId.IdentifierAsString;
-        }
-
-        /// <summary>
-        /// Follows one browse name of the model from the Objects folder.
-        /// </summary>
-        private async Task<NodeId> ResolveModelNodeAsync(string browseName)
-        {
-            var wellKnownNamespaceUris = new NamespaceTable();
-            wellKnownNamespaceUris.Append(Quickstarts.AliasNames.Namespaces.AliasNames);
-
-            List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
-                m_session,
-                ObjectIds.ObjectsFolder,
-                wellKnownNamespaceUris,
-                default,
-                "1:" + browseName).ConfigureAwait(true);
-
-            return nodes.Count > 0 ? nodes[0] : NodeId.Null;
-        }
-
-        /// <summary>
-        /// Browses the hierarchical children of a node of one node class.
-        /// </summary>
-        private async Task<IReadOnlyList<ReferenceDescription>> BrowseAsync(NodeId nodeId, NodeClass nodeClass)
-        {
-            var browse = new BrowseDescription {
-                NodeId = nodeId,
-                BrowseDirection = BrowseDirection.Forward,
-                ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
-                IncludeSubtypes = true,
-                NodeClassMask = (uint)nodeClass,
-                ResultMask = (uint)BrowseResultMask.All,
-            };
-
-            BrowseResponse response = await m_session
-                .BrowseAsync(null, null, 0, new List<BrowseDescription> { browse }, default)
-                .ConfigureAwait(true);
-
-            return response.Results.ToArray()[0].References.ToArray();
-        }
-
-        /// <summary>
-        /// Reads the value of a node without throwing on a bad status code.
-        /// </summary>
-        private async Task<DataValue> ReadAsync(NodeId nodeId)
-        {
-            var valuesToRead = new List<ReadValueId> {
-                new ReadValueId { NodeId = nodeId, AttributeId = Attributes.Value },
-            };
-
-            ReadResponse response = await m_session
-                .ReadAsync(null, 0, TimestampsToReturn.Both, valuesToRead, default)
-                .ConfigureAwait(true);
-
-            return response.Results.ToArray()[0];
-        }
-
-        /// <summary>
-        /// Disposes the resolver of the previous session.
-        /// </summary>
-        private async Task ReleaseResolverAsync()
-        {
-            if (m_resolver != null)
-            {
-                AliasNameResolver resolver = m_resolver;
-                m_resolver = null;
-
-                await resolver.DisposeAsync().ConfigureAwait(true);
-            }
-        }
-
-        /// <summary>
-        /// Disposes the resolver from a synchronous context, for the form's own Dispose.
-        /// </summary>
-        /// <remarks>
-        /// Disposal of a resolver in the Manual refresh mode this client uses completes
-        /// without doing any I/O - there is no timer and no subscription to unwind - so
-        /// waiting for it here does not block on the server. It is documented as idempotent
-        /// and as never throwing, and a form which is being torn down has no way to report a
-        /// failure anyway.
-        /// </remarks>
-        private void ReleaseResolver()
-        {
-            AliasNameResolver resolver = m_resolver;
-            m_resolver = null;
-
-            resolver?.DisposeAsync().AsTask().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Reports what the server answered to an operation the user asked for.
-        /// </summary>
-        private void Report(string what, StatusCode status)
-        {
-            ActionStatusLB.Text = $"{what} answered {status}";
-            ActionStatusLB.ForeColor = StatusCode.IsGood(status) ? Color.Empty : Color.Red;
-        }
-
-        /// <summary>
-        /// Reports a plain message.
-        /// </summary>
-        private void Report(string what, string outcome)
-        {
-            ActionStatusLB.Text = $"{what}: {outcome}";
-            ActionStatusLB.ForeColor = Color.Empty;
-        }
-
-        /// <summary>
-        /// Reports why the alias name client refused or could not complete a call.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// <see cref="AliasNameClient"/> maps the Part 17 status codes onto ordinary .NET
-        /// exceptions, so the refusals this sample is meant to show up arrive as
-        /// <see cref="UnauthorizedAccessException"/> and
-        /// <see cref="NotSupportedException"/> rather than as status codes.
-        /// </para>
-        /// <para>
-        /// They go into the status bar rather than a message box: half the point of this
-        /// sample is trying an operation as one account after another and comparing the
-        /// answers, and a modal dialog between every click makes that tedious. It also keeps
-        /// the buttons drivable from a test.
-        /// </para>
-        /// </remarks>
-        private void ReportRefusal(string what, Exception exception)
-        {
-            string outcome = exception switch {
-                UnauthorizedAccessException => "refused - this needs the SecurityAdmin role on an encrypted channel",
-                NotSupportedException => "this category does not expose that method",
-                ServiceResultException service => service.StatusCode.ToString(),
-                _ => exception.Message,
-            };
-
-            ActionStatusLB.Text = $"{what}: {outcome}";
-            ActionStatusLB.ForeColor = Color.Red;
+            ActionStatusLB.Text = outcome.Text;
+            ActionStatusLB.ForeColor = outcome.Failed ? Color.Red : Color.Empty;
         }
 
         /// <summary>
@@ -812,64 +489,8 @@ namespace Quickstarts.AliasNames.Client
         /// </summary>
         private void UpdateIdentityHint()
         {
-            IdentityHintLB.Text = string.Equals(
-                IdentityCB.SelectedItem as string,
-                kSecurityAdmin,
-                StringComparison.Ordinal)
-                ? "SecurityAdmin: may add and delete aliases, over an encrypted channel."
-                : "Anonymous: may search the tag list, and is refused every change to it.";
+            IdentityHintLB.Text = AliasNamesClientModel.HintFor(IdentityCB.SelectedItem as string);
         }
-        #endregion
-
-        #region Private Types
-        /// <summary>
-        /// One entry of the category drop down.
-        /// </summary>
-        /// <param name="Label">What the user sees.</param>
-        /// <param name="CategoryName">
-        /// The identifier of one of the server's own categories, or <c>null</c> for the
-        /// standard TagVariables object.
-        /// </param>
-        private sealed record CategoryChoice(string Label, string CategoryName)
-        {
-            /// <inheritdoc/>
-            public override string ToString() => Label;
-        }
-
-        /// <summary>
-        /// One row of the plant list.
-        /// </summary>
-        private sealed class PlantRow
-        {
-            public string Path { get; init; }
-            public NodeId NodeId { get; init; }
-        }
-
-        /// <summary>
-        /// One row of the search results.
-        /// </summary>
-        private sealed class AliasRow
-        {
-            public string Name { get; init; }
-            public ExpandedNodeId Target { get; init; }
-        }
-        #endregion
-
-        #region Private Fields
-        /// <summary>
-        /// The entry of the identity drop down which opens an anonymous Session.
-        /// </summary>
-        private const string kAnonymous = "Anonymous";
-
-        /// <summary>
-        /// The account of the sample server which holds the SecurityAdmin Role.
-        /// </summary>
-        private const string kSecurityAdmin = "secadmin";
-
-        private readonly ApplicationConfiguration m_configuration;
-        private readonly ITelemetryContext m_telemetry;
-        private ISession m_session;
-        private AliasNameResolver m_resolver;
         #endregion
     }
 }
