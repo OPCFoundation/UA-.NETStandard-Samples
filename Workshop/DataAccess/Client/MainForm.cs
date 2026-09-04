@@ -844,8 +844,7 @@ namespace Quickstarts.DataAccessClient
             {
                 dialog.ShowDialog(
                     current,
-                    (value, ct) => m_model.WriteAsync(nodeId, Attributes.Value, value, ct),
-                    m_telemetry);
+                    (value, ct) => m_model.WriteAsync(nodeId, Attributes.Value, value, ct));
             }
         }
 

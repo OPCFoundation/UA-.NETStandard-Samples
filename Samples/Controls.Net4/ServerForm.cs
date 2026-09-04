@@ -35,8 +35,8 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
-using Opc.Ua.Samples.WinForms;
 
+using Opc.Ua.Samples.WinForms;
 using Opc.Ua.Server;
 using Opc.Ua.Client.Controls;
 

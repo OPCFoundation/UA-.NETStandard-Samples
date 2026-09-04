@@ -30,10 +30,10 @@
 using System;
 using System.Windows.Forms;
 using System.Reflection;
-using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {

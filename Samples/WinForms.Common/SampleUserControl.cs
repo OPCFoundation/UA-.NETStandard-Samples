@@ -37,7 +37,9 @@ namespace Opc.Ua.Samples.WinForms
         public IWindowFactory Windows => m_windows ??= WindowServices.RequireWindows(this);
 
         /// <inheritdoc/>
-        IWindowFactory IWindowFactoryConsumer.Windows
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public IWindowFactory AttachedWindows
         {
             get => m_windows;
             set => m_windows = value;

@@ -36,9 +36,9 @@ using System.Text;
 using System.Linq;
 using System.Windows.Forms;
 using System.Reflection;
-using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 using System.Threading;
 using System.Threading.Tasks;
 

@@ -107,7 +107,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         }
 
                         #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                        var identity = new Opc.Ua.Client.Controls.UserNamePasswordDlg().ShowDialog(m_gds.AdminCredentials, "Provide GDS Administrator Credentials");
+                        var identity = Windows.Create<Opc.Ua.Client.Controls.UserNamePasswordDlg>().ShowDialog(m_gds.AdminCredentials, "Provide GDS Administrator Credentials");
                         #pragma warning restore CA2000
 
                         if (identity != null)

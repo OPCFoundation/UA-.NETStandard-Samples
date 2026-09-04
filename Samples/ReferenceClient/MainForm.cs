@@ -66,9 +66,17 @@ namespace Quickstarts.ReferenceClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
+        /// <param name="telemetry">The telemetry of the sample.</param>
+        /// <param name="reverseConnectListeners">Creates the listener the Server menu
+        /// arms, one per wait.</param>
+        public MainForm(
+            ApplicationConfiguration configuration,
+            ITelemetryContext telemetry,
+            Func<ReverseConnectListener> reverseConnectListeners)
         {
             InitializeComponent();
+
+            m_reverseConnectListeners = reverseConnectListeners;
             ConnectServerCTRL.Configuration = m_configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62541/Quickstarts/ReferenceServer";
             this.Text = m_configuration.ApplicationName;
@@ -80,6 +88,7 @@ namespace Quickstarts.ReferenceClient
         private ApplicationConfiguration m_configuration;
         private ISession m_session;
         private ITelemetryContext m_telemetry;
+        private readonly Func<ReverseConnectListener> m_reverseConnectListeners;
 
         /// <summary>
         /// The listener for incoming server connections while the reverse connect of the
@@ -157,7 +166,7 @@ namespace Quickstarts.ReferenceClient
                     return;
                 }
 
-                var reverseConnect = new ReverseConnectListener(m_configuration, m_telemetry);
+                ReverseConnectListener reverseConnect = m_reverseConnectListeners();
                 var cts = new CancellationTokenSource();
 
                 // binding the listener is what can fail here - the port may be taken - so

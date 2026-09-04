@@ -36,9 +36,9 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Bindings;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {

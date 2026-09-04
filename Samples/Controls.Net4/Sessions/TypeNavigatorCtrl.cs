@@ -35,10 +35,10 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
-using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading.Tasks;
 using System.Threading;
 

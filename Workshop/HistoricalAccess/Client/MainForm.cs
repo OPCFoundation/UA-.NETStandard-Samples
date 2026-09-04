@@ -228,7 +228,7 @@ namespace Quickstarts.HistoricalAccess.Client
                     return;
                 }
 
-                using Opc.Ua.Client.Controls.SelectNodeDlg dialog = new Opc.Ua.Client.Controls.SelectNodeDlg();
+                using Opc.Ua.Client.Controls.SelectNodeDlg dialog = Windows.Create<Opc.Ua.Client.Controls.SelectNodeDlg>();
                 NodeId nodeId = await dialog.ShowDialogAsync(
                     m_model.Session,
                     Opc.Ua.ObjectIds.ObjectsFolder,

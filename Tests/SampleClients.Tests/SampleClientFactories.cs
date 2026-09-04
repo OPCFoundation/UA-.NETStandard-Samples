@@ -138,8 +138,9 @@ namespace Opc.Ua.Samples.Tests
                 Client("Views", services => services.AddViewsClient(), typeof(Quickstarts.ViewsClient.MainForm)),
 
                 // the reference client keeps its logic in the shared controls rather than in
-                // a client model, so it registers nothing of its own
-                Client("Reference", null, typeof(Quickstarts.ReferenceClient.MainForm)),
+                // a client model of its own; what it registers is the listener its Server menu
+                // arms.
+                Client("Reference", services => services.AddReferenceClient(), typeof(Quickstarts.ReferenceClient.MainForm)),
             };
 
             return clients.ToDictionary(client => client.Sample.Name, StringComparer.Ordinal);

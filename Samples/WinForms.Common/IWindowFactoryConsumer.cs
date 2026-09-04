@@ -16,16 +16,22 @@ namespace Opc.Ua.Samples.WinForms
     /// <remarks>
     /// The Windows Forms designer creates the controls of a form itself, with the
     /// parameterless constructor it writes into the generated code, so a control cannot
-    /// take the factory through its constructor. The form the container creates hands
-    /// it down its control tree instead - see
-    /// <see cref="WindowServices.AttachWindows"/> - and a control which is parented
-    /// later finds it by walking up to its form.
+    /// take the factory through its constructor. The form the container created hands it
+    /// down its control tree instead - see <see cref="WindowServices.AttachWindows"/> -
+    /// and a control which is parented later finds it by walking up to its form.
     /// </remarks>
     public interface IWindowFactoryConsumer
     {
         /// <summary>
-        /// The factory the form or control creates its windows with.
+        /// The factory the form or control was handed, or <c>null</c> while it has not
+        /// been handed one.
         /// </summary>
-        IWindowFactory Windows { get; set; }
+        /// <remarks>
+        /// This is the raw value, which is what lets the walk up a control tree ask a
+        /// parent whether it has one. Code which needs a window uses the <c>Windows</c>
+        /// property of <see cref="SampleForm"/> or <see cref="SampleUserControl"/>,
+        /// which finds it and says so when there is none.
+        /// </remarks>
+        IWindowFactory AttachedWindows { get; set; }
     }
 }

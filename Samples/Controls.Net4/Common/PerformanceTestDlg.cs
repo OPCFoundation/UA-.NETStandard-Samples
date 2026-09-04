@@ -41,10 +41,10 @@ using System.ServiceModel;
 using System.Runtime.Serialization;
 using System.Security.Cryptography.X509Certificates;
 using System.IO;
-using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading.Tasks;
 using Opc.Ua;
 

@@ -70,12 +70,10 @@ namespace Quickstarts.DataAccessClient
         /// </summary>
         /// <param name="current">The current value, whose type the new one has to have.</param>
         /// <param name="write">Writes the new value and returns the status the server answered.</param>
-        /// <param name="m_telemetry">The m_telemetry context of the client, for error reporting.</param>
         /// <returns>True if successful. False if the operation was cancelled.</returns>
         public bool ShowDialog(
             DataValue current,
-            Func<Variant, CancellationToken, Task<StatusCode>> write,
-            ITelemetryContext m_telemetry)
+            Func<Variant, CancellationToken, Task<StatusCode>> write)
         {
             m_value = current;
             m_write = write ?? throw new ArgumentNullException(nameof(write));

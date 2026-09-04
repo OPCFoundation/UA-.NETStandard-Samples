@@ -59,7 +59,9 @@ namespace Quickstarts.ReferenceClient
                         options.ApplicationType = ApplicationType.Client;
                         options.ApplicationName = "UA Reference Client";
                         options.ConfigurationFile = "Quickstarts.ReferenceClient.Config.xml";
-                    }),
+                    })
+                    // the parts the window is built on
+                    .AddReferenceClient(),
                 ExceptionDlg.Show);
         }
     }

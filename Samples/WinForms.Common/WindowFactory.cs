@@ -55,7 +55,7 @@ namespace Opc.Ua.Samples.WinForms
             }
             else if (window is IWindowFactoryConsumer consumer)
             {
-                consumer.Windows = this;
+                consumer.AttachedWindows = this;
             }
 
             return window;

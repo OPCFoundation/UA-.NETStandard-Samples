@@ -38,7 +38,7 @@ namespace Opc.Ua.Samples.WinForms
 
             if (control is IWindowFactoryConsumer consumer)
             {
-                consumer.Windows = windows;
+                consumer.AttachedWindows = windows;
             }
 
             foreach (Control child in control.Controls)
@@ -60,16 +60,16 @@ namespace Opc.Ua.Samples.WinForms
         {
             for (Control parent = control?.Parent; parent != null; parent = parent.Parent)
             {
-                if (parent is IWindowFactoryConsumer consumer && consumer.Windows != null)
+                if (parent is IWindowFactoryConsumer consumer && consumer.AttachedWindows != null)
                 {
-                    return consumer.Windows;
+                    return consumer.AttachedWindows;
                 }
             }
 
             // a dialog is not a child of the window which opened it.
             if (control is Form form && form.Owner is IWindowFactoryConsumer owner)
             {
-                return owner.Windows;
+                return owner.AttachedWindows;
             }
 
             return null;

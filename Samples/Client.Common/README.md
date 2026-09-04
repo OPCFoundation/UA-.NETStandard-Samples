@@ -19,14 +19,18 @@ over every `Model` namespace.
 The window owns the shared connect control and hands the session it opens to the model:
 
 ```csharp
-public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
+public MainForm(
+    ApplicationConfiguration configuration,
+    ITelemetryContext telemetry,
+    BoilerClientModel model)
 {
     InitializeComponent();
     ConnectServerCTRL.Configuration = configuration;
     ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62567/Quickstarts/BoilerServer";
 
-    // created on the thread of the window, so the model raises its events on this thread
-    m_model = new BoilerClientModel(telemetry);
+    // created by the container while this constructor runs, so on the thread of the
+    // window: that is the context the model captures for its events
+    m_model = model;
     m_model.ValueChanged += Model_ValueChanged;
     m_model.Error += Model_Error;
 }
