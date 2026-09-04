@@ -59,6 +59,7 @@ Use this table to quickly find the project that suits your needs. If you already
 | [GlobalDiscoveryClient](Samples/GDS/Client) | **Client** | Windows Forms GDS client. Use this to register applications, request CA-signed certificates, and manage trust lists via a running GDS server. |
 | [ConsoleLds](Samples/LDS/ConsoleServer) | **Server** | Cross-platform console Local Discovery Server built on `Opc.Ua.Lds.Server`. Servers register with it and clients call `FindServers` / `FindServersOnNetwork` against it. |
 | [Opc.Ua.Samples.Hosting](Samples/Hosting/README.md) | **Library** | The bootstrap every sample shares: dependency injection, the .NET Generic Host and file based logging. Read this first if you want to know how a sample starts up. |
+| [Opc.Ua.Samples.Client](Samples/Client.Common/README.md) | **Library** | The half of a sample client which talks OPC UA and knows nothing about the window: the base class of the client models, the session helpers they share and the pumps which turn subscription callbacks into events. Read this to see how a Workshop client is put together. |
 
 ### Quickstart Workshop Samples (`Workshop/`)
 

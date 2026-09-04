@@ -28,20 +28,24 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Security.Cryptography.X509Certificates;
-using System.Windows.Forms;
 using System.IO;
+using System.Windows.Forms;
+using AggregationClient.Model;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.Client;
 
 namespace AggregationClient
 {
     /// <summary>
     /// The main form for a simple Client application.
     /// </summary>
+    /// <remarks>
+    /// The window owns the shared connect control and the browse control, and hands the
+    /// session the connect control opens to the <see cref="AggregationClientModel"/>,
+    /// which is what the dialogs of this sample browse and change the session through.
+    /// </remarks>
     public partial class MainForm : Form
     {
         #region Constructors
@@ -58,25 +62,28 @@ namespace AggregationClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
+        /// <param name="telemetry">The telemetry context of the client.</param>
         public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
             m_telemetry = telemetry;
 
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
+            ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62541/AggregationServer";
-            this.Text = m_configuration.ApplicationName;
+            this.Text = configuration.ApplicationName;
+
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new AggregationClientModel(telemetry);
+            m_model.Error += Model_Error;
         }
         #endregion
 
         #region Private Fields
-        private ApplicationConfiguration m_configuration;
-        private ISession m_session;
-        private ITelemetryContext m_telemetry;
-        #endregion
-
-        #region Private Methods
+        private readonly ITelemetryContext m_telemetry;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
+        private readonly AggregationClientModel m_model;
         #endregion
 
         #region Event Handlers
@@ -98,10 +105,15 @@ namespace AggregationClient
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        /// <remarks>
+        /// The model is detached first: it releases what it holds of the session before
+        /// the control closes it.
+        /// </remarks>
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -132,10 +144,19 @@ namespace AggregationClient
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
 
-                // browse the instances in the server.
-                await BrowseCTRL.InitializeAsync(m_session, ObjectIds.ObjectsFolder, m_telemetry, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
+                if (session == null)
+                {
+                    await m_model.DetachAsync();
+                }
+                else
+                {
+                    await m_model.AttachAsync(session);
+                }
+
+                // browse the instances in the server. A null session clears the tree.
+                await BrowseCTRL.InitializeAsync(session, ObjectIds.ObjectsFolder, m_telemetry, default, ReferenceTypeIds.Organizes, ReferenceTypeIds.Aggregates);
             }
             catch (Exception exception)
             {
@@ -150,6 +171,7 @@ namespace AggregationClient
         {
             try
             {
+                m_model.NotifyReconnectStarting();
                 await BrowseCTRL.ChangeSessionAsync(null);
             }
             catch (Exception exception)
@@ -165,8 +187,8 @@ namespace AggregationClient
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
-                await BrowseCTRL.ChangeSessionAsync(m_session);
+                await m_model.NotifyReconnectCompletedAsync();
+                await BrowseCTRL.ChangeSessionAsync(ConnectServerCTRL.Session);
             }
             catch (Exception exception)
             {
@@ -177,8 +199,13 @@ namespace AggregationClient
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; only then does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
         }
 
@@ -235,6 +262,19 @@ namespace AggregationClient
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
+        }
+
+        /// <summary>
+        /// Reports a failure on a background path of the model.
+        /// </summary>
+        private void Model_Error(object sender, ModelErrorEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
         }
         #endregion
 

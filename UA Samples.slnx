@@ -96,6 +96,7 @@
     <Project Path="Samples/Controls.Net4/UA Sample Controls.csproj" Id="92ae819b-4938-4502-ac32-67063f9893cd" />
     <Project Path="Samples/Opc.Ua.Sample/Opc.Ua.Sample.csproj" />
     <Project Path="Samples/Hosting/Opc.Ua.Samples.Hosting.csproj" />
+    <Project Path="Samples/Client.Common/Opc.Ua.Samples.Client.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/Samples.Tests.Common/Samples.Tests.Common.csproj" />
@@ -105,6 +106,7 @@
     <Project Path="Tests/SampleServers.Tests/SampleServers.Tests.csproj" />
     <Project Path="Tests/SampleNodeManagers.Tests/SampleNodeManagers.Tests.csproj" />
     <Project Path="Tests/SampleClients.Tests/SampleClients.Tests.csproj" />
+    <Project Path="Tests/SampleClientModels.Tests/SampleClientModels.Tests.csproj" />
     <File Path="docs/TESTING.md" />
     <File Path="Tests/Directory.Build.props" />
   </Folder>

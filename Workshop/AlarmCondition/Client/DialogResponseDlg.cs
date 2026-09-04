@@ -30,7 +30,6 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using Opc.Ua;
 
 namespace Quickstarts.AlarmConditionClient
 {
@@ -51,23 +50,26 @@ namespace Quickstarts.AlarmConditionClient
 
         #region Public Interface
         /// <summary>
-        /// Prompts the user to enter a comment.
+        /// Prompts the user to pick one of the responses a dialog condition offers.
         /// </summary>
-        public int ShowDialog(DialogConditionState dialog)
+        /// <param name="prompt">The prompt of the dialog.</param>
+        /// <param name="options">The responses, in the order the server lists them.</param>
+        /// <returns>The index of the picked response, or -1 when the user cancelled.</returns>
+        public int ShowDialog(string prompt, IReadOnlyList<string> options)
         {
+            ArgumentNullException.ThrowIfNull(options);
+
             // set the prompt.
-            PromptLB.Text = Utils.Format("{0}", dialog.Prompt.Value);
+            PromptLB.Text = prompt;
 
             Dictionary<DialogResult, int> resultMapping = new Dictionary<DialogResult, int>();
 
             // configure the buttons.
-            LocalizedText[] options = dialog.ResponseOptionSet.Value.ToArray();
-
-            switch (options.Length)
+            switch (options.Count)
             {
                 case 1:
                 {
-                    OkBTN.Text = Utils.Format("{0}", options[0]);
+                    OkBTN.Text = options[0];
 
                     ButtonsPN.ColumnStyles[0].Width = 50;
                     ButtonsPN.ColumnStyles[1].Width = 0;
@@ -81,8 +83,8 @@ namespace Quickstarts.AlarmConditionClient
 
                 case 2:
                 {
-                    OkBTN.Text = Utils.Format("{0}", options[0]);
-                    Response2BTN.Text = Utils.Format("{0}", options[1]);
+                    OkBTN.Text = options[0];
+                    Response2BTN.Text = options[1];
 
                     ButtonsPN.ColumnStyles[0].Width = 33;
                     ButtonsPN.ColumnStyles[1].Width = 0;
@@ -97,9 +99,9 @@ namespace Quickstarts.AlarmConditionClient
 
                 case 3:
                 {
-                    OkBTN.Text = Utils.Format("{0}", options[0]);
-                    Response1BTN.Text = Utils.Format("{0}", options[1]);
-                    Response3BTN.Text = Utils.Format("{0}", options[2]);
+                    OkBTN.Text = options[0];
+                    Response1BTN.Text = options[1];
+                    Response3BTN.Text = options[2];
 
                     ButtonsPN.ColumnStyles[0].Width = 25;
                     ButtonsPN.ColumnStyles[1].Width = 25;
@@ -115,10 +117,10 @@ namespace Quickstarts.AlarmConditionClient
 
                 case 4:
                 {
-                    OkBTN.Text = Utils.Format("{0}", options[0]);
-                    Response1BTN.Text = Utils.Format("{0}", options[1]);
-                    Response2BTN.Text = Utils.Format("{0}", options[2]);
-                    Response3BTN.Text = Utils.Format("{0}", options[3]);
+                    OkBTN.Text = options[0];
+                    Response1BTN.Text = options[1];
+                    Response2BTN.Text = options[2];
+                    Response3BTN.Text = options[3];
 
                     ButtonsPN.ColumnStyles[0].Width = 20;
                     ButtonsPN.ColumnStyles[1].Width = 20;

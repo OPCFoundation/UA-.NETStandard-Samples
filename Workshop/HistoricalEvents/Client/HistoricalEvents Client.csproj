@@ -34,6 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
+    <ProjectReference Include="..\..\..\Samples\Client.Common\Opc.Ua.Samples.Client.csproj" />
     <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
     <ProjectReference Include="..\..\Common\Quickstart Library.csproj" />
   </ItemGroup>

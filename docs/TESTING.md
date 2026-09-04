@@ -9,20 +9,28 @@ automatically for every sample:
 Anything beyond that is out of scope. A sample that starts, serves its address space,
 and answers a browse/read is considered working.
 
-## The four tiers
+## The five tiers
 
 | Tier | What it proves | Needs a network? | Needs a desktop? | Runtime |
 |------|----------------|------------------|------------------|---------|
 | 0 — Configuration | Every `*.Config.xml` parses and validates; client URLs match their server's endpoint; ports don't collide | no | no | seconds |
 | 1 — Server smoke | Every sample server starts headless and answers a real OPC UA session (browse, read, sample-specific check) | localhost | no | ~1 min |
 | 1.5 — Node managers | Every sample node manager still does the thing it was written to demonstrate | localhost | no | ~1.5 min |
+| 1.7 — Client models | Every Workshop client model does what its window asks of it, driven without the window | localhost | no | ~2 min |
 | 2 — Client smoke | Every WinForms client builds its main form, connects to its own sample server, and completes its post-connect logic | localhost | yes | ~2-3 min |
 
 Tier 0 and Tier 1 run anywhere, including Linux agents for Tier 0. Tier 2 is Windows-only and
 is tagged `[Category("RequiresDesktop")]` so it can be excluded where there is no window
 station. CI runs all of them: the `Test Samples` job is on a Windows agent.
 
-Tier 1.5 is the odd one out and is worth explaining. The other three ask whether a sample
+Tier 1.7 is the client-side counterpart of tier 1.5. Since the Workshop clients keep their
+OPC UA logic in a `Model/<Sample>ClientModel` which never references Windows Forms (see
+[`Samples/Client.Common`](../Samples/Client.Common/README.md)), that logic can be attached to
+a managed session and driven directly - no STA thread, no message loop, no reflection into
+private handlers. Tier 2 still builds every form and connects it, because the wiring from
+the form to the model is the part only a form can prove.
+
+Tier 1.5 is the odd one out and is worth explaining. The others ask whether a sample
 works; this one asks whether it still does what it *means*. It exists because the sample node
 managers are due to be migrated, and a rewrite of a node manager is exactly the kind of change
 which leaves a server starting, browsing and reading perfectly while quietly dropping the
@@ -30,7 +38,7 @@ behaviour the sample was written to show. Tier 1 would not notice any of that.
 
 ### Why this works at all
 
-Three properties of the samples make headless testing cheap:
+Four properties of the samples make headless testing cheap:
 
 1. **Server `Main` methods are UI-free until the last line.** Every sample server registers
    itself through a composition root next to its entry point (`AddXServer()` in
@@ -48,6 +56,12 @@ Three properties of the samples make headless testing cheap:
    helper drives every client. No UI automation, no changes to the samples.
 3. **Endpoints are hard-coded and paired.** The client URL sits in `MainForm.cs`, the server
    endpoint in `*.Config.xml`. That pairing is machine-checkable, which is Tier 0's job.
+4. **Every Workshop client keeps its OPC UA logic in a model the tests can drive without a
+   window.** `Model/<Sample>ClientModel` derives from `SampleClientModel`, takes the session
+   through `AttachAsync`, and reports through properties and events. Nothing in a `Model`
+   namespace references Windows Forms - `ModelContractTests` checks that by reflection - so
+   Tier 1.7 attaches the model to a managed session on the sample server and asks it what
+   the window would ask.
 
 ## Layout
 
@@ -60,6 +74,7 @@ Tests/
   SampleConfiguration.Tests/   # Tier 0. No project references, no network.
   SampleServers.Tests/         # Tier 1. Starts the servers from Samples.Servers.Hosting.
   SampleNodeManagers.Tests/    # Tier 1.5. One fixture per node manager, over a real session.
+  SampleClientModels.Tests/    # Tier 1.7. One fixture per client model, over a managed session. No WinForms.
   SampleClients.Tests/         # Tier 2. References the sample *client* projects.
 ```
 
@@ -151,6 +166,7 @@ cannot miss.
 dotnet test Tests/SampleConfiguration.Tests
 dotnet test Tests/SampleServers.Tests
 dotnet test Tests/SampleNodeManagers.Tests
+dotnet test Tests/SampleClientModels.Tests
 dotnet test Tests/SampleClients.Tests
 ```
 
@@ -205,7 +221,7 @@ which had not caught up with the value types the 2.0 stack introduced (`ArrayOf<
 `DateTimeUtc`, `NodeId` as a struct, the `Variant.From` overloads); they were fixed rather
 than parked:
 
-| Sample | What was wrong |
+| Sample | What was wrong | - (not a Workshop client) |
 |--------|----------------|
 | `Workshop/DataAccess/Server` | `QuickstartNodeManager` unboxed the absent `DataType` attribute of an Object node straight into `NodeId`, now a struct, so every browse answered `BadUnexpectedError` |
 | `Workshop/HistoricalAccess/Server` | the archive stored `DateTimeUtc` timestamps in `DataTable` columns typed `DateTime` |
@@ -315,27 +331,27 @@ What each fixture pins down, in one line:
 |---|---|
 | Empty | The hand-built trigger, its 2x2 matrix property, and the sample's own reference type in both directions |
 | Boiler (Workshop) | The boiler from the node set and the one built in code; the simulation counts one below 100 and the other below 20 |
-| DataTypes | Custom structures with both encodings, an instance from a second node set carrying a value of a type from the first, a structured value surviving a write round trip, and a subscription reporting the current value |
-| Views | The same node browsed through two views shows two different sets of children |
-| SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing |
-| Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process |
-| NodeManagement | The four Part 4 §5.8 services over a real session: a client creates an object and a variable with attributes, gets a node id from the node manager or asks for one, is refused a duplicate browse name, a taken node id, a non-hierarchical reference and a parent outside the folder the sample opens, deletes what it added and is refused the model, references a node into a second folder and drops the reference again without deleting the node, sees the derived counter follow and a GeneralModelChangeEvent report the folder, and is refused everything on a node manager which never opted in |
-| RoleManagement | What a Part 18 Role is worth: an anonymous session browses the machine and is refused every value, an Observer reads but neither writes nor calls, an Operator does both, an Engineer sees a node an Observer cannot browse, UserRolePermissions reports what the session earns, the role configuration is refused to everyone but a SecurityAdmin on an encrypted channel, and a Role granted at runtime reaches an already open session |
+| DataTypes | Custom structures with both encodings, an instance from a second node set carrying a value of a type from the first, a structured value surviving a write round trip, and a subscription reporting the current value | `DataTypesClientModelTests` |
+| Views | The same node browsed through two views shows two different sets of children | `ViewsClientModelTests` |
+| SimpleEvents | The custom event type, its declared fields, both severities, and the cycle counter advancing | `SimpleEventsClientModelTests` |
+| Methods | Argument metadata, the two argument-validation refusals, the ramp, and replacing a running process | `MethodsClientModelTests` |
+| NodeManagement | The four Part 4 §5.8 services over a real session: a client creates an object and a variable with attributes, gets a node id from the node manager or asks for one, is refused a duplicate browse name, a taken node id, a non-hierarchical reference and a parent outside the folder the sample opens, deletes what it added and is refused the model, references a node into a second folder and drops the reference again without deleting the node, sees the derived counter follow and a GeneralModelChangeEvent report the folder, and is refused everything on a node manager which never opted in | `NodeManagementClientModelTests` |
+| RoleManagement | What a Part 18 Role is worth: an anonymous session browses the machine and is refused every value, an Observer reads but neither writes nor calls, an Operator does both, an Engineer sees a node an Observer cannot browse, UserRolePermissions reports what the session earns, the role configuration is refused to everyone but a SecurityAdmin on an encrypted channel, and a Role granted at runtime reaches an already open session | `RoleManagementClientModelTests` |
 | AliasNames | What a Part 17 index is worth: the standard TagVariables object answers FindAlias for the whole plant, a wildcard narrows it, a tag name resolves to the node the browse path leads to and back again, the materialized alias nodes carry an AliasFor reference which reaches that same node, the standard category answers the optional FindAliasVerbose it was given, the application-defined category tree is browsable below the standard Aliases object and its nested categories serve only their own unit, FindAliasVerbose names the category an entry came from, and the tag list is editable at runtime by a SecurityAdmin on an encrypted channel and by nobody else |
-| UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session |
-| PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused |
-| DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths |
-| AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area |
-| HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting and deleting with the modified history remembering it, annotations read and written, and which items are still being collected |
-| DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths, a set point written through to the underlying system |
-| AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area, a condition refresh replaying the retained dialogs |
-| HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting into the history, and which items are still being collected |
-| HistoricalEvents | The well tree, event history with continuation points, and the two refusals the sample declares |
+| UserAuthentication | UserAccessLevel computed per session, the write refused for anonymous, an unknown user refused a session | `UserAuthenticationClientModelTests` |
+| PerfTest | The register/offset arithmetic in the node id, nodes synthesized on demand, bounds refused | `PerfTestClientModelTests` |
+| DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths | `DataAccessClientModelTests` |
+| AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area | `AlarmConditionClientModelTests` |
+| HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting and deleting with the modified history remembering it, annotations read and written, and which items are still being collected | `HistoricalAccessClientModelTests` |
+| DataAccess | The segment tree, blocks browsable down to their tags, one block reachable through two paths, a set point written through to the underlying system | `DataAccessClientModelTests` |
+| AlarmCondition | The configured area tree, areas as notifiers of the server, alarms travelling from source to area, a condition refresh replaying the retained dialogs | `AlarmConditionClientModelTests` |
+| HistoricalAccess | Raw reads, continuation points, read-at-time, aggregates, inserting into the history, and which items are still being collected | `HistoricalAccessClientModelTests` |
+| HistoricalEvents | The well tree, event history with continuation points, and the two refusals the sample declares | `HistoricalEventsClientModelTests` |
 | Aggregation | The proxy root for the configured downstream server, and the pass through behind it: browsing the other server's address space, reading a static value, and a subscription forwarded downstream with its notifications coming back |
 | TestData | Static write round trip, simulated values while monitored, which single variable is archived, and the archive read back over an authenticated session |
 | MemoryBuffer | Tags synthesized from node ids, a buffer browsing into its tags, and the three creation refusals the custom monitored item makes |
 | Boiler (sample server) | Display names renamed after the unit, and the state machines of both boilers started by the node manager itself |
-| FileTransfer | The configured directory mounted below `Server/FileSystem`, the content the sample seeds, an upload/download/delete round trip, a streamed transfer of a file larger than one chunk, create/rename/remove of a directory, and a path which tries to leave the mount |
+| FileTransfer | The configured directory mounted below `Server/FileSystem`, the content the sample seeds, an upload/download/delete round trip, a streamed transfer of a file larger than one chunk, create/rename/remove of a directory, and a path which tries to leave the mount | `FileTransferClientModelTests` |
 
 The file transfer fixture is the one exception to "one fixture per node manager": that sample
 writes no node manager, it registers the one the SDK ships. What the fixture holds it to is
@@ -413,6 +429,37 @@ gives up, which is the difference between a failure that explains itself and one
 Nothing assumes it has seen the *first* event of a run either: the simulations have been going
 since the server started.
 
+## What Tier 1.7 checks today
+
+One fixture per Workshop client model, each starting its sample server once and opening a
+fresh managed session per test - the same kind of session the shared connect control opens,
+on the V2 subscription engine, which is why `TestClient.ConnectManagedAsync` exists next to
+the plain connect the other tiers use. A test creates the model the way the window does,
+attaches it to the session, calls what the window's buttons call, and waits on an
+`EventSink<T>` for what the window's handlers would have rendered.
+
+Three things about this tier which are not obvious from the code:
+
+- **There is no synchronization context**, so a model raises its events inline on the
+  publish worker of the engine. That is by design: a model posts to the context it was
+  created on (a window's message loop) and raises inline when there is none. The sink is
+  therefore thread safe, and it counts how many handlers are inside it at once - which is
+  how `AlarmConditionClientModelTests` proves that the condition list is now updated one
+  event at a time, in order. The one test of the marshalling itself is in
+  `EmptyClientModelTests`: a recording context stands in for the message loop and has to
+  see every event go through `Post`, never `Send`.
+- **The model is disposed before the session.** A model deletes its subscriptions on
+  detach, and closing a session which still carries one waits for the publish pipeline to
+  drain; the fixture base keeps that order so a teardown does not cost five seconds per test.
+- **`ModelContractTests` is the rule, not a smoke test.** Every type in a `Model` namespace
+  of every client is checked by reflection for a field, property, event, parameter or
+  return type from `System.Windows.Forms`, `System.Drawing` or the shared control library.
+  The models live in the same assembly as their window, so nothing else enforces it. It
+  also fails for a client without a model, so a new sample cannot be copied from the
+  template and quietly grow its logic back into the form.
+
+The per-client table under Tier 2 says what each fixture drives.
+
 ## What Tier 2 checks today
 
 55 test cases, about two and a half minutes, Windows only. For each WinForms sample client
@@ -459,26 +506,26 @@ button once.
 So every sample client which has a control now has one test which presses it and asserts what
 the sample exists to show:
 
-| Client | What is driven | What is asserted | Where |
-|--------|----------------|------------------|-------|
-| AlarmCondition | opens the audit event window | a condition reaches the display | `WorkshopClientSubscriptionTests` |
-| Boiler | connects | the drum level of the selected boiler arrives | `WorkshopClientSubscriptionTests` |
-| DataAccess | monitors a value | the value column of the monitored item list fills | `WorkshopClientSubscriptionTests` |
-| DataTypes | walks the browse tree to the parking lot's primary vehicle and selects it | the value shows the structure decoded into its fields, the ones the *derived* type adds included | `SampleClientActionTests` |
-| FileTransfer | selects and expands a directory, then reports a completed reconnect | the selected node is still the same node object and the tree did not change size | `FileTransferClientTests` |
-| Gds | connects both of its clients, registers with the directory and reads the registration back | the registration round trips and the server status panel fills itself | `GdsClientTests` |
-| HistoricalAccess | points the history control at a recorded archive item and presses Go | the grid fills with the recorded values | `SampleClientActionTests` |
-| HistoricalEvents | connects | a live event reaches the list | `WorkshopClientSubscriptionTests` |
-| Methods | connects | the current state of the process arrives | `WorkshopClientSubscriptionTests` |
-| NodeManagement | adds an object, references it into the group, drops the reference, deletes the node | each of the four services changed the list it is supposed to change - and dropping the reference left the node where it was | `NodeManagementClientTests` |
-| PerfTest | connects, then presses Stop | the item update count leaves zero, and Stop ends the run | `SampleClientActionTests` |
-| Reference | browses into the static scalars and selects one | the attribute list holds the attributes of the node the tree selected | `SampleClientActionTests` |
-| RoleManagement | signs in as an Operator and presses Reset | the server answered Good and the set point is back at its default - the case which motivated all of this | `RoleManagementClientTests` |
-| Sample | opens a session through the modal dialog | a `ManagedSession` on the V2 engine, and a filled browse tree | `SampleClientFormTests` |
-| SimpleEvents | connects | an event reaches the list | `WorkshopClientSubscriptionTests` |
-| StateMachines | powers the machine on and starts it | a transition reaches the list, the states and transitions of the machine are listed, and the sub state machine of the Running state is active | `WorkshopClientSubscriptionTests` |
-| UserAuthentication | writes the log file path anonymously, then impersonates an unknown account | the write is refused with `BadUserAccessDenied` and the sample reports it; the refused impersonation leaves the session's identity alone | `SampleClientActionTests` |
-| Views | selects the engineering view and presses Change | the operations nodes are gone from the re-browse and the engineering ones are still there | `SampleClientActionTests` |
+| Client | What is driven | What is asserted | Where | Model fixture (tier 1.7) |
+|--------|----------------|------------------|-------|--------------------------|
+| AlarmCondition | opens the audit event window | a condition reaches the display | `WorkshopClientSubscriptionTests` | `AlarmConditionClientModelTests` |
+| Boiler | connects | the drum level of the selected boiler arrives | `WorkshopClientSubscriptionTests` | `BoilerClientModelTests` |
+| DataAccess | monitors a value | the value column of the monitored item list fills | `WorkshopClientSubscriptionTests` | `DataAccessClientModelTests` |
+| DataTypes | walks the browse tree to the parking lot's primary vehicle and selects it | the value shows the structure decoded into its fields, the ones the *derived* type adds included | `SampleClientActionTests` | `DataTypesClientModelTests` |
+| FileTransfer | selects and expands a directory, then reports a completed reconnect | the selected node is still the same node object and the tree did not change size | `FileTransferClientTests` | `FileTransferClientModelTests` |
+| Gds | connects both of its clients, registers with the directory and reads the registration back | the registration round trips and the server status panel fills itself | `GdsClientTests` | - (not a Workshop client) |
+| HistoricalAccess | points the history control at a recorded archive item and presses Go | the grid fills with the recorded values | `SampleClientActionTests` | `HistoricalAccessClientModelTests` |
+| HistoricalEvents | connects | a live event reaches the list | `WorkshopClientSubscriptionTests` | `HistoricalEventsClientModelTests` |
+| Methods | connects | the current state of the process arrives | `WorkshopClientSubscriptionTests` | `MethodsClientModelTests` |
+| NodeManagement | adds an object, references it into the group, drops the reference, deletes the node | each of the four services changed the list it is supposed to change - and dropping the reference left the node where it was | `NodeManagementClientTests` | `NodeManagementClientModelTests` |
+| PerfTest | connects, then presses Stop | the item update count leaves zero, and Stop ends the run | `SampleClientActionTests` | `PerfTestClientModelTests` |
+| Reference | browses into the static scalars and selects one | the attribute list holds the attributes of the node the tree selected | `SampleClientActionTests` | - (not a Workshop client) |
+| RoleManagement | signs in as an Operator and presses Reset | the server answered Good and the set point is back at its default - the case which motivated all of this | `RoleManagementClientTests` | `RoleManagementClientModelTests` |
+| Sample | opens a session through the modal dialog | a `ManagedSession` on the V2 engine, and a filled browse tree | `SampleClientFormTests` | - (not a Workshop client) |
+| SimpleEvents | connects | an event reaches the list | `WorkshopClientSubscriptionTests` | `SimpleEventsClientModelTests` |
+| StateMachines | powers the machine on and starts it | a transition reaches the list, the states and transitions of the machine are listed, and the sub state machine of the Running state is active | `WorkshopClientSubscriptionTests` | `StateMachinesClientModelTests` |
+| UserAuthentication | writes the log file path anonymously, then impersonates an unknown account | the write is refused with `BadUserAccessDenied` and the sample reports it; the refused impersonation leaves the session's identity alone | `SampleClientActionTests` | `UserAuthenticationClientModelTests` |
+| Views | selects the engineering view and presses Change | the operations nodes are gone from the re-browse and the engineering ones are still there | `SampleClientActionTests` | `ViewsClientModelTests` |
 
 Aggregation is the one client still uncovered at any depth: it needs more than one server and
 is a declared gap in `SampleClientTests.UncoveredClientSamplesAreDeclared`.

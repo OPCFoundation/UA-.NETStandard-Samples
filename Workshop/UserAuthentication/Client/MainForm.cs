@@ -1,5 +1,5 @@
 /* ========================================================================
- * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2026 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
  *
@@ -30,23 +30,25 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
-using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Text;
-using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.Client;
+using Quickstarts.UserAuthenticationClient.Model;
 
 namespace Quickstarts.UserAuthenticationClient
 {
     /// <summary>
-    /// The main form for a simple Quickstart Client application.
+    /// The main form of the user authentication Quickstart client.
     /// </summary>
+    /// <remarks>
+    /// The window owns the shared connect control and hands the session it opens to the
+    /// <see cref="UserAuthenticationClientModel"/>, which reads and writes the log file
+    /// path and changes the identity of the session. The window only enables the tab of
+    /// each kind of token the server accepts, translates each button into one model call,
+    /// and puts what the server answered into the status bar.
+    /// </remarks>
     public partial class MainForm : Form
     {
         #region Constructors
@@ -63,15 +65,21 @@ namespace Quickstarts.UserAuthenticationClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
+        /// <param name="telemetry">The telemetry context of the application.</param>
         public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
-
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
-            ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62565/Quickstarts/UserAuthenticationServer";
-            this.Text = m_configuration.ApplicationName;
             m_telemetry = telemetry;
+
+            ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62565/Quickstarts/UserAuthenticationServer";
+            this.Text = configuration.ApplicationName;
+
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new UserAuthenticationClientModel(telemetry);
+            m_model.Error += Model_Error;
 
             UserNameTB.Text = "Operator";
             PreferredLocalesTB.Text = "de,es,en";
@@ -95,16 +103,9 @@ namespace Quickstarts.UserAuthenticationClient
         #endregion
 
         #region Private Fields
-        private ApplicationConfiguration m_configuration;
-        private ISession m_session;
-        private ITelemetryContext m_telemetry;
-        private bool m_connectedOnce;
-
-        // hard code for convience only valid when connecting to UserAuthenticationServer.
-        private NodeId m_logFileNodeId = new NodeId(2, 2);
-        #endregion
-
-        #region Private Methods
+        private readonly ITelemetryContext m_telemetry;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
+        private readonly UserAuthenticationClientModel m_model;
         #endregion
 
         #region Event Handlers
@@ -126,10 +127,15 @@ namespace Quickstarts.UserAuthenticationClient
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        /// <remarks>
+        /// The model is detached first: it releases what it holds of the session before
+        /// the control closes it.
+        /// </remarks>
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -160,22 +166,21 @@ namespace Quickstarts.UserAuthenticationClient
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
 
-                if (m_session == null)
+                if (session == null)
                 {
+                    await m_model.DetachAsync();
+                    SetAvailableUserTokens(null);
                     return;
                 }
 
-                // set a suitable initial state.
-                if (!m_connectedOnce)
-                {
-                    m_connectedOnce = true;
-                }
+                await m_model.AttachAsync(session);
 
                 // set the available tokens.
-                SetAvailableUserTokens(m_session.ConfiguredEndpoint.Description);
-                await ReadLogFilePathAsync();
+                SetAvailableUserTokens(m_model.UserTokenPolicies);
+
+                LogFilePathTB.Text = await m_model.ReadLogFilePathAsync();
             }
             catch (Exception exception)
             {
@@ -190,6 +195,7 @@ namespace Quickstarts.UserAuthenticationClient
         {
             try
             {
+                m_model.NotifyReconnectStarting();
             }
             catch (Exception exception)
             {
@@ -200,13 +206,13 @@ namespace Quickstarts.UserAuthenticationClient
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
                 // this sample does not subscribe to anything: it demonstrates the user
                 // identity tokens, and the managed session reconnects on its own.
-                m_session = ConnectServerCTRL.Session;
+                await m_model.NotifyReconnectCompletedAsync();
             }
             catch (Exception exception)
             {
@@ -217,29 +223,137 @@ namespace Quickstarts.UserAuthenticationClient
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; only then does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
+        }
+
+        /// <summary>
+        /// Changes the identity of the session to the user name and password in the boxes.
+        /// </summary>
+        private async void UserNameImpersonateBTN_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!m_model.IsConnected)
+                {
+                    return;
+                }
+
+                Report(await m_model.ImpersonateUserNameAsync(
+                    UserNameTB.Text,
+                    PasswordTB.Text,
+                    UserAuthenticationClientModel.ParseLocales(PreferredLocalesTB.Text)));
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Changes the identity of the session to the certificate in the boxes.
+        /// </summary>
+        private async void CertificateImpersonateBTN_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!m_model.IsConnected)
+                {
+                    return;
+                }
+
+                Report(await m_model.ImpersonateWithCertificateAsync(
+                    CertificateTB.Text,
+                    CertificatePasswordTB.Text,
+                    UserAuthenticationClientModel.ParseLocales(PreferredLocalesTB.Text)));
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Drops the identity of the session.
+        /// </summary>
+        private async void AnonymousImpersonateBTN_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!m_model.IsConnected)
+                {
+                    return;
+                }
+
+                Report(await m_model.ImpersonateAnonymouslyAsync(
+                    UserAuthenticationClientModel.ParseLocales(PreferredLocalesTB.Text)));
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Writes the log file path in the box to the server.
+        /// </summary>
+        private async void ChangeLogFileBTN_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!m_model.IsConnected)
+                {
+                    return;
+                }
+
+                // the refusal is the interesting outcome here, not an error: the node manager
+                // answers the user access level per session, and an identity which may not
+                // write is told so by the write handler as well
+                Report(await m_model.WriteLogFilePathAsync(LogFilePathTB.Text));
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Reports a failure on a background path of the model.
+        /// </summary>
+        private void Model_Error(object sender, ModelErrorEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
         }
         #endregion
 
         #region Private Methods
         /// <summary>
-        /// Sets the available user tokens.
+        /// Enables the tab of each kind of token the server accepts.
         /// </summary>
-        /// <param name="endpointDescription">The endpoint description.</param>
-        private void SetAvailableUserTokens(EndpointDescription endpointDescription)
+        /// <param name="policies">The user token policies of the endpoint, or null when disconnected.</param>
+        private void SetAvailableUserTokens(IReadOnlyList<UserTokenPolicy> policies)
         {
             AnonymousTAB.Enabled = false;
             UserNameTAB.Enabled = false;
             CertificateTAB.Enabled = false;
 
-            if (endpointDescription == null)
+            if (policies == null)
             {
                 return;
             }
 
-            foreach (UserTokenPolicy policy in endpointDescription.UserIdentityTokens)
+            foreach (UserTokenPolicy policy in policies)
             {
                 if (policy.TokenType == UserTokenType.Anonymous)
                 {
@@ -274,210 +388,6 @@ namespace Quickstarts.UserAuthenticationClient
                 // the stack for the flows it supports.
             }
         }
-        #endregion
-
-        #region Event Handlers
-        private async void UserNameImpersonateBTN_Click(object sender, EventArgs e)
-        {
-            if (m_session == null)
-            {
-                return;
-            }
-
-            try
-            {
-                // want to get error text for this call.
-                m_session.ReturnDiagnostics = DiagnosticsMasks.All;
-
-#pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the active session.
-                UserIdentity identity = new UserIdentity(UserNameTB.Text, Encoding.UTF8.GetBytes(PasswordTB.Text));
-#pragma warning restore CA2000
-                string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                await m_session.UpdateSessionAsync(identity, preferredLocales);
-
-                Report($"Impersonating '{UserNameTB.Text}'", StatusCodes.Good);
-            }
-            catch (Exception exception)
-            {
-                Report($"Impersonating '{UserNameTB.Text}'", exception);
-            }
-            finally
-            {
-                m_session.ReturnDiagnostics = DiagnosticsMasks.None;
-            }
-        }
-
-        private async void CertificateImpersonateBTN_Click(object sender, EventArgs e)
-        {
-            if (m_session == null)
-            {
-                return;
-            }
-
-            try
-            {
-                // load the certficate.
-#pragma warning disable CA2000, SYSLIB0057 // Justification: Certificate ownership is transferred to UserIdentity; sample targets frameworks without a common loader API.
-                X509Certificate2 certificate = new X509Certificate2(
-                    CertificateTB.Text,
-                    CertificatePasswordTB.Text,
-                    X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
-#pragma warning restore CA2000, SYSLIB0057
-
-                // want to get error text for this call.
-                m_session.ReturnDiagnostics = DiagnosticsMasks.All;
-
-#pragma warning disable CA2000 // Justification: UserIdentity ownership is transferred to the active session.
-                UserIdentity identity = new UserIdentity(new X509IdentityToken { CertificateData = certificate.RawData.ToByteString() });
-#pragma warning restore CA2000
-                string[] preferredLocales = PreferredLocalesTB.Text.Split([','], StringSplitOptions.RemoveEmptyEntries);
-                await m_session.UpdateSessionAsync(identity, preferredLocales);
-
-                Report("Impersonating with a certificate", StatusCodes.Good);
-            }
-            catch (Exception exception)
-            {
-                Report("Impersonating with a certificate", exception);
-            }
-            finally
-            {
-                m_session.ReturnDiagnostics = DiagnosticsMasks.None;
-            }
-        }
-
-        private async void AnonymousImpersonateBTN_Click(object sender, EventArgs e)
-        {
-            if (m_session == null)
-            {
-                return;
-            }
-
-            try
-            {
-                // want to get error text for this call.
-                m_session.ReturnDiagnostics = DiagnosticsMasks.All;
-
-                string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-#pragma warning disable CA2000 // Justification: UserIdentity and token ownership is transferred to the active session.
-                await m_session.UpdateSessionAsync(new UserIdentity(new AnonymousIdentityToken()), preferredLocales);
-#pragma warning restore CA2000
-
-                Report("Impersonating anonymously", StatusCodes.Good);
-            }
-            catch (Exception exception)
-            {
-                Report("Impersonating anonymously", exception);
-            }
-            finally
-            {
-                m_session.ReturnDiagnostics = DiagnosticsMasks.None;
-            }
-        }
-
-        /// <summary>
-        /// Reads the log file path.
-        /// </summary>
-        private async Task ReadLogFilePathAsync(CancellationToken ct = default)
-        {
-            if (m_session == null)
-            {
-                return;
-            }
-
-            try
-            {
-                // want to get error text for this call.
-                m_session.ReturnDiagnostics = DiagnosticsMasks.All;
-
-                ReadValueId value = new ReadValueId();
-                value.NodeId = m_logFileNodeId;
-                value.AttributeId = Attributes.Value;
-
-                List<ReadValueId> valuesToRead = new List<ReadValueId>();
-                valuesToRead.Add(value);
-
-                ReadResponse response = await m_session.ReadAsync(
-                    null,
-                    0,
-                    TimestampsToReturn.Neither,
-                    valuesToRead,
-                    ct);
-
-                ResponseHeader responseHeader = response.ResponseHeader;
-                List<DataValue> results = response.Results.ToList();
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                ClientBase.ValidateResponse(results, valuesToRead);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
-
-                if (StatusCode.IsBad(results[0].StatusCode))
-                {
-                    throw ServiceResultException.Create(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable);
-                }
-
-                LogFilePathTB.Text = results[0].GetValue<string>("");
-            }
-            catch (Exception exception)
-            {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
-            }
-            finally
-            {
-                m_session.ReturnDiagnostics = DiagnosticsMasks.None;
-            }
-        }
-
-        private async void ChangeLogFileBTN_ClickAsync(object sender, EventArgs e)
-        {
-            if (m_session == null)
-            {
-                return;
-            }
-
-            try
-            {
-                // want to get error text for this call.
-                m_session.ReturnDiagnostics = DiagnosticsMasks.All;
-
-                WriteValue value = new WriteValue();
-                value.NodeId = m_logFileNodeId;
-                value.AttributeId = Attributes.Value;
-                value.Value = new DataValue(new Variant(LogFilePathTB.Text));
-
-                List<WriteValue> valuesToWrite = new List<WriteValue>();
-                valuesToWrite.Add(value);
-
-                WriteResponse response = await m_session.WriteAsync(
-                    null,
-                    valuesToWrite,
-                    default);
-
-                ResponseHeader responseHeader = response.ResponseHeader;
-                List<StatusCode> results = response.Results.ToList();
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                ClientBase.ValidateResponse(results, valuesToWrite);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);
-
-                // the refusal is the interesting outcome here, not an error: the node manager
-                // answers the user access level per session, and an identity which may not
-                // write is told so by the write handler as well
-                Report("Writing the log file path", results[0]);
-
-                if (StatusCode.IsBad(results[0]))
-                {
-                    return;
-                }
-            }
-            catch (Exception exception)
-            {
-                Report("Writing the log file path", exception);
-            }
-            finally
-            {
-                m_session.ReturnDiagnostics = DiagnosticsMasks.None;
-            }
-        }
 
         /// <summary>
         /// Reports what the server answered to an operation the user asked for.
@@ -488,25 +398,10 @@ namespace Quickstarts.UserAuthenticationClient
         /// and a modal dialog between every click makes that tedious. It also keeps the
         /// buttons drivable from a test, which a modal dialog does not.
         /// </remarks>
-        private void Report(string what, StatusCode status)
+        private void Report(OperationResult result)
         {
-            ActionStatusLB.Text = $"{what} answered {status}";
-            ActionStatusLB.ForeColor = StatusCode.IsGood(status) ? Color.Empty : Color.Red;
-        }
-
-        /// <summary>
-        /// Reports an operation which did not get through, with the status code it failed with
-        /// where the stack gave one.
-        /// </summary>
-        private void Report(string what, Exception exception)
-        {
-            Report(
-                what,
-                exception is ServiceResultException refused
-                    ? refused.StatusCode
-                    : (StatusCode)StatusCodes.Bad);
-
-            m_telemetry.CreateLogger<MainForm>().LogInformation(exception, "{What} did not get through.", what);
+            ActionStatusLB.Text = result.ToString();
+            ActionStatusLB.ForeColor = result.Succeeded ? Color.Empty : Color.Red;
         }
         #endregion
     }

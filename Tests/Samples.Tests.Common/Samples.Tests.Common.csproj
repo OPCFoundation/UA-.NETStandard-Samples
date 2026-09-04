@@ -15,4 +15,9 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="$(OpcUaNetStandardVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- the managed session factory the sample clients connect with -->
+    <ProjectReference Include="..\..\Samples\Client.Common\Opc.Ua.Samples.Client.csproj" />
+  </ItemGroup>
+
 </Project>

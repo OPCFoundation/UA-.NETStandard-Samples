@@ -28,22 +28,25 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Security.Cryptography.X509Certificates;
+using System.Globalization;
 using System.Windows.Forms;
-using System.IO;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
-using System.Threading;
+using Opc.Ua.Samples.Client;
+using Quickstarts.PerfTestClient.Model;
 
 namespace Quickstarts.PerfTestClient
 {
     /// <summary>
     /// The main form for a simple Quickstart Client application.
     /// </summary>
+    /// <remarks>
+    /// The window owns the shared connect control and hands the session it opens to the
+    /// <see cref="PerfTestClientModel"/>, which runs the test. The window only tells the
+    /// model how many items to monitor and how fast, reads its counters on a timer, and
+    /// stops the test when the user asks.
+    /// </remarks>
     public partial class MainForm : Form
     {
         #region Constructors
@@ -59,25 +62,26 @@ namespace Quickstarts.PerfTestClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
+        /// <param name="telemetry">The telemetry context of the client.</param>
         public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
+            ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62559/Quickstarts/PerfTestServer";
-            this.Text = m_configuration.ApplicationName;
+            this.Text = configuration.ApplicationName;
             m_telemetry = telemetry;
+
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new PerfTestClientModel(telemetry);
+            m_model.Error += Model_Error;
         }
         #endregion
 
         #region Private Fields
-        private ApplicationConfiguration m_configuration;
-        private ISession m_session;
-        private bool m_connectedOnce;
-        private Tester m_tester;
         private readonly ITelemetryContext m_telemetry;
-        #endregion
-
-        #region Private Methods
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
+        private readonly PerfTestClientModel m_model;
         #endregion
 
         #region Event Handlers
@@ -99,10 +103,16 @@ namespace Quickstarts.PerfTestClient
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        /// <remarks>
+        /// The model is detached first: it deletes its subscription before the control
+        /// closes the session, because closing a session which still carries a
+        /// subscription waits for the publish pipeline to drain.
+        /// </remarks>
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -133,33 +143,25 @@ namespace Quickstarts.PerfTestClient
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
 
-                if (m_session == null)
+                if (session == null)
                 {
-                    if (m_tester != null)
-                    {
-                        await StopTestAsync();
-                    }
-
+                    await m_model.DetachAsync();
+                    ShowRunning(false);
                     return;
-                }
-
-                // set a suitable initial state.
-                if (!m_connectedOnce)
-                {
-                    m_connectedOnce = true;
                 }
 
                 LogTB.Clear();
 
-                m_tester = new Tester();
-                m_tester.SamplingRate = (int)UpdateRateCTRL.Value;
-                m_tester.ItemCount = (int)ItemCountCTRL.Value;
-                await m_tester.StartAsync(m_session, m_telemetry);
+                // the test starts as soon as the session is attached, with the settings
+                // the user chose before connecting
+                m_model.SamplingRate = (int)UpdateRateCTRL.Value;
+                m_model.ItemCount = (int)ItemCountCTRL.Value;
 
-                UpdateTimer.Enabled = true;
-                StopBTN.Visible = true;
+                await m_model.AttachAsync(session);
+
+                ShowRunning(true);
             }
             catch (Exception exception)
             {
@@ -174,7 +176,7 @@ namespace Quickstarts.PerfTestClient
         {
             try
             {
-                // TBD
+                m_model.NotifyReconnectStarting();
             }
             catch (Exception exception)
             {
@@ -185,11 +187,12 @@ namespace Quickstarts.PerfTestClient
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                // the subscription of the tester survives the reconnect, so it keeps counting
+                await m_model.NotifyReconnectCompletedAsync();
             }
             catch (Exception exception)
             {
@@ -200,90 +203,99 @@ namespace Quickstarts.PerfTestClient
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; only then does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            UpdateTimer.Enabled = false;
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
-        /// Stops the test.
+        /// Shows what the model counted since the last tick.
         /// </summary>
-        private async Task StopTestAsync(CancellationToken ct = default)
-        {
-            if (m_tester != null)
-            {
-                await m_tester.StopAsync(ct);
-            }
-
-            UpdateTimer.Enabled = false;
-            StopBTN.Visible = false;
-        }
-        #endregion
-
-        #region Event Handlers
         private void UpdateTimer_Tick(object sender, EventArgs e)
         {
             try
             {
-                int messageCount = 0;
-                int totalItemUpdateCount = 0;
-                DateTime firstMessageTime = DateTime.MinValue;
-                DateTime lastMessageTime = DateTime.MinValue;
-                int minItemUpdateCount = 0;
-                int maxItemUpdateCount = 0;
+                PerfTestStatistics statistics = m_model.ReadStatistics();
 
-                m_tester.GetStatistics(
-                    out messageCount,
-                    out totalItemUpdateCount,
-                    out firstMessageTime,
-                    out lastMessageTime,
-                    out minItemUpdateCount,
-                    out maxItemUpdateCount);
-
-                string[] messages = m_tester.GetMessages();
-
-                for (int ii = 0; ii < messages.Length; ii++)
+                foreach (string message in m_model.TakeMessages())
                 {
-                    LogTB.AppendText(messages[ii]);
+                    LogTB.AppendText(message);
                     LogTB.AppendText(Environment.NewLine);
                 }
 
-                MessageCountTB.Text = String.Format("{0}", messageCount);
-                TotalItemUpdateCountTB.Text = String.Format("{0}", totalItemUpdateCount);
-                TimeSpan delta = (lastMessageTime - firstMessageTime);
+                MessageCountTB.Text = statistics.MessageCount.ToString(CultureInfo.CurrentCulture);
+                TotalItemUpdateCountTB.Text = statistics.TotalItemUpdateCount.ToString(CultureInfo.CurrentCulture);
+
+                TimeSpan delta = statistics.Elapsed;
 
                 if (delta.TotalMilliseconds > 0)
                 {
-                    LogTB.AppendText(Utils.Format("Checking Update Counts. Time={0}, Min={1}, Max={2}", DateTime.UtcNow.ToString("mm:ss.fff"), minItemUpdateCount, maxItemUpdateCount));
+                    LogTB.AppendText(Utils.Format(
+                        "Checking Update Counts. Time={0}, Min={1}, Max={2}",
+                        DateTime.UtcNow.ToString("mm:ss.fff", CultureInfo.InvariantCulture),
+                        statistics.MinItemUpdateCount,
+                        statistics.MaxItemUpdateCount));
                     LogTB.AppendText(Environment.NewLine);
 
-                    MessageRateTB.Text = String.Format("{0}", delta.TotalSeconds);
-                    TotalItemUpdateRateTB.Text = String.Format("{0}", ((double)totalItemUpdateCount) / delta.TotalSeconds);
+                    MessageRateTB.Text = delta.TotalSeconds.ToString(CultureInfo.CurrentCulture);
+                    TotalItemUpdateRateTB.Text = (statistics.TotalItemUpdateCount / delta.TotalSeconds).ToString(CultureInfo.CurrentCulture);
                 }
                 else
                 {
-                    MessageRateTB.Text = String.Empty;
-                    TotalItemUpdateRateTB.Text = String.Empty;
+                    MessageRateTB.Text = string.Empty;
+                    TotalItemUpdateRateTB.Text = string.Empty;
                 }
-            }
-            catch
-            {
-                // TBD
-            }
-        }
-
-        private async void StopBTN_ClickAsync(object sender, EventArgs e)
-        {
-            try
-            {
-                await StopTestAsync();
             }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
+        }
+
+        /// <summary>
+        /// Ends the test the connect started.
+        /// </summary>
+        private async void StopBTN_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                await m_model.StopAsync();
+                ShowRunning(false);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Reports a failure on a background path of the model.
+        /// </summary>
+        private void Model_Error(object sender, ModelErrorEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
+        }
+        #endregion
+
+        #region Private Methods
+        /// <summary>
+        /// Reads the counters while a test runs, and offers Stop.
+        /// </summary>
+        private void ShowRunning(bool running)
+        {
+            UpdateTimer.Enabled = running;
+            StopBTN.Visible = running;
         }
         #endregion
     }

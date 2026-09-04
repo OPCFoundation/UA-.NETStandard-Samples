@@ -28,28 +28,24 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
-using System.IO;
-using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Samples.Client;
+using Quickstarts.MethodsClient.Model;
 
 namespace Quickstarts.MethodsClient
 {
-    // the V2 subscription engine reuses names the classic engine has in Opc.Ua.Client, and
-    // Opc.Ua itself has a server side IMonitoredItem, so the client types are aliased.
-    using IMonitoredItem = Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItem;
-    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
-    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
-
     /// <summary>
     /// The main form for a simple Quickstart Client application.
     /// </summary>
+    /// <remarks>
+    /// The window owns the shared connect control and hands the session it opens to the
+    /// <see cref="MethodsClientModel"/>, which finds the process, calls its Start method
+    /// and watches its state. The window only reads the states the user typed, tells the
+    /// model to start, and writes what the model reports into the text boxes.
+    /// </remarks>
     public partial class MainForm : Form
     {
         #region Constructors
@@ -66,40 +62,29 @@ namespace Quickstarts.MethodsClient
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
+        /// <param name="telemetry">The telemetry context of the client.</param>
         public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
             m_telemetry = telemetry;
 
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
+            ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62557/Quickstarts/MethodsServer";
-            this.Text = m_configuration.ApplicationName;
+            this.Text = configuration.ApplicationName;
 
-            // the V2 engine takes the notification handler when the subscription is created,
-            // so the form owns one for its whole lifetime and points it at its own methods.
-            m_callbacks.DataChangeCallback = OnDataChanges;
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new MethodsClientModel(telemetry);
+            m_model.StateChanged += Model_StateChanged;
+            m_model.Error += Model_Error;
         }
         #endregion
 
         #region Private Fields
-        /// <summary>
-        /// The name which identifies the state item within its subscription.
-        /// </summary>
-        private const string kStateItemName = "State";
-
-        private ApplicationConfiguration m_configuration;
-        private ISession m_session;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed asynchronously by DeleteSubscriptionAsync.")]
-        private ISubscription m_subscription;
-        private readonly SubscriptionCallbacks m_callbacks = new SubscriptionCallbacks();
-        private NodeId m_objectNode;
-        private NodeId m_methodNode;
-        private bool m_connectedOnce;
         private readonly ITelemetryContext m_telemetry;
-        #endregion
-
-        #region Private Methods
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
+        private readonly MethodsClientModel m_model;
         #endregion
 
         #region Event Handlers
@@ -121,35 +106,21 @@ namespace Quickstarts.MethodsClient
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
+        /// <remarks>
+        /// The model is detached first: it deletes its subscription before the control
+        /// closes the session, because closing a session which still carries a
+        /// subscription waits for the publish pipeline to drain.
+        /// </remarks>
         private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                await DeleteSubscriptionAsync();
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
-            }
-        }
-
-        /// <summary>
-        /// Deletes the subscription on the server and drops it from the subscription manager.
-        /// </summary>
-        /// <remarks>
-        /// Done before the session is closed: closing a session which still carries a
-        /// subscription waits for the publish pipeline to drain.
-        /// </remarks>
-        private async Task DeleteSubscriptionAsync()
-        {
-            ISubscription subscription = m_subscription;
-
-            m_subscription = null;
-
-            if (subscription != null)
-            {
-                await subscription.DisposeAsync();
             }
         }
 
@@ -175,69 +146,20 @@ namespace Quickstarts.MethodsClient
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
 
-                if (m_session == null)
+                if (session == null)
                 {
-                    m_subscription = null;
+                    await m_model.DetachAsync();
                     StartBTN.Enabled = false;
                     return;
                 }
 
+                // the model finds the process and starts watching its state while it
+                // attaches.
+                await m_model.AttachAsync(session);
+
                 // set a suitable initial state.
-                if (!m_connectedOnce)
-                {
-                    m_connectedOnce = true;
-                }
-
-                // this client has built-in knowledge of the information model used by the server.
-                NamespaceTable wellKnownNamespaceUris = new NamespaceTable();
-                wellKnownNamespaceUris.Append(Namespaces.Methods);
-
-                string[] browsePaths = new string[]
-                {
-                    "1:My Process/1:State",
-                    "1:My Process",
-                    "1:My Process/1:Start"
-                };
-
-                List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
-                    m_session,
-                    ObjectIds.ObjectsFolder,
-                    wellKnownNamespaceUris,
-                    default,
-                    browsePaths);
-
-                // subscribe to the state if available.
-                if (nodes.Count > 0 && !(nodes[0]).IsNull)
-                {
-                    await DeleteSubscriptionAsync();
-
-                    // the V2 engine takes the settings through an options monitor and creates
-                    // the subscription on the server on its own worker.
-                    var options = new OptionsMonitor<SubscriptionOptions>(
-                        ClientUtils.DefaultSubscriptionOptions with { Priority = 1, LifetimeCount = 20 });
-
-                    m_subscription = ClientUtils.AddSubscription(m_session, m_callbacks, options);
-
-                    // adding the item to the collection is the create request: the engine
-                    // applies it on its own worker, there is no ApplyChanges to call.
-                    m_subscription.MonitoredItems.TryAdd(
-                        kStateItemName,
-                        new OptionsMonitor<MonitoredItemOptions>(new MonitoredItemOptions {
-                            StartNodeId = nodes[0],
-                            AttributeId = Attributes.Value,
-                        }),
-                        out IMonitoredItem _);
-                }
-
-                // save the object/method
-                if (nodes.Count > 2)
-                {
-                    m_objectNode = nodes[1];
-                    m_methodNode = nodes[2];
-                }
-
                 InitialStateTB.Text = "1";
                 FinalStateTB.Text = "100";
                 StartBTN.Enabled = true;
@@ -255,6 +177,7 @@ namespace Quickstarts.MethodsClient
         {
             try
             {
+                m_model.NotifyReconnectStarting();
                 StartBTN.Enabled = false;
             }
             catch (Exception exception)
@@ -266,16 +189,18 @@ namespace Quickstarts.MethodsClient
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
                 // a V2 subscription belongs to the subscription manager of the session and
-                // survives the reconnect together with its monitored items, so there is
-                // nothing to re-attach here.
-                m_session = ConnectServerCTRL.Session;
-
+                // survives the reconnect together with its monitored items, so the model
+                // has nothing to re-create.
+                await m_model.NotifyReconnectCompletedAsync();
                 StartBTN.Enabled = true;
+
+                // the process is restarted from the states the user typed, which only the
+                // window knows.
                 StartBTN_ClickAsync(this, null);
             }
             catch (Exception exception)
@@ -287,19 +212,24 @@ namespace Quickstarts.MethodsClient
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; only then does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            ClientUtils.WaitForTeardown(DeleteSubscriptionAsync);
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
         }
-        #endregion
 
-        #region Event Handlers
+        /// <summary>
+        /// Starts the process with the states the user typed.
+        /// </summary>
         private async void StartBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                if (m_session == null)
+                if (!m_model.IsConnected)
                 {
                     return;
                 }
@@ -310,17 +240,12 @@ namespace Quickstarts.MethodsClient
                 RevisedInitialStateTB.Text = String.Empty;
                 RevisedFinalStateTB.Text = String.Empty;
 
-                ArrayOf<Variant> outputArguments = await m_session.CallAsync(
-                    m_objectNode,
-                    m_methodNode,
-                    default,
-                    initialState,
-                    finalState);
+                StartResult result = await m_model.StartAsync(initialState, finalState);
 
-                if (outputArguments != null && outputArguments.Count > 1)
+                if (result != null)
                 {
-                    RevisedInitialStateTB.Text = outputArguments[0].ToString();
-                    RevisedFinalStateTB.Text = outputArguments[1].ToString();
+                    RevisedInitialStateTB.Text = result.RevisedInitialState.ToString();
+                    RevisedFinalStateTB.Text = result.RevisedFinalState.ToString();
                 }
             }
             catch (Exception exception)
@@ -333,42 +258,30 @@ namespace Quickstarts.MethodsClient
         /// Updates the display with the new value of the state variable.
         /// </summary>
         /// <remarks>
-        /// The V2 engine calls this on a publish worker instead of on the UI thread, and it
-        /// reports the whole notification instead of one value per item.
+        /// The model raises this on the thread of the window, so the control is written
+        /// directly. A value can still arrive after the window was closed.
         /// </remarks>
-        private void OnDataChanges(
-            ISubscription subscription,
-            uint sequenceNumber,
-            DateTime publishTime,
-            DataValueChange[] notifications,
-            PublishState publishState)
+        private void Model_StateChanged(object sender, StateChangedEventArgs e)
         {
-            if (!IsHandleCreated || IsDisposed)
+            if (IsDisposed)
             {
                 return;
             }
 
-            if (InvokeRequired)
+            CurrentStateTB.Text = e.Value.WrappedValue.ToString();
+        }
+
+        /// <summary>
+        /// Reports a failure on a background path of the model.
+        /// </summary>
+        private void Model_Error(object sender, ModelErrorEventArgs e)
+        {
+            if (IsDisposed)
             {
-                BeginInvoke(new Action(
-                    () => OnDataChanges(subscription, sequenceNumber, publishTime, notifications, publishState)));
                 return;
             }
 
-            try
-            {
-                foreach (DataValueChange change in notifications)
-                {
-                    if (change.MonitoredItem?.Name == kStateItemName)
-                    {
-                        CurrentStateTB.Text = change.Value.WrappedValue.ToString();
-                    }
-                }
-            }
-            catch (Exception exception)
-            {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
-            }
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
         }
         #endregion
     }

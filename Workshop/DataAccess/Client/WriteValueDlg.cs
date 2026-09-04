@@ -28,16 +28,10 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
-using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 
 namespace Quickstarts.DataAccessClient
@@ -45,6 +39,10 @@ namespace Quickstarts.DataAccessClient
     /// <summary>
     /// Prompts the user to specify a new value and then writes it to the server.
     /// </summary>
+    /// <remarks>
+    /// The dialog knows nothing about the session: it is given the current value, so it
+    /// can convert the text to the same type, and a delegate which does the write.
+    /// </remarks>
     public partial class WriteValueDlg : Form
     {
         #region Constructors
@@ -58,58 +56,32 @@ namespace Quickstarts.DataAccessClient
         #endregion
 
         #region Private Fields
-        private ISession m_session;
-        private NodeId m_nodeId;
-        private uint m_attributeId;
         private DataValue m_value;
+        private Func<Variant, CancellationToken, Task<StatusCode>> m_write;
+        private ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Prompts the user to enter a value to write.
         /// </summary>
-        /// <param name="session">The session to use.</param>
-        /// <param name="nodeId">The identifier for the node to write to.</param>
-        /// <param name="attributeId">The attribute being written.</param>
-        /// <param name="ct">The token to cancel the request</param>
+        /// <param name="current">The current value, whose type the new one has to have.</param>
+        /// <param name="write">Writes the new value and returns the status the server answered.</param>
+        /// <param name="telemetry">The telemetry context of the client, for error reporting.</param>
         /// <returns>True if successful. False if the operation was cancelled.</returns>
-        public async Task<bool> ShowDialogAsync(ISession session, NodeId nodeId, uint attributeId, CancellationToken ct = default)
+        public bool ShowDialog(
+            DataValue current,
+            Func<Variant, CancellationToken, Task<StatusCode>> write,
+            ITelemetryContext telemetry)
         {
-            m_session = session;
-            m_nodeId = nodeId;
-            m_attributeId = attributeId;
+            m_value = current;
+            m_write = write ?? throw new ArgumentNullException(nameof(write));
+            m_telemetry = telemetry;
 
-            ReadValueId nodeToRead = new ReadValueId();
-            nodeToRead.NodeId = nodeId;
-            nodeToRead.AttributeId = attributeId;
-
-            List<ReadValueId> nodesToRead = new List<ReadValueId>();
-            nodesToRead.Add(nodeToRead);
-
-            // read current value.
-            ReadResponse response = await m_session.ReadAsync(
-                null,
-                0,
-                TimestampsToReturn.Neither,
-                nodesToRead,
-                ct);
-
-            var results = response.Results.ToList();
-            var diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            m_value = results[0];
             ValueTB.Text = Utils.Format("{0}", m_value.WrappedValue);
 
             // display the dialog.
-            if (ShowDialog() != DialogResult.OK)
-            {
-                return false;
-            }
-
-            return true;
+            return ShowDialog() == DialogResult.OK;
         }
         #endregion
 
@@ -193,41 +165,18 @@ namespace Quickstarts.DataAccessClient
         {
             try
             {
-                WriteValue valueToWrite = new WriteValue();
+                StatusCode result = await m_write(ChangeType(), CancellationToken.None);
 
-                valueToWrite.NodeId = m_nodeId;
-                valueToWrite.AttributeId = m_attributeId;
-                valueToWrite.Value = new DataValue(
-                    ChangeType(),
-                    StatusCodes.Good,
-                    DateTime.MinValue,
-                    DateTime.MinValue);
-
-                List<WriteValue> valuesToWrite = new List<WriteValue>();
-                valuesToWrite.Add(valueToWrite);
-
-                // write current value.
-                WriteResponse response = await m_session.WriteAsync(
-                    null,
-                    valuesToWrite,
-                    default);
-
-                var results = response.Results.ToList();
-                var diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                ClientBase.ValidateResponse(results, valuesToWrite);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToWrite);
-
-                if (StatusCode.IsBad(results[0]))
+                if (StatusCode.IsBad(result))
                 {
-                    throw new ServiceResultException(results[0]);
+                    throw new ServiceResultException(result);
                 }
 
                 DialogResult = DialogResult.OK;
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, "Error Writing Value", exception);
+                ClientUtils.HandleException(m_telemetry, "Error Writing Value", exception);
             }
         }
         #endregion

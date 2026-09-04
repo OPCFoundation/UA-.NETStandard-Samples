@@ -29,19 +29,24 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Text;
-using Opc.Ua;
-using Opc.Ua.Client;
-using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using AggregationClient.Model;
+using Opc.Ua;
+using Opc.Ua.Client.Controls;
 
 namespace AggregationClient
 {
     /// <summary>
-    /// Prompts the user to select an area to use as an event filter.
+    /// Prompts the user to change the user name and the locale of the session.
     /// </summary>
+    /// <remarks>
+    /// The dialog only collects what the user types; the model changes the session in
+    /// place, which is what the sample shows: a session keeps its subscriptions and its
+    /// node cache while its user or its locale changes.
+    /// </remarks>
     public partial class SetUserAndLocaleDlg: Form
     {
         #region Constructors
@@ -55,20 +60,20 @@ namespace AggregationClient
         #endregion
 
         #region Private Fields
-        private ISession m_session;
+        private AggregationClientModel m_model;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Prompts the user to specify the user name and locale.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(ISession session, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(AggregationClientModel model, CancellationToken ct = default)
         {
-            m_session = session;
+            m_model = model;
 
             #region Task #D3 - Change Locale and User Identity
-            UpdateUserIdentity(session);
-            await UpdateLocaleAsync(session, ct);
+            UpdateUserIdentity();
+            await UpdateLocaleAsync(ct);
             #endregion
 
             // display the dialog.
@@ -83,49 +88,25 @@ namespace AggregationClient
 
         #region Task #D3 - Change Locale and User Identity
         /// <summary>
-        /// Updates the local displayed in the control.
+        /// Shows the user the session was opened with. The password is never read back.
         /// </summary>
-        private void UpdateUserIdentity(ISession session)
+        private void UpdateUserIdentity()
         {
-            UserNameTB.Text = null;
+            UserNameTB.Text = m_model.CurrentUserName;
             PasswordTB.Text = null;
-
-            // get the current identity.
-            IUserIdentity identity = session.Identity;
-
-            if (identity != null && identity.TokenType == UserTokenType.UserName)
-            {
-                UserNameIdentityTokenHandler token = identity.TokenHandler as UserNameIdentityTokenHandler;
-
-                if (token != null)
-                {
-                    UserNameTB.Text = token.UserName;
-                    PasswordTB.Text = Encoding.UTF8.GetString(token.DecryptedPassword);
-                }
-            }
         }
 
         /// <summary>
-        /// Updates the local displayed in the control.
+        /// Updates the locale displayed in the control.
         /// </summary>
-        private async Task UpdateLocaleAsync(ISession session, CancellationToken ct = default)
+        private async Task UpdateLocaleAsync(CancellationToken ct = default)
         {
             LocaleCB.Items.Clear();
 
             // get the locales from the server.
-            DataValue value = await m_session.ReadValueAsync(VariableIds.Server_ServerCapabilities_LocaleIdArray, ct);
-
-            if (!value.IsNull)
+            foreach (string locale in await m_model.ReadAvailableLocalesAsync(ct))
             {
-                string[] availableLocales = value.GetValue<string[]>(null);
-
-                if (availableLocales != null)
-                {
-                    for (int ii = 0; ii < availableLocales.Length; ii++)
-                    {
-                        LocaleCB.Items.Add(availableLocales[ii]);
-                    }
-                }
+                LocaleCB.Items.Add(locale);
             }
 
             // select the default locale.
@@ -134,28 +115,25 @@ namespace AggregationClient
                 LocaleCB.SelectedIndex = 0;
             }
 
-            // select the cutrren locale for the session.
-            if (session.PreferredLocales != null)
+            // select the current locale for the session.
+            foreach (string locale in m_model.PreferredLocales)
             {
-                for (int ii = 0; ii < session.PreferredLocales.Count; ii++)
-                {
-                    int index = LocaleCB.FindStringExact(session.PreferredLocales[ii]);
+                int index = LocaleCB.FindStringExact(locale);
 
-                    if (index >= 0)
-                    {
-                        LocaleCB.SelectedIndex = index;
-                        break;
-                    }
+                if (index >= 0)
+                {
+                    LocaleCB.SelectedIndex = index;
+                    break;
                 }
             }
         }
         #endregion
 
-        #region Private Methods
-        #endregion
-
         #region Event Handlers
-        private void OkBTN_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Changes the user and the locale of the session to what the user typed.
+        /// </summary>
+        private async void OkBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
@@ -179,29 +157,18 @@ namespace AggregationClient
                 }
 
                 // can specify multiple locales but just use one here to keep the UI simple.
-                List<string> preferredLocales = new List<string>();
-                preferredLocales.Add(LocaleCB.SelectedItem as string);
+                var preferredLocales = new List<string> { LocaleCB.SelectedItem as string };
 
-                // override the default diagnostics to get error messages.
-                DiagnosticsMasks returnDiagnostics = m_session.ReturnDiagnostics;
-
-                try
-                {
-                    // update the session.
-                    m_session.ReturnDiagnostics = DiagnosticsMasks.ServiceSymbolicIdAndText;
-                    m_session.UpdateSessionAsync(identity, preferredLocales).GetAwaiter().GetResult();
-                }
-                finally
-                {
-                    m_session.ReturnDiagnostics = returnDiagnostics;
-                }
+                // the session is updated in place, and the window keeps reacting while the
+                // server processes the request.
+                await m_model.UpdateSessionAsync(identity, preferredLocales);
                 #endregion
 
                 DialogResult = DialogResult.OK;
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                ClientUtils.HandleException(m_model?.Telemetry, this.Text, exception);
             }
         }
         #endregion
