@@ -12,7 +12,6 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
@@ -211,7 +210,7 @@ namespace Opc.Ua.Samples.Tests
             // stack resolves its loggers from; the tests log nothing from the server.
             HostApplicationBuilder builder = Host.CreateEmptyApplicationBuilder(
                 new HostApplicationBuilderSettings());
-            builder.Services.AddLogging(logging => { logging.AddProvider(new ProbeFileLoggerProvider()); logging.SetMinimumLevel(LogLevel.Trace); });
+            builder.Services.AddLogging();
 
             string endpointUrl = null;
 
@@ -342,53 +341,6 @@ namespace Opc.Ua.Samples.Tests
 
             int hostStart = address.IndexOf("://", StringComparison.Ordinal) + 3;
             return string.Concat(address.AsSpan(0, hostStart), "localhost", address.AsSpan(hostStart + uri.Host.Length));
-        }
-    }
-}
-
-// TEMPORARY diagnostic logger - delete with the probe.
-namespace Opc.Ua.Samples.Tests
-{
-    internal sealed class ProbeFileLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider
-    {
-        internal static readonly string Path =
-            System.Environment.GetEnvironmentVariable("PROBE_LOG") ?? "probe-server.log";
-
-        private static readonly object s_gate = new();
-
-        public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName)
-            => new ProbeLogger(categoryName);
-
-        public void Dispose()
-        {
-        }
-
-        private sealed class ProbeLogger : Microsoft.Extensions.Logging.ILogger
-        {
-            private readonly string m_category;
-
-            public ProbeLogger(string category) => m_category = category;
-
-            public System.IDisposable BeginScope<TState>(TState state) where TState : notnull => null;
-
-            public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
-
-            public void Log<TState>(
-                Microsoft.Extensions.Logging.LogLevel logLevel,
-                Microsoft.Extensions.Logging.EventId eventId,
-                TState state,
-                System.Exception exception,
-                System.Func<TState, System.Exception, string> formatter)
-            {
-                string line =
-                    $"[{logLevel}] {m_category} ({eventId.Id}) {formatter(state, exception)}" +
-                    (exception == null ? string.Empty : $" EX: {exception}");
-
-                lock (s_gate)
-                {
-                    System.IO.File.AppendAllText(Path, line + System.Environment.NewLine);
-                }
-            }
         }
     }
 }
