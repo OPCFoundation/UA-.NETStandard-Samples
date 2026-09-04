@@ -77,6 +77,7 @@ namespace Opc.Ua.Samples.Tests
                 Client("NodeManagement", (configuration, telemetry) => new Quickstarts.NodeManagement.Client.MainForm(configuration, telemetry), "RefreshBTN"),
                 Client("PerfTest", (configuration, telemetry) => new Quickstarts.PerfTestClient.MainForm(configuration, telemetry)),
                 Client("RoleManagement", (configuration, telemetry) => new Quickstarts.RoleManagement.Client.MainForm(configuration, telemetry), "RefreshBTN"),
+                Client("RuntimeNodeSets", (configuration, telemetry) => new Quickstarts.RuntimeNodeSets.Client.MainForm(configuration, telemetry), "LoadBTN"),
                 Client("SimpleEvents", (configuration, telemetry) => new Quickstarts.SimpleEvents.Client.MainForm(configuration, telemetry)),
                 Client("StateMachines", (configuration, telemetry) => new Quickstarts.StateMachines.Client.MainForm(configuration, telemetry), "PowerOnBTN"),
                 Client("UserAuthentication", (configuration, telemetry) => new Quickstarts.UserAuthenticationClient.MainForm(configuration, telemetry)),

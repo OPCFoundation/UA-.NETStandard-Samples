@@ -87,6 +87,11 @@ The Boiler client is the reference implementation; the Empty client is the templ
   session, and a subscription which cannot be deleted on a server that is gone is logged, not
   shown. Detaching runs **before** the window closes the session: closing a session which
   still carries a subscription waits for the publish pipeline to drain.
+- **Disposal.** `DisposeAsync()` detaches and then calls `DisposeAsyncCore()`, which a model
+  overrides only when it owns something of its own rather than something of the session -
+  everything that belongs to the session goes in `OnDetachingAsync`, which also runs when the
+  window disconnects without closing. The DataTypes model overrides it, for the service
+  provider it builds to reach the schema generators.
 - **Reconnect.** `NotifyReconnectStarting()` and `NotifyReconnectCompletedAsync()` are what the
   window forwards the events of the connect control to. A managed session keeps its identity
   across a reconnect, and so do the subscriptions of the V2 engine, so most models override

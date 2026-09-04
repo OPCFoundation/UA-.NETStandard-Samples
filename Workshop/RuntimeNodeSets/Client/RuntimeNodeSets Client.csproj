@@ -2,17 +2,28 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Quickstarts.DataTypes</RootNamespace>
-    <AssemblyName>Quickstarts.DataTypesClient</AssemblyName>
+    <RootNamespace>Quickstarts.RuntimeNodeSets.Client</RootNamespace>
+    <AssemblyName>Quickstarts.RuntimeNodeSetsClient</AssemblyName>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Release\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <Content Include="DataTypesClient.Config.xml">
+
+    <!-- There is nothing to hand a source generator: the model this client talks to is a
+         NodeSet2 document the server reads at run time, so the client finds everything by
+         browse path in the two namespaces those documents declare. -->
+
+    <Content Include="Quickstarts.RuntimeNodeSetsClient.Config.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -20,17 +31,9 @@
     <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
     <ProjectReference Include="..\..\..\Samples\Client.Common\Opc.Ua.Samples.Client.csproj" />
     <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
-    <ProjectReference Include="..\Common\DataTypes Library.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
-      <Version>$(OpcUaNetStandardVersion)</Version>
-    </PackageReference>
-
-    <!-- the schema generators, which turn a DataTypeDefinition into XSD, OPC Binary or
-         JSON Schema. They are internal to the package and reached through its
-         AddSchemaGeneration() registration. -->
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core.Schema">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
   </ItemGroup>

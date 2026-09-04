@@ -65,6 +65,7 @@ namespace Quickstarts.DataTypes
             this.Server_ConnectMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Server_ChangeUserOrLocaleMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Server_DisconnectMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.SchemasMI = new System.Windows.Forms.ToolStripMenuItem();
             this.HelpMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Help_ContentsMI = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusBar = new System.Windows.Forms.StatusStrip();
@@ -83,6 +84,7 @@ namespace Quickstarts.DataTypes
             // 
             this.MenuBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.ServerMI,
+            this.SchemasMI,
             this.HelpMI});
             this.MenuBar.Location = new System.Drawing.Point(0, 0);
             this.MenuBar.Name = "MenuBar";
@@ -136,6 +138,13 @@ namespace Quickstarts.DataTypes
             // 
             // HelpMI
             // 
+            this.SchemasMI.Name = "SchemasMI";
+            this.SchemasMI.Size = new System.Drawing.Size(62, 20);
+            this.SchemasMI.Text = "Schemas";
+            this.SchemasMI.Click += new System.EventHandler(this.SchemasMI_Click);
+            //
+            // HelpMI
+            //
             this.HelpMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.Help_ContentsMI});
             this.HelpMI.Name = "HelpMI";
@@ -253,6 +262,7 @@ namespace Quickstarts.DataTypes
         private System.Windows.Forms.ToolStripMenuItem Server_ConnectMI;
         private System.Windows.Forms.ToolStripMenuItem Server_DisconnectMI;
         private System.Windows.Forms.Panel MainPN;
+        private System.Windows.Forms.ToolStripMenuItem SchemasMI;
         private System.Windows.Forms.ToolStripMenuItem HelpMI;
         private System.Windows.Forms.ToolStripMenuItem Help_ContentsMI;
         private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;

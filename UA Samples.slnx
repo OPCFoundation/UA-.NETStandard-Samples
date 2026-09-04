@@ -53,6 +53,10 @@
     <Project Path="Workshop/RoleManagement/Client/RoleManagement Client.csproj" />
     <Project Path="Workshop/RoleManagement/Server/RoleManagement Server.csproj" />
   </Folder>
+  <Folder Name="/RuntimeNodeSets/">
+    <Project Path="Workshop/RuntimeNodeSets/Client/RuntimeNodeSets Client.csproj" />
+    <Project Path="Workshop/RuntimeNodeSets/Server/RuntimeNodeSets Server.csproj" />
+  </Folder>
   <Folder Name="/SimpleEvents/">
     <Project Path="Workshop/SimpleEvents/Client/SimpleEvents Client.csproj" Id="fa574129-651d-4655-ae44-b61f3e68230b" />
     <Project Path="Workshop/SimpleEvents/Server/SimpleEvents Server.csproj" Id="6ac7a41d-cc27-4b7f-8570-b99561e2a339" />

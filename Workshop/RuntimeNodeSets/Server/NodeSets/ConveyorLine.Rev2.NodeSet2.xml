@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Revision 2 of the conveyor line: the vendor added a Throughput variable to
+     ConveyorType and a second conveyor to the line, and left everything else where it
+     was. Same ModelUri as revision 1, so loading this over that one is a reload of the
+     same namespace rather than a second model.
+
+     The node ids revision 1 already used mean the same nodes here. That is what lets a
+     shadow reload keep a monitored item on ns=N;i=1102 alive across the swap; a node
+     id which changed meaning between two revisions would be a modelling error the
+     server cannot repair. -->
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+  <NamespaceUris>
+    <Uri>http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Line/</Uri>
+  </NamespaceUris>
+  <Models>
+    <Model ModelUri="http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Line/" Version="2.0.0" PublicationDate="2026-03-01T00:00:00Z">
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05.04" PublicationDate="2024-04-25T00:00:00Z" />
+    </Model>
+  </Models>
+  <Aliases>
+    <Alias Alias="Boolean">i=1</Alias>
+    <Alias Alias="Int32">i=6</Alias>
+    <Alias Alias="Double">i=11</Alias>
+    <Alias Alias="String">i=12</Alias>
+    <Alias Alias="Organizes">i=35</Alias>
+    <Alias Alias="HasModellingRule">i=37</Alias>
+    <Alias Alias="HasTypeDefinition">i=40</Alias>
+    <Alias Alias="HasSubtype">i=45</Alias>
+    <Alias Alias="HasProperty">i=46</Alias>
+    <Alias Alias="HasComponent">i=47</Alias>
+  </Aliases>
+
+  <UADataType NodeId="ns=1;i=1000" BrowseName="1:ConveyorState">
+    <DisplayName>ConveyorState</DisplayName>
+    <Description>The operating state of a conveyor.</Description>
+    <References>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=29</Reference>
+    </References>
+    <!-- Identical to revision 1, and it has to be: the server refuses a reload which
+         changes the definition of a DataType it already published, because a Client may
+         have decoded values against the old one. Adding a field here is refused with
+         "Runtime DataType definitions are immutable for the server lifetime". A model
+         which needs a different structure declares a new DataType. -->
+    <Definition Name="1:ConveyorState">
+      <Field Name="Stopped" Value="0" />
+      <Field Name="Running" Value="1" />
+      <Field Name="Faulted" Value="2" />
+    </Definition>
+  </UADataType>
+
+  <UAObjectType NodeId="ns=1;i=1010" BrowseName="1:ConveyorType">
+    <DisplayName>ConveyorType</DisplayName>
+    <References>
+      <Reference ReferenceType="HasComponent">ns=1;i=1011</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1012</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1013</Reference>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=58</Reference>
+    </References>
+  </UAObjectType>
+  <UAVariable NodeId="ns=1;i=1011" BrowseName="1:Speed" ParentNodeId="ns=1;i=1010" DataType="Double" AccessLevel="1">
+    <DisplayName>Speed</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1010</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1012" BrowseName="1:State" ParentNodeId="ns=1;i=1010" DataType="ns=1;i=1000" AccessLevel="1">
+    <DisplayName>State</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1010</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1013" BrowseName="1:Throughput" ParentNodeId="ns=1;i=1010" DataType="Double" AccessLevel="1">
+    <DisplayName>Throughput</DisplayName>
+    <Description>Parts per minute. New in revision 2.</Description>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1010</Reference>
+    </References>
+  </UAVariable>
+
+  <UAObject NodeId="ns=1;i=1100" BrowseName="1:ConveyorLine">
+    <DisplayName>ConveyorLine</DisplayName>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=1110</Reference>
+      <Reference ReferenceType="Organizes">ns=1;i=1101</Reference>
+      <Reference ReferenceType="Organizes">ns=1;i=1120</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=61</Reference>
+      <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=1110" BrowseName="1:Revision" ParentNodeId="ns=1;i=1100" DataType="String" AccessLevel="1">
+    <DisplayName>Revision</DisplayName>
+    <Description>Which revision of the vendor model is loaded. Read it again after a reload.</Description>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=1100</Reference>
+    </References>
+    <Value>
+      <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">Rev2</String>
+    </Value>
+  </UAVariable>
+
+  <UAObject NodeId="ns=1;i=1101" BrowseName="1:Conveyor1" ParentNodeId="ns=1;i=1100">
+    <DisplayName>Conveyor1</DisplayName>
+    <References>
+      <Reference ReferenceType="HasComponent">ns=1;i=1102</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1103</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1104</Reference>
+      <Reference ReferenceType="HasTypeDefinition">ns=1;i=1010</Reference>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=1;i=1100</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=1102" BrowseName="1:Speed" ParentNodeId="ns=1;i=1101" DataType="Double" AccessLevel="1">
+    <DisplayName>Speed</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1101</Reference>
+    </References>
+    <Value>
+      <Double xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">1.4</Double>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1103" BrowseName="1:State" ParentNodeId="ns=1;i=1101" DataType="ns=1;i=1000" AccessLevel="1">
+    <DisplayName>State</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1101</Reference>
+    </References>
+    <Value>
+      <Int32 xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">1</Int32>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1104" BrowseName="1:Throughput" ParentNodeId="ns=1;i=1101" DataType="Double" AccessLevel="1">
+    <DisplayName>Throughput</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1101</Reference>
+    </References>
+    <Value>
+      <Double xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">42</Double>
+    </Value>
+  </UAVariable>
+
+  <UAObject NodeId="ns=1;i=1120" BrowseName="1:Conveyor2" ParentNodeId="ns=1;i=1100">
+    <DisplayName>Conveyor2</DisplayName>
+    <Description>New in revision 2.</Description>
+    <References>
+      <Reference ReferenceType="HasComponent">ns=1;i=1121</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1122</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1123</Reference>
+      <Reference ReferenceType="HasTypeDefinition">ns=1;i=1010</Reference>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=1;i=1100</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=1121" BrowseName="1:Speed" ParentNodeId="ns=1;i=1120" DataType="Double" AccessLevel="1">
+    <DisplayName>Speed</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1120</Reference>
+    </References>
+    <Value>
+      <Double xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">0.9</Double>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1122" BrowseName="1:State" ParentNodeId="ns=1;i=1120" DataType="ns=1;i=1000" AccessLevel="1">
+    <DisplayName>State</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1120</Reference>
+    </References>
+    <Value>
+      <Int32 xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">0</Int32>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1123" BrowseName="1:Throughput" ParentNodeId="ns=1;i=1120" DataType="Double" AccessLevel="1">
+    <DisplayName>Throughput</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1120</Reference>
+    </References>
+    <Value>
+      <Double xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">0</Double>
+    </Value>
+  </UAVariable>
+</UANodeSet>

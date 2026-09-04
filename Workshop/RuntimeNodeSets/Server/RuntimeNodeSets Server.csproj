@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Quickstarts.RuntimeNodeSets.Server</RootNamespace>
+    <AssemblyName>Quickstarts.RuntimeNodeSetsServer</AssemblyName>
+    <ApplicationIcon>App.ico</ApplicationIcon>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="App.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+
+    <!-- The address space of this sample. There is no model design and no source
+         generation: the NodeSet2 documents are data the server reads at run time, so
+         they are copied next to the executable and nothing else happens to them. -->
+    <Content Include="NodeSets\*.NodeSet2.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+
+    <Content Include="Quickstarts.RuntimeNodeSetsServer.Config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
+    <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
+      <Version>$(OpcUaNetStandardVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>
