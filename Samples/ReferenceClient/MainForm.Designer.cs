@@ -67,6 +67,9 @@ namespace Quickstarts.ReferenceClient
             this.Server_DiscoverMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Server_ConnectMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Server_DisconnectMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Server_ReverseConnectMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Server_SeparatorMI = new System.Windows.Forms.ToolStripSeparator();
+            this.Server_ExportNodeSetMI = new System.Windows.Forms.ToolStripMenuItem();
             this.HelpMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Help_ContentsMI = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusBar = new System.Windows.Forms.StatusStrip();
@@ -108,7 +111,10 @@ namespace Quickstarts.ReferenceClient
             this.ServerMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.Server_DiscoverMI,
             this.Server_ConnectMI,
-            this.Server_DisconnectMI});
+            this.Server_ReverseConnectMI,
+            this.Server_DisconnectMI,
+            this.Server_SeparatorMI,
+            this.Server_ExportNodeSetMI});
             this.ServerMI.Name = "ServerMI";
             this.ServerMI.Size = new System.Drawing.Size(51, 20);
             this.ServerMI.Text = "Server";
@@ -133,7 +139,28 @@ namespace Quickstarts.ReferenceClient
             this.Server_DisconnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_DisconnectMI.Text = "Disconnect";
             this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_ClickAsync);
-            // 
+            //
+            // Server_ReverseConnectMI
+            //
+            this.Server_ReverseConnectMI.Name = "Server_ReverseConnectMI";
+            this.Server_ReverseConnectMI.Size = new System.Drawing.Size(127, 22);
+            this.Server_ReverseConnectMI.Text = "Reverse Connect";
+            this.Server_ReverseConnectMI.ToolTipText = "Listens for a server which connects out to this client and opens a session on the connection it offers.";
+            this.Server_ReverseConnectMI.Click += new System.EventHandler(this.Server_ReverseConnectMI_ClickAsync);
+            //
+            // Server_SeparatorMI
+            //
+            this.Server_SeparatorMI.Name = "Server_SeparatorMI";
+            this.Server_SeparatorMI.Size = new System.Drawing.Size(124, 6);
+            //
+            // Server_ExportNodeSetMI
+            //
+            this.Server_ExportNodeSetMI.Name = "Server_ExportNodeSetMI";
+            this.Server_ExportNodeSetMI.Size = new System.Drawing.Size(127, 22);
+            this.Server_ExportNodeSetMI.Text = "Export NodeSet2...";
+            this.Server_ExportNodeSetMI.ToolTipText = "Browses the address space of the connected server and writes it to a NodeSet2 XML file.";
+            this.Server_ExportNodeSetMI.Click += new System.EventHandler(this.Server_ExportNodeSetMI_ClickAsync);
+            //
             // HelpMI
             // 
             this.HelpMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -227,6 +254,9 @@ namespace Quickstarts.ReferenceClient
         private System.Windows.Forms.ToolStripMenuItem Server_DiscoverMI;
         private System.Windows.Forms.ToolStripMenuItem Server_ConnectMI;
         private System.Windows.Forms.ToolStripMenuItem Server_DisconnectMI;
+        private System.Windows.Forms.ToolStripMenuItem Server_ReverseConnectMI;
+        private System.Windows.Forms.ToolStripSeparator Server_SeparatorMI;
+        private System.Windows.Forms.ToolStripMenuItem Server_ExportNodeSetMI;
         private System.Windows.Forms.ToolStripMenuItem HelpMI;
         private System.Windows.Forms.ToolStripMenuItem Help_ContentsMI;
         private ConnectServerCtrl ConnectServerCTRL;

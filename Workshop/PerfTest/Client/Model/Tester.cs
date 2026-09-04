@@ -61,6 +61,53 @@ namespace Quickstarts.PerfTestClient.Model
             set { m_itemCount = value; }
         }
 
+        /// <summary>
+        /// The upper bound of monitored items the engine puts into one server side
+        /// subscription; zero lets it discover the effective limit of the server.
+        /// </summary>
+        /// <remarks>
+        /// A logical subscription of the V2 engine is not bound by
+        /// <c>MaxMonitoredItemsPerSubscription</c> (OPC UA Part 4 §5.13.2): when the cap
+        /// would be exceeded it splits the items over further server side partition
+        /// subscriptions and still presents one collection. Setting this to a small number
+        /// forces the split on a server whose real limit is far higher, which is how this
+        /// test makes the partitioning visible.
+        /// </remarks>
+        public int MaxMonitoredItemsPerPartition
+        {
+            get { return m_maxMonitoredItemsPerPartition; }
+            set { m_maxMonitoredItemsPerPartition = value; }
+        }
+
+        /// <summary>
+        /// Whether to bind the subscription to a single server side subscription, so that
+        /// items beyond the server cap fail with <c>Bad_TooManyMonitoredItems</c> the way
+        /// they did before the V2 engine.
+        /// </summary>
+        public bool DisableUnboundedItemMode
+        {
+            get { return m_disableUnboundedItemMode; }
+            set { m_disableUnboundedItemMode = value; }
+        }
+
+        /// <summary>
+        /// How many consecutive items share an affinity tag, so that they are guaranteed to
+        /// land in the same partition; zero for no affinity at all.
+        /// </summary>
+        /// <remarks>
+        /// <c>SetTriggering</c> is scoped to one server side subscription (OPC UA Part 4
+        /// §5.13.6), so items which have to take part in a triggering relationship must not
+        /// be spread over partitions. <see cref="MonitoredItemOptions.Affinity"/> is the
+        /// promise the engine keeps for them: items sharing a non-null tag share a
+        /// partition, and once that partition is full the next <c>TryAdd</c> with the tag
+        /// is refused rather than splitting the group.
+        /// </remarks>
+        public int AffinityGroupSize
+        {
+            get { return m_affinityGroupSize; }
+            set { m_affinityGroupSize = value; }
+        }
+
         // returns the number of callbacks that have arrived.
         public int MessageCount
         {
@@ -149,6 +196,34 @@ namespace Quickstarts.PerfTestClient.Model
         }
 
         /// <summary>
+        /// The partitions the logical subscription is currently spread over, together with
+        /// the item updates each of them delivered since the test started.
+        /// </summary>
+        /// <remarks>
+        /// The engine tags every notification with the server side identifier of the
+        /// partition it came from, which is what lets a caller see the load spread over
+        /// the partitions rather than only their number.
+        /// </remarks>
+        public void GetPartitions(out int partitionCount, out IReadOnlyList<KeyValuePair<uint, int>> updatesPerPartition)
+        {
+            partitionCount = 0;
+
+            ISubscription subscription = m_subscription;
+
+            if (subscription is IPartitionedSubscription partitioned)
+            {
+                partitionCount = partitioned.PartitionCount;
+            }
+
+            lock (m_lock)
+            {
+                var counts = new List<KeyValuePair<uint, int>>(m_partitionUpdateCounts);
+                counts.Sort((x, y) => x.Key.CompareTo(y.Key));
+                updatesPerPartition = counts;
+            }
+        }
+
+        /// <summary>
         /// Starts the specified session.
         /// </summary>
         /// <param name="session">The session.</param>
@@ -172,6 +247,15 @@ namespace Quickstarts.PerfTestClient.Model
                 MaxNotificationsPerPublish = 50000,
                 PublishingEnabled = false,
                 Priority = 1,
+
+                // the knobs of the unbounded monitored item mode: a null bound lets the
+                // reactive fallback discover the real limit of the server from the first
+                // Bad_TooManyMonitoredItems it sees, and disabling the mode brings back
+                // the per item failure of the pre-V2 engine.
+                MaxMonitoredItemsPerPartition = m_maxMonitoredItemsPerPartition > 0
+                    ? (uint)m_maxMonitoredItemsPerPartition
+                    : null,
+                DisableUnboundedItemMode = m_disableUnboundedItemMode,
             });
 
             ISubscription subscription = m_subscription = manager.Add(this, m_options);
@@ -179,6 +263,8 @@ namespace Quickstarts.PerfTestClient.Model
             DateTime start = DateTime.UtcNow;
 
             var indexes = new Dictionary<uint, int>();
+            int refused = 0;
+
 
             for (int ii = 0; ii < m_itemCount; ii++)
             {
@@ -190,6 +276,12 @@ namespace Quickstarts.PerfTestClient.Model
                     QueueSize = 0,
                     DiscardOldest = true,
                     MonitoringMode = MonitoringMode.Reporting,
+
+                    // null places no constraint, which is what lets the placement policy
+                    // fill partitions first fit; a tag keeps its group together.
+                    Affinity = m_affinityGroupSize > 0
+                        ? Utils.Format("group{0}", ii / m_affinityGroupSize)
+                        : null,
                 });
 
                 if (subscription.MonitoredItems.TryAdd(
@@ -201,6 +293,22 @@ namespace Quickstarts.PerfTestClient.Model
                     // used to get by constructing the item with the index as its handle.
                     indexes[monitoredItem.ClientHandle] = ii;
                 }
+                else
+                {
+                    // the affinity contract is strict: rather than split a group over two
+                    // partitions the engine refuses the item, and the caller has to shrink
+                    // the group or raise the bound per partition.
+                    refused++;
+                }
+            }
+
+            if (refused > 0)
+            {
+                ReportMessage(
+                    "{0} of {1} items were refused. An affinity group does not fit into a partition of {2} items.",
+                    refused,
+                    m_itemCount,
+                    m_maxMonitoredItemsPerPartition);
             }
 
             // the engine applies the added items on its own worker, so the time it takes for
@@ -214,6 +322,18 @@ namespace Quickstarts.PerfTestClient.Model
             }
 
             ReportMessage("Time to add {1} items {0}ms.", (end - start).TotalMilliseconds, m_itemCount);
+
+            // a single partition is the common case and the fast path; more than one means
+            // the placement policy hit the per subscription cap, either the one configured
+            // here or the one the server reported.
+            if (subscription is IPartitionedSubscription partitioned)
+            {
+                ReportMessage(
+                    "{0} item(s) spread over {1} partition(s): {2}.",
+                    m_itemCount,
+                    partitioned.PartitionCount,
+                    String.Join(", ", partitioned.PartitionIds));
+            }
 
             // reconfiguring the options monitor is what modifies the subscription; there is no
             // SetPublishingMode call in the V2 engine.
@@ -330,6 +450,14 @@ namespace Quickstarts.PerfTestClient.Model
                 {
                     m_totalItemUpdateCount++;
 
+                    // which server side subscription of the logical one the update came
+                    // from; the same for every update while a single partition holds all
+                    // the items.
+                    uint partitionServerId = changes[ii].PartitionServerId;
+
+                    m_partitionUpdateCounts.TryGetValue(partitionServerId, out int partitionCount);
+                    m_partitionUpdateCounts[partitionServerId] = partitionCount + 1;
+
                     if (changes[ii].MonitoredItem == null || m_itemIndexes == null)
                     {
                         continue;
@@ -382,6 +510,15 @@ namespace Quickstarts.PerfTestClient.Model
         private List<string> m_logMessages;
         private int m_samplingRate;
         private int m_itemCount;
+        private int m_maxMonitoredItemsPerPartition;
+        private bool m_disableUnboundedItemMode;
+        private int m_affinityGroupSize;
+
+        /// <summary>
+        /// The item updates each partition delivered, by the server side subscription id
+        /// the engine reports on the notification.
+        /// </summary>
+        private readonly Dictionary<uint, int> m_partitionUpdateCounts = new Dictionary<uint, int>();
         private int m_messageCount;
         private int m_totalItemUpdateCount;
         private DateTime m_firstMessageTime;

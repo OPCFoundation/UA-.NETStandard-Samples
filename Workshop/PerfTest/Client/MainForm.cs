@@ -28,7 +28,9 @@
  * ======================================================================*/
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
@@ -159,6 +161,11 @@ namespace Quickstarts.PerfTestClient
                 m_model.SamplingRate = (int)UpdateRateCTRL.Value;
                 m_model.ItemCount = (int)ItemCountCTRL.Value;
 
+                // zero leaves the bound to the engine, which discovers the effective limit
+                // of the server from the first Bad_TooManyMonitoredItems it is told about
+                // and fans the rest of the items out over further partitions.
+                m_model.MaxMonitoredItemsPerPartition = (int)MaxItemsPerPartitionCTRL.Value;
+
                 await m_model.AttachAsync(session);
 
                 ShowRunning(true);
@@ -232,6 +239,8 @@ namespace Quickstarts.PerfTestClient
                 MessageCountTB.Text = statistics.MessageCount.ToString(CultureInfo.CurrentCulture);
                 TotalItemUpdateCountTB.Text = statistics.TotalItemUpdateCount.ToString(CultureInfo.CurrentCulture);
 
+                ShowPartitions(m_model.ReadPartitions());
+
                 TimeSpan delta = statistics.Elapsed;
 
                 if (delta.TotalMilliseconds > 0)
@@ -296,6 +305,40 @@ namespace Quickstarts.PerfTestClient
         {
             UpdateTimer.Enabled = running;
             StopBTN.Visible = running;
+
+            if (!running)
+            {
+                PartitionCountTB.Text = String.Empty;
+                PartitionLoadTB.Text = String.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Shows how the items of the running test are spread over server side subscriptions.
+        /// </summary>
+        /// <remarks>
+        /// One partition is the common case: the whole block of items fits into a single
+        /// server side subscription and the logical subscription short circuits to it. More
+        /// than one means the placement policy ran into the per subscription cap, and the
+        /// load column shows that the updates really do arrive from each of them.
+        /// </remarks>
+        private void ShowPartitions(PerfTestPartitionStatistics partitions)
+        {
+            PartitionCountTB.Text = partitions.PartitionCount.ToString(CultureInfo.CurrentCulture);
+
+            var load = new StringBuilder();
+
+            foreach (KeyValuePair<uint, int> partition in partitions.UpdatesPerPartition)
+            {
+                if (load.Length > 0)
+                {
+                    load.Append(", ");
+                }
+
+                load.AppendFormat(CultureInfo.CurrentCulture, "{0}:{1}", partition.Key, partition.Value);
+            }
+
+            PartitionLoadTB.Text = load.ToString();
         }
         #endregion
     }

@@ -65,6 +65,25 @@
     <DiscoveryServers></DiscoveryServers>
     <EndpointCacheFilePath>Quickstarts.ReferenceClient.Endpoints.xml</EndpointCacheFilePath>
     <MinSubscriptionLifetime>10000</MinSubscriptionLifetime>
+
+    <!--
+      Reverse connect: the endpoint the client listens on for servers which connect out to it,
+      the case a firewall in front of the server forces. Server > Reverse Connect opens this
+      listener and waits for the ReverseHello of the server named in the connect control; the
+      Reference Server dials this port out of the box.
+
+      HoldTime is how long a connection which matches nothing the client waits for yet is kept
+      open before it is rejected, WaitTimeout how long a wait for a server runs.
+    -->
+    <ReverseConnect>
+      <ClientEndpoints>
+        <ClientEndpoint>
+          <EndpointUrl>opc.tcp://localhost:65301</EndpointUrl>
+        </ClientEndpoint>
+      </ClientEndpoints>
+      <HoldTime>15000</HoldTime>
+      <WaitTimeout>20000</WaitTimeout>
+    </ReverseConnect>
   </ClientConfiguration>
 
   <Extensions>

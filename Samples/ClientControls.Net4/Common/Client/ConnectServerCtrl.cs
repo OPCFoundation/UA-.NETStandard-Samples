@@ -652,11 +652,16 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Updates the status control.
         /// </summary>
+        /// <remarks>
+        /// Public so that a form which drives a connection the control does not start
+        /// itself - a client waiting for a reverse connection, for one - reports it on the
+        /// same status line as the connects the control does start.
+        /// </remarks>
         /// <param name="error">Whether the status represents an error.</param>
         /// <param name="time">The time associated with the status.</param>
         /// <param name="status">The status message.</param>
         /// <param name="args">Arguments used to format the status message.</param>
-        private void UpdateStatus(bool error, DateTime time, string status, params object[] args)
+        public void UpdateStatus(bool error, DateTime time, string status, params object[] args)
         {
             if (this.InvokeRequired)
             {
