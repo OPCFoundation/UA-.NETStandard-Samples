@@ -7,7 +7,7 @@ arrives.
 
 | Project | What it is |
 |---------|------------|
-| [Server](Server) | An `AsyncCustomNodeManager` which maps a simulated plant onto Areas, Sources and Conditions |
+| [Server](Server) | A hand-written `FluentNodeManagerBase` which maps a simulated plant onto Areas, Sources and Conditions |
 | [Client](Client) | A Windows Forms alarm viewer which subscribes to conditions and calls the Part 9 Methods on them |
 
 Endpoint: `opc.tcp://localhost:62544/Quickstarts/AlarmConditionServer`.

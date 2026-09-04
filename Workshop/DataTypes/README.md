@@ -2,20 +2,20 @@
 
 This server is build using the UA-.NETStandard stack as example of how to define and use custom data types.
 
-## Two ways to turn a model into code
+## Two models, one generator
 
-The sample carries two information models, and each is built a different way, because
-together they show both routes:
+The sample carries two information models, both compiled by the **OPC UA source
+generator** at build time:
 
-| Model | Built by | Where |
+| Model | Assembly | Where |
 |-------|----------|-------|
-| `Common/Types/ModelDesign1.xml` - the vehicle types | the **OPC UA source generator** at compile time | `AdditionalFiles` in [DataTypes Library.csproj](./Common/DataTypes%20Library.csproj) |
-| `Server/Instances/ModelDesign2.xml` - the parking lot and the two wheelers | the **ModelCompiler**, checked in | [Server/BuildDesign.bat](./Server/BuildDesign.bat) |
+| `Common/Types/ModelDesign1.xml` - the vehicle types | [DataTypes Library](./Common/DataTypes%20Library.csproj), shared by the client and the server | `AdditionalFiles` in the library project |
+| `Server/Instances/ModelDesign2.xml` - the parking lot and the two wheelers | [DataTypes Server](./Server/DataTypes%20Server.csproj) | `AdditionalFiles` in the server project |
 
-The source generator is the route to prefer: the `.cs` files never enter the repository,
-the model and the code cannot drift apart, and the generator emits a registration
-extension (`AddQuickstartsDataTypesTypes`) instead of leaving a client to find the types
-by reflection. Reference the analyzer package and hand the design to it:
+The `.cs` files never enter the repository, the model and the code cannot drift apart,
+and the generator emits a registration extension per model (`AddQuickstartsDataTypesTypes`,
+`AddQuickstartsDataTypesInstances`) instead of leaving a client to find the types by
+reflection. Reference the analyzer package and hand the design to it:
 
 ```xml
 <ItemGroup>
@@ -26,83 +26,106 @@ by reflection. Reference the analyzer package and hand the design to it:
 </ItemGroup>
 ```
 
-The instance model cannot take that route yet: its `BicycleType` subtypes a structure
-declared in the *other* design file, which the model source generator does not support
-([UA-.NETStandard#4332](https://github.com/OPCFoundation/UA-.NETStandard/issues/4332)).
-Writing those types by hand as `[DataType]` classes does not work around it either -
-the attribute generator emits a `Clone()` which drops the inherited fields, and the
-server clones node values while loading its address space
-([UA-.NETStandard#4352](https://github.com/OPCFoundation/UA-.NETStandard/issues/4352)).
-The instance model therefore still uses the ModelCompiler workflow described below; see
-[#814](https://github.com/OPCFoundation/UA-.NETStandard-Samples/issues/814) for the
-follow-up.
+The instance model reaches across the project boundary: its `BicycleType` subtypes a
+structure of the type model, and its `DriverOfTheMonth` is an instance of the `DriverType`
+declared there. The generated code refers to the classes of the library assembly for
+both. The generator resolves such references from the model dependency metadata every
+generated assembly carries; the server project hands it the type model's design file as
+well (a second pair of `AdditionalFiles`), because the metadata does not carry the access
+levels and default values of the children a type declares, and the design file does. No
+code is generated for that design in the server - the library already supplies the same
+C# namespace.
+
+The type model is built with `ModelSourceGeneratorOmitFluentApi=true`: the library is
+shared with the client and must not depend on `Opc.Ua.Server`.
+
+### Known gap on 2.0.0-preview.4
+
+The generated node sets keep the default values of a model as the XML the design
+declares, decoded when the nodes are created. An `ExtensionObject` written that way has
+no `TypeId`, and the XML decoder of the SDK only resolves a body by its type id, never by
+its element name (`XmlDecoder.ReadExtensionObjectBody`). The structured default values
+of the sample - the driver's `PrimaryVehicle`, the `VehiclesInLot` - therefore load as raw
+XML with a null type id, which a client cannot decode; values a client writes round-trip
+as before. Two of the node manager tests of the sample record this as a known issue
+([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401))
+and start failing the moment the SDK resolves such bodies, which is when the wrappers come
+off.
 
 ## How to integrate new information model into OPC Server
 
 This documentation explains how to add a custom information model to OPC Server based on UA-.NETStandard stack. It will use the DataTypes server example as reference but the general steps are the same for every UA-.NETStandard stack based OPC Server.
 
-### Preparation
-
-1. Clone [Opc.Ua.ModelCompiler Repository](https://github.com/OPCFoundation/UA-ModelCompiler)
-2. Build Opc.Ua.ModelCompiler solution
-3. Copy the build result of Opc.Ua.ModelCompiler solution to [UA-.NETStandard/SampleApplications/bin](./../../bin)
-
 ### Add own information model
 
-1. Create a Folder to to UA-.NETStandard/SampleApplications/Workshop/DataTypes/Common e.g. MyInformationModel
-   1. Create a sub-folder named "Output"
-2. Copy the model itself into this folder e.g. MyInformationModel.xml into UA-.NETStandard/SampleApplications/Workshop/DataTypes/Common/MyInformationModel
-3. Modify [BuildDesign.bat](./Common/BuildDesign.bat) and add the following lines
+1. Create a folder for the model, e.g. `Workshop/DataTypes/Server/MyInformationModel`
+2. Copy the model design into it, e.g. `MyInformationModel.xml`, together with the `.csv`
+   file that pins the numeric node ids (the generator assigns ids to nodes the file does
+   not list, so the file may start empty)
+3. Hand both files to the source generator in the project file:
 
-```cmd
-echo Building MyInformationModel
-Opc.Ua.ModelCompiler.exe -version v104 -d2 ".\MyInformationModel\MyInformationModel.xml" -cg ".\MyInformationModel\Output\MyInformationModel.csv" -o2 ".\MyInformationModel\Output"
-echo Success!
+```xml
+<ItemGroup>
+  <AdditionalFiles Include="MyInformationModel\MyInformationModel.xml" />
+  <AdditionalFiles Include="MyInformationModel\MyInformationModel.csv" />
+</ItemGroup>
 ```
 
-4. Run [BuildDesign.bat](./Common/BuildDesign.bat)
-
-```cmd
-.\Common\BuildDesign.bat
-```
-
-In case of an issue the Opc.Ua.ModelCompiler will show and error dialog, otherwise you will have different files in your output folder, that need to be added into the project. Either as source code or as embedded resource.
+The generator emits the node states, the data types, the constants (`Objects`,
+`Variables`, `DataTypes`, ... and `Namespaces`) and the registration extensions of the
+model into the C# namespace the `Prefix` of the model's `<opc:Namespace>` names. When the
+design refers to a model of another project - a base type, a type definition - reference
+that project and, as this sample does for the type model, add its design as
+`AdditionalFiles` too so the inherited children come out complete.
 
 ### Use information model
 
-Extend the [DataTypesNodeManager](./Server/DataTypesNodeManager.cs):
+Extend the [DataTypesNodeManager](./Server/DataTypesNodeManager.cs). A node manager
+serves one generated model directly: the `[NodeManager]` attribute selects it by its
+namespace URI, and the generated partial loads it. Every further model is named in
+`AdditionalNamespaceUris` and loaded in front of it:
 
 ```csharp
-// in the constructor - add the namespaces of the new model to the base call,
-// and register its encodeable types
-
-public DataTypesNodeManager(IServerInternal server, ApplicationConfiguration configuration)
-:
-    base(server, configuration,
-        Quickstarts.DataTypes.Namespaces.DataTypes,
+[NodeManager(
+    NamespaceUri = "http://opcfoundation.org/UA/Quickstarts/DataTypes/Instances",
+    AdditionalNamespaceUris = new[] {
         Quickstarts.DataTypes.Types.Namespaces.DataTypes,
-        Quickstarts.DataTypes.Instances.Namespaces.DataTypeInstances,
-        MyNamespace.DataTypes.Types.Namespaces.DataTypes)
+        Quickstarts.DataTypes.Namespaces.DataTypes,
+        MyNamespace.Namespaces.MyInformationModel
+    })]
+public partial class DataTypesNodeManager
 {
-    // a source generated model brings its own registration extension
-    Server.Factory.Builder.AddMyNamespaceDataTypes().Commit();
+    protected override async ValueTask LoadPredefinedNodesAsync(
+        ISystemContext context,
+        IDictionary<NodeId, IList<IReference>> externalReferences,
+        CancellationToken cancellationToken = default)
+    {
+        // every generated model brings its own registration extension
+        Server.Factory.Builder
+            .AddQuickstartsDataTypesTypes()
+            .AddQuickstartsDataTypesInstances()
+            .AddMyNamespaceMyInformationModel()
+            .Commit();
 
-    // a ModelCompiler built model is registered by reflection over its assembly
-    Server.Factory.AddEncodeableTypes(typeof(MyNamespace.DataTypes.Types.MyDataType).Assembly);
-    ...
+        // add the nodes of the models the generated partial does not load itself
+        NodeStateCollection nodes = new NodeStateCollection()
+            .AddQuickstartsDataTypesTypes(context)
+            .AddMyNamespaceMyInformationModel(context);
+
+        foreach (NodeState node in nodes)
+        {
+            await AddPredefinedNodeAsync(context, node, cancellationToken).ConfigureAwait(false);
+        }
+
+        await base.LoadPredefinedNodesAsync(context, externalReferences, cancellationToken).ConfigureAwait(false);
+    }
 }
-
-// in LoadPredefinedNodesAsync
-
-predefinedNodes.LoadFromBinaryResource(context,
-      "MyNamespace.DataTypes.Types.MyNamespace.DataTypes.Types.PredefinedNodes.uanodes",
-      typeof(MyNamespace.DataTypes.Types.MyDataType).Assembly,
-      true);
 ```
 
-The factory in the same file announces the namespaces the node manager serves, so
-new namespaces are added to its `NamespacesUris` property as well.
+The generated `DataTypesNodeManagerFactory` announces every namespace the attribute
+names, so nothing else has to change for the server to route requests for the new
+namespace to this node manager.
 
 Compile and run the DataTypes server, you should be able to connect with any OPC UA client (e.g. DataTypes Client) and to browse your own data types.
 
-*Remark* you don't need to load schema files (*.xsd, *.bsd) because the *.uanodes files contains those information already. 
+*Remark* the type dictionaries (`*.xsd`, `*.bsd`) and the node set files are no longer needed: the generated code carries the nodes, the data type definitions and the schemas.

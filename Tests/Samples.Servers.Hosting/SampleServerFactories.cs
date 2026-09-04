@@ -7,15 +7,15 @@
  * http://opcfoundation.org/License/MIT/1.00/
  * ======================================================================*/
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using Opc.Ua.Server;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Opc.Ua.Samples.Tests
 {
     /// <summary>
-    /// One sample server to start, together with the way its own Program.Main creates it.
+    /// A sample server which can be hosted by a test: the catalog entry of the sample
+    /// and the registration its entry point uses to host it.
     /// </summary>
     public sealed class SampleServerUnderTest
     {
@@ -25,80 +25,62 @@ namespace Opc.Ua.Samples.Tests
         public SampleDefinition Sample { get; init; }
 
         /// <summary>
-        /// Creates the server instance, exactly the way the sample does.
+        /// Registers the server of the sample with the host of a test, through the
+        /// same composition root its <c>Program.Main</c> uses: the server class, its
+        /// node managers and the configuration file.
         /// </summary>
-        public Func<ITelemetryContext, StandardServer> CreateServer { get; init; }
-
-        /// <inheritdoc/>
-        public override string ToString() => Sample.Name;
+        public SampleServerRegistration ConfigureServices { get; init; }
     }
 
     /// <summary>
-    /// Maps the samples in the catalog to their server classes.
+    /// Knows how every sample server is registered with a host, so a test can host
+    /// any of them without knowing its classes.
     /// </summary>
-    /// <remarks>
-    /// The factories are written out instead of being resolved by reflection on purpose:
-    /// renaming or removing a sample server then breaks the build of the tests, which is
-    /// the earliest and clearest moment to notice.
-    /// </remarks>
     public static class SampleServerFactories
     {
-        private static readonly Dictionary<string, Func<ITelemetryContext, StandardServer>> s_factories =
-            new(StringComparer.Ordinal) {
-                ["AlarmCondition"] = telemetry => new Quickstarts.AlarmConditionServer.AlarmConditionServer(telemetry),
-                ["AliasNames"] = telemetry => new Quickstarts.AliasNames.Server.AliasNamesServer(telemetry),
-                ["Boiler"] = telemetry => new Quickstarts.Boiler.Server.BoilerServer(telemetry),
-                ["DataAccess"] = telemetry => new Quickstarts.DataAccessServer.DataAccessServer(telemetry),
-                ["DataTypes"] = telemetry => new Quickstarts.DataTypes.DataTypesServer(telemetry),
-                ["Empty"] = telemetry => new Quickstarts.EmptyServer.EmptyServer(telemetry),
-                ["FileTransfer"] = telemetry => new Quickstarts.FileTransferServer.FileTransferServer(telemetry),
-                ["HistoricalAccess"] = telemetry => new Quickstarts.HistoricalAccessServer.HistoricalAccessServer(telemetry),
-                ["HistoricalEvents"] = telemetry => new Quickstarts.HistoricalEvents.Server.HistoricalEventsServer(telemetry),
-                ["Methods"] = telemetry => new Quickstarts.MethodsServer.MethodsServer(telemetry),
-                ["NodeManagement"] = telemetry => new Quickstarts.NodeManagement.Server.NodeManagementServer(telemetry),
-                ["PerfTest"] = telemetry => new Quickstarts.PerfTestServer.PerfTestServer(telemetry),
-                ["RoleManagement"] = telemetry => new Quickstarts.RoleManagement.Server.RoleManagementServer(telemetry),
-                ["SimpleEvents"] = telemetry => new Quickstarts.SimpleEvents.Server.SimpleEventsServer(telemetry),
-                ["StateMachines"] = telemetry => new Quickstarts.StateMachines.Server.StateMachinesServer(telemetry),
-                ["UserAuthentication"] = telemetry => new Quickstarts.UserAuthenticationServer.UserAuthenticationServer(telemetry),
-                ["Views"] = telemetry => new Quickstarts.Views.Server.ViewsServer(telemetry),
-                ["Sample"] = telemetry => new Opc.Ua.Sample.SampleServer(telemetry),
-                ["Reference"] = CreateReferenceServer,
-
+        private static readonly Dictionary<string, SampleServerRegistration> s_registrations =
+            new()
+            {
+                ["AlarmCondition"] = (services, file, configure) => services.AddAlarmConditionServer(file, configure),
+                ["AliasNames"] = (services, file, configure) => services.AddAliasNamesServer(file, configure),
+                ["Boiler"] = (services, file, configure) => services.AddBoilerServer(file, configure),
+                ["DataAccess"] = (services, file, configure) => services.AddDataAccessServer(file, configure),
+                ["DataTypes"] = (services, file, configure) => services.AddDataTypesServer(file, configure),
+                ["Empty"] = (services, file, configure) => services.AddEmptyServer(file, configure),
+                ["FileTransfer"] = (services, file, configure) => services.AddFileTransferServer(file, configure),
+                ["HistoricalAccess"] = (services, file, configure) => services.AddHistoricalAccessServer(file, configure),
+                ["HistoricalEvents"] = (services, file, configure) => services.AddHistoricalEventsServer(file, configure),
+                ["Methods"] = (services, file, configure) => services.AddMethodsServer(file, configure),
+                ["NodeManagement"] = (services, file, configure) => services.AddNodeManagementServer(file, configure),
+                ["PerfTest"] = (services, file, configure) => services.AddPerfTestServer(file, configure),
+                ["RoleManagement"] = (services, file, configure) => services.AddRoleManagementServer(file, configure),
+                ["SimpleEvents"] = (services, file, configure) => services.AddSimpleEventsServer(file, configure),
+                ["StateMachines"] = (services, file, configure) => services.AddStateMachinesServer(file, configure),
+                ["UserAuthentication"] = (services, file, configure) => services.AddUserAuthenticationServer(file, configure),
+                ["Views"] = (services, file, configure) => services.AddViewsServer(file, configure),
+                ["Sample"] = (services, file, configure) => services.AddUaSampleServer(file, configure),
+                ["Reference"] = (services, file, configure) => services.AddReferenceServer(file, configure),
                 // the console variant of the aggregation sample shares its sources with the
                 // WinForms one and only differs in its configuration, which is the one that
                 // can actually run: the WinForms configuration puts the server on the port of
                 // the downstream server it aggregates
-                ["AggregationConsole"] = telemetry => new AggregationServer.AggregationServer(telemetry),
+                ["AggregationConsole"] = (services, file, configure) => services.AddAggregationServer(file, configure),
             };
 
         /// <summary>
-        /// The sample servers tier 1 covers.
+        /// Every sample server of the catalog which a test can host.
         /// </summary>
         public static IEnumerable<SampleServerUnderTest> All
             => SampleCatalog.Servers
-                .Where(sample => s_factories.ContainsKey(sample.Name))
+                .Where(sample => s_registrations.ContainsKey(sample.Name))
                 .Select(sample => new SampleServerUnderTest {
                     Sample = sample,
-                    CreateServer = s_factories[sample.Name],
+                    ConfigureServices = s_registrations[sample.Name],
                 });
 
         /// <summary>
-        /// The names of the samples which have a factory.
+        /// The names of the samples this class can host.
         /// </summary>
-        public static IEnumerable<string> CoveredSamples => s_factories.Keys;
-
-        /// <summary>
-        /// The reference server adds the node managers of the quickstart library, the same
-        /// way Samples/ReferenceServer/Program.cs does.
-        /// </summary>
-        private static StandardServer CreateReferenceServer(ITelemetryContext telemetry)
-        {
-            var server = new Quickstarts.ReferenceServer.ReferenceServer(telemetry);
-
-            Quickstarts.Servers.Utils.AddDefaultNodeManagers(server);
-
-            return server;
-        }
+        public static IEnumerable<string> CoveredSamples => s_registrations.Keys;
     }
 }

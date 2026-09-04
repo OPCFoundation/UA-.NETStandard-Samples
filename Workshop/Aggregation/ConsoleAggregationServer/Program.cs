@@ -188,9 +188,7 @@ namespace AggregationServer
             builder.Logging.AddSampleConsole();
 
             builder.Services
-                .AddSampleServer<AggregationServer>(
-                    "Quickstarts.AggregationServer.Config.xml",
-                    RejectUntrustedCertificatesLoudly);
+                .AddAggregationServer(configure: RejectUntrustedCertificatesLoudly);
 
             host = builder.Build();
             m_telemetry = host.Services.GetRequiredService<ITelemetryContext>();

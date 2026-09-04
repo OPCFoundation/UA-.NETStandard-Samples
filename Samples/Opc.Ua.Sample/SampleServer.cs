@@ -46,11 +46,6 @@ namespace Opc.Ua.Sample
         public SampleServer(ITelemetryContext telemetry)
             : base(telemetry)
         {
-            // register the node manager factories. the server creates the node
-            // managers from them while it builds the master node manager on startup.
-            AddNodeManager(new global::TestData.TestDataNodeManagerFactory());
-            AddNodeManager(new global::MemoryBuffer.MemoryBufferNodeManagerFactory());
-            AddNodeManager(new global::Boiler.BoilerNodeManagerFactory());
         }
         #endregion
 

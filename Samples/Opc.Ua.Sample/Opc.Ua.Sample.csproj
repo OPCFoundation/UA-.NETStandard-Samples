@@ -26,6 +26,15 @@
     <Reference Include="System.IdentityModel" />
   </ItemGroup>
 
+  <!-- the composition root of the sample server registers its node managers with the
+       generic host, which the sample hosting library offers on the modern targets only -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Remove="SampleServerHosting.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net48' And '$(TargetFramework)' != 'netstandard2.1'">
+    <ProjectReference Include="..\Hosting\Opc.Ua.Samples.Hosting.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.11" />
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core" Version="$(OpcUaNetStandardVersion)" />

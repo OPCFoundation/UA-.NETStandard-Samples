@@ -109,18 +109,11 @@ namespace Quickstarts.AliasNames.Server
 
         #region Constructors
         /// <summary>
-        /// Creates the server and registers its node manager factories.
+        /// Creates the server. Its node managers are registered with the host by the hosting composition root of the sample.
         /// </summary>
         public AliasNamesServer(ITelemetryContext telemetry) : base(telemetry)
         {
-            // the plant itself: the nodes the aliases point at
-            AddNodeManager(new AliasNamesNodeManagerFactory());
 
-            // the application defined category tree. Its store is built by the factory rather
-            // than here, because a category descriptor has to carry the NodeId the category
-            // will really have, and the index of the category namespace is not assigned until
-            // the server builds its namespace table.
-            AddNodeManager(new AliasNameCategoryNodeManagerFactory());
         }
         #endregion
 

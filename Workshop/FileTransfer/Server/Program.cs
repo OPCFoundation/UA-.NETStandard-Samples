@@ -59,7 +59,7 @@ namespace Quickstarts.FileTransferServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<FileTransferServer>("Quickstarts.FileTransferServer.Config.xml"),
+                    .AddFileTransferServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

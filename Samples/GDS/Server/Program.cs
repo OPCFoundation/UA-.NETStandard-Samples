@@ -88,6 +88,13 @@ namespace Opc.Ua.Gds.Server
                 .AddSingleton(provider => new SampleServerConfigurationResetProvider(
                     provider.GetRequiredService<ApplicationConfiguration>(),
                     provider.GetRequiredService<ITelemetryContext>()))
+                // the OPC 10000-12 §7.10.16 ManagedApplications folder and the OPC 10000-21
+                // onboarding registrar: the stores they are backed by, and the node managers
+                // which serve them, registered with the container like the server itself.
+                .AddSingleton<IConfigurationDataStore>(CreateManagedApplicationsDataStore)
+                .AddSingleton<ITicketStore, MemoryTicketStore>()
+                .AddSampleNodeManager<ManagedApplicationsNodeManagerFactory>()
+                .AddSampleNodeManager<DeviceRegistrarNodeManagerFactory>()
                 .AddSampleServer(CreateServer)
                 .AddHostedService<AliasMergerHostedService>()
                 .AddHostedService<SecurityDefaultsHostedService>();
@@ -152,9 +159,24 @@ namespace Opc.Ua.Gds.Server
         }
 
         /// <summary>
+        /// Backs the OPC 10000-12 §7.10.16 ManagedApplications folder with the SQL database,
+        /// next to the other state of the sample.
+        /// </summary>
+        private static IConfigurationDataStore CreateManagedApplicationsDataStore(IServiceProvider provider)
+        {
+            ApplicationConfiguration configuration = provider.GetRequiredService<ApplicationConfiguration>();
+
+            return new GdsManagedApplicationsDataStore(
+                provider.GetRequiredService<SqlApplicationsDatabase>(),
+                System.IO.Path.Combine(GetStateDirectory(configuration), "ManagedApplications"),
+                provider.GetRequiredService<ITelemetryContext>());
+        }
+
+        /// <summary>
         /// Creates the server: the GDS directory and CA, the AliasNames master list
-        /// (issue #274), the OPC 10000-12 §7.10.16 ManagedApplications folder, the Optional
-        /// §7.10.3 ServerConfiguration surface and the OPC 10000-21 onboarding registrar.
+        /// (issue #274) and the Optional §7.10.3 ServerConfiguration surface. The OPC
+        /// 10000-12 §7.10.16 ManagedApplications folder and the OPC 10000-21 onboarding
+        /// registrar are the node managers registered with the container.
         /// </summary>
         private static SampleGlobalDiscoveryServer CreateServer(IServiceProvider provider)
         {
@@ -172,11 +194,6 @@ namespace Opc.Ua.Gds.Server
                 telemetry,
                 provider.GetRequiredService<GlobalDiscoveryServerAliasMerger>(),
                 true,
-                new GdsManagedApplicationsDataStore(
-                    database,
-                    System.IO.Path.Combine(GetStateDirectory(configuration), "ManagedApplications"),
-                    telemetry),
-                new MemoryTicketStore(),
                 new ServerConfigurationOptions {
                     // the sample keeps its private keys in the file system, not in a TPM or
                     // secure element - reporting that honestly is the point of the Property.

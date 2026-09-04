@@ -59,7 +59,7 @@ namespace Quickstarts.SimpleEvents.Server
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<SimpleEventsServer>("SimpleEventsServer.Config.xml"),
+                    .AddSimpleEventsServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

@@ -59,7 +59,7 @@ namespace Quickstarts.MethodsServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<MethodsServer>("Quickstarts.MethodsServer.Config.xml"),
+                    .AddMethodsServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

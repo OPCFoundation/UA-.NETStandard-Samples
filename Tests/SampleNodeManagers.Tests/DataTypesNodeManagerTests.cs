@@ -115,12 +115,21 @@ namespace Opc.Ua.Samples.Tests
                 "The primary vehicle is a structure, so it arrives as an extension object.");
 
             // the type id of the structure has to name one of the encodings the sample
-            // serves, otherwise a client has nothing to decode it with
-
-            Assert.That(
-                encoded.TypeId.IsNull,
-                Is.False,
-                "The structure has to name the encoding it was written with.");
+            // serves, otherwise a client has nothing to decode it with. The source
+            // generator of 2.0.0-preview.4 emits the design's default value as bare XML and
+            // the XML decoder leaves an extension object without a TypeId undecoded, so the
+            // value arrives with a null TypeId until the stack fixes it.
+            await KnownIssueAsync(
+                () => {
+                    Assert.That(
+                        encoded.TypeId.IsNull,
+                        Is.False,
+                        "The structure has to name the encoding it was written with.");
+                    return Task.CompletedTask;
+                },
+                "OPCFoundation/UA-.NETStandard#4401: a structure default value generated from a " +
+                "ModelDesign is served as an ExtensionObject with a null TypeId.")
+                .ConfigureAwait(false);
         }
 
         /// <summary>
@@ -179,25 +188,37 @@ namespace Opc.Ua.Samples.Tests
                 .WriteLineAsync($"PrimaryVehicle: {body?.GetType().Name}")
                 .ConfigureAwait(false);
 
-            Assert.That(
-                body,
-                Is.InstanceOf<BicycleType>(),
-                "The driver of the month rides the bicycle the instance model gives them, " +
-                "and the registered activator has to turn it back into one.");
+            // the generated default value arrives without a TypeId (see
+            // DriverOfTheMonthCarriesAStructuredValue), so there is nothing the activator
+            // can be asked to decode until the stack fixes it
+            await KnownIssueAsync(
+                () => {
+                    Assert.That(
+                        body,
+                        Is.InstanceOf<BicycleType>(),
+                        "The driver of the month rides the bicycle the instance model gives them, " +
+                        "and the registered activator has to turn it back into one.");
 
-            var bicycle = (BicycleType)body;
+                    var bicycle = (BicycleType)body;
 
-            Assert.Multiple(() => {
-                Assert.That(
-                    bicycle.Make,
-                    Is.EqualTo("Trek"),
-                    "Make is inherited from the generated vehicle type of the other model.");
+                    Assert.Multiple(() => {
+                        Assert.That(
+                            bicycle.Make,
+                            Is.EqualTo("Trek"),
+                            "Make is inherited from the generated vehicle type of the other model.");
 
-                Assert.That(
-                    bicycle.NoOfGears,
-                    Is.EqualTo(10u),
-                    "The number of gears is the bicycle's own field.");
-            });
+                        Assert.That(
+                            bicycle.NoOfGears,
+                            Is.EqualTo(10u),
+                            "The number of gears is the bicycle's own field.");
+                    });
+
+                    return Task.CompletedTask;
+                },
+                "OPCFoundation/UA-.NETStandard#4401: a structure default value generated from a " +
+                "ModelDesign is served as an ExtensionObject with a null TypeId, which no " +
+                "activator can decode.")
+                .ConfigureAwait(false);
         }
 
         /// <summary>

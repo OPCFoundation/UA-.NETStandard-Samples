@@ -84,8 +84,6 @@ namespace Opc.Ua.Gds.Server
         private readonly ICertificateRequest m_request;
         private readonly ICertificateGroup m_certificateGroup;
         private readonly bool m_autoApprove;
-        private readonly IConfigurationDataStore m_configurationDataStore;
-        private readonly ITicketStore m_ticketStore;
         private readonly ServerConfigurationOptions m_serverConfigurationOptions;
 
         /// <summary>
@@ -102,14 +100,6 @@ namespace Opc.Ua.Gds.Server
         /// <param name="telemetry">The telemetry context.</param>
         /// <param name="merger">The AliasNames merger whose master list the GDS serves.</param>
         /// <param name="autoApprove">Whether certificate requests are approved automatically.</param>
-        /// <param name="configurationDataStore">
-        /// Backs the §7.10.16 <c>ManagedApplications</c> folder. When <c>null</c> the folder
-        /// stays empty.
-        /// </param>
-        /// <param name="ticketStore">
-        /// Backs the OPC 10000-21 registrar administration Object. When <c>null</c> the
-        /// registrar is not exposed.
-        /// </param>
         /// <param name="serverConfigurationOptions">
         /// Configures the Optional §7.10.3 <c>ServerConfiguration</c> members. When
         /// <c>null</c> only the always-known identity Properties are exposed.
@@ -123,8 +113,6 @@ namespace Opc.Ua.Gds.Server
             ITelemetryContext telemetry,
             GlobalDiscoveryServerAliasMerger merger,
             bool autoApprove = true,
-            IConfigurationDataStore configurationDataStore = null,
-            ITicketStore ticketStore = null,
             ServerConfigurationOptions serverConfigurationOptions = null)
             : base(database, request, certificateGroup, userDatabase, telemetry, autoApprove)
         {
@@ -133,8 +121,6 @@ namespace Opc.Ua.Gds.Server
             m_request = request;
             m_certificateGroup = certificateGroup;
             m_autoApprove = autoApprove;
-            m_configurationDataStore = configurationDataStore;
-            m_ticketStore = ticketStore;
             m_serverConfigurationOptions = serverConfigurationOptions;
         }
 
@@ -146,15 +132,18 @@ namespace Opc.Ua.Gds.Server
         }
 
         /// <summary>
-        /// Creates the GDS node manager and, when they are configured, the
-        /// <c>ManagedApplications</c> and onboarding-registrar node managers alongside it.
+        /// Creates the GDS node manager and, alongside it, the node managers of the
+        /// factories registered with the server: the <c>ManagedApplications</c> and the
+        /// onboarding-registrar node managers the host registers.
         /// </summary>
         /// <remarks>
         /// The base class builds the <c>MasterNodeManager</c> with the GDS
-        /// <c>ApplicationsNodeManager</c> alone, so the additions are made by rebuilding the
-        /// list here rather than by appending to it.
+        /// <c>ApplicationsNodeManager</c> alone and ignores the node manager factories
+        /// registered with the server, so the list is rebuilt here: the GDS node manager
+        /// first, then one node manager per registered factory, the way
+        /// <see cref="StandardServer"/> creates them.
         /// </remarks>
-        protected override ValueTask<IMasterNodeManager> CreateMasterNodeManagerAsync(
+        protected override async ValueTask<IMasterNodeManager> CreateMasterNodeManagerAsync(
             IServerInternal server,
             ApplicationConfiguration configuration,
             CancellationToken cancellationToken = default)
@@ -169,24 +158,19 @@ namespace Opc.Ua.Gds.Server
                     m_autoApprove)
             };
 
-            if (m_configurationDataStore != null)
+            foreach (INodeManagerFactory factory in NodeManagerFactories)
             {
-                nodeManagers.Add(
-                    new DefaultManagedApplicationsNodeManager(
-                        server,
-                        configuration,
-                        m_configurationDataStore));
+                nodeManagers.Add(factory.Create(server, configuration).ToAsyncNodeManager());
             }
 
-            if (m_ticketStore != null)
+            foreach (IAsyncNodeManagerFactory factory in AsyncNodeManagerFactories)
             {
                 nodeManagers.Add(
-                    new DeviceRegistrarNodeManager(server, configuration, m_ticketStore));
+                    await factory.CreateAsync(server, configuration, cancellationToken).ConfigureAwait(false));
             }
 
             #pragma warning disable CA2000 // Justification: ownership of the MasterNodeManager transfers to the caller.
-            return new ValueTask<IMasterNodeManager>(
-                new MasterNodeManager(server, configuration, null, nodeManagers.ToArray()));
+            return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
             #pragma warning restore CA2000
         }
 

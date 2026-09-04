@@ -57,7 +57,7 @@ namespace AggregationServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<AggregationServer>("Quickstarts.AggregationServer.Config.xml"),
+                    .AddAggregationServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

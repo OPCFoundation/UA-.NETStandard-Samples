@@ -57,7 +57,7 @@ namespace Quickstarts.DataAccessServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<DataAccessServer>("DataAccessServer.Config.xml"),
+                    .AddDataAccessServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

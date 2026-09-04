@@ -447,7 +447,7 @@ namespace Opc.Ua.Samples.Tests
                 .StartAsync(
                     sample.Sample.Name,
                     sample.Sample.ServerConfig,
-                    sample.CreateServer,
+                    sample.ConfigureServices,
                     configure: configure)
                 .ConfigureAwait(false);
         }

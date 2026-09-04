@@ -59,9 +59,7 @@ namespace Quickstarts.ReferenceServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer(
-                        "Quickstarts.ReferenceServer.Config.xml",
-                        CreateReferenceServer),
+                    .AddReferenceServer(),
                 CreateServerForm,
                 ExceptionDlg.Show);
         }

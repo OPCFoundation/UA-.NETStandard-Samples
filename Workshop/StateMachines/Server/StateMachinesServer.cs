@@ -50,9 +50,6 @@ namespace Quickstarts.StateMachines.Server
         /// </summary>
         public StateMachinesServer(ITelemetryContext telemetry) : base(telemetry)
         {
-            // register the node manager factory. the server creates the node manager from it
-            // while it builds the master node manager on startup.
-            AddNodeManager(new StateMachinesNodeManagerFactory());
         }
 
         #region Overridden Methods

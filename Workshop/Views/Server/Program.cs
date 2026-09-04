@@ -59,7 +59,7 @@ namespace Quickstarts.Views.Server
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<ViewsServer>("Quickstarts.ViewsServer.Config.xml"),
+                    .AddViewsServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }
