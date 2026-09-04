@@ -16,9 +16,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Client.Subscriptions.Streaming;
+using Opc.Ua.Security.Certificates;
 
 namespace Quickstarts.RoleManagement.Client
 {
@@ -28,26 +32,36 @@ namespace Quickstarts.RoleManagement.Client
     using ModelNames = Quickstarts.RoleManagement.BrowseNames;
     using BrowseNames = Opc.Ua.BrowseNames;
     using ObjectIds = Opc.Ua.ObjectIds;
+    using ObjectTypeIds = Opc.Ua.ObjectTypeIds;
     using MethodIds = Opc.Ua.MethodIds;
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
 
     /// <summary>
     /// The main form of the OPC UA Part 18 role management Quickstart client.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The form is a two-panel demonstration of what a Role is worth. The upper list is the
+    /// The form is a three-panel demonstration of what a Role is worth. The upper list is the
     /// machine of the sample server as the current Session sees it: the nodes it may browse,
-    /// the values it may read, and what its UserRolePermissions say it may do with each of
-    /// them. Signing in as a different account and connecting again changes all three,
-    /// without a line of client code knowing which account is which.
+    /// the values it may read, the AccessRestrictions each of them carries, and what its
+    /// UserRolePermissions say it may do with them. Signing in as a different account and
+    /// connecting again changes all of it, without a line of client code knowing which
+    /// account is which - and so does clearing the Use Security box, because two of the
+    /// nodes are restricted to an encrypted channel and one Role is restricted to the
+    /// encrypted endpoints.
     /// </para>
     /// <para>
-    /// The lower list is the RoleSet the server publishes below
+    /// The middle list is the RoleSet the server publishes below
     /// Server/ServerCapabilities. Its Methods are the Part 18 4.2/4.4 role configuration
     /// API: a Session which holds the SecurityAdmin Role, over an encrypted channel, can
-    /// create a Role and grant it to a user while everybody else stays connected. The
+    /// create a Role, grant it to a user name or to the certificate of a client application,
+    /// and set the CustomConfiguration flag, all while everybody else stays connected. The
     /// buttons are deliberately left enabled for every account, because seeing the server
     /// answer BadUserAccessDenied or BadSecurityModeInsufficient is the point.
+    /// </para>
+    /// <para>
+    /// The lower list is the audit trail the server reports for those changes. It stays
+    /// empty against 2.0.0-preview.4 - see <see cref="SubscribeToAuditEventsAsync"/>.
     /// </para>
     /// </remarks>
     public partial class MainForm : Form
@@ -93,6 +107,19 @@ namespace Quickstarts.RoleManagement.Client
             IdentityCB.SelectedIndex = 0;
             IdentityCB.SelectedIndexChanged += IdentityCB_SelectedIndexChanged;
 
+            // the three Part 18 4.4.3 identity criteria this sample can produce. UserName is
+            // what the server maps its demonstration accounts with; the other two are matched
+            // against the application instance certificate this client sends in CreateSession,
+            // so the text box is filled with what this client would present.
+            CriteriaCB.Items.AddRange(new object[] {
+                IdentityCriteriaType.UserName,
+                IdentityCriteriaType.Thumbprint,
+                IdentityCriteriaType.X509Subject,
+            });
+
+            CriteriaCB.SelectedIndex = 0;
+            CriteriaCB.SelectedIndexChanged += CriteriaCB_SelectedIndexChangedAsync;
+
             UpdateIdentityHint();
         }
         #endregion
@@ -102,6 +129,17 @@ namespace Quickstarts.RoleManagement.Client
         /// The entry of the identity drop down which opens an anonymous Session.
         /// </summary>
         private const string kAnonymous = "Anonymous";
+
+        /// <summary>
+        /// The account the criteria box offers for a UserName rule.
+        /// </summary>
+        private const string kDefaultUserCriteria = "guest";
+
+        /// <summary>
+        /// The order Part 18 4.4.3 puts the parts of an X509Subject criteria in.
+        /// </summary>
+        private static readonly string[] kSubjectNameOrder =
+            { "CN", "O", "OU", "DC", "L", "S", "C", "dnQualifier", "serialNumber" };
 
         private readonly ApplicationConfiguration m_configuration;
         private readonly ITelemetryContext m_telemetry;
@@ -114,6 +152,19 @@ namespace Quickstarts.RoleManagement.Client
         /// </summary>
         private NodeId m_resetId;
         private readonly Dictionary<NodeId, string> m_roleNames = new Dictionary<NodeId, string>();
+
+        /// <summary>
+        /// The browse names of the event types the audit list has already shown.
+        /// </summary>
+        private readonly Dictionary<NodeId, string> m_typeNames = new Dictionary<NodeId, string>();
+
+        /// <summary>
+        /// The subscription which carries the audit events of the server, or null.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed asynchronously by DeleteSubscriptionAsync.")]
+        private StreamingSubscription m_streaming;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed by DeleteSubscriptionAsync.")]
+        private CancellationTokenSource m_cts;
         #endregion
 
         #region Event Handlers
@@ -199,6 +250,8 @@ namespace Quickstarts.RoleManagement.Client
 
                 if (m_session == null)
                 {
+                    await DeleteSubscriptionAsync().ConfigureAwait(true);
+
                     m_machineId = NodeId.Null;
                     m_resetId = NodeId.Null;
                     NodesLV.Items.Clear();
@@ -221,6 +274,8 @@ namespace Quickstarts.RoleManagement.Client
                 m_machineId = nodes.Count > 0 ? nodes[0] : NodeId.Null;
 
                 SetButtonsEnabled(true);
+
+                await SubscribeToAuditEventsAsync().ConfigureAwait(true);
 
                 await RefreshAsync().ConfigureAwait(true);
             }
@@ -272,6 +327,8 @@ namespace Quickstarts.RoleManagement.Client
         /// </summary>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            ClientUtils.WaitForTeardown(DeleteSubscriptionAsync);
+
             ConnectServerCTRL.Disconnect();
         }
 
@@ -376,11 +433,86 @@ namespace Quickstarts.RoleManagement.Client
         }
 
         /// <summary>
-        /// Grants the selected Role to the user in the text box.
+        /// Fills the criteria box with something the chosen criteria type accepts.
+        /// </summary>
+        /// <remarks>
+        /// The two certificate criteria are matched against the application instance
+        /// certificate of the <b>client</b>, so this client can fill them in from its own
+        /// configuration. Granting a Role for one of them and reconnecting is how the sample
+        /// shows a Role which belongs to a machine rather than to a person.
+        /// </remarks>
+        private async void CriteriaCB_SelectedIndexChangedAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                RoleUserTB.Text = await CriteriaOfAsync(SelectedCriteriaType()).ConfigureAwait(true);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Grants the selected Role to the identity in the text box.
         /// </summary>
         private async void AddIdentityBTN_ClickAsync(object sender, EventArgs e)
         {
             await ChangeIdentityAsync(BrowseNames.AddIdentity).ConfigureAwait(true);
+        }
+
+        /// <summary>
+        /// Flips the CustomConfiguration flag of the selected Role.
+        /// </summary>
+        /// <remarks>
+        /// Part 18 4.4.1: a Role whose Identities list is empty is granted to nobody unless
+        /// CustomConfiguration is set, and with it set the rest of the configuration - the
+        /// Applications and Endpoints filters - decides on its own. Revoke the X509Subject
+        /// rule of the ConfigureAdmin Role of the sample, set the flag, and every Session on
+        /// the encrypted endpoint holds that Role.
+        /// </remarks>
+        private async void CustomConfigBTN_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                if (m_session == null || RolesLV.SelectedItems.Count == 0)
+                {
+                    return;
+                }
+
+                var role = (RoleRow)RolesLV.SelectedItems[0].Tag;
+
+                NodeId flagId = await ResolveAsync(role.NodeId, BrowseNames.CustomConfiguration)
+                    .ConfigureAwait(true);
+
+                if (flagId.IsNull)
+                {
+                    Report($"CustomConfiguration of {role.Name}", StatusCodes.BadUserAccessDenied);
+                    return;
+                }
+
+                var valuesToWrite = new List<WriteValue> {
+                    new WriteValue {
+                        NodeId = flagId,
+                        AttributeId = Attributes.Value,
+                        Value = new DataValue(Variant.From(!role.CustomConfiguration)),
+                    },
+                };
+
+                WriteResponse response = await m_session
+                    .WriteAsync(null, valuesToWrite, default)
+                    .ConfigureAwait(true);
+
+                Report(
+                    $"CustomConfiguration of {role.Name} := {!role.CustomConfiguration}",
+                    response.Results.ToArray()[0]);
+
+                await RefreshAsync().ConfigureAwait(true);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
         }
 
         /// <summary>
@@ -430,10 +562,11 @@ namespace Quickstarts.RoleManagement.Client
         /// Calls AddIdentity or RemoveIdentity on the selected Role.
         /// </summary>
         /// <remarks>
-        /// Both Methods take one IdentityMappingRuleType, and a UserName rule is the one
-        /// this sample server is configured with. The Methods live on the Role node itself,
-        /// and the standard address space only lets a SecurityAdmin browse to them, so a
-        /// Session which is refused the change is usually refused the browse as well.
+        /// Both Methods take one IdentityMappingRuleType, whose criteria type the drop down
+        /// picks: a UserName rule names an account, a Thumbprint or an X509Subject rule names
+        /// the certificate a client application presents. The Methods live on the Role node
+        /// itself, and the standard address space only lets a SecurityAdmin browse to them,
+        /// so a Session which is refused the change is usually refused the browse as well.
         /// </remarks>
         private async Task ChangeIdentityAsync(string methodName)
         {
@@ -454,8 +587,10 @@ namespace Quickstarts.RoleManagement.Client
                     return;
                 }
 
+                IdentityCriteriaType criteriaType = SelectedCriteriaType();
+
                 var rule = new IdentityMappingRuleType {
-                    CriteriaType = IdentityCriteriaType.UserName,
+                    CriteriaType = criteriaType,
                     Criteria = RoleUserTB.Text,
                 };
 
@@ -464,7 +599,7 @@ namespace Quickstarts.RoleManagement.Client
                     methodId,
                     Variant.From(new ExtensionObject(rule))).ConfigureAwait(true);
 
-                Report($"{methodName}('{RoleUserTB.Text}') on {role.Name}", result.StatusCode);
+                Report($"{methodName}({criteriaType}='{RoleUserTB.Text}') on {role.Name}", result.StatusCode);
 
                 await RefreshAsync().ConfigureAwait(true);
             }
@@ -472,6 +607,96 @@ namespace Quickstarts.RoleManagement.Client
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
+        }
+
+        /// <summary>
+        /// The identity criteria type the drop down is on.
+        /// </summary>
+        private IdentityCriteriaType SelectedCriteriaType()
+        {
+            return CriteriaCB.SelectedItem is IdentityCriteriaType selected
+                ? selected
+                : IdentityCriteriaType.UserName;
+        }
+
+        /// <summary>
+        /// A criteria string of the given type which this client could be matched by.
+        /// </summary>
+        /// <remarks>
+        /// A Thumbprint has to be upper case hexadecimal without separators, and an
+        /// X509Subject has to be the normalised <c>Name="Value"</c> form of Part 18 4.4.3
+        /// rather than the comma separated one a certificate reports. Both conversions are
+        /// done here because the stack keeps its own normalisation internal.
+        /// </remarks>
+        private async Task<string> CriteriaOfAsync(IdentityCriteriaType criteriaType)
+        {
+            if (criteriaType == IdentityCriteriaType.UserName)
+            {
+                return kDefaultUserCriteria;
+            }
+
+            using Certificate certificate = await m_configuration.SecurityConfiguration
+                .FindApplicationCertificateAsync(SecurityPolicies.Basic256Sha256, false, m_telemetry)
+                .ConfigureAwait(true);
+
+            if (certificate == null)
+            {
+                return string.Empty;
+            }
+
+            return criteriaType == IdentityCriteriaType.Thumbprint
+                ? certificate.Thumbprint.ToUpperInvariant()
+                : Part18Subject(certificate.Subject);
+        }
+
+        /// <summary>
+        /// Turns the subject name of a certificate into the Part 18 4.4.3 X509Subject form.
+        /// </summary>
+        /// <remarks>
+        /// The grammar is <c>Name="Value"</c> pairs separated by slashes, in the fixed order
+        /// CN, O, OU, DC, L, S, C, dnQualifier, serialNumber, with names outside that set
+        /// dropped. A certificate reports its subject comma separated and in its own order,
+        /// so the two are only comparable after this.
+        /// </remarks>
+        private static string Part18Subject(string subject)
+        {
+            var pairs = new List<KeyValuePair<string, string>>();
+
+            foreach (string part in (subject ?? string.Empty).Split(','))
+            {
+                int separator = part.IndexOf('=', StringComparison.Ordinal);
+
+                if (separator <= 0)
+                {
+                    continue;
+                }
+
+                pairs.Add(new KeyValuePair<string, string>(
+                    part.Substring(0, separator).Trim(),
+                    part.Substring(separator + 1).Trim().Trim('"')));
+            }
+
+            var builder = new StringBuilder();
+
+            foreach (string name in kSubjectNameOrder)
+            {
+                foreach (KeyValuePair<string, string> pair in pairs)
+                {
+                    if (!string.Equals(pair.Key, name, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    if (builder.Length > 0)
+                    {
+                        builder.Append('/');
+                    }
+
+                    builder.Append(name).Append("=\"").Append(pair.Value).Append('"');
+                }
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>
@@ -566,6 +791,7 @@ namespace Quickstarts.RoleManagement.Client
 
                 item.SubItems.Add(value);
                 item.SubItems.Add(status);
+                item.SubItems.Add(await DescribeRestrictionsAsync(nodeId).ConfigureAwait(true));
                 item.SubItems.Add(DescribePermissions(permissions));
 
                 NodesLV.Items.Add(item);
@@ -602,11 +828,20 @@ namespace Quickstarts.RoleManagement.Client
 
                 m_roleNames[roleId] = name;
 
+                bool customConfiguration = await ReadFlagAsync(roleId, BrowseNames.CustomConfiguration)
+                    .ConfigureAwait(true);
+
                 var item = new ListViewItem(name) {
-                    Tag = new RoleRow { Name = name, NodeId = roleId },
+                    Tag = new RoleRow {
+                        Name = name,
+                        NodeId = roleId,
+                        CustomConfiguration = customConfiguration,
+                    },
                 };
 
                 item.SubItems.Add(grantedRoles.Contains(roleId) ? "yes" : string.Empty);
+                item.SubItems.Add(await DescribeEndpointsAsync(roleId).ConfigureAwait(true));
+                item.SubItems.Add(customConfiguration ? "yes" : string.Empty);
                 item.SubItems.Add(await DescribeIdentitiesAsync(roleId).ConfigureAwait(true));
 
                 RolesLV.Items.Add(item);
@@ -644,6 +879,94 @@ namespace Quickstarts.RoleManagement.Client
                 rules.ToArray().Select(rule => string.IsNullOrEmpty(rule.Criteria)
                     ? rule.CriteriaType.ToString()
                     : $"{rule.CriteriaType}={rule.Criteria}"));
+        }
+
+        /// <summary>
+        /// The Endpoints filter of a Role, which is evaluated before its identity rules are.
+        /// </summary>
+        /// <remarks>
+        /// A Role with an empty list is granted on every endpoint. The sample restricts one
+        /// Role to the encrypted endpoints, which is why the same account can hold different
+        /// Roles depending on the Use Security box of the connect bar.
+        /// </remarks>
+        private async Task<string> DescribeEndpointsAsync(NodeId roleId)
+        {
+            NodeId endpointsId = await ResolveAsync(roleId, BrowseNames.Endpoints).ConfigureAwait(true);
+
+            if (endpointsId.IsNull)
+            {
+                return "(not visible)";
+            }
+
+            DataValue value = await ReadAsync(endpointsId, Attributes.Value).ConfigureAwait(true);
+
+            if (!StatusCode.IsGood(value.StatusCode) ||
+                !value.WrappedValue.TryGetStructure(out ArrayOf<EndpointType> endpoints))
+            {
+                return string.Empty;
+            }
+
+            EndpointType[] entries = endpoints.ToArray();
+
+            if (entries.Length == 0)
+            {
+                return "any";
+            }
+
+            return string.Join(", ", entries.Select(endpoint => endpoint.SecurityMode.ToString()).Distinct());
+        }
+
+        /// <summary>
+        /// Reads a boolean Property of a Role, false when the Session may not see it.
+        /// </summary>
+        private async Task<bool> ReadFlagAsync(NodeId roleId, string browseName)
+        {
+            NodeId flagId = await ResolveAsync(roleId, browseName).ConfigureAwait(true);
+
+            if (flagId.IsNull)
+            {
+                return false;
+            }
+
+            DataValue value = await ReadAsync(flagId, Attributes.Value).ConfigureAwait(true);
+
+            return StatusCode.IsGood(value.StatusCode) &&
+                value.WrappedValue.TryGetValue(out bool flag) &&
+                flag;
+        }
+
+        /// <summary>
+        /// The AccessRestrictions of a node, which are about the channel rather than the user.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Part 3 5.2.11. A node which demands an encrypted channel answers
+        /// BadSecurityModeInsufficient in the status column of an unencrypted Session however
+        /// many Roles that Session holds, which is a different fix from BadUserAccessDenied:
+        /// reconnect with Use Security rather than sign in as somebody else.
+        /// </para>
+        /// <para>
+        /// The column stays empty for exactly the nodes a Session was refused. Reading any
+        /// attribute other than the Value is checked against the restrictions as well, so a
+        /// Session on an unencrypted channel cannot read the attribute which would tell it
+        /// that the channel is the problem. The status code is what it has to go by.
+        /// </para>
+        /// </remarks>
+        private async Task<string> DescribeRestrictionsAsync(NodeId nodeId)
+        {
+            DataValue value = await ReadAsync(nodeId, Attributes.AccessRestrictions).ConfigureAwait(true);
+
+            if (!StatusCode.IsGood(value.StatusCode))
+            {
+                return string.Empty;
+            }
+
+            if (!value.WrappedValue.TryGetValue(out ushort restrictions) || restrictions == 0)
+            {
+                return string.Empty;
+            }
+
+            return ((AccessRestrictionType)restrictions).ToString();
         }
 
         /// <summary>
@@ -764,6 +1087,223 @@ namespace Quickstarts.RoleManagement.Client
         }
 
         /// <summary>
+        /// Subscribes to the audit events the server reports on its Server object.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Part 18 4.4 asks a server to audit every change to its role configuration, and the
+        /// stack reports a RoleMappingRuleChangedAuditEventType from the RoleSet binding for
+        /// each of the Methods. The filter here accepts AuditEventType and its subtypes, so
+        /// the list shows every audited operation rather than only the role ones - a client
+        /// which watches the role configuration usually wants the session events beside it.
+        /// </para>
+        /// <para>
+        /// The list stays empty against 2.0.0-preview.4: the server reports Server.Auditing
+        /// as true and the Methods answer Good, but no audit event reaches a subscriber. A
+        /// GeneralModelChangeEvent from the same Server object does arrive, so this is the
+        /// stack rather than the subscription. The subscription is here because it is what a
+        /// client is supposed to do, and it starts showing rows the moment that is fixed.
+        /// </para>
+        /// </remarks>
+        private async Task SubscribeToAuditEventsAsync()
+        {
+            await DeleteSubscriptionAsync().ConfigureAwait(true);
+
+            if (!m_session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                Report("Subscribing to the audit events", StatusCodes.BadNotSupported);
+                return;
+            }
+
+            m_streaming = new StreamingSubscription(manager, ClientUtils.DefaultSubscriptionOptions);
+            m_cts = new CancellationTokenSource();
+
+            // nothing is awaited here on purpose: the enumeration runs for as long as the
+            // client is connected
+            _ = PumpAuditEventsAsync(m_cts.Token);
+        }
+
+        /// <summary>
+        /// Adds a row to the audit list for every audit event the server reports.
+        /// </summary>
+        private async Task PumpAuditEventsAsync(CancellationToken ct)
+        {
+            IStreamingSubscription streaming = m_streaming;
+
+            var options = new MonitoredItemOptions {
+                StartNodeId = ObjectIds.Server,
+                AttributeId = Attributes.EventNotifier,
+                SamplingInterval = TimeSpan.Zero,
+                QueueSize = 1000,
+                DiscardOldest = true,
+            };
+
+            try
+            {
+                await foreach (EventNotification notification in streaming
+                    .SubscribeEventsAsync(ObjectIds.Server, AuditFilter(), options, ct)
+                    .ConfigureAwait(false))
+                {
+                    if (ct.IsCancellationRequested || IsDisposed)
+                    {
+                        return;
+                    }
+
+                    // without a window there is nothing to update, and the enumeration keeps
+                    // running rather than ending for good
+                    if (!IsHandleCreated)
+                    {
+                        continue;
+                    }
+
+                    Variant[] fields = notification.Fields.ToArray();
+
+                    // the enumeration runs on a publish worker, so the display is updated on
+                    // the UI thread
+                    BeginInvoke(new Action(() => AddAuditRowAsync(fields)));
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // the client disconnected.
+            }
+            catch (Exception exception)
+            {
+                // the pump runs on a publish worker, so the error is logged instead of shown
+                m_telemetry?.CreateLogger<MainForm>().LogError(exception, "Failed to read the audit events.");
+            }
+        }
+
+        /// <summary>
+        /// A filter which accepts AuditEventType and its subtypes.
+        /// </summary>
+        /// <remarks>
+        /// The select clauses decide what the fields of a notification are and in which
+        /// order, so the four here line up with the four columns of the audit list.
+        /// </remarks>
+        private static EventFilter AuditFilter()
+        {
+            var filter = new EventFilter {
+                SelectClauses = new[] {
+                    Field(BrowseNames.Time),
+                    Field(BrowseNames.EventType),
+                    Field(BrowseNames.SourceName),
+                    Field(BrowseNames.Message),
+                }.ToArrayOf(),
+            };
+
+            filter.WhereClause = new ContentFilter();
+            filter.WhereClause.Push(FilterOperator.OfType, Variant.From(ObjectTypeIds.AuditEventType));
+
+            return filter;
+        }
+
+        /// <summary>
+        /// One select clause of the audit filter, named on the base event type.
+        /// </summary>
+        private static SimpleAttributeOperand Field(string browseName)
+        {
+            return new SimpleAttributeOperand {
+                TypeDefinitionId = ObjectTypeIds.BaseEventType,
+                AttributeId = Attributes.Value,
+                BrowsePath = new[] { new QualifiedName(browseName) }.ToArrayOf(),
+            };
+        }
+
+        /// <summary>
+        /// Shows one audit event, newest first.
+        /// </summary>
+        private async void AddAuditRowAsync(Variant[] fields)
+        {
+            try
+            {
+                string time = fields.Length > 0 && fields[0].TryGetValue(out DateTimeUtc reported)
+                    ? reported.ToDateTime().ToLocalTime().ToString("HH:mm:ss.fff", CultureInfo.CurrentCulture)
+                    : string.Empty;
+
+                string eventType = fields.Length > 1 && fields[1].TryGetValue(out NodeId typeId)
+                    ? await NameOfAsync(typeId).ConfigureAwait(true)
+                    : string.Empty;
+
+                string source = fields.Length > 2 && fields[2].TryGetValue(out string sourceName)
+                    ? sourceName
+                    : string.Empty;
+
+                string message = fields.Length > 3 && fields[3].TryGetValue(out LocalizedText text)
+                    ? text.Text
+                    : string.Empty;
+
+                var item = new ListViewItem(time);
+
+                item.SubItems.Add(eventType);
+                item.SubItems.Add(source);
+                item.SubItems.Add(message);
+
+                AuditLV.Items.Insert(0, item);
+            }
+            catch (Exception exception)
+            {
+                m_telemetry?.CreateLogger<MainForm>().LogError(exception, "Failed to show an audit event.");
+            }
+        }
+
+        /// <summary>
+        /// The browse name of a node, cached, so the audit list can name an event type.
+        /// </summary>
+        private async Task<string> NameOfAsync(NodeId nodeId)
+        {
+            if (m_typeNames.TryGetValue(nodeId, out string known))
+            {
+                return known;
+            }
+
+            DataValue value = await ReadAsync(nodeId, Attributes.BrowseName).ConfigureAwait(true);
+
+            string name = StatusCode.IsGood(value.StatusCode) &&
+                value.WrappedValue.TryGetValue(out QualifiedName browseName)
+                ? browseName.Name
+                : nodeId.ToString();
+
+            m_typeNames[nodeId] = name;
+
+            return name;
+        }
+
+        /// <summary>
+        /// Stops the stream and deletes the subscription on the server.
+        /// </summary>
+        private async Task DeleteSubscriptionAsync()
+        {
+            StreamingSubscription streaming = m_streaming;
+            CancellationTokenSource cts = m_cts;
+
+            m_streaming = null;
+            m_cts = null;
+
+            if (cts != null)
+            {
+                await cts.CancelAsync().ConfigureAwait(true);
+                cts.Dispose();
+            }
+
+            if (streaming == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await streaming.DisposeAsync().ConfigureAwait(true);
+            }
+            catch (Exception exception)
+            {
+                // this also runs when the session has already gone away, and then the
+                // subscription cannot be deleted on the server any more
+                m_telemetry?.CreateLogger<MainForm>().LogError(exception, "Failed to delete the subscription.");
+            }
+        }
+
+        /// <summary>
         /// Reports what the server answered to an operation the user asked for.
         /// </summary>
         /// <remarks>
@@ -789,6 +1329,7 @@ namespace Quickstarts.RoleManagement.Client
             AddIdentityBTN.Enabled = enabled;
             RemoveIdentityBTN.Enabled = enabled;
             AddRoleBTN.Enabled = enabled;
+            CustomConfigBTN.Enabled = enabled;
         }
 
         /// <summary>
@@ -801,11 +1342,12 @@ namespace Quickstarts.RoleManagement.Client
             IdentityHintLB.Text = account switch {
                 "observer1" => "Observer: reads the temperature and the set point.",
                 "operator1" => "Operator: writes the set point and calls Reset.",
-                "engineer1" => "Engineer: the only Role which sees the calibration.",
-                "supervisor1" => "Supervisor: writes the maintenance note.",
+                "engineer1" => "Engineer: the only account which sees the calibration.",
+                "supervisor1" => "Supervisor: writes the maintenance note, over an encrypted channel.",
                 "secadmin" => "SecurityAdmin: manages the RoleSet, over an encrypted channel.",
                 "guest" => "No Role beyond AuthenticatedUser: sees the machine, may change nothing.",
-                _ => "Anonymous: browses the machine, and is refused every value.",
+                _ => "Anonymous: browses the machine - and with Use Security on, this workstation " +
+                     "still earns ConfigureAdmin from its certificate.",
             };
         }
         #endregion
@@ -829,6 +1371,12 @@ namespace Quickstarts.RoleManagement.Client
         {
             public string Name { get; init; }
             public NodeId NodeId { get; init; }
+
+            /// <summary>
+            /// What the CustomConfiguration Property of the Role reads, so the button which
+            /// flips it knows what to write.
+            /// </summary>
+            public bool CustomConfiguration { get; init; }
         }
         #endregion
     }

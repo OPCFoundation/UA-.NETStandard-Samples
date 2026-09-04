@@ -58,13 +58,149 @@ namespace Opc.Ua.Samples.Tests
         private const double kDefaultSetPoint = 20.0;
 
         /// <summary>
+        /// The entry of the identity drop down which opens an anonymous Session.
+        /// </summary>
+        private const string kAnonymous = "Anonymous";
+
+        /// <summary>
+        /// The columns of the node list, as the sample orders them.
+        /// </summary>
+        private const int kStatusColumn = 2;
+        private const int kRestrictionsColumn = 3;
+
+        /// <summary>
         /// How long the sample gets to answer a press.
         /// </summary>
         private static readonly TimeSpan s_actionTimeout = TimeSpan.FromSeconds(30);
 
+        /// <summary>
+        /// The endpoint of the server the harness started, for the body of a fixture.
+        /// </summary>
+        /// <remarks>
+        /// The fixture is NonParallelizable and one server runs at a time, so a static is
+        /// enough to carry the url onto the STA thread the form lives on.
+        /// </remarks>
+        private static string s_endpointUrl;
+
         [Test]
         [CancelAfter(kTimeout)]
         public async Task OperatorCanCallResetFromTheForm(CancellationToken ct)
+        {
+            await RunAsync((form, token) => DriveAsync(form, token), ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// The nodes which demand an encrypted channel say so, and say why they refused.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The Operator holds Browse and Read on the maintenance note in both sessions here.
+        /// What changes is the channel, and the client has to be able to tell the difference:
+        /// BadSecurityModeInsufficient means reconnect with security, where
+        /// BadUserAccessDenied would mean sign in as somebody else.
+        /// </para>
+        /// <para>
+        /// The AccessRestrictions column is only filled in the session which satisfies them.
+        /// A read of any attribute other than the Value is checked against the restrictions
+        /// too, so a Session on an unencrypted channel cannot read the attribute which would
+        /// tell it that the channel is the problem - the status code is what it has.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnUnencryptedSessionSeesWhyTheRestrictedNodesRefuse(CancellationToken ct)
+        {
+            await RunAsync(async (form, token) => {
+                await ConnectAsAsync(form, "operator1", useSecurity: false, token).ConfigureAwait(true);
+
+                bool listed = await SampleFormDriver
+                    .PumpUntilAsync(() => RowOf(form, "MaintenanceNote") != null, s_actionTimeout, token)
+                    .ConfigureAwait(true);
+
+                Assert.That(listed, Is.True, "The maintenance note never appeared; " + Seen(form));
+
+                Assert.That(
+                    ColumnOf(form, "MaintenanceNote", kStatusColumn),
+                    Does.Contain("BadSecurityModeInsufficient"),
+                    "An Operator holds Read on the maintenance note, so the refusal has to " +
+                    "name the channel rather than the user. " + Seen(form));
+
+                // the same account, the same node, the other channel
+                await WinFormsHarness.GetConnectControl(form)
+                    .DisconnectAsync(CancellationToken.None)
+                    .ConfigureAwait(true);
+
+                await ConnectAsAsync(form, "operator1", useSecurity: true, token).ConfigureAwait(true);
+
+                bool readable = await SampleFormDriver
+                    .PumpUntilAsync(
+                        () => ColumnOf(form, "MaintenanceNote", kStatusColumn)?.Contains(
+                            "Good", StringComparison.Ordinal) == true,
+                        s_actionTimeout,
+                        token)
+                    .ConfigureAwait(true);
+
+                Assert.That(readable, Is.True, "The encrypted session has to read the note; " + Seen(form));
+
+                Assert.That(
+                    ColumnOf(form, "MaintenanceNote", kRestrictionsColumn),
+                    Does.Contain("EncryptionRequired"),
+                    "A Session which may touch the node at all has to be able to read the " +
+                    "AccessRestrictions which apply to it. " + Seen(form));
+            }, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// The certificate of this client application earns it a Role of its own.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The server maps the subject name of the application instance certificate the
+        /// sample client creates for itself onto the ConfigureAdmin Role, restricted to its
+        /// encrypted endpoints (Part 18 4.4.3 X509Subject and the 4.4.1 Endpoints filter).
+        /// So an <b>anonymous</b> Session from this client holds a Role which no account of
+        /// the sample can earn, and the service code is in its address space.
+        /// </para>
+        /// <para>
+        /// This is the fixture which holds the server's hard coded criteria to the
+        /// certificate the client's own configuration file produces. It fails if either of
+        /// the two is edited without the other.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task TheCertificateOfThisClientEarnsTheServiceCode(CancellationToken ct)
+        {
+            await RunAsync(async (form, token) => {
+                await ConnectAsAsync(form, kAnonymous, useSecurity: true, token).ConfigureAwait(true);
+
+                bool listed = await SampleFormDriver
+                    .PumpUntilAsync(() => RowOf(form, "ServiceCode") != null, s_actionTimeout, token)
+                    .ConfigureAwait(true);
+
+                Assert.That(
+                    listed,
+                    Is.True,
+                    "An anonymous Session on an encrypted endpoint has to hold the ConfigureAdmin " +
+                    "Role, because the server maps the subject of this client's certificate onto " +
+                    "it. " + Seen(form));
+
+                Assert.That(
+                    ColumnOf(form, "ServiceCode", kStatusColumn),
+                    Does.Contain("Good"),
+                    "The ConfigureAdmin Role carries Read on the service code. " + Seen(form));
+            }, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Starts the sample server, opens the sample client on the STA thread of the
+        /// harness, and runs the body against the form.
+        /// </summary>
+        /// <remarks>
+        /// The disconnect is awaited rather than the synchronous Disconnect, which blocks the
+        /// UI thread on work that needs the same message loop and deadlocks the fixture.
+        /// </remarks>
+        private static async Task RunAsync(Func<Form, CancellationToken, Task> body, CancellationToken ct)
         {
             SampleClientUnderTest sample = SampleClientFactories.All
                 .Single(entry => entry.Sample.Name == kSample);
@@ -77,104 +213,122 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await WinFormsHarness.RunAsync(
-                async _ => await DriveAsync(sample, host.EndpointUrl, ct).ConfigureAwait(true),
+                async _ => {
+                    using var pki = new TemporaryPki($"client-{kSample}");
+
+                    ApplicationConfiguration configuration = await SampleConfigurationLoader
+                        .LoadAsync(sample.Sample.ClientConfig, pki, ct)
+                        .ConfigureAwait(true);
+
+                    await using var application =
+                        new ApplicationInstance(configuration, NullTelemetry.Instance);
+
+                    Assert.That(
+                        await application
+                            .CheckApplicationInstanceCertificatesAsync(true, null, ct)
+                            .ConfigureAwait(true),
+                        Is.True,
+                        "The client certificate of the sample could not be created.");
+
+                    using Form form = sample.CreateMainForm(configuration, NullTelemetry.Instance);
+
+                    SampleFormDriver.CreateHandles(form);
+
+                    s_endpointUrl = host.EndpointUrl;
+
+                    try
+                    {
+                        await body(form, ct).ConfigureAwait(true);
+                    }
+                    finally
+                    {
+                        await WinFormsHarness.GetConnectControl(form)
+                            .DisconnectAsync(CancellationToken.None)
+                            .ConfigureAwait(true);
+                    }
+                },
                 TimeSpan.FromMilliseconds(kTimeout) - TimeSpan.FromSeconds(15))
                 .ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Runs on the STA thread of the harness, with a message loop pumping.
+        /// Signs in through the drop down of the sample and connects.
         /// </summary>
-        private static async Task DriveAsync(
-            SampleClientUnderTest sample,
-            string endpointUrl,
+        /// <remarks>
+        /// The drop down handler is what puts the identity token on the connect control, so
+        /// this is the same path a user takes rather than a short cut around the sample.
+        /// </remarks>
+        private static async Task ConnectAsAsync(
+            Form form,
+            string account,
+            bool useSecurity,
             CancellationToken ct)
         {
-            using var pki = new TemporaryPki($"client-{kSample}");
-
-            ApplicationConfiguration configuration = await SampleConfigurationLoader
-                .LoadAsync(sample.Sample.ClientConfig, pki, ct)
-                .ConfigureAwait(true);
-
-            await using var application = new ApplicationInstance(configuration, NullTelemetry.Instance);
-
-            Assert.That(
-                await application.CheckApplicationInstanceCertificatesAsync(true, null, ct).ConfigureAwait(true),
-                Is.True,
-                "The client certificate of the sample could not be created.");
-
-            using Form form = sample.CreateMainForm(configuration, NullTelemetry.Instance);
-
-            SampleFormDriver.CreateHandles(form);
-
-            // sign in as the Operator: the drop down handler is what puts the identity token
-            // on the connect control, so this is the same path a user takes
             var identity = WinFormsHarness.FindControl(form, "IdentityCB") as ComboBox;
 
             Assert.That(identity, Is.Not.Null, "The sample no longer offers an identity drop down.");
 
-            identity.SelectedItem = "operator1";
+            identity.SelectedItem = account;
 
             ConnectServerCtrl connect = WinFormsHarness.GetConnectControl(form);
 
             Assert.That(
                 connect.UserIdentity?.DisplayName,
-                Is.EqualTo("operator1"),
+                Is.EqualTo(string.Equals(account, kAnonymous, StringComparison.Ordinal) ? null : account),
                 "Choosing an account did not reach the connect control.");
 
             ISession session = await connect
-                .ConnectAsync(NullTelemetry.Instance, endpointUrl, false, 30_000, ct)
+                .ConnectAsync(NullTelemetry.Instance, s_endpointUrl, useSecurity, 30_000, ct)
                 .ConfigureAwait(true);
 
-            try
-            {
-                Assert.That(session, Is.Not.Null, "The sample did not connect.");
+            Assert.That(session, Is.Not.Null, "The sample did not connect.");
+        }
 
-                // the machine is listed by the sample's own async void ConnectComplete handler
-                bool listed = await SampleFormDriver
-                    .PumpUntilAsync(() => RowOf(form, "SetPoint") != null, s_actionTimeout, ct)
-                    .ConfigureAwait(true);
+        /// <summary>
+        /// Runs on the STA thread of the harness, with a message loop pumping.
+        /// </summary>
+        private static async Task DriveAsync(Form form, CancellationToken ct)
+        {
+            await ConnectAsAsync(form, "operator1", useSecurity: false, ct).ConfigureAwait(true);
 
-                Assert.That(listed, Is.True, "The machine never appeared in the node list; " + Seen(form));
+            // the machine is listed by the sample's own async void ConnectComplete handler
+            bool listed = await SampleFormDriver
+                .PumpUntilAsync(() => RowOf(form, "SetPoint") != null, s_actionTimeout, ct)
+                .ConfigureAwait(true);
 
-                // the regression this fixture exists for: the client has to find its own
-                // method and call it. Nothing is written first on purpose - a Reset which
-                // restores the value it already had still goes the whole way through the
-                // resolve and the call, and the status line is where the answer shows up.
-                var reset = WinFormsHarness.FindControl(form, "ResetBTN") as Button;
+            Assert.That(listed, Is.True, "The machine never appeared in the node list; " + Seen(form));
 
-                Assert.That(reset, Is.Not.Null, "The sample no longer has a Reset button.");
-                Assert.That(reset.Enabled, Is.True, "Reset is disabled while connected.");
+            // the regression this fixture exists for: the client has to find its own
+            // method and call it. Nothing is written first on purpose - a Reset which
+            // restores the value it already had still goes the whole way through the
+            // resolve and the call, and the status line is where the answer shows up.
+            var reset = WinFormsHarness.FindControl(form, "ResetBTN") as Button;
 
-                Assert.That(
-                    SampleFormDriver.TryInvokeHandler(form, "ResetBTN_ClickAsync", reset),
-                    Is.True,
-                    "The sample no longer has a ResetBTN_ClickAsync handler.");
+            Assert.That(reset, Is.Not.Null, "The sample no longer has a Reset button.");
+            Assert.That(reset.Enabled, Is.True, "Reset is disabled while connected.");
 
-                bool reported = await SampleFormDriver
-                    .PumpUntilAsync(() => StatusText(form).Length > 0, s_actionTimeout, ct)
-                    .ConfigureAwait(true);
+            Assert.That(
+                SampleFormDriver.TryInvokeHandler(form, "ResetBTN_ClickAsync", reset),
+                Is.True,
+                "The sample no longer has a ResetBTN_ClickAsync handler.");
 
-                Assert.That(reported, Is.True, "Reset never reported a status; " + Seen(form));
+            bool reported = await SampleFormDriver
+                .PumpUntilAsync(() => StatusText(form).Length > 0, s_actionTimeout, ct)
+                .ConfigureAwait(true);
 
-                Assert.That(
-                    StatusText(form),
-                    Does.Contain("Good"),
-                    "Calling Reset as an Operator has to succeed. " +
-                    "BadNotFound means the client could not resolve its own method, " +
-                    "BadUserAccessDenied means the call was refused.");
+            Assert.That(reported, Is.True, "Reset never reported a status; " + Seen(form));
 
-                Assert.That(
-                    SetPointIs(form, kDefaultSetPoint),
-                    Is.True,
-                    $"After Reset the set point has to read {kDefaultSetPoint}; " + Seen(form));
-            }
-            finally
-            {
-                // awaited, not the synchronous Disconnect: that one blocks the UI thread on
-                // work which needs the same message loop, and the fixture deadlocks
-                await connect.DisconnectAsync(CancellationToken.None).ConfigureAwait(true);
-            }
+            Assert.That(
+                StatusText(form),
+                Does.Contain("Good"),
+                "Calling Reset as an Operator has to succeed. " +
+                "BadNotFound means the client could not resolve its own method, " +
+                "BadUserAccessDenied means the call was refused.");
+
+            Assert.That(
+                SetPointIs(form, kDefaultSetPoint),
+                Is.True,
+                $"After Reset the set point has to read {kDefaultSetPoint}; " + Seen(form));
         }
 
         #region Form Helpers
@@ -192,9 +346,17 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         private static string ValueOf(Form form, string node)
         {
+            return ColumnOf(form, node, 1);
+        }
+
+        /// <summary>
+        /// One column of a node's row, or null when the row or the column is not there.
+        /// </summary>
+        private static string ColumnOf(Form form, string node, int column)
+        {
             ListViewItem row = RowOf(form, node);
 
-            return row != null && row.SubItems.Count > 1 ? row.SubItems[1].Text : null;
+            return row != null && row.SubItems.Count > column ? row.SubItems[column].Text : null;
         }
 
         /// <summary>

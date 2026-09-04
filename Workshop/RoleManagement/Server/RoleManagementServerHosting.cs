@@ -22,9 +22,11 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <remarks>
     /// Everything is registered with the server builder of the stack: the role
     /// mappings configure the role manager the stack installs on the server, the
-    /// authenticator joins its identity registry once the server has started. The
-    /// sample has no server class of its own. The entry point of the sample and the
-    /// tests which host it share this one registration.
+    /// authenticator joins its identity registry once the server has started, and the
+    /// startup task finishes the one part of the role configuration which cannot be
+    /// written down before the server knows its own endpoints. The sample has no server
+    /// class of its own. The entry point of the sample and the tests which host it share
+    /// this one registration.
     /// </remarks>
     public static class RoleManagementServerHosting
     {
@@ -53,6 +55,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 server => server
                     .AddNodeManager<RoleManagementNodeManagerFactory>()
                     .ConfigureRoles(SampleUsers.ConfigureRoles)
+                    .AddStartupTask<WorkstationEndpoints>()
                     .AddIdentityAuthenticator(
                         (_, _) => new UserNamePasswordAuthenticator(SampleUsers.AuthenticateAsync)),
                 configure);

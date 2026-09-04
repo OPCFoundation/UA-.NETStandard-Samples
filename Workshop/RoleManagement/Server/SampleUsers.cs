@@ -46,9 +46,56 @@ namespace Quickstarts.RoleManagement.Server
         ];
 
         /// <summary>
+        /// The subject name of the application instance certificate the sample client
+        /// creates for itself, in the Part 18 4.4.3 form the X509Subject criteria uses.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The certificate the Role manager matches against is the <b>application instance
+        /// certificate of the client</b> - the one the client sends in CreateSession - not a
+        /// user certificate. That is worth saying out loud, because the criteria is named
+        /// after X.509 and Part 18 4.4.3 allows either reading: a Role granted this way
+        /// belongs to the software on that workstation, and every Session it opens holds it,
+        /// signed in or not.
+        /// </para>
+        /// <para>
+        /// The criteria is a normalised subject: <c>Name="Value"</c> pairs separated by
+        /// slashes, in the order CN, O, OU, DC, L, S, C, whatever order the certificate
+        /// itself carries them in. The DC is the host name because that is what the stack
+        /// substitutes for <c>DC=localhost</c> when it creates a certificate from a
+        /// configured subject name, so this only matches a client which runs on the same
+        /// machine as the server - which is what a Quickstart does.
+        /// </para>
+        /// <para>
+        /// A real server would not hard code this. It would hold the subject of every
+        /// workstation it trusts in the same administered store as its Role mappings, or let
+        /// a SecurityAdmin add one through the AddIdentity Method of the RoleSet, which is
+        /// what the sample client's identity criteria drop down does.
+        /// </para>
+        /// </remarks>
+        public static string WorkstationCertificateSubject { get; } =
+            "CN=\"Quickstart RoleManagement Client\"" +
+            "/O=\"OPC Foundation\"" +
+            $"/DC=\"{Utils.GetHostName()}\"" +
+            "/S=\"Arizona\"" +
+            "/C=\"US\"";
+
+        /// <summary>
+        /// The Role the maintenance workstation earns, and the only Role of the sample which
+        /// belongs to a machine rather than to a person.
+        /// </summary>
+        /// <remarks>
+        /// The class is named in full because the source generator emits a
+        /// <c>Quickstarts.RoleManagement.ObjectIds</c> for the model of this sample, and this
+        /// namespace is a child of that one, so the generated class wins over the standard
+        /// one for a bare <c>ObjectIds</c>.
+        /// </remarks>
+        public static NodeId WorkstationRoleId => Opc.Ua.ObjectIds.WellKnownRole_ConfigureAdmin;
+
+        /// <summary>
         /// Grants every account its Role, as an identity mapping rule on the well-known
         /// Role of the stack - the configuration of the role manager the stack installs
-        /// on the server.
+        /// on the server - and grants one Role for a certificate rather than an account.
         /// </summary>
         /// <param name="roles">The role configuration of the server.</param>
         public static void ConfigureRoles(RoleConfigurationOptions roles)
@@ -72,6 +119,26 @@ namespace Quickstarts.RoleManagement.Server
                     },
                 });
             }
+
+            // The Role which belongs to the maintenance workstation rather than to a user:
+            // it is granted for the certificate the client application presented, not for a
+            // user name, so an anonymous Session from the sample client holds it and a
+            // signed in Session from any other client does not.
+            //
+            // Two things this cannot say here. The Endpoints filter which goes with it is
+            // applied by WorkstationEndpoints once the server knows its own endpoints. And
+            // CustomConfiguration stays false on purpose: it is the flag which lets a Role
+            // with an empty Identities list be granted at all, and setting it is what the
+            // sample client's CustomConfiguration button demonstrates.
+            roles.Roles.Add(new RoleDefinitionOptions {
+                Name = Role.ConfigureAdmin.Name,
+                Identities = {
+                    new RoleIdentityMappingOptions {
+                        CriteriaType = IdentityCriteriaType.X509Subject,
+                        Criteria = WorkstationCertificateSubject,
+                    },
+                },
+            });
         }
 
         /// <summary>

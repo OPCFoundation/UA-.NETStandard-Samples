@@ -128,6 +128,15 @@
       </SamplingRateGroup>
     </AvailableSamplingRates>
     <MaxRegistrationInterval>30000</MaxRegistrationInterval>
+
+    <!--
+    Part 18 4.4 asks a server to audit every change to its role configuration, and the stack
+    already reports a RoleMappingRuleChangedAuditEventType from the RoleSet binding for each
+    one - but only when auditing is switched on. Without this flag a change which should be
+    audited looks exactly like one which is not, so the sample turns it on and the sample
+    client subscribes to the events it produces.
+    -->
+    <AuditingEnabled>true</AuditingEnabled>
   </ServerConfiguration>
 
   <TraceConfiguration>

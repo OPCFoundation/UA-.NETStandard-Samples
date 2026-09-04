@@ -4,3 +4,4 @@ Machine_SetPoint,3,Variable
 Machine_Calibration,4,Variable
 Machine_MaintenanceNote,5,Variable
 Machine_Reset,6,Method
+Machine_ServiceCode,7,Variable
