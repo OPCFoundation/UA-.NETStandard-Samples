@@ -28,9 +28,6 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server.Fluent;
 
@@ -42,44 +39,36 @@ namespace Quickstarts.Boiler.Server
     /// <remarks>
     /// The <c>[NodeManager]</c> attribute opts this partial class in to source
     /// generation: the generator emits a sibling partial which derives from
-    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
+    /// <c>FluentNodeManagerBase</c>, loads the predefined nodes generated from
     /// <c>ModelDesign.xml</c> - Boiler #1 comes out of it as a typed
     /// <see cref="BoilerState"/> - and calls <see cref="Configure"/> once the
     /// address space is in place. It also emits the <c>BoilerNodeManagerFactory</c>
     /// the server registers to create this node manager.
+    /// <para>
+    /// The nodes the sample creates in code live in a second namespace next to the
+    /// one of the type model. <c>AdditionalNamespaceUris</c> hands that namespace
+    /// to the generated constructor and factory, so the master node manager routes
+    /// requests for it here from the start and the <see cref="New"/> override can
+    /// mint node ids in it. The uri is spelled out because the generator reads the
+    /// attribute before the <c>Namespaces</c> constants it emits itself exist.
+    /// </para>
     /// </remarks>
-    [NodeManager]
+    [NodeManager(AdditionalNamespaceUris = new[] { "http://opcfoundation.org/Quickstarts/Boiler/Instance" })]
     public partial class BoilerNodeManager
     {
         #region INodeIdFactory Members
         /// <summary>
         /// Creates the NodeId for the specified node.
         /// </summary>
+        /// <remarks>
+        /// The builder mints the node ids of every instance it creates through this
+        /// method, the root as well as all of its children, so the whole subtree of
+        /// Boiler #2 ends up in the instance namespace.
+        /// </remarks>
         public override NodeId New(ISystemContext context, NodeState node)
         {
             // generate a new numeric id in the instance namespace.
             return new NodeId(++m_nodeIdCounter, NamespaceIndexes[1]);
-        }
-        #endregion
-
-        #region Overridden Methods
-        /// <summary>
-        /// Captures the external references collection of the startup for <see cref="Configure"/>.
-        /// </summary>
-        /// <remarks>
-        /// The fluent builder cannot publish references on nodes another node manager
-        /// owns, so Configure links the second boiler below the Objects folder through
-        /// this collection - the same route the Organizes reference the model declares
-        /// for Boiler #1 takes. The master node manager distributes the collected
-        /// references once every address space exists.
-        /// </remarks>
-        protected override ValueTask LoadPredefinedNodesAsync(
-            ISystemContext context,
-            IDictionary<NodeId, IList<IReference>> externalReferences,
-            CancellationToken cancellationToken = default)
-        {
-            m_externalReferences = externalReferences;
-            return base.LoadPredefinedNodesAsync(context, externalReferences, cancellationToken);
         }
         #endregion
 
@@ -88,34 +77,32 @@ namespace Quickstarts.Boiler.Server
         /// Builds the dynamic part of the address space and wires the behaviour of
         /// the sample once the predefined nodes are in place.
         /// </summary>
+        /// <remarks>
+        /// The generator also emits a typed <c>IBoilerNodeManagerBuilder</c> with a
+        /// <c>Boiler1</c> accessor, but its proxy is not the builder the simulation
+        /// extension expects and it declares the node by its node class rather than
+        /// by its type, so the untyped builder is used and Boiler #1 is resolved by
+        /// its node id as the typed boiler the model loader created.
+        /// </remarks>
         partial void Configure(INodeManagerBuilder builder)
         {
-            // the generated constructor only registers the namespace of the type
-            // model; add a second namespace for the dynamically created nodes. the
-            // master node manager built its routing table when this node manager
-            // reported one namespace, so the new namespace is registered with it too.
-            SetNamespaces(Namespaces.Boiler, Namespaces.Boiler + "/Instance");
-            Server.NodeManager.RegisterNamespaceManager(Namespaces.Boiler + "/Instance", this);
+            // the typed Boiler1 node was created when the model was loaded.
+            m_boiler1 = builder
+                .Node<BoilerState>(new NodeId(Objects.Boiler1, NamespaceIndexes[0]))
+                .Node;
 
-            // find the typed Boiler1 node that was created when the model was loaded.
-            m_boiler1 = FindPredefinedNode<BoilerState>(new NodeId(Objects.Boiler1, NamespaceIndexes[0]));
-
-            // create a second boiler from the type model. the source generated factory
-            // builds the children the type declares and, because a browse name is
-            // passed, assigns unique node ids through New.
-            m_boiler2 = SystemContext.CreateInstanceOfBoilerType(
-                browseName: new QualifiedName("Boiler #2", NamespaceIndexes[1]));
-
-            // store it and all of its children in the pre-defined nodes dictionary for easy look up.
-            AddPredefinedNodeSynchronously(m_boiler2);
-
-            // link it below the Objects folder, which another node manager owns.
-            AddExternalReference(
-                Opc.Ua.ObjectIds.ObjectsFolder,
-                Opc.Ua.ReferenceTypeIds.Organizes,
-                false,
-                m_boiler2.NodeId,
-                m_externalReferences);
+            // create a second boiler from the type model. the builder materializes the
+            // children the type declares, assigns unique node ids through New and
+            // registers the whole subtree with this node manager. the inverse Organizes
+            // reference places it below the Objects folder, which another node manager
+            // owns: the generated partial publishes the forward edge once Configure
+            // returns, the same route the model takes for Boiler #1.
+            m_boiler2 = builder
+                .CreateInstance(
+                    new QualifiedName("Boiler #2", NamespaceIndexes[1]),
+                    parent => new BoilerState(parent))
+                .Configure(node => node.UnderObjectsFolder())
+                .Node;
 
             // start a simulation that changes the values of the nodes. the loop is
             // owned by the node manager and stops when the node manager is disposed.
@@ -143,7 +130,6 @@ namespace Quickstarts.Boiler.Server
         #endregion
 
         #region Private Fields
-        private IDictionary<NodeId, IList<IReference>> m_externalReferences;
         private BoilerState m_boiler1;
         private BoilerState m_boiler2;
         private uint m_nodeIdCounter;

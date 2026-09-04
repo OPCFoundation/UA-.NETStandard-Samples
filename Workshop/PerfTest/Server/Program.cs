@@ -59,7 +59,7 @@ namespace Quickstarts.PerfTestServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<PerfTestServer>("PerfTestServer.Config.xml"),
+                    .AddPerfTestServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

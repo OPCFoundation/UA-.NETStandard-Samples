@@ -39,7 +39,7 @@ namespace Quickstarts.AliasNames.Server
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<AliasNamesServer>("Quickstarts.AliasNamesServer.Config.xml"),
+                    .AddAliasNamesServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

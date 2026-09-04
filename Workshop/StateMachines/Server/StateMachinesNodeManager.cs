@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Opc.Ua.Server.Fluent;
 using Opc.Ua.Server.StateMachines;
 
 namespace Quickstarts.StateMachines.Server
@@ -84,13 +85,24 @@ namespace Quickstarts.StateMachines.Server
     /// </description></item>
     /// </list>
     /// <para>
-    /// The address space is built by hand, without an information model, because that keeps
-    /// the state machines and nothing else in view. A server which declares its machine in a
+    /// The address space is built without an information model, because that keeps the
+    /// state machines and nothing else in view. A server which declares its machine in a
     /// ModelDesign gets a generated <c>*StateMachineState</c> subclass and uses lifecycle
     /// mode for it, exactly the way <c>Program</c> is used here.
     /// </para>
+    /// <para>
+    /// The node manager is a hand-written <see cref="FluentNodeManagerBase"/>: it drives the
+    /// fluent builder itself in <see cref="CreateAddressSpaceAsync"/>, the way the generated
+    /// node manager of a ModelDesign does. What the sample numbers itself - the machine
+    /// object, the two state machines and the cause methods - is built by hand and registered
+    /// as predefined nodes, because the builder mints the identifiers of what it creates.
+    /// Everything else goes through the builder in <see cref="Configure"/>: the link below
+    /// the Objects folder, the notifier link to the server object and the two properties of
+    /// the machine, whose references to nodes of other node managers are published by
+    /// <see cref="FluentNodeManagerBase.CompleteConfigureAsync"/>.
+    /// </para>
     /// </remarks>
-    public class StateMachinesNodeManager : AsyncCustomNodeManager
+    public class StateMachinesNodeManager : FluentNodeManagerBase
     {
         #region Node Identifiers
         /// <summary>
@@ -99,24 +111,9 @@ namespace Quickstarts.StateMachines.Server
         public const uint MachineId = 1;
 
         /// <summary>
-        /// The interlock the guard of the Start cause reads.
-        /// </summary>
-        public const uint SafetyInterlockClearId = 2;
-
-        /// <summary>
-        /// The number of transitions the Operation machine has completed.
-        /// </summary>
-        public const uint TransitionCountId = 3;
-
-        /// <summary>
         /// The state machine built in definition mode.
         /// </summary>
         public const uint OperationId = 10;
-
-        /// <summary>
-        /// The optional LastTransition variable of the Operation machine.
-        /// </summary>
-        public const uint OperationLastTransitionId = 11;
 
         /// <summary>
         /// The stack shipped program state machine, used in lifecycle mode.
@@ -151,9 +148,9 @@ namespace Quickstarts.StateMachines.Server
         public const uint ResetCause = 106;
 
         // The states and transitions of the Operation machine. They are numbered from a range
-        // of their own: the framework builds the value of CurrentState/Id out of the state id
-        // and the namespace given to UseElementNamespace, so a state id which is also the id
-        // of an object in that namespace would be confusing to read.
+        // of their own: the framework materializes a node per state and per transition, and
+        // the number becomes its StateNumber or TransitionNumber, so a state id which is also
+        // the id of an object of the sample would be confusing to read.
 
         /// <summary>The machine is powered down.</summary>
         public const uint OffState = 1001;
@@ -237,13 +234,81 @@ namespace Quickstarts.StateMachines.Server
         /// <summary>
         /// Builds the address space of the sample.
         /// </summary>
+        /// <remarks>
+        /// The sequence is the one the generated node manager of a ModelDesign follows: the
+        /// predefined nodes first, then the builder, then
+        /// <see cref="FluentNodeManagerBase.CompleteConfigureAsync"/>, which publishes the
+        /// references written in <see cref="Configure"/> to the node managers which own their
+        /// targets, and finally <see cref="NodeManagerBuilder.Seal"/>.
+        /// </remarks>
         public override async ValueTask CreateAddressSpaceAsync(
             IDictionary<NodeId, IList<IReference>> externalReferences,
             CancellationToken cancellationToken = default)
         {
             await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
 
-            // the object which owns both machines.
+            // the object which owns both machines. It carries a numeric id of the sample's
+            // own, as do the machines and the cause methods below it, so it is built by hand
+            // and registered before the builder runs: the builder resolves the nodes it is
+            // asked to wire among the predefined nodes.
+            BaseObjectState machine = CreateMachine();
+            await AddPredefinedNodeAsync(SystemContext, machine, cancellationToken).ConfigureAwait(false);
+
+            NodeManagerBuilder builder = CreateFluentBuilder(NamespaceIndex).Configure(Configure);
+
+            // the inverse references Configure wrote to the Objects folder and to the Server
+            // object belong to other node managers. This pass hands them over, and registers
+            // the machine as a root notifier on the strength of its HasNotifier reference.
+            await CompleteConfigureAsync(externalReferences, cancellationToken).ConfigureAwait(false);
+
+            builder.Seal();
+        }
+
+        /// <summary>
+        /// Wires what the builder can express: where the machine hangs, whom it notifies and
+        /// the two properties a client reads and writes.
+        /// </summary>
+        /// <remarks>
+        /// The properties are created by the builder, so they carry the identifiers it mints
+        /// rather than numbers of the sample; a client finds them by browse name. The
+        /// interlock is written by a client and read by the guard of the Start cause, the
+        /// counter is written by the transition observer through the updater it binds.
+        /// </remarks>
+        private void Configure(INodeManagerBuilder builder)
+        {
+            builder.Node(new NodeId(MachineId, NamespaceIndex))
+                // ensure the machine can be found below the objects folder.
+                .UnderObjectsFolder()
+
+                // a transition reports a TransitionEventType, so the machine is a notifier
+                // and the events find their way to the server object from here.
+                .AddReference(ReferenceTypeIds.HasNotifier, true, ObjectIds.Server)
+
+                // writable, so that a client can watch a guard refuse a transition: clear
+                // the interlock, call Start, and the call is answered with BadInvalidState
+                // while the machine stays where it is.
+                .WithProperty(
+                    "SafetyInterlockClear",
+                    Variant.From(true),
+                    interlock => interlock
+                        .Writable()
+                        .AsVariable<bool>()
+                        .OnWrite(clear => m_interlockClear = clear))
+
+                // counts the transitions of the Operation machine.
+                .WithProperty(
+                    "TransitionCount",
+                    Variant.From(0u),
+                    counter => counter
+                        .AsVariable<uint>()
+                        .Bind(out m_transitionCount));
+        }
+
+        /// <summary>
+        /// Creates the object both state machines belong to, and the machines below it.
+        /// </summary>
+        private BaseObjectState CreateMachine()
+        {
 #pragma warning disable CA2000 // Justification: node ownership is transferred to the server address space.
             var machine = new BaseObjectState(null);
 #pragma warning restore CA2000
@@ -253,26 +318,13 @@ namespace Quickstarts.StateMachines.Server
             machine.DisplayName = new LocalizedText(machine.BrowseName.Name);
             machine.TypeDefinitionId = ObjectTypeIds.BaseObjectType;
 
-            // a transition reports a TransitionEventType, so the object is a notifier and the
-            // events find their way to the server object from here.
+            // the machine is a notifier; Configure links it to the server object.
             machine.EventNotifier = EventNotifiers.SubscribeToEvents;
 
-            // ensure the machine can be found below the objects folder.
-            if (!externalReferences.TryGetValue(ObjectIds.ObjectsFolder, out IList<IReference> references))
-            {
-                externalReferences[ObjectIds.ObjectsFolder] = references = new List<IReference>();
-            }
-
-            machine.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
-            references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, machine.NodeId));
-
-            CreateInterlock(machine);
-            CreateTransitionCounter(machine);
             CreateOperationStateMachine(machine);
             CreateProgramStateMachine(machine);
 
-            await AddPredefinedNodeAsync(SystemContext, machine, cancellationToken).ConfigureAwait(false);
-            await AddRootNotifierAsync(machine, cancellationToken).ConfigureAwait(false);
+            return machine;
         }
         #endregion
 
@@ -325,16 +377,13 @@ namespace Quickstarts.StateMachines.Server
 
                 .WithInitialState(OffState);
 
+            // the machine now exists, with a node per state and per transition below it, and
+            // with LastTransition: the optional child a client watches to see the transitions
+            // rather than only the states is materialized along with the transitions it names.
             FluentFiniteStateMachineState operation = builder.StateMachine;
 
             operation.ReferenceTypeId = ReferenceTypeIds.HasComponent;
             machine.AddChild(operation);
-
-            // LastTransition is an optional child, and the one a client watches to see the
-            // transitions rather than only the states, so the sample adds it.
-            operation.AddLastTransition(
-                SystemContext,
-                new NodeId(OperationLastTransitionId, NamespaceIndex));
 
             // the methods have to be children of the machine before they can be bound to a
             // cause: WithCause looks the method up below the state machine node.
@@ -359,7 +408,7 @@ namespace Quickstarts.StateMachines.Server
                 // is changed, with the status code given here.
                 .WhenCause(
                     StartCause,
-                    (context, stateMachine) => m_interlock.Value,
+                    (context, stateMachine) => m_interlockClear,
                     new ServiceResult(StatusCodes.BadInvalidState))
 
                 // the observers. OnExitState, OnTransition and OnEnterState run in that order,
@@ -444,8 +493,9 @@ namespace Quickstarts.StateMachines.Server
         /// </summary>
         /// <remarks>
         /// A transition observer runs on whichever thread drove the transition - the thread of
-        /// the method call, or a timer thread for the automatic reset - so the change is
-        /// flushed synchronously, the way the sampling groups of the server do it.
+        /// the method call, or a timer thread for the automatic reset. The updater the
+        /// builder bound to the counter writes the value and flushes the change synchronously,
+        /// the way the sampling groups of the server do it.
         /// </remarks>
         private void OnOperationTransition(
             ISystemContext context,
@@ -453,8 +503,7 @@ namespace Quickstarts.StateMachines.Server
             uint fromState,
             uint toState)
         {
-            m_transitionCount.Value = (uint)Interlocked.Increment(ref m_transitions);
-            m_transitionCount.ClearChangeMasks(SystemContext, false);
+            m_transitionCount.SetValue((uint)Interlocked.Increment(ref m_transitions));
 
             LogTransition("Operation", fromState, toState);
         }
@@ -578,66 +627,20 @@ namespace Quickstarts.StateMachines.Server
         }
         #endregion
 
-        #region Private Methods
-        /// <summary>
-        /// Creates the interlock the guard of the Start cause reads.
-        /// </summary>
-        /// <remarks>
-        /// Writable, so that a client can watch a guard refuse a transition: clear the
-        /// interlock, call Start, and the call is answered with BadInvalidState while the
-        /// machine stays where it is.
-        /// </remarks>
-        private void CreateInterlock(BaseObjectState machine)
-        {
-#pragma warning disable CA2000 // Justification: node ownership is transferred to the server address space.
-            PropertyState<bool> interlock = PropertyState<bool>.With<VariantBuilder>(machine);
-#pragma warning restore CA2000
-
-            interlock.NodeId = new NodeId(SafetyInterlockClearId, NamespaceIndex);
-            interlock.BrowseName = new QualifiedName("SafetyInterlockClear", NamespaceIndex);
-            interlock.DisplayName = new LocalizedText(interlock.BrowseName.Name);
-            interlock.TypeDefinitionId = VariableTypeIds.PropertyType;
-            interlock.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-            interlock.DataType = DataTypeIds.Boolean;
-            interlock.ValueRank = ValueRanks.Scalar;
-            interlock.AccessLevel = AccessLevels.CurrentReadOrWrite;
-            interlock.UserAccessLevel = AccessLevels.CurrentReadOrWrite;
-            interlock.Value = true;
-
-            machine.AddChild(interlock);
-
-            m_interlock = interlock;
-        }
-
-        /// <summary>
-        /// Creates the variable which counts the transitions of the Operation machine.
-        /// </summary>
-        private void CreateTransitionCounter(BaseObjectState machine)
-        {
-#pragma warning disable CA2000 // Justification: node ownership is transferred to the server address space.
-            PropertyState<uint> counter = PropertyState<uint>.With<VariantBuilder>(machine);
-#pragma warning restore CA2000
-
-            counter.NodeId = new NodeId(TransitionCountId, NamespaceIndex);
-            counter.BrowseName = new QualifiedName("TransitionCount", NamespaceIndex);
-            counter.DisplayName = new LocalizedText(counter.BrowseName.Name);
-            counter.TypeDefinitionId = VariableTypeIds.PropertyType;
-            counter.ReferenceTypeId = ReferenceTypeIds.HasProperty;
-            counter.DataType = DataTypeIds.UInt32;
-            counter.ValueRank = ValueRanks.Scalar;
-            counter.Value = 0;
-
-            machine.AddChild(counter);
-
-            m_transitionCount = counter;
-        }
-        #endregion
-
         #region Private Fields
         private uint m_lastUsedId = 1000000;
         private long m_transitions;
-        private PropertyState<bool> m_interlock;
-        private PropertyState<uint> m_transitionCount;
+
+        /// <summary>
+        /// The interlock the guard of the Start cause reads. A client writes it through the
+        /// property, the guard reads it on the thread of the method call.
+        /// </summary>
+        private volatile bool m_interlockClear = true;
+
+        /// <summary>
+        /// The updater of the TransitionCount property, bound by the builder.
+        /// </summary>
+        private IValueUpdater<uint> m_transitionCount;
         #endregion
     }
 }

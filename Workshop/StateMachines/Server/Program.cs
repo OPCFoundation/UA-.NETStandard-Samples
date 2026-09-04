@@ -59,7 +59,7 @@ namespace Quickstarts.StateMachines.Server
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<StateMachinesServer>("StateMachinesServer.Config.xml"),
+                    .AddStateMachinesServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

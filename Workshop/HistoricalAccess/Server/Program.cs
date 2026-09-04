@@ -72,7 +72,7 @@ namespace Quickstarts.HistoricalAccessServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<HistoricalAccessServer>("HistoricalAccessServer.Config.xml"),
+                    .AddHistoricalAccessServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

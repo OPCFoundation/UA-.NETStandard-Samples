@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -145,24 +144,6 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         private const int kDataAccessValueColumn = 5;
 
-        /// <summary>
-        /// Samples whose subscription flow is known not to work, and why. As with the
-        /// list in <c>SampleClientTests</c>, a listed sample is reported as ignored
-        /// rather than failed, and the test fails the moment it starts working, so an
-        /// entry cannot rot.
-        /// </summary>
-        private static readonly IReadOnlyDictionary<string, string> s_knownIssues =
-            new Dictionary<string, string>(StringComparer.Ordinal) {
-                // the client never sees Start become executable after PowerOn - on the
-                // 2.0.0-preview.4 packages of master's CI just as on the current GitHub
-                // Packages builds, so this is not a missing stack feature but a defect in
-                // how the sample and the stack report Executable for causes. Tracked to
-                // be fixed rather than parked forever.
-                ["StateMachines"] =
-                    "the Start cause is not offered once the machine is Idle; fails " +
-                    "identically on master's CI at 2.0.0-preview.4",
-            };
-
         [Test]
         [TestCaseSource(nameof(Clients))]
         [CancelAfter(kTimeout)]
@@ -174,39 +155,14 @@ namespace Opc.Ua.Samples.Tests
             SampleServerUnderTest server = SampleServerFactories.All
                 .Single(entry => entry.Sample.Name == client.Name);
 
-            Exception failure = null;
+            await using SampleServerHost host = await SampleServerHost
+                .StartAsync(client.Name, server.Sample.ServerConfig, server.ConfigureServices, ct)
+                .ConfigureAwait(false);
 
-            try
-            {
-                await using SampleServerHost host = await SampleServerHost
-                    .StartAsync(client.Name, server.Sample.ServerConfig, server.CreateServer, ct)
-                    .ConfigureAwait(false);
-
-                await WinFormsHarness.RunAsync(
-                    async _ => await DriveClientAsync(sample, client, host.EndpointUrl, ct).ConfigureAwait(true),
-                    TimeSpan.FromMilliseconds(kTimeout) - TimeSpan.FromSeconds(15))
-                    .ConfigureAwait(false);
-            }
-            catch (Exception exception)
-            {
-                failure = exception;
-            }
-
-            if (s_knownIssues.TryGetValue(client.Name, out string issue))
-            {
-                Assert.That(
-                    failure,
-                    Is.Not.Null,
-                    $"{client.Name} is listed as a known issue, but the subscription test passed. " +
-                    "Remove the entry from s_knownIssues and from docs/TESTING.md.");
-
-                Assert.Ignore($"{client.Name}: known issue - {issue}. The test reported: {failure.Message}");
-            }
-
-            if (failure != null)
-            {
-                ExceptionDispatchInfo.Capture(failure).Throw();
-            }
+            await WinFormsHarness.RunAsync(
+                async _ => await DriveClientAsync(sample, client, host.EndpointUrl, ct).ConfigureAwait(true),
+                TimeSpan.FromMilliseconds(kTimeout) - TimeSpan.FromSeconds(15))
+                .ConfigureAwait(false);
         }
 
         /// <summary>
@@ -389,8 +345,15 @@ namespace Opc.Ua.Samples.Tests
                 Is.False,
                 "Start is not declared for Off, so the client must not offer it there.");
 
-            // the click handler is an async void event handler, so there is nothing to await
-            powerOn.PerformClick();
+            // not through Button.PerformClick: that one is gated on CanSelect, which is false
+            // while no parent of the control is visible, so on the form this harness never
+            // shows it does nothing at all - no handler runs, and nothing fails either. The
+            // handler is an async void event handler, so there is nothing to await either way.
+            Assert.That(
+                SampleFormDriver.TryInvokeHandler(form, "OperationCauseBTN_ClickAsync", powerOn),
+                Is.True,
+                "The StateMachines client no longer has an 'OperationCauseBTN_ClickAsync'. " +
+                "Rename it here too.");
 
             // and once the machine is Idle the same button has to become available. The click
             // handler re-reads the attributes after its call returns, so this is a wait on the

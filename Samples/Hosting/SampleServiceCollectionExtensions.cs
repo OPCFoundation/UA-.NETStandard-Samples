@@ -131,11 +131,38 @@ namespace Microsoft.Extensions.DependencyInjection
             Action<ApplicationConfiguration> configure = null)
             where TServer : StandardServer
         {
+            return services.AddSampleServer<TServer>(configurationFile, configureServer: null, configure);
+        }
+
+        /// <summary>
+        /// Registers the server of a sample as a hosted OPC UA server of the stack,
+        /// and lets the sample register what the server is made of - its node
+        /// managers first of all - with the server builder of the stack:
+        /// <c>server.AddNodeManager&lt;MyNodeManagerFactory&gt;()</c>. The factories are
+        /// created by the container and handed to the server before it starts, so a
+        /// server class registers nothing itself.
+        /// </summary>
+        /// <typeparam name="TServer">The server class of the sample.</typeparam>
+        /// <param name="services">The service collection.</param>
+        /// <param name="configurationFile">The application configuration XML file of
+        /// the sample, for example <c>BoilerServer.Config.xml</c>.</param>
+        /// <param name="configureServer">Registers the node managers and the other
+        /// parts of the server with the server builder of the stack.</param>
+        /// <param name="configure">Applied to the configuration right after it has
+        /// been read, for the settings the file cannot express, such as a certificate
+        /// validation callback.</param>
+        public static IServiceCollection AddSampleServer<TServer>(
+            this IServiceCollection services,
+            string configurationFile,
+            Action<IOpcUaServerBuilder> configureServer,
+            Action<ApplicationConfiguration> configure = null)
+            where TServer : StandardServer
+        {
             ArgumentNullException.ThrowIfNull(services);
 
             services.TryAddSingleton<TServer>();
 
-            return services.AddSampleServerHost<TServer>(configurationFile, configure);
+            return services.AddSampleServerHost<TServer>(configurationFile, configureServer, configure);
         }
 
         /// <summary>
@@ -157,12 +184,62 @@ namespace Microsoft.Extensions.DependencyInjection
             Action<ApplicationConfiguration> configure = null)
             where TServer : StandardServer
         {
+            return services.AddSampleServer(configurationFile, factory, configureServer: null, configure);
+        }
+
+        /// <summary>
+        /// Registers the server of a sample as a hosted OPC UA server of the stack,
+        /// for a server which cannot be created by the container alone, and lets the
+        /// sample register its node managers with the server builder of the stack.
+        /// </summary>
+        /// <typeparam name="TServer">The server class of the sample.</typeparam>
+        /// <param name="services">The service collection.</param>
+        /// <param name="configurationFile">The application configuration XML file of
+        /// the sample.</param>
+        /// <param name="factory">Creates the server. The loaded
+        /// <see cref="ApplicationConfiguration"/> can be resolved from the provider,
+        /// for a server whose node managers depend on the configuration.</param>
+        /// <param name="configureServer">Registers the node managers and the other
+        /// parts of the server with the server builder of the stack.</param>
+        /// <param name="configure">Applied to the configuration right after it has
+        /// been read, for the settings the file cannot express.</param>
+        public static IServiceCollection AddSampleServer<TServer>(
+            this IServiceCollection services,
+            string configurationFile,
+            Func<IServiceProvider, TServer> factory,
+            Action<IOpcUaServerBuilder> configureServer,
+            Action<ApplicationConfiguration> configure = null)
+            where TServer : StandardServer
+        {
             ArgumentNullException.ThrowIfNull(services);
             ArgumentNullException.ThrowIfNull(factory);
 
             services.TryAddSingleton(factory);
 
-            return services.AddSampleServerHost<TServer>(configurationFile, configure);
+            return services.AddSampleServerHost<TServer>(configurationFile, configureServer, configure);
+        }
+
+        /// <summary>
+        /// Registers a node manager factory with the container, for a sample whose
+        /// server is started by <see cref="AddSampleApplication"/> rather than by
+        /// the hosted server of the stack. The registration is the one the server
+        /// builder of the stack makes for <c>AddNodeManager&lt;TFactory&gt;()</c>, so a
+        /// sample registers its node managers the same way on either path, and the
+        /// hosted server of the stack picks them up too.
+        /// </summary>
+        /// <typeparam name="TFactory">The node manager factory, created by the
+        /// container.</typeparam>
+        /// <param name="services">The service collection.</param>
+        public static IServiceCollection AddSampleNodeManager<TFactory>(this IServiceCollection services)
+            where TFactory : class, IAsyncNodeManagerFactory
+        {
+            ArgumentNullException.ThrowIfNull(services);
+
+            services.TryAddSingleton<TFactory>();
+            services.AddSingleton(provider => new OpcUaServerNodeManagerRegistration(
+                provider.GetRequiredService<TFactory>()));
+
+            return services;
         }
 
         /// <summary>
@@ -186,6 +263,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static IServiceCollection AddSampleServerHost<TServer>(
             this IServiceCollection services,
             string configurationFile,
+            Action<IOpcUaServerBuilder> configureServer,
             Action<ApplicationConfiguration> configure)
             where TServer : StandardServer
         {
@@ -201,7 +279,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton(
                 provider => provider.GetRequiredService<SampleServerStartup>().Configuration);
 
-            services
+            IOpcUaServerBuilder server = services
                 .AddOpcUa()
                 .AddServer(
                     SampleConfigurationFile.Resolve(configurationFile),
@@ -212,6 +290,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
                         startup.OnConfigurationLoaded(configuration);
                     });
+
+            // the node managers of the sample. The hosted server of the stack creates
+            // them from the registered factories and adds them to the server it
+            // creates through the factory below, before it starts the server.
+            configureServer?.Invoke(server);
 
             // the hosted server creates its server through this factory: the instance
             // of the sample from the container, which the main form resolves too.

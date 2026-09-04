@@ -39,7 +39,7 @@ namespace Quickstarts.NodeManagement.Server
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<NodeManagementServer>("Quickstarts.NodeManagementServer.Config.xml"),
+                    .AddNodeManagementServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

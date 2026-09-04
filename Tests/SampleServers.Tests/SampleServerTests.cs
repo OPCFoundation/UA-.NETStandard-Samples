@@ -130,7 +130,7 @@ namespace Opc.Ua.Samples.Tests
         private static async Task SmokeTestAsync(SampleServerUnderTest server, CancellationToken ct)
         {
             await using SampleServerHost host = await SampleServerHost
-                .StartAsync(server.Sample.Name, server.Sample.ServerConfig, server.CreateServer, ct)
+                .StartAsync(server.Sample.Name, server.Sample.ServerConfig, server.ConfigureServices, ct)
                 .ConfigureAwait(false);
 
             Assert.That(

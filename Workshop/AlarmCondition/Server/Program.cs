@@ -57,7 +57,7 @@ namespace Quickstarts.AlarmConditionServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<AlarmConditionServer>("AlarmConditionServer.Config.xml"),
+                    .AddAlarmConditionServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

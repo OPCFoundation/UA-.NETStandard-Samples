@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Server;
+using Opc.Ua.Server.Hosting;
 
 namespace Opc.Ua.Samples.Hosting
 {
@@ -60,6 +62,25 @@ namespace Opc.Ua.Samples.Hosting
             if (server == null)
             {
                 return;
+            }
+
+            // the node managers registered with the container, the way the hosted
+            // server of the stack hands them to the server it creates.
+            if (server is StandardServer standardServer)
+            {
+                foreach (OpcUaServerNodeManagerRegistration registration
+                    in m_provider.GetServices<OpcUaServerNodeManagerRegistration>())
+                {
+                    if (registration.AsyncFactory != null)
+                    {
+                        standardServer.AddNodeManager(registration.AsyncFactory);
+                    }
+
+                    if (registration.SyncFactory != null)
+                    {
+                        standardServer.AddNodeManager(registration.SyncFactory);
+                    }
+                }
             }
 
             await m_application.Instance.StartAsync(server, cancellationToken).ConfigureAwait(false);

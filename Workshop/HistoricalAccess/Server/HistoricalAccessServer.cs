@@ -1,4 +1,4 @@
-﻿/* ========================================================================
+/* ========================================================================
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
@@ -49,9 +49,6 @@ namespace Quickstarts.HistoricalAccessServer
     {
         public HistoricalAccessServer(ITelemetryContext telemetry) : base(telemetry)
         {
-            // register the node manager factory. the server creates the node manager
-            // from it while it builds the master node manager on startup.
-            AddNodeManager(new HistoricalAccessNodeManagerFactory());
         }
 
         #region Overridden Methods

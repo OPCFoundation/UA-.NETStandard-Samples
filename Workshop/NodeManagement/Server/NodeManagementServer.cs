@@ -36,13 +36,10 @@ namespace Quickstarts.NodeManagement.Server
     public partial class NodeManagementServer : StandardServer
     {
         /// <summary>
-        /// Creates the server and registers its node manager factory.
+        /// Creates the server. Its node manager is registered with the host by the hosting composition root of the sample.
         /// </summary>
         public NodeManagementServer(ITelemetryContext telemetry) : base(telemetry)
         {
-            // register the source generated node manager factory. the server creates the
-            // node manager from it while it builds the master node manager on startup.
-            AddNodeManager(new NodeManagementNodeManagerFactory());
         }
 
         /// <summary>

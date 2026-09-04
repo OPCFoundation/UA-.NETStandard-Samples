@@ -59,7 +59,7 @@ namespace Quickstarts.EmptyServer
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<EmptyServer>("Quickstarts.EmptyServer.Config.xml"),
+                    .AddEmptyServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

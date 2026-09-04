@@ -39,7 +39,7 @@ namespace Quickstarts.RoleManagement.Server
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<RoleManagementServer>("Quickstarts.RoleManagementServer.Config.xml"),
+                    .AddRoleManagementServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

@@ -33,12 +33,15 @@ behaviour the sample was written to show. Tier 1 would not notice any of that.
 Three properties of the samples make headless testing cheap:
 
 1. **Server `Main` methods are UI-free until the last line.** Every sample server registers
-   itself with `AddSampleServer<XServer>(configurationFile)` and lets the hosted server of the
+   itself through a composition root next to its entry point (`AddXServer()` in
+   `XServerHosting.cs`: the server class, its configuration file and its node managers, the
+   latter registered with the server builder of the stack) and lets the hosted server of the
    stack load the configuration file, check the certificate and start the server; only *then*
    is the main form resolved from the container and shown. See
-   [`Samples/Hosting`](../Samples/Hosting/README.md). The server class is `public` and derives
-   from `StandardServer`, so a test starts the real server object with the real config file
-   and never touches WinForms.
+   [`Samples/Hosting`](../Samples/Hosting/README.md). A test hosts the sample through that
+   same composition root in a generic host with the real config file, so it exercises the
+   real server object, the real node manager registration and the real bootstrap, and never
+   touches WinForms.
 2. **Every WinForms client uses the same control under the same name.** All client
    `MainForm.Designer.cs` files declare `private Opc.Ua.Client.Controls.ConnectServerCtrl ConnectServerCTRL;`,
    and that control exposes `ConnectAsync()`, `Session` and `ConnectComplete`. One reflection
@@ -82,8 +85,9 @@ tiers iterate that table, so a sample that is not in the catalog is not tested; 
 additionally globs the repo for `*.Config.xml` so new configs cannot be silently forgotten.
 
 Two factory tables pair those entries with the sample code: `SampleServerFactories`
-(`Samples.Servers.Hosting`) knows how each sample creates its server, `SampleClientFactories`
-(`SampleClients.Tests`) how each creates its main form. Both are written out rather than
+(`Samples.Servers.Hosting`) knows the composition root each sample server is registered
+with (`services.AddXServer(configurationFile, configure)`), `SampleClientFactories`
+(`SampleClients.Tests`) how each client creates its main form. Both are written out rather than
 resolved by reflection on purpose: renaming or removing a sample then breaks the build of the
 tests, which is the earliest and clearest moment to notice. A sample without a factory has to
 be listed as a known gap, so it cannot drop out unnoticed.
@@ -288,15 +292,11 @@ is what every other sample in the repository uses.
 
 ### Known issues
 
-`s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests` and
-`WorkshopClientSubscriptionTests`) reports a listed sample as **ignored** rather than failed,
-and fails the moment it starts working, so an entry cannot rot. The lists are used sparingly:
-a sample that is broken is worth fixing, not parking.
-
-Recorded right now, in the subscription list: the StateMachines client never sees its Start
-cause become executable once the machine is Idle. It fails identically on master's CI, so it
-is a defect in how the sample and the stack report Executable for causes, not a package-lag
-issue - worth fixing, at which point the entry pays out.
+`s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests`) reports a
+listed sample as **ignored** rather than failed, and fails the moment it starts working, so
+an entry cannot rot. Both lists are used sparingly: a sample that is broken is worth fixing,
+not parking. Both lists are currently empty - the StateMachines subscription failure that
+was briefly parked turned out to be the test pressing the wrong cause, fixed for good.
 
 ## What Tier 1.5 checks today
 
@@ -354,9 +354,16 @@ enabling, and the refresh replays one dialog per source until somebody answers i
 
 ### Recorded issues
 
-Nothing is recorded as a known issue right now: the last two entries paid out when their
-node managers were migrated. The mechanism stays, because it is what made that happen. An
-expectation written the way the sample is *meant* to behave is reported as **ignored**
+Two expectations are recorded right now, both in `DataTypesNodeManagerTests`: the structure
+default value of `ParkingLot/DriverOfTheMonth/PrimaryVehicle` arrives as an extension object
+without a `TypeId`, and the registered activator therefore cannot turn it back into a
+`BicycleType`. The source generator of 2.0.0-preview.4 emits a design's structured
+`DefaultValue` as bare XML, and the XML decoder of the stack leaves an extension object
+without a `TypeId` undecoded
+([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401)); the
+entries pay out when the stack ships the fix. Before that the last two entries paid out when
+their node managers were migrated. The mechanism stays, because it is what made that happen.
+An expectation written the way the sample is *meant* to behave is reported as **ignored**
 through `KnownIssue.RecordAsync`, and - like `s_knownIssues` in Tier 1 - an entry fails the
 moment it starts passing, so it cannot rot. That has already happened six times. Three were
 expectations that were wrong about the harness rather than about the sample, one of them

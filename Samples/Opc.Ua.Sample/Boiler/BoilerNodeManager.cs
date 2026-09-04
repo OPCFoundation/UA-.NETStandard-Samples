@@ -44,9 +44,14 @@ namespace Boiler
     /// <c>BoilerDesign.xml</c> - Boiler #1 comes out of it as a typed
     /// <see cref="BoilerState"/> - and calls <see cref="Configure"/> once the
     /// address space is in place. It also emits the <c>BoilerNodeManagerFactory</c>
-    /// the server registers to create this node manager.
+    /// the server registers to create this node manager. The instance namespace
+    /// named by <c>AdditionalNamespaceUris</c> is reported by the generated
+    /// constructor and factory alongside the namespace of the type model, so the
+    /// master node manager routes the dynamically created nodes here from the start.
     /// </remarks>
-    [NodeManager(NamespaceUri = "http://opcfoundation.org/UA/Boiler/")]
+    [NodeManager(
+        NamespaceUri = "http://opcfoundation.org/UA/Boiler/",
+        AdditionalNamespaceUris = new[] { "http://opcfoundation.org/UA/Boiler/Instance" })]
     public partial class BoilerNodeManager
     {
         #region INodeIdFactory Members
@@ -70,13 +75,6 @@ namespace Boiler
         /// </summary>
         partial void Configure(INodeManagerBuilder builder)
         {
-            // the generated constructor only registers the namespace of the type
-            // model; add a second namespace for the dynamically created nodes. the
-            // master node manager built its routing table when this node manager
-            // reported one namespace, so the new namespace is registered with it too.
-            SetNamespaces(Namespaces.Boiler, Namespaces.Boiler + "Instance");
-            Server.NodeManager.RegisterNamespaceManager(Namespaces.Boiler + "Instance", this);
-
             m_boilers = new List<BoilerState>();
 
             // the boiler the type model declares came out of the generated load as
@@ -90,7 +88,7 @@ namespace Boiler
             StartSimulation(boiler1);
 
             // create a second boiler dynamically.
-            CreateBoiler(2);
+            CreateBoiler(builder, 2);
         }
         #endregion
 
@@ -98,23 +96,28 @@ namespace Boiler
         /// <summary>
         /// Creates a boiler and adds it to the address space.
         /// </summary>
+        /// <param name="builder">The builder of the node manager.</param>
         /// <param name="unitNumber">The unit number for the boiler.</param>
-        private void CreateBoiler(int unitNumber)
+        private void CreateBoiler(INodeManagerBuilder builder, int unitNumber)
         {
             string name = Utils.Format("Boiler #{0}", unitNumber);
 
-            // create a boiler from the type model with unique node ids assigned
-            // through New. the typed create also runs the OnAfterCreate hooks the
-            // sample uses to wire the state machine of the simulation, which the
-            // source generated instance factory would skip.
-            BoilerState boiler = new BoilerState(null);
+            // the boilers folder the type model declares.
+            NodeId boilersFolder = new NodeId(Objects.Boilers, NamespaceIndexes[0]);
 
-            boiler.Create(
-                SystemContext,
-                default,
-                new QualifiedName(name, NamespaceIndexes[1]),
-                default,
-                true);
+            // create a boiler from the type model. the builder materializes the
+            // children the type declares, assigns unique node ids to all of them
+            // through New and registers the instance with the node manager. the
+            // typed create also runs the OnAfterCreate hook the sample uses to wire
+            // the state machine of the simulation. the inverse Organizes reference
+            // places the boiler below the boilers folder; the matching forward
+            // reference on the folder is added when Configure completes.
+            BoilerState boiler = builder
+                .CreateInstance(
+                    new QualifiedName(name, NamespaceIndexes[1]),
+                    parent => new BoilerState(parent))
+                .Configure(node => node.OrganizedBy(boilersFolder))
+                .Node;
 
             string unitLabel = Utils.Format("{0}0", unitNumber);
 
@@ -125,17 +128,7 @@ namespace Boiler
             UpdateDisplayName(boiler.FlowController, unitLabel);
             UpdateDisplayName(boiler.CustomController, unitLabel);
 
-            // link it below the boilers folder the type model declares.
-            NodeState folder = FindPredefinedNode<NodeState>(
-                new NodeId(Objects.Boilers, NamespaceIndexes[0]));
-
-            folder.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, boiler.NodeId);
-            boiler.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, folder.NodeId);
-
             m_boilers.Add(boiler);
-
-            // store it and all of its children in the pre-defined nodes dictionary for easy look up.
-            AddPredefinedNodeSynchronously(boiler);
 
             StartSimulation(boiler);
         }

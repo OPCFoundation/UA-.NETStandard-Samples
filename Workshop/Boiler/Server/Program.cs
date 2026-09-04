@@ -59,7 +59,7 @@ namespace Quickstarts.Boiler.Server
             SampleWinFormsHost.Run(
                 args,
                 services => services
-                    .AddSampleServer<BoilerServer>("BoilerServer.Config.xml"),
+                    .AddBoilerServer(),
                 ServerForm.Create,
                 ExceptionDlg.Show);
         }

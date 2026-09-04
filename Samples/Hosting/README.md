@@ -7,9 +7,9 @@ plumbing.
 
 ## What a sample looks like
 
-A Windows Forms server hands its configuration XML file to the hosted server of the stack
-(`services.AddOpcUa().AddServer(configurationFile)` under the hood) and shows the running
-server in the shared server form:
+A Windows Forms server registers its composition root - the server class, its configuration
+XML file and the node managers the server is made of - and shows the running server in the
+shared server form:
 
 ```csharp
 [STAThread]
@@ -22,12 +22,34 @@ static void Main(string[] args)
 
     SampleWinFormsHost.Run(
         args,
-        services => services
-            .AddSampleServer<BoilerServer>("BoilerServer.Config.xml"),
+        services => services.AddBoilerServer(),
         ServerForm.Create,
         ExceptionDlg.Show);
 }
 ```
+
+The composition root lives next to the entry point (`BoilerServerHosting.cs`), so the tests
+host the sample through exactly the registration its `Main` uses:
+
+```csharp
+public static IServiceCollection AddBoilerServer(
+    this IServiceCollection services,
+    string configurationFile = null,
+    Action<ApplicationConfiguration> configure = null)
+{
+    return services.AddSampleServer<BoilerServer>(
+        configurationFile ?? "BoilerServer.Config.xml",
+        server => server.AddNodeManager<BoilerNodeManagerFactory>(),
+        configure);
+}
+```
+
+`AddSampleServer` hands the configuration file to the hosted server of the stack
+(`services.AddOpcUa().AddServer(configurationFile)` under the hood) and the callback to the
+server builder of the stack, which is where the node managers are registered:
+`AddNodeManager<TFactory>()` makes the container create the factory and the hosted server hand
+it to the server before the server starts. A server class registers nothing itself - no
+`AddNodeManager` in a constructor, no `CreateMasterNodeManagerAsync` override.
 
 A Windows Forms client loads the same kind of file eagerly, because its main form takes the
 `ApplicationConfiguration` in its constructor:
@@ -49,22 +71,21 @@ A console server builds its own host on the same registration:
 HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
 
 builder.Logging.AddSampleConsole();
-builder.Services.AddSampleServer<AggregationServer>(
-    "Quickstarts.AggregationServer.Config.xml",
-    RejectUntrustedCertificatesLoudly);
+builder.Services.AddAggregationServer(configure: RejectUntrustedCertificatesLoudly);
 
 await builder.Build().RunAsync();
 ```
 
 ## The server path: the hosted server of the stack
 
-`AddSampleServer<TServer>(configurationFile)` - and the overload taking a factory, for the
-servers which need databases or node managers - registers the server through the
+`AddSampleServer<TServer>(configurationFile, configureServer)` - and the overload taking a
+server factory, for the servers which need databases - registers the server through the
 dependency injection surface of the stack: `services.AddOpcUa().AddServer(configurationFile)`
 loads the configuration XML document of the sample and owns the application instance, the
-certificate check and the server lifetime. Every setting in the file applies exactly as on the
-classic `ApplicationInstance` path. On top of the stack the sample registration adds what the
-samples rely on:
+certificate check and the server lifetime, and `configureServer` receives the
+`IOpcUaServerBuilder` of the stack to register the node managers with. Every setting in the
+file applies exactly as on the classic `ApplicationInstance` path. On top of the stack the
+sample registration adds what the samples rely on:
 
 1. the hosted server starts the server instance of the *container* (through
    `IOpcUaServerFactory`), so the main form resolves the same running server -
@@ -81,6 +102,28 @@ The optional `configure` callback runs right after the file has been read and be
 certificates are checked, for the settings a configuration file cannot express, such as a
 certificate validation callback.
 
+### Node managers which depend on the configuration
+
+The hosted server of the stack collects the registered node manager factories before it reads
+the configuration file, so a factory type registered with `AddNodeManager<TFactory>()` cannot
+take the `ApplicationConfiguration` in its constructor. Two samples need the configuration to
+know what to serve, and show the two ways around that:
+
+- the file transfer server's `FileTransferNodeManagerFactory` takes the container and reads the
+  configuration the first time the server asks it for its namespace or for the node manager -
+  both happen with the configuration loaded;
+- the aggregation server needs *one factory per configured endpoint*, so its composition root
+  uses the server-factory overload of `AddSampleServer`: the factory runs with the configuration
+  loaded, right before the hosted server starts the server, and adds the factories to the server
+  it creates. The reverse connect manager the node managers share is a hosted service registered
+  after the server, so it starts once the server listens.
+
+The GDS servers take the middle road: their `ManagedApplications` and onboarding registrar node
+managers are registered as factory types whose stores come from the container, and the sample
+GDS server creates the node managers of every registered factory next to the GDS one (the GDS
+base server of the stack builds its master node manager without looking at registered
+factories).
+
 ## The client path: an eager `ApplicationInstance`
 
 `AddSampleApplication(...)` registers `SampleApplication`, and through it the
@@ -91,8 +134,10 @@ certificate validation callback.
 2. apply `ConfigureConfiguration`, for settings the configuration file cannot express,
 3. attach the log file the configuration names,
 4. make sure the application instance certificate is usable,
-5. start a server registered with the classic `AddSampleServer<T>()` (no file), and stop it
-   on shutdown.
+5. start a server registered with the classic `AddSampleServer<T>()` (no file), with the node
+   managers registered through `AddSampleNodeManager<TFactory>()` - the same registration the
+   server builder of the stack makes for `AddNodeManager<TFactory>()` - handed to it first,
+   and stop it on shutdown.
 
 The client samples stay on this path on purpose: their forms take the loaded
 `ApplicationConfiguration` in their constructors, and the client controls create their

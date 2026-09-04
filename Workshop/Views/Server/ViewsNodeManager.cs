@@ -62,8 +62,10 @@ namespace Quickstarts.Views.Server
         /// The boilers the sample creates from the type model get parsed node ids:
         /// a root instance's id is built from its own name, and every child derives
         /// its id from its parent's, so the whole subtree carries stable, readable
-        /// string ids. The predefined nodes of the model never pass through here -
-        /// they keep the ids the model assigns.
+        /// string ids. <c>CreateInstance</c> in <see cref="Configure"/> materialises
+        /// the subtree first - so the symbolic names are set - and only then asks
+        /// here for the ids, root before children. The predefined nodes of the model
+        /// never pass through here - they keep the ids the model assigns.
         /// </remarks>
         public override NodeId New(ISystemContext context, NodeState node)
         {
@@ -104,12 +106,22 @@ namespace Quickstarts.Views.Server
             m_operationsNamespaceIndex =
                 (ushort)Server.NamespaceUris.GetIndex(Quickstarts.Views.Namespaces.Operations);
 
-            // create the two boilers below the plant folder the model declares.
-            NodeState root = FindPredefinedNode<NodeState>(
-                new NodeId(Quickstarts.Views.Objects.Plant, NamespaceIndex));
+            // create the two boilers below the plant folder the model declares. the
+            // manager scoped CreateInstance materialises the subtree the type model
+            // declares, mints its ids through the New override above and registers it;
+            // the boiler only states that the plant organizes it, and the generated
+            // partial adds the matching forward reference on the plant folder before
+            // the address space is sealed.
+            NodeId plantId = new NodeId(Quickstarts.Views.Objects.Plant, NamespaceIndex);
 
-            CreateBoiler(root, "Boiler #1");
-            CreateBoiler(root, "Boiler #2");
+            foreach (string name in new[] { "Boiler #1", "Boiler #2" })
+            {
+                builder
+                    .CreateInstance(
+                        new QualifiedName(name, NamespaceIndex),
+                        parent => new Quickstarts.Views.BoilerState(parent))
+                    .Configure(boiler => boiler.OrganizedBy(plantId));
+            }
         }
         #endregion
 
@@ -117,26 +129,32 @@ namespace Quickstarts.Views.Server
         /// <summary>
         /// Checks if the node is in the view.
         /// </summary>
-        protected override bool IsNodeInView(ServerSystemContext context, ContinuationPoint continuationPoint, NodeState node)
+        /// <remarks>
+        /// The view membership lives on the overload that takes the view id: the
+        /// browse path reaches it through the ContinuationPoint overload, which the
+        /// base class routes here once it has ruled out a browse without a view, and
+        /// the public <c>IsNodeInViewAsync</c> of the node manager interface reaches
+        /// it directly. Overriding the ContinuationPoint overload instead would leave
+        /// the second path with the base behaviour, which knows nothing about the
+        /// disciplines.
+        /// </remarks>
+        protected override bool IsNodeInView(ServerSystemContext context, NodeId viewId, NodeState node)
         {
-            if (continuationPoint.View != null)
+            if (viewId == new NodeId(Quickstarts.Views.Views.Engineering, NamespaceIndex))
             {
-                if (continuationPoint.View.ViewId == new NodeId(Quickstarts.Views.Views.Engineering, NamespaceIndex))
+                // suppress operations properties.
+                if (node != null && node.BrowseName.NamespaceIndex == m_operationsNamespaceIndex)
                 {
-                    // suppress operations properties.
-                    if (node != null && node.BrowseName.NamespaceIndex == m_operationsNamespaceIndex)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
+            }
 
-                if (continuationPoint.View.ViewId == new NodeId(Quickstarts.Views.Views.Operations, NamespaceIndex))
+            if (viewId == new NodeId(Quickstarts.Views.Views.Operations, NamespaceIndex))
+            {
+                // suppress engineering properties.
+                if (node != null && node.BrowseName.NamespaceIndex == m_engineeringNamespaceIndex)
                 {
-                    // suppress engineering properties.
-                    if (node != null && node.BrowseName.NamespaceIndex == m_engineeringNamespaceIndex)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
 
@@ -166,26 +184,6 @@ namespace Quickstarts.Views.Server
             }
 
             return true;
-        }
-        #endregion
-
-        #region Private Methods
-        /// <summary>
-        /// Creates a boiler below the plant folder.
-        /// </summary>
-        /// <remarks>
-        /// The generated factory instantiates the subtree the type model declares
-        /// and lets the <see cref="New"/> override above assign the parsed node ids.
-        /// </remarks>
-        private void CreateBoiler(NodeState root, string name)
-        {
-            Quickstarts.Views.BoilerState boiler = SystemContext.CreateInstanceOfBoilerType(
-                browseName: new QualifiedName(name, NamespaceIndex));
-
-            boiler.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, true, root.NodeId);
-            root.AddReference(Opc.Ua.ReferenceTypeIds.Organizes, false, boiler.NodeId);
-
-            AddPredefinedNodeSynchronously(boiler);
         }
         #endregion
 

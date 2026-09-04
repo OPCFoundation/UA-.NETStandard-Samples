@@ -17,14 +17,16 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="Instances\ModelDesign2.xml" />
-    <Content Include="Instances\Quickstarts.DataTypes.Instances.NodeSet.xml" />
-    <Content Include="Instances\Quickstarts.DataTypes.Instances.PredefinedNodes.xml" />
-    <Content Include="BuildDesign.bat" />
-    <Content Include="Instances\ModelDesign2.csv" />
-    <EmbeddedResource Include="Instances\Quickstarts.DataTypes.Instances.PredefinedNodes.uanodes" />
-    <Content Include="Instances\Quickstarts.DataTypes.Instances.Types.bsd" />
-    <Content Include="Instances\Quickstarts.DataTypes.Instances.Types.xsd" />
+    <!-- The instance model is compiled by the OPC UA source generator. Its BicycleType
+         subtypes a structure of the type model in the DataTypes Library and its
+         DriverOfTheMonth is an instance of the DriverType declared there. The type
+         model's design is handed to the generator as well so it resolves those
+         references from the design itself; no code is generated for it, because the
+         referenced library already carries the types under the same C# namespace. -->
+    <AdditionalFiles Include="Instances\ModelDesign2.xml" />
+    <AdditionalFiles Include="Instances\ModelDesign2.csv" />
+    <AdditionalFiles Include="..\Common\Types\ModelDesign1.xml" Link="Instances\ModelDesign1.xml" />
+    <AdditionalFiles Include="..\Common\Types\ModelDesign1.csv" Link="Instances\ModelDesign1.csv" />
     <None Include="..\README.md">
       <Link>README.md</Link>
     </None>

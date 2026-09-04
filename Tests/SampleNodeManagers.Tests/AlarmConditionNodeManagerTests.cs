@@ -34,9 +34,9 @@ namespace Opc.Ua.Samples.Tests
     /// is a graph rather than a hierarchy. A migration which turns it back into a tree
     /// would be caught by SourceIsSharedBetweenAreas.
     ///
-    /// The node manager is built directly on the AsyncCustomNodeManager of the SDK; the
-    /// areas and sources exist only as entries in its dictionaries until a node id names
-    /// them.
+    /// The node manager is a hand-written FluentNodeManagerBase of the SDK: the areas and
+    /// sources are predefined nodes, and the builder only adds the notifier link to the
+    /// server object and the one second cycle of the simulation.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]
