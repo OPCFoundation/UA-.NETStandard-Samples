@@ -74,49 +74,28 @@ namespace Opc.Ua.Gds.Server
             "http://opcfoundation.org/UA-.NETStandard-Samples/GDS/Onboarding/";
 
         /// <summary>
-        /// The namespace of the OPC 10000-21 Onboarding companion model, which the two
-        /// Method NodeIds are created in - see <see cref="CreateTicketMethod"/>. Spelled
-        /// out because the generated model constants are not part of every package version
-        /// this sample builds against.
-        /// </summary>
-        public const string OnboardingNamespaceUri = "http://opcfoundation.org/UA/Onboarding/";
-
-        /// <summary>
         /// BrowseName of the registrar administration Object, the node a client passes to
         /// <c>OnboardingClient</c>.
         /// </summary>
         public const string RegistrarBrowseName = "DeviceRegistrarAdmin";
 
-        /// <summary>
-        /// The type-declaration MethodIds of <c>DeviceRegistrarAdminType</c> in the
-        /// Onboarding companion model (<c>DeviceRegistrarAdminType_RegisterTickets</c> and
-        /// <c>DeviceRegistrarAdminType_UnregisterTickets</c>), spelled out because the
-        /// generated model constants are not part of every package version this sample
-        /// builds against.
-        /// </summary>
-        private const uint kRegisterTicketsTypeMethodId = 1176;
-        private const uint kUnregisterTicketsTypeMethodId = 1179;
-
         private readonly ITicketStore m_ticketStore;
 
         /// <summary>
-        /// Creates the node manager over the supplied ticket store.
+        /// Creates the node manager over the supplied ticket store. The Onboarding
+        /// companion model namespace is the manager's second namespace, because the two
+        /// Method nodes carry the model's type-declaration NodeIds - see
+        /// <see cref="CreateTicketMethod"/>.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="ticketStore"/> is <c>null</c>.</exception>
         public DeviceRegistrarNodeManager(
             IServerInternal server,
             ApplicationConfiguration configuration,
             ITicketStore ticketStore)
-            : base(server, configuration, NamespaceUri, OnboardingNamespaceUri)
+            : base(server, configuration, NamespaceUri, Opc.Ua.Onboarding.Namespaces.OpcUaOnboarding)
         {
             m_ticketStore = ticketStore ?? throw new ArgumentNullException(nameof(ticketStore));
         }
-
-        /// <summary>
-        /// The server table index of the Part 21 Onboarding namespace.
-        /// </summary>
-        private ushort OnboardingNamespaceIndex
-            => (ushort)SystemContext.NamespaceUris.GetIndex(OnboardingNamespaceUri);
 
         /// <inheritdoc/>
         public override async ValueTask CreateAddressSpaceAsync(
@@ -137,11 +116,11 @@ namespace Opc.Ua.Gds.Server
             MethodState register = CreateTicketMethod(
                 registrar,
                 "RegisterTickets",
-                kRegisterTicketsTypeMethodId);
+                Opc.Ua.Onboarding.MethodIds.DeviceRegistrarAdminType_RegisterTickets);
             MethodState unregister = CreateTicketMethod(
                 registrar,
                 "UnregisterTickets",
-                kUnregisterTicketsTypeMethodId);
+                Opc.Ua.Onboarding.MethodIds.DeviceRegistrarAdminType_UnregisterTickets);
 
             registrar.AddChild(register);
             registrar.AddChild(unregister);
@@ -184,11 +163,14 @@ namespace Opc.Ua.Gds.Server
         /// actually exchange would be rejected with <c>Bad_TypeMismatch</c>.
         /// </para>
         /// </remarks>
-        private MethodState CreateTicketMethod(NodeState parent, string name, uint typeMethodId)
+        private MethodState CreateTicketMethod(
+            NodeState parent,
+            string name,
+            ExpandedNodeId typeMethodId)
         {
             #pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
             var method = new MethodState(parent) {
-                NodeId = new NodeId(typeMethodId, OnboardingNamespaceIndex),
+                NodeId = ExpandedNodeId.ToNodeId(typeMethodId, SystemContext.NamespaceUris),
                 BrowseName = new QualifiedName(name),
                 DisplayName = new LocalizedText(name),
                 ReferenceTypeId = ReferenceTypeIds.HasComponent,
