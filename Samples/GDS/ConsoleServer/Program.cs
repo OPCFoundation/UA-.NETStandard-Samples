@@ -548,11 +548,12 @@ namespace Opc.Ua.Gds.Server
                 // which serve them, registered with the container like the server itself.
                 .AddSingleton<IConfigurationDataStore>(CreateManagedApplicationsDataStore)
                 .AddSingleton<ITicketStore, MemoryTicketStore>()
-                .AddSampleNodeManager<ManagedApplicationsNodeManagerFactory>()
-                .AddSampleNodeManager<DeviceRegistrarNodeManagerFactory>()
-                .AddSampleServer(
+                .AddSingleton(CreateServer)
+                .AddSampleServer<SampleGlobalDiscoveryServer>(
                     "Opc.Ua.GlobalDiscoveryServer.Config.xml",
-                    CreateServer,
+                    server => server
+                        .AddNodeManager<ManagedApplicationsNodeManagerFactory>()
+                        .AddNodeManager<DeviceRegistrarNodeManagerFactory>(),
                     AcceptUntrustedCertificatesInteractively);
 
             m_host = builder.Build();

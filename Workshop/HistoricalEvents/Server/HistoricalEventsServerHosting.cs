@@ -14,14 +14,15 @@ using Quickstarts.HistoricalEvents.Server;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// The composition root of the HistoricalEvents server sample: the server class, its
-    /// configuration file and the node managers the server is made of.
+    /// The composition root of the HistoricalEvents server sample: its configuration
+    /// file, the node manager the server is made of and the history capabilities it
+    /// advertises.
     /// </summary>
     /// <remarks>
-    /// The node managers are registered with the server builder of the stack and
-    /// created by the container. The hosted server hands them to the server before it
-    /// starts, so the server class registers nothing itself. The entry point of the
-    /// sample and the tests which host it share this one registration.
+    /// Everything is registered with the server builder of the stack and created by
+    /// the container; the hosted server hands it to the shared sample server, so the
+    /// sample has no server class of its own. The entry point of the sample and the
+    /// tests which host it share this one registration.
     /// </remarks>
     public static class HistoricalEventsServerHosting
     {
@@ -31,8 +32,9 @@ namespace Microsoft.Extensions.DependencyInjection
         public const string ConfigurationFile = "HistoricalEventsServer.Config.xml";
 
         /// <summary>
-        /// Registers the HistoricalEvents server as the hosted OPC UA server of the stack,
-        /// together with the node manager it serves.
+        /// Registers the HistoricalEvents server as the hosted OPC UA server of the
+        /// stack, together with the node manager it serves and the event history
+        /// capabilities it advertises once it has started.
         /// </summary>
         /// <param name="services">The service collection.</param>
         /// <param name="configurationFile">The configuration file to load, when the
@@ -45,9 +47,11 @@ namespace Microsoft.Extensions.DependencyInjection
             string configurationFile = null,
             Action<ApplicationConfiguration> configure = null)
         {
-            return services.AddSampleServer<HistoricalEventsServer>(
+            return services.AddSampleServer(
                 configurationFile ?? ConfigurationFile,
-                server => server.AddNodeManager<HistoricalEventsNodeManagerFactory>(),
+                server => server
+                    .AddNodeManager<HistoricalEventsNodeManagerFactory>()
+                    .AddStartupTask<HistoricalEventsCapabilities>(),
                 configure);
         }
     }

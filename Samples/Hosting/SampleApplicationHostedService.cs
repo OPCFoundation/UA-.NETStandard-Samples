@@ -10,98 +10,45 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Opc.Ua.Server;
-using Opc.Ua.Server.Hosting;
 
 namespace Opc.Ua.Samples.Hosting
 {
     /// <summary>
-    /// Gives the generic host ownership of the lifetime of a sample: it reads the
-    /// configuration, sets up the certificate and starts and stops the server the
-    /// sample registered, if it has one.
+    /// Reads the configuration of a sample and sets up its certificate when the host
+    /// starts, so the forms of the sample can take the loaded configuration in their
+    /// constructors.
     /// </summary>
+    /// <remarks>
+    /// A server of the sample is started and stopped by the hosted server of the
+    /// stack, see <c>AddSampleServer(configureServer)</c>; this service only makes the
+    /// load happen before the forms are created.
+    /// </remarks>
     public sealed class SampleApplicationHostedService : IHostedService
     {
         private readonly SampleApplication m_application;
-        private readonly IServiceProvider m_provider;
-        private readonly ILogger m_logger;
-        private bool m_started;
 
         /// <summary>
         /// Creates the hosted service.
         /// </summary>
         /// <param name="application">The application instance of the sample.</param>
-        /// <param name="telemetry">The telemetry context of the host.</param>
-        /// <param name="provider">The container the server of the sample comes from.</param>
-        public SampleApplicationHostedService(
-            SampleApplication application,
-            ITelemetryContext telemetry,
-            IServiceProvider provider)
+        public SampleApplicationHostedService(SampleApplication application)
         {
             ArgumentNullException.ThrowIfNull(application);
-            ArgumentNullException.ThrowIfNull(telemetry);
-            ArgumentNullException.ThrowIfNull(provider);
 
             m_application = application;
-            m_provider = provider;
-            m_logger = telemetry.CreateLogger<SampleApplicationHostedService>();
         }
 
         /// <inheritdoc/>
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
-            await m_application.InitializeAsync(cancellationToken).ConfigureAwait(false);
-
-            // the server is resolved here and not injected: the host creates every
-            // hosted service before it starts the first one, and the servers of the
-            // samples are meant to see the configuration which was just read.
-            IServerBase server = m_provider.GetService<IServerBase>();
-            if (server == null)
-            {
-                return;
-            }
-
-            // the node managers registered with the container, the way the hosted
-            // server of the stack hands them to the server it creates.
-            if (server is StandardServer standardServer)
-            {
-                foreach (OpcUaServerNodeManagerRegistration registration
-                    in m_provider.GetServices<OpcUaServerNodeManagerRegistration>())
-                {
-                    if (registration.AsyncFactory != null)
-                    {
-                        standardServer.AddNodeManager(registration.AsyncFactory);
-                    }
-
-                    if (registration.SyncFactory != null)
-                    {
-                        standardServer.AddNodeManager(registration.SyncFactory);
-                    }
-                }
-            }
-
-            await m_application.Instance.StartAsync(server, cancellationToken).ConfigureAwait(false);
-            m_started = true;
-
-            if (m_logger.IsEnabled(LogLevel.Information))
-            {
-                m_logger.LogInformation(
-                    "{Application} is listening.",
-                    m_application.Instance.ApplicationName);
-            }
+            return m_application.GetAsync(cancellationToken);
         }
 
         /// <inheritdoc/>
-        public async Task StopAsync(CancellationToken cancellationToken)
+        public Task StopAsync(CancellationToken cancellationToken)
         {
-            if (m_started)
-            {
-                m_started = false;
-                await m_application.Instance.StopAsync(cancellationToken).ConfigureAwait(false);
-            }
+            return Task.CompletedTask;
         }
     }
 }

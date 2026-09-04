@@ -24,14 +24,18 @@ namespace Opc.Ua.Samples.Hosting
     /// <remarks>
     /// The instance is resolved from dependency injection, so it gets the
     /// <see cref="ITelemetryContext"/> of the host and everything it creates logs
-    /// through the host. The configuration is only read once the host starts, which
-    /// is what <see cref="SampleApplicationHostedService"/> is for.
+    /// through the host. The configuration is read once the host starts, which is
+    /// what <see cref="SampleApplicationHostedService"/> is for; a server of the
+    /// sample registered with <c>AddSampleServer(configureServer)</c> runs on the
+    /// same instance and configuration, which the hosted server of the stack takes
+    /// through <see cref="IOpcUaApplicationConfigurationProvider"/>.
     /// </remarks>
-    public sealed class SampleApplication
+    public sealed class SampleApplication : IOpcUaApplicationConfigurationProvider
     {
         private readonly SampleApplicationOptions m_options;
         private readonly ILogger m_logger;
-        private ApplicationConfiguration m_configuration;
+        private readonly object m_lock = new();
+        private Task<ApplicationConfiguration> m_load;
 
         /// <summary>
         /// Creates the application instance of the sample.
@@ -63,6 +67,9 @@ namespace Opc.Ua.Samples.Hosting
         /// </summary>
         public ApplicationInstance Instance { get; }
 
+        /// <inheritdoc/>
+        IApplicationInstance IOpcUaApplicationConfigurationProvider.Application => Instance;
+
         /// <summary>
         /// The configuration the sample was started with.
         /// </summary>
@@ -71,57 +78,82 @@ namespace Opc.Ua.Samples.Hosting
         /// not been read.
         /// </exception>
         public ApplicationConfiguration Configuration
-            => m_configuration ?? throw new InvalidOperationException(
-                "The application configuration is only available once the host has started.");
+        {
+            get
+            {
+                Task<ApplicationConfiguration> load = Volatile.Read(ref m_load);
+
+                return load is { IsCompletedSuccessfully: true }
+                    ? load.Result
+                    : throw new InvalidOperationException(
+                        "The application configuration is only available once the host has started.");
+            }
+        }
 
         /// <summary>
         /// Reads the configuration, points the logging at the file it names and makes
-        /// sure the application instance certificate is usable.
+        /// sure the application instance certificate is usable. Once: every caller
+        /// after the first gets the same load.
         /// </summary>
         /// <param name="ct">The cancellation token.</param>
-        internal async Task InitializeAsync(CancellationToken ct)
+        public Task<ApplicationConfiguration> GetAsync(CancellationToken ct = default)
         {
-            m_configuration = await Instance
+            Task<ApplicationConfiguration> load;
+
+            lock (m_lock)
+            {
+                m_load ??= LoadAsync();
+                load = m_load;
+            }
+
+            return load.WaitAsync(ct);
+        }
+
+        /// <inheritdoc/>
+        ValueTask IAsyncDisposable.DisposeAsync()
+        {
+            // the container disposes the application instance: it is registered with
+            // it as a service of its own, which the forms of the samples take.
+            return ValueTask.CompletedTask;
+        }
+
+        private async Task<ApplicationConfiguration> LoadAsync()
+        {
+            ApplicationConfiguration configuration = await Instance
                 .LoadApplicationConfigurationAsync(
                     SampleConfigurationFile.Resolve(m_options.ConfigurationFile),
-                    m_options.Silent,
-                    ct)
+                    silent: false)
                 .ConfigureAwait(false);
 
             // what the configuration file cannot express, for example a certificate
             // validation callback.
-            m_options.ConfigureConfiguration?.Invoke(m_configuration);
+            m_options.ConfigureConfiguration?.Invoke(configuration);
 
             // the file to log to is part of the configuration, so it can only be
             // attached now. Loggers handed out before this point write to the file as
             // well, see SampleLogging.
-            string logFile = SampleLogging.UseTraceConfiguration(m_configuration);
-            string applicationName = m_configuration.ApplicationName;
+            string logFile = SampleLogging.UseTraceConfiguration(configuration);
+            string applicationName = configuration.ApplicationName;
             if (logFile != null && m_logger.IsEnabled(LogLevel.Information))
             {
                 m_logger.LogInformation("{Application} logs to {LogFile}.", applicationName, logFile);
             }
 
             bool certificateOk = await Instance
-                .CheckApplicationInstanceCertificatesAsync(m_options.Silent, ct: ct)
+                .CheckApplicationInstanceCertificatesAsync(silent: false)
                 .ConfigureAwait(false);
 
             if (!certificateOk)
             {
-                if (m_options.RequireApplicationCertificate)
-                {
-                    throw new ServiceResultException(
-                        StatusCodes.BadConfigurationError,
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            "The application instance certificate of '{0}' is invalid.",
-                            applicationName));
-                }
-
-                m_logger.LogWarning(
-                    "The application instance certificate of '{Application}' is invalid.",
-                    applicationName);
+                throw new ServiceResultException(
+                    StatusCodes.BadConfigurationError,
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The application instance certificate of '{0}' is invalid.",
+                        applicationName));
             }
+
+            return configuration;
         }
     }
 }

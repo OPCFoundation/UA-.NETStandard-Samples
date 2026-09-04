@@ -60,8 +60,7 @@ namespace Opc.Ua.Sample
                         options.ApplicationType = ApplicationType.ClientAndServer;
                         options.ConfigurationFile = "Opc.Ua.SampleClient.Config.xml";
                     })
-                    .AddSampleServer<SampleServer>()
-                    .AddUaSampleServerNodeManagers(),
+                    .AddSampleServer(server => server.AddUaSampleServer()),
                 CreateClientForm,
                 ExceptionDlg.Show);
         }
