@@ -15,10 +15,11 @@
 
   <!--
   The address space of this sample is deliberately tiny. Everything it demonstrates is in
-  the RolePermissions the node manager puts on these five nodes: which of the Part 3 well
-  known Roles, and which Role the sample defines itself, may browse, read, write or call
-  them. The node manager assigns those permissions in code so that the mapping between a
-  Role and a permission is readable in one place instead of being buried in the model.
+  the RolePermissions and the AccessRestrictions the node manager puts on these six nodes:
+  which of the Part 3 well known Roles may browse, read, write or call them, and which of
+  them a channel has to be encrypted to reach at all. The node manager assigns both in code
+  so that the mapping between a Role and a permission is readable in one place instead of
+  being buried in the model.
   -->
   <opc:Object SymbolicName="Machine" TypeDefinition="ua:BaseObjectType">
     <opc:Description>A machine whose values are protected by role permissions.</opc:Description>
@@ -36,10 +37,13 @@
         <opc:Description>The requested temperature. Readable by everyone, writable by an Operator or an Engineer.</opc:Description>
       </opc:Variable>
       <opc:Variable SymbolicName="Calibration" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
-        <opc:Description>The calibration offset of the sensor. Only an Engineer may read or write it.</opc:Description>
+        <opc:Description>The calibration offset of the sensor. Only an Engineer may write it, and only over an encrypted channel.</opc:Description>
       </opc:Variable>
       <opc:Variable SymbolicName="MaintenanceNote" DataType="ua:String" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
-        <opc:Description>The maintenance log. Written by the Role this sample defines itself.</opc:Description>
+        <opc:Description>The maintenance log. Written by a Supervisor, and not part of the address space of an unencrypted channel at all.</opc:Description>
+      </opc:Variable>
+      <opc:Variable SymbolicName="ServiceCode" DataType="ua:String" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
+        <opc:Description>The service unlock code. Read by an Engineer, written by the maintenance workstation, which earns its Role from the certificate of the client application rather than from a user.</opc:Description>
       </opc:Variable>
       <opc:Method SymbolicName="Reset">
         <opc:Description>Returns the set point to its default. Only an Operator or an Engineer may call it.</opc:Description>
