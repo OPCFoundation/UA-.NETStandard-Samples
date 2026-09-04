@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// downstream servers through, when the configuration asks for reverse connections:
     /// created with the server, started with the host, disposed with it.
     /// </summary>
-    internal sealed class AggregationReverseConnect : IHostedService
+    internal sealed class AggregationReverseConnect : IHostedService, IAsyncDisposable
     {
         private readonly ITelemetryContext m_telemetry;
         private ReverseConnectManager m_manager;
@@ -158,7 +158,16 @@ namespace Microsoft.Extensions.DependencyInjection
         /// synchronous <c>Dispose</c> is obsolete because closing the listening hosts
         /// is asynchronous, and the host awaits this method, which a disposer cannot.
         /// </remarks>
-        public async Task StopAsync(CancellationToken cancellationToken)
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return DisposeAsync().AsTask();
+        }
+
+        /// <summary>
+        /// Closes the listening hosts of the manager. Idempotent, so that the container
+        /// disposing this service after the host already stopped it does nothing.
+        /// </summary>
+        public async ValueTask DisposeAsync()
         {
             ReverseConnectManager manager = m_manager;
             m_manager = null;

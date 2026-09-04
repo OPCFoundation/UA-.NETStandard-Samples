@@ -125,7 +125,7 @@ namespace Opc.Ua.Samples.Tests
                     "The new node has to land in the namespace of the node manager which owns it.");
 
                 Assert.That(
-                    result.AddedNodeId.Identifier,
+                    result.AddedNodeId.IdentifierAsString,
                     Does.Match("^Valve201-[0-9]+$"),
                     "The sample overrides INodeIdFactory.New to build the identifier from the browse name.");
             });

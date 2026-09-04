@@ -37,15 +37,5 @@
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Label="Compile items now included by globbing that were not in the original project file">
-    <Compile Remove="Aggregates\TimeSlice.cs" />
-    <Compile Remove="Aggregates\InterpolativeAggregate.cs" />
-    <Compile Remove="Aggregates\Experiment.cs" />
-    <Compile Remove="Aggregates\BoundingValue.cs" />
-    <Compile Remove="Aggregates\Aggregators.cs" />
-    <Compile Remove="Aggregates\AggregateManager.cs" />
-    <Compile Remove="Aggregates\AggregateCursor.cs" />
-    <Compile Remove="Aggregates\AggregateCalculator.cs" />
-  </ItemGroup>
   <PropertyGroup />
 </Project>
