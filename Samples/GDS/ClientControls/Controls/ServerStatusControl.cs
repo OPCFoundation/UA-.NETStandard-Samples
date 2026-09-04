@@ -39,6 +39,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -47,7 +48,7 @@ namespace Opc.Ua.Gds.Client.Controls
     using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
     using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
 
-    public partial class ServerStatusControl : UserControl
+    public partial class ServerStatusControl : SampleUserControl
     {
         /// <summary>
         /// The name the status item carries inside the subscription. A V2 monitored item is

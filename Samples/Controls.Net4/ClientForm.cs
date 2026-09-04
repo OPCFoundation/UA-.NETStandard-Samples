@@ -66,30 +66,33 @@ namespace Opc.Ua.Sample.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
 
+        /// <summary>
+        /// Creates the window of the sample: the container supplies the application it
+        /// runs on, the configuration it was started with and the telemetry.
+        /// </summary>
+        /// <param name="application">The application instance of the sample.</param>
+        /// <param name="configuration">The configuration of the sample.</param>
+        /// <param name="telemetry">The telemetry of the sample.</param>
         public ClientForm(
-            ServiceMessageContext context,
             ApplicationInstance application,
-            ClientForm masterForm,
             ApplicationConfiguration configuration,
             ITelemetryContext telemetry)
         {
+            ArgumentNullException.ThrowIfNull(application);
+            ArgumentNullException.ThrowIfNull(configuration);
+
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            m_masterForm = masterForm;
-            m_context = context;
+            m_context = configuration.CreateMessageContext();
             m_application = application;
             m_server = application.Server as Opc.Ua.Server.StandardServer;
             m_telemetry = telemetry;
             m_logger = telemetry.CreateLogger<ClientForm>();
-
-            if (m_masterForm == null)
-            {
-                m_forms = new List<ClientForm>();
-            }
+            m_forms = [];
 
             SessionsCTRL.Configuration = m_configuration = configuration;
-            SessionsCTRL.MessageContext = context;
+            SessionsCTRL.MessageContext = m_context;
 
             // get list of cached endpoints.
             m_endpoints = m_configuration.LoadCachedEndpoints(true);
@@ -107,7 +110,8 @@ namespace Opc.Ua.Sample.Controls
         {
             if (m_masterForm == null)
             {
-                ClientForm form = new ClientForm(m_context, m_application, this, m_configuration, m_telemetry);
+                ClientForm form = Windows.Create<ClientForm>();
+                form.m_masterForm = this;
                 m_forms.Add(form);
                 form.FormClosing += new FormClosingEventHandler(Window_FormClosing);
                 form.Show();

@@ -9,6 +9,7 @@
 
 using System;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Opc.Ua.Configuration;
 using Opc.Ua.Samples.WinForms;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -31,8 +32,15 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ArgumentNullException.ThrowIfNull(services);
 
+            services.AddOptions();
+
             services.TryAddSingleton<IWindowFactory>(
                 provider => new WindowFactory(provider));
+
+            // the message box the stack asks its questions through. The entry point
+            // helper hands it to the application instance of the stack before the host
+            // starts, so the certificate of the sample can be created interactively.
+            services.TryAddSingleton<IApplicationMessageDlg, SampleApplicationMessageDlg>();
 
             return services;
         }

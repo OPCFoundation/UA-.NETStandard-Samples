@@ -31,25 +31,26 @@ using Opc.Ua.Client;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class SelectGdsDialog : Form
+    public partial class SelectGdsDialog : SampleForm
     {
-        public SelectGdsDialog()
+        public SelectGdsDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ImageListControl.AppIcon;
+
+            m_telemetry = telemetry;
         }
 
         private GlobalDiscoveryServerClient m_gds;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
 
-        public string ShowDialog(IWin32Window owner, GlobalDiscoveryServerClient gds, IList<string> serverUrls, ITelemetryContext telemetry)
+        public string ShowDialog(IWin32Window owner, GlobalDiscoveryServerClient gds, IList<string> serverUrls)
         {
             m_gds = gds;
-            m_telemetry = telemetry;
-
             ServersListBox.Items.Clear();
 
             foreach (var serverUrl in serverUrls)

@@ -47,12 +47,10 @@ namespace Opc.Ua.Sample
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
             // the sample is a client and a server at once: the generic host owns the
             // configuration, the certificate, the logging and the lifetime of the
             // server, and the container creates the client form.
-            SampleWinFormsHost.Run(
+            SampleWinFormsHost.Run<SampleClientForm>(
                 args,
                 services => {
                     services
@@ -70,21 +68,7 @@ namespace Opc.Ua.Sample
                     // nobody answers.
                     services.AddOpcUa().AddHttpsTransport();
                 },
-                CreateClientForm,
                 ExceptionDlg.Show);
-        }
-
-        /// <summary>
-        /// Creates the main form. The sample has no master form to attach to, which the
-        /// container cannot know, so the form is created explicitly.
-        /// </summary>
-        private static Form CreateClientForm(IServiceProvider provider)
-        {
-            return new SampleClientForm(
-                provider.GetRequiredService<ApplicationInstance>(),
-                masterForm: null,
-                provider.GetRequiredService<ApplicationConfiguration>(),
-                provider.GetRequiredService<ITelemetryContext>());
         }
     }
 }

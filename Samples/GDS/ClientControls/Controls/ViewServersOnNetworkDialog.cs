@@ -35,10 +35,11 @@ using System.Windows.Forms;
 using Opc.Ua.Client.Controls;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class ViewServersOnNetworkDialog : Form
+    public partial class ViewServersOnNetworkDialog : SampleForm
     {
         public ViewServersOnNetworkDialog(GlobalDiscoveryServerClient gds, ITelemetryContext telemetry)
         {
@@ -119,7 +120,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 if (!m_gds.IsConnected)
                 {
                     #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                    new SelectGdsDialog().ShowDialog(null, m_gds, await m_gds.GetDefaultGdsUrlsAsync(null), m_telemetry);
+                    Windows.Create<SelectGdsDialog>().ShowDialog(null, m_gds, await m_gds.GetDefaultGdsUrlsAsync(null));
                     #pragma warning restore CA2000
 
                     // The user may have cancelled the dialog or the connection may have failed.
@@ -314,7 +315,7 @@ namespace Opc.Ua.Gds.Client.Controls
             try
             {
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                var capabilities = new ServerCapabilitiesDialog().ShowDialog(this, ServerCapabilitiesTextBox.Tag as IList<string>);
+                var capabilities = Windows.Create<ServerCapabilitiesDialog>().ShowDialog(this, ServerCapabilitiesTextBox.Tag as IList<string>);
                 #pragma warning restore CA2000
 
                 if (capabilities == null)

@@ -15,6 +15,9 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
       <Version>10.0.11</Version>
     </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
+      <Version>$(OpcUaNetStandardVersion)</Version>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

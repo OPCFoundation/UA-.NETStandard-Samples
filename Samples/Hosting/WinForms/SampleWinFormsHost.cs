@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Opc.Ua.Configuration;
 using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Samples.Hosting
@@ -132,6 +133,10 @@ namespace Opc.Ua.Samples.Hosting
         {
             try
             {
+                // the stack asks its questions - whether to create a certificate, for
+                // example - through the message box the container registered.
+                ApplicationInstance.MessageDlg = host.Services.GetRequiredService<IApplicationMessageDlg>();
+
                 await host.StartAsync().ConfigureAwait(true);
 
                 Form mainForm = createMainForm(host.Services);

@@ -39,10 +39,11 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Security.Certificates;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class CertificateStoreControl : UserControl
+    public partial class CertificateStoreControl : SampleUserControl
     {
         public CertificateStoreControl()
         {
@@ -422,13 +423,9 @@ namespace Opc.Ua.Gds.Client.Controls
                 foreach (DataGridViewCell cell in CertificateListGridView.SelectedCells)
                 {
                     DataRowView source = CertificateListGridView.Rows[cell.RowIndex].DataBoundItem as DataRowView;
-                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                    EditValueDlg dialog = new EditValueDlg
-                    #pragma warning restore CA2000
-                    {
-                        Size = new Size(800, 400)
-                    };
-                    dialog.ShowDialog(m_logger, (X509Certificate2)source.Row[7], this.Text);
+                    using EditValueDlg dialog = Windows.Create<EditValueDlg>();
+                    dialog.Size = new Size(800, 400);
+                    dialog.ShowDialog((X509Certificate2)source.Row[7], this.Text);
                     break;
                 }
             }

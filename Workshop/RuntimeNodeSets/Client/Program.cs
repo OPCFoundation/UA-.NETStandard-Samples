@@ -31,8 +31,6 @@ namespace Quickstarts.RuntimeNodeSets.Client
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
             // the generic host owns the configuration, the certificate and the logging; the
             // main form is created by the container from the services registered here.
             SampleWinFormsHost.Run<MainForm>(

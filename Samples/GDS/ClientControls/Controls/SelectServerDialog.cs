@@ -29,26 +29,30 @@
 
 using System.Windows.Forms;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class SelectServerDialog : Form
+    public partial class SelectServerDialog : SampleForm
     {
-        public SelectServerDialog()
+        public SelectServerDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
+
+        private readonly ITelemetryContext m_telemetry;
 
         public EndpointDescription ShowDialog(
             IWin32Window owner,
             ConfiguredEndpointCollection endpoints,
             LocalDiscoveryServerClient lds,
             GlobalDiscoveryServerClient gds,
-            QueryServersFilter filters,
-            ITelemetryContext telemetry)
+            QueryServersFilter filters)
         {
-            this.DiscoveryControl.Initialize(endpoints, lds, gds, filters, telemetry);
+            this.DiscoveryControl.Initialize(endpoints, lds, gds, filters, m_telemetry);
 
             if (base.ShowDialog(owner) != System.Windows.Forms.DialogResult.OK)
             {

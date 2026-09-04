@@ -33,6 +33,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Gds.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client
 {
@@ -46,7 +47,7 @@ namespace Opc.Ua.Gds.Client
     /// <see cref="TrustListModel"/>; this control shows what it returns and asks the
     /// questions the model must not ask.
     /// </remarks>
-    public partial class ApplicationTrustListControl : UserControl
+    public partial class ApplicationTrustListControl : SampleUserControl
     {
         public ApplicationTrustListControl()
         {

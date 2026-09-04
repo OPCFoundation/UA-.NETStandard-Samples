@@ -52,13 +52,17 @@ namespace Opc.Ua.Sample
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Creates the window of the sample from the container.
+        /// </summary>
+        /// <param name="application">The application instance of the sample.</param>
+        /// <param name="configuration">The configuration of the sample.</param>
+        /// <param name="telemetry">The telemetry of the sample.</param>
         public SampleClientForm(
             ApplicationInstance application,
-            ClientForm masterForm,
             ApplicationConfiguration configuration,
             ITelemetryContext telemetry)
-        :
-            base(configuration.CreateMessageContext(), application, masterForm, configuration, telemetry)
+            : base(application, configuration, telemetry)
         {
             InitializeComponent();
 

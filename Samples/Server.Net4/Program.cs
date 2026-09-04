@@ -47,8 +47,6 @@ namespace Opc.Ua.Sample
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
             // the generic host owns the configuration, the certificate, the logging
             // and the lifetime of the server; the main form is created by the container
             // from the services registered here.

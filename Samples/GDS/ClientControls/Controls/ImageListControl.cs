@@ -31,10 +31,11 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class ImageListControl : UserControl
+    public partial class ImageListControl : SampleUserControl
     {
         public ImageListControl()
         {

@@ -37,6 +37,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Security.Cryptography.X509Certificates;
 using Opc.Ua.Security.Certificates;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -46,7 +47,7 @@ namespace Opc.Ua.Gds.Client.Controls
     /// certificate properties directly instead of navigating a boxed CLR
     /// object with reflection.
     /// </summary>
-    public partial class EditValueCtrl : UserControl
+    public partial class EditValueCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>

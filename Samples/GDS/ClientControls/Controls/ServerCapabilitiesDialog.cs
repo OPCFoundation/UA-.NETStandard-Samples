@@ -29,10 +29,11 @@
 
 using System.Collections.Generic;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class ServerCapabilitiesDialog : Form
+    public partial class ServerCapabilitiesDialog : SampleForm
     {
         public ServerCapabilitiesDialog()
         {

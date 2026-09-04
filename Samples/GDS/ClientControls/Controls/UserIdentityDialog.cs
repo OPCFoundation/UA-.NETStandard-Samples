@@ -31,32 +31,34 @@ using System;
 using System.Text;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
     /// <summary>
     /// Prompts the user to select an area to use as an event filter.
     /// </summary>
-    public partial class UserIdentityDialog : Form
+    public partial class UserIdentityDialog : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public UserIdentityDialog()
+        public UserIdentityDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
+
+            m_logger = telemetry.CreateLogger<UserIdentityDialog>();
         }
         #endregion
 
         #region Private Fields
-        private ILogger m_logger = LoggerUtils.Null.Logger;
+        private readonly ILogger m_logger;
         #endregion
 
         #region Public Interface
-        public UserIdentity ShowDialog(ILogger logger, IWin32Window owner, string caption, UserIdentity identity)
+        public UserIdentity ShowDialog(IWin32Window owner, string caption, UserIdentity identity)
         {
-            m_logger = logger;
             if (!String.IsNullOrEmpty(caption))
             {
                 InstructuctionsLabel.Text = caption;

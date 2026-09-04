@@ -31,25 +31,26 @@ using Opc.Ua.Client;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class SelectPushServerDialog : Form
+    public partial class SelectPushServerDialog : SampleForm
     {
-        public SelectPushServerDialog()
+        public SelectPushServerDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ImageListControl.AppIcon;
+
+            m_telemetry = telemetry;
         }
 
         private ServerPushConfigurationClient m_pushServer;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
 
-        public string ShowDialog(IWin32Window owner, ServerPushConfigurationClient pushServer, IList<string> serverUrls, ITelemetryContext telemetry)
+        public string ShowDialog(IWin32Window owner, ServerPushConfigurationClient pushServer, IList<string> serverUrls)
         {
             m_pushServer = pushServer;
-            m_telemetry = telemetry;
-
             ServersListBox.Items.Clear();
 
             foreach (var serverUrl in serverUrls)

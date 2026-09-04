@@ -59,8 +59,6 @@ namespace Opc.Ua.Gds.Server
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
             // the generic host owns the configuration, the certificate, the logging
             // and the lifetime of the server; the databases, the alias merger and the
             // main form are resolved from the services registered here.

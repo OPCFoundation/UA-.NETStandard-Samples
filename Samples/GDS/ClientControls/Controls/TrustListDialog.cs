@@ -30,21 +30,26 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class CertificatesStoreDialog : Form
+    public partial class CertificatesStoreDialog : SampleForm
     {
-        public CertificatesStoreDialog()
+        public CertificatesStoreDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ImageListControl.AppIcon;
+
+            m_telemetry = telemetry;
         }
 
-        public async Task ShowDialogAsync(ApplicationConfiguration configuration, ITelemetryContext telemetry, CancellationToken ct = default)
+        private readonly ITelemetryContext m_telemetry;
+
+        public async Task ShowDialogAsync(ApplicationConfiguration configuration, CancellationToken ct = default)
         {
             await CertificatesControl.Initialize(
-                telemetry,
+                m_telemetry,
                 configuration.SecurityConfiguration.TrustedPeerCertificates.StorePath,
                 configuration.SecurityConfiguration.TrustedIssuerCertificates.StorePath,
                 configuration.SecurityConfiguration.RejectedCertificateStore.StorePath,

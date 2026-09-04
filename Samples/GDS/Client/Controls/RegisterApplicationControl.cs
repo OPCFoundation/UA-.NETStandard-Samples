@@ -42,10 +42,11 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua.Gds.Client.Controls;
 using Opc.Ua.Security.Certificates;
 using Opc.Ua.Gds.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client
 {
-    public partial class RegisterApplicationControl : UserControl
+    public partial class RegisterApplicationControl : SampleUserControl
     {
         public RegisterApplicationControl()
         {
@@ -627,7 +628,7 @@ namespace Opc.Ua.Gds.Client
             try
             {
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                var capabilities = new ServerCapabilitiesDialog().ShowDialog(Parent, ServerCapabilitiesTextBox.Tag as IList<string>);
+                var capabilities = Windows.Create<ServerCapabilitiesDialog>().ShowDialog(Parent, ServerCapabilitiesTextBox.Tag as IList<string>);
                 #pragma warning restore CA2000
 
                 if (capabilities != null)
@@ -646,7 +647,7 @@ namespace Opc.Ua.Gds.Client
             try
             {
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                var discoveryUrls = new DiscoveryUrlsDialog().ShowDialog(m_logger, Parent, DiscoveryUrlsTextBox.Tag as IList<string>);
+                var discoveryUrls = Windows.Create<DiscoveryUrlsDialog>().ShowDialog(Parent, DiscoveryUrlsTextBox.Tag as IList<string>);
                 #pragma warning restore CA2000
 
                 if (discoveryUrls != null)
@@ -1317,7 +1318,7 @@ namespace Opc.Ua.Gds.Client
             }
 
             #pragma warning disable CA1849, CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-            return new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records.ToArray(), preselected);
+            return Windows.Create<ViewApplicationRecordsDialog>(m_gds).ShowDialog(Parent, records.ToArray(), preselected);
             #pragma warning restore CA1849, CA2000
         }
 
@@ -1757,7 +1758,7 @@ namespace Opc.Ua.Gds.Client
             try
             {
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                string uri = new SelectPushServerDialog().ShowDialog(null, m_pushClient, await m_gds.GetDefaultServerUrlsAsync(null), m_telemetry);
+                string uri = Windows.Create<SelectPushServerDialog>().ShowDialog(null, m_pushClient, await m_gds.GetDefaultServerUrlsAsync(null));
                 #pragma warning restore CA2000
                 if (uri != null && m_pushClient.IsConnected)
                 {

@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using Microsoft.Extensions.DependencyInjection;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Samples.Tests
 {
@@ -63,13 +64,17 @@ namespace Opc.Ua.Samples.Tests
             services.AddSingleton(configuration);
             services.AddSingleton(telemetry);
 
+            // the same window factory the entry point helper registers, so the form and
+            // the dialogs it opens are created the way they are in the running sample.
+            services.AddSampleWindows();
+
             ConfigureServices?.Invoke(services);
 
             ServiceProvider provider = services.BuildServiceProvider();
 
             try
             {
-                var form = (Form)ActivatorUtilities.CreateInstance(provider, MainFormType);
+                var form = (Form)provider.GetRequiredService<IWindowFactory>().Create(MainFormType);
 
                 form.Disposed += (_, _) => provider.Dispose();
 

@@ -32,23 +32,25 @@ using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class DiscoveryUrlsDialog : Form
+    public partial class DiscoveryUrlsDialog : SampleForm
     {
-        public DiscoveryUrlsDialog()
+        public DiscoveryUrlsDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ImageListControl.AppIcon;
+
+            m_logger = telemetry.CreateLogger<DiscoveryUrlsDialog>();
         }
 
         private List<string> m_discoveryUrls;
-        private ILogger m_logger = LoggerUtils.Null.Logger;
+        private readonly ILogger m_logger;
 
-        public IList<string> ShowDialog(ILogger logger, IWin32Window owner, IList<string> discoveryUrls)
+        public IList<string> ShowDialog(IWin32Window owner, IList<string> discoveryUrls)
         {
-            m_logger = logger;
             StringBuilder builder = new StringBuilder();
 
             if (discoveryUrls != null)

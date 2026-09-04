@@ -51,8 +51,6 @@ namespace Quickstarts.Boiler.Server
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
             // the generic host owns the logging and the lifetime of the sample; the
             // server is hosted by the stack, its configuration is loaded straight from
             // the configuration file, and the form shows the running server.
