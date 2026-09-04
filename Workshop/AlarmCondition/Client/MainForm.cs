@@ -114,6 +114,7 @@ namespace Quickstarts.AlarmConditionClient
             "https://github.com/OPCFoundation/UA-.NETStandard-Samples/blob/master/Workshop/AlarmCondition/README.md";
 
         private readonly ITelemetryContext m_telemetry;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
         private readonly AlarmConditionClientModel m_model;
 #pragma warning disable CA2213 // Justification: the audit window is closed by the disconnect and close handlers.
         private AuditEventForm m_auditEventForm;
