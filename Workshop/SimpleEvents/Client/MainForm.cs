@@ -28,38 +28,23 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
-using System.IO;
-using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using Opc.Ua.Client.Subscriptions;
-using Opc.Ua.Client.Subscriptions.Streaming;
-using System.Threading;
-using System.Threading.Tasks;
+using Opc.Ua.Samples.Client;
+using Quickstarts.SimpleEvents.Client.Model;
 
 namespace Quickstarts.SimpleEvents.Client
 {
-    // the V2 subscription engine reuses a name the classic engine has in Opc.Ua.Client.
-    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
-
     /// <summary>
     /// The main form for a simple Quickstart Client application.
     /// </summary>
     /// <remarks>
-    /// This sample exists to show one thing - the events of a server arriving in a list - and
-    /// it watches them for exactly as long as it is connected. That is what the streaming API
-    /// of the V2 subscription engine is for: <see cref="IStreamingSubscription"/> hands the
-    /// notifications out as an <see cref="System.Collections.Generic.IAsyncEnumerable{T}"/>,
-    /// creates the monitored item when the enumeration starts and removes it again when it
-    /// ends, so the sample reads events in a plain <c>await foreach</c> instead of wiring up a
-    /// notification handler. The AlarmCondition sample shows the callback based
-    /// <see cref="ISubscriptionNotificationHandler"/>, which is the better fit for a
-    /// subscription that outlives one screen and has to serve condition refreshes.
+    /// The window owns the shared connect control and hands the session it opens to the
+    /// <see cref="SimpleEventsClientModel"/>, which streams the events of the server for
+    /// as long as it is attached. The window only turns each event the model reports into
+    /// a row of its list.
     /// </remarks>
     public partial class MainForm : Form
     {
@@ -77,32 +62,33 @@ namespace Quickstarts.SimpleEvents.Client
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
+        /// <param name="telemetry">The telemetry context of the client.</param>
         public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
-
             m_telemetry = telemetry;
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
+
+            ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62563/Quickstarts/SimpleEventsServer";
-            this.Text = m_configuration.ApplicationName;
+            this.Text = configuration.ApplicationName;
+
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new SimpleEventsClientModel(telemetry);
+            m_model.EventReceived += Model_EventReceived;
+            m_model.Error += Model_Error;
+
+            // the designer of this window never wired the closing of the window, so the
+            // subscription used to outlive it; the model has to be detached before the
+            // control closes the session.
+            FormClosing += MainForm_FormClosing;
         }
         #endregion
 
         #region Private Fields
-        private ApplicationConfiguration m_configuration;
-        private ISession m_session;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed asynchronously by DeleteSubscriptionAsync.")]
-        private StreamingSubscription m_streaming;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed by DeleteSubscriptionAsync.")]
-        private CancellationTokenSource m_cts;
-        private EventFilter m_eventFilter;
-        private EventRecordDecoderRegistry m_eventDecoders;
-        private bool m_connectedOnce;
         private readonly ITelemetryContext m_telemetry;
-        #endregion
-
-        #region Private Methods
+        private readonly SimpleEventsClientModel m_model;
         #endregion
 
         #region Event Handlers
@@ -124,11 +110,16 @@ namespace Quickstarts.SimpleEvents.Client
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
+        /// <remarks>
+        /// The model is detached first: it stops the stream and deletes its subscription
+        /// before the control closes the session, because closing a session which still
+        /// carries a subscription waits for the publish pipeline to drain.
+        /// </remarks>
         private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                await DeleteSubscriptionAsync();
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -159,21 +150,16 @@ namespace Quickstarts.SimpleEvents.Client
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
 
-                if (m_session == null)
+                if (session == null)
                 {
-                    await DeleteSubscriptionAsync();
+                    await m_model.DetachAsync();
                     return;
                 }
 
-                // set a suitable initial state.
-                if (!m_connectedOnce)
-                {
-                    m_connectedOnce = true;
-                }
-
-                await CreateSubscriptionAsync();
+                // the model starts streaming the events while it attaches.
+                await m_model.AttachAsync(session);
             }
             catch (Exception exception)
             {
@@ -188,6 +174,7 @@ namespace Quickstarts.SimpleEvents.Client
         {
             try
             {
+                m_model.NotifyReconnectStarting();
             }
             catch (Exception exception)
             {
@@ -198,14 +185,14 @@ namespace Quickstarts.SimpleEvents.Client
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
                 // a V2 subscription belongs to the subscription manager of the session and
                 // survives the reconnect together with its monitored items, so the stream
-                // keeps running and there is nothing to re-create here.
-                m_session = ConnectServerCTRL.Session;
+                // keeps running and the model has nothing to re-create.
+                await m_model.NotifyReconnectCompletedAsync();
             }
             catch (Exception exception)
             {
@@ -216,229 +203,61 @@ namespace Quickstarts.SimpleEvents.Client
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; only then does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            ClientUtils.WaitForTeardown(DeleteSubscriptionAsync);
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
         }
-        #endregion
-
-        #region Private Methods
-        /// <summary>
-        /// Creates the subscription.
-        /// </summary>
-        private async Task CreateSubscriptionAsync(CancellationToken ct = default)
-        {
-            await DeleteSubscriptionAsync();
-
-            // the streaming subscription lives as long as the connection: the underlying OPC UA
-            // subscription is created when the first SubscribeXxxAsync enumeration starts.
-            if (!m_session.TryGetSubscriptionManager(out ISubscriptionManager manager))
-            {
-                throw new ServiceResultException(
-                    StatusCodes.BadNotSupported,
-                    "The session does not use the V2 subscription engine.");
-            }
-
-            m_streaming = new StreamingSubscription(manager, ClientUtils.DefaultSubscriptionOptions);
-            m_cts = new CancellationTokenSource();
-
-            // Register the generated activators for the sample's own data types, so that the
-            // CurrentStep of an event arrives as a CycleStepDataType instead of as the raw
-            // body of an extension object.
-            m_session.Factory.Builder.AddQuickstartsSimpleEvents().Commit();
-
-            // The source generator emitted one event record - and a positional decoder for it -
-            // per event type in the server's information model. Registering those decoders
-            // yields both the select clauses and the decode step, so the client does not have
-            // to browse the type model to find out which fields a SystemCycleStatusEventType
-            // carries.
-            m_eventDecoders = new EventRecordDecoderRegistry()
-                .RegisterSimpleEventsDecoders(m_session.NamespaceUris);
-
-            // the filter to use. The fields of a notification line up with its select clauses,
-            // so the form keeps it: the engine does not report the filter of an item back.
-            m_eventFilter = SystemCycleStatusEventTypeRecord.EventFilters.Build(
-                m_session.NamespaceUris,
-                m_eventDecoders);
-
-            // start reading the events. Nothing is awaited here on purpose: the enumeration
-            // runs for as long as the client is connected.
-            _ = PumpEventsAsync(m_cts.Token);
-        }
 
         /// <summary>
-        /// Reads the events off the streaming subscription until the client disconnects.
+        /// Adds an event the model read off the stream to the list.
         /// </summary>
         /// <remarks>
-        /// Each notification arrives on the enumeration instead of on a callback, so the form
-        /// drives the loop and cancelling the token both ends the loop and removes the
-        /// monitored item again.
+        /// The model raises this on the thread of the window, so the list is written
+        /// directly. An event can still arrive after the window was closed.
         /// </remarks>
-        private async Task PumpEventsAsync(CancellationToken ct)
+        private void Model_EventReceived(object sender, SimpleEventReceivedEventArgs e)
         {
-            IStreamingSubscription streaming = m_streaming;
-
-            var options = new MonitoredItemOptions {
-                StartNodeId = Opc.Ua.ObjectIds.Server,
-                AttributeId = Attributes.EventNotifier,
-                SamplingInterval = TimeSpan.Zero,
-                QueueSize = 1000,
-                DiscardOldest = true,
-            };
-
-            try
-            {
-                await foreach (EventNotification notification in streaming
-                    .SubscribeEventsAsync(Opc.Ua.ObjectIds.Server, m_eventFilter, options, ct)
-                    .ConfigureAwait(false))
-                {
-                    if (ct.IsCancellationRequested || IsDisposed)
-                    {
-                        return;
-                    }
-
-                    // without a window there is nothing to update, and the enumeration keeps
-                    // running rather than ending for good.
-                    if (!IsHandleCreated)
-                    {
-                        continue;
-                    }
-
-                    // the enumeration runs on a publish worker, so the display is updated on
-                    // the UI thread.
-                    BeginInvoke(new Action<EventNotification>(DisplayEventAsync), notification);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // the client disconnected.
-            }
-            catch (Exception exception)
-            {
-                // the pump runs on a publish worker, so the error is logged instead of shown.
-                m_telemetry?.CreateLogger<MainForm>().LogError(exception, "Failed to read the events.");
-            }
-        }
-
-        /// <summary>
-        /// Stops the stream and deletes the subscription on the server.
-        /// </summary>
-        /// <remarks>
-        /// Done before the session is closed: closing a session which still carries a
-        /// subscription waits for the publish pipeline to drain.
-        /// </remarks>
-        private async Task DeleteSubscriptionAsync()
-        {
-            StreamingSubscription streaming = m_streaming;
-            CancellationTokenSource cts = m_cts;
-
-            m_streaming = null;
-            m_cts = null;
-            m_eventDecoders = null;
-            m_eventFilter = null;
-
-            if (cts != null)
-            {
-                await cts.CancelAsync();
-                cts.Dispose();
-            }
-
-            if (streaming == null)
+            if (IsDisposed)
             {
                 return;
             }
 
-            try
+            SimpleEventRecord status = e.Event;
+
+            ListViewItem item = new ListViewItem(status.SourceName);
+
+            item.SubItems.Add(status.EventTypeName);
+            item.SubItems.Add(status.CycleId);
+            item.SubItems.Add(status.CurrentStep);
+            item.SubItems.Add(status.TimeUtc != null ? Utils.Format("{0:HH:mm:ss.fff}", status.TimeUtc.Value.ToLocalTime()) : null);
+            item.SubItems.Add(status.Message);
+
+            item.Tag = status;
+            EventsLV.Items.Add(item);
+
+            // adjust the width of the columns.
+            for (int ii = 0; ii < EventsLV.Columns.Count; ii++)
             {
-                await streaming.DisposeAsync();
-            }
-            catch (Exception exception)
-            {
-                // this also runs when the session has already gone away, and then the
-                // subscription cannot be deleted on the server any more.
-                m_telemetry?.CreateLogger<MainForm>()
-                    .LogError(exception, "Failed to delete the event subscription.");
+                EventsLV.Columns[ii].Width = -2;
             }
         }
-        #endregion
 
-        #region Event Handlers
         /// <summary>
-        /// Updates the display with an event read off the stream.
+        /// Reports a failure on a background path of the model.
         /// </summary>
-        private async void DisplayEventAsync(EventNotification eventNotification)
+        private void Model_Error(object sender, ModelErrorEventArgs e)
         {
-            try
+            if (IsDisposed)
             {
-                // The engine reports the fields of an event, which line up with the select
-                // clauses of the generated filter the item was created with. The registry
-                // routes on the EventType field and remaps the server's field order to the
-                // layout the generated decoder expects.
-                if (m_eventDecoders.Decode(eventNotification.Fields.ToArray())
-                    is not SystemCycleStatusEventTypeRecord status)
-                {
-                    // ignore events with no registered decoder.
-                    return;
-                }
-
-                ListViewItem item = new ListViewItem(String.Empty);
-
-                item.SubItems.Add(String.Empty); // Source
-                item.SubItems.Add(String.Empty); // Type
-                item.SubItems.Add(String.Empty); // CycleId
-                item.SubItems.Add(String.Empty); // Step
-                item.SubItems.Add(String.Empty); // Time
-                item.SubItems.Add(String.Empty); // Message
-
-                // look up the event type metadata in the local cache.
-                INode type = await m_session.NodeCache.FindAsync(status.EventType);
-
-                // Source
-                item.SubItems[0].Text = status.SourceName;
-
-                // Type
-                if (type != null)
-                {
-                    item.SubItems[1].Text = Utils.Format("{0}", type);
-                }
-                else
-                {
-                    item.SubItems[1].Text = null;
-                }
-
-                // CycleId
-                item.SubItems[2].Text = status.CycleId;
-
-                // Step
-                item.SubItems[3].Text = status.CurrentStep?.Name;
-
-                // Time
-                if (status.Time != null)
-                {
-                    item.SubItems[4].Text = Utils.Format("{0:HH:mm:ss.fff}", status.Time.Value.ToLocalTime());
-                }
-                else
-                {
-                    item.SubItems[4].Text = null;
-                }
-
-                // Message
-                item.SubItems[5].Text = status.Message.Text;
-
-                item.Tag = status;
-                EventsLV.Items.Add(item);
-
-                // adjust the width of the columns.
-                for (int ii = 0; ii < EventsLV.Columns.Count; ii++)
-                {
-                    EventsLV.Columns[ii].Width = -2;
-                }
+                return;
             }
-            catch (Exception exception)
-            {
-                ClientUtils.HandleException(m_telemetry, this.Text, exception);
-            }
+
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
         }
 
         /// <summary>
@@ -448,7 +267,7 @@ namespace Quickstarts.SimpleEvents.Client
         {
             try
             {
-                if (m_session == null)
+                if (!m_model.IsConnected)
                 {
                     return;
                 }
@@ -456,7 +275,7 @@ namespace Quickstarts.SimpleEvents.Client
                 string locale;
                 using (SelectLocaleDlg dialog = new SelectLocaleDlg())
                 {
-                    locale = await dialog.ShowDialogAsync(m_session);
+                    locale = await dialog.ShowDialogAsync(m_model.Session);
                 }
 
                 if (locale == null)
@@ -464,8 +283,10 @@ namespace Quickstarts.SimpleEvents.Client
                     return;
                 }
 
+                // the control remembers the choice for the next session it opens; the
+                // model changes the one which is open.
                 ConnectServerCTRL.PreferredLocales = new string[] { locale };
-                await m_session.ChangePreferredLocalesAsync(new List<string>(ConnectServerCTRL.PreferredLocales));
+                await m_model.ChangePreferredLocalesAsync(ConnectServerCTRL.PreferredLocales);
             }
             catch (Exception exception)
             {
