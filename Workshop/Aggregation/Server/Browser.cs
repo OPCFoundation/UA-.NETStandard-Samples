@@ -295,7 +295,7 @@ namespace AggregationServer
                     m_continuationPoint = results[0].ContinuationPoint;
                 }
 
-                return m_references != null || m_references.Count > 0;
+                return m_references != null && m_references.Count > 0;
             }
 
             return false;
@@ -344,6 +344,13 @@ namespace AggregationServer
 #pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the returned reference.
                 case NodeClass.View: { target = new ViewState(); break; }
 #pragma warning restore CA2000
+            }
+
+            // the NodeClass was not one of the mapped values; return a reference
+            // to the target node id directly instead of dereferencing a null state.
+            if (target == null)
+            {
+                return new NodeStateReference(reference.ReferenceTypeId, !reference.IsForward, m_mapper.ToLocalId((NodeId)reference.NodeId));
             }
 
             target.NodeId = m_mapper.ToLocalId((NodeId)reference.NodeId);
