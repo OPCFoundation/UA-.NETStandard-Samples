@@ -17,6 +17,7 @@ using NUnit.Framework;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
+using Quickstarts.AlarmConditionClient.Model;
 
 namespace Opc.Ua.Samples.Tests
 {
@@ -852,8 +853,7 @@ namespace Opc.Ua.Samples.Tests
         {
             foreach (ListViewItem candidate in conditions.Items)
             {
-                if (candidate.Tag is AlarmConditionState alarm &&
-                    alarm.SilenceState?.Id?.Value == false)
+                if (candidate.Tag is ConditionSnapshot snapshot && snapshot.CanSilence)
                 {
                     return candidate;
                 }

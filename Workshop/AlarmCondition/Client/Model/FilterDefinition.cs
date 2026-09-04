@@ -33,8 +33,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.Client;
 
-namespace Quickstarts.AlarmConditionClient
+namespace Quickstarts.AlarmConditionClient.Model
 {
     // the V2 subscription engine reuses a name the classic engine has in Opc.Ua.Client.
     using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
@@ -154,14 +155,14 @@ namespace Quickstarts.AlarmConditionClient
             {
                 for (int ii = 0; ii < eventTypeIds.Length; ii++)
                 {
-                    await CollectFieldsAsync(session, eventTypeIds[ii], selectClauses, foundNodes, ct);
+                    await CollectFieldsAsync(session, eventTypeIds[ii], selectClauses, foundNodes, ct).ConfigureAwait(false);
                 }
             }
 
             // use BaseEventType as the default if no EventTypes specified.
             else
             {
-                await CollectFieldsAsync(session, ObjectTypeIds.BaseEventType, selectClauses, foundNodes, ct);
+                await CollectFieldsAsync(session, ObjectTypeIds.BaseEventType, selectClauses, foundNodes, ct).ConfigureAwait(false);
             }
 
             return selectClauses;
@@ -184,7 +185,8 @@ namespace Quickstarts.AlarmConditionClient
             ContentFilter whereClause = new ContentFilter();
 
             // the code below constructs a filter that looks like this:
-            // (Severity >= X OR LastSeverity >= X) AND (SuppressedOrShelved == False) AND (OfType(A) OR OfType(B))
+            // ((Severity >= X OR LastSeverity >= X) AND (SuppressedOrShelved == False) AND (OfType(A) OR OfType(B)))
+            //   OR OfType(RefreshStartEventType) OR OfType(RefreshEndEventType)
 
             // add the severity.
             ContentFilterElement element1 = null;
@@ -260,8 +262,36 @@ namespace Quickstarts.AlarmConditionClient
                 // need to link the set of event types with the previous filters.
                 if (element1 != null)
                 {
-                    whereClause.Push(FilterOperator.And, new Variant(new ExtensionObject(element1)), new Variant(new ExtensionObject(element2)));
+                    element1 = whereClause.Push(FilterOperator.And, new Variant(new ExtensionObject(element1)), new Variant(new ExtensionObject(element2)));
                 }
+                else
+                {
+                    element1 = element2;
+                }
+            }
+
+            // Part 9 frames a condition refresh with a RefreshStart and a RefreshEnd event,
+            // and a client relies on the first of the two to start its list over. The
+            // stack runs those two through the where clause like any other event, and a
+            // filter which asks for conditions - or for a severity - drops them: they are
+            // system events which carry neither. So they are asked for explicitly, next
+            // to whatever else the filter asks for.
+            if (element1 != null)
+            {
+                ContentFilterElement markers = null;
+
+                foreach (NodeId markerTypeId in new[] { ObjectTypeIds.RefreshStartEventType, ObjectTypeIds.RefreshEndEventType })
+                {
+                    LiteralOperand operand = new LiteralOperand();
+                    operand.Value = new Variant(markerTypeId);
+                    ContentFilterElement marker = whereClause.Push(FilterOperator.OfType, new Variant(new ExtensionObject(operand)));
+
+                    markers = markers == null
+                        ? marker
+                        : whereClause.Push(FilterOperator.Or, new Variant(new ExtensionObject(markers)), new Variant(new ExtensionObject(marker)));
+                }
+
+                whereClause.Push(FilterOperator.Or, new Variant(new ExtensionObject(element1)), new Variant(new ExtensionObject(markers)));
             }
 
             filter.WhereClause = whereClause;
@@ -288,7 +318,7 @@ namespace Quickstarts.AlarmConditionClient
             CancellationToken ct = default)
         {
             // get the supertypes.
-            List<ReferenceDescription> supertypes = await FormUtils.BrowseSuperTypesAsync(session, eventTypeId, false, ct);
+            List<ReferenceDescription> supertypes = await SampleSession.BrowseSuperTypesAsync(session, eventTypeId, false, ct).ConfigureAwait(false);
 
             if (supertypes == null)
             {
@@ -300,11 +330,11 @@ namespace Quickstarts.AlarmConditionClient
 
             for (int ii = supertypes.Count - 1; ii >= 0; ii--)
             {
-                await CollectFieldsAsync(session, (NodeId)supertypes[ii].NodeId, parentPath, eventFields, foundNodes, ct);
+                await CollectFieldsAsync(session, (NodeId)supertypes[ii].NodeId, parentPath, eventFields, foundNodes, ct).ConfigureAwait(false);
             }
 
             // collect the fields for the selected type.
-            await CollectFieldsAsync(session, eventTypeId, parentPath, eventFields, foundNodes, ct);
+            await CollectFieldsAsync(session, eventTypeId, parentPath, eventFields, foundNodes, ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -334,7 +364,7 @@ namespace Quickstarts.AlarmConditionClient
             nodeToBrowse.NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable);
             nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
 
-            List<ReferenceDescription> children = await FormUtils.BrowseAsync(session, nodeToBrowse, false, ct);
+            List<ReferenceDescription> children = await SampleSession.BrowseAsync(session, nodeToBrowse, false, ct).ConfigureAwait(false);
 
             if (children == null)
             {
@@ -373,7 +403,7 @@ namespace Quickstarts.AlarmConditionClient
                 // need to guard against loops.
                 if (foundNodes.TryAdd(targetId, browsePath))
                 {
-                    await CollectFieldsAsync(session, (NodeId)child.NodeId, browsePath, eventFields, foundNodes, ct);
+                    await CollectFieldsAsync(session, (NodeId)child.NodeId, browsePath, eventFields, foundNodes, ct).ConfigureAwait(false);
                 }
             }
         }

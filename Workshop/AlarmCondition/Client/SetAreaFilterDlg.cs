@@ -31,14 +31,19 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using Opc.Ua;
-using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Quickstarts.AlarmConditionClient.Model;
 
 namespace Quickstarts.AlarmConditionClient
 {
     /// <summary>
     /// Prompts the user to select an area to use as an event filter.
     /// </summary>
+    /// <remarks>
+    /// The dialog browses through the model rather than through a session of its own:
+    /// the model knows which references make up the area tree, and the dialog only turns
+    /// what it answers into tree nodes.
+    /// </remarks>
     public partial class SetAreaFilterDlg : Form
     {
         #region Constructors
@@ -52,18 +57,18 @@ namespace Quickstarts.AlarmConditionClient
         #endregion
 
         #region Private Fields
-        private ISession m_session;
+        private AlarmConditionClientModel m_model;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the available areas in a tree view.
         /// </summary>
-        /// <param name="session">The session.</param>
-        /// <returns></returns>
-        public NodeId ShowDialog(ISession session)
+        /// <param name="model">The model which browses the areas.</param>
+        /// <returns>The selected area, or a null node id when the user cancelled.</returns>
+        public NodeId ShowDialog(AlarmConditionClientModel model)
         {
-            m_session = session;
+            m_model = model ?? throw new ArgumentNullException(nameof(model));
 
             TreeNode root = new TreeNode(BrowseNames.Server);
             root.Nodes.Add(new TreeNode());
@@ -125,7 +130,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                ClientUtils.HandleException(m_model?.Telemetry, this.Text, exception);
             }
         }
 
@@ -156,7 +161,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                ClientUtils.HandleException(m_model?.Telemetry, this.Text, exception);
             }
         }
 
@@ -172,33 +177,17 @@ namespace Quickstarts.AlarmConditionClient
                 ReferenceDescription reference = (ReferenceDescription)e.Node.Tag;
                 e.Node.Nodes.Clear();
 
-                // browse HasEventSource to display the sources but it won't be possible to select them.
-                BrowseDescription nodeToBrowse = new BrowseDescription();
+                // the root of the tree is the Server object, which has no reference of its
+                // own; the model browses the sources below an area so that they show up
+                // too, although only an area can be picked.
+                NodeId parent = reference != null ? (NodeId)reference.NodeId : NodeId.Null;
 
-                nodeToBrowse.NodeId = ObjectIds.Server;
-                nodeToBrowse.BrowseDirection = BrowseDirection.Forward;
-                nodeToBrowse.ReferenceTypeId = ReferenceTypeIds.HasEventSource;
-                nodeToBrowse.IncludeSubtypes = true;
-                nodeToBrowse.NodeClassMask = 0;
-                nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
+                IReadOnlyList<ReferenceDescription> references = await m_model.BrowseAreasAsync(parent);
 
-                if (reference != null)
-                {
-                    nodeToBrowse.NodeId = (NodeId)reference.NodeId;
-                }
-
-                // add the childen to the control.
-                List<ReferenceDescription> references = await FormUtils.BrowseAsync(m_session, nodeToBrowse, false);
-
+                // add the children to the control.
                 for (int ii = 0; ii < references.Count; ii++)
                 {
                     reference = references[ii];
-
-                    // ignore out of server references.
-                    if (reference.NodeId.IsAbsolute)
-                    {
-                        continue;
-                    }
 
                     TreeNode child = new TreeNode(reference.ToString());
                     child.Nodes.Add(new TreeNode());
@@ -209,7 +198,7 @@ namespace Quickstarts.AlarmConditionClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                ClientUtils.HandleException(m_model?.Telemetry, this.Text, exception);
             }
         }
         #endregion
