@@ -44,8 +44,9 @@ namespace Quickstarts.DataAccessServer
         /// <summary>
         /// Initializes a new instance of the <see cref="UnderlyingSystem"/> class.
         /// </summary>
-        public UnderlyingSystem(ITelemetryContext telemetry)
+        public UnderlyingSystem(ITelemetryContext telemetry, TimeProvider timeProvider = null)
         {
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_blocks = new Dictionary<string, UnderlyingSystemBlock>();
             m_telemetry = telemetry;
             m_logger = telemetry.CreateLogger<UnderlyingSystem>();
@@ -580,7 +581,11 @@ namespace Quickstarts.DataAccessServer
                 }
 
                 m_generator = new Opc.Ua.Test.DataGenerator(null, telemetry);
-                m_simulationTimer = new Timer(DoSimulation, null, 1000, 1000);
+                m_simulationTimer = m_timeProvider.CreateTimer(
+                    DoSimulation,
+                    null,
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1));
             }
         }
 
@@ -635,7 +640,8 @@ namespace Quickstarts.DataAccessServer
         private Dictionary<string, UnderlyingSystemBlock> m_blocks;
         private ITelemetryContext m_telemetry;
         private ILogger m_logger;
-        private Timer m_simulationTimer;
+        private ITimer m_simulationTimer;
+        private readonly TimeProvider m_timeProvider;
         private long m_simulationCounter;
         private Opc.Ua.Test.DataGenerator m_generator;
         #endregion

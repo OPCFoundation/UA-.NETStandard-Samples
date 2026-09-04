@@ -51,7 +51,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62560/Quickstarts/ViewsServer/</ua:String>
       <ua:String>opc.tcp://localhost:62561/Quickstarts/ViewsServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>

@@ -51,7 +51,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62554/DataTypesServer</ua:String>
       <ua:String>opc.tcp://localhost:62555/DataTypesServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>

@@ -81,11 +81,27 @@ namespace AggregationServer
         /// Returns the next reference.
         /// </summary>
         /// <returns>The next reference that meets the browse criteria.</returns>
+        /// <remarks>
+        /// This is the one place in the sample which blocks on a task, and it is the
+        /// browse contract of the stack that forces it: <c>NodeState.OnCreateBrowser</c>
+        /// hands back a <see cref="NodeBrowser"/> synchronously and
+        /// <c>AsyncCustomNodeManager</c> drives it with a synchronous
+        /// <see cref="NodeBrowser.Next"/> loop, so a browser which has to reach a remote
+        /// server - which is the whole point of an aggregation server - has nowhere to
+        /// await. There is no async browser seam in the stack to migrate to yet.
+        ///
+        /// It does not deadlock: the browse runs on a request worker of the server and
+        /// never on a UI thread, so there is no synchronization context to rejoin. It
+        /// does hold that worker for the duration of the remote call, which is what an
+        /// async seam would fix. <see cref="NextAsync"/> is the real implementation and
+        /// is what the sample would call once the stack offers one.
+        ///
+        /// NodeBrowser instances are single-consumer and perform no synchronization of
+        /// their own; the former DataLock is gone.
+        /// </remarks>
         public override IReference Next()
         {
-            // NodeBrowser instances are single-consumer and perform no
-            // synchronization of their own; the former DataLock is gone.
-            return NextAsync().Result;
+            return NextAsync().GetAwaiter().GetResult();
         }
 
         public async Task<IReference> NextAsync(CancellationToken ct = default)

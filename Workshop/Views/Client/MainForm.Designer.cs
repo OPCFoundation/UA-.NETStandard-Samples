@@ -112,7 +112,7 @@ namespace Quickstarts.ViewsClient
             this.Server_ConnectMI.Name = "Server_ConnectMI";
             this.Server_ConnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_ConnectMI.Text = "Connect";
-            this.Server_ConnectMI.Click += new System.EventHandler(this.Server_ConnectMI_Click);
+            this.Server_ConnectMI.Click += new System.EventHandler(this.Server_ConnectMI_ClickAsync);
             // 
             // Server_DisconnectMI
             // 

@@ -52,7 +52,6 @@
 
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62574/Quickstarts/AliasNamesServer</ua:String>
       <ua:String>opc.tcp://localhost:62577/Quickstarts/AliasNamesServer</ua:String>
     </BaseAddresses>
 

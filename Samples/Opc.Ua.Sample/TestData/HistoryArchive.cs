@@ -43,9 +43,10 @@ namespace TestData
     /// </summary>
     internal class HistoryArchive : IDisposable
     {
-        public HistoryArchive(ITelemetryContext telemetryContext)
+        public HistoryArchive(ITelemetryContext telemetryContext, TimeProvider timeProvider = null)
         {
             m_logger = telemetryContext.CreateLogger<HistoryArchive>();
+            m_timeProvider = timeProvider ?? TimeProvider.System;
         }
 
         #region IDisposable Members
@@ -166,7 +167,11 @@ namespace TestData
 
                 if (m_updateTimer == null)
                 {
-                    m_updateTimer = new Timer(OnUpdate, null, 10000, 10000);
+                    m_updateTimer = m_timeProvider.CreateTimer(
+                        OnUpdate,
+                        null,
+                        TimeSpan.FromSeconds(10),
+                        TimeSpan.FromSeconds(10));
                 }
             }
         }
@@ -229,7 +234,8 @@ namespace TestData
         #region Private Fields
         private object m_lock = new object();
         private readonly ILogger m_logger;
-        private Timer m_updateTimer;
+        private ITimer m_updateTimer;
+        private readonly TimeProvider m_timeProvider;
         private Dictionary<NodeId, HistoryRecord> m_records;
         #endregion
     }

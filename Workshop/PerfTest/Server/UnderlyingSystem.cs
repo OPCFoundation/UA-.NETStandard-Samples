@@ -39,13 +39,14 @@ namespace Quickstarts.PerfTestServer
 {
     public class UnderlyingSystem
     {
-        public void Initialize(ITelemetryContext telemetry)
+        public void Initialize(ITelemetryContext telemetry, TimeProvider timeProvider = null)
         {
             m_logger = telemetry.CreateLogger<UnderlyingSystem>();
+            timeProvider ??= TimeProvider.System;
             m_registers = new List<MemoryRegister>();
             MemoryRegister register1 = new MemoryRegister();
             m_registers.Add(register1);
-            register1.Initialize(1, "R1", 50000, m_logger);
+            register1.Initialize(1, "R1", 50000, m_logger, timeProvider);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1024:Use properties where appropriate", Justification = "Sample API intentionally exposes a method.")]
@@ -86,8 +87,9 @@ namespace Quickstarts.PerfTestServer
             get { return m_values.Length; }
         }
 
-        public void Initialize(int id, string name, int size, ILogger logger)
+        public void Initialize(int id, string name, int size, ILogger logger, TimeProvider timeProvider = null)
         {
+            m_timeProvider = timeProvider ?? TimeProvider.System;
             m_id = id;
             m_name = name;
             m_values = new int[size];
@@ -119,7 +121,11 @@ namespace Quickstarts.PerfTestServer
             {
                 if (m_timer == null)
                 {
-                    m_timer = new Timer(OnUpdate, null, 45, 45);
+                    m_timer = m_timeProvider.CreateTimer(
+                        OnUpdate,
+                        null,
+                        TimeSpan.FromMilliseconds(45),
+                        TimeSpan.FromMilliseconds(45));
                 }
 
                 if (index >= 0 && index < m_values.Length)
@@ -183,7 +189,11 @@ namespace Quickstarts.PerfTestServer
             {
                 lock (m_lock)
                 {
-                    DateTime start = DateTime.UtcNow;
+                    // a timestamp rather than a wall clock reading: the elapsed time below
+                    // is a duration, which GetElapsedTime measures without being thrown
+                    // off by a change of the system clock.
+                    long start = m_timeProvider.GetTimestamp();
+                    DateTime now = m_timeProvider.GetUtcNow().UtcDateTime;
                     int delta = m_values.Length / 2;
 
                     for (int ii = m_start; ii < delta + m_start && ii < m_values.Length; ii++)
@@ -194,7 +204,7 @@ namespace Quickstarts.PerfTestServer
 
                         if (monitoredItems != null)
                         {
-                            DataValue value = new DataValue(Variant.From(m_values[ii]), StatusCodes.Good, DateTime.UtcNow, DateTime.UtcNow);
+                            DataValue value = new DataValue(Variant.From(m_values[ii]), StatusCodes.Good, now, now);
 
                             for (int jj = 0; jj < monitoredItems.Length; jj++)
                             {
@@ -210,9 +220,11 @@ namespace Quickstarts.PerfTestServer
                         m_start = 0;
                     }
 
-                    if ((DateTime.UtcNow - start).TotalMilliseconds > 50)
+                    TimeSpan elapsed = m_timeProvider.GetElapsedTime(start);
+
+                    if (elapsed.TotalMilliseconds > 50)
                     {
-                        m_logger.LogWarning("Update took {ElapsedMs}ms.", (DateTime.UtcNow - start).TotalMilliseconds);
+                        m_logger.LogWarning("Update took {ElapsedMs}ms.", elapsed.TotalMilliseconds);
                     }
                 }
             }
@@ -227,7 +239,8 @@ namespace Quickstarts.PerfTestServer
         private string m_name;
         private int[] m_values;
         private int m_start;
-        private Timer m_timer;
+        private ITimer m_timer;
+        private TimeProvider m_timeProvider = TimeProvider.System;
         private IDataChangeMonitoredItem2[][] m_monitoredItems;
         private ILogger m_logger;
     }

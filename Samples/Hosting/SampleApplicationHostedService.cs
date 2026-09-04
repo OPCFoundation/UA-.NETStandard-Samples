@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Bindings;
 using Opc.Ua.Server;
 using Opc.Ua.Server.Hosting;
 
@@ -62,6 +63,16 @@ namespace Opc.Ua.Samples.Hosting
             if (server == null)
             {
                 return;
+            }
+
+            // the transports registered with the container - AddOpcUa() seeds opc.tcp,
+            // a sample which serves opc.https adds AddHttpsTransport(). Without this the
+            // server would fall back to a private registry which only knows opc.tcp, and
+            // a base address of any other scheme would be skipped without an error.
+            if (server is ServerBase serverBase)
+            {
+                serverBase.TransportBindings =
+                    m_provider.GetRequiredService<ITransportBindingRegistry>();
             }
 
             // the node managers registered with the container, the way the hosted

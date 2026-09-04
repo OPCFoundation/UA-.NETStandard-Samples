@@ -106,7 +106,11 @@ namespace Boiler
                     }
 
                     m_simulationContext = context;
-                    m_simulationTimer = new Timer(DoSimulation, null, (int)updateRate, (int)updateRate);
+                    m_simulationTimer = TimeProvider.CreateTimer(
+                        DoSimulation,
+                        null,
+                        TimeSpan.FromMilliseconds(updateRate),
+                        TimeSpan.FromMilliseconds(updateRate));
                     break;
                 }
 
@@ -296,8 +300,15 @@ namespace Boiler
 
         #region Private Fields
         private ISystemContext m_simulationContext;
-        private Timer m_simulationTimer;
+        private ITimer m_simulationTimer;
         private Random m_random;
+
+        /// <summary>
+        /// The clock the simulation runs on. The node manager points this at the clock of
+        /// the server so that a test which drives a FakeTimeProvider drives the boiler
+        /// with it; a boiler nobody configured keeps the system clock.
+        /// </summary>
+        internal TimeProvider TimeProvider { get; set; } = TimeProvider.System;
         #endregion
     }
 }

@@ -77,10 +77,6 @@ namespace Quickstarts.UserAuthenticationClient
             PreferredLocalesTB.Text = "de,es,en";
             SetAvailableUserTokens(null);
 
-            KerberosUserNameTB.Text = "Operator";
-            KerberosPasswordTB.Text = "operator";
-            KerberosDomainTB.Text = "GEMS";
-
             UserNameTokenLB.Text =
             "UserName/Password tokens can be used with any password based system including Windows.\r\n" +
             "The main disadvantage is client must trust the server with its password.\r\n" +
@@ -95,11 +91,6 @@ namespace Quickstarts.UserAuthenticationClient
             "Certificate tokens use a X509 certicate associated with a user.\r\n" +
             "These could come from a smart card and identify a user account.\r\n" +
             "Tokens must be signed when sent to the server.";
-
-            KereberosTokenLB.Text =
-            "Kereberos tokens allow use of Windows domain credentials without\r\n" +
-            "requiring the client to explictly enter a password.\r\n" +
-            "The token must be encrypted when sent to the server.";
         }
         #endregion
 
@@ -182,8 +173,6 @@ namespace Quickstarts.UserAuthenticationClient
                     m_connectedOnce = true;
                 }
 
-                m_session.RenewUserIdentity += new RenewUserIdentityEventHandler(Session_RenewUserIdentity);
-
                 // set the available tokens.
                 SetAvailableUserTokens(m_session.ConfiguredEndpoint.Description);
                 await ReadLogFilePathAsync();
@@ -236,40 +225,6 @@ namespace Quickstarts.UserAuthenticationClient
 
         #region Private Methods
         /// <summary>
-        /// Creates a SAML token for the specified email address.
-        /// </summary>
-        /// <remarks>
-        /// SAML token creation relied on System.IdentityModel (WIF), which is not available on
-        /// modern .NET. This path is stubbed out under the .NET 10 upgrade (Option C).
-        /// </remarks>
-        public static Task<UserIdentity> CreateSAMLTokenAsync(string emailAddress, CancellationToken ct = default)
-        {
-            throw new NotSupportedException(
-                "SAML tokens (System.IdentityModel / WIF) are not supported on this platform.");
-        }
-
-        private IUserIdentity GetKerberosToken()
-        {
-            // Kerberos WS-Security token providers (System.IdentityModel.Selectors) are not
-            // available on modern .NET. This path is stubbed out under the .NET 10 upgrade (Option C).
-            throw new NotSupportedException(
-                "Kerberos issued tokens (System.IdentityModel) are not supported on this platform.");
-        }
-
-        /// <summary>
-        /// Called when a Kerberos token needs to be renewed before reconnect.
-        /// </summary>
-        IUserIdentity Session_RenewUserIdentity(ISession session, IUserIdentity identity)
-        {
-            if (identity == null || identity.TokenType != UserTokenType.IssuedToken)
-            {
-                return identity;
-            }
-
-            return GetKerberosToken();
-        }
-
-        /// <summary>
         /// Sets the available user tokens.
         /// </summary>
         /// <param name="endpointDescription">The endpoint description.</param>
@@ -278,7 +233,6 @@ namespace Quickstarts.UserAuthenticationClient
             AnonymousTAB.Enabled = false;
             UserNameTAB.Enabled = false;
             CertificateTAB.Enabled = false;
-            KerberosTAB.Enabled = false;
 
             if (endpointDescription == null)
             {
@@ -314,17 +268,10 @@ namespace Quickstarts.UserAuthenticationClient
                     }
                 }
 
-                if (policy.TokenType == UserTokenType.IssuedToken)
-                {
-                    if (!KerberosTAB.Enabled)
-                    {
-                        if (policy.IssuedTokenType == "http://docs.oasis-open.org/wss/oasis-wss-kerberos-token-profile-1.1")
-                        {
-                            KerberosTAB.Tag = policy;
-                            KerberosTAB.Enabled = true;
-                        }
-                    }
-                }
+                // a server which advertises an IssuedToken policy names the endpoint of
+                // its token issuer in the policy. Obtaining the token from that issuer
+                // is outside the scope of this sample; see docs/IdentityProviders.md in
+                // the stack for the flows it supports.
             }
         }
         #endregion
@@ -420,36 +367,6 @@ namespace Quickstarts.UserAuthenticationClient
             catch (Exception exception)
             {
                 Report("Impersonating anonymously", exception);
-            }
-            finally
-            {
-                m_session.ReturnDiagnostics = DiagnosticsMasks.None;
-            }
-        }
-
-        private async void KerberosImpersonateBTN_Click(object sender, EventArgs e)
-        {
-            if (m_session == null)
-            {
-                return;
-            }
-
-            try
-            {
-                // request the token.
-                IUserIdentity identity = GetKerberosToken();
-
-                // want to get error text for this call.
-                m_session.ReturnDiagnostics = DiagnosticsMasks.All;
-
-                string[] preferredLocales = PreferredLocalesTB.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                await m_session.UpdateSessionAsync(identity, preferredLocales);
-
-                Report("Impersonating with a Kerberos token", StatusCodes.Good);
-            }
-            catch (Exception exception)
-            {
-                Report("Impersonating with a Kerberos token", exception);
             }
             finally
             {

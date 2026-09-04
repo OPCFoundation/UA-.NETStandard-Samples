@@ -50,7 +50,6 @@
   </TransportQuotas>
   <ServerConfiguration>
     <BaseAddresses>
-      <ua:String>https://localhost:62543/Quickstarts/AlarmConditionServer</ua:String>
       <ua:String>opc.tcp://localhost:62544/Quickstarts/AlarmConditionServer</ua:String>
     </BaseAddresses>
     <SecurityPolicies>

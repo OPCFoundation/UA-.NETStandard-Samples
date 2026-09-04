@@ -84,11 +84,11 @@ namespace Quickstarts.ViewsClient
         /// <summary>
         /// Connects to a server.
         /// </summary>
-        private void Server_ConnectMI_Click(object sender, EventArgs e)
+        private async void Server_ConnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                ConnectServerCTRL.ConnectAsync(m_telemetry).Wait();
+                await ConnectServerCTRL.ConnectAsync(m_telemetry);
             }
             catch (Exception exception)
             {

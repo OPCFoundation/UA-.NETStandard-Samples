@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Client.ModelChange;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.Streaming;
 
@@ -109,8 +110,8 @@ namespace Quickstarts.NodeManagement.Client
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed asynchronously by DeleteSubscriptionAsync.")]
         private StreamingSubscription m_streaming;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed by DeleteSubscriptionAsync.")]
-        private CancellationTokenSource m_cts;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed asynchronously by DeleteSubscriptionAsync.")]
+        private ModelChangeTracker m_modelChanges;
         #endregion
 
         #region Event Handlers
@@ -758,14 +759,17 @@ namespace Quickstarts.NodeManagement.Client
         }
 
         /// <summary>
-        /// Subscribes to the model change events of the server.
+        /// Starts tracking the model changes of the server.
         /// </summary>
         /// <remarks>
         /// A client of a server whose address space is built by its clients cannot assume
         /// that what it read is still true. Part 5 9.32 answers that with the model change
-        /// events, and this client uses them the simple way: any GeneralModelChangeEvent
-        /// means "browse again". The event says which nodes changed, which a client with a
-        /// large address space would use to refresh only the part which did.
+        /// events, and the stack answers it with <see cref="ModelChangeTracker"/>: it owns
+        /// the event filter, the subscription on the Server object and the decoding of the
+        /// Changes field, reports the changes as a structured payload, refreshes the
+        /// namespace table when one of them needs it, and - the part a hand written pump
+        /// tends to forget - evicts the changed nodes from the <c>INodeCache</c>, so that
+        /// the next read does not answer out of a stale cache.
         /// </remarks>
         private async Task CreateSubscriptionAsync()
         {
@@ -779,88 +783,40 @@ namespace Quickstarts.NodeManagement.Client
             }
 
             m_streaming = new StreamingSubscription(manager, ClientUtils.DefaultSubscriptionOptions);
-            m_cts = new CancellationTokenSource();
 
-            // nothing is awaited here on purpose: the enumeration runs for as long as the
-            // client is connected
-            _ = PumpModelChangesAsync(m_cts.Token);
+            // the node cache and the namespace table of the session are handed to the
+            // tracker so that it can keep both consistent with what the server reports.
+            m_modelChanges = new ModelChangeTracker(
+                m_streaming,
+                m_session.NodeCache,
+                m_telemetry?.CreateLogger<MainForm>(),
+                m_session as INamespaceTableRefresher);
+
+            m_modelChanges.ModelChanged += OnModelChanged;
+
+            await m_modelChanges.StartTrackingAsync().ConfigureAwait(true);
         }
 
         /// <summary>
-        /// Refreshes the lists whenever the server reports that its model changed.
-        /// </summary>
-        private async Task PumpModelChangesAsync(CancellationToken ct)
-        {
-            IStreamingSubscription streaming = m_streaming;
-
-            var options = new MonitoredItemOptions {
-                StartNodeId = ObjectIds.Server,
-                AttributeId = Attributes.EventNotifier,
-                SamplingInterval = TimeSpan.Zero,
-                QueueSize = 1000,
-                DiscardOldest = true,
-            };
-
-            try
-            {
-                await foreach (EventNotification notification in streaming
-                    .SubscribeEventsAsync(ObjectIds.Server, ModelChangeFilter(), options, ct)
-                    .ConfigureAwait(false))
-                {
-                    if (ct.IsCancellationRequested || IsDisposed)
-                    {
-                        return;
-                    }
-
-                    // without a window there is nothing to update, and the enumeration keeps
-                    // running rather than ending for good
-                    if (!IsHandleCreated)
-                    {
-                        continue;
-                    }
-
-                    // the enumeration runs on a publish worker, so the display is updated on
-                    // the UI thread
-                    BeginInvoke(new Action(ModelChangedAsync));
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // the client disconnected.
-            }
-            catch (Exception exception)
-            {
-                // the pump runs on a publish worker, so the error is logged instead of shown
-                m_telemetry?.CreateLogger<MainForm>().LogError(exception, "Failed to read the model change events.");
-            }
-        }
-
-        /// <summary>
-        /// A filter which accepts nothing but GeneralModelChangeEvents.
+        /// Reads the address space again after the server reported a change.
         /// </summary>
         /// <remarks>
-        /// One select clause is enough for a client which only wants to know that something
-        /// changed. The Changes field of the event would name the nodes, and is worth reading
-        /// for an address space too large to browse again.
+        /// This client refreshes everything, because everything it shows fits on one form.
+        /// A client with a large address space would refresh only what
+        /// <see cref="ModelChangedEventArgs.Changes"/> names, and only rebuild the whole of
+        /// it when <see cref="ModelChangedEventArgs.RequiresFullCacheInvalidation"/> says
+        /// the server could not say what changed.
         /// </remarks>
-        private static EventFilter ModelChangeFilter()
+        private void OnModelChanged(object sender, ModelChangedEventArgs e)
         {
-            var filter = new EventFilter {
-                SelectClauses = new[] {
-                    new SimpleAttributeOperand {
-                        TypeDefinitionId = ObjectTypeIds.BaseEventType,
-                        AttributeId = Attributes.Value,
-                        BrowsePath = new[] { new QualifiedName(BrowseNames.EventType) }.ToArrayOf(),
-                    },
-                }.ToArrayOf(),
-            };
+            // the event is raised on a publish worker, and without a window there is
+            // nothing to update
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
 
-            filter.WhereClause = new ContentFilter();
-            filter.WhereClause.Push(
-                FilterOperator.OfType,
-                Variant.From(ObjectTypeIds.GeneralModelChangeEventType));
-
-            return filter;
+            BeginInvoke(new Action(ModelChangedAsync));
         }
 
         /// <summary>
@@ -884,15 +840,23 @@ namespace Quickstarts.NodeManagement.Client
         private async Task DeleteSubscriptionAsync()
         {
             StreamingSubscription streaming = m_streaming;
-            CancellationTokenSource cts = m_cts;
+            ModelChangeTracker modelChanges = m_modelChanges;
 
             m_streaming = null;
-            m_cts = null;
+            m_modelChanges = null;
 
-            if (cts != null)
+            if (modelChanges != null)
             {
-                await cts.CancelAsync().ConfigureAwait(true);
-                cts.Dispose();
+                modelChanges.ModelChanged -= OnModelChanged;
+
+                try
+                {
+                    await modelChanges.DisposeAsync().ConfigureAwait(true);
+                }
+                catch (Exception exception)
+                {
+                    m_telemetry?.CreateLogger<MainForm>().LogError(exception, "Failed to stop tracking model changes.");
+                }
             }
 
             if (streaming == null)
