@@ -76,8 +76,9 @@ namespace Opc.Ua.Gds.Server
         /// <summary>
         /// The namespace of the OPC 10000-21 Onboarding companion model, which the two
         /// Method NodeIds are created in - see <see cref="CreateTicketMethod"/>. Spelled
-        /// out because the generated model constants are not part of every package version
-        /// this sample builds against.
+        /// out because the generated model constant
+        /// (<c>Opc.Ua.Onboarding.Namespaces.OpcUaOnboarding</c>) is not part of the
+        /// 2.0.0-preview.4 packages; replace the literal with it when the packages move on.
         /// </summary>
         public const string OnboardingNamespaceUri = "http://opcfoundation.org/UA/Onboarding/";
 
@@ -89,10 +90,11 @@ namespace Opc.Ua.Gds.Server
 
         /// <summary>
         /// The type-declaration MethodIds of <c>DeviceRegistrarAdminType</c> in the
-        /// Onboarding companion model (<c>DeviceRegistrarAdminType_RegisterTickets</c> and
-        /// <c>DeviceRegistrarAdminType_UnregisterTickets</c>), spelled out because the
-        /// generated model constants are not part of every package version this sample
-        /// builds against.
+        /// Onboarding companion model. Spelled out because the generated model constants
+        /// (<c>Opc.Ua.Onboarding.MethodIds.DeviceRegistrarAdminType_RegisterTickets</c> and
+        /// <c>...DeviceRegistrarAdminType_UnregisterTickets</c>) are not part of the
+        /// 2.0.0-preview.4 packages; replace the literals with them when the packages move
+        /// on.
         /// </summary>
         private const uint kRegisterTicketsTypeMethodId = 1176;
         private const uint kUnregisterTicketsTypeMethodId = 1179;
