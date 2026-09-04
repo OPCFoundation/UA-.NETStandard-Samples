@@ -304,6 +304,7 @@ namespace Opc.Ua.Samples.Client
             m_disposed = true;
 
             await DetachAsync().ConfigureAwait(false);
+            await DisposeAsyncCore().ConfigureAwait(false);
             m_lifecycle.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -343,6 +344,13 @@ namespace Opc.Ua.Samples.Client
         /// <summary>
         /// Releases the resources of the model.
         /// </summary>
+        /// <remarks>
+        /// The same two steps as <see cref="DisposeAsync"/> and in the same order, waited
+        /// for instead of awaited: a model which owns something of its own releases it in
+        /// <see cref="DisposeAsyncCore"/>, and that has to run whichever way the model is
+        /// disposed. A window disposes synchronously, so the asynchronous path alone would
+        /// leak exactly the thing that override exists for.
+        /// </remarks>
         /// <param name="disposing">True when called from <see cref="Dispose()"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
@@ -353,8 +361,26 @@ namespace Opc.Ua.Samples.Client
 
             m_disposed = true;
 
-            SampleSession.WaitForTeardown(DetachAsync);
+            SampleSession.WaitForTeardown(async () => {
+                await DetachAsync().ConfigureAwait(false);
+                await DisposeAsyncCore().ConfigureAwait(false);
+            });
+
             m_lifecycle.Dispose();
+        }
+
+        /// <summary>
+        /// Releases what the model owns beyond the session, after it has detached.
+        /// </summary>
+        /// <remarks>
+        /// For the rare model which holds something of its own rather than something of
+        /// the session - everything which belongs to the session is released by
+        /// <see cref="OnDetachingAsync"/>, which also runs when the window disconnects
+        /// without closing.
+        /// </remarks>
+        protected virtual ValueTask DisposeAsyncCore()
+        {
+            return ValueTask.CompletedTask;
         }
 
         /// <summary>

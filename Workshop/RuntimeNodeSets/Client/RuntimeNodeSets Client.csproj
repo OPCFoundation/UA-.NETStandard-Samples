@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Quickstarts.RuntimeNodeSets.Client</RootNamespace>
+    <AssemblyName>Quickstarts.RuntimeNodeSetsClient</AssemblyName>
+    <ApplicationIcon>App.ico</ApplicationIcon>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="App.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+
+    <!-- There is nothing to hand a source generator: the model this client talks to is a
+         NodeSet2 document the server reads at run time, so the client finds everything by
+         browse path in the two namespaces those documents declare. -->
+
+    <Content Include="Quickstarts.RuntimeNodeSetsClient.Config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
+    <ProjectReference Include="..\..\..\Samples\Client.Common\Opc.Ua.Samples.Client.csproj" />
+    <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
+      <Version>$(OpcUaNetStandardVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>

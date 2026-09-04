@@ -468,6 +468,27 @@ Three things about this tier which are not obvious from the code:
 
 The per-client table under Tier 2 says what each fixture drives.
 
+Two fixtures in this tier are not client models but client *features* which have no window
+in them, and which therefore belong here rather than in Tier 2:
+
+- `NodeSetExportTests` drives the client side NodeSet2 export against the Boiler server:
+  the browse reaches the model namespace of the server, the file reads back through the
+  same `UANodeSet.Read` a server loads its model with and declares every namespace the
+  exported nodes belong to, the standard namespace is left out unless it is asked for, and
+  the `FetchTree` and `MaxNodeCount` bounds do what they say. It rides on the Boiler
+  fixture because the export needs nothing but a session, and that fixture is what starts a
+  server with a model of its own.
+- `ReverseConnectListenerTests` is the client half of reverse connect end to end, and the
+  one fixture which hosts the Reference server, because it is the sample server that can
+  dial out. It points both ends at a port picked per test rather than the 65301 the sample
+  configurations ship with, waits for the server to open a connection, and opens a
+  `ManagedSession` on the connection the server offered - spending the first `ReverseHello`
+  on `GetEndpoints` and waiting for the next, exactly as the Reference Client does - then
+  reads the server state over that socket. It also pins down that the `ReverseHello`
+  carries the endpoint URL the server knows *itself* by, which names the host rather than
+  `localhost`, and that the manager matches a wait against it anyway; that is what lets the
+  sample configurations say `localhost` on both ends.
+
 ## What Tier 2 checks today
 
 55 test cases, about two and a half minutes, Windows only. For each WinForms sample client
@@ -529,6 +550,7 @@ the sample exists to show:
 | Methods | connects | the current state of the process arrives | `WorkshopClientSubscriptionTests` | `MethodsClientModelTests` |
 | NodeManagement | adds an object, references it into the group, drops the reference, deletes the node | each of the four services changed the list it is supposed to change - and dropping the reference left the node where it was | `NodeManagementClientTests` | `NodeManagementClientModelTests` |
 | PerfTest | connects, then presses Stop | the item update count leaves zero, and Stop ends the run | `SampleClientActionTests` | `PerfTestClientModelTests` |
+| (PerfTest, unbounded items) | - | a bound per partition splits the block over several server side subscriptions and updates arrive from each of them; a block below the bound stays in one; an affinity group is kept within one partition, and a group which does not fit the space left in it - or which is larger than a partition at all - is refused rather than split | - | `PerfTestClientModelTests` |
 | Reference | browses into the static scalars and selects one | the attribute list holds the attributes of the node the tree selected | `SampleClientActionTests` | - (not a Workshop client) |
 | RoleManagement | signs in as an Operator and presses Reset | the server answered Good and the set point is back at its default - the case which motivated all of this | `RoleManagementClientTests` | `RoleManagementClientModelTests` |
 | Sample | opens a session through the modal dialog | a `ManagedSession` on the V2 engine, and a filled browse tree | `SampleClientFormTests` | - (not a Workshop client) |
@@ -619,6 +641,18 @@ rebuilt tree carries new nodes even where every label matches.
 `SubscriptionHandle` on the V2 engine, shows the (modeless) `SubscriptionDlg`, adds
 `Server_ServerStatus_CurrentTime` through the `MonitoredItemConfigCtrl` grid, applies, and
 waits for a data change to land in the `DataChangeNotificationListCtrl` of the dialog.
+
+`SampleControlsTriggeringTests` covers the other half of the monitored item services those
+dialogs offer, `SetTriggering` (Part 4 §5.13.5). The dialog itself is modal and is left to
+the user; what the test drives is the work its OK button leads to, and it drives *both*
+halves of the API because the menu item uses both. Items which already exist on the server
+go through the imperative `SetTriggeringAsync`, which is the only path that reports a status
+per link - the test asserts the per link results pair up with the request, that the N:M
+relationship is visible from both ends (`TriggeringItems` and `TriggeredItems`), that the
+`Triggered By` column of the grid renders it, and that removing one link leaves the other
+alone. An item the wizard only staged has no server side item to link, so its intent is
+written declaratively into `TriggeredByNames`; the test stages one, applies, and waits for
+the engine to issue the `SetTriggering` on its own once both ends exist.
 
 `ClientReconnectTests` is the only test which takes the server away. A connect proves that the
 sample talks to a `ManagedSession`; it does not prove that the managed session does the one

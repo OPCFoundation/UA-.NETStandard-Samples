@@ -126,6 +126,7 @@ namespace Opc.Ua.Samples.Tests
                 Client("NodeManagement", services => services.AddNodeManagementClient(), typeof(Quickstarts.NodeManagement.Client.MainForm), "RefreshBTN"),
                 Client("PerfTest", services => services.AddPerfTestClient(), typeof(Quickstarts.PerfTestClient.MainForm)),
                 Client("RoleManagement", services => services.AddRoleManagementClient(), typeof(Quickstarts.RoleManagement.Client.MainForm), "RefreshBTN"),
+                Client("RuntimeNodeSets", services => services.AddRuntimeNodeSetsClient(), typeof(Quickstarts.RuntimeNodeSets.Client.MainForm), "LoadBTN"),
                 Client("SimpleEvents", services => services.AddSimpleEventsClient(), typeof(Quickstarts.SimpleEvents.Client.MainForm)),
                 Client("StateMachines", services => services.AddStateMachinesClient(), typeof(Quickstarts.StateMachines.Client.MainForm), "PowerOnBTN"),
                 Client("UserAuthentication", services => services.AddUserAuthenticationClient(), typeof(Quickstarts.UserAuthenticationClient.MainForm)),

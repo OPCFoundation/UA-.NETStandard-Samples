@@ -66,6 +66,7 @@ namespace Opc.Ua.Sample.Controls
             this.SetSamplingIntervalMI = new System.Windows.Forms.ToolStripMenuItem();
             this.SetFilterMI = new System.Windows.Forms.ToolStripMenuItem();
             this.SetMonitoringModeMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.SetTriggeringMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Separator2 = new System.Windows.Forms.ToolStripSeparator();
             this.MonitorMI = new System.Windows.Forms.ToolStripMenuItem();
             this.PopupMenu.SuspendLayout();
@@ -85,6 +86,7 @@ namespace Opc.Ua.Sample.Controls
             this.SetSamplingIntervalMI,
             this.SetFilterMI,
             this.SetMonitoringModeMI,
+            this.SetTriggeringMI,
             this.Separator2,
             this.MonitorMI});
             this.PopupMenu.Name = "PopupMenu";
@@ -136,6 +138,14 @@ namespace Opc.Ua.Sample.Controls
             this.SetMonitoringModeMI.Size = new System.Drawing.Size(196, 22);
             this.SetMonitoringModeMI.Text = "Set Monitoring Mode...";
             this.SetMonitoringModeMI.Click += new System.EventHandler(this.SetMonitoringModeMI_ClickAsync);
+            //
+            // SetTriggeringMI
+            //
+            this.SetTriggeringMI.Name = "SetTriggeringMI";
+            this.SetTriggeringMI.Size = new System.Drawing.Size(196, 22);
+            this.SetTriggeringMI.Text = "Set Triggering...";
+            this.SetTriggeringMI.ToolTipText = "Chooses the items whose notifications are reported whenever the selected item reports.";
+            this.SetTriggeringMI.Click += new System.EventHandler(this.SetTriggeringMI_ClickAsync);
             // 
             // Separator2
             // 
@@ -165,6 +175,7 @@ namespace Opc.Ua.Sample.Controls
         private System.Windows.Forms.ToolStripMenuItem NewMI;
         private System.Windows.Forms.ToolStripMenuItem EditMI;
         private System.Windows.Forms.ToolStripMenuItem SetMonitoringModeMI;
+        private System.Windows.Forms.ToolStripMenuItem SetTriggeringMI;
         private System.Windows.Forms.ToolStripMenuItem DeleteMI;
         private System.Windows.Forms.ToolStripSeparator Separator1;
         private System.Windows.Forms.ToolStripMenuItem SetFilterMI;

@@ -223,6 +223,7 @@ namespace Opc.Ua.Samples.Tests
                     // redirected before the server sets up its certificate
                     m_pki.Redirect(configuration);
                     endpointUrl = KeepOpcTcpEndpointsOnly(configuration);
+                    KeepTheServerFromDiallingOut(configuration);
                     m_configure?.Invoke(configuration);
                 });
 
@@ -271,6 +272,27 @@ namespace Opc.Ua.Samples.Tests
             else
             {
                 host.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Drops the reverse connect clients a sample server ships with, so a server
+        /// hosted by a test never opens a connection of its own.
+        /// </summary>
+        /// <remarks>
+        /// The Reference server dials a client every <c>ConnectInterval</c> so its own
+        /// sample pairs with the Reference Client out of the box. In a test nothing owns
+        /// that port, so the dial is a failing outbound connect every fifteen seconds,
+        /// with the logging that goes with it, in the same process as timing sensitive
+        /// data change tests. A test which wants a server to dial sets its own
+        /// <see cref="ServerConfiguration.ReverseConnect"/> in the <c>configure</c>
+        /// callback, which runs after this.
+        /// </remarks>
+        private static void KeepTheServerFromDiallingOut(ApplicationConfiguration configuration)
+        {
+            if (configuration.ServerConfiguration != null)
+            {
+                configuration.ServerConfiguration.ReverseConnect = null;
             }
         }
 

@@ -211,6 +211,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "RuntimeNodeSets",
+                ServerProject = "Workshop/RuntimeNodeSets/Server/RuntimeNodeSets Server.csproj",
+                ServerConfig = "Workshop/RuntimeNodeSets/Server/Quickstarts.RuntimeNodeSetsServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62579/Quickstarts/RuntimeNodeSetsServer",
+                ClientProject = "Workshop/RuntimeNodeSets/Client/RuntimeNodeSets Client.csproj",
+                ClientConfig = "Workshop/RuntimeNodeSets/Client/Quickstarts.RuntimeNodeSetsClient.Config.xml",
+                ClientEndpointSource = "Workshop/RuntimeNodeSets/Client/MainForm.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "SimpleEvents",
                 ServerProject = "Workshop/SimpleEvents/Server/SimpleEvents Server.csproj",
                 ServerConfig = "Workshop/SimpleEvents/Server/SimpleEventsServer.Config.xml",

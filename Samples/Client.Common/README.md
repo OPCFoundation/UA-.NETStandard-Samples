@@ -87,6 +87,11 @@ The Boiler client is the reference implementation; the Empty client is the templ
   session, and a subscription which cannot be deleted on a server that is gone is logged, not
   shown. Detaching runs **before** the window closes the session: closing a session which
   still carries a subscription waits for the publish pipeline to drain.
+- **Disposal.** `DisposeAsync()` detaches and then calls `DisposeAsyncCore()`, which a model
+  overrides only when it owns something of its own rather than something of the session -
+  everything that belongs to the session goes in `OnDetachingAsync`, which also runs when the
+  window disconnects without closing. The DataTypes model overrides it, for the service
+  provider it builds to reach the schema generators.
 - **Reconnect.** `NotifyReconnectStarting()` and `NotifyReconnectCompletedAsync()` are what the
   window forwards the events of the connect control to. A managed session keeps its identity
   across a reconnect, and so do the subscriptions of the V2 engine, so most models override
@@ -149,6 +154,14 @@ The Boiler client is the reference implementation; the Empty client is the templ
   archive a date picker starts from.
 - `SampleDiscovery`: the endpoints of a server, across the discovery urls it advertises -
   the question an endpoint editor asks, next to the single url `CoreClientUtils` takes.
+- `NodeSetExport`: browses a connected server and writes its address space to a NodeSet2 XML
+  file, which is what the `Export NodeSet2...` commands of the Reference Client and the UA
+  Sample Client run. `NodeSetExportSettings` decides how far the browse reaches and whether
+  the OPC UA namespace comes along; the stack does the writing.
+- `ReverseConnectListener`: the client half of a reverse connection - listens on the client
+  endpoints of the configuration and hands out the connections servers open to it, so a
+  session can be created on a socket the server opened. Used by
+  `Server > Reverse Connect` of the [Reference Client](../ReferenceClient/README.md).
 
 ## The connection behind the connect control
 

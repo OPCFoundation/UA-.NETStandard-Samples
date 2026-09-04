@@ -64,6 +64,11 @@ namespace Quickstarts.PerfTestClient
             this.UpdateRateCTRL = new System.Windows.Forms.NumericUpDown();
             this.ItemCountLB = new System.Windows.Forms.Label();
             this.UpdateRateLB = new System.Windows.Forms.Label();
+            this.MaxItemsPerPartitionCTRL = new System.Windows.Forms.NumericUpDown();
+            this.MaxItemsPerPartitionLB = new System.Windows.Forms.Label();
+            this.PartitionCountTB = new System.Windows.Forms.TextBox();
+            this.PartitionCountLB = new System.Windows.Forms.Label();
+            this.PartitionLoadTB = new System.Windows.Forms.TextBox();
             this.TotalItemUpdateRateTB = new System.Windows.Forms.TextBox();
             this.MessageRateTB = new System.Windows.Forms.TextBox();
             this.TotalItemUpdateCountTB = new System.Windows.Forms.TextBox();
@@ -79,6 +84,7 @@ namespace Quickstarts.PerfTestClient
             this.MainPN.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ItemCountCTRL)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.UpdateRateCTRL)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.MaxItemsPerPartitionCTRL)).BeginInit();
             this.SuspendLayout();
             // 
             // MenuBar
@@ -175,6 +181,11 @@ namespace Quickstarts.PerfTestClient
             this.MainPN.Controls.Add(this.UpdateRateCTRL);
             this.MainPN.Controls.Add(this.ItemCountLB);
             this.MainPN.Controls.Add(this.UpdateRateLB);
+            this.MainPN.Controls.Add(this.MaxItemsPerPartitionCTRL);
+            this.MainPN.Controls.Add(this.MaxItemsPerPartitionLB);
+            this.MainPN.Controls.Add(this.PartitionCountTB);
+            this.MainPN.Controls.Add(this.PartitionCountLB);
+            this.MainPN.Controls.Add(this.PartitionLoadTB);
             this.MainPN.Controls.Add(this.TotalItemUpdateRateTB);
             this.MainPN.Controls.Add(this.MessageRateTB);
             this.MainPN.Controls.Add(this.TotalItemUpdateCountTB);
@@ -335,14 +346,66 @@ namespace Quickstarts.PerfTestClient
             this.MessageCountLB.TabIndex = 16;
             this.MessageCountLB.Text = "Message Count";
             // 
+            // MaxItemsPerPartitionLB
+            //
+            this.MaxItemsPerPartitionLB.AutoSize = true;
+            this.MaxItemsPerPartitionLB.Location = new System.Drawing.Point(13, 61);
+            this.MaxItemsPerPartitionLB.Name = "MaxItemsPerPartitionLB";
+            this.MaxItemsPerPartitionLB.Size = new System.Drawing.Size(88, 13);
+            this.MaxItemsPerPartitionLB.TabIndex = 29;
+            this.MaxItemsPerPartitionLB.Text = "Items / Partition";
+            //
+            // MaxItemsPerPartitionCTRL
+            //
+            this.MaxItemsPerPartitionCTRL.Increment = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.MaxItemsPerPartitionCTRL.Location = new System.Drawing.Point(115, 57);
+            this.MaxItemsPerPartitionCTRL.Maximum = new decimal(new int[] {
+            100000,
+            0,
+            0,
+            0});
+            this.MaxItemsPerPartitionCTRL.Name = "MaxItemsPerPartitionCTRL";
+            this.MaxItemsPerPartitionCTRL.Size = new System.Drawing.Size(58, 20);
+            this.MaxItemsPerPartitionCTRL.TabIndex = 30;
+            this.MaxItemsPerPartitionCTRL.ThousandsSeparator = true;
+            //
+            // PartitionCountLB
+            //
+            this.PartitionCountLB.AutoSize = true;
+            this.PartitionCountLB.Location = new System.Drawing.Point(189, 61);
+            this.PartitionCountLB.Name = "PartitionCountLB";
+            this.PartitionCountLB.Size = new System.Drawing.Size(51, 13);
+            this.PartitionCountLB.TabIndex = 31;
+            this.PartitionCountLB.Text = "Partitions";
+            //
+            // PartitionCountTB
+            //
+            this.PartitionCountTB.Location = new System.Drawing.Point(283, 57);
+            this.PartitionCountTB.Name = "PartitionCountTB";
+            this.PartitionCountTB.ReadOnly = true;
+            this.PartitionCountTB.Size = new System.Drawing.Size(85, 20);
+            this.PartitionCountTB.TabIndex = 32;
+            //
+            // PartitionLoadTB
+            //
+            this.PartitionLoadTB.Location = new System.Drawing.Point(471, 57);
+            this.PartitionLoadTB.Name = "PartitionLoadTB";
+            this.PartitionLoadTB.ReadOnly = true;
+            this.PartitionLoadTB.Size = new System.Drawing.Size(123, 20);
+            this.PartitionLoadTB.TabIndex = 33;
+            //
             // LogTB
-            // 
+            //
             this.LogTB.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.LogTB.Location = new System.Drawing.Point(16, 59);
+            this.LogTB.Location = new System.Drawing.Point(16, 83);
             this.LogTB.Name = "LogTB";
-            this.LogTB.Size = new System.Drawing.Size(779, 242);
+            this.LogTB.Size = new System.Drawing.Size(779, 218);
             this.LogTB.TabIndex = 5;
             this.LogTB.Text = "";
             // 
@@ -403,6 +466,7 @@ namespace Quickstarts.PerfTestClient
             this.MainPN.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ItemCountCTRL)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.UpdateRateCTRL)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.MaxItemsPerPartitionCTRL)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -429,6 +493,11 @@ namespace Quickstarts.PerfTestClient
         private System.Windows.Forms.NumericUpDown ItemCountCTRL;
         private System.Windows.Forms.NumericUpDown UpdateRateCTRL;
         private System.Windows.Forms.Label ItemCountLB;
+        private System.Windows.Forms.NumericUpDown MaxItemsPerPartitionCTRL;
+        private System.Windows.Forms.Label MaxItemsPerPartitionLB;
+        private System.Windows.Forms.TextBox PartitionCountTB;
+        private System.Windows.Forms.Label PartitionCountLB;
+        private System.Windows.Forms.TextBox PartitionLoadTB;
         private System.Windows.Forms.Label UpdateRateLB;
         private System.Windows.Forms.TextBox TotalItemUpdateRateTB;
         private System.Windows.Forms.TextBox MessageRateTB;

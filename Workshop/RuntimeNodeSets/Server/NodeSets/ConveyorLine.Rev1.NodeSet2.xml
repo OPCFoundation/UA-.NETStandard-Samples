@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Revision 1 of the conveyor line a vendor shipped as a NodeSet2 document.
+
+     Nothing in this repository generates code from this file: the server loads it
+     with AddRuntimeNodeSet and the SDK materializes the nodes at run time. The only
+     thing the server code knows about it is the path of the file and the model uri.
+
+     Revision 2 is the same model after the vendor added a Throughput variable to the
+     conveyor type and a second conveyor to the line. Both revisions carry the same
+     ModelUri, so loading one over the other is a reload of the same namespace. -->
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+  <NamespaceUris>
+    <Uri>http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Line/</Uri>
+  </NamespaceUris>
+  <Models>
+    <Model ModelUri="http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Line/" Version="1.0.0" PublicationDate="2026-01-15T00:00:00Z">
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05.04" PublicationDate="2024-04-25T00:00:00Z" />
+    </Model>
+  </Models>
+  <Aliases>
+    <Alias Alias="Boolean">i=1</Alias>
+    <Alias Alias="Int32">i=6</Alias>
+    <Alias Alias="Double">i=11</Alias>
+    <Alias Alias="String">i=12</Alias>
+    <Alias Alias="Organizes">i=35</Alias>
+    <Alias Alias="HasModellingRule">i=37</Alias>
+    <Alias Alias="HasTypeDefinition">i=40</Alias>
+    <Alias Alias="HasSubtype">i=45</Alias>
+    <Alias Alias="HasProperty">i=46</Alias>
+    <Alias Alias="HasComponent">i=47</Alias>
+  </Aliases>
+
+  <!-- The enumeration the State variables use. A client which has no compiled copy of
+       this model reads it back as an Int32; the DataTypes sample shows how such a type
+       is turned into a schema at run time. -->
+  <UADataType NodeId="ns=1;i=1000" BrowseName="1:ConveyorState">
+    <DisplayName>ConveyorState</DisplayName>
+    <Description>The operating state of a conveyor.</Description>
+    <References>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=29</Reference>
+    </References>
+    <Definition Name="1:ConveyorState">
+      <Field Name="Stopped" Value="0" />
+      <Field Name="Running" Value="1" />
+      <Field Name="Faulted" Value="2" />
+    </Definition>
+  </UADataType>
+
+  <UAObjectType NodeId="ns=1;i=1010" BrowseName="1:ConveyorType">
+    <DisplayName>ConveyorType</DisplayName>
+    <References>
+      <Reference ReferenceType="HasComponent">ns=1;i=1011</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1012</Reference>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=58</Reference>
+    </References>
+  </UAObjectType>
+  <UAVariable NodeId="ns=1;i=1011" BrowseName="1:Speed" ParentNodeId="ns=1;i=1010" DataType="Double" AccessLevel="1">
+    <DisplayName>Speed</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1010</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1012" BrowseName="1:State" ParentNodeId="ns=1;i=1010" DataType="ns=1;i=1000" AccessLevel="1">
+    <DisplayName>State</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1010</Reference>
+    </References>
+  </UAVariable>
+
+  <!-- The instance the server publishes. The inverse Organizes reference to i=85 is
+       what puts the folder under Objects: the SDK turns a hierarchical reference which
+       points out of this node set into an external reference when the model is
+       imported. The ParentNodeId attribute alone would not be enough. -->
+  <UAObject NodeId="ns=1;i=1100" BrowseName="1:ConveyorLine">
+    <DisplayName>ConveyorLine</DisplayName>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=1110</Reference>
+      <Reference ReferenceType="Organizes">ns=1;i=1101</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=61</Reference>
+      <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=1110" BrowseName="1:Revision" ParentNodeId="ns=1;i=1100" DataType="String" AccessLevel="1">
+    <DisplayName>Revision</DisplayName>
+    <Description>Which revision of the vendor model is loaded. Read it again after a reload.</Description>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=1100</Reference>
+    </References>
+    <Value>
+      <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">Rev1</String>
+    </Value>
+  </UAVariable>
+
+  <UAObject NodeId="ns=1;i=1101" BrowseName="1:Conveyor1" ParentNodeId="ns=1;i=1100">
+    <DisplayName>Conveyor1</DisplayName>
+    <References>
+      <Reference ReferenceType="HasComponent">ns=1;i=1102</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=1103</Reference>
+      <Reference ReferenceType="HasTypeDefinition">ns=1;i=1010</Reference>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=1;i=1100</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=1102" BrowseName="1:Speed" ParentNodeId="ns=1;i=1101" DataType="Double" AccessLevel="1">
+    <DisplayName>Speed</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1101</Reference>
+    </References>
+    <Value>
+      <Double xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">1.4</Double>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=1103" BrowseName="1:State" ParentNodeId="ns=1;i=1101" DataType="ns=1;i=1000" AccessLevel="1">
+    <DisplayName>State</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1101</Reference>
+    </References>
+    <Value>
+      <Int32 xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">1</Int32>
+    </Value>
+  </UAVariable>
+</UANodeSet>

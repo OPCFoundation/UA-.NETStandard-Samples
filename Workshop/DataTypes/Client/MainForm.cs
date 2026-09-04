@@ -266,6 +266,39 @@ namespace Quickstarts.DataTypes
         }
 
         /// <summary>
+        /// Shows the schemas of the data types the server declares.
+        /// </summary>
+        /// <remarks>
+        /// The model registered them when the session was attached, from the generated
+        /// classes this client compiled and from the DataTypeDefinition Attribute of every
+        /// other data type node the server has.
+        /// </remarks>
+        private void SchemasMI_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!m_model.IsConnected)
+                {
+                    MessageBox.Show(
+                        this,
+                        "Connect to the server first: the schemas are made from the data types it declares.",
+                        this.Text);
+
+                    return;
+                }
+
+                using (SchemaDlg dialog = new SchemaDlg())
+                {
+                    dialog.ShowDialog(m_model);
+                }
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
         /// Reports a failure on a background path of the model.
         /// </summary>
         private void Model_Error(object sender, ModelErrorEventArgs e)

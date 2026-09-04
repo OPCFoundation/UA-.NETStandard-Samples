@@ -26,5 +26,12 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
+
+    <!-- the schema generators, which turn a DataTypeDefinition into XSD, OPC Binary or
+         JSON Schema. They are internal to the package and reached through its
+         AddSchemaGeneration() registration. -->
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Core.Schema">
+      <Version>$(OpcUaNetStandardVersion)</Version>
+    </PackageReference>
   </ItemGroup>
 </Project>
