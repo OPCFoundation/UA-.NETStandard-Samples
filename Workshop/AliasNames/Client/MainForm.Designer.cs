@@ -24,12 +24,6 @@ namespace Quickstarts.AliasNames.Client
         {
             if (disposing)
             {
-                // the alias resolver holds whatever its refresh strategy needs - nothing at
-                // all for the Manual mode this client uses, a timer or a subscription for the
-                // automatic ones. Tearing it down here rather than only when the session
-                // changes is what makes closing the form clean up either way.
-                ReleaseResolver();
-
                 components?.Dispose();
             }
             base.Dispose(disposing);
@@ -138,7 +132,7 @@ namespace Quickstarts.AliasNames.Client
             this.Server_DisconnectMI.Name = "Server_DisconnectMI";
             this.Server_DisconnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_DisconnectMI.Text = "Disconnect";
-            this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_Click);
+            this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_ClickAsync);
             //
             // HelpMI
             //
