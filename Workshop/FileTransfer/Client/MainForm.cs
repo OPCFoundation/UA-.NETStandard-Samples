@@ -104,6 +104,7 @@ namespace Quickstarts.FileTransferClient
         private const string kRootText = "FileSystem";
 
         private readonly ITelemetryContext m_telemetry;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
         private readonly FileTransferClientModel m_model;
         private readonly IProgress<TransferProgress> m_progress;
 

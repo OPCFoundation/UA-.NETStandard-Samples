@@ -114,6 +114,7 @@ namespace Quickstarts.StateMachines.Client
 
         #region Private Fields
         private readonly ITelemetryContext m_telemetry;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
         private readonly StateMachinesClientModel m_model;
         private readonly Dictionary<OperationCause, Button> m_operationButtons;
         private readonly Dictionary<ProgramCause, Button> m_programButtons;

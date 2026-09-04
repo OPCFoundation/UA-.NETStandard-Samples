@@ -83,6 +83,7 @@ namespace Quickstarts.MethodsClient
 
         #region Private Fields
         private readonly ITelemetryContext m_telemetry;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
         private readonly MethodsClientModel m_model;
         #endregion
 
