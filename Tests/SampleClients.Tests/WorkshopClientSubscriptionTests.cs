@@ -345,8 +345,15 @@ namespace Opc.Ua.Samples.Tests
                 Is.False,
                 "Start is not declared for Off, so the client must not offer it there.");
 
-            // the click handler is an async void event handler, so there is nothing to await
-            powerOn.PerformClick();
+            // not through Button.PerformClick: that one is gated on CanSelect, which is false
+            // while no parent of the control is visible, so on the form this harness never
+            // shows it does nothing at all - no handler runs, and nothing fails either. The
+            // handler is an async void event handler, so there is nothing to await either way.
+            Assert.That(
+                SampleFormDriver.TryInvokeHandler(form, "OperationCauseBTN_ClickAsync", powerOn),
+                Is.True,
+                "The StateMachines client no longer has an 'OperationCauseBTN_ClickAsync'. " +
+                "Rename it here too.");
 
             // and once the machine is Idle the same button has to become available. The click
             // handler re-reads the attributes after its call returns, so this is a wait on the
