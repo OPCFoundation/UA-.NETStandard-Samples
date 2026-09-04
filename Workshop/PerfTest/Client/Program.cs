@@ -62,7 +62,9 @@ namespace Quickstarts.PerfTestClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "PerfTestClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddPerfTestClient(),
                 ExceptionDlg.Show);
         }
     }

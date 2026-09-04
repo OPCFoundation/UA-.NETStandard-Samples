@@ -55,7 +55,7 @@ namespace Quickstarts.NodeManagement.Client
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
         /// <param name="telemetry">The telemetry context of the application.</param>
-        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry, NodeManagementClientModel model)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -65,9 +65,10 @@ namespace Quickstarts.NodeManagement.Client
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62575/Quickstarts/NodeManagementServer";
             this.Text = configuration.ApplicationName;
 
-            // created here, on the thread of the window, so that the model raises its
-            // events on this thread and the handlers below can touch the controls directly
-            m_model = new NodeManagementClientModel(telemetry);
+            // created by the container while this constructor runs, so on the thread of
+            // the window: that is the context the model captures for its events, and it is
+            // why the handlers below can touch the controls directly
+            m_model = model ?? throw new ArgumentNullException(nameof(model));
             m_model.ModelChanged += Model_ModelChangedAsync;
             m_model.Error += Model_Error;
         }
@@ -75,7 +76,6 @@ namespace Quickstarts.NodeManagement.Client
 
         #region Private Fields
         private readonly ITelemetryContext m_telemetry;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
         private readonly NodeManagementClientModel m_model;
 
         /// <summary>
@@ -89,6 +89,30 @@ namespace Quickstarts.NodeManagement.Client
         /// </remarks>
         private bool m_refreshing;
         private bool m_refreshPending;
+        #endregion
+
+        #region Overrides
+        /// <summary>
+        /// Releases the resources of the window, and with them the model it owns.
+        /// </summary>
+        /// <remarks>
+        /// This is hand written and therefore lives here rather than in the designer
+        /// partial: the model is disposed with the window. The synchronous Dispose of
+        /// the model runs its detach on a thread pool thread and waits for it, which is
+        /// what a Dispose that cannot await needs. The closing handler has normally
+        /// detached already by the time this runs, and a second detach returns at once.
+        /// </remarks>
+        /// <param name="disposing">True if managed resources should be disposed.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                components?.Dispose();
+                m_model?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
         #endregion
 
         #region Event Handlers

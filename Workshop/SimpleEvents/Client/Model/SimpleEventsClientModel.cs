@@ -77,6 +77,7 @@ namespace Quickstarts.SimpleEvents.Client.Model
     /// <see cref="ISubscriptionNotificationHandler"/>, which is the better fit for a
     /// subscription that outlives one screen and has to serve condition refreshes.
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The handles below are taken, cleared and released by OnDetachingAsync, which the detach of the base class runs - on a detach as well as on a dispose. The analyzer does not follow an asynchronous release through a virtual hook.")]
     public sealed class SimpleEventsClientModel : SampleClientModel
     {
         /// <summary>

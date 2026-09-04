@@ -60,7 +60,9 @@ namespace Quickstarts.DataAccessClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "DataAccessClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddDataAccessClient(),
                 ExceptionDlg.Show);
         }
     }

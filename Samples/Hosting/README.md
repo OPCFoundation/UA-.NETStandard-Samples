@@ -251,3 +251,34 @@ which knows nothing about the window, built on the base class and helpers of
 [`Samples/Client.Common`](../Client.Common/README.md). The form hands the session of the shared
 connect control to the model and renders what the model reports; the model tier of the tests
 drives the model without a window.
+
+The model comes from the container, like everything else the form takes. Each client has a
+composition root next to its entry point - `Workshop/<Sample>/Client/<Sample>ClientHosting.cs`,
+the counterpart of the `AddXServer()` of the server half:
+
+```csharp
+public static IServiceCollection AddBoilerClient(this IServiceCollection services)
+{
+    services.TryAddSingleton<BoilerClientModel>();
+    return services;
+}
+```
+
+```csharp
+SampleWinFormsHost.Run<MainForm>(
+    args,
+    services => services
+        .AddSampleApplication(options => { ... })
+        .AddBoilerClient(),
+    ExceptionDlg.Show);
+```
+
+and `MainForm` takes the `BoilerClientModel` as a constructor parameter. The timing matters
+and is what makes a singleton right here: the container creates the model while it is creating
+the form, on the thread which owns the message loop, and a model captures the
+`SynchronizationContext` of the thread it was constructed on to raise its events. So a model
+resolved for a window reports to that window's thread, and the window's handlers touch its
+controls directly.
+
+Tier 2 of the tests goes through the same registration rather than calling the constructor:
+see [`docs/TESTING.md`](../../docs/TESTING.md).

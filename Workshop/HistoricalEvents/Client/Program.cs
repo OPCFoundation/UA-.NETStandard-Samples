@@ -60,7 +60,9 @@ namespace Quickstarts.HistoricalEvents.Client
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "HistoricalEventsClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddHistoricalEventsClient(),
                 ExceptionDlg.Show);
         }
     }

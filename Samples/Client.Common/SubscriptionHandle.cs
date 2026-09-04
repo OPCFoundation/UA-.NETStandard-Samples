@@ -32,11 +32,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua.Client;
-using Opc.Ua.Client.Controls;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.MonitoredItems;
 
-namespace Opc.Ua.Sample.Controls
+namespace Opc.Ua.Samples.Client
 {
     // the V2 subscription engine reuses names the classic engine already has in the
     // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
@@ -44,15 +43,26 @@ namespace Opc.Ua.Sample.Controls
     using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
 
     /// <summary>
-    /// Everything the sample controls keep about one subscription of the V2 engine.
+    /// Everything a caller keeps about one subscription of the V2 engine which it owns for
+    /// as long as its session lives.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A V2 subscription does not point back at its session, carries no display name and takes
-    /// its notification handler when it is created, so the tree and the dialogs share this
-    /// handle instead of the subscription itself: it pairs the subscription with the session it
-    /// was created on, the options monitor which reconfigures it, the
-    /// <see cref="SubscriptionCallbacks"/> every interested control attaches its delegates to
-    /// and the <see cref="MonitoredItemHandle"/> bookkeeping of the items the controls added.
+    /// its notification handler when it is created, so the tree and the dialogs of the UA
+    /// sample client share this handle instead of the subscription itself: it pairs the
+    /// subscription with the session it was created on, the options monitor which reconfigures
+    /// it, the <see cref="SubscriptionCallbacks"/> every interested control attaches its
+    /// delegates to and the <see cref="MonitoredItemHandle"/> bookkeeping of the items which
+    /// were added.
+    /// </para>
+    /// <para>
+    /// <see cref="SampleSubscription"/> is the other view of the same idea, for a caller which
+    /// is <em>editing</em> a subscription rather than keeping one: it can adopt a subscription
+    /// somebody else created, it stages the items of a wizard page and sends them in one go,
+    /// and it goes away with the session instead of deleting it. Which of the two fits is
+    /// whether the caller owns the subscription or is only working on it.
+    /// </para>
     /// </remarks>
     public sealed class SubscriptionHandle
     {
@@ -68,7 +78,7 @@ namespace Opc.Ua.Sample.Controls
         {
             Session = session ?? throw new ArgumentNullException(nameof(session));
             DisplayName = displayName;
-            Options = new OptionsMonitor<SubscriptionOptions>(options ?? ClientUtils.DefaultSubscriptionOptions);
+            Options = new OptionsMonitor<SubscriptionOptions>(options ?? SampleSession.DefaultSubscriptionOptions);
             Callbacks = new SubscriptionCallbacks();
             Items = new List<MonitoredItemHandle>();
         }
@@ -122,7 +132,7 @@ namespace Opc.Ua.Sample.Controls
         {
             if (Subscription == null)
             {
-                Subscription = ClientUtils.AddSubscription(Session, Callbacks, Options);
+                Subscription = SampleSession.AddSubscription(Session, Callbacks, Options);
             }
 
             return Subscription;
@@ -262,7 +272,7 @@ namespace Opc.Ua.Sample.Controls
                 return Task.CompletedTask;
             }
 
-            return ClientUtils.WaitForPendingChangesAsync(Subscription, timeout, ct);
+            return SampleSession.WaitForPendingChangesAsync(Subscription, timeout, ct);
         }
 
         /// <summary>
@@ -288,7 +298,7 @@ namespace Opc.Ua.Sample.Controls
         /// The classic engine composed a default filter inside its MonitoredItem; the V2
         /// engine takes the filter through the options the item is created with, so the
         /// controls build it themselves. The first clause selects the node id of the event
-        /// source, matching the layout the <see cref="Opc.Ua.Client.Controls.FilterDeclaration"/>
+        /// source, matching the layout the <see cref="FilterDeclaration"/>
         /// helper produces.
         /// </remarks>
         public static EventFilter CreateDefaultEventFilter()

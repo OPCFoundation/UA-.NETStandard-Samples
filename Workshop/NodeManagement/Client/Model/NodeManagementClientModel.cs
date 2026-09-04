@@ -84,6 +84,7 @@ namespace Quickstarts.NodeManagement.Client.Model
     /// set creates and the reason Part 5 9.32 exists.
     /// </para>
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The handles below are taken, cleared and released by OnDetachingAsync, which the detach of the base class runs - on a detach as well as on a dispose. The analyzer does not follow an asynchronous release through a virtual hook.")]
     public sealed class NodeManagementClientModel : SampleClientModel
     {
         /// <summary>

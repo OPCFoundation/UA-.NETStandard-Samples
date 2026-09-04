@@ -62,6 +62,7 @@ namespace Quickstarts.AlarmConditionClient.Model
     /// write a refusal into the row it belongs to.
     /// </para>
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The handles below are taken, cleared and released by OnDetachingAsync, which the detach of the base class runs - on a detach as well as on a dispose. The analyzer does not follow an asynchronous release through a virtual hook.")]
     public sealed class AlarmConditionClientModel : SampleClientModel
     {
         /// <summary>

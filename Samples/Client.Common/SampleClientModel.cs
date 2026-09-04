@@ -109,11 +109,12 @@ namespace Opc.Ua.Samples.Client
     /// instead, after being logged.
     /// </para>
     /// </remarks>
-    public abstract class SampleClientModel : IAsyncDisposable
+    public abstract class SampleClientModel : IAsyncDisposable, IDisposable
     {
         private readonly SynchronizationContext m_context;
         private readonly SemaphoreSlim m_lifecycle = new SemaphoreSlim(1, 1);
         private ISession m_session;
+        private bool m_disposed;
 
         /// <summary>
         /// Creates a model, capturing the synchronization context of the calling thread
@@ -295,9 +296,65 @@ namespace Opc.Ua.Samples.Client
         /// <inheritdoc/>
         public async ValueTask DisposeAsync()
         {
+            if (m_disposed)
+            {
+                return;
+            }
+
+            m_disposed = true;
+
             await DetachAsync().ConfigureAwait(false);
             m_lifecycle.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Detaches the model and releases it, for a caller which cannot await.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This is what a window calls from its <c>Dispose(bool)</c>. Windows Forms disposes
+        /// a form from <c>FormClosed</c> and from the message loop, neither of which can
+        /// await a <see cref="DisposeAsync"/>, so the model has to be able to tear itself
+        /// down synchronously - otherwise every window needs a CA2213 suppression for the
+        /// field which holds it.
+        /// </para>
+        /// <para>
+        /// The detach runs on a thread pool thread, where there is no synchronization
+        /// context to post the continuations back to; awaiting it on the user interface
+        /// thread would deadlock against the very message loop the wait is blocking. It
+        /// therefore must not touch a control - and it does not: a model knows nothing
+        /// about the window. See <see cref="SampleSession.WaitForTeardown"/>, which this
+        /// is the model's own use of.
+        /// </para>
+        /// <para>
+        /// A window which is already awaiting <see cref="DetachAsync"/> on its way out -
+        /// most of them do, so the subscription is gone before the connect control closes
+        /// the session - pays nothing here: the second detach finds no session and returns
+        /// at once.
+        /// </para>
+        /// </remarks>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases the resources of the model.
+        /// </summary>
+        /// <param name="disposing">True when called from <see cref="Dispose()"/>.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposing || m_disposed)
+            {
+                return;
+            }
+
+            m_disposed = true;
+
+            SampleSession.WaitForTeardown(DetachAsync);
+            m_lifecycle.Dispose();
         }
 
         /// <summary>

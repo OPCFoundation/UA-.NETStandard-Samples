@@ -62,7 +62,9 @@ namespace Quickstarts.SimpleEvents.Client
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "SimpleEventsClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddSimpleEventsClient(),
                 ExceptionDlg.Show);
         }
     }

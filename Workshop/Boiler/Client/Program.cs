@@ -62,7 +62,9 @@ namespace Quickstarts.Boiler.Client
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "BoilerClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddBoilerClient(),
                 ExceptionDlg.Show);
         }
     }

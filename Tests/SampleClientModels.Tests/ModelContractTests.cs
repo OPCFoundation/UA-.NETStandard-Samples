@@ -62,11 +62,27 @@ namespace Opc.Ua.Samples.Tests
         };
 
         /// <summary>
+        /// The clients which keep their logic in a Model namespace without building it on
+        /// <see cref="SampleClientModel"/>.
+        /// </summary>
+        /// <remarks>
+        /// The base class is about a session which a connect control hands over. The Global
+        /// Discovery Client has no such session: it works through the GDS, push configuration
+        /// and discovery clients of the stack, which the container hands it. Its models are
+        /// still models, and the rule below is still theirs.
+        /// </remarks>
+        private static readonly Type[] s_clientsWithoutSessionModels =
+        {
+            typeof(Opc.Ua.Gds.Client.MainForm),
+        };
+
+        /// <summary>
         /// Every type in a Model namespace of a sample client.
         /// </summary>
         public static IEnumerable<Type> ModelTypes()
         {
             return s_clientMainForms
+                .Concat(s_clientsWithoutSessionModels)
                 .Select(form => form.Assembly)
                 .Distinct()
                 .SelectMany(assembly => assembly.GetTypes())

@@ -47,6 +47,8 @@
     <ProjectReference Include="..\..\Workshop\StateMachines\Client\StateMachines Client.csproj" />
     <ProjectReference Include="..\..\Workshop\UserAuthentication\Client\UserAuthentication Client.csproj" />
     <ProjectReference Include="..\..\Workshop\Views\Client\Views Client.csproj" />
+    <!-- not a Workshop client, but its Model namespace is under the same rule -->
+    <ProjectReference Include="..\..\Samples\GDS\Client\GlobalDiscoveryClient.csproj" />
   </ItemGroup>
 
 </Project>

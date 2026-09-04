@@ -62,7 +62,9 @@ namespace Quickstarts.UserAuthenticationClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "Quickstarts.UserAuthenticationClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddUserAuthenticationClient(),
                 ExceptionDlg.Show);
         }
     }

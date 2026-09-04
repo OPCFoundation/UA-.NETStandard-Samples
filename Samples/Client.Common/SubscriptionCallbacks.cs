@@ -20,10 +20,11 @@ namespace Opc.Ua.Samples.Client
     /// </summary>
     /// <remarks>
     /// The engine takes the handler when the subscription is created and never hands it
-    /// back, so a model creates one of these up front, keeps it for its whole lifetime and
+    /// back, so a caller creates one of these up front, keeps it for its whole lifetime and
     /// points the delegates at its own methods. Those methods run on a publish worker of
-    /// the engine, not on the thread of the window; a model turns what they deliver into
-    /// events, which its base class posts to the thread the model was created on.
+    /// the engine, not on the thread of a window: a model turns what they deliver into
+    /// events, which its base class posts to the thread the model was created on, and a
+    /// control marshals them itself.
     /// </remarks>
     public sealed class SubscriptionCallbacks : ISubscriptionNotificationHandler
     {

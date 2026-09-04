@@ -62,7 +62,9 @@ namespace Quickstarts.DataTypes
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "DataTypesClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddDataTypesClient(),
                 ExceptionDlg.Show);
         }
     }

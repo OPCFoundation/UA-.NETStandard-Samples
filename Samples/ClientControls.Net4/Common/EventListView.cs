@@ -40,6 +40,7 @@ using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.MonitoredItems;
 using System.Threading;
 using System.Threading.Tasks;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Client.Controls
 {

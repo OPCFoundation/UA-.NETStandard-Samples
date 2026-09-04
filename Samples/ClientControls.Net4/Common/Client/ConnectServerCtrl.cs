@@ -34,13 +34,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
-using Opc.Ua.Client.ComplexTypes;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A tool bar used to connect to a server.
     /// </summary>
+    /// <remarks>
+    /// The control is the window half of a connection: it holds the url and the security
+    /// flag a person edits, shows what the connection reports in a status strip, and asks
+    /// about a certificate which did not validate. Everything else - discovery, the
+    /// session, the reconnect, the bounded close - belongs to the
+    /// <see cref="SampleConnection"/> behind it, which has no window and which the
+    /// headless tests use directly.
+    /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
     public partial class ConnectServerCtrl : UserControl
     {
@@ -51,17 +59,25 @@ namespace Opc.Ua.Client.Controls
         public ConnectServerCtrl()
         {
             InitializeComponent();
-            m_CertificateValidation = CertificateValidator_CertificateValidation;
-            m_endpoints = new Dictionary<Uri, EndpointDescription>();
+
+            m_connection = new SampleConnection {
+                CertificateValidation = CertificateValidator_CertificateValidation,
+            };
+
+            m_connection.StatusChanged += Connection_StatusChanged;
+            m_connection.ConnectComplete += Connection_ConnectComplete;
+            m_connection.KeepAlive += Connection_KeepAlive;
+            m_connection.ReconnectStarting += Connection_ReconnectStarting;
+            m_connection.ReconnectComplete += Connection_ReconnectComplete;
         }
         #endregion
 
         #region Private Fields
+        // the connection is released with the session it holds; there is nothing else in
+        // it to dispose, and the control has no Dispose of its own to release it from.
+        private readonly SampleConnection m_connection;
         private ITelemetryContext m_telemetry;
         private ILogger m_logger;
-        private ApplicationConfiguration m_configuration;
-        private ISession m_session;
-        private Func<Opc.Ua.Security.Certificates.Certificate, ServiceResult, bool> m_CertificateValidation;
         private EventHandler m_ReconnectComplete;
         private EventHandler m_ReconnectStarting;
         private EventHandler m_KeepAliveComplete;
@@ -72,15 +88,14 @@ namespace Opc.Ua.Client.Controls
 #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private ToolStripItem m_StatusUpateTimeLB;
 #pragma warning restore CA2213
-        private Dictionary<Uri, EndpointDescription> m_endpoints;
         #endregion
 
         #region Public Members
         /// <summary>
         /// Default session values.
         /// </summary>
-        public static readonly uint DefaultSessionTimeout = 60000;
-        public static readonly int DefaultDiscoverTimeout = 15000;
+        public static readonly uint DefaultSessionTimeout = SampleConnection.DefaultSessionTimeout;
+        public static readonly int DefaultDiscoverTimeout = SampleConnection.DefaultDiscoverTimeout;
         public static readonly int DefaultReconnectPeriod = 1;
         public static readonly int DefaultReconnectPeriodExponentialBackOff = 10;
 
@@ -122,28 +137,30 @@ namespace Opc.Ua.Client.Controls
         public ToolStripItem StatusUpateTimeControl { get => m_StatusUpateTimeLB; set => m_StatusUpateTimeLB = value; }
 
         /// <summary>
+        /// The connection behind the control, for a caller which wants the session
+        /// without the tool bar.
+        /// </summary>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public SampleConnection Connection => m_connection;
+
+        /// <summary>
         /// The name of the session to create.
         /// </summary>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public string SessionName { get; set; }
+        public string SessionName { get => m_connection.SessionName; set => m_connection.SessionName = value; }
 
         /// <summary>
         /// Gets or sets a flag indicating that the domain checks should be ignored when connecting.
         /// </summary>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public bool DisableDomainCheck { get; set; }
+        public bool DisableDomainCheck { get => m_connection.DisableDomainCheck; set => m_connection.DisableDomainCheck = value; }
 
         /// <summary>
         /// Gets the cached EndpointDescription for a Url.
         /// </summary>
         public EndpointDescription GetEndpointDescription(Uri url)
         {
-            EndpointDescription endpointDescription;
-            if (m_endpoints.TryGetValue(url, out endpointDescription))
-            {
-                return endpointDescription;
-            }
-            return null;
+            return m_connection.GetEndpointDescription(url);
         }
 
         /// <summary>
@@ -185,13 +202,15 @@ namespace Opc.Ua.Client.Controls
         /// The locales to use when creating the session.
         /// </summary>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public string[] PreferredLocales { get; set; }
+        #pragma warning disable CA1819 // Justification: sample public API shape is preserved by design.
+        public string[] PreferredLocales { get => m_connection.PreferredLocales; set => m_connection.PreferredLocales = value; }
+        #pragma warning restore CA1819
 
         /// <summary>
         /// The user identity to use when creating the session.
         /// </summary>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public IUserIdentity UserIdentity { get; set; }
+        public IUserIdentity UserIdentity { get => m_connection.UserIdentity; set => m_connection.UserIdentity = value; }
 
         /// <summary>
         /// The client application configuration.
@@ -200,39 +219,22 @@ namespace Opc.Ua.Client.Controls
         public ApplicationConfiguration Configuration
         #pragma warning restore WFO1000
         {
-            get => m_configuration;
-
-            set
-            {
-                if (!Object.ReferenceEquals(m_configuration, value))
-                {
-                    if (m_configuration != null)
-                    {
-                        m_configuration.CertificateManager.AcceptError = null;
-                    }
-
-                    m_configuration = value;
-
-                    if (m_configuration != null)
-                    {
-                        m_configuration.CertificateManager.AcceptError = m_CertificateValidation;
-                    }
-                }
-            }
+            get => m_connection.Configuration;
+            set => m_connection.Configuration = value;
         }
 
         /// <summary>
         /// The currently active session.
         /// </summary>
-        public ISession Session => m_session;
+        public ISession Session => m_connection.Session;
 
         /// <summary>
         /// The number of seconds between reconnect attempts (0 means reconnect is disabled).
         /// </summary>
         /// <remarks>
         /// Kept for source compatibility. The reconnect is now driven by the reconnect policy
-        /// of the <see cref="ManagedSession"/> the control creates, which this value no longer
-        /// feeds into.
+        /// of the <see cref="ManagedSession"/> the connection creates, which this value no
+        /// longer feeds into.
         /// </remarks>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public int ReconnectPeriod { get; set; } = DefaultReconnectPeriod;
@@ -241,13 +243,13 @@ namespace Opc.Ua.Client.Controls
         /// The discover timeout in ms.
         /// </summary>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public int DiscoverTimeout { get; set; } = DefaultDiscoverTimeout;
+        public int DiscoverTimeout { get => m_connection.DiscoverTimeout; set => m_connection.DiscoverTimeout = value; }
 
         /// <summary>
         /// The session timeout in ms.
         /// </summary>
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public uint SessionTimeout { get; set; } = DefaultSessionTimeout;
+        public uint SessionTimeout { get => m_connection.SessionTimeout; set => m_connection.SessionTimeout = value; }
 
         /// <summary>
         /// Raised when a good keep alive from the server arrives.
@@ -317,109 +319,11 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Creates a new session.
         /// </summary>
-        /// <returns>The new session object.</returns>
-        private async Task<ISession> ConnectInternalAsync(
-            ITransportWaitingConnection connection,
-            EndpointDescription endpointDescription,
-            bool useSecurity,
-            ITelemetryContext telemetry,
-            uint sessionTimeout = 0,
-            CancellationToken ct = default)
-        {
-            m_telemetry = telemetry;
-            m_logger = telemetry.CreateLogger<ConnectServerCtrl>();
-
-            // disconnect from existing session.
-            await InternalDisconnectAsync(ct);
-
-            // select the best endpoint.
-            if (endpointDescription == null)
-            {
-                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, DiscoverTimeout, telemetry, ct);
-            }
-
-            EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
-            ConfiguredEndpoint endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
-
-            // the managed session brings its own connection state machine and reconnect policy,
-            // so no SessionReconnectHandler is wired up here.
-            m_session = await new ManagedSessionFactory(telemetry).CreateAsync(m_configuration, connection, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout, UserIdentity, PreferredLocales, ct);
-
-            // set up keep alive and connection state callbacks.
-            AttachSession();
-
-            // raise an event.
-            DoConnectComplete(null);
-
-            try
-            {
-                UpdateStatus(false, DateTime.Now, "Connected, loading complex type system.");
-                var typeSystemLoader = ComplexTypeSystemClientExtensions.Create(m_session, m_telemetry);
-                await typeSystemLoader.LoadAsync(ct: ct);
-            }
-            catch (Exception e)
-            {
-                UpdateStatus(true, DateTime.Now, "Connected, failed to load complex type system.");
-                m_logger.LogWarning(e, "Failed to load complex type system.");
-            }
-
-            // return the new session.
-            return m_session;
-        }
-
-        /// <summary>
-        /// Creates a new session.
-        /// </summary>
-        /// <returns>The new session object.</returns>
-        private async Task<ISession> ConnectInternalAsync(
-            string serverUrl,
-            bool useSecurity,
-            ITelemetryContext telemetry,
-            uint sessionTimeout = 0,
-            CancellationToken ct = default)
-        {
-            m_telemetry = telemetry;
-            m_logger = telemetry.CreateLogger<ConnectServerCtrl>();
-
-            // disconnect from existing session.
-            await InternalDisconnectAsync(ct);
-
-            // select the best endpoint.
-            var endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, serverUrl, useSecurity, DiscoverTimeout, telemetry, ct);
-            var endpointConfiguration = EndpointConfiguration.Create(m_configuration);
-            var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
-
-            // the managed session brings its own connection state machine and reconnect policy,
-            // so no SessionReconnectHandler is wired up here.
-            m_session = await new ManagedSessionFactory(telemetry).CreateAsync(m_configuration, endpoint, false, !DisableDomainCheck, (String.IsNullOrEmpty(SessionName)) ? m_configuration.ApplicationName : SessionName, sessionTimeout == 0 ? DefaultSessionTimeout : sessionTimeout, UserIdentity, PreferredLocales, ct);
-
-            // set up keep alive and connection state callbacks.
-            AttachSession();
-
-            // raise an event.
-            DoConnectComplete(null);
-
-            try
-            {
-                UpdateStatus(false, DateTime.Now, "Connected, loading complex type system.");
-                var typeSystemLoader = ComplexTypeSystemClientExtensions.Create(m_session, m_telemetry);
-                await typeSystemLoader.LoadAsync(ct: ct);
-            }
-            catch (Exception e)
-            {
-                UpdateStatus(true, DateTime.Now, "Connected, failed to load complex type system.");
-                m_logger.LogError(e, "Failed to load complex type system.");
-            }
-
-            // return the new session.
-            return m_session;
-        }
-
-        /// <summary>
-        /// Creates a new session.
-        /// </summary>
-        /// <param name="serverUrl">The URL of a server endpoint.</param>
-        /// <param name="useSecurity">Whether to use security.</param>
+        /// <param name="telemetry">The telemetry context of the client.</param>
+        /// <param name="serverUrl">The URL of a server endpoint, or null for the one shown.</param>
+        /// <param name="useSecurity">Whether to use security. Ignored when the url is null.</param>
+        /// <param name="sessionTimeout">The session timeout in ms, or zero for the default.</param>
+        /// <param name="ct">The cancellation token.</param>
         /// <returns>The new session object.</returns>
         public Task<ISession> ConnectAsync(
             ITelemetryContext telemetry,
@@ -432,13 +336,7 @@ namespace Opc.Ua.Client.Controls
         {
             if (serverUrl == null)
             {
-                serverUrl = UrlCB.Text;
-
-                if (UrlCB.SelectedIndex >= 0)
-                {
-                    serverUrl = (string)UrlCB.SelectedItem;
-                }
-
+                serverUrl = ServerUrl;
                 useSecurity = UseSecurityCK.Checked;
             }
             else
@@ -447,17 +345,22 @@ namespace Opc.Ua.Client.Controls
                 UseSecurityCK.Checked = useSecurity;
             }
 
-            UpdateStatus(false, DateTime.Now, "Connecting [{0}]", serverUrl);
+            m_telemetry = telemetry;
+            m_logger = telemetry?.CreateLogger<ConnectServerCtrl>();
 
-            return ConnectInternalAsync(serverUrl, useSecurity, telemetry, sessionTimeout, ct);
+            return m_connection.ConnectAsync(serverUrl, useSecurity, telemetry, sessionTimeout, ct);
         }
 
         /// <summary>
         /// Create a new reverse connection.
         /// </summary>
-        /// <param name="connection"></param>
-        /// <param name="useSecurity"></param>
-        public async Task<ISession> ConnectAsync(
+        /// <param name="connection">The connection the server opened.</param>
+        /// <param name="useSecurity">Whether to use security.</param>
+        /// <param name="telemetry">The telemetry context of the client.</param>
+        /// <param name="discoverTimeout">The discovery timeout in ms, or -1 for the default.</param>
+        /// <param name="sessionTimeout">The session timeout in ms, or zero for the default.</param>
+        /// <param name="ct">The cancellation token.</param>
+        public Task<ISession> ConnectAsync(
             ITransportWaitingConnection connection,
             bool useSecurity,
             ITelemetryContext telemetry,
@@ -465,46 +368,38 @@ namespace Opc.Ua.Client.Controls
             uint sessionTimeout = 0,
             CancellationToken ct = default)
         {
+            ArgumentNullException.ThrowIfNull(connection);
+
             if (connection.EndpointUrl == null)
             {
-                throw new ArgumentException("Endpoint URL is not valid.");
+                throw new ArgumentException("Endpoint URL is not valid.", nameof(connection));
             }
 
             UrlCB.Text = connection.EndpointUrl.ToString();
             UseSecurityCK.Checked = useSecurity;
 
-            EndpointDescription endpointDescription = null;
+            m_telemetry = telemetry;
+            m_logger = telemetry?.CreateLogger<ConnectServerCtrl>();
 
-            if (!m_endpoints.TryGetValue(connection.EndpointUrl, out endpointDescription))
-            {
-                // Discovery uses the reverse connection and closes it
-                // return and wait for next reverse hello
-                endpointDescription = await CoreClientUtils.SelectEndpointAsync(m_configuration, connection, useSecurity, discoverTimeout, telemetry, ct);
-                m_endpoints[connection.EndpointUrl] = endpointDescription;
-                return null;
-            }
-
-            return await ConnectInternalAsync(connection, endpointDescription, UseSecurityCK.Checked, telemetry, sessionTimeout, ct);
+            // the security of the session follows the check box, the way it always has:
+            // the discovery of the first reverse hello is what the argument steers.
+            return m_connection.ConnectAsync(
+                connection,
+                UseSecurityCK.Checked,
+                telemetry,
+                discoverTimeout,
+                sessionTimeout,
+                ct);
         }
 
         /// <summary>
         /// Disconnects from the server.
         /// </summary>
+        /// <param name="ct">The cancellation token.</param>
         public Task DisconnectAsync(CancellationToken ct = default)
         {
             UpdateStatus(false, DateTime.UtcNow, "Disconnected");
-            return Task.Run(() => InternalDisconnectAsync(), ct);
-        }
-
-        /// <summary>
-        /// Disconnects from the server and reports it.
-        /// </summary>
-        private async Task InternalDisconnectAsync(CancellationToken ct = default)
-        {
-            await CloseSessionAsync(ct).ConfigureAwait(false);
-
-            // raise an event.
-            DoConnectComplete(null);
+            return m_connection.DisconnectAsync(ct);
         }
 
         /// <summary>
@@ -513,51 +408,13 @@ namespace Opc.Ua.Client.Controls
         /// <remarks>
         /// The synchronous entry point exists for the callers which cannot await: the
         /// Disconnect menu item of the samples, and their FormClosing handler, which the
-        /// event signature keeps synchronous. Both run on the UI thread.
+        /// event signature keeps synchronous. Both run on the UI thread, and the
+        /// connection reports the completion on that same thread rather than marshalling
+        /// it - a form which is already on its way out would never see a marshalled one.
         /// </remarks>
         public void Disconnect()
         {
-            UpdateStatus(false, DateTime.UtcNow, "Disconnected");
-
-            // Waiting for the close on the calling thread only works if the close does not
-            // need that thread to finish. Awaited here, it would: closing a session goes to
-            // the server, and the continuation of that await is posted back to the message
-            // loop which this very call is blocking, so neither side would ever move again.
-            // Task.Run puts the close on a thread pool thread, where there is no
-            // synchronization context to post back to, and the wait can complete.
-            Task.Run(() => CloseSessionAsync()).GetAwaiter().GetResult();
-
-            // reported here, on the thread of the caller, rather than from inside the task:
-            // the samples clear their display from this event and their FormClosing handler
-            // is already on the way out, so an event which is only marshalled back would
-            // arrive at a form which has gone. DoConnectComplete sees no marshalling is
-            // needed and raises it directly.
-            DoConnectComplete(null);
-        }
-
-        /// <summary>
-        /// Closes and releases the session of the control, without reporting it.
-        /// </summary>
-        /// <remarks>
-        /// Closing the managed session also stops its connection state machine, so there is
-        /// no separate reconnect handler to cancel. The close is bounded: a session which is
-        /// in the middle of a reconnect attempt against a server that is gone cannot close
-        /// until that attempt has run out, and the sample must not wait for that. See
-        /// ClientUtils.CloseAndDisposeAsync.
-        ///
-        /// Nothing here touches the controls, so it is safe to run off the UI thread.
-        /// </remarks>
-        private async Task CloseSessionAsync(CancellationToken ct = default)
-        {
-            if (m_session != null)
-            {
-                DetachSession();
-
-                ISession session = m_session;
-                m_session = null;
-
-                await ClientUtils.CloseAndDisposeAsync(session, ct).ConfigureAwait(false);
-            }
+            m_connection.Disconnect();
         }
 
         /// <summary>
@@ -566,7 +423,7 @@ namespace Opc.Ua.Client.Controls
         public void Discover(string hostName)
         {
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            string endpointUrl = new DiscoverServerDlg().ShowDialog(m_configuration, hostName, m_telemetry);
+            string endpointUrl = new DiscoverServerDlg().ShowDialog(Configuration, hostName, m_telemetry);
             #pragma warning restore CA2000
 
             if (endpointUrl != null)
@@ -577,32 +434,6 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Methods
-        /// <summary>
-        /// Subscribes to the session events the control reports on.
-        /// </summary>
-        private void AttachSession()
-        {
-            m_session.KeepAlive += Session_KeepAlive;
-
-            if (m_session is ManagedSession managedSession)
-            {
-                managedSession.ConnectionStateChanged += Session_ConnectionStateChanged;
-            }
-        }
-
-        /// <summary>
-        /// Unsubscribes from the session events the control reports on.
-        /// </summary>
-        private void DetachSession()
-        {
-            m_session.KeepAlive -= Session_KeepAlive;
-
-            if (m_session is ManagedSession managedSession)
-            {
-                managedSession.ConnectionStateChanged -= Session_ConnectionStateChanged;
-            }
-        }
-
         /// <summary>
         /// Raises the connect complete event on the main GUI thread.
         /// </summary>
@@ -617,32 +448,6 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 m_ConnectComplete(this, null);
-            }
-        }
-
-        /// <summary>
-        /// Finds the endpoint that best matches the current settings.
-        /// </summary>
-        private async Task<EndpointDescription> SelectEndpointAsync(ITelemetryContext telemetry, CancellationToken ct = default)
-        {
-            try
-            {
-                Cursor = Cursors.WaitCursor;
-
-                // determine the URL that was selected.
-                string discoveryUrl = UrlCB.Text;
-
-                if (UrlCB.SelectedIndex >= 0)
-                {
-                    discoveryUrl = (string)UrlCB.SelectedItem;
-                }
-
-                // return the selected endpoint.
-                return await CoreClientUtils.SelectEndpointAsync(m_configuration, discoveryUrl, UseSecurityCK.Checked, DiscoverTimeout, telemetry, ct);
-            }
-            finally
-            {
-                Cursor = Cursors.Default;
             }
         }
         #endregion
@@ -678,36 +483,79 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Handles a keep alive event from a session.
+        /// Shows what the connection reports in the status strip.
         /// </summary>
-        private void Session_KeepAlive(ISession session, KeepAliveEventArgs e)
+        private void Connection_StatusChanged(object sender, SampleConnectionStatusEventArgs e)
+        {
+            // the message is already formatted, so it is passed as a literal: a status
+            // which happens to contain a brace must not be formatted a second time.
+            UpdateStatus(e.IsError, e.Time, "{0}", e.Message);
+        }
+
+        /// <summary>
+        /// Reports a connect or a disconnect to the window.
+        /// </summary>
+        private void Connection_ConnectComplete(object sender, EventArgs e)
+        {
+            DoConnectComplete(null);
+        }
+
+        /// <summary>
+        /// Reports a keep alive to the window.
+        /// </summary>
+        private void Connection_KeepAlive(object sender, KeepAliveEventArgs e)
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke(new KeepAliveEventHandler(Session_KeepAlive), session, e);
+                this.BeginInvoke(new EventHandler<KeepAliveEventArgs>(Connection_KeepAlive), sender, e);
                 return;
             }
 
             try
             {
-                // check for events from discarded sessions.
-                if (!Object.ReferenceEquals(session, m_session))
-                {
-                    return;
-                }
-
-                // the managed session starts the reconnect sequence itself, this only reports it.
-                if (ServiceResult.IsBad(e.Status))
-                {
-                    UpdateStatus(true, e.CurrentTime, "Communication Error ({0})", e.Status);
-                    return;
-                }
-
-                // update status.
-                UpdateStatus(false, e.CurrentTime, "Connected [{0}]", session.Endpoint.EndpointUrl);
-
-                // raise any additional notifications.
                 m_KeepAliveComplete?.Invoke(this, e);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_logger, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Reports the start of a reconnect to the window.
+        /// </summary>
+        private void Connection_ReconnectStarting(object sender, EventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new EventHandler(Connection_ReconnectStarting), sender, e);
+                return;
+            }
+
+            try
+            {
+                m_ReconnectStarting?.Invoke(this, e);
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_logger, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Reports the completion of a reconnect to the window.
+        /// </summary>
+        private void Connection_ReconnectComplete(object sender, EventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new EventHandler(Connection_ReconnectComplete), sender, e);
+                return;
+            }
+
+            try
+            {
+                m_ReconnectComplete?.Invoke(this, e);
             }
             catch (Exception exception)
             {
@@ -720,22 +568,11 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private async void Server_ConnectMI_Click(object sender, EventArgs e)
         {
-            string serverUrl = UrlCB.Text;
-
-            if (UrlCB.SelectedIndex >= 0)
-            {
-                serverUrl = (string)UrlCB.SelectedItem;
-            }
-
-            bool useSecurity = UseSecurityCK.Checked;
-
-            UpdateStatus(false, DateTime.Now, "Connecting [{0}]", serverUrl);
-
             try
             {
                 // Await directly so that continuations resume on the UI thread's
                 // SynchronizationContext, keeping all control access thread-safe.
-                await this.ConnectAsync(m_telemetry, serverUrl, useSecurity);
+                await this.ConnectAsync(m_telemetry, ServerUrl, UseSecurityCK.Checked);
             }
             catch (ServiceResultException sre)
             {
@@ -759,67 +596,6 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Handles the connection state changes reported by the managed session.
-        /// </summary>
-        /// <remarks>
-        /// The managed session keeps the same <see cref="ISession"/> instance across a
-        /// reconnect, so the control only has to report the transitions - there is no
-        /// session to swap out as there was with the SessionReconnectHandler.
-        /// </remarks>
-        private void Session_ConnectionStateChanged(object sender, ConnectionStateChangedEventArgs e)
-        {
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new EventHandler<ConnectionStateChangedEventArgs>(Session_ConnectionStateChanged), sender, e);
-                return;
-            }
-
-            try
-            {
-                // ignore callbacks from discarded sessions. The event may be raised by the
-                // session or by the connection state machine behind it, so only a sender which
-                // is a session is worth comparing.
-                if (m_session == null || (sender is ISession sessionOfEvent && !Object.ReferenceEquals(sessionOfEvent, m_session)))
-                {
-                    return;
-                }
-
-                switch (e.NewState)
-                {
-                    case ConnectionState.Reconnecting:
-                    case ConnectionState.Failover:
-                    {
-                        UpdateStatus(true, DateTime.UtcNow, "Reconnecting (attempt {0})", e.ReconnectAttempt);
-                        m_ReconnectStarting?.Invoke(this, e);
-                        break;
-                    }
-
-                    case ConnectionState.Connected:
-                    {
-                        UpdateStatus(false, DateTime.UtcNow, "Connected [{0}]", m_session.Endpoint.EndpointUrl);
-
-                        if (e.PreviousState is ConnectionState.Reconnecting or ConnectionState.Failover)
-                        {
-                            m_ReconnectComplete?.Invoke(this, e);
-                        }
-
-                        break;
-                    }
-
-                    case ConnectionState.Disconnected:
-                    {
-                        UpdateStatus(true, DateTime.UtcNow, "Disconnected ({0})", e.Error);
-                        break;
-                    }
-                }
-            }
-            catch (Exception exception)
-            {
-                ClientUtils.HandleException(m_logger, this.Text, exception);
-            }
-        }
-
-        /// <summary>
         /// Handles a certificate validation error.
         /// </summary>
         private bool CertificateValidator_CertificateValidation(Opc.Ua.Security.Certificates.Certificate certificate, ServiceResult error)
@@ -831,12 +607,7 @@ namespace Opc.Ua.Client.Controls
 
             try
             {
-                if (!m_configuration.SecurityConfiguration.AutoAcceptUntrustedCertificates)
-                {
-                    return GuiUtils.HandleCertificateValidationError(this.FindForm(), certificate, error);
-                }
-
-                return true;
+                return GuiUtils.HandleCertificateValidationError(this.FindForm(), certificate, error);
             }
             catch (Exception exception)
             {
