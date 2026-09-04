@@ -39,22 +39,26 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class HistoryReadDlg : Form
+    public partial class HistoryReadDlg : SampleForm
     {
         #region Constructors
-        public HistoryReadDlg()
+        public HistoryReadDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
+        private readonly ITelemetryContext m_telemetry;
         private ISession m_session;
         #endregion
 
@@ -62,14 +66,14 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(ISession session, IList<ReadValueId> valueIds, ITelemetryContext telemetry)
+        public void Show(ISession session, IList<ReadValueId> valueIds)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
             m_session = session;
 
-            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, telemetry);
-            ReadValuesCTRL.Initialize(session, valueIds, telemetry);
+            BrowseCTRL.SetViewAsync(m_session, BrowseViewType.Objects, NodeId.Null, m_telemetry);
+            ReadValuesCTRL.Initialize(session, valueIds, m_telemetry);
 
             MoveBTN_ClickAsync(BackBTN, null);
 

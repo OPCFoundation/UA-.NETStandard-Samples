@@ -17,12 +17,9 @@ static void Main(string[] args)
     Application.EnableVisualStyles();
     Application.SetCompatibleTextRenderingDefault(false);
 
-    ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
-    SampleWinFormsHost.Run(
+    SampleWinFormsHost.Run<ServerForm>(
         args,
         services => services.AddBoilerServer(),
-        ServerForm.Create,
         ExceptionDlg.Show);
 }
 ```
@@ -229,10 +226,18 @@ the user interface thread through the Windows Forms synchronization context. Tha
 thread a single threaded apartment - which the common dialogs, drag and drop and the clipboard
 need - without a blocking wait in the entry point of the sample.
 
-The main form is created by the container, either by type
-(`ActivatorUtilities.CreateInstance<TMainForm>`) or through a factory - `ServerForm.Create`
-for the server samples, whose shared form takes the running `StandardServer` and the loaded
-configuration.
+The main form is created by the container - `Run<TMainForm>` resolves it through the window
+factory - and so is every dialog it opens. A server sample shows the shared `ServerForm`,
+which takes the running `StandardServer`, the loaded configuration and a `ServerFormOptions`
+saying whether it asks the user about an untrusted certificate; a sample which wants
+something other than the defaults says so where it registers its server rather than passing
+flags to a form factory of its own. See
+[`Samples/WinForms.Common`](../WinForms.Common/README.md) for the factory itself and for how
+the controls the designer created are handed it.
+
+`Run` also installs the message box the stack asks its questions through - whether to create
+a certificate, for instance - from the container, so no `Main` sets
+`ApplicationInstance.MessageDlg` itself.
 
 Because the form is built by the container, a sample which needs a client of the stack lets the
 stack register it rather than constructing it. The Global Discovery Client is the one that does:
@@ -241,7 +246,9 @@ stack register it rather than constructing it. The Global Discovery Client is th
 `GlobalDiscoveryServerClient`, the `ServerPushConfigurationClient` and the
 `LocalDiscoveryServerClient` as constructor parameters. Which session those clients open is then
 one registration rather than three `new` expressions in a form constructor - and the container,
-not the form, owns their lifetime.
+not the form, owns their lifetime. The same is true of what a window opens: the reference
+client asks the container for the reverse connect listener its Server menu arms
+(`AddReferenceClient()`), instead of building one out of its own fields.
 
 ## The client models
 

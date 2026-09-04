@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -56,7 +57,7 @@ namespace Opc.Ua.Sample.Controls
     /// leaves the links other items hold alone.
     /// </para>
     /// </remarks>
-    public partial class SetTriggeringDlg : Form
+    public partial class SetTriggeringDlg : SampleForm
     {
         private MonitoredItemHandle[] m_candidates;
 

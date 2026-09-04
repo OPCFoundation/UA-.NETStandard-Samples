@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Opc.Ua.Configuration;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Samples.Hosting
 {
@@ -44,18 +46,18 @@ namespace Opc.Ua.Samples.Hosting
             => Run(
                 args,
                 configureServices,
-                provider => ActivatorUtilities.CreateInstance<TMainForm>(provider),
+                provider => provider.GetRequiredService<IWindowFactory>().Create<TMainForm>(),
                 showException);
 
         /// <summary>
-        /// Runs a sample whose main form needs arguments the container does not know,
-        /// for example a flag read from the configuration of the sample.
+        /// Builds the host, starts it on the user interface thread and shows the main
+        /// form the container created.
         /// </summary>
         /// <param name="args">The command line of the sample.</param>
         /// <param name="configureServices">The registrations of the sample.</param>
         /// <param name="createMainForm">Creates the main form from the container.</param>
         /// <param name="showException">Reports a startup failure to the user.</param>
-        public static void Run(
+        private static void Run(
             string[] args,
             Action<IServiceCollection> configureServices,
             Func<IServiceProvider, Form> createMainForm,
@@ -66,6 +68,10 @@ namespace Opc.Ua.Samples.Hosting
             ArgumentNullException.ThrowIfNull(showException);
 
             HostApplicationBuilder builder = SampleHost.CreateBuilder(args);
+
+            // the forms of the sample create the dialogs they open from the container.
+            builder.Services.AddSampleWindows();
+
             configureServices(builder.Services);
 
             IHost host = builder.Build();
@@ -127,6 +133,10 @@ namespace Opc.Ua.Samples.Hosting
         {
             try
             {
+                // the stack asks its questions - whether to create a certificate, for
+                // example - through the message box the container registered.
+                ApplicationInstance.MessageDlg = host.Services.GetRequiredService<IApplicationMessageDlg>();
+
                 await host.StartAsync().ConfigureAwait(true);
 
                 Form mainForm = createMainForm(host.Services);

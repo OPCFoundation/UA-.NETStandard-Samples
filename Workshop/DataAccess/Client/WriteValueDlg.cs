@@ -33,6 +33,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.DataAccessClient
 {
@@ -43,22 +44,24 @@ namespace Quickstarts.DataAccessClient
     /// The dialog knows nothing about the session: it is given the current value, so it
     /// can convert the text to the same type, and a delegate which does the write.
     /// </remarks>
-    public partial class WriteValueDlg : Form
+    public partial class WriteValueDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public WriteValueDlg()
+        public WriteValueDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private DataValue m_value;
         private Func<Variant, CancellationToken, Task<StatusCode>> m_write;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -67,17 +70,13 @@ namespace Quickstarts.DataAccessClient
         /// </summary>
         /// <param name="current">The current value, whose type the new one has to have.</param>
         /// <param name="write">Writes the new value and returns the status the server answered.</param>
-        /// <param name="telemetry">The telemetry context of the client, for error reporting.</param>
         /// <returns>True if successful. False if the operation was cancelled.</returns>
         public bool ShowDialog(
             DataValue current,
-            Func<Variant, CancellationToken, Task<StatusCode>> write,
-            ITelemetryContext telemetry)
+            Func<Variant, CancellationToken, Task<StatusCode>> write)
         {
             m_value = current;
             m_write = write ?? throw new ArgumentNullException(nameof(write));
-            m_telemetry = telemetry;
-
             ValueTB.Text = Utils.Format("{0}", m_value.WrappedValue);
 
             // display the dialog.

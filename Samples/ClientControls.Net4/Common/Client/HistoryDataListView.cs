@@ -42,6 +42,7 @@ using Opc.Ua.Client.Historian;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.MonitoredItems;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -53,7 +54,7 @@ namespace Opc.Ua.Client.Controls
     /// Displays the results from a history read operation.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
-    public partial class HistoryDataListView : UserControl
+    public partial class HistoryDataListView : SampleUserControl
     {
         /// <summary>
         /// How long the control waits for the subscription engine to apply a monitored item change.
@@ -696,9 +697,7 @@ namespace Opc.Ua.Client.Controls
             {
                 if (m_configuration != null)
                 {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    await new ViewNodeStateDlg().ShowDialogAsync(m_session, m_configuration, null, ct);
-                    #pragma warning restore CA2000
+                    await Windows.Create<ViewNodeStateDlg>().ShowDialogAsync(m_session, m_configuration, null, ct);
                 }
             }
         }
@@ -1345,9 +1344,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
-                #pragma warning restore CA2000
+                ReferenceDescription reference = await Windows.Create<SelectNodeDlg>().ShowDialogAsync(
                     m_session,
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     null,
@@ -1942,9 +1939,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                Annotation annotation = new EditAnnotationDlg().ShowDialog(m_session, null, null);
-                #pragma warning restore CA2000
+                Annotation annotation = Windows.Create<EditAnnotationDlg>().ShowDialog(m_session, null, null);
 
                 if (annotation == null)
                 {
@@ -1988,9 +1983,7 @@ namespace Opc.Ua.Client.Controls
                     DataRowView source = row.DataBoundItem as DataRowView;
                     DataValue value = (DataValue)source.Row[9];
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    Variant newValue = new EditDataValueDlg().ShowDialog(value.WrappedValue, null, null);
-                    #pragma warning restore CA2000
+                    Variant newValue = Windows.Create<EditDataValueDlg>().ShowDialog(value.WrappedValue, null);
 
                     if (newValue.IsNull)
                     {

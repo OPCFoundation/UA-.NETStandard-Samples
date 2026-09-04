@@ -44,6 +44,7 @@ using System.IO;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading.Tasks;
 using Opc.Ua;
 
@@ -52,7 +53,7 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// Prompts the user to create a new secure channel.
     /// </summary>
-    public partial class PerformanceTestDlg : Form
+    public partial class PerformanceTestDlg : SampleForm
     {
         public PerformanceTestDlg()
         {

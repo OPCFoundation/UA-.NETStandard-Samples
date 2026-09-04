@@ -88,6 +88,11 @@ namespace Opc.Ua.Samples.Tests
             form.Controls.Add(connect);
             form.Controls.Add(subscribe);
 
+            // the controls open their dialogs through the factory their form was handed;
+            // the test builds the form itself, so it hands them one too.
+            using var windows = new TestWindowFactory(configuration);
+            windows.AttachTo(form);
+
             // create the window handle without ever showing the form: the controls marshal their
             // notification callbacks back to the UI thread and need a handle to do so
             _ = form.Handle;

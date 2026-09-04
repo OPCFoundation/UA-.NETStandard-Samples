@@ -38,13 +38,14 @@ using System.Reflection;
 
 using Opc.Ua.Configuration;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays a drop down list of hosts.
     /// </summary>
-    public partial class SelectHostCtrl : UserControl
+    public partial class SelectHostCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -164,9 +165,7 @@ namespace Opc.Ua.Client.Controls
                 if (!m_selectDomains)
                 {
                     // prompt user to select a host.
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    string hostname = new HostListDlg().ShowDialog(m_telemetry, null);
-                    #pragma warning restore CA2000
+                    string hostname = Windows.Create<HostListDlg>().ShowDialog(null);
 
                     if (hostname == null)
                     {

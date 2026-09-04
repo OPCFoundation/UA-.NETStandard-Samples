@@ -38,13 +38,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control with button that displays an open file dialog.
     /// </summary>
-    public partial class SelectNodeCtrl : UserControl
+    public partial class SelectNodeCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -200,9 +201,7 @@ namespace Opc.Ua.Client.Controls
         #region Event Handlers
         private async void BrowseBTN_ClickAsync(object sender, EventArgs e)
         {
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
-            #pragma warning restore CA2000
+            ReferenceDescription reference = await Windows.Create<SelectNodeDlg>().ShowDialogAsync(
                 Session,
                 RootId,
                 View,

@@ -40,10 +40,11 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class ClientForm : Form
+    public partial class ClientForm : SampleForm
     {
         #region Private Fields
         private ISession m_session;
@@ -65,30 +66,39 @@ namespace Opc.Ua.Sample.Controls
             this.Icon = ClientUtils.GetAppIcon();
         }
 
+        /// <summary>
+        /// Creates the window of the sample: the container supplies the application it
+        /// runs on, the configuration it was started with and the telemetry.
+        /// </summary>
+        /// <remarks>
+        /// The message context the sessions of this window are encoded with is derived
+        /// from the configuration here rather than passed in, so a second window opened
+        /// from the Window menu gets one of its own - which is what a window with its own
+        /// sessions should have.
+        /// </remarks>
+        /// <param name="application">The application instance of the sample.</param>
+        /// <param name="configuration">The configuration of the sample.</param>
+        /// <param name="telemetry">The telemetry of the sample.</param>
         public ClientForm(
-            ServiceMessageContext context,
             ApplicationInstance application,
-            ClientForm masterForm,
             ApplicationConfiguration configuration,
             ITelemetryContext telemetry)
         {
+            ArgumentNullException.ThrowIfNull(application);
+            ArgumentNullException.ThrowIfNull(configuration);
+
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
 
-            m_masterForm = masterForm;
-            m_context = context;
+            m_context = configuration.CreateMessageContext();
             m_application = application;
             m_server = application.Server as Opc.Ua.Server.StandardServer;
             m_telemetry = telemetry;
             m_logger = telemetry.CreateLogger<ClientForm>();
-
-            if (m_masterForm == null)
-            {
-                m_forms = new List<ClientForm>();
-            }
+            m_forms = [];
 
             SessionsCTRL.Configuration = m_configuration = configuration;
-            SessionsCTRL.MessageContext = context;
+            SessionsCTRL.MessageContext = m_context;
 
             // get list of cached endpoints.
             m_endpoints = m_configuration.LoadCachedEndpoints(true);
@@ -106,7 +116,8 @@ namespace Opc.Ua.Sample.Controls
         {
             if (m_masterForm == null)
             {
-                ClientForm form = new ClientForm(m_context, m_application, this, m_configuration, m_telemetry);
+                ClientForm form = Windows.Create<ClientForm>();
+                form.m_masterForm = this;
                 m_forms.Add(form);
                 form.FormClosing += new FormClosingEventHandler(Window_FormClosing);
                 form.Show();
@@ -417,9 +428,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                _ = new PerformanceTestDlg().ShowDialog(
-                #pragma warning restore CA2000
+                _ = Windows.Create<PerformanceTestDlg>().ShowDialog(
                     m_configuration,
                     m_endpoints,
                     await m_configuration.CertificateManager.CertificateProvider.GetPrivateKeyCertificateAsync(
@@ -439,9 +448,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                ConfiguredEndpoint endpoint = new ConfiguredServerListDlg().ShowDialog(m_configuration, true, m_telemetry);
-                #pragma warning restore CA2000
+                ConfiguredEndpoint endpoint = Windows.Create<ConfiguredServerListDlg>().ShowDialog(m_configuration, true);
 
                 if (endpoint != null)
                 {
@@ -459,9 +466,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                ServerOnNetwork serverOnNetwork = new DiscoveredServerOnNetworkListDlg().ShowDialog(null, m_configuration, m_telemetry);
-                #pragma warning restore CA2000
+                ServerOnNetwork serverOnNetwork = Windows.Create<DiscoveredServerOnNetworkListDlg>().ShowDialog(null, m_configuration);
 
                 if (serverOnNetwork != null)
                 {

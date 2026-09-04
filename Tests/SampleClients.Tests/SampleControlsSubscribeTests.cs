@@ -12,12 +12,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Configuration;
 using Opc.Ua.Sample.Controls;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Samples.Tests
 {
@@ -91,7 +93,16 @@ namespace Opc.Ua.Samples.Tests
                 .CreateAsync(configuration, endpoint, false, false, "SampleControlsTest", 60_000, null, (string[])null, ct)
                 .ConfigureAwait(true);
 
-            using var dialog = new SubscriptionDlg();
+            // the dialog is created the way the sample creates it: out of a container.
+            var services = new ServiceCollection();
+
+            services.AddSingleton(configuration);
+            services.AddSingleton<ITelemetryContext>(NullTelemetry.Instance);
+            services.AddSampleWindows();
+
+            await using ServiceProvider provider = services.BuildServiceProvider();
+
+            using var dialog = provider.GetRequiredService<IWindowFactory>().Create<SubscriptionDlg>();
 
             try
             {

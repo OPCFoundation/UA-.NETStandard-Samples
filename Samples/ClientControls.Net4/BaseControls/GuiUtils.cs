@@ -38,13 +38,14 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A class that provide various common utility functions and shared resources.
     /// </summary>
-    public partial class GuiUtils : UserControl
+    public partial class GuiUtils : SampleUserControl
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="GuiUtils"/> class.
@@ -374,14 +375,14 @@ namespace Opc.Ua.Client.Controls
         /// Displays a dialog that allows a user to edit a value. Returns false
         /// if the user cancelled the edit.
         /// </summary>
-        public static bool TryEditValue(ISession session, Variant value, ITelemetryContext telemetry, out Variant result)
+        public static bool TryEditValue(IWindowFactory windows, ISession session, Variant value, out Variant result)
         {
             result = Variant.Null;
             TypeInfo typeInfo = value.TypeInfo;
 
             if (!typeInfo.IsUnknown)
             {
-                return TryEditValue(session, value, new NodeId((uint)typeInfo.BuiltInType), typeInfo.ValueRank, telemetry, out result);
+                return TryEditValue(windows, session, value, new NodeId((uint)typeInfo.BuiltInType), typeInfo.ValueRank, out result);
             }
 
             return false;
@@ -391,7 +392,7 @@ namespace Opc.Ua.Client.Controls
         /// Displays a dialog that allows a user to edit a value. Returns false
         /// if the user cancelled the edit.
         /// </summary>
-        public static bool TryEditValue(ISession session, Variant value, NodeId datatypeId, int valueRank, ITelemetryContext telemetry, out Variant result)
+        public static bool TryEditValue(IWindowFactory windows, ISession session, Variant value, NodeId datatypeId, int valueRank, out Variant result)
         {
             result = Variant.Null;
 
@@ -402,9 +403,7 @@ namespace Opc.Ua.Client.Controls
 
             if (valueRank >= 0)
             {
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                return new ComplexValueEditDlg().TryShowDialog(value, telemetry, out result);
-                #pragma warning restore CA2000
+                return windows.Create<ComplexValueEditDlg>().TryShowDialog(value, out result);
             }
 
             BuiltInType builtinType = TypeInfo.GetBuiltInType(datatypeId, session.TypeTree);
@@ -413,9 +412,7 @@ namespace Opc.Ua.Client.Controls
             {
                 case BuiltInType.Boolean:
                 {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new SimpleValueEditDlg().TryShowDialog(value.ConvertTo(BuiltInType.Boolean), telemetry, out result);
-                    #pragma warning restore CA2000
+                    return windows.Create<SimpleValueEditDlg>().TryShowDialog(value.ConvertTo(BuiltInType.Boolean), out result);
                 }
 
                 case BuiltInType.Byte:
@@ -433,16 +430,12 @@ namespace Opc.Ua.Client.Controls
                 case BuiltInType.Integer:
                 case BuiltInType.UInteger:
                 {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    return new NumericValueEditDlg().TryShowDialog(value, builtinType, out result);
-                    #pragma warning restore CA2000
+                    return windows.Create<NumericValueEditDlg>().TryShowDialog(value, builtinType, out result);
                 }
 
                 case BuiltInType.NodeId:
                 {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    NodeId nodeId = new NodeIdValueEditDlg().ShowDialog(session, value.GetNodeId(), telemetry);
-                    #pragma warning restore CA2000
+                    NodeId nodeId = windows.Create<NodeIdValueEditDlg>().ShowDialog(session, value.GetNodeId());
 
                     if (nodeId.IsNull)
                     {
@@ -455,9 +448,7 @@ namespace Opc.Ua.Client.Controls
 
                 case BuiltInType.ExpandedNodeId:
                 {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    ExpandedNodeId expandedNodeId = new NodeIdValueEditDlg().ShowDialog(session, value.GetExpandedNodeId(), telemetry);
-                    #pragma warning restore CA2000
+                    ExpandedNodeId expandedNodeId = windows.Create<NodeIdValueEditDlg>().ShowDialog(session, value.GetExpandedNodeId());
 
                     if (expandedNodeId.IsNull)
                     {
@@ -472,9 +463,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     DateTime datetime = value.GetDateTime().ToDateTime();
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    if (new DateTimeValueEditDlg().ShowDialog(ref datetime))
-                    #pragma warning restore CA2000
+                    if (windows.Create<DateTimeValueEditDlg>().ShowDialog(ref datetime))
                     {
                         result = Variant.From(new DateTimeUtc(datetime));
                         return true;
@@ -487,9 +476,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     QualifiedName qname = value.GetQualifiedName();
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    string name = new StringValueEditDlg().ShowDialog(qname.Name);
-                    #pragma warning restore CA2000
+                    string name = windows.Create<StringValueEditDlg>().ShowDialog(qname.Name);
 
                     if (name != null)
                     {
@@ -502,9 +489,7 @@ namespace Opc.Ua.Client.Controls
 
                 case BuiltInType.String:
                 {
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    string text = new StringValueEditDlg().ShowDialog(value.GetString());
-                    #pragma warning restore CA2000
+                    string text = windows.Create<StringValueEditDlg>().ShowDialog(value.GetString());
 
                     if (text == null)
                     {
@@ -519,9 +504,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     string hex = FormatByteString(value.GetByteString());
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    string edited = new StringValueEditDlg().ShowDialog(hex);
-                    #pragma warning restore CA2000
+                    string edited = windows.Create<StringValueEditDlg>().ShowDialog(hex);
 
                     if (edited == null)
                     {
@@ -536,9 +519,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     LocalizedText ltext = value.GetLocalizedText();
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    string text = new StringValueEditDlg().ShowDialog(ltext.Text);
-                    #pragma warning restore CA2000
+                    string text = windows.Create<StringValueEditDlg>().ShowDialog(ltext.Text);
 
                     if (text != null)
                     {
@@ -550,9 +531,7 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            return new ComplexValueEditDlg().TryShowDialog(value, telemetry, out result);
-            #pragma warning restore CA2000
+            return windows.Create<ComplexValueEditDlg>().TryShowDialog(value, out result);
         }
 
         /// <summary>

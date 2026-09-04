@@ -38,6 +38,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.HistoricalEvents.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
@@ -54,7 +55,7 @@ namespace Quickstarts.HistoricalEvents.Client
     /// type and filter the user picked, and writes the events the model reports into the
     /// event list.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -271,7 +272,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                using var dialog = new SelectTypeDlg();
+                using var dialog = Windows.Create<SelectTypeDlg>();
                 TypeDeclaration type = await dialog.ShowDialogAsync(m_model, Opc.Ua.ObjectTypeIds.BaseEventType, "Select Event Type");
 
                 if (type == null)
@@ -298,8 +299,8 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // the dialog edits the filter in place.
-                using var dialog = new ModifyFilterDlg();
-                if (!dialog.ShowDialog(m_model.Filter, m_telemetry))
+                using var dialog = Windows.Create<ModifyFilterDlg>();
+                if (!dialog.ShowDialog(m_model.Filter))
                 {
                     return;
                 }
@@ -322,7 +323,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // a shared dialog which browses the server itself.
-                using var dialog = new SelectNodeDlg();
+                using var dialog = Windows.Create<SelectNodeDlg>();
                 NodeId areaId = await dialog.ShowDialogAsync(m_model.Session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId.IsNull)
@@ -360,7 +361,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // the dialog works on a copy of the filter, so what it changes stays there.
-                using var dialog = new ReadEventHistoryDlg();
+                using var dialog = Windows.Create<ReadEventHistoryDlg>();
                 await dialog.ShowDialogAsync(m_model, m_model.AreaId, new FilterDeclaration(m_model.Filter));
             }
             catch (Exception exception)
@@ -382,7 +383,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // a shared dialog which browses the locales of the server itself.
-                using var dialog = new SelectLocaleDlg();
+                using var dialog = Windows.Create<SelectLocaleDlg>();
                 string locale = await dialog.ShowDialogAsync(m_model.Session);
 
                 if (locale == null)

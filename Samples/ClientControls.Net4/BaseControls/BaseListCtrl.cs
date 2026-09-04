@@ -39,13 +39,14 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A base class for list controls.
     /// </summary>
-    public partial class BaseListCtrl : UserControl
+    public partial class BaseListCtrl : SampleUserControl
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseListCtrl"/> class.

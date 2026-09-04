@@ -40,6 +40,7 @@ using System.Reflection;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -47,9 +48,9 @@ namespace Opc.Ua.Sample.Controls
     // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
     using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
 
-    public partial class MonitoredItemEditDlg : Form
+    public partial class MonitoredItemEditDlg : SampleForm
     {
-        public MonitoredItemEditDlg()
+        public MonitoredItemEditDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -65,16 +66,20 @@ namespace Opc.Ua.Sample.Controls
             {
                 NodeClassCB.Items.Add(value);
             }
+
+            m_telemetry = telemetry;
         }
+
+        private readonly ITelemetryContext m_telemetry;
 
         private ISession m_session;
 
         /// <summary>
         /// Prompts the user to specify the settings for a monitored item.
         /// </summary>
-        public bool ShowDialog(ISession session, MonitoredItemHandle monitoredItem, ITelemetryContext telemetry)
+        public bool ShowDialog(ISession session, MonitoredItemHandle monitoredItem)
         {
-            return ShowDialog(session, monitoredItem, false, telemetry);
+            return ShowDialog(session, monitoredItem, false);
         }
 
         /// <summary>
@@ -85,13 +90,13 @@ namespace Opc.Ua.Sample.Controls
         /// which already exists the V2 engine applies the new settings on its own worker, and
         /// for one which does not it uses them when it is created.
         /// </remarks>
-        public bool ShowDialog(ISession session, MonitoredItemHandle monitoredItem, bool editMonitoredItem, ITelemetryContext telemetry)
+        public bool ShowDialog(ISession session, MonitoredItemHandle monitoredItem, bool editMonitoredItem)
         {
             if (monitoredItem == null) throw new ArgumentNullException(nameof(monitoredItem));
 
             m_session = session;
 
-            NodeIdCTRL.Telemetry = telemetry;
+            NodeIdCTRL.Telemetry = m_telemetry;
             NodeIdCTRL.Browser = new Browser(session);
 
             // the V2 engine identifies the monitored node by its node id, relative paths are

@@ -36,6 +36,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -58,12 +59,12 @@ namespace Opc.Ua.Gds.Client.Controls
     /// server therefore builds the node in a namespace of its own.
     /// </para>
     /// </remarks>
-    public partial class DeviceOnboardingDialog : Form
+    public partial class DeviceOnboardingDialog : SampleForm
     {
         private const string kRegistrarBrowseName = "DeviceRegistrarAdmin";
 
         private ISession m_session;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         private NodeId m_registrarNodeId;
         private readonly List<(string Path, byte[] Ticket)> m_tickets =
             new List<(string, byte[])>();
@@ -71,10 +72,12 @@ namespace Opc.Ua.Gds.Client.Controls
         /// <summary>
         /// Creates the dialog.
         /// </summary>
-        public DeviceOnboardingDialog()
+        public DeviceOnboardingDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
 
         /// <summary>
@@ -82,11 +85,10 @@ namespace Opc.Ua.Gds.Client.Controls
         /// </summary>
         /// <param name="owner">The owning window.</param>
         /// <param name="session">A connected session with the GDS.</param>
-        /// <param name="telemetry">The telemetry context used to report failures.</param>
-        public void ShowDialog(IWin32Window owner, ISession session, ITelemetryContext telemetry)
+        /// <param name="m_telemetry">The m_telemetry context used to report failures.</param>
+        public void ShowDialog(IWin32Window owner, ISession session)
         {
             m_session = session;
-            m_telemetry = telemetry;
             m_registrarNodeId = NodeId.Null;
             m_tickets.Clear();
             TicketsListView.Items.Clear();

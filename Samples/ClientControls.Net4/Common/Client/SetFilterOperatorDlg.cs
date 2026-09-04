@@ -33,13 +33,14 @@ using System.Windows.Forms;
 using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to select an area to use as an event filter.
     /// </summary>
-    public partial class SetFilterOperatorDlg : Form
+    public partial class SetFilterOperatorDlg : SampleForm
     {
         #region Constructors
         /// <summary>

@@ -36,12 +36,13 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 
+using Opc.Ua.Samples.WinForms;
 using Opc.Ua.Server;
 using Opc.Ua.Client.Controls;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class ServerForm : Form
+    public partial class ServerForm : SampleForm
     {
         #region Constructors
         public ServerForm(StandardServer server, ApplicationConfiguration configuration)

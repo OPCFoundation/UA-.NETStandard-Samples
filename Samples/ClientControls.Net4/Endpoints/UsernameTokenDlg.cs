@@ -39,13 +39,14 @@ using System.Threading;
 using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to provide a user name and password.
     /// </summary>
-    public partial class UsernameTokenDlg : Form
+    public partial class UsernameTokenDlg : SampleForm
     {
         #region Constructors
         /// <summary>

@@ -41,6 +41,7 @@ using Opc.Ua.Client.Subscriptions.MonitoredItems;
 using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -51,7 +52,7 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// A control which displays a list of events.
     /// </summary>
-    public partial class EventListView : UserControl
+    public partial class EventListView : SampleUserControl
     {
         /// <summary>
         /// How long the control waits for the subscription engine to apply a monitored item change.
@@ -735,7 +736,7 @@ namespace Opc.Ua.Client.Controls
 
                 if (fields != null)
                 {
-                    // new ViewEventDetailsDlg().ShowDialog(m_filter, fields);
+                    // Windows.Create<ViewEventDetailsDlg>().ShowDialog(m_filter, fields);
                 }
             }
             catch (Exception exception)

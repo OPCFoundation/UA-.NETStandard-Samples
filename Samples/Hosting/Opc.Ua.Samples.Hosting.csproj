@@ -29,6 +29,11 @@
   <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows'">
     <Compile Remove="WinForms\**" />
   </ItemGroup>
+  <!-- the dependency injection plumbing of the Windows Forms samples: the window
+       factory the entry point helper registers for the forms of a sample. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <ProjectReference Include="..\WinForms.Common\Opc.Ua.Samples.WinForms.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting">

@@ -34,13 +34,14 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays all fields associated with an event notification.
     /// </summary>
-    public partial class ViewEventDetailsDlg : Form
+    public partial class ViewEventDetailsDlg : SampleForm
     {
         #region Constructors
         /// <summary>

@@ -105,9 +105,15 @@ each sample server is registered (`services.AddXServer(configurationFile, config
 `SampleClientFactories` (`SampleClients.Tests`) how each client is
 (`services.AddXClient()`, in `Workshop/<Sample>/Client/<Sample>ClientHosting.cs`) and which
 main form that registration feeds. The client table builds a container holding the
-configuration and the telemetry, lets the sample add its client model to it and resolves the
-form out of it - the same three steps `SampleWinFormsHost` takes - so a client which starts
-taking something else from the container is covered without a change to the table. Both are
+configuration and the telemetry, adds the window factory every Windows Forms sample shares,
+lets the sample add its client model to it and creates the form out of it - the same steps
+`SampleWinFormsHost` takes - so a client which starts taking something else from the
+container is covered without a change to the table. Creating the form through the factory
+matters beyond tidiness: the controls of a sample open their dialogs through the factory
+their form was handed, so a form built any other way fails on the first dialog it opens.
+A test which assembles a form out of single controls rather than resolving a sample's own
+hands them a factory through `TestWindowFactory` - see
+[`Samples/WinForms.Common`](../Samples/WinForms.Common/README.md). Both are
 written out rather than resolved by reflection on purpose: renaming or removing a sample then
 breaks the build of the tests, which is the earliest and clearest moment to notice. A sample
 without a factory has to be listed as a known gap, so it cannot drop out unnoticed.

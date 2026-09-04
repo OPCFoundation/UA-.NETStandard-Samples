@@ -31,29 +31,32 @@ using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
     /// <summary>
     /// Displays the details of a certificate.
     /// </summary>
-    public partial class EditValueDlg : Form
+    public partial class EditValueDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public EditValueDlg()
+        public EditValueDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
 
             SetTypeCB.Visible = false;
             SetArraySizeBTN.Visible = false;
+
+            m_logger = telemetry.CreateLogger<EditValueDlg>();
         }
         #endregion
 
         #region Private Fields
-        private ILogger m_logger = LoggerUtils.Null.Logger;
+        private readonly ILogger m_logger;
         #endregion
 
         #region Public Interface
@@ -61,12 +64,9 @@ namespace Opc.Ua.Gds.Client.Controls
         /// Displays the details of the certificate.
         /// </summary>
         public void ShowDialog(
-            ILogger logger,
             X509Certificate2 certificate,
             string caption)
         {
-            m_logger = logger;
-
             if (!String.IsNullOrEmpty(caption))
             {
                 this.Text = caption;

@@ -36,13 +36,14 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control with button that displays a select certificate store dialog.
     /// </summary>
-    public partial class SelectCertificateStoreCtrl : UserControl
+    public partial class SelectCertificateStoreCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -88,9 +89,7 @@ namespace Opc.Ua.Client.Controls
             store.StoreType = CertificateStoreIdentifier.DetermineStoreType(CertificateStoreControl.Text);
             store.StorePath = CertificateStoreControl.Text;
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            store = new CertificateStoreDlg().ShowDialog(store, Telemetry);
-            #pragma warning restore CA2000
+            store = Windows.Create<CertificateStoreDlg>().ShowDialog(store);
 
             if (store == null)
             {

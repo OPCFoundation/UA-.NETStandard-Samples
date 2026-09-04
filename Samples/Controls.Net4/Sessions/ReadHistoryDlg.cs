@@ -40,6 +40,7 @@ using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -48,7 +49,7 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// Prompts the user to create a new secure channel.
     /// </summary>
-    public partial class ReadHistoryDlg : Form
+    public partial class ReadHistoryDlg : SampleForm
     {
         public ReadHistoryDlg()
         {

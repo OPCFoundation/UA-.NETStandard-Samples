@@ -35,13 +35,14 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to select an area to use as an event filter.
     /// </summary>
-    public partial class SelectNodeDlg : Form
+    public partial class SelectNodeDlg : SampleForm
     {
         #region Constructors
         /// <summary>

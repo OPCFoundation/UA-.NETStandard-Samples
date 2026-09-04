@@ -39,10 +39,11 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class FindNodeDlg : Form
+    public partial class FindNodeDlg : SampleForm
     {
         public FindNodeDlg()
         {

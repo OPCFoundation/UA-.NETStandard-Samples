@@ -39,6 +39,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
 using Opc.Ua.Bindings;
+using Opc.Ua.Samples.WinForms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
@@ -48,7 +49,7 @@ namespace Opc.Ua.Sample.Controls
     /// <summary>
     /// Prompts the user to create a new secure channel.
     /// </summary>
-    public partial class CreateSecureChannelDlg : Form
+    public partial class CreateSecureChannelDlg : SampleForm
     {
         public CreateSecureChannelDlg()
         {
@@ -203,9 +204,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                new EndpointViewDlg().ShowDialog(m_endpoints[index]);
-                #pragma warning restore CA2000
+                Windows.Create<EndpointViewDlg>().ShowDialog(m_endpoints[index]);
             }
             catch (Exception exception)
             {

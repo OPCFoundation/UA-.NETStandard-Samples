@@ -39,15 +39,16 @@ using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class SelectNodeDlg : Form
+    public partial class SelectNodeDlg : SampleForm
     {
         #region Constructors
-        public SelectNodeDlg()
+        public SelectNodeDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -61,24 +62,25 @@ namespace Opc.Ua.Sample.Controls
             {
                 NodeClassCB.Items.Add(nodeClass);
             }
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private ReferenceDescription m_reference;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, ISession session, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<ReferenceDescription> ShowDialogAsync(Browser browser, NodeId rootId, ISession session, CancellationToken ct = default)
         {
             if (browser == null) throw new ArgumentNullException(nameof(browser));
 
-            m_telemetry = telemetry;
-            await BrowseCTRL.SetRootAsync(browser, rootId, session, telemetry, ct);
+            await BrowseCTRL.SetRootAsync(browser, rootId, session, m_telemetry, ct);
 
             NamespaceUriCB.Items.Clear();
             NamespaceUriCB.Items.AddRange(session.NamespaceUris.ToArray());

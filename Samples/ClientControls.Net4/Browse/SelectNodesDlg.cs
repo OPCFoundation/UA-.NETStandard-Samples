@@ -40,13 +40,14 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A dialog used to selected one or more nodes.
     /// </summary>
-    public partial class SelectNodesDlg : Form
+    public partial class SelectNodesDlg : SampleForm
     {
         #region Constructors
         /// <summary>

@@ -37,13 +37,14 @@ using System.Text;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays a list of references for a node.
     /// </summary>
-    public partial class ReferenceListCtrl : UserControl
+    public partial class ReferenceListCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>

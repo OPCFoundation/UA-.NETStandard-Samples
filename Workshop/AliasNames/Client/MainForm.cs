@@ -16,6 +16,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.AliasNames.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.AliasNames.Client
 {
@@ -38,7 +39,7 @@ namespace Quickstarts.AliasNames.Client
     /// succeed for an administrator.
     /// </para>
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

@@ -35,6 +35,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.Boiler.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.Boiler.Client
 {
@@ -47,7 +48,7 @@ namespace Quickstarts.Boiler.Client
     /// user picks. The window only fills the combo box from the model, tells it which
     /// boiler was picked, and writes the values the model reports into the text boxes.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

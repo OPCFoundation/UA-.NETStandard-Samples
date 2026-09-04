@@ -38,6 +38,7 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -48,7 +49,7 @@ namespace Opc.Ua.Client.Controls
     /// <summary>
     /// Allows the user to edit and issue read requests.
     /// </summary>
-    public partial class SubscribeDataDlg : Form, ISessionForm
+    public partial class SubscribeDataDlg : SampleForm, ISessionForm
     {
         #region Constructors
         /// <summary>

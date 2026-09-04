@@ -21,6 +21,7 @@ using Opc.Ua.Configuration;
 using Opc.Ua.Gds;
 using Opc.Ua.Gds.Client;
 using Opc.Ua.Gds.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Samples.Tests
 {
@@ -192,11 +193,17 @@ namespace Opc.Ua.Samples.Tests
             services.AddSingleton(configuration);
             services.AddGlobalDiscoveryClient();
 
+            // the window factory the entry point helper registers: the form and the dialogs
+            // it opens are created by the container, not by hand.
+            services.AddSampleWindows();
+
             await using ServiceProvider provider = services.BuildServiceProvider();
 
             phase.Enter("building its main form");
 
-            using var form = ActivatorUtilities.CreateInstance<Opc.Ua.Gds.Client.MainForm>(provider);
+            var windows = provider.GetRequiredService<IWindowFactory>();
+
+            using var form = windows.Create<Opc.Ua.Gds.Client.MainForm>();
 
             // create the window handle without ever showing the form: the sample marshals its
             // notifications back to the UI thread and needs a window to do so
@@ -223,8 +230,8 @@ namespace Opc.Ua.Samples.Tests
             // the two v1.05.07 dialogs are not reached by the walk-through below - they are
             // modal and would stall the harness - so they are at least built here. That runs
             // their InitializeComponent, which is where a designer mistake shows up.
-            using (var certificates = new CertificateManagementDialog())
-            using (var onboarding = new DeviceOnboardingDialog())
+            using (var certificates = windows.Create<CertificateManagementDialog>())
+            using (var onboarding = windows.Create<DeviceOnboardingDialog>())
             {
                 _ = certificates.Handle;
                 _ = onboarding.Handle;

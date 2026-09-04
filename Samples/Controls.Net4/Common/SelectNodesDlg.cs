@@ -38,12 +38,13 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class SelectNodesDlg : Form
+    public partial class SelectNodesDlg : SampleForm
     {
         #region Constructors
         public SelectNodesDlg()

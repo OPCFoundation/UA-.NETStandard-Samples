@@ -36,13 +36,14 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample
 {
     /// <summary>
     /// Displays diagnostics information for a server running within the process.
     /// </summary>
-    public partial class ServerDiagnosticsCtrl : UserControl
+    public partial class ServerDiagnosticsCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>

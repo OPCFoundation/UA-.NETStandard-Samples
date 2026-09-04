@@ -51,8 +51,6 @@ namespace Quickstarts.ViewsClient
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
             // the generic host owns the configuration, the certificate, the logging
             // and the lifetime of the client; the main form is created by the container
             // from the services registered here.

@@ -39,13 +39,14 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
-    public partial class EventFilterListViewCtrl : UserControl
+    public partial class EventFilterListViewCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -155,9 +156,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     FilterOperator filterOperator = field.FilterOperator;
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    if (new SetFilterOperatorDlg().ShowDialog(ref filterOperator))
-                    #pragma warning restore CA2000
+                    if (Windows.Create<SetFilterOperatorDlg>().ShowDialog(ref filterOperator))
                     {
                         field.FilterEnabled = true;
                         source.Row[5] = field.FilterEnabled;
@@ -179,9 +178,7 @@ namespace Opc.Ua.Client.Controls
 
                     InstanceDeclaration declaration = field.InstanceDeclaration;
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                    bool edited = new EditComplexValueDlg().TryShowDialog(
-                    #pragma warning restore CA2000
+                    bool edited = Windows.Create<EditComplexValueDlg>().TryShowDialog(
                         m_session,
                         declaration.DisplayName,
                         declaration.DataType,

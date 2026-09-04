@@ -39,41 +39,42 @@ using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class NodeAttributesDlg : Form
+    public partial class NodeAttributesDlg : SampleForm
     {
         #region Constructors
-        public NodeAttributesDlg()
+        public NodeAttributesDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private ISession m_session;
         private ExpandedNodeId m_nodeId;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task ShowDialogAsync(ISession session, ExpandedNodeId nodeId, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task ShowDialogAsync(ISession session, ExpandedNodeId nodeId, CancellationToken ct = default)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (nodeId.IsNull) throw new ArgumentNullException(nameof(nodeId));
 
             m_session = session;
             m_nodeId = nodeId;
-            m_telemetry = telemetry;
-
-            await AttributesCTRL.InitializeAsync(session, nodeId, telemetry, ct);
+            await AttributesCTRL.InitializeAsync(session, nodeId, m_telemetry, ct);
 
             if (ShowDialog() != DialogResult.OK)
             {

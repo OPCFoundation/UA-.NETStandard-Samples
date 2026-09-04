@@ -38,13 +38,14 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control which displays browse tree.
     /// </summary>
-    public partial class BrowseNodeCtrl : UserControl
+    public partial class BrowseNodeCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>

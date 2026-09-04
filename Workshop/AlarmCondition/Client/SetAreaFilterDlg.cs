@@ -33,6 +33,7 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Quickstarts.AlarmConditionClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.AlarmConditionClient
 {
@@ -44,7 +45,7 @@ namespace Quickstarts.AlarmConditionClient
     /// the model knows which references make up the area tree, and the dialog only turns
     /// what it answers into tree nodes.
     /// </remarks>
-    public partial class SetAreaFilterDlg : Form
+    public partial class SetAreaFilterDlg : SampleForm
     {
         #region Constructors
         /// <summary>

@@ -34,6 +34,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Gds.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client
 {
@@ -47,7 +48,7 @@ namespace Opc.Ua.Gds.Client
     /// polls the request, and the two questions only a person can answer: which file to
     /// export a new key pair to, and whether an existing file may be overwritten.
     /// </remarks>
-    public partial class ApplicationCertificateControl : UserControl
+    public partial class ApplicationCertificateControl : SampleUserControl
     {
         public ApplicationCertificateControl()
         {
@@ -169,14 +170,11 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                bool staged = new Controls.CertificateManagementDialog().ShowDialog(
+                bool staged = Windows.Create<Controls.CertificateManagementDialog>().ShowDialog(
                     Parent,
                     m_gds,
                     m_server,
-                    m_application,
-                    m_telemetry);
-                #pragma warning restore CA2000
+                    m_application);
 
                 if (staged)
                 {

@@ -42,6 +42,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
@@ -49,7 +50,7 @@ namespace Opc.Ua.Sample.Controls
     // Opc.Ua.Client namespace this file imports, so the V2 types are pinned explicitly.
     using SubscriptionState = Opc.Ua.Client.Subscriptions.SubscriptionState;
 
-    public partial class SubscriptionDlg : Form
+    public partial class SubscriptionDlg : SampleForm
     {
         /// <summary>
         /// How long the dialog waits for the subscription engine to apply changes.
@@ -98,9 +99,7 @@ namespace Opc.Ua.Sample.Controls
                 Utils.Format("Subscription {0}", Utils.IncrementIdentifier(ref m_Counter)),
                 ClientUtils.DefaultSubscriptionOptions);
 
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (!new SubscriptionEditDlg().ShowDialog(subscription))
-            #pragma warning restore CA2000
+            if (!Windows.Create<SubscriptionEditDlg>().ShowDialog(subscription))
             {
                 return null;
             }
@@ -471,9 +470,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new SubscriptionEditDlg().ShowDialog(m_subscription))
-                #pragma warning restore CA2000
+                if (!Windows.Create<SubscriptionEditDlg>().ShowDialog(m_subscription))
                 {
                     return;
                 }
@@ -495,11 +492,11 @@ namespace Opc.Ua.Sample.Controls
             {
                 if (m_createDialog == null)
                 {
-                    m_createDialog = new CreateMonitoredItemsDlg();
+                    m_createDialog = Windows.Create<CreateMonitoredItemsDlg>();
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                m_createDialog.Show(m_subscription, false, m_telemetry);
+                m_createDialog.Show(m_subscription, false);
             }
             catch (Exception exception)
             {
@@ -528,11 +525,11 @@ namespace Opc.Ua.Sample.Controls
             {
                 if (m_createDialog == null)
                 {
-                    m_createDialog = new CreateMonitoredItemsDlg();
+                    m_createDialog = Windows.Create<CreateMonitoredItemsDlg>();
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                m_createDialog.Show(m_subscription, true, m_telemetry);
+                m_createDialog.Show(m_subscription, true);
             }
             catch (Exception exception)
             {

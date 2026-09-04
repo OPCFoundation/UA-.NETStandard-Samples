@@ -30,13 +30,14 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A class that provide various common utility functions and shared resources.
     /// </summary>
-    public partial class ClientUtils : UserControl
+    public partial class ClientUtils : SampleUserControl
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientUtils"/> class.

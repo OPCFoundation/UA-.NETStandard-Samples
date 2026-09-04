@@ -29,10 +29,11 @@
 
 using System;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class EndpointUrlDialog : Form
+    public partial class EndpointUrlDialog : SampleForm
     {
         public EndpointUrlDialog()
         {

@@ -30,13 +30,14 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.AlarmConditionClient
 {
     /// <summary>
     /// Prompts the select a response for a Dialog Condition.
     /// </summary>
-    public partial class DialogResponseDlg : Form
+    public partial class DialogResponseDlg : SampleForm
     {
         #region Constructors
         /// <summary>

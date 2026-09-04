@@ -32,6 +32,7 @@ using System.Windows.Forms;
 using System.Reflection;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 
 namespace Opc.Ua.Client.Controls
@@ -41,23 +42,25 @@ namespace Opc.Ua.Client.Controls
     /// as a Variant and the edited text is converted back to the value's
     /// built in type.
     /// </summary>
-    public partial class SimpleValueEditDlg : Form
+    public partial class SimpleValueEditDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Default constructor
         /// </summary>
-        public SimpleValueEditDlg()
+        public SimpleValueEditDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private Variant m_value;
         private BuiltInType m_targetType;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
@@ -65,13 +68,11 @@ namespace Opc.Ua.Client.Controls
         /// Displays the dialog. Returns false if the user cancelled the edit;
         /// otherwise returns the edited value in <paramref name="result"/>.
         /// </summary>
-        public bool TryShowDialog(Variant value, ITelemetryContext telemetry, out Variant result)
+        public bool TryShowDialog(Variant value, out Variant result)
         {
             result = Variant.Null;
 
             m_targetType = !value.IsNull ? value.TypeInfo.BuiltInType : BuiltInType.String;
-            m_telemetry = telemetry;
-
             this.Text = Utils.Format("{0} ({1})", this.Text, m_targetType);
 
             // the displayed text has to round trip through ConvertTo when it is parsed back.

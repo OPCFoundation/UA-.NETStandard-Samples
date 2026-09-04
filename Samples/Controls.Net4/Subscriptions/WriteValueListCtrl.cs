@@ -290,9 +290,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 WriteValue value = new WriteValue();
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, value, Telemetry))
-                #pragma warning restore CA2000
+                if (await Windows.Create<WriteValueEditDlg>().ShowDialogAsync(m_session, value))
                 {
                     AddItem(value);
                 }
@@ -316,9 +314,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (await new WriteValueEditDlg().ShowDialogAsync(m_session, values[0], Telemetry))
-                #pragma warning restore CA2000
+                if (await Windows.Create<WriteValueEditDlg>().ShowDialogAsync(m_session, values[0]))
                 {
                     Node node = await m_session.NodeCache.FindAsync(values[0].NodeId) as Node;
 
@@ -387,13 +383,11 @@ namespace Opc.Ua.Sample.Controls
 
                 if (useIndexRange)
                 {
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    edited = new ComplexValueEditDlg().TryShowDialog(values[0], Telemetry, out value);
-                    #pragma warning restore CA2000
+                    edited = Windows.Create<ComplexValueEditDlg>().TryShowDialog(values[0], out value);
                 }
                 else
                 {
-                    edited = GuiUtils.TryEditValue(m_session, values[0].Value.WrappedValue, datatypeId, valueRank, Telemetry, out value);
+                    edited = GuiUtils.TryEditValue(Windows, m_session, values[0].Value.WrappedValue, datatypeId, valueRank, out value);
                 }
 
                 if (edited)

@@ -39,6 +39,7 @@ using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Quickstarts.HistoricalEvents.Client.Model;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
@@ -55,7 +56,7 @@ namespace Quickstarts.HistoricalEvents.Client
     /// the history goes through a delegate the host sets, because only the host knows
     /// which area and filter the rows were read with.
     /// </remarks>
-    public partial class EventListView : UserControl
+    public partial class EventListView : SampleUserControl
     {
         public EventListView()
         {
@@ -203,7 +204,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
                 if (EventsLV.SelectedItems[0].Tag is EventRecord record)
                 {
-                    using var dialog = new ViewEventDetailsDlg();
+                    using var dialog = Windows.Create<ViewEventDetailsDlg>();
                     dialog.ShowDialog(m_filter, record.Fields.ToList());
                 }
             }

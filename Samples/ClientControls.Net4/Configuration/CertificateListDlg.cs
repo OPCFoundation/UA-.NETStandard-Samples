@@ -37,31 +37,32 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.IO;
 using System.Threading.Tasks;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays a list of certificates.
     /// </summary>
-    public partial class CertificateListDlg : Form
+    public partial class CertificateListDlg : SampleForm
     {
         /// <summary>
         /// Contructs the object.
         /// </summary>
-        public CertificateListDlg()
+        public CertificateListDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
 
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public CertificateIdentifier ShowDialog(CertificateStoreIdentifier store, bool allowStoreChange, ITelemetryContext telemetry)
+        public CertificateIdentifier ShowDialog(CertificateStoreIdentifier store, bool allowStoreChange)
         {
-            m_telemetry = telemetry;
-
-            CertificateStoreCTRL.Telemetry = telemetry;
+            CertificateStoreCTRL.Telemetry = m_telemetry;
             CertificateStoreCTRL.StoreType = CertificateStoreType.Directory;
             CertificateStoreCTRL.StorePath = String.Empty;
             CertificateStoreCTRL.ReadOnly = !allowStoreChange;
@@ -175,6 +176,6 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
     }
 }

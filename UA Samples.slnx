@@ -101,6 +101,7 @@
     <Project Path="Samples/Opc.Ua.Sample/Opc.Ua.Sample.csproj" />
     <Project Path="Samples/Hosting/Opc.Ua.Samples.Hosting.csproj" />
     <Project Path="Samples/Client.Common/Opc.Ua.Samples.Client.csproj" />
+    <Project Path="Samples/WinForms.Common/Opc.Ua.Samples.WinForms.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/Samples.Tests.Common/Samples.Tests.Common.csproj" />

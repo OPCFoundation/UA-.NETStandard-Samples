@@ -178,9 +178,7 @@ namespace Opc.Ua.Sample.Controls
 
             monitoredItem.DisplayName = monitoredItem.Name;
 
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session, monitoredItem, Telemetry))
-            #pragma warning restore CA2000
+            if (!Windows.Create<MonitoredItemEditDlg>().ShowDialog(m_subscription.Session, monitoredItem))
             {
                 return null;
             }
@@ -475,9 +473,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new MonitoredItemEditDlg().ShowDialog(m_subscription.Session, monitoredItem, monitoredItem.Created, Telemetry))
-                #pragma warning restore CA2000
+                if (!Windows.Create<MonitoredItemEditDlg>().ShowDialog(m_subscription.Session, monitoredItem, monitoredItem.Created))
                 {
                     return;
                 }
@@ -533,9 +529,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     MonitoringMode monitoringMode = monitoredItems[0].Settings.MonitoringMode;
 
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                    if (!new SetMonitoringModeDlg().ShowDialog(ref monitoringMode))
-                    #pragma warning restore CA2000
+                    if (!Windows.Create<SetMonitoringModeDlg>().ShowDialog(ref monitoringMode))
                     {
                         return;
                     }
@@ -592,9 +586,7 @@ namespace Opc.Ua.Sample.Controls
                 IList<MonitoredItemHandle> linksToAdd;
                 IList<MonitoredItemHandle> linksToRemove;
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                if (!new SetTriggeringDlg().ShowDialog(m_subscription, triggeringItem, out linksToAdd, out linksToRemove))
-                #pragma warning restore CA2000
+                if (!Windows.Create<SetTriggeringDlg>().ShowDialog(m_subscription, triggeringItem, out linksToAdd, out linksToRemove))
                 {
                     return;
                 }
@@ -778,18 +770,14 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (monitoredItems[0].NodeClass == NodeClass.Variable || monitoredItems[0].NodeClass == NodeClass.VariableType)
                     {
-                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                        if (!new DataChangeFilterEditDlg().ShowDialog(m_subscription.Session, monitoredItems[0]))
-                        #pragma warning restore CA2000
+                        if (!Windows.Create<DataChangeFilterEditDlg>().ShowDialog(m_subscription.Session, monitoredItems[0]))
                         {
                             return;
                         }
                     }
                     else
                     {
-                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                        EventFilter filter = new EventFilterDlg().ShowDialog(m_subscription.Session, Telemetry, monitoredItems[0].Settings.Filter as EventFilter, false);
-                        #pragma warning restore CA2000
+                        EventFilter filter = Windows.Create<EventFilterDlg>().ShowDialog(m_subscription.Session, monitoredItems[0].Settings.Filter as EventFilter, false);
 
                         if (filter == null)
                         {
@@ -828,7 +816,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (!m_dialogs.TryGetValue(monitoredItem, out dialog))
                 {
-                    m_dialogs[monitoredItem] = dialog = new MonitoredItemDlg();
+                    m_dialogs[monitoredItem] = dialog = Windows.Create<MonitoredItemDlg>();
                     dialog.FormClosing += new FormClosingEventHandler(MonitoredItemDlg_FormClosing);
                 }
 

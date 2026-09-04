@@ -38,13 +38,14 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A list of node ids.
     /// </summary>
-    public partial class NodeIdCtrl : UserControl
+    public partial class NodeIdCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -179,9 +180,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", Telemetry, default, null);
-                #pragma warning restore CA2000
+                ReferenceDescription reference = await Windows.Create<SelectNodeDlg>().ShowDialogAsync(m_browser.Session as Session, RootId, null, "", Telemetry, default, null);
 
                 if (reference != null && !reference.NodeId.IsNull)
                 {

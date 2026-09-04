@@ -558,7 +558,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (items != null && items.Length == 1)
                 {
-                    bool edited = GuiUtils.TryEditValue(m_session, items[0].Value, Telemetry, out Variant value);
+                    bool edited = GuiUtils.TryEditValue(Windows, m_session, items[0].Value, out Variant value);
 
                     if (!m_readOnly)
                     {

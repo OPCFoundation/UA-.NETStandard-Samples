@@ -33,6 +33,8 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Server;
 using Opc.Ua.Configuration;
+using Microsoft.Extensions.Options;
+using Opc.Ua.Server.Controls;
 
 namespace Quickstarts
 {
@@ -57,6 +59,13 @@ namespace Quickstarts
 
     public partial class DiscoverServerDlg : Opc.Ua.Client.Controls.DiscoverServerDlg
     {
+        /// <summary>
+        /// Initializes a new instance, from the container.
+        /// </summary>
+        /// <param name="telemetry">The telemetry of the sample.</param>
+        public DiscoverServerDlg(ITelemetryContext telemetry) : base(telemetry)
+        {
+        }
     }
 
     public partial class EditDataValueCtrl : Opc.Ua.Client.Controls.EditDataValueCtrl
@@ -65,6 +74,13 @@ namespace Quickstarts
 
     public partial class EditDataValueDlg : Opc.Ua.Client.Controls.EditDataValueDlg
     {
+        /// <summary>
+        /// Initializes a new instance, from the container.
+        /// </summary>
+        /// <param name="telemetry">The telemetry of the sample.</param>
+        public EditDataValueDlg(ITelemetryContext telemetry) : base(telemetry)
+        {
+        }
     }
 
     public partial class EditValueCtrl : Opc.Ua.Client.Controls.EditValueCtrl
@@ -73,6 +89,13 @@ namespace Quickstarts
 
     public partial class EditValueDlg : Opc.Ua.Client.Controls.EditComplexValueDlg
     {
+        /// <summary>
+        /// Initializes a new instance, from the container.
+        /// </summary>
+        /// <param name="telemetry">The telemetry of the sample.</param>
+        public EditValueDlg(ITelemetryContext telemetry) : base(telemetry)
+        {
+        }
     }
 
     public partial class HistoryDataListView : Opc.Ua.Client.Controls.HistoryDataListView
@@ -97,9 +120,18 @@ namespace Quickstarts
         }
 
         /// <summary>
-        /// Creates a form which displays the status for a UA server.
+        /// Creates the form which shows the state of a running UA server.
         /// </summary>
-        public ServerForm(StandardServer server, ApplicationConfiguration configuration, ITelemetryContext telemetry) : base(server, configuration, telemetry)
+        /// <param name="server">The running server of the sample.</param>
+        /// <param name="configuration">The configuration the server was started with.</param>
+        /// <param name="telemetry">The telemetry of the sample.</param>
+        /// <param name="options">What the form does beyond showing the server.</param>
+        public ServerForm(
+            StandardServer server,
+            ApplicationConfiguration configuration,
+            ITelemetryContext telemetry,
+            IOptions<ServerFormOptions> options)
+            : base(server, configuration, telemetry, options)
         {
         }
 

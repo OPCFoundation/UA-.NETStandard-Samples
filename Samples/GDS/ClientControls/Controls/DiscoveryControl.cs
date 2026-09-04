@@ -35,10 +35,11 @@ using System.Text;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class DiscoveryControl : UserControl
+    public partial class DiscoveryControl : SampleUserControl
     {
         public DiscoveryControl()
         {
@@ -378,9 +379,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (RootFolders.GlobalDiscovery.Equals(e.Node.Tag))
             {
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                var servers = new ViewServersOnNetworkDialog(m_gds, m_telemetry).ShowDialog(this, ref m_filters);
-                #pragma warning restore CA2000
+                var servers = Windows.Create<ViewServersOnNetworkDialog>(m_gds).ShowDialog(this, ref m_filters);
 
                 if (servers != null)
                 {
@@ -669,7 +668,7 @@ namespace Opc.Ua.Gds.Client.Controls
             if (RootFolders.LocalMachine.Equals(node.Tag))
             {
                 /*
-                FindServersRequest result = new EditComplexValueDlg().ShowDialog(
+                FindServersRequest result = Windows.Create<EditComplexValueDlg>().ShowDialog(
                     null,
                     null,
                     new FindServersRequest(),
@@ -704,9 +703,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                string url = new EndpointUrlDialog().ShowDialog(null);
-                #pragma warning restore CA2000
+                string url = Windows.Create<EndpointUrlDialog>().ShowDialog(null);
 
                 if (url != null)
                 {
@@ -855,9 +852,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         e.Node.Nodes.Clear();
 
-                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                        var servers = new ViewServersOnNetworkDialog(m_gds, m_telemetry).ShowDialog(this, ref m_filters);
-                        #pragma warning restore CA2000
+                        var servers = Windows.Create<ViewServersOnNetworkDialog>(m_gds).ShowDialog(this, ref m_filters);
 
                         if (servers != null)
                         {
@@ -1008,9 +1003,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     DataRowView view = (DataRowView)EndpointsGridView.SelectedRows[0].DataBoundItem;
                     DataRow row = (DataRow)view.Row;
-                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                    new EndpointUrlDialog().ShowDialog((string)row[0]);
-                    #pragma warning restore CA2000
+                    Windows.Create<EndpointUrlDialog>().ShowDialog((string)row[0]);
                 }
             }
             catch (Exception ex)
@@ -1027,9 +1020,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     DataRowView view = (DataRowView)ServersGridView.SelectedRows[0].DataBoundItem;
                     DataRow row = (DataRow)view.Row;
-                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                    new EndpointUrlDialog().ShowDialog((string)row[2]);
-                    #pragma warning restore CA2000
+                    Windows.Create<EndpointUrlDialog>().ShowDialog((string)row[2]);
                 }
             }
             catch (Exception ex)

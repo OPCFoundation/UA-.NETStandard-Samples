@@ -36,6 +36,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.UserAuthenticationClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.UserAuthenticationClient
 {
@@ -49,7 +50,7 @@ namespace Quickstarts.UserAuthenticationClient
     /// each kind of token the server accepts, translates each button into one model call,
     /// and puts what the server answered into the status bar.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

@@ -9,21 +9,26 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Server.Controls
 {
-    public partial class InputDlg : Form
+    public partial class InputDlg : SampleForm
     {
         public InputDlg()
         {
             InitializeComponent();
         }
 
-        public static string Show(string text, bool hideInput)
+        /// <summary>
+        /// Asks the user for a line of text.
+        /// </summary>
+        /// <param name="windows">The window factory of the sample.</param>
+        /// <param name="text">The prompt shown above the input.</param>
+        /// <param name="hideInput">Whether what is typed is a secret.</param>
+        public static string Show(IWindowFactory windows, string text, bool hideInput)
         {
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-            var inputDlg = new InputDlg();
-            #pragma warning restore CA2000
+            var inputDlg = windows.Create<InputDlg>();
             if (hideInput)
                 inputDlg.textBoxInput.PasswordChar = '*';
             inputDlg.labelText.Text = text;

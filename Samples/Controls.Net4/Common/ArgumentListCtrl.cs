@@ -286,7 +286,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                if (GuiUtils.TryEditValue(m_session, GetArgumentValue(arguments[0]), arguments[0].DataType, arguments[0].ValueRank, Telemetry, out Variant value))
+                if (GuiUtils.TryEditValue(Windows, m_session, GetArgumentValue(arguments[0]), arguments[0].DataType, arguments[0].ValueRank, out Variant value))
                 {
                     arguments[0].Value = value;
                 }

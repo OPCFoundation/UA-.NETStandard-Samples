@@ -30,13 +30,14 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.AlarmConditionClient
 {
     /// <summary>
     /// Prompts the user to specify a comment to send to the server.
     /// </summary>
-    public partial class AddCommentDlg : Form
+    public partial class AddCommentDlg : SampleForm
     {
         #region Constructors
         /// <summary>

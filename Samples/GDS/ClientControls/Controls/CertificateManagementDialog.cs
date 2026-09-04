@@ -33,6 +33,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
@@ -65,21 +66,23 @@ namespace Opc.Ua.Gds.Client.Controls
     /// reports the staging rather than pretending the change already happened.
     /// </para>
     /// </remarks>
-    public partial class CertificateManagementDialog : Form
+    public partial class CertificateManagementDialog : SampleForm
     {
         private GlobalDiscoveryServerClient m_gds;
         private ServerPushConfigurationClient m_server;
         private RegisteredApplication m_application;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         private bool m_pushMode;
 
         /// <summary>
         /// Creates the dialog.
         /// </summary>
-        public CertificateManagementDialog()
+        public CertificateManagementDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
 
         /// <summary>
@@ -90,7 +93,7 @@ namespace Opc.Ua.Gds.Client.Controls
         /// <param name="gds">The GDS client, used for the pull model.</param>
         /// <param name="server">The push client, used for the push model.</param>
         /// <param name="application">The registration the certificates belong to.</param>
-        /// <param name="telemetry">The telemetry context used to report failures.</param>
+        /// <param name="m_telemetry">The m_telemetry context used to report failures.</param>
         /// <returns>
         /// <c>true</c> when a push Method staged a change, so the caller knows an
         /// <c>ApplyChanges</c> is now pending.
@@ -99,13 +102,11 @@ namespace Opc.Ua.Gds.Client.Controls
             IWin32Window owner,
             GlobalDiscoveryServerClient gds,
             ServerPushConfigurationClient server,
-            RegisteredApplication application,
-            ITelemetryContext telemetry)
+            RegisteredApplication application)
         {
             m_gds = gds;
             m_server = server;
             m_application = application;
-            m_telemetry = telemetry;
             m_pushMode = application?.RegistrationType == RegistrationType.ServerPush;
 
             Text = m_pushMode

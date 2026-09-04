@@ -38,30 +38,34 @@ using System.Windows.Forms;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class AddressSpaceDlg : Form
+    public partial class AddressSpaceDlg : SampleForm
     {
         #region Constructors
-        public AddressSpaceDlg()
+        public AddressSpaceDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
             m_SessionClosing = new EventHandler(Session_Closing);
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private ISession m_session;
         private EventHandler m_SessionClosing;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the address space with the specified view
         /// </summary>
-        public void Show(ISession session, BrowseViewType viewType, NodeId viewId, ITelemetryContext telemetry)
+        public void Show(ISession session, BrowseViewType viewType, NodeId viewId)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
 
@@ -73,7 +77,7 @@ namespace Opc.Ua.Sample.Controls
             m_session = session;
             m_session.SessionClosing += m_SessionClosing;
 
-            BrowseCTRL.SetViewAsync(session, viewType, viewId, telemetry);
+            BrowseCTRL.SetViewAsync(session, viewType, viewId, m_telemetry);
             Show();
             BringToFront();
         }

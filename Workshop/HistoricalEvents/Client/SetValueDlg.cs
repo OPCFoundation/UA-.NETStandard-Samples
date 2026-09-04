@@ -36,13 +36,14 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
     /// <summary>
     /// Prompts the user to specify a new value and then writes it to the server.
     /// </summary>
-    public partial class SetValueDlg : Form
+    public partial class SetValueDlg : SampleForm
     {
         #region Constructors
         /// <summary>

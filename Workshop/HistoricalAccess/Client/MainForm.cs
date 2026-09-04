@@ -35,6 +35,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.HistoricalAccess.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.HistoricalAccess.Client
 {
@@ -46,7 +47,7 @@ namespace Quickstarts.HistoricalAccess.Client
     /// <see cref="HistoricalAccessClientModel"/> and to the shared history control, which
     /// does the reading. The window only picks the variable and passes it on.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -227,7 +228,7 @@ namespace Quickstarts.HistoricalAccess.Client
                     return;
                 }
 
-                using Opc.Ua.Client.Controls.SelectNodeDlg dialog = new Opc.Ua.Client.Controls.SelectNodeDlg();
+                using Opc.Ua.Client.Controls.SelectNodeDlg dialog = Windows.Create<Opc.Ua.Client.Controls.SelectNodeDlg>();
                 NodeId nodeId = await dialog.ShowDialogAsync(
                     m_model.Session,
                     Opc.Ua.ObjectIds.ObjectsFolder,

@@ -38,22 +38,25 @@ using System.Reflection;
 
 using Opc.Ua.Configuration;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Allows the user to browse a list of servers.
     /// </summary>
-    public partial class HostListDlg : Form
+    public partial class HostListDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Initializes the dialog.
         /// </summary>
-        public HostListDlg()
+        public HostListDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -61,14 +64,14 @@ namespace Opc.Ua.Client.Controls
         private string m_domain;
         private string m_hostname;
         private ILogger m_logger = LoggerUtils.Null.Logger;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public string ShowDialog(ITelemetryContext telemetry, string domain)
+        public string ShowDialog(string domain)
         {
             if (String.IsNullOrEmpty(domain))
             {
@@ -76,11 +79,9 @@ namespace Opc.Ua.Client.Controls
             }
 
             m_domain = domain;
-            m_logger = telemetry.CreateLogger<HostListDlg>();
-            m_telemetry = telemetry;
-
-            DomainNameCTRL.Initialize(telemetry, m_domain, null);
-            HostsCTRL.Initialize(telemetry, m_domain);
+            m_logger = m_telemetry.CreateLogger<HostListDlg>();
+            DomainNameCTRL.Initialize(m_telemetry, m_domain, null);
+            HostsCTRL.Initialize(m_telemetry, m_domain);
             OkBTN.Enabled = false;
 
             if (ShowDialog() != DialogResult.OK)

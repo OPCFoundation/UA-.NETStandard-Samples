@@ -884,8 +884,8 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                using var dialog = new BrowseOptionsDlg();
-                if (await dialog.ShowDialogAsync(m_browser, m_session, Telemetry))
+                using var dialog = Windows.Create<BrowseOptionsDlg>();
+                if (await dialog.ShowDialogAsync(m_browser, m_session))
                 {
                     if (NodesTV.SelectedNode != null)
                     {
@@ -1014,8 +1014,8 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                using var dialog = new NodeAttributesDlg();
-                await dialog.ShowDialogAsync(m_session, reference.NodeId, Telemetry);
+                using var dialog = Windows.Create<NodeAttributesDlg>();
+                await dialog.ShowDialogAsync(m_session, reference.NodeId);
             }
             catch (Exception exception)
             {
@@ -1066,8 +1066,8 @@ namespace Opc.Ua.Sample.Controls
                     }
                 }
 
-                using var dialog = new CallMethodDlg();
-                await dialog.ShowAsync(m_session, objectId, methodId, Telemetry);
+                using var dialog = Windows.Create<CallMethodDlg>();
+                await dialog.ShowAsync(m_session, objectId, methodId);
             }
             catch (Exception exception)
             {
@@ -1104,8 +1104,8 @@ namespace Opc.Ua.Sample.Controls
                 valueIds.Add(valueId);
 
                 // show form.
-                using var dialog = new ReadDlg();
-                await dialog.ShowAsync(m_session, valueIds, Telemetry);
+                using var dialog = Windows.Create<ReadDlg>();
+                await dialog.ShowAsync(m_session, valueIds);
             }
             catch (Exception exception)
             {
@@ -1142,8 +1142,8 @@ namespace Opc.Ua.Sample.Controls
                 values.Add(value);
 
                 // show form.
-                using var dialog = new WriteDlg();
-                await dialog.ShowAsync(m_session, values, Telemetry);
+                using var dialog = Windows.Create<WriteDlg>();
+                await dialog.ShowAsync(m_session, values);
             }
             catch (Exception exception)
             {
@@ -1228,7 +1228,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                using var dialog = new ReadHistoryDlg();
+                using var dialog = Windows.Create<ReadHistoryDlg>();
                 await dialog.ShowDialogAsync(m_session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)
@@ -1253,7 +1253,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                using var dialog = new BrowseDlg();
+                using var dialog = Windows.Create<BrowseDlg>();
                 await dialog.ShowAsync(m_session, (NodeId)reference.NodeId);
             }
             catch (Exception exception)

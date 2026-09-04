@@ -35,41 +35,42 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using Opc.Ua.Security.Certificates;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to specify a new access rule for a file.
     /// </summary>
-    public partial class ViewCertificateDlg : Form
+    public partial class ViewCertificateDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Initializes the dialog.
         /// </summary>
-        public ViewCertificateDlg()
+        public ViewCertificateDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private string m_currentDirectory;
         private CertificateIdentifier m_certificate;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public async Task<bool> ShowDialogAsync(CertificateIdentifier certificate, ITelemetryContext telemetry, CancellationToken ct = default)
+        public async Task<bool> ShowDialogAsync(CertificateIdentifier certificate, CancellationToken ct = default)
         {
             m_certificate = certificate;
-            m_telemetry = telemetry;
-
-            CertificateStoreCTRL.Telemetry = telemetry;
+            CertificateStoreCTRL.Telemetry = m_telemetry;
             CertificateStoreCTRL.StoreType = null;
             CertificateStoreCTRL.StorePath = null;
             CertificateStoreCTRL.ReadOnly = true;
@@ -229,9 +230,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                await new CertificateDlg().ShowDialogAsync(m_certificate, m_telemetry);
-                #pragma warning restore CA2000
+                await Windows.Create<CertificateDlg>().ShowDialogAsync(m_certificate);
             }
             catch (Exception exception)
             {

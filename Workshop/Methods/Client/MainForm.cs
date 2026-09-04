@@ -34,6 +34,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.MethodsClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.MethodsClient
 {
@@ -46,7 +47,7 @@ namespace Quickstarts.MethodsClient
     /// and watches its state. The window only reads the states the user typed, tells the
     /// model to start, and writes what the model reports into the text boxes.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

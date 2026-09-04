@@ -12,12 +12,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Configuration;
 using Opc.Ua.Sample;
 using Opc.Ua.Sample.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Samples.Tests
 {
@@ -102,7 +104,18 @@ namespace Opc.Ua.Samples.Tests
 
             phase.Enter("building its main form");
 
-            using var form = new SampleClientForm(application, masterForm: null, configuration, NullTelemetry.Instance);
+            // the form is composed the way the entry point of the sample composes it, so the
+            // dialogs it opens come out of the same container.
+            var services = new ServiceCollection();
+
+            services.AddSingleton(application);
+            services.AddSingleton(configuration);
+            services.AddSingleton<ITelemetryContext>(NullTelemetry.Instance);
+            services.AddSampleWindows();
+
+            await using ServiceProvider provider = services.BuildServiceProvider();
+
+            using var form = provider.GetRequiredService<IWindowFactory>().Create<SampleClientForm>();
 
             // create the window handle without ever showing the form: the sample marshals its
             // connect callbacks back to the UI thread and needs a handle to do so

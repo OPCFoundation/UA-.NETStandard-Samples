@@ -35,33 +35,34 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Prompts the user to choose a certificate store.
     /// </summary>
-    public partial class CertificateStoreDlg : Form
+    public partial class CertificateStoreDlg : SampleForm
     {
         /// <summary>
         /// Contructs the object.
         /// </summary>
-        public CertificateStoreDlg()
+        public CertificateStoreDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
 
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
 
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public CertificateStoreIdentifier ShowDialog(CertificateStoreIdentifier store, ITelemetryContext telemetry)
+        public CertificateStoreIdentifier ShowDialog(CertificateStoreIdentifier store)
         {
-            m_telemetry = telemetry;
-
-            CertificateStoreCTRL.Telemetry = telemetry;
+            CertificateStoreCTRL.Telemetry = m_telemetry;
             CertificateStoreCTRL.StoreType = CertificateStoreType.Directory;
             CertificateStoreCTRL.StorePath = null;
 
@@ -101,9 +102,7 @@ namespace Opc.Ua.Client.Controls
                 CertificateStoreIdentifier store = new CertificateStoreIdentifier();
                 store.StoreType = CertificateStoreCTRL.StoreType;
                 store.StorePath = CertificateStoreCTRL.StorePath;
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                new CertificateListDlg().ShowDialog(store, false, m_telemetry);
-                #pragma warning restore CA2000
+                Windows.Create<CertificateListDlg>().ShowDialog(store, false);
             }
             catch (Exception exception)
             {

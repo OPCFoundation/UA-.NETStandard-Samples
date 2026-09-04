@@ -38,13 +38,14 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Displays the results from a history read operation.
     /// </summary>
-    public partial class HistoryEventCtrl : UserControl
+    public partial class HistoryEventCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -304,9 +305,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                ReferenceDescription reference = await new SelectNodeDlg().ShowDialogAsync(
-                #pragma warning restore CA2000
+                ReferenceDescription reference = await Windows.Create<SelectNodeDlg>().ShowDialogAsync(
                     m_session,
                     Opc.Ua.ObjectIds.Server,
                     null,

@@ -35,6 +35,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -50,7 +51,7 @@ namespace Opc.Ua.Client.Controls
     /// headless tests use directly.
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "WinForms designer/owner lifetime manages this sample field.")]
-    public partial class ConnectServerCtrl : UserControl
+    public partial class ConnectServerCtrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -422,9 +423,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void Discover(string hostName)
         {
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            string endpointUrl = new DiscoverServerDlg().ShowDialog(Configuration, hostName, m_telemetry);
-            #pragma warning restore CA2000
+            string endpointUrl = Windows.Create<DiscoverServerDlg>().ShowDialog(Configuration, hostName);
 
             if (endpointUrl != null)
             {

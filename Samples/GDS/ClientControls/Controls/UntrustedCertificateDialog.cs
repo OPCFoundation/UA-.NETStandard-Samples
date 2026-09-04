@@ -30,10 +30,11 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using Opc.Ua.Security.Certificates;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class UntrustedCertificateDialog : Form
+    public partial class UntrustedCertificateDialog : SampleForm
     {
         public UntrustedCertificateDialog()
         {

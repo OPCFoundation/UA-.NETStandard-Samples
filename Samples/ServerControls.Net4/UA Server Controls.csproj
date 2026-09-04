@@ -34,6 +34,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <!-- the window factory the controls create the dialogs they open with -->
+    <ProjectReference Include="..\WinForms.Common\Opc.Ua.Samples.WinForms.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
       <Version>10.0.11</Version>
     </PackageReference>

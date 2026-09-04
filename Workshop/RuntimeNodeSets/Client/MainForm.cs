@@ -18,6 +18,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.RuntimeNodeSets.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.RuntimeNodeSets.Client
 {
@@ -31,7 +32,7 @@ namespace Quickstarts.RuntimeNodeSets.Client
     /// the server answered into the status bar rather than into a dialog, because the
     /// refusals are half of what there is to see.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

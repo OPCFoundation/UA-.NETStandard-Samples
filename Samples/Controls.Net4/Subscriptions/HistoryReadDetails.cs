@@ -36,10 +36,11 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample
 {
-    public partial class HistoryReadDetails : UserControl
+    public partial class HistoryReadDetails : SampleUserControl
     {
         public HistoryReadDetails()
         {

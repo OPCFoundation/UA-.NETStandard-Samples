@@ -38,5 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ClientControls.Net4\UA Client Controls.csproj" />
+    <!-- the window factory the controls create the dialogs they open with -->
+    <ProjectReference Include="..\..\WinForms.Common\Opc.Ua.Samples.WinForms.csproj" />
   </ItemGroup>
 </Project>

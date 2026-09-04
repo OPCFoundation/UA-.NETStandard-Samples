@@ -34,12 +34,13 @@ using System.Text;
 using System.Windows.Forms;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class ViewApplicationRecordsDialog : Form
+    public partial class ViewApplicationRecordsDialog : SampleForm
     {
-        public ViewApplicationRecordsDialog(GlobalDiscoveryServerClient gds)
+        public ViewApplicationRecordsDialog(GlobalDiscoveryServerClient gds, ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ClientUtils.GetAppIcon();
@@ -59,18 +60,19 @@ namespace Opc.Ua.Gds.Client.Controls
             m_dataset.Tables[0].Columns.Add("ApplicationRecord", typeof(ApplicationRecordDataType));
 
             ApplicationRecordDataGridView.DataSource = m_dataset.Tables[0];
+
+            m_logger = telemetry.CreateLogger<ViewApplicationRecordsDialog>();
         }
 
         private DataTable ApplicationsTable { get { return m_dataset.Tables[0]; } }
         #pragma warning disable CA2213 // Justification: Designer-generated Dispose owns the WinForms disposal pattern for this sample.
         private DataSet m_dataset;
         #pragma warning restore CA2213
-        private ILogger m_logger = LoggerUtils.Null.Logger;
+        private readonly ILogger m_logger;
         private GlobalDiscoveryServerClient m_gds;
 
-        public ApplicationRecordDataType ShowDialog(ILogger logger, IWin32Window owner, IList<ApplicationRecordDataType> records, NodeId defaultRecord)
+        public ApplicationRecordDataType ShowDialog(IWin32Window owner, IList<ApplicationRecordDataType> records, NodeId defaultRecord)
         {
-            m_logger = logger;
             ApplicationsTable.Rows.Clear();
 
             DataRow selectedRow = null;

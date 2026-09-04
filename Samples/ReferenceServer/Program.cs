@@ -51,30 +51,24 @@ namespace Quickstarts.ReferenceServer
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
             // the generic host owns the logging and the lifetime of the sample; the
             // server is hosted by the stack, its configuration is loaded straight from
             // the configuration file, and the form shows the running server.
-            SampleWinFormsHost.Run(
+            SampleWinFormsHost.Run<ServerForm>(
                 args,
-                services => services
-                    .AddReferenceServer(),
-                CreateServerForm,
+                services => {
+                    services.AddReferenceServer();
+
+                    // the form asks about an untrusted certificate when the
+                    // ReferenceServerConfiguration extension says so. The setting is read
+                    // from the configuration the host loaded, so the form takes it from
+                    // the container like everything else it needs.
+                    services.AddOptions<ServerFormOptions>()
+                        .Configure<ApplicationConfiguration>(
+                            (options, configuration) => options.ShowCertificateValidationDialog =
+                                ShowCertificateValidationDialog(configuration));
+                },
                 ExceptionDlg.Show);
-        }
-
-        /// <summary>
-        /// Creates the main form, which shows the certificate validation dialog when
-        /// the extension of the configuration asks for it.
-        /// </summary>
-        private static Form CreateServerForm(IServiceProvider provider)
-        {
-            ApplicationConfiguration configuration = provider.GetRequiredService<ApplicationConfiguration>();
-
-            return ActivatorUtilities.CreateInstance<ServerForm>(
-                provider,
-                ShowCertificateValidationDialog(configuration));
         }
 
         /// <summary>

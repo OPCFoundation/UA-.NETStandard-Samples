@@ -36,13 +36,14 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// A control with button that displays edit array dialog.
     /// </summary>
-    public partial class EditValue2Ctrl : UserControl
+    public partial class EditValue2Ctrl : SampleUserControl
     {
         #region Constructors
         /// <summary>
@@ -106,9 +107,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            bool edited = new EditComplexValueDlg().TryShowDialog(
-            #pragma warning restore CA2000
+            bool edited = Windows.Create<EditComplexValueDlg>().TryShowDialog(
                 m_value.TypeInfo,
                 null,
                 m_value,

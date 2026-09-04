@@ -39,15 +39,16 @@ using System.Security.Cryptography.X509Certificates;
 
 using Opc.Ua.Bindings;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
     /// <summary>
     /// Prompts the user to create a new secure channel.
     /// </summary>
-    public partial class SecuritySettingsDlg : Form
+    public partial class SecuritySettingsDlg : SampleForm
     {
-        public SecuritySettingsDlg()
+        public SecuritySettingsDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -58,15 +59,16 @@ namespace Opc.Ua.Sample.Controls
             }
 
             SecurityPolicyUriCB.Items.AddRange(SecurityPolicies.Default.GetDisplayNames());
+
+            m_telemetry = telemetry;
         }
 
         /// <summary>
         /// Displays the dialog.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Sample code preserves existing public API and behavior.")]
-        public bool ShowDialog(ITelemetryContext telemetry, ref MessageSecurityMode securityMode, ref string securityPolicyUri, ref bool useNativeStack)
+        public bool ShowDialog(ref MessageSecurityMode securityMode, ref string securityPolicyUri, ref bool useNativeStack)
         {
-            m_telemetry = telemetry;
             // set security mode.
             SecurityModeCB.SelectedItem = securityMode;
 
@@ -107,6 +109,6 @@ namespace Opc.Ua.Sample.Controls
             }
         }
 
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
     }
 }

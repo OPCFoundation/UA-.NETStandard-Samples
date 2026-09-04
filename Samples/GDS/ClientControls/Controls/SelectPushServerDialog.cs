@@ -31,25 +31,26 @@ using Opc.Ua.Client;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Gds.Client.Controls
 {
-    public partial class SelectPushServerDialog : Form
+    public partial class SelectPushServerDialog : SampleForm
     {
-        public SelectPushServerDialog()
+        public SelectPushServerDialog(ITelemetryContext telemetry)
         {
             InitializeComponent();
             Icon = ImageListControl.AppIcon;
+
+            m_telemetry = telemetry;
         }
 
         private ServerPushConfigurationClient m_pushServer;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
 
-        public string ShowDialog(IWin32Window owner, ServerPushConfigurationClient pushServer, IList<string> serverUrls, ITelemetryContext telemetry)
+        public string ShowDialog(IWin32Window owner, ServerPushConfigurationClient pushServer, IList<string> serverUrls)
         {
             m_pushServer = pushServer;
-            m_telemetry = telemetry;
-
             ServersListBox.Items.Clear();
 
             foreach (var serverUrl in serverUrls)
@@ -105,9 +106,7 @@ namespace Opc.Ua.Gds.Client.Controls
                             throw new ArgumentException("Server does not support username/password user identity tokens.");
                         }
 
-                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                        var identity = new Opc.Ua.Client.Controls.UserNamePasswordDlg().ShowDialog(m_pushServer.AdminCredentials, "Provide PushServer Administrator Credentials");
-                        #pragma warning restore CA2000
+                        var identity = Windows.Create<Opc.Ua.Client.Controls.UserNamePasswordDlg>().ShowDialog(m_pushServer.AdminCredentials, "Provide PushServer Administrator Credentials");
 
                         if (identity != null)
                         {

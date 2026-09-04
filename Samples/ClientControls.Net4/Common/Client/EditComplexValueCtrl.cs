@@ -36,6 +36,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls.Common
 {
@@ -45,7 +46,7 @@ namespace Opc.Ua.Client.Controls.Common
     /// and structure fields with <see cref="VariantFieldCollection"/>, so no
     /// boxed CLR values or reflection are involved.
     /// </summary>
-    public partial class EditComplexValueCtrl : UserControl
+    public partial class EditComplexValueCtrl : SampleUserControl
     {
         /// <summary>
         /// Constructs the object.
@@ -277,9 +278,7 @@ namespace Opc.Ua.Client.Controls.Common
                 dimensions = currentDimensions;
             }
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-            SetTypeDlg.SetTypeResult result = new SetTypeDlg().ShowDialog(m_session?.MessageContext?.Telemetry, currentType, dimensions);
-            #pragma warning restore CA2000
+            SetTypeDlg.SetTypeResult result = Windows.Create<SetTypeDlg>().ShowDialog(currentType, dimensions);
 
             if (result == null)
             {

@@ -35,22 +35,25 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Client.Controls
 {
     /// <summary>
     /// Allows the user to browse a list of servers.
     /// </summary>
-    public partial class DiscoveredServerListDlg : Form
+    public partial class DiscoveredServerListDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Initializes the dialog.
         /// </summary>
-        public DiscoveredServerListDlg()
+        public DiscoveredServerListDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
@@ -58,18 +61,16 @@ namespace Opc.Ua.Client.Controls
         private string m_hostname;
         private ApplicationDescription m_server;
         private ApplicationConfiguration m_configuration;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         #endregion
 
         #region Public Interface
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public ApplicationDescription ShowDialog(string hostname, ApplicationConfiguration configuration, ITelemetryContext telemetry)
+        public ApplicationDescription ShowDialog(string hostname, ApplicationConfiguration configuration)
         {
             m_configuration = configuration;
-            m_telemetry = telemetry;
-
             if (String.IsNullOrEmpty(hostname))
             {
                 hostname = System.Net.Dns.GetHostName();
@@ -79,7 +80,7 @@ namespace Opc.Ua.Client.Controls
             List<string> hostnames = new List<string>();
 
             HostNameCTRL.Initialize(m_telemetry, hostname, hostnames);
-            ServersCTRL.Initialize(hostname, configuration, telemetry);
+            ServersCTRL.Initialize(hostname, configuration, m_telemetry);
 
             OkBTN.Enabled = false;
 

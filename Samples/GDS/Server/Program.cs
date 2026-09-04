@@ -39,6 +39,7 @@ using Opc.Ua.Configuration;
 using Opc.Ua.Gds.Server.Database.Sql;
 using Opc.Ua.Gds.Server.Onboarding;
 using Opc.Ua.Samples.Hosting;
+using Opc.Ua.Samples.WinForms;
 using Opc.Ua.Server;
 using Opc.Ua.Server.Controls;
 
@@ -58,15 +59,12 @@ namespace Opc.Ua.Gds.Server
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-            ApplicationInstance.MessageDlg = new ApplicationMessageDlg();
-
             // the generic host owns the configuration, the certificate, the logging
             // and the lifetime of the server; the databases, the alias merger and the
             // main form are resolved from the services registered here.
-            SampleWinFormsHost.Run(
+            SampleWinFormsHost.Run<ServerForm>(
                 args,
                 ConfigureServices,
-                CreateServerForm,
                 ExceptionDlg.Show);
         }
 
@@ -98,7 +96,12 @@ namespace Opc.Ua.Gds.Server
                     .AddNodeManager<ManagedApplicationsNodeManagerFactory>()
                     .AddNodeManager<DeviceRegistrarNodeManagerFactory>())
                 .AddHostedService<AliasMergerHostedService>()
-                .AddHostedService<SecurityDefaultsHostedService>();
+                .AddHostedService<SecurityDefaultsHostedService>()
+                // the global discovery server is started by the form, not before it, so
+                // the form is the one which can ask the user about a certificate the
+                // server does not trust.
+                .Configure<ServerFormOptions>(
+                    options => options.ShowCertificateValidationDialog = true);
         }
 
         /// <summary>
@@ -154,7 +157,7 @@ namespace Opc.Ua.Gds.Server
             var userDatabase = new SqlUsersDatabase();
             userDatabase.Initialize(logger);
 
-            ConfigureUsers(userDatabase);
+            ConfigureUsers(provider.GetRequiredService<IWindowFactory>(), userDatabase);
 
             return userDatabase;
         }
@@ -209,17 +212,6 @@ namespace Opc.Ua.Gds.Server
                         configuration.SourceFilePath,
                         telemetry)
                 });
-        }
-
-        /// <summary>
-        /// Creates the main form, which shows the state of the running server.
-        /// </summary>
-        private static System.Windows.Forms.Form CreateServerForm(IServiceProvider provider)
-        {
-            return new ServerForm(
-                provider.GetRequiredService<SampleGlobalDiscoveryServer>(),
-                provider.GetRequiredService<ApplicationConfiguration>(),
-                provider.GetRequiredService<ITelemetryContext>());
         }
 
         /// <summary>
@@ -305,7 +297,7 @@ namespace Opc.Ua.Gds.Server
             }
         }
 
-        private static bool ConfigureUsers(SqlUsersDatabase userDatabase)
+        private static bool ConfigureUsers(IWindowFactory windows, SqlUsersDatabase userDatabase)
         {
             ApplicationInstance.MessageDlg.Message("Use default users?", true);
             bool createStandardUsers = ApplicationInstance.MessageDlg.ShowAsync().GetAwaiter().GetResult();
@@ -320,12 +312,12 @@ namespace Opc.Ua.Gds.Server
                 userDatabase.DeleteUser("ApplicationAdmin");
 
                 //Create new admin user
-                string username = InputDlg.Show("Please specify user name of the application admin user:", false);
+                string username = InputDlg.Show(windows, "Please specify user name of the application admin user:", false);
                 #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                 _ = username ?? throw new ArgumentNullException("User name is not allowed to be empty");
                 #pragma warning restore CA2208
 
-                string password = InputDlg.Show($"Please specify the password of {username}:", true);
+                string password = InputDlg.Show(windows, $"Please specify the password of {username}:", true);
                 #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
                 _ = password ?? throw new ArgumentNullException("Password is not allowed to be empty");
                 #pragma warning restore CA2208

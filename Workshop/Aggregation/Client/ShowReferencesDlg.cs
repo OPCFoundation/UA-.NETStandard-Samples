@@ -35,6 +35,7 @@ using System.Windows.Forms;
 using AggregationClient.Model;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace AggregationClient
 {
@@ -45,7 +46,7 @@ namespace AggregationClient
     /// The browse itself - in both directions and paged through continuation points - is
     /// done by the model; the dialog only renders the rows it returns.
     /// </remarks>
-    public partial class ShowReferencesDlg : Form
+    public partial class ShowReferencesDlg : SampleForm
     {
         #region Constructors
         /// <summary>

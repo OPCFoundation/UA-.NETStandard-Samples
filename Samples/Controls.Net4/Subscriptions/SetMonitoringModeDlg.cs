@@ -34,10 +34,11 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample.Controls
 {
-    public partial class SetMonitoringModeDlg : Form
+    public partial class SetMonitoringModeDlg : SampleForm
     {
         public SetMonitoringModeDlg()
         {

@@ -38,12 +38,13 @@ using System.Reflection;
 
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace Opc.Ua.Sample
 {
-    public partial class TypeNavigatorCtrl : UserControl
+    public partial class TypeNavigatorCtrl : SampleUserControl
     {
         #region Constructors
         public TypeNavigatorCtrl()
