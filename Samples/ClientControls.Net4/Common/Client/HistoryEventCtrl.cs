@@ -305,9 +305,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ReferenceDescription reference = await Windows.Create<SelectNodeDlg>().ShowDialogAsync(
-                #pragma warning restore CA2000
                     m_session,
                     Opc.Ua.ObjectIds.Server,
                     null,

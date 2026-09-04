@@ -99,9 +99,7 @@ namespace Opc.Ua.Sample.Controls
                 Utils.Format("Subscription {0}", Utils.IncrementIdentifier(ref m_Counter)),
                 ClientUtils.DefaultSubscriptionOptions);
 
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (!Windows.Create<SubscriptionEditDlg>().ShowDialog(subscription))
-            #pragma warning restore CA2000
             {
                 return null;
             }
@@ -472,9 +470,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!Windows.Create<SubscriptionEditDlg>().ShowDialog(m_subscription))
-                #pragma warning restore CA2000
                 {
                     return;
                 }

@@ -230,9 +230,7 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 await Windows.Create<CertificateDlg>().ShowDialogAsync(m_certificate);
-                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {

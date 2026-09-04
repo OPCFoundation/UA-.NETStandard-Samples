@@ -191,6 +191,13 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Displays the exception in a dialog.
         /// </summary>
+        /// <remarks>
+        /// The one window of the samples which is not created by the container. It
+        /// reports a failure of the sample - including a failure to build the container
+        /// or to start the host - so it takes its logger from the caller and constructs
+        /// itself, and there is nothing left to go wrong on the way to showing the
+        /// error.
+        /// </remarks>
         public static void Show(ILogger logger, string caption, Exception e)
         {
             // check if running as a service.

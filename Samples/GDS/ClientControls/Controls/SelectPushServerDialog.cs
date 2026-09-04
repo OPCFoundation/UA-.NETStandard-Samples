@@ -106,9 +106,7 @@ namespace Opc.Ua.Gds.Client.Controls
                             throw new ArgumentException("Server does not support username/password user identity tokens.");
                         }
 
-                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                         var identity = Windows.Create<Opc.Ua.Client.Controls.UserNamePasswordDlg>().ShowDialog(m_pushServer.AdminCredentials, "Provide PushServer Administrator Credentials");
-                        #pragma warning restore CA2000
 
                         if (identity != null)
                         {

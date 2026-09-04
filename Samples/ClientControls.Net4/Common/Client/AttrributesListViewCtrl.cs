@@ -322,9 +322,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 await Windows.Create<EditComplexValueDlg>().ShowDialogAsync(
-                #pragma warning restore CA2000
                     m_session,
                     info.NodeToRead.NodeId,
                     info.NodeToRead.AttributeId,

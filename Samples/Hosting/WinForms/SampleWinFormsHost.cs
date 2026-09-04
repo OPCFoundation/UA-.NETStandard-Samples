@@ -50,14 +50,14 @@ namespace Opc.Ua.Samples.Hosting
                 showException);
 
         /// <summary>
-        /// Runs a sample whose main form needs arguments the container does not know,
-        /// for example a flag read from the configuration of the sample.
+        /// Builds the host, starts it on the user interface thread and shows the main
+        /// form the container created.
         /// </summary>
         /// <param name="args">The command line of the sample.</param>
         /// <param name="configureServices">The registrations of the sample.</param>
         /// <param name="createMainForm">Creates the main form from the container.</param>
         /// <param name="showException">Reports a startup failure to the user.</param>
-        public static void Run(
+        private static void Run(
             string[] args,
             Action<IServiceCollection> configureServices,
             Func<IServiceProvider, Form> createMainForm,

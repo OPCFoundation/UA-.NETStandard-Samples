@@ -278,9 +278,7 @@ namespace Opc.Ua.Client.Controls.Common
                 dimensions = currentDimensions;
             }
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             SetTypeDlg.SetTypeResult result = Windows.Create<SetTypeDlg>().ShowDialog(currentType, dimensions);
-            #pragma warning restore CA2000
 
             if (result == null)
             {

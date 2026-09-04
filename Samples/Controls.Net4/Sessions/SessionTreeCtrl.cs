@@ -184,9 +184,7 @@ namespace Opc.Ua.Sample.Controls
             // check if the endpoint needs to be updated.
             if (endpoint.UpdateBeforeConnect)
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ConfiguredServerDlg configurationDialog = Windows.Create<ConfiguredServerDlg>();
-                #pragma warning restore CA2000
                 #pragma warning disable CA1849 // Justification: modal dialogs pump their own message loop.
                 endpoint = configurationDialog.ShowDialog(endpoint, m_configuration);
                 #pragma warning restore CA1849
@@ -203,9 +201,9 @@ namespace Opc.Ua.Sample.Controls
             m_messageContext = m_configuration.CreateMessageContext();
 
             // create and open the session.
-            #pragma warning disable CA2000, CA1849 // Justification: modal dialogs pump their own message loop; sample code retains existing ownership/lifetime and behavior.
+            #pragma warning disable CA1849 // Justification: modal dialogs pump their own message loop.
             ISession session = Windows.Create<SessionOpenDlg>().ShowDialog(m_configuration, endpoint, PreferredLocales);
-            #pragma warning restore CA2000, CA1849
+            #pragma warning restore CA1849
 
             if (session == null)
             {
@@ -317,9 +315,7 @@ namespace Opc.Ua.Sample.Controls
         public async Task<SubscriptionHandle> CreateSubscriptionAsync(ISession session, CancellationToken ct = default)
         {
             // create form.
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             SubscriptionDlg dialog = Windows.Create<SubscriptionDlg>();
-            #pragma warning restore CA2000
             dialog.FormClosing += new FormClosingEventHandler(Subscription_FormClosing);
 
             // create subscription.
@@ -666,9 +662,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     Windows.Create<AddressSpaceDlg>().Show(session, BrowseViewType.All, NodeId.Null);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -694,9 +688,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     Windows.Create<AddressSpaceDlg>().Show(session, BrowseViewType.Objects, NodeId.Null);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -722,9 +714,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     await Windows.Create<BrowseTypesDlg>().ShowAsync(session, ObjectTypeIds.BaseObjectType);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -750,9 +740,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     await Windows.Create<BrowseTypesDlg>().ShowAsync(session, VariableTypeIds.BaseDataVariableType);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -778,9 +766,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     Windows.Create<AddressSpaceDlg>().Show(session, BrowseViewType.DataTypes, NodeId.Null);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -806,9 +792,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     Windows.Create<AddressSpaceDlg>().Show(session, BrowseViewType.ReferenceTypes, NodeId.Null);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -834,9 +818,7 @@ namespace Opc.Ua.Sample.Controls
 
                 if (session != null)
                 {
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     await Windows.Create<BrowseTypesDlg>().ShowAsync(session, ObjectTypeIds.BaseEventType);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -911,9 +893,7 @@ namespace Opc.Ua.Sample.Controls
                     {
                         ReferenceDescription reference = menuitem.Tag as ReferenceDescription;
 
-                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         Windows.Create<AddressSpaceDlg>().Show(
-                        #pragma warning restore CA2000
                             session,
                             BrowseViewType.ServerDefinedView,
                             (NodeId)reference.NodeId);
@@ -1061,9 +1041,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 await Windows.Create<ReadDlg>().ShowAsync(session, valueIds);
-                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {
@@ -1119,9 +1097,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // show form.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 await Windows.Create<WriteDlg>().ShowAsync(session, values);
-                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {
@@ -1452,9 +1428,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 string locale = await Windows.Create<SelectLocaleDlg>().ShowDialogAsync(session);
-                #pragma warning restore CA2000
 
                 if (locale == null)
                 {

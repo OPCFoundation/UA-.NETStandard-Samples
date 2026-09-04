@@ -216,9 +216,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // modify configuration.
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ConfiguredEndpoint endpoint = Windows.Create<ConfiguredServerListDlg>().ShowDialog(m_configuration, true);
-                #pragma warning restore CA2000
 
                 if (endpoint == null)
                 {

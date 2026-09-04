@@ -396,9 +396,7 @@ namespace Opc.Ua.Client.Controls
 
                     BuiltInType builtInType = TypeInfo.GetBuiltInType(argument.DataType, m_session.TypeTree);
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     bool edited = Windows.Create<EditComplexValueDlg>().TryShowDialog(
-                    #pragma warning restore CA2000
                         new TypeInfo(builtInType, argument.ValueRank),
                         argument.Name,
                         GetArgumentValue(argument),

@@ -89,9 +89,7 @@ namespace Opc.Ua.Client.Controls
             store.StoreType = CertificateStoreIdentifier.DetermineStoreType(CertificateStoreControl.Text);
             store.StorePath = CertificateStoreControl.Text;
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             store = Windows.Create<CertificateStoreDlg>().ShowDialog(store);
-            #pragma warning restore CA2000
 
             if (store == null)
             {

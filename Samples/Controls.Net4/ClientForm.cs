@@ -70,6 +70,12 @@ namespace Opc.Ua.Sample.Controls
         /// Creates the window of the sample: the container supplies the application it
         /// runs on, the configuration it was started with and the telemetry.
         /// </summary>
+        /// <remarks>
+        /// The message context the sessions of this window are encoded with is derived
+        /// from the configuration here rather than passed in, so a second window opened
+        /// from the Window menu gets one of its own - which is what a window with its own
+        /// sessions should have.
+        /// </remarks>
         /// <param name="application">The application instance of the sample.</param>
         /// <param name="configuration">The configuration of the sample.</param>
         /// <param name="telemetry">The telemetry of the sample.</param>
@@ -422,9 +428,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 _ = Windows.Create<PerformanceTestDlg>().ShowDialog(
-                #pragma warning restore CA2000
                     m_configuration,
                     m_endpoints,
                     await m_configuration.CertificateManager.CertificateProvider.GetPrivateKeyCertificateAsync(
@@ -444,9 +448,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ConfiguredEndpoint endpoint = Windows.Create<ConfiguredServerListDlg>().ShowDialog(m_configuration, true);
-                #pragma warning restore CA2000
 
                 if (endpoint != null)
                 {
@@ -464,9 +466,7 @@ namespace Opc.Ua.Sample.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 ServerOnNetwork serverOnNetwork = Windows.Create<DiscoveredServerOnNetworkListDlg>().ShowDialog(null, m_configuration);
-                #pragma warning restore CA2000
 
                 if (serverOnNetwork != null)
                 {

@@ -28,9 +28,7 @@ namespace Opc.Ua.Server.Controls
         /// <param name="hideInput">Whether what is typed is a secret.</param>
         public static string Show(IWindowFactory windows, string text, bool hideInput)
         {
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             var inputDlg = windows.Create<InputDlg>();
-            #pragma warning restore CA2000
             if (hideInput)
                 inputDlg.textBoxInput.PasswordChar = '*';
             inputDlg.labelText.Text = text;

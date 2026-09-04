@@ -35,13 +35,14 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using Opc.Ua.Samples.WinForms;
 
 namespace Opc.Ua.Sample
 {
     /// <summary>
     /// The primary form displayed by the application.
     /// </summary>
-    public partial class ServerForm : Form
+    public partial class ServerForm : SampleForm
     {
         #region Constructors
         /// <summary>

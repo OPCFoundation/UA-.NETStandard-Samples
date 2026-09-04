@@ -251,9 +251,7 @@ namespace Opc.Ua.Client.Controls
                     }
 
                     // edit the parameters.
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     ReadValueId[] results = await Windows.Create<EditReadValueIdDlg>().ShowDialogAsync(m_session, default, nodeToRead);
-                    #pragma warning restore CA2000
 
                     if (results != null)
                     {
@@ -285,9 +283,7 @@ namespace Opc.Ua.Client.Controls
                         ReadValueId nodeToRead = (ReadValueId)source.Row[0];
                         DataValue value = (DataValue)source.Row[6];
 
-                        #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                         await Windows.Create<EditComplexValueDlg>().ShowDialogAsync(
-                        #pragma warning restore CA2000
                             m_session,
                             NodeId.Null,
                             0,
@@ -310,9 +306,7 @@ namespace Opc.Ua.Client.Controls
                         nodesToRead.Add(value);
                     }
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     ReadValueId[] results = await Windows.Create<EditReadValueIdDlg>().ShowDialogAsync(m_session, default, nodesToRead.ToArray());
-                    #pragma warning restore CA2000
 
                     if (results != null)
                     {

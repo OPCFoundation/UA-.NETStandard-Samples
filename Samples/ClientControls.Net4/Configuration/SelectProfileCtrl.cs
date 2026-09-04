@@ -128,9 +128,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             Opc.Ua.Security.ListOfSecurityProfiles profiles = Windows.Create<SelectProfileDlg>().ShowDialog(Profiles, null);
-            #pragma warning restore CA2000
 
             if (profiles == null)
             {

@@ -107,9 +107,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             bool edited = Windows.Create<EditComplexValueDlg>().TryShowDialog(
-            #pragma warning restore CA2000
                 m_value.TypeInfo,
                 null,
                 m_value,

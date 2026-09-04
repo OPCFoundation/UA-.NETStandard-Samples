@@ -423,9 +423,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public void Discover(string hostName)
         {
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             string endpointUrl = Windows.Create<DiscoverServerDlg>().ShowDialog(Configuration, hostName);
-            #pragma warning restore CA2000
 
             if (endpointUrl != null)
             {

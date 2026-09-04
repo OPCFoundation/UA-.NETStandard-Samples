@@ -379,9 +379,7 @@ namespace Opc.Ua.Gds.Client.Controls
 
             if (RootFolders.GlobalDiscovery.Equals(e.Node.Tag))
             {
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 var servers = Windows.Create<ViewServersOnNetworkDialog>(m_gds).ShowDialog(this, ref m_filters);
-                #pragma warning restore CA2000
 
                 if (servers != null)
                 {
@@ -705,9 +703,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 string url = Windows.Create<EndpointUrlDialog>().ShowDialog(null);
-                #pragma warning restore CA2000
 
                 if (url != null)
                 {
@@ -856,9 +852,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     {
                         e.Node.Nodes.Clear();
 
-                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                         var servers = Windows.Create<ViewServersOnNetworkDialog>(m_gds).ShowDialog(this, ref m_filters);
-                        #pragma warning restore CA2000
 
                         if (servers != null)
                         {
@@ -1009,9 +1003,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     DataRowView view = (DataRowView)EndpointsGridView.SelectedRows[0].DataBoundItem;
                     DataRow row = (DataRow)view.Row;
-                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                     Windows.Create<EndpointUrlDialog>().ShowDialog((string)row[0]);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception ex)
@@ -1028,9 +1020,7 @@ namespace Opc.Ua.Gds.Client.Controls
                 {
                     DataRowView view = (DataRowView)ServersGridView.SelectedRows[0].DataBoundItem;
                     DataRow row = (DataRow)view.Row;
-                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                     Windows.Create<EndpointUrlDialog>().ShowDialog((string)row[2]);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception ex)

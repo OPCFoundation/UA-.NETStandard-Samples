@@ -225,9 +225,7 @@ namespace Opc.Ua.Sample.Controls
             {
                 ReadValueId valueId = new ReadValueId();
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (await Windows.Create<ReadValueEditDlg>().ShowDialogAsync(m_session, valueId))
-                #pragma warning restore CA2000
                 {
                     AddItem(valueId);
                 }
@@ -251,9 +249,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (await Windows.Create<ReadValueEditDlg>().ShowDialogAsync(m_session, valueId))
-                #pragma warning restore CA2000
                 {
                     await UpdateItemAsync(ItemsLV.SelectedItems[0], valueId);
                 }

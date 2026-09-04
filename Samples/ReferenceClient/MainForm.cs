@@ -39,6 +39,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.ReferenceClient
 {
@@ -51,7 +52,7 @@ namespace Quickstarts.ReferenceClient
     /// form holds stays the same instance across a reconnect, which is why nothing here swaps
     /// it out or rebuilds the browse tree when the connection drops.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

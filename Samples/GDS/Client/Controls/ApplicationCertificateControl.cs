@@ -170,13 +170,11 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 bool staged = Windows.Create<Controls.CertificateManagementDialog>().ShowDialog(
                     Parent,
                     m_gds,
                     m_server,
                     m_application);
-                #pragma warning restore CA2000
 
                 if (staged)
                 {

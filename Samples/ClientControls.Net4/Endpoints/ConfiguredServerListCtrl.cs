@@ -183,18 +183,14 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ApplicationDescription server = Windows.Create<DiscoveredServerListDlg>().ShowDialog(null, m_configuration);
-                #pragma warning restore CA2000
 
                 if (server == null)
                 {
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 ConfiguredEndpoint endpoint = Windows.Create<ConfiguredServerDlg>().ShowDialog(server, m_configuration);
-                #pragma warning restore CA2000
 
                 if (endpoint == null)
                 {
@@ -221,9 +217,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 endpoint = Windows.Create<ConfiguredServerDlg>().ShowDialog(endpoint, m_configuration);
-                #pragma warning restore CA2000
 
                 if (endpoint == null)
                 {

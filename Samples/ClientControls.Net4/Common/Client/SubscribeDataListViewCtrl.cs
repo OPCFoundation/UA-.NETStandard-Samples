@@ -577,9 +577,7 @@ namespace Opc.Ua.Client.Controls
                 // dialog takes it back off again, before it ever reached the server.
                 MonitoredItemHandle handle = m_subscription.Add(selected?.Settings ?? new MonitoredItemOptions());
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (await Windows.Create<EditMonitoredItemDlg>().ShowDialogAsync(m_subscription.Session, handle, false))
-                #pragma warning restore CA2000
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
                     handle.Row = row;
@@ -615,9 +613,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (await Windows.Create<EditMonitoredItemDlg>().ShowDialogAsync(m_subscription.Session, handle, false))
-                #pragma warning restore CA2000
                 {
                     await UpdateRowAsync(handle.Row, handle);
                 }
@@ -726,9 +722,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 MonitoringMode oldMonitoringMode = handles[0].Settings.MonitoringMode;
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 MonitoringMode newMonitoringMode = Windows.Create<EditMonitoredItemDlg>().ShowDialog(oldMonitoringMode);
-                #pragma warning restore CA2000
 
                 if (oldMonitoringMode != newMonitoringMode)
                 {
@@ -755,9 +749,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (Windows.Create<EditSubscriptionDlg>().ShowDialog(m_subscription.Options))
-                #pragma warning restore CA2000
                 {
                     // the engine applies the new options on its own worker, so the revised values
                     // are only there once the pending change settled.

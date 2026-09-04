@@ -94,9 +94,7 @@ namespace Opc.Ua.Gds.Client
                 {
                     try
                     {
-                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                         accept = Windows.Create<UntrustedCertificateDialog>().ShowDialog(this, certificate.AsX509Certificate2()) == DialogResult.OK;
-                        #pragma warning restore CA2000
                     }
                     catch (Exception ex)
                     {
@@ -273,9 +271,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 var endpoint = Windows.Create<SelectServerDialog>().ShowDialog(this, m_endpoints, m_lds, m_gds, m_filters);
-                #pragma warning restore CA2000
 
                 if (endpoint != null)
                 {
@@ -445,9 +441,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (!m_gdsConfigured)
                 {
-                    #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                     string uri = Windows.Create<SelectGdsDialog>().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).AsTask().GetAwaiter().GetResult());
-                    #pragma warning restore CA2000
                     if (uri != null)
                     {
                         m_configuration.GlobalDiscoveryServerUrl = m_gds.EndpointUrl;
@@ -552,9 +546,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 Windows.Create<DeviceOnboardingDialog>().ShowDialog(this, m_gds?.Session);
-                #pragma warning restore CA2000
             }
             catch (Exception ex)
             {
@@ -628,9 +620,7 @@ namespace Opc.Ua.Gds.Client
             m_gdsConfigured = false;
             UpdateGdsStatus(true, DateTime.UtcNow, "Disconnected");
 
-            #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
             string uri = Windows.Create<SelectGdsDialog>().ShowDialog(null, m_gds, m_gds.GetDefaultGdsUrlsAsync(m_lds).AsTask().GetAwaiter().GetResult());
-            #pragma warning restore CA2000
             if (uri != null)
             {
                 m_configuration.GlobalDiscoveryServerUrl = m_gds.EndpointUrl;
@@ -643,9 +633,7 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
                 var identity = Windows.Create<Opc.Ua.Client.Controls.UserNamePasswordDlg>().ShowDialog(e.Credentials, "Provide PushServer Administrator Credentials");
-                #pragma warning restore CA2000
 
                 if (identity != null)
                 {

@@ -421,9 +421,7 @@ namespace Opc.Ua.Client.Controls
                         id.StorePath = m_storeId.StorePath;
                     }
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     await Windows.Create<ViewCertificateDlg>().ShowDialogAsync(id);
-                    #pragma warning restore CA2000
                 }
             }
             catch (Exception exception)
@@ -476,9 +474,7 @@ namespace Opc.Ua.Client.Controls
                             buffer.Append("\r\n");
                             buffer.Append("Are you sure you wish to continue?.");
 
-                            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                             DialogResult yesno = Windows.Create<YesNoDlg>().ShowDialog(buffer.ToString(), "Delete Private Key", true);
-                            #pragma warning restore CA2000
 
                             if (yesno == DialogResult.No)
                             {

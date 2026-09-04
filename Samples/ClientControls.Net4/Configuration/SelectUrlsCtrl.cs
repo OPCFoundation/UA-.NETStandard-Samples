@@ -154,9 +154,7 @@ namespace Opc.Ua.Client.Controls
                 }
             }
 
-            #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             bool edited = Windows.Create<EditArrayDlg>().TryShowDialog(Variant.From((ArrayOf<string>)strings), BuiltInType.String, false, null, out Variant result);
-            #pragma warning restore CA2000
 
             if (!edited)
             {

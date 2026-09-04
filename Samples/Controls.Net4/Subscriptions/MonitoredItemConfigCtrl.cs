@@ -178,9 +178,7 @@ namespace Opc.Ua.Sample.Controls
 
             monitoredItem.DisplayName = monitoredItem.Name;
 
-            #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
             if (!Windows.Create<MonitoredItemEditDlg>().ShowDialog(m_subscription.Session, monitoredItem))
-            #pragma warning restore CA2000
             {
                 return null;
             }
@@ -475,9 +473,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!Windows.Create<MonitoredItemEditDlg>().ShowDialog(m_subscription.Session, monitoredItem, monitoredItem.Created))
-                #pragma warning restore CA2000
                 {
                     return;
                 }
@@ -533,9 +529,7 @@ namespace Opc.Ua.Sample.Controls
                 {
                     MonitoringMode monitoringMode = monitoredItems[0].Settings.MonitoringMode;
 
-                    #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                     if (!Windows.Create<SetMonitoringModeDlg>().ShowDialog(ref monitoringMode))
-                    #pragma warning restore CA2000
                     {
                         return;
                     }
@@ -592,9 +586,7 @@ namespace Opc.Ua.Sample.Controls
                 IList<MonitoredItemHandle> linksToAdd;
                 IList<MonitoredItemHandle> linksToRemove;
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!Windows.Create<SetTriggeringDlg>().ShowDialog(m_subscription, triggeringItem, out linksToAdd, out linksToRemove))
-                #pragma warning restore CA2000
                 {
                     return;
                 }
@@ -778,18 +770,14 @@ namespace Opc.Ua.Sample.Controls
                 {
                     if (monitoredItems[0].NodeClass == NodeClass.Variable || monitoredItems[0].NodeClass == NodeClass.VariableType)
                     {
-                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         if (!Windows.Create<DataChangeFilterEditDlg>().ShowDialog(m_subscription.Session, monitoredItems[0]))
-                        #pragma warning restore CA2000
                         {
                             return;
                         }
                     }
                     else
                     {
-                        #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                         EventFilter filter = Windows.Create<EventFilterDlg>().ShowDialog(m_subscription.Session, monitoredItems[0].Settings.Filter as EventFilter, false);
-                        #pragma warning restore CA2000
 
                         if (filter == null)
                         {

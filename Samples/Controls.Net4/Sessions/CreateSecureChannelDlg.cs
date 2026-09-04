@@ -204,9 +204,7 @@ namespace Opc.Ua.Sample.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 Windows.Create<EndpointViewDlg>().ShowDialog(m_endpoints[index]);
-                #pragma warning restore CA2000
             }
             catch (Exception exception)
             {

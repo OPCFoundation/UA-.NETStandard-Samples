@@ -802,9 +802,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (!Windows.Create<EditSubscriptionDlg>().ShowDialog(m_subscription.Options))
-                #pragma warning restore CA2000
                 {
                     return;
                 }
@@ -897,9 +895,7 @@ namespace Opc.Ua.Client.Controls
                     AttributeId = Attributes.EventNotifier,
                 });
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (await Windows.Create<EditMonitoredItemDlg>().ShowDialogAsync(m_subscription.Session, handle, true))
-                #pragma warning restore CA2000
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
                     handle.Row = row;
@@ -940,9 +936,7 @@ namespace Opc.Ua.Client.Controls
                     return;
                 }
 
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 if (await Windows.Create<EditMonitoredItemDlg>().ShowDialogAsync(m_subscription.Session, handle, true))
-                #pragma warning restore CA2000
                 {
                     await UpdateRowAsync(handle.Row, handle);
                 }
@@ -1017,9 +1011,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 MonitoringMode oldMonitoringMode = handles[0].Settings.MonitoringMode;
-                #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                 MonitoringMode newMonitoringMode = Windows.Create<EditMonitoredItemDlg>().ShowDialog(oldMonitoringMode);
-                #pragma warning restore CA2000
 
                 if (oldMonitoringMode != newMonitoringMode)
                 {

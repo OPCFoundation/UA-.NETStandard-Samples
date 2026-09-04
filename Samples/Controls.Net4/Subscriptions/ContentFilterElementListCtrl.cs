@@ -209,9 +209,7 @@ namespace Opc.Ua.Sample.Controls
 
                 FilterOperator op = element.FilterOperator;
 
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!Windows.Create<FilterOperatorEditDlg>().ShowDialog(ref op))
-                #pragma warning restore CA2000
                 {
                     return;
                 }
@@ -430,9 +428,7 @@ namespace Opc.Ua.Sample.Controls
                 }
 
                 // edit the value.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
                 if (!Windows.Create<SimpleValueEditDlg>().TryShowDialog(currentValue, out Variant value))
-                #pragma warning restore CA2000
                 {
                     return;
                 }

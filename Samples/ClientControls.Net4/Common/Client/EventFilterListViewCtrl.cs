@@ -156,9 +156,7 @@ namespace Opc.Ua.Client.Controls
                 {
                     FilterOperator filterOperator = field.FilterOperator;
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     if (Windows.Create<SetFilterOperatorDlg>().ShowDialog(ref filterOperator))
-                    #pragma warning restore CA2000
                     {
                         field.FilterEnabled = true;
                         source.Row[5] = field.FilterEnabled;
@@ -180,9 +178,7 @@ namespace Opc.Ua.Client.Controls
 
                     InstanceDeclaration declaration = field.InstanceDeclaration;
 
-                    #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
                     bool edited = Windows.Create<EditComplexValueDlg>().TryShowDialog(
-                    #pragma warning restore CA2000
                         m_session,
                         declaration.DisplayName,
                         declaration.DataType,

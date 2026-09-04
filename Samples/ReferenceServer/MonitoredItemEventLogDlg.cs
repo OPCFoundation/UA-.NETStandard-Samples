@@ -35,10 +35,11 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using Opc.Ua.Server;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.ReferenceServer
 {
-    public partial class MonitoredItemEventLogDlg : Form
+    public partial class MonitoredItemEventLogDlg : SampleForm
     {
         public MonitoredItemEventLogDlg()
         {
