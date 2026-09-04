@@ -112,14 +112,14 @@ namespace Quickstarts.ViewsClient
             this.Server_ConnectMI.Name = "Server_ConnectMI";
             this.Server_ConnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_ConnectMI.Text = "Connect";
-            this.Server_ConnectMI.Click += new System.EventHandler(this.Server_ConnectMI_Click);
+            this.Server_ConnectMI.Click += new System.EventHandler(this.Server_ConnectMI_ClickAsync);
             // 
             // Server_DisconnectMI
             // 
             this.Server_DisconnectMI.Name = "Server_DisconnectMI";
             this.Server_DisconnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_DisconnectMI.Text = "Disconnect";
-            this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_Click);
+            this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_ClickAsync);
             // 
             // HelpMI
             // 

@@ -29,19 +29,22 @@
 
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using System.Text;
-using Opc.Ua;
-using Opc.Ua.Client;
-using Opc.Ua.Client.Controls;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using AggregationClient.Model;
+using Opc.Ua;
+using Opc.Ua.Client.Controls;
 
 namespace AggregationClient
 {
     /// <summary>
-    /// Prompts the user to select an area to use as an event filter.
+    /// Shows the references of a node and lets the user pick one.
     /// </summary>
+    /// <remarks>
+    /// The browse itself - in both directions and paged through continuation points - is
+    /// done by the model; the dialog only renders the rows it returns.
+    /// </remarks>
     public partial class ShowReferencesDlg : Form
     {
         #region Constructors
@@ -55,18 +58,20 @@ namespace AggregationClient
         #endregion
 
         #region Private Fields
-        private ISession m_session;
-        private NodeId m_nodeId;
+        private AggregationClientModel m_model;
         private ReferenceDescription m_reference;
         #endregion
 
         #region Public Interface
-        public async Task<ReferenceDescription> ShowDialogAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
+        /// <summary>
+        /// Shows the references of a node and returns the one the user picked, or null.
+        /// </summary>
+        public async Task<ReferenceDescription> ShowDialogAsync(AggregationClientModel model, NodeId nodeId, CancellationToken ct = default)
         {
-            m_session = session;
+            m_model = model;
 
             #region Task #B1 - Browse References
-            await UpdateListAsync(session, nodeId, ct);
+            await UpdateListAsync(nodeId, ct);
             #endregion
 
             // display the dialog.
@@ -83,133 +88,21 @@ namespace AggregationClient
         /// <summary>
         /// Updates the list of references.
         /// </summary>
-        private async Task UpdateListAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
-        {
-            m_nodeId = nodeId;
-            ReferencesLV.Items.Clear();
-            List<ReferenceDescription> references = await BrowseAsync(session, nodeId, ct);
-            await DisplayReferencesAsync(session, references, ct);
-        }
-
-        /// <summary>
-        /// Fetches the references for the node.
-        /// </summary>
-        private async Task<List<ReferenceDescription>> BrowseAsync(ISession session, NodeId nodeId, CancellationToken ct = default)
-        {
-            List<ReferenceDescription> references = new List<ReferenceDescription>();
-
-            // specify the references to follow and the fields to return.
-            BrowseDescription nodeToBrowse = new BrowseDescription();
-
-            nodeToBrowse.NodeId = nodeId;
-            nodeToBrowse.ReferenceTypeId = ReferenceTypeIds.References;
-            nodeToBrowse.IncludeSubtypes = true;
-            nodeToBrowse.BrowseDirection = BrowseDirection.Both;
-            nodeToBrowse.NodeClassMask = 0;
-            nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
-
-            List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
-            nodesToBrowse.Add(nodeToBrowse);
-
-            // start the browse operation.
-            BrowseResponse response = await session.BrowseAsync(
-                null,
-                null,
-                2,
-                nodesToBrowse,
-                ct);
-
-            ResponseHeader responseHeader = response.ResponseHeader;
-            ArrayOf<BrowseResult> results = response.Results;
-            ArrayOf<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos;
-
-            // these do sanity checks on the result - make sure response matched the request.
-            ClientBase.ValidateResponse<BrowseDescription, BrowseResult>((IReadOnlyList<BrowseResult>)results.ToArray(), (IReadOnlyList<BrowseDescription>)nodesToBrowse.ToArray());
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), nodesToBrowse);
-
-            // check status.
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                // embed the diagnostic information in a exception.
-                throw ServiceResultException.Create(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable);
-            }
-
-            // add first batch.
-            references.AddRange(results[0].References);
-
-            // check if server limited the results.
-            while (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
-            {
-                List<ByteString> continuationPoints = new List<ByteString>();
-                continuationPoints.Add(results[0].ContinuationPoint);
-
-                // continue browse operation.
-                BrowseNextResponse response2 = await session.BrowseNextAsync(
-                    null,
-                    false,
-                    continuationPoints,
-                    ct);
-
-                responseHeader = response2.ResponseHeader;
-                results = response2.Results;
-                diagnosticInfos = response2.DiagnosticInfos;
-
-                ClientBase.ValidateResponse<ByteString, BrowseResult>((IReadOnlyList<BrowseResult>)results.ToArray(), continuationPoints);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos.ToArray(), continuationPoints);
-
-                // check status.
-                if (StatusCode.IsBad(results[0].StatusCode))
-                {
-                    // embed the diagnostic information in a exception.
-                    throw ServiceResultException.Create(results[0].StatusCode, 0, diagnosticInfos, responseHeader.StringTable);
-                }
-
-                // add next batch.
-                references.AddRange(results[0].References);
-            }
-
-            return references;
-        }
-        #endregion
-
-        #region Private Methods
-        /// <summary>
-        /// Displays the references in the control.
-        /// </summary>
-        private async Task DisplayReferencesAsync(ISession session, List<ReferenceDescription> references, CancellationToken ct = default)
+        private async Task UpdateListAsync(NodeId nodeId, CancellationToken ct = default)
         {
             ReferencesLV.Items.Clear();
 
-            for (int ii = 0; ii < references.Count; ii++)
+            IReadOnlyList<ReferenceRow> references = await m_model.BrowseReferencesAsync(nodeId, ct);
+
+            foreach (ReferenceRow reference in references)
             {
-                ReferenceDescription reference = references[ii];
+                ListViewItem item = new ListViewItem(reference.ReferenceTypeName);
 
-                string referenceType = null;
-
-                // look up the name for the reference
-                IReferenceType referenceTypeNode = await session.NodeCache.FindAsync(reference.ReferenceTypeId, ct) as IReferenceType;
-
-                if (referenceTypeNode != null)
-                {
-                    referenceType = referenceTypeNode.DisplayName.Text;
-
-                    if (!reference.IsForward && !(referenceTypeNode.InverseName).IsNullOrEmpty)
-                    {
-                        referenceType = referenceTypeNode.InverseName.Text;
-                    }
-                }
-
-                // the node cache is used to store the type model so it can be accessed locally.
-                string typeDefinition = await session.NodeCache.GetDisplayTextAsync(reference.TypeDefinition, ct);
-
-                ListViewItem item = new ListViewItem(referenceType);
-
-                // the ToString() operator on the ReferenceDescription returns the target name.
-                item.SubItems.Add(reference.ToString());
+                item.SubItems.Add(reference.TargetName);
                 item.SubItems.Add(reference.NodeClass.ToString());
-                item.SubItems.Add(typeDefinition);
+                item.SubItems.Add(reference.TypeDefinitionName);
 
-                item.Tag = reference;
+                item.Tag = reference.Reference;
 
                 ReferencesLV.Items.Add(item);
             }
@@ -243,7 +136,7 @@ namespace AggregationClient
             }
             catch (Exception exception)
             {
-                ClientUtils.HandleException(m_session?.MessageContext?.Telemetry, this.Text, exception);
+                ClientUtils.HandleException(m_model?.Telemetry, this.Text, exception);
             }
         }
         #endregion
