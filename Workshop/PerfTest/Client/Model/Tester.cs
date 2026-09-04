@@ -36,7 +36,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Subscriptions;
 
-namespace Quickstarts.PerfTestClient
+namespace Quickstarts.PerfTestClient.Model
 {
     // the V2 subscription engine reuses names the classic engine has in Opc.Ua.Client, and
     // Opc.Ua itself has a server side IMonitoredItem, so the client types are aliased.
@@ -205,7 +205,7 @@ namespace Quickstarts.PerfTestClient
 
             // the engine applies the added items on its own worker, so the time it takes for
             // them to exist on the server is the time until nothing is pending any more.
-            await WaitForPendingChangesAsync(subscription);
+            await WaitForPendingChangesAsync(subscription).ConfigureAwait(false);
             DateTime end = DateTime.UtcNow;
 
             lock (m_lock)
@@ -250,7 +250,7 @@ namespace Quickstarts.PerfTestClient
                     return;
                 }
 
-                await Task.Delay(10, ct);
+                await Task.Delay(10, ct).ConfigureAwait(false);
             }
         }
 
@@ -272,7 +272,7 @@ namespace Quickstarts.PerfTestClient
             {
                 // disposing the subscription deletes it on the server and drops it from the
                 // subscription manager, which also stops the notifications.
-                await subscription.DisposeAsync();
+                await subscription.DisposeAsync().ConfigureAwait(false);
             }
         }
 

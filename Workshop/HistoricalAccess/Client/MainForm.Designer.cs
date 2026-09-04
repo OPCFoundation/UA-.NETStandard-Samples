@@ -140,7 +140,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.Server_DisconnectMI.Name = "Server_DisconnectMI";
             this.Server_DisconnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_DisconnectMI.Text = "Disconnect";
-            this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_Click);
+            this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_ClickAsync);
             // 
             // AggregatesMI
             // 
@@ -255,7 +255,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.ConnectServerCTRL.UserIdentity = null;
             this.ConnectServerCTRL.UseSecurity = true;
             this.ConnectServerCTRL.ConnectComplete += new System.EventHandler(this.Server_ConnectCompleteAsync);
-            this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectComplete);
+            this.ConnectServerCTRL.ReconnectComplete += new System.EventHandler(this.Server_ReconnectCompleteAsync);
             // 
             // StatusBar
             // 
