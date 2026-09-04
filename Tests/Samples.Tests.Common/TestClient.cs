@@ -158,6 +158,65 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// Opens the kind of session the sample clients run on: a managed session on the
+        /// V2 subscription engine.
+        /// </summary>
+        /// <remarks>
+        /// The other connects here use the plain session factory, whose sessions have no
+        /// subscription manager - fine for asking a server whether it serves, useless for
+        /// a client model, which creates its subscriptions on the V2 engine and would be
+        /// refused with BadNotSupported. This one goes through the same factory the shared
+        /// connect control of the windows uses.
+        /// </remarks>
+        /// <param name="endpointUrl">The endpoint to connect to.</param>
+        /// <param name="sessionName">The name of the session, for readable server logs.</param>
+        /// <param name="identity">The user to open the session for. Null for anonymous.</param>
+        /// <param name="useSecurity">Whether to prefer a secured endpoint.</param>
+        /// <param name="ct">The cancellation token.</param>
+        public static async Task<TestClient> ConnectManagedAsync(
+            string endpointUrl,
+            string sessionName,
+            IUserIdentity identity = null,
+            bool useSecurity = false,
+            CancellationToken ct = default)
+        {
+            TemporaryPki pki = null;
+            ApplicationInstance application = null;
+
+            try
+            {
+                pki = new TemporaryPki($"client-{sessionName}");
+
+                application = new ApplicationInstance(NullTelemetry.Instance) {
+                    ApplicationName = "Sample Test Client",
+                    ApplicationType = ApplicationType.Client,
+                };
+
+                ApplicationConfiguration configuration =
+                    await CreateConfigurationAsync(application, pki, ct).ConfigureAwait(false);
+
+                ISession session = await Opc.Ua.Samples.Client.SampleSessionFactory
+                    .ConnectAsync(configuration, endpointUrl, useSecurity, identity, sessionName, NullTelemetry.Instance, ct: ct)
+                    .ConfigureAwait(false);
+
+                var client = new TestClient(session, application, pki) {
+                    Endpoint = session.ConfiguredEndpoint?.Description,
+                };
+                application = null;
+                pki = null;
+                return client;
+            }
+            finally
+            {
+                if (application != null)
+                {
+                    await application.DisposeAsync().ConfigureAwait(false);
+                }
+                pki?.Dispose();
+            }
+        }
+
+        /// <summary>
         /// Which endpoint of the server a connect is willing to use.
         /// </summary>
         private enum EndpointChoice

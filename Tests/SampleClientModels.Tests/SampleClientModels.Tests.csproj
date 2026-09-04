@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- the sample clients are WinForms executables, so anything referencing them has to
+         target the windows flavour - even though no window, no STA thread and no message
+         loop is ever created here: the models under test know nothing about the window -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Opc.Ua.Samples.Tests</RootNamespace>
+    <AssemblyName>SampleClientModels.Tests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <Description>Headless tests of the client models of the Workshop samples: each one is attached to a managed session on its own sample server and driven the way its window drives it, without the window.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="NUnit" Version="4.6.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.3.0" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.14.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Samples.Tests.Common\Samples.Tests.Common.csproj" />
+    <ProjectReference Include="..\Samples.Servers.Hosting\Samples.Servers.Hosting.csproj" />
+    <ProjectReference Include="..\..\Samples\Client.Common\Opc.Ua.Samples.Client.csproj" />
+  </ItemGroup>
+
+  <!-- the sample clients whose models are under test. The generated model types of a
+       sample (Namespaces, ObjectIds, ...) are compiled into both its client and its server
+       assembly, and the servers arrive through Samples.Servers.Hosting, so a test must never
+       name one of them - only the model types, which exist once (docs/TESTING.md). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Workshop\Aggregation\Client\Aggregation Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\AlarmCondition\Client\AlarmCondition Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\AliasNames\Client\AliasNames Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\Boiler\Client\Boiler Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\DataAccess\Client\DataAccess Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\DataTypes\Client\DataTypes Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\Empty\Client\Empty Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\FileTransfer\Client\FileTransfer Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\HistoricalAccess\Client\HistoricalAccess Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\HistoricalEvents\Client\HistoricalEvents Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\Methods\Client\Methods Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\NodeManagement\Client\NodeManagement Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\PerfTest\Client\PerfTest Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\RoleManagement\Client\RoleManagement Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\SimpleEvents\Client\SimpleEvents Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\StateMachines\Client\StateMachines Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\UserAuthentication\Client\UserAuthentication Client.csproj" />
+    <ProjectReference Include="..\..\Workshop\Views\Client\Views Client.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -181,6 +181,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <!-- the user interface free helpers the controls and the sample client models share -->
+    <ProjectReference Include="..\Client.Common\Opc.Ua.Samples.Client.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Console">
       <Version>10.0.11</Version>
     </PackageReference>
