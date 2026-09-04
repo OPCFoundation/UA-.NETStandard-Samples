@@ -30,17 +30,13 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
-using Opc.Ua.Client.StateMachines;
-using Opc.Ua.Client.Subscriptions;
-using Opc.Ua.Client.Subscriptions.Streaming;
+using Opc.Ua.Samples.Client;
+using Quickstarts.StateMachines.Client.Model;
 
 namespace Quickstarts.StateMachines.Client
 {
@@ -48,20 +44,11 @@ namespace Quickstarts.StateMachines.Client
     /// The main form of the state machines Quickstart client.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The client never browses the state or transition variables of a machine itself. The
-    /// generic Part 16 client API does that: <see cref="FiniteStateMachineTypeClient"/> wraps
-    /// any finite state machine, and the extension methods on it read the current state
-    /// (<c>GetCurrentFiniteStateAsync</c>) and stream a fresh snapshot per transition
-    /// (<c>ObserveFiniteTransitionsAsync</c>). That is the same code for the vendor machine on
-    /// the left of the window and for the standard program machine on the right.
-    /// </para>
-    /// <para>
-    /// What differs is how the two are driven. The vendor machine has no type definition, so
-    /// its causes are plain method calls. The program machine is a standard type, so the
-    /// source generated <see cref="ProgramStateMachineTypeClient"/> proxy exposes its causes
-    /// as <c>StartAsync</c>, <c>SuspendAsync</c> and so on.
-    /// </para>
+    /// The window owns the shared connect control and hands the session it opens to the
+    /// <see cref="StateMachinesClientModel"/>, which resolves the two machines, streams
+    /// their transitions and reads which causes they permit. The window only maps its
+    /// buttons to the causes of the model, records the transitions the model reports and
+    /// enables the buttons the model says apply.
     /// </remarks>
     public partial class MainForm : Form
     {
@@ -86,31 +73,51 @@ namespace Quickstarts.StateMachines.Client
             this.Icon = ClientUtils.GetAppIcon();
 
             m_telemetry = telemetry;
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
+            ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62571/Quickstarts/StateMachinesServer";
-            this.Text = m_configuration.ApplicationName;
+            this.Text = configuration.ApplicationName;
+
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new StateMachinesClientModel(telemetry);
+            m_model.TransitionObserved += Model_TransitionObserved;
+            m_model.PermittedCausesChanged += Model_PermittedCausesChanged;
+            m_model.Error += Model_Error;
+
+            m_operationButtons = new Dictionary<OperationCause, Button> {
+                [OperationCause.PowerOn] = PowerOnBTN,
+                [OperationCause.PowerOff] = PowerOffBTN,
+                [OperationCause.Start] = StartBTN,
+                [OperationCause.Stop] = StopBTN,
+                [OperationCause.Fault] = FaultBTN,
+                [OperationCause.Reset] = ResetBTN,
+            };
+
+            m_programButtons = new Dictionary<ProgramCause, Button> {
+                [ProgramCause.Start] = ProgramStartBTN,
+                [ProgramCause.Suspend] = ProgramSuspendBTN,
+                [ProgramCause.Resume] = ProgramResumeBTN,
+                [ProgramCause.Halt] = ProgramHaltBTN,
+                [ProgramCause.Reset] = ProgramResetBTN,
+            };
+
+            // the six buttons of the Operation machine share one click handler, which
+            // needs the cause a button stands for
+            m_operationCauses = new Dictionary<Button, OperationCause>();
+
+            foreach (KeyValuePair<OperationCause, Button> entry in m_operationButtons)
+            {
+                m_operationCauses[entry.Value] = entry.Key;
+            }
         }
         #endregion
 
         #region Private Fields
-        /// <summary>
-        /// The names the transitions of the two machines are reported under.
-        /// </summary>
-        private const string kOperation = "Operation";
-        private const string kProgram = "Program";
-
-        private readonly ApplicationConfiguration m_configuration;
         private readonly ITelemetryContext m_telemetry;
-        private ISession m_session;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed asynchronously by StopWatchingAsync.")]
-        private StreamingSubscription m_streaming;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed by StopWatchingAsync.")]
-        private CancellationTokenSource m_cts;
-        private FiniteStateMachineTypeClient m_operation;
-        private ProgramStateMachineTypeClient m_program;
-        private NodeId m_interlockNode;
-        private readonly Dictionary<Button, NodeId> m_causes = new();
-        private readonly Dictionary<Button, NodeId> m_programCauses = new();
+        private readonly StateMachinesClientModel m_model;
+        private readonly Dictionary<OperationCause, Button> m_operationButtons;
+        private readonly Dictionary<ProgramCause, Button> m_programButtons;
+        private readonly Dictionary<Button, OperationCause> m_operationCauses;
         private bool m_updatingInterlock;
         #endregion
 
@@ -133,11 +140,16 @@ namespace Quickstarts.StateMachines.Client
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
+        /// <remarks>
+        /// The model is detached first: it stops its streams and deletes its subscription
+        /// before the control closes the session, because closing a session which still
+        /// carries a subscription waits for the publish pipeline to drain.
+        /// </remarks>
         private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                await StopWatchingAsync();
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -168,16 +180,27 @@ namespace Quickstarts.StateMachines.Client
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
 
-                if (m_session == null)
+                if (session == null)
                 {
-                    await StopWatchingAsync();
+                    await m_model.DetachAsync();
                     EnableControls(false);
                     return;
                 }
 
-                await StartWatchingAsync();
+                TransitionsLV.Items.Clear();
+
+                // the model resolves both machines, reads where they are, starts the streams
+                // and reads which causes apply; all of that is known when it returns.
+                await m_model.AttachAsync(session);
+
+                ShowSnapshot(m_model.OperationState, append: false);
+                ShowSnapshot(m_model.ProgramState, append: false);
+                ShowInterlock(m_model.InterlockClear);
+
+                EnableControls(true);
+                ApplyCauses(m_model.PermittedCauses);
             }
             catch (Exception exception)
             {
@@ -192,6 +215,7 @@ namespace Quickstarts.StateMachines.Client
         {
             try
             {
+                m_model.NotifyReconnectStarting();
                 EnableControls(false);
             }
             catch (Exception exception)
@@ -207,17 +231,12 @@ namespace Quickstarts.StateMachines.Client
         {
             try
             {
-                // a V2 subscription belongs to the subscription manager of the session and
-                // survives the reconnect together with its monitored items, so both streams
-                // keep running and there is nothing to re-create here.
-                m_session = ConnectServerCTRL.Session;
+                // the streams survive the reconnect; the model reads back which causes the
+                // machines permit, because they may well have moved while the connection
+                // was down, and the buttons are offered only once that is known.
+                await m_model.NotifyReconnectCompletedAsync();
                 EnableControls(true);
-
-                // EnableControls only knows that there is a session again, so it offers every
-                // cause. Which of them the machines actually permit has to be read back before
-                // the user can press one, or this client offers a cause the server refuses -
-                // and the machine may well have moved while the connection was down.
-                await RefreshPermittedCausesAsync();
+                ApplyCauses(m_model.PermittedCauses);
             }
             catch (Exception exception)
             {
@@ -228,272 +247,14 @@ namespace Quickstarts.StateMachines.Client
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; only then does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            ClientUtils.WaitForTeardown(StopWatchingAsync);
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
-        }
-        #endregion
-
-        #region Connecting
-        /// <summary>
-        /// Resolves both state machines and starts watching their transitions.
-        /// </summary>
-        private async Task StartWatchingAsync(CancellationToken ct = default)
-        {
-            await StopWatchingAsync();
-
-            TransitionsLV.Items.Clear();
-
-            // this client has built-in knowledge of the address space of its server: the two
-            // machines and the interlock the guard of the Start cause reads.
-            var wellKnownNamespaceUris = new NamespaceTable();
-            wellKnownNamespaceUris.Append(Namespaces.StateMachines);
-
-            List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
-                m_session,
-                ObjectIds.ObjectsFolder,
-                wellKnownNamespaceUris,
-                ct,
-                "1:Machine/1:Operation",
-                "1:Machine/1:Program",
-                "1:Machine/1:SafetyInterlockClear",
-                "1:Machine/1:Operation/1:PowerOn",
-                "1:Machine/1:Operation/1:PowerOff",
-                "1:Machine/1:Operation/1:Start",
-                "1:Machine/1:Operation/1:Stop",
-                "1:Machine/1:Operation/1:Fault",
-                "1:Machine/1:Operation/1:Reset");
-
-            if (nodes.Count < 9 || nodes[0].IsNull || nodes[1].IsNull)
-            {
-                throw new ServiceResultException(
-                    StatusCodes.BadNotFound,
-                    "The server does not expose the state machines of this sample.");
-            }
-
-            // the generic proxy works for any finite state machine, the typed one adds the
-            // methods the standard program state machine declares.
-            m_operation = new FiniteStateMachineTypeClient(m_session, nodes[0], m_telemetry);
-            m_program = new ProgramStateMachineTypeClient(m_session, nodes[1], m_telemetry);
-            m_interlockNode = nodes[2];
-
-            m_causes.Clear();
-            m_programCauses.Clear();
-            m_causes[PowerOnBTN] = nodes[3];
-            m_causes[PowerOffBTN] = nodes[4];
-            m_causes[StartBTN] = nodes[5];
-            m_causes[StopBTN] = nodes[6];
-            m_causes[FaultBTN] = nodes[7];
-            m_causes[ResetBTN] = nodes[8];
-
-            await ResolveProgramCausesAsync(ct);
-
-            // where the machines are right now, before anything moves them.
-            ShowSnapshot(kOperation, await m_operation.GetCurrentFiniteStateAsync(ct), append: false);
-            ShowSnapshot(kProgram, await m_program.GetCurrentFiniteStateAsync(ct), append: false);
-            await ReadInterlockAsync(ct);
-
-            // the streaming subscription lives as long as the connection: the underlying OPC
-            // UA subscription is created when the first enumeration starts.
-            if (!m_session.TryGetSubscriptionManager(out ISubscriptionManager manager))
-            {
-                throw new ServiceResultException(
-                    StatusCodes.BadNotSupported,
-                    "The session does not use the V2 subscription engine.");
-            }
-
-            m_streaming = new StreamingSubscription(manager, ClientUtils.DefaultSubscriptionOptions);
-            m_cts = new CancellationTokenSource();
-
-            // nothing is awaited here on purpose: both enumerations run for as long as the
-            // client is connected, and cancelling the token is what unsubscribes them.
-            _ = PumpTransitionsAsync(kOperation, m_operation, m_cts.Token);
-            _ = PumpTransitionsAsync(kProgram, m_program, m_cts.Token);
-
-            EnableControls(true);
-
-            await RefreshPermittedCausesAsync(ct);
-        }
-
-        /// <summary>
-        /// Resolves the five methods of the program machine.
-        /// </summary>
-        /// <remarks>
-        /// They carry the browse names of the standard type, so they live in the OPC UA
-        /// namespace rather than in the one of the sample.
-        /// </remarks>
-        private async Task ResolveProgramCausesAsync(CancellationToken ct)
-        {
-            m_programCauses.Clear();
-
-            var wellKnownNamespaceUris = new NamespaceTable();
-
-            var buttons = new (Button Button, string BrowseName)[] {
-                (ProgramStartBTN, BrowseNames.Start),
-                (ProgramSuspendBTN, BrowseNames.Suspend),
-                (ProgramResumeBTN, BrowseNames.Resume),
-                (ProgramHaltBTN, BrowseNames.Halt),
-                (ProgramResetBTN, BrowseNames.Reset),
-            };
-
-            List<NodeId> nodes = await ClientUtils.TranslateBrowsePathsAsync(
-                m_session,
-                m_program.ObjectId,
-                wellKnownNamespaceUris,
-                ct,
-                buttons.Select(entry => entry.BrowseName).ToArray());
-
-            for (int ii = 0; ii < buttons.Length && ii < nodes.Count; ii++)
-            {
-                if (!nodes[ii].IsNull)
-                {
-                    m_programCauses[buttons[ii].Button] = nodes[ii];
-                }
-            }
-        }
-
-        /// <summary>
-        /// Offers only the causes which apply to the state each machine is in right now.
-        /// </summary>
-        /// <remarks>
-        /// A cause is only declared for some of the states of its machine, so calling one in
-        /// any other state is refused with BadNotSupported. Which ones apply is not something
-        /// a client should work out for itself: OPC 10000-16 has the server say so through the
-        /// <c>Executable</c> and <c>UserExecutable</c> attributes of the method nodes, which
-        /// the sample server answers from <c>IsCausePermitted</c>. Reading them after every
-        /// transition keeps the buttons in step with the machine, and keeps this client
-        /// correct if the server ever changes its state table.
-        /// </remarks>
-        private async Task RefreshPermittedCausesAsync(CancellationToken ct = default)
-        {
-            List<KeyValuePair<Button, NodeId>> causes = m_causes
-                .Concat(m_programCauses)
-                .ToList();
-
-            if (m_session == null || causes.Count == 0)
-            {
-                return;
-            }
-
-            var nodesToRead = causes
-                .Select(cause => new ReadValueId {
-                    NodeId = cause.Value,
-                    AttributeId = Attributes.UserExecutable,
-                })
-                .ToArrayOf();
-
-            ReadResponse response = await m_session.ReadAsync(
-                null,
-                0,
-                TimestampsToReturn.Neither,
-                nodesToRead,
-                ct);
-
-            List<DataValue> results = response.Results.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToRead.ToArray());
-
-            for (int ii = 0; ii < causes.Count && ii < results.Count; ii++)
-            {
-                // a server which does not answer the attribute leaves the button enabled, so
-                // that this client stays usable against one which is not the sample.
-                causes[ii].Key.Enabled = !results[ii].WrappedValue.TryGetValue(out bool executable)
-                    || executable;
-            }
-        }
-
-        /// <summary>
-        /// Reports every transition of one state machine until the client disconnects.
-        /// </summary>
-        /// <remarks>
-        /// <c>ObserveFiniteTransitionsAsync</c> subscribes to <c>CurrentState/Id</c> and yields
-        /// a snapshot of the state and the transition variables per change, so the window sees
-        /// consistent data per transition and never has to assemble it from single values.
-        /// </remarks>
-        private async Task PumpTransitionsAsync(
-            string name,
-            FiniteStateMachineTypeClient stateMachine,
-            CancellationToken ct)
-        {
-            IStreamingSubscription streaming = m_streaming;
-
-            try
-            {
-                await foreach (FiniteStateSnapshot snapshot in stateMachine
-                    .ObserveFiniteTransitionsAsync(streaming, null, ct)
-                    .ConfigureAwait(false))
-                {
-                    if (ct.IsCancellationRequested || IsDisposed)
-                    {
-                        return;
-                    }
-
-                    // without a window there is nothing to update, and the enumeration keeps
-                    // running rather than ending for good.
-                    if (!IsHandleCreated)
-                    {
-                        continue;
-                    }
-
-                    // the enumeration runs on a publish worker, so the display is updated on
-                    // the UI thread.
-                    BeginInvoke(new Action(() => OnTransitionObserved(name, snapshot)));
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // the client disconnected.
-            }
-            catch (Exception exception)
-            {
-                // the pump runs on a publish worker, so the error is logged instead of shown.
-                m_telemetry?.CreateLogger<MainForm>()
-                    .LogError(exception, "Failed to watch the {StateMachine} state machine.", name);
-            }
-        }
-
-        /// <summary>
-        /// Stops both streams and deletes the subscription on the server.
-        /// </summary>
-        /// <remarks>
-        /// Done before the session is closed: closing a session which still carries a
-        /// subscription waits for the publish pipeline to drain.
-        /// </remarks>
-        private async Task StopWatchingAsync()
-        {
-            StreamingSubscription streaming = m_streaming;
-            CancellationTokenSource cts = m_cts;
-
-            m_streaming = null;
-            m_cts = null;
-            m_operation = null;
-            m_program = null;
-            m_causes.Clear();
-            m_programCauses.Clear();
-
-            if (cts != null)
-            {
-                await cts.CancelAsync();
-                cts.Dispose();
-            }
-
-            if (streaming == null)
-            {
-                return;
-            }
-
-            try
-            {
-                await streaming.DisposeAsync();
-            }
-            catch (Exception exception)
-            {
-                // this also runs when the session has already gone away, and then the
-                // subscription cannot be deleted on the server any more.
-                m_telemetry?.CreateLogger<MainForm>()
-                    .LogError(exception, "Failed to delete the state machine subscription.");
-            }
         }
         #endregion
 
@@ -502,28 +263,21 @@ namespace Quickstarts.StateMachines.Client
         /// Calls the cause the pressed button stands for.
         /// </summary>
         /// <remarks>
-        /// The Operation machine has no type definition, so there is no generated proxy for
-        /// it and its causes are called as the plain methods they are. Which transition a
-        /// call takes is the server's business: a method whose cause cannot apply in the
-        /// current state is refused as BadNotExecutable, and the guard on Start answers
-        /// BadInvalidState while the interlock is open.
+        /// A cause the server refuses - BadNotExecutable outside its state, BadInvalidState
+        /// from the guard on Start while the interlock is open - is thrown by the model and
+        /// shown here, which is the point of the sample.
         /// </remarks>
         private async void OperationCauseBTN_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                if (m_session == null || sender is not Button button ||
-                    !m_causes.TryGetValue(button, out NodeId methodId))
+                if (!m_model.IsConnected || sender is not Button button ||
+                    !m_operationCauses.TryGetValue(button, out OperationCause cause))
                 {
                     return;
                 }
 
-                await m_session.CallAsync(m_operation.ObjectId, methodId, default);
-
-                // the call just moved the machine, so what it permits has changed. Re-read it
-                // here rather than waiting for the transition to come back on the stream: the
-                // buttons then follow the user's own action immediately.
-                await RefreshPermittedCausesAsync();
+                await m_model.CallOperationCauseAsync(cause);
             }
             catch (Exception exception)
             {
@@ -534,13 +288,9 @@ namespace Quickstarts.StateMachines.Client
         /// <summary>
         /// Starts the program.
         /// </summary>
-        /// <remarks>
-        /// ProgramStateMachineType is a standard type, so the generated proxy carries its five
-        /// methods and the client does not have to know their NodeIds.
-        /// </remarks>
         private async void ProgramStartBTN_ClickAsync(object sender, EventArgs e)
         {
-            await CallProgramAsync(ct => m_program.StartAsync(ct));
+            await CallProgramAsync(ProgramCause.Start);
         }
 
         /// <summary>
@@ -548,7 +298,7 @@ namespace Quickstarts.StateMachines.Client
         /// </summary>
         private async void ProgramSuspendBTN_ClickAsync(object sender, EventArgs e)
         {
-            await CallProgramAsync(ct => m_program.SuspendAsync(ct));
+            await CallProgramAsync(ProgramCause.Suspend);
         }
 
         /// <summary>
@@ -556,7 +306,7 @@ namespace Quickstarts.StateMachines.Client
         /// </summary>
         private async void ProgramResumeBTN_ClickAsync(object sender, EventArgs e)
         {
-            await CallProgramAsync(ct => m_program.ResumeAsync(ct));
+            await CallProgramAsync(ProgramCause.Resume);
         }
 
         /// <summary>
@@ -564,7 +314,7 @@ namespace Quickstarts.StateMachines.Client
         /// </summary>
         private async void ProgramHaltBTN_ClickAsync(object sender, EventArgs e)
         {
-            await CallProgramAsync(ct => m_program.HaltAsync(ct));
+            await CallProgramAsync(ProgramCause.Halt);
         }
 
         /// <summary>
@@ -572,25 +322,22 @@ namespace Quickstarts.StateMachines.Client
         /// </summary>
         private async void ProgramResetBTN_ClickAsync(object sender, EventArgs e)
         {
-            await CallProgramAsync(ct => m_program.ResetAsync(ct));
+            await CallProgramAsync(ProgramCause.Reset);
         }
 
         /// <summary>
-        /// Invokes one of the methods of the program proxy and reports what it answered.
+        /// Calls one cause of the program machine and reports what it answered.
         /// </summary>
-        private async Task CallProgramAsync(Func<CancellationToken, ValueTask> call)
+        private async Task CallProgramAsync(ProgramCause cause)
         {
             try
             {
-                if (m_program == null)
+                if (!m_model.IsConnected)
                 {
                     return;
                 }
 
-                await call(default);
-
-                // same as for the vendor machine: the causes the program permits changed.
-                await RefreshPermittedCausesAsync();
+                await m_model.CallProgramCauseAsync(cause);
             }
             catch (Exception exception)
             {
@@ -605,104 +352,85 @@ namespace Quickstarts.StateMachines.Client
         {
             try
             {
-                if (m_session == null || m_interlockNode.IsNull || m_updatingInterlock)
+                // the box is also set from what the server has, and that must not be
+                // written straight back
+                if (!m_model.IsConnected || m_updatingInterlock)
                 {
                     return;
                 }
 
-                var value = new WriteValue {
-                    NodeId = m_interlockNode,
-                    AttributeId = Attributes.Value,
-                    Value = new DataValue(Variant.From(InterlockCB.Checked)),
-                };
-
-                var valuesToWrite = new List<WriteValue> { value };
-
-                WriteResponse response = await m_session.WriteAsync(null, valuesToWrite, default);
-
-                List<StatusCode> results = response.Results.ToList();
-
-                ClientBase.ValidateResponse(results, valuesToWrite);
-
-                if (StatusCode.IsBad(results[0]))
-                {
-                    throw new ServiceResultException(results[0]);
-                }
+                await m_model.WriteInterlockAsync(InterlockCB.Checked);
             }
             catch (Exception exception)
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
         }
-
-        /// <summary>
-        /// Shows the interlock the server currently has, without writing it back.
-        /// </summary>
-        private async Task ReadInterlockAsync(CancellationToken ct)
-        {
-            DataValue value = await m_session.ReadValueAsync(m_interlockNode, ct);
-
-            m_updatingInterlock = true;
-
-            try
-            {
-                InterlockCB.Checked = value.WrappedValue.TryGetValue(out bool clear) && clear;
-            }
-            finally
-            {
-                m_updatingInterlock = false;
-            }
-        }
         #endregion
 
         #region Display
         /// <summary>
-        /// Records a transition and re-reads which causes the machines now permit.
+        /// Records a transition the model observed on the stream.
         /// </summary>
         /// <remarks>
-        /// Runs on the UI thread, marshalled from the publish worker the stream runs on. The
-        /// causes are re-read here rather than in the pump because a transition is exactly
-        /// what changes them: leaving Idle takes Start away and offers Stop instead.
+        /// The model raises this on the thread of the window, so the controls are written
+        /// directly. A transition can still arrive after the window was closed.
         /// </remarks>
-        private async void OnTransitionObserved(string name, FiniteStateSnapshot snapshot)
-        {
-            try
-            {
-                ShowSnapshot(name, snapshot, append: true);
-
-                await RefreshPermittedCausesAsync();
-            }
-            catch (Exception exception)
-            {
-                // this runs as an async void continuation, so an escaping exception would
-                // take the process down rather than reach a handler.
-                m_telemetry?.CreateLogger<MainForm>()
-                    .LogError(exception, "Failed to update the causes the machines permit.");
-            }
-        }
-
-        /// <summary>
-        /// Shows where a machine is, and optionally records how it got there.
-        /// </summary>
-        private void ShowSnapshot(string name, FiniteStateSnapshot snapshot, bool append)
+        private void Model_TransitionObserved(object sender, TransitionObservedEventArgs e)
         {
             if (IsDisposed)
             {
                 return;
             }
 
-            string state = snapshot.CurrentState.Text ?? string.Empty;
-            string transition = snapshot.LastTransition.Text ?? string.Empty;
+            ShowSnapshot(e.Snapshot, append: true);
+        }
 
-            if (name == kOperation)
+        /// <summary>
+        /// Offers the causes the model found to apply.
+        /// </summary>
+        private void Model_PermittedCausesChanged(object sender, PermittedCausesChangedEventArgs e)
+        {
+            if (IsDisposed || !m_model.IsConnected)
             {
-                OperationStateTB.Text = state;
-                OperationTransitionTB.Text = transition;
+                return;
+            }
+
+            ApplyCauses(e.Causes);
+        }
+
+        /// <summary>
+        /// Reports a failure on a background path of the model.
+        /// </summary>
+        private void Model_Error(object sender, ModelErrorEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
+        }
+
+        /// <summary>
+        /// Shows where a machine is, and optionally records how it got there.
+        /// </summary>
+        private void ShowSnapshot(StateMachineSnapshot snapshot, bool append)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            if (snapshot.Machine == StateMachineKind.Operation)
+            {
+                OperationStateTB.Text = snapshot.State;
+                OperationTransitionTB.Text = snapshot.Transition;
             }
             else
             {
-                ProgramStateTB.Text = state;
-                ProgramTransitionTB.Text = transition;
+                ProgramStateTB.Text = snapshot.State;
+                ProgramTransitionTB.Text = snapshot.Transition;
             }
 
             if (!append)
@@ -713,12 +441,45 @@ namespace Quickstarts.StateMachines.Client
             var item = new ListViewItem(
                 snapshot.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff", CultureInfo.CurrentCulture));
 
-            item.SubItems.Add(name);
-            item.SubItems.Add(state);
-            item.SubItems.Add(transition);
+            item.SubItems.Add(snapshot.Machine.ToString());
+            item.SubItems.Add(snapshot.State);
+            item.SubItems.Add(snapshot.Transition);
 
             TransitionsLV.Items.Add(item);
             item.EnsureVisible();
+        }
+
+        /// <summary>
+        /// Shows the interlock the server has, without writing it back.
+        /// </summary>
+        private void ShowInterlock(bool clear)
+        {
+            m_updatingInterlock = true;
+
+            try
+            {
+                InterlockCB.Checked = clear;
+            }
+            finally
+            {
+                m_updatingInterlock = false;
+            }
+        }
+
+        /// <summary>
+        /// Offers only the causes which apply to the state each machine is in right now.
+        /// </summary>
+        private void ApplyCauses(PermittedCauses causes)
+        {
+            foreach (KeyValuePair<OperationCause, Button> entry in m_operationButtons)
+            {
+                entry.Value.Enabled = causes.IsPermitted(entry.Key);
+            }
+
+            foreach (KeyValuePair<ProgramCause, Button> entry in m_programButtons)
+            {
+                entry.Value.Enabled = causes.IsPermitted(entry.Key);
+            }
         }
 
         /// <summary>
@@ -728,18 +489,15 @@ namespace Quickstarts.StateMachines.Client
         {
             InterlockCB.Enabled = enabled;
 
-            PowerOnBTN.Enabled = enabled;
-            PowerOffBTN.Enabled = enabled;
-            StartBTN.Enabled = enabled;
-            StopBTN.Enabled = enabled;
-            FaultBTN.Enabled = enabled;
-            ResetBTN.Enabled = enabled;
+            foreach (Button button in m_operationButtons.Values)
+            {
+                button.Enabled = enabled;
+            }
 
-            ProgramStartBTN.Enabled = enabled;
-            ProgramSuspendBTN.Enabled = enabled;
-            ProgramResumeBTN.Enabled = enabled;
-            ProgramHaltBTN.Enabled = enabled;
-            ProgramResetBTN.Enabled = enabled;
+            foreach (Button button in m_programButtons.Values)
+            {
+                button.Enabled = enabled;
+            }
         }
         #endregion
     }

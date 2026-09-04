@@ -28,20 +28,24 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Security.Cryptography.X509Certificates;
-using System.Windows.Forms;
 using System.IO;
+using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.Client;
+using Quickstarts.HistoricalAccess.Client.Model;
 
 namespace Quickstarts.HistoricalAccess.Client
 {
     /// <summary>
     /// The main form for a simple Quickstart Client application.
     /// </summary>
+    /// <remarks>
+    /// The window owns the shared connect control and hands the session it opens to the
+    /// <see cref="HistoricalAccessClientModel"/> and to the shared history control, which
+    /// does the reading. The window only picks the variable and passes it on.
+    /// </remarks>
     public partial class MainForm : Form
     {
         #region Constructors
@@ -58,6 +62,7 @@ namespace Quickstarts.HistoricalAccess.Client
         /// Creates a form which uses the specified client configuration.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
+        /// <param name="telemetry">The telemetry context of the client.</param>
         public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
         {
             InitializeComponent();
@@ -65,20 +70,20 @@ namespace Quickstarts.HistoricalAccess.Client
             m_telemetry = telemetry;
 
             ReadCTRL.Reset();
-            ConnectServerCTRL.Configuration = m_configuration = configuration;
+            ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62550/Quickstarts/HistoricalAccessServer";
-            this.Text = m_configuration.ApplicationName;
+            this.Text = configuration.ApplicationName;
+
+            // created here, on the thread of the window, so that the model raises its
+            // events on this thread and the handlers below can touch the controls directly
+            m_model = new HistoricalAccessClientModel(telemetry);
+            m_model.Error += Model_Error;
         }
         #endregion
 
         #region Private Fields
-        private ApplicationConfiguration m_configuration;
-        private ISession m_session;
-        private ITelemetryContext m_telemetry;
-        private bool m_connectedOnce;
-        #endregion
-
-        #region Private Methods
+        private readonly ITelemetryContext m_telemetry;
+        private readonly HistoricalAccessClientModel m_model;
         #endregion
 
         #region Event Handlers
@@ -100,10 +105,11 @@ namespace Quickstarts.HistoricalAccess.Client
         /// <summary>
         /// Disconnects from the current session.
         /// </summary>
-        private void Server_DisconnectMI_Click(object sender, EventArgs e)
+        private async void Server_DisconnectMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
+                await m_model.DetachAsync();
                 ConnectServerCTRL.Disconnect();
             }
             catch (Exception exception)
@@ -134,15 +140,19 @@ namespace Quickstarts.HistoricalAccess.Client
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
+                ISession session = ConnectServerCTRL.Session;
 
-                // set a suitable initial state.
-                if (m_session != null && !m_connectedOnce)
+                if (session == null)
                 {
-                    m_connectedOnce = true;
+                    await m_model.DetachAsync();
+                }
+                else
+                {
+                    await m_model.AttachAsync(session);
                 }
 
-                await ReadCTRL.ChangeSessionAsync(m_session, m_telemetry);
+                // the history control takes the session itself, and null when it is gone
+                await ReadCTRL.ChangeSessionAsync(session, m_telemetry);
             }
             catch (Exception exception)
             {
@@ -153,12 +163,12 @@ namespace Quickstarts.HistoricalAccess.Client
         /// <summary>
         /// Updates the application after reconnecting to the server.
         /// </summary>
-        private void Server_ReconnectComplete(object sender, EventArgs e)
+        private async void Server_ReconnectCompleteAsync(object sender, EventArgs e)
         {
             try
             {
-                m_session = ConnectServerCTRL.Session;
-                ReadCTRL.SessionReconnected(m_session);
+                await m_model.NotifyReconnectCompletedAsync();
+                ReadCTRL.SessionReconnected(ConnectServerCTRL.Session);
             }
             catch (Exception exception)
             {
@@ -169,8 +179,13 @@ namespace Quickstarts.HistoricalAccess.Client
         /// <summary>
         /// Cleans up when the main form closes.
         /// </summary>
+        /// <remarks>
+        /// FormClosing cannot await, so the model is detached on a thread pool thread and
+        /// waited for; only then does the control close the session.
+        /// </remarks>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            ClientUtils.WaitForTeardown(m_model.DetachAsync);
             ConnectServerCTRL.Disconnect();
         }
 
@@ -181,14 +196,14 @@ namespace Quickstarts.HistoricalAccess.Client
         {
             try
             {
-                if (m_session == null)
+                if (!m_model.IsConnected)
                 {
                     return;
                 }
 
                 using Opc.Ua.Client.Controls.SelectNodeDlg dialog = new Opc.Ua.Client.Controls.SelectNodeDlg();
                 NodeId nodeId = await dialog.ShowDialogAsync(
-                    m_session,
+                    m_model.Session,
                     Opc.Ua.ObjectIds.ObjectsFolder,
                     "Select Variable to Monitor",
                     m_telemetry,
@@ -198,6 +213,7 @@ namespace Quickstarts.HistoricalAccess.Client
 
                 if (!nodeId.IsNull)
                 {
+                    m_model.SelectNode(nodeId);
                     await ReadCTRL.ChangeNodeAsync(nodeId);
                 }
             }
@@ -207,11 +223,14 @@ namespace Quickstarts.HistoricalAccess.Client
             }
         }
 
+        /// <summary>
+        /// Shows the historical configuration of the selected variable.
+        /// </summary>
         private async void ViewHistoricalConfigurationMI_ClickAsync(object sender, EventArgs e)
         {
             try
             {
-                if (m_session == null)
+                if (!m_model.IsConnected)
                 {
                     return;
                 }
@@ -222,6 +241,19 @@ namespace Quickstarts.HistoricalAccess.Client
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
+        }
+
+        /// <summary>
+        /// Reports a failure on a background path of the model.
+        /// </summary>
+        private void Model_Error(object sender, ModelErrorEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            ClientUtils.HandleException(m_telemetry, this.Text, e.Exception);
         }
         #endregion
 
