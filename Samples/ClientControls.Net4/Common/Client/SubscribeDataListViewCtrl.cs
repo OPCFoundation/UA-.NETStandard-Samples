@@ -40,6 +40,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.MonitoredItems;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -65,9 +66,9 @@ namespace Opc.Ua.Client.Controls
         public SubscribeDataListViewCtrl()
         {
             InitializeComponent();
-            m_callbacks.DataChangeCallback = OnDataChanges;
-            m_callbacks.KeepAliveCallback = OnKeepAlive;
-            m_callbacks.StateChangedCallback = OnSubscriptionStateChanged;
+            m_subscription.Callbacks.DataChangeCallback = OnDataChanges;
+            m_subscription.Callbacks.KeepAliveCallback = OnKeepAlive;
+            m_subscription.Callbacks.StateChangedCallback = OnSubscriptionStateChanged;
             ResultsDV.AutoGenerateColumns = false;
             #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
             ImageList = new ClientUtils().ImageList;
@@ -102,12 +103,10 @@ namespace Opc.Ua.Client.Controls
         #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private DataSet m_dataset;
         #pragma warning restore CA2213
-        private ISession m_session;
+        // the subscription, its items and everything the engine needs said to it; the
+        // control below is the grid which shows them.
+        private readonly SampleSubscription m_subscription = new SampleSubscription();
         private ITelemetryContext m_telemetry;
-        private ISubscription m_subscription;
-        private OptionsMonitor<SubscriptionOptions> m_subscriptionOptions;
-        private readonly SubscriptionCallbacks m_callbacks = new SubscriptionCallbacks();
-        private int m_nextItemId;
         private DisplayState m_state;
         #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
         private EditComplexValueDlg m_EditComplexValueDlg;
@@ -133,36 +132,22 @@ namespace Opc.Ua.Client.Controls
         public void ChangeSession(ISession session, ITelemetryContext telemetry)
         {
             m_telemetry = telemetry;
-            if (!Object.ReferenceEquals(session, m_session))
+
+            // a V2 subscription belongs to the subscription manager of the session it was
+            // created on, and it survives a reconnect together with its monitored items.
+            // It only has to be dropped when it does not belong to the new session.
+            if (m_subscription.ChangeSession(session))
             {
-                m_session = session;
-
-                // a V2 subscription belongs to the subscription manager of the session it was
-                // created on, and it survives a reconnect together with its monitored items.
-                // It only has to be dropped when it does not belong to the new session.
-                if (m_subscription != null && !OwnsSubscription(m_session, m_subscription))
-                {
-                    m_subscription = null;
-                    m_subscriptionOptions = null;
-                }
-
-                if (m_EditComplexValueDlg != null)
-                {
-                    m_EditComplexValueDlg.ChangeSession(session);
-                }
+                m_dataset.Tables[0].Rows.Clear();
             }
+
+            m_EditComplexValueDlg?.ChangeSession(session);
         }
 
         /// <summary>
         /// Returns true if the control has an active subscription assigned.
         /// </summary>
-        public bool HasSubscription
-        {
-            get
-            {
-                return m_subscription != null;
-            }
-        }
+        public bool HasSubscription => m_subscription.HasSubscription;
 
         /// <summary>
         /// The handler the control needs when a subscription is created on its behalf.
@@ -171,16 +156,17 @@ namespace Opc.Ua.Client.Controls
         /// The V2 engine takes the notification handler when the subscription is created, so a
         /// caller which creates the subscription itself has to pass this one.
         /// </remarks>
-        public ISubscriptionNotificationHandler NotificationHandler => m_callbacks;
+        public ISubscriptionNotificationHandler NotificationHandler => m_subscription.NotificationHandler;
 
         /// <summary>
         /// Creates the subscription the control displays on the session.
         /// </summary>
         public ISubscription CreateSubscription(ISession session, SubscriptionOptions options = null)
         {
-            var monitor = new OptionsMonitor<SubscriptionOptions>(options ?? ClientUtils.DefaultSubscriptionOptions);
-            ISubscription subscription = ClientUtils.AddSubscription(session, m_callbacks, monitor);
-            SetSubscription(subscription, session, monitor);
+            ISubscription subscription = m_subscription.Create(session, options);
+
+            m_dataset.Tables[0].Rows.Clear();
+
             return subscription;
         }
 
@@ -194,31 +180,8 @@ namespace Opc.Ua.Client.Controls
         /// control can reconfigure it. Optional: without it the subscription cannot be edited.</param>
         public void SetSubscription(ISubscription subscription, ISession session, OptionsMonitor<SubscriptionOptions> options = null)
         {
-            m_session = session;
-            m_subscription = subscription;
-            m_subscriptionOptions = options;
+            m_subscription.Adopt(subscription, session, options);
             m_dataset.Tables[0].Rows.Clear();
-        }
-
-        /// <summary>
-        /// Returns true if the subscription belongs to the subscription manager of the session.
-        /// </summary>
-        private static bool OwnsSubscription(ISession session, ISubscription subscription)
-        {
-            if (session == null || !session.TryGetSubscriptionManager(out ISubscriptionManager manager))
-            {
-                return false;
-            }
-
-            foreach (ISubscription item in manager.Items)
-            {
-                if (Object.ReferenceEquals(item, subscription))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -226,7 +189,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         public async Task AddItemsAsync(CancellationToken ct, params ReadValueId[] itemsToMonitor)
         {
-            if (m_subscription == null)
+            if (!m_subscription.HasSubscription)
             {
                 throw new ServiceResultException(StatusCodes.BadNoSubscription);
             }
@@ -244,7 +207,7 @@ namespace Opc.Ua.Client.Controls
 
                     DataRow row = m_dataset.Tables[0].NewRow();
 
-                    MonitoredItemHandle handle = NewHandle(new MonitoredItemOptions {
+                    MonitoredItemHandle handle = m_subscription.Add(new MonitoredItemOptions {
                         StartNodeId = itemsToMonitor[ii].NodeId,
                         AttributeId = itemsToMonitor[ii].AttributeId,
                         IndexRange = itemsToMonitor[ii].IndexRange,
@@ -253,7 +216,7 @@ namespace Opc.Ua.Client.Controls
 
                     handle.Row = row;
 
-                    await UpdateRowAsync(row, handle);
+                    await UpdateRowAsync(row, handle, ct);
                     m_dataset.Tables[0].Rows.Add(row);
                 }
             }
@@ -299,38 +262,19 @@ namespace Opc.Ua.Client.Controls
                 row.Selected = false;
             }
 
-            if (m_subscription != null)
+            // apply any changes.
+            if (m_subscription.HasSubscription && m_state == DisplayState.ApplyChanges)
             {
-                // apply any changes.
-                if (m_state == DisplayState.ApplyChanges)
-                {
-                    await ApplyChangesAsync(ct);
-                }
+                await ApplyChangesAsync(ct);
             }
         }
 
         /// <summary>
-        /// Adds the items which are new to the subscription and shows the results.
+        /// Sends the items which are new to the server and shows what it revised them to.
         /// </summary>
-        /// <remarks>
-        /// The V2 engine has no ApplyChanges: adding an item to the collection or reconfiguring
-        /// its options is the request, and the engine applies it on its own worker. The wizard
-        /// step therefore adds the new items and then waits for that worker to settle.
-        /// </remarks>
         private async Task ApplyChangesAsync(CancellationToken ct = default)
         {
-            foreach (DataRow row in m_dataset.Tables[0].Rows)
-            {
-                var handle = (MonitoredItemHandle)row[0];
-
-                if (handle.Item == null)
-                {
-                    m_subscription.MonitoredItems.TryAdd(handle.Name, handle.Options, out IMonitoredItem item);
-                    handle.Item = item;
-                }
-            }
-
-            await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
+            await m_subscription.ApplyAsync(kApplyTimeout, ct);
 
             foreach (DataRow row in m_dataset.Tables[0].Rows)
             {
@@ -429,7 +373,7 @@ namespace Opc.Ua.Client.Controls
 
             row[0] = handle;
             row[1] = ImageList.Images[ClientUtils.GetImageIndex(settings.AttributeId, Variant.Null)];
-            row[2] = await m_session.NodeCache.GetDisplayTextAsync(settings.StartNodeId, ct) + "/" + Attributes.GetBrowseName(settings.AttributeId);
+            row[2] = await m_subscription.Session.NodeCache.GetDisplayTextAsync(settings.StartNodeId, ct) + "/" + Attributes.GetBrowseName(settings.AttributeId);
             row[3] = settings.IndexRange;
             row[4] = settings.Encoding ?? QualifiedName.Null;
             row[5] = settings.MonitoringMode;
@@ -468,14 +412,6 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Creates a handle for a new monitored item of the subscription.
-        /// </summary>
-        private MonitoredItemHandle NewHandle(MonitoredItemOptions options)
-        {
-            return new MonitoredItemHandle(Utils.Format("Item{0}", ++m_nextItemId), options);
-        }
-
-        /// <summary>
         /// Updates the row with the data value.
         /// </summary>
         private void UpdateRow(DataRow row, DataValue value)
@@ -493,24 +429,6 @@ namespace Opc.Ua.Client.Controls
             }
         }
 
-        /// <summary>
-        /// Gets the display string for the subscription status.
-        /// </summary>
-        private string GetDisplayString(ISubscription subscription)
-        {
-            StringBuilder buffer = new StringBuilder();
-
-            buffer.Append((subscription.CurrentPublishingEnabled) ? "Enabled" : "Disabled");
-            buffer.Append(" (");
-            buffer.Append(subscription.CurrentPublishingInterval.TotalMilliseconds);
-            buffer.Append("ms/");
-            buffer.Append(subscription.CurrentKeepAliveCount);
-            buffer.Append('/');
-            buffer.Append(subscription.CurrentLifetimeCount);
-            buffer.Append('}');
-
-            return buffer.ToString();
-        }
         #endregion
 
         #region Event Handlers
@@ -533,14 +451,14 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            if (!Object.ReferenceEquals(subscription, m_subscription))
+            if (!Object.ReferenceEquals(subscription, m_subscription.Subscription))
             {
                 return;
             }
 
             try
             {
-                SubscriptionStateTB.Text = GetDisplayString(subscription);
+                SubscriptionStateTB.Text = SampleSubscription.Describe(subscription);
                 SubscriptionStateTB.ForeColor = Color.Empty;
 
                 // the state change is what reports that the engine applied the pending item
@@ -564,7 +482,7 @@ namespace Opc.Ua.Client.Controls
         /// </summary>
         private void UpdatePublishStatus(ISubscription subscription, uint sequenceNumber, DateTime publishTime, PublishState publishStateMask)
         {
-            if (!Object.ReferenceEquals(subscription, m_subscription))
+            if (!Object.ReferenceEquals(subscription, m_subscription.Subscription))
             {
                 return;
             }
@@ -578,7 +496,7 @@ namespace Opc.Ua.Client.Controls
                 }
                 else if ((publishStateMask & PublishState.Recovered) != 0)
                 {
-                    SubscriptionStateTB.Text = GetDisplayString(subscription);
+                    SubscriptionStateTB.Text = SampleSubscription.Describe(subscription);
                     SubscriptionStateTB.ForeColor = Color.Empty;
                 }
 
@@ -599,7 +517,7 @@ namespace Opc.Ua.Client.Controls
                 return;
             }
 
-            if (!Object.ReferenceEquals(subscription, m_subscription))
+            if (!Object.ReferenceEquals(subscription, m_subscription.Subscription))
             {
                 return;
             }
@@ -610,7 +528,7 @@ namespace Opc.Ua.Client.Controls
 
                 foreach (DataValueChange change in changes)
                 {
-                    MonitoredItemHandle handle = FindHandle(change.MonitoredItem);
+                    MonitoredItemHandle handle = m_subscription.Find(change.MonitoredItem);
 
                     if (handle?.Row == null || handle.Row.RowState == DataRowState.Detached)
                     {
@@ -629,29 +547,6 @@ namespace Opc.Ua.Client.Controls
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
-        }
-
-        /// <summary>
-        /// Finds the handle which owns the monitored item a notification came from.
-        /// </summary>
-        private MonitoredItemHandle FindHandle(IMonitoredItem monitoredItem)
-        {
-            if (monitoredItem == null)
-            {
-                return null;
-            }
-
-            foreach (DataRow row in m_dataset.Tables[0].Rows)
-            {
-                var handle = (MonitoredItemHandle)row[0];
-
-                if (Object.ReferenceEquals(handle.Item, monitoredItem))
-                {
-                    return handle;
-                }
-            }
-
-            return null;
         }
 
         private void PopupMenu_Opening(object sender, CancelEventArgs e)
@@ -677,16 +572,22 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 // a new item starts from the settings of the selected one, or from the defaults.
-                MonitoredItemHandle handle = NewHandle(selected?.Settings ?? new MonitoredItemOptions());
+                // It is added straight away because the dialog edits it in place; a cancelled
+                // dialog takes it back off again, before it ever reached the server.
+                MonitoredItemHandle handle = m_subscription.Add(selected?.Settings ?? new MonitoredItemOptions());
 
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, handle, false, m_telemetry))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_subscription.Session, handle, false, m_telemetry))
                 #pragma warning restore CA2000
                 {
                     DataRow row = m_dataset.Tables[0].NewRow();
                     handle.Row = row;
                     await UpdateRowAsync(row, handle);
                     m_dataset.Tables[0].Rows.Add(row);
+                }
+                else
+                {
+                    m_subscription.Remove(handle);
                 }
             }
             catch (Exception exception)
@@ -714,7 +615,7 @@ namespace Opc.Ua.Client.Controls
                 }
 
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_session, handle, false, m_telemetry))
+                if (await new EditMonitoredItemDlg().ShowDialogAsync(m_subscription.Session, handle, false, m_telemetry))
                 #pragma warning restore CA2000
                 {
                     await UpdateRowAsync(handle.Row, handle);
@@ -735,11 +636,7 @@ namespace Opc.Ua.Client.Controls
                     DataRowView source = row.DataBoundItem as DataRowView;
                     var handle = (MonitoredItemHandle)source.Row[0];
 
-                    if (handle.Item != null)
-                    {
-                        m_subscription.MonitoredItems.TryRemove(handle.Item.ClientHandle);
-                    }
-
+                    m_subscription.Remove(handle);
                     source.Row.Delete();
                 }
 
@@ -775,7 +672,7 @@ namespace Opc.Ua.Client.Controls
                 m_EditComplexValueDlg.Tag = handle;
 
                 await m_EditComplexValueDlg.ShowDialogAsync(
-                    m_session,
+                    m_subscription.Session,
                     handle.Settings.StartNodeId,
                     handle.Settings.AttributeId,
                     null,
@@ -834,15 +731,12 @@ namespace Opc.Ua.Client.Controls
 
                 if (oldMonitoringMode != newMonitoringMode)
                 {
-                    // reconfiguring the options is the request: the engine sends SetMonitoringMode
-                    // for the items which already exist and creates the rest with the new mode.
                     foreach (MonitoredItemHandle handle in handles)
                     {
                         handle.Row[5] = newMonitoringMode;
-                        handle.Configure(options => options with { MonitoringMode = newMonitoringMode });
                     }
 
-                    await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
+                    await m_subscription.SetMonitoringModeAsync(handles, newMonitoringMode, kApplyTimeout);
                 }
             }
             catch (Exception exception)
@@ -855,19 +749,19 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                if (m_subscriptionOptions == null)
+                if (!m_subscription.CanEditSubscription)
                 {
                     return;
                 }
 
                 #pragma warning disable CA2000 // Justification: ownership is transferred to WinForms/control owner or existing sample lifetime is preserved.
-                if (new EditSubscriptionDlg().ShowDialog(m_subscriptionOptions, m_telemetry))
+                if (new EditSubscriptionDlg().ShowDialog(m_subscription.Options, m_telemetry))
                 #pragma warning restore CA2000
                 {
                     // the engine applies the new options on its own worker, so the revised values
                     // are only there once the pending change settled.
-                    await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout);
-                    SubscriptionStateTB.Text = GetDisplayString(m_subscription);
+                    await m_subscription.WaitForChangesAsync(kApplyTimeout);
+                    SubscriptionStateTB.Text = SampleSubscription.Describe(m_subscription.Subscription);
                 }
             }
             catch (Exception exception)

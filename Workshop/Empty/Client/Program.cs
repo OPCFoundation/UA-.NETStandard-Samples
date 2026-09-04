@@ -62,7 +62,9 @@ namespace Quickstarts.EmptyClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "Quickstarts.EmptyClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddEmptyClient(),
                 ExceptionDlg.Show);
         }
     }

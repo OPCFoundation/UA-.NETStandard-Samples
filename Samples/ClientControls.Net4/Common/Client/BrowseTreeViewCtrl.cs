@@ -41,6 +41,7 @@ using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -386,49 +387,20 @@ namespace Opc.Ua.Client.Controls
             {
                 ReferenceDescription reference = (ReferenceDescription)e.Node.Tag;
 
-                // build list of references to browse.
-                List<BrowseDescription> nodesToBrowse = new List<BrowseDescription>();
-
-                for (int ii = 0; ii < m_referenceTypeIds.Length; ii++)
-                {
-                    BrowseDescription nodeToBrowse = new BrowseDescription();
-
-                    nodeToBrowse.NodeId = m_rootId;
-                    nodeToBrowse.BrowseDirection = BrowseDirection.Forward;
-                    nodeToBrowse.ReferenceTypeId = m_referenceTypeIds[ii];
-                    nodeToBrowse.IncludeSubtypes = true;
-                    nodeToBrowse.NodeClassMask = 0;
-                    nodeToBrowse.ResultMask = (uint)BrowseResultMask.All;
-
-                    if (reference != null)
-                    {
-                        nodeToBrowse.NodeId = (NodeId)reference.NodeId;
-                    }
-
-                    nodesToBrowse.Add(nodeToBrowse);
-                }
-
                 // add the children to the control.
                 SortedDictionary<ExpandedNodeId, TreeNode> dictionary = new SortedDictionary<ExpandedNodeId, TreeNode>();
 
                 // browse FIRST (await) before touching the tree so the placeholder
                 // stays in place while the expand is in progress.
-                List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, View, nodesToBrowse, false);
+                List<ReferenceDescription> references = await SampleBrowser.BrowseChildrenAsync(
+                    m_session,
+                    View,
+                    (reference != null) ? (NodeId)reference.NodeId : m_rootId,
+                    m_referenceTypeIds);
 
-                for (int ii = 0; references != null && ii < references.Count; ii++)
+                for (int ii = 0; ii < references.Count; ii++)
                 {
                     reference = references[ii];
-
-                    // ignore out of server references.
-                    if (reference.NodeId.IsAbsolute)
-                    {
-                        continue;
-                    }
-
-                    if (dictionary.ContainsKey(reference.NodeId))
-                    {
-                        continue;
-                    }
 
                     TreeNode child = new TreeNode(reference.ToString());
 
@@ -437,30 +409,7 @@ namespace Opc.Ua.Client.Controls
 
                     if (!reference.TypeDefinition.IsAbsolute)
                     {
-                        try
-                        {
-                            if (!m_typeImageMapping.ContainsKey((NodeId)reference.TypeDefinition))
-                            {
-                                List<NodeId> nodeIds = await ClientUtils.TranslateBrowsePathsAsync(m_session, (NodeId)reference.TypeDefinition, m_session.NamespaceUris, default, Opc.Ua.BrowseNames.Icon);
-
-                                if (nodeIds.Count > 0 && !nodeIds[0].IsNull)
-                                {
-                                    DataValue value = await m_session.ReadValueAsync(nodeIds[0]);
-
-                                    if (value.WrappedValue.TryGetValue(out ByteString bytes))
-                                    {
-                                        System.IO.MemoryStream istrm = new System.IO.MemoryStream(bytes.ToArray());
-                                        Image icon = Image.FromStream(istrm);
-                                        BrowseTV.ImageList.Images.Add(icon);
-                                        m_typeImageMapping[(NodeId)reference.TypeDefinition] = BrowseTV.ImageList.Images.Count - 1;
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception exception)
-                        {
-                            m_logger.LogError(exception, "Error loading image.");
-                        }
+                        await LoadTypeIconAsync((NodeId)reference.TypeDefinition);
                     }
 
                     int index = 0;
@@ -504,6 +453,42 @@ namespace Opc.Ua.Client.Controls
             catch (Exception exception)
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Puts the icon a type definition publishes into the image list of the tree, once
+        /// per type.
+        /// </summary>
+        /// <remarks>
+        /// A type which publishes no icon, or one which cannot be decoded, leaves the
+        /// mapping empty and the node falls back to the image of its node class. A failure
+        /// here is logged rather than shown: it is a decoration, not the address space.
+        /// </remarks>
+        private async Task LoadTypeIconAsync(NodeId typeDefinitionId)
+        {
+            if (m_typeImageMapping.ContainsKey(typeDefinitionId))
+            {
+                return;
+            }
+
+            try
+            {
+                ByteString bytes = await SampleBrowser.ReadTypeIconAsync(m_session, typeDefinitionId);
+
+                if (bytes.IsNull || bytes.Length == 0)
+                {
+                    return;
+                }
+
+                using var stream = new System.IO.MemoryStream(bytes.ToArray());
+
+                BrowseTV.ImageList.Images.Add(Image.FromStream(stream));
+                m_typeImageMapping[typeDefinitionId] = BrowseTV.ImageList.Images.Count - 1;
+            }
+            catch (Exception exception)
+            {
+                m_logger.LogError(exception, "Error loading image.");
             }
         }
 

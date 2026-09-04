@@ -38,6 +38,7 @@ using System.Security.Cryptography.X509Certificates;
 using Opc.Ua.Security.Certificates;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -1098,70 +1099,35 @@ namespace Opc.Ua.Client.Controls
 
             OnUpdateStatus(new Tuple<String, StatusType>("Attempting to read latest configuration options from server.", StatusType.Ok));
 
-            String discoveryMessage = String.Empty;
-            bool success;
+            EndpointDiscoveryResult discovery = await SampleDiscovery.DiscoverEndpointsAsync(
+                m_configuration,
+                server.DiscoveryUrls.ToArray(),
+                (url, reason) => {
+                    #pragma warning disable CA1873 // Justification: sample public API shape is preserved by design.
+                    m_logger.LogDebug("Could not fetch endpoints from url: {DiscoveryUrl}. Reason={Message}", url, reason);
+                    #pragma warning restore CA1873
+                },
+                m_discoveryTimeout,
+                ct);
 
-            // process each url.
-            foreach (string discoveryUrl in server.DiscoveryUrls.ToArray())
+            // another discover operation has started in the meantime; that one owns the dialog now.
+            if (discoverCount != m_discoverCount)
             {
-                Uri url = Utils.ParseUri(discoveryUrl);
+                return;
+            }
 
-                if (url != null)
-                {
-                    (success, discoveryMessage) = await DiscoverEndpointsAsync(url, ct);
-                    if (success)
-                    {
-                        m_discoverySucceeded = true;
-                        m_discoveryUrl = url;
-                        OnUpdateStatus(new Tuple<String, StatusType>("Configuration options are up to date.", StatusType.Ok));
-                        return;
-                    }
+            if (discovery.Succeeded)
+            {
+                m_discoverySucceeded = true;
+                m_discoveryUrl = discovery.DiscoveryUrl;
 
-                    // check if another discover operation has started.
-                    if (discoverCount != m_discoverCount)
-                    {
-                        return;
-                    }
-                }
+                OnUpdateEndpoints(new List<EndpointDescription>(discovery.Endpoints));
+                OnUpdateStatus(new Tuple<String, StatusType>("Configuration options are up to date.", StatusType.Ok));
+                return;
             }
 
             OnUpdateEndpoints(m_availableEndpoints);
-            OnUpdateStatus(new Tuple<String, StatusType>("Warning: Configuration options may not be correct because the server is not available (" + discoveryMessage + ").", StatusType.Warning));
-        }
-
-        /// <summary>
-        /// Fetches the servers from the discovery server.
-        /// </summary>
-        private async Task<(bool Success, string Message)> DiscoverEndpointsAsync(Uri discoveryUrl, CancellationToken ct = default)
-        {
-            // use a short timeout.
-            EndpointConfiguration endpointConfiguration = EndpointConfiguration.Create(m_configuration);
-            endpointConfiguration.OperationTimeout = m_discoveryTimeout;
-
-            DiscoveryClient client = await DiscoveryClient.CreateAsync(
-                discoveryUrl,
-                EndpointConfiguration.Create(m_configuration),
-                m_configuration,
-                DiagnosticsMasks.None,
-                ct);
-
-            try
-            {
-                List<EndpointDescription> endpoints = new List<EndpointDescription>((await client.GetEndpointsAsync(default, ct)).ToArray());
-                OnUpdateEndpoints(endpoints);
-                return (true, String.Empty);
-            }
-            catch (Exception e)
-            {
-                #pragma warning disable CA1873 // Justification: sample public API shape is preserved by design.
-                m_logger.LogDebug("Could not fetch endpoints from url: {DiscoveryUrl}. Reason={Message}", discoveryUrl, e.Message);
-                #pragma warning restore CA1873
-                return (false, e.Message);
-            }
-            finally
-            {
-                await client.CloseAsync(ct);
-            }
+            OnUpdateStatus(new Tuple<String, StatusType>("Warning: Configuration options may not be correct because the server is not available (" + discovery.Error + ").", StatusType.Warning));
         }
 
         /// <summary>

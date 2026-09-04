@@ -114,6 +114,13 @@ The Boiler client is the reference implementation; the Empty client is the templ
 - `SampleSession`: the UI-free helpers which used to live in `ClientUtils` (browse, browse
   path translation, event decoding, bounded session close, V2 subscription creation).
   `ClientUtils` keeps forwarders under the old names.
+- `SampleTypeModel`: reads the instance declarations of a type, with the ones it inherits.
+  This existed twice - in `ClientUtils` and in the `ModelUtils` of the Quickstart library -
+  and neither copy needed a window. `ClientUtils` keeps forwarders under the old names.
+- `TypeDeclaration`, `InstanceDeclaration`, `FilterDeclaration`, `FilterDeclarationField`:
+  what a type model read returns and what an event filter editor builds from it. These
+  existed twice as well; the HistoricalEvents client model used the Quickstart library copy
+  and so depended on a Windows Forms assembly for a type with no user interface in it.
 - `SubscriptionPump`: owns the token and the tasks of `await foreach` enumerations over a
   streaming subscription, so `StopAsync` can wait for them and nothing is raised after a
   detach.
@@ -127,6 +134,26 @@ The Boiler client is the reference implementation; the Empty client is the templ
   answered.
 - `SampleSessionFactory`: opens the managed session the connect control opens, for callers
   without a window (the model tests).
+- `SampleConnection`: the connection of a sample client without the tool bar - discovery,
+  the session, the reconnect it reports, the bounded close, the complex type load.
+  `ConnectServerCtrl` is now the window half of it: two input fields, a status strip and
+  the certificate question. See below.
+- `SampleSubscription`, `MonitoredItemHandle`: a V2 subscription and the monitored items a
+  caller is editing on it - create or adopt, hand out item names, add the pending items and
+  wait for the engine, change a monitoring mode, describe the subscription for a status
+  field. The two subscribe wizards of the control library each owned a copy of this.
+- `SubscriptionHandle`: the same idea for a caller which *owns* a subscription for as long
+  as its session lives, rather than editing one. This is what the session tree and the
+  subscription dialogs of the UA sample client keep; it was UI free already and only lived
+  in a Windows Forms assembly.
+- `SampleBrowser`: what a browse tree asks the server - the children of a node under a set
+  of reference types, and the icon a type definition publishes.
+- `SampleHistory`: the history reads a client makes which the historian of the stack has no
+  method for - the properties of a node which keep a history, the HistoricalDataConfiguration
+  beside a variable, whether a node offers its history at all, and the two edges of the
+  archive a date picker starts from.
+- `SampleDiscovery`: the endpoints of a server, across the discovery urls it advertises -
+  the question an endpoint editor asks, next to the single url `CoreClientUtils` takes.
 - `NodeSetExport`: browses a connected server and writes its address space to a NodeSet2 XML
   file, which is what the `Export NodeSet2...` commands of the Reference Client and the UA
   Sample Client run. `NodeSetExportSettings` decides how far the browse reaches and whether
@@ -135,6 +162,29 @@ The Boiler client is the reference implementation; the Empty client is the templ
   endpoints of the configuration and hands out the connections servers open to it, so a
   session can be created on a socket the server opened. Used by
   `Server > Reverse Connect` of the [Reference Client](../ReferenceClient/README.md).
+
+## The connection behind the connect control
+
+`ConnectServerCtrl` used to own the whole sequence, which meant the only way to open the
+kind of session the samples run on was to create a `UserControl`; the headless tests went
+through `SampleSessionFactory` instead and so exercised a second implementation of the same
+steps. The control now reads its url and its security flag, hands them to a
+`SampleConnection` and renders what comes back:
+
+```csharp
+m_connection = new SampleConnection { CertificateValidation = AskAboutCertificate };
+m_connection.StatusChanged += (s, e) => UpdateStatus(e.IsError, e.Time, "{0}", e.Message);
+m_connection.ConnectComplete += (s, e) => DoConnectComplete(null);
+```
+
+Two things stayed with the window on purpose. **Accepting an untrusted certificate** is a
+question for a person, so `CertificateValidation` is a hook the window points at its dialog;
+with no handler the `AutoAcceptUntrustedCertificates` flag of the configuration decides
+alone. **Marshalling** is the window's job too: `SampleConnection` raises every event on
+whichever thread reached it, and the control marshals with `BeginInvoke`. That is what keeps
+the synchronous `Disconnect()` working - a form closing blocks its own message loop, so an
+event posted to that loop would arrive after the form is gone, while one raised inline still
+reaches it.
 
 ## Testing a model
 

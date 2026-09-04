@@ -41,7 +41,9 @@ namespace Quickstarts.RuntimeNodeSets.Client
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "Quickstarts.RuntimeNodeSetsClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddRuntimeNodeSetsClient(),
                 ExceptionDlg.Show);
         }
     }

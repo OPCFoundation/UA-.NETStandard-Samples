@@ -99,13 +99,18 @@ files and the expected endpoint URL. **Adding a new sample means adding one row.
 tiers iterate that table, so a sample that is not in the catalog is not tested; Tier 0
 additionally globs the repo for `*.Config.xml` so new configs cannot be silently forgotten.
 
-Two factory tables pair those entries with the sample code: `SampleServerFactories`
-(`Samples.Servers.Hosting`) knows the composition root each sample server is registered
-with (`services.AddXServer(configurationFile, configure)`), `SampleClientFactories`
-(`SampleClients.Tests`) how each client creates its main form. Both are written out rather than
-resolved by reflection on purpose: renaming or removing a sample then breaks the build of the
-tests, which is the earliest and clearest moment to notice. A sample without a factory has to
-be listed as a known gap, so it cannot drop out unnoticed.
+Two factory tables pair those entries with the sample code, and both name a composition
+root rather than a constructor: `SampleServerFactories` (`Samples.Servers.Hosting`) knows how
+each sample server is registered (`services.AddXServer(configurationFile, configure)`),
+`SampleClientFactories` (`SampleClients.Tests`) how each client is
+(`services.AddXClient()`, in `Workshop/<Sample>/Client/<Sample>ClientHosting.cs`) and which
+main form that registration feeds. The client table builds a container holding the
+configuration and the telemetry, lets the sample add its client model to it and resolves the
+form out of it - the same three steps `SampleWinFormsHost` takes - so a client which starts
+taking something else from the container is covered without a change to the table. Both are
+written out rather than resolved by reflection on purpose: renaming or removing a sample then
+breaks the build of the tests, which is the earliest and clearest moment to notice. A sample
+without a factory has to be listed as a known gap, so it cannot drop out unnoticed.
 
 ## Practical notes
 
@@ -456,7 +461,10 @@ Three things about this tier which are not obvious from the code:
   return type from `System.Windows.Forms`, `System.Drawing` or the shared control library.
   The models live in the same assembly as their window, so nothing else enforces it. It
   also fails for a client without a model, so a new sample cannot be copied from the
-  template and quietly grow its logic back into the form.
+  template and quietly grow its logic back into the form. The Global Discovery Client is
+  covered by the rule too, even though its models do not derive from `SampleClientModel`:
+  it has no session a connect control hands over, it works through the GDS, push
+  configuration and discovery clients of the stack.
 
 The per-client table under Tier 2 says what each fixture drives.
 
@@ -487,7 +495,9 @@ in them, and which therefore belong here rather than in Tier 2:
 the test starts its sample server in process, then on a dedicated STA thread with a running
 message loop - but without ever showing a window:
 
-- builds the client's real `MainForm` from the client's own configuration file
+- builds the client's real `MainForm` out of a container seeded with the client's own
+  configuration file and the client's own `services.AddXClient()`, the way its `Program.Main`
+  does
 - reaches the shared `ConnectServerCtrl` through its designer field and connects it to the
   server the sample ships with
 - asserts the session is connected and that the control kept it

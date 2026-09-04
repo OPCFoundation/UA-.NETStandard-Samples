@@ -41,7 +41,9 @@ namespace Quickstarts.AliasNames.Client
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "Quickstarts.AliasNamesClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddAliasNamesClient(),
                 ExceptionDlg.Show);
         }
     }

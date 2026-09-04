@@ -60,7 +60,9 @@ namespace AggregationClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "Quickstarts.AggregationClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddAggregationClient(),
                 ExceptionDlg.Show);
         }
     }

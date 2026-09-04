@@ -18,6 +18,7 @@ using Opc.Ua.Client.Controls;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Configuration;
 using Opc.Ua.Sample.Controls;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Samples.Tests
 {

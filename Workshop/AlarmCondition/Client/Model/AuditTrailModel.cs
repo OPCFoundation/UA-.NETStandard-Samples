@@ -94,7 +94,7 @@ namespace Quickstarts.AlarmConditionClient.Model
     /// never shown, because the pump has no caller to throw to.
     /// </para>
     /// </remarks>
-    public sealed class AuditTrailModel : IAsyncDisposable
+    public sealed class AuditTrailModel : IAsyncDisposable, IDisposable
     {
         private readonly ISession m_session;
         private readonly ILogger m_logger;
@@ -221,6 +221,20 @@ namespace Quickstarts.AlarmConditionClient.Model
             {
                 m_logger.LogError(exception, "Failed to delete the audit event subscription.");
             }
+        }
+
+        /// <summary>
+        /// Ends the trail for a caller which cannot await, the window's Dispose.
+        /// </summary>
+        /// <remarks>
+        /// The teardown runs on a thread pool thread, where there is no synchronization
+        /// context for its continuations to be posted back to; awaiting it on the user
+        /// interface thread would deadlock against the message loop the wait is blocking.
+        /// Nothing in it touches a control.
+        /// </remarks>
+        public void Dispose()
+        {
+            SampleSession.WaitForTeardown(() => DisposeAsync().AsTask());
         }
 
         /// <summary>

@@ -599,7 +599,7 @@ namespace Quickstarts.HistoricalEvents.Client.Model
 
             return new TypeDeclaration {
                 NodeId = typeId,
-                Declarations = await ModelUtils.CollectInstanceDeclarationsForTypeAsync(session, typeId, ct).ConfigureAwait(false),
+                Declarations = await SampleTypeModel.CollectInstanceDeclarationsForTypeAsync(session, typeId, ct).ConfigureAwait(false),
             };
         }
 

@@ -62,7 +62,9 @@ namespace Quickstarts.MethodsClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "Quickstarts.MethodsClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddMethodsClient(),
                 ExceptionDlg.Show);
         }
     }

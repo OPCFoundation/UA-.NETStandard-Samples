@@ -42,6 +42,7 @@ using Opc.Ua.Client.Controls;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Sample.Controls
 {

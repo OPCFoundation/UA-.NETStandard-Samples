@@ -32,14 +32,14 @@ using System.Data;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.MonitoredItems;
 
-namespace Opc.Ua.Client.Controls
+namespace Opc.Ua.Samples.Client
 {
     // the V2 subscription engine reuses names the classic engine already has in the enclosing
     // Opc.Ua.Client namespace, which wins over a using directive at the top of the file.
     using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
 
     /// <summary>
-    /// Everything a control needs to keep about one monitored item of the V2 engine.
+    /// Everything a caller needs to keep about one monitored item of the V2 engine.
     /// </summary>
     /// <remarks>
     /// The V2 engine takes the settings of a monitored item through an
@@ -68,7 +68,7 @@ namespace Opc.Ua.Client.Controls
         public string Name { get; }
 
         /// <summary>
-        /// The name a control displays for the item. Defaults to <see cref="Name"/>.
+        /// The name a caller displays for the item. Defaults to <see cref="Name"/>.
         /// </summary>
         /// <remarks>
         /// The V2 engine identifies an item by its unique name and its options carry no
@@ -104,7 +104,8 @@ namespace Opc.Ua.Client.Controls
         public IMonitoredItem Item { get; set; }
 
         /// <summary>
-        /// The grid row which displays the item.
+        /// The grid row which displays the item, for the callers which bind one. Nothing
+        /// in this library reads it.
         /// </summary>
         public DataRow Row { get; set; }
 

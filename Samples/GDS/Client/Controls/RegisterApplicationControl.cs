@@ -41,6 +41,7 @@ using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
 using Opc.Ua.Gds.Client.Controls;
 using Opc.Ua.Security.Certificates;
+using Opc.Ua.Gds.Client.Model;
 
 namespace Opc.Ua.Gds.Client
 {
@@ -83,6 +84,9 @@ namespace Opc.Ua.Gds.Client
         private const int ServerPullManagement = (int)RegistrationType.ServerPull;
         private const int ServerPushManagement = (int)RegistrationType.ServerPush;
 
+        // the register, find and unregister calls, and the record they are built from
+        private readonly RegistrationModel m_model = new RegistrationModel();
+
         public event EventHandler<SelectServerEventArgs> SelectServer;
         public event EventHandler<RegisteredApplicationChangedEventArgs> RegisteredApplicationChanged;
 
@@ -103,6 +107,7 @@ namespace Opc.Ua.Gds.Client
         public async Task InitializeAsync(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient pushClient, EndpointDescription endpoint, GlobalDiscoveryClientConfiguration configuration, ITelemetryContext telemetry)
         {
             m_gds = gds;
+            m_model.Initialize(gds);
             m_pushClient = pushClient;
             m_application.ServerUrl = null;
 
@@ -270,17 +275,17 @@ namespace Opc.Ua.Gds.Client
                 case RegistrationType.ClientPull:
                 case RegistrationType.ServerPull:
                 {
-                    ConfigurationFileTextBox.Text = AddSpecialFolders(m_application.ConfigurationFile);
-                    CertificateStorePathTextBox.Text = AddSpecialFolders(m_application.CertificateStorePath);
+                    ConfigurationFileTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.ConfigurationFile);
+                    CertificateStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.CertificateStorePath);
                     CertificateSubjectNameTextBox.Text = m_application.CertificateSubjectName;
-                    CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(m_application.CertificatePublicKeyPath);
-                    CertificatePrivateKeyPathTextBox.Text = AddSpecialFolders(m_application.CertificatePrivateKeyPath);
-                    TrustListStorePathTextBox.Text = AddSpecialFolders(m_application.TrustListStorePath);
-                    IssuerListStorePathTextBox.Text = AddSpecialFolders(m_application.IssuerListStorePath);
-                    HttpsCertificatePublicKeyPathTextBox.Text = AddSpecialFolders(m_application.HttpsCertificatePublicKeyPath);
-                    HttpsCertificatePrivateKeyPathTextBox.Text = AddSpecialFolders(m_application.HttpsCertificatePrivateKeyPath);
-                    HttpsTrustListStorePathTextBox.Text = AddSpecialFolders(m_application.HttpsTrustListStorePath);
-                    HttpsIssuerListStorePathTextBox.Text = AddSpecialFolders(m_application.HttpsIssuerListStorePath);
+                    CertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.CertificatePublicKeyPath);
+                    CertificatePrivateKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.CertificatePrivateKeyPath);
+                    TrustListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.TrustListStorePath);
+                    IssuerListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.IssuerListStorePath);
+                    HttpsCertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.HttpsCertificatePublicKeyPath);
+                    HttpsCertificatePrivateKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.HttpsCertificatePrivateKeyPath);
+                    HttpsTrustListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.HttpsTrustListStorePath);
+                    HttpsIssuerListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(m_application.HttpsIssuerListStorePath);
                     break;
                 }
 
@@ -300,68 +305,6 @@ namespace Opc.Ua.Gds.Client
                     break;
                 }
             }
-        }
-
-        private string AddSpecialFolders(string filePath)
-        {
-            if (filePath == null)
-            {
-                return filePath;
-            }
-
-            string prefix = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-
-            if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Concat("%", Environment.SpecialFolder.ProgramFiles.ToString(), "%", filePath.AsSpan(prefix.Length));
-            }
-
-            prefix = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-
-            if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Concat("%", Environment.SpecialFolder.CommonApplicationData.ToString(), "%", filePath.AsSpan(prefix.Length));
-            }
-
-            prefix = Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles);
-
-            if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Concat("%", Environment.SpecialFolder.CommonProgramFiles.ToString(), "%", filePath.AsSpan(prefix.Length));
-            }
-
-            prefix = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-
-            if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Concat("%", Environment.SpecialFolder.LocalApplicationData.ToString(), "%", filePath.AsSpan(prefix.Length));
-            }
-
-            prefix = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-            if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Concat("%", Environment.SpecialFolder.ApplicationData.ToString(), "%", filePath.AsSpan(prefix.Length));
-            }
-
-            prefix = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-            if (filePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Concat("%", Environment.SpecialFolder.MyDocuments.ToString(), "%", filePath.AsSpan(prefix.Length));
-            }
-
-            return filePath;
-        }
-
-        private string RemoveSpecialFolders(string filePath)
-        {
-            if (filePath == null)
-            {
-                return filePath;
-            }
-
-            return Utils.GetAbsoluteFilePath(filePath, true, false, false);
         }
 
         private void SetDiscoveryUrls(IList<string> discoveryUrls)
@@ -404,26 +347,6 @@ namespace Opc.Ua.Gds.Client
 
             ServerCapabilitiesTextBox.Text = buffer.ToString();
             ServerCapabilitiesTextBox.Tag = capabilities;
-        }
-
-        private string ReplaceLocalhost(string value)
-        {
-            if (value == null)
-            {
-                return null;
-            }
-
-            return value.Replace("localhost", Utils.GetHostName(), StringComparison.Ordinal);
-        }
-
-        private string HostnameToLocalhost(string value)
-        {
-            if (value == null)
-            {
-                return null;
-            }
-
-            return value.Replace(Utils.GetHostName(), "localhost", StringComparison.Ordinal);
         }
 
         private void ClearFields()
@@ -501,7 +424,7 @@ namespace Opc.Ua.Gds.Client
                 {
                     SetRegistrationTypeNoTrigger(application.RegistrationType);
 
-                    ApplicationUriTextBox.Text = ReplaceLocalhost(application.ApplicationUri);
+                    ApplicationUriTextBox.Text = RegistrationModel.ReplaceLocalhost(application.ApplicationUri);
                     await ReadRegistrationAsync(true);
 
                     ApplicationNameTextBox.Text = application.ApplicationName;
@@ -572,7 +495,7 @@ namespace Opc.Ua.Gds.Client
 #endif
                     if (application.Domains != null)
                     {
-                        DomainsTextBox.Text = ReplaceLocalhost(application.Domains);
+                        DomainsTextBox.Text = RegistrationModel.ReplaceLocalhost(application.Domains);
                     }
 
                     return;
@@ -596,7 +519,7 @@ namespace Opc.Ua.Gds.Client
                     SetRegistrationTypeNoTrigger(RegistrationType.ServerPull);
                 }
 
-                ApplicationUriTextBox.Text = ReplaceLocalhost(configuration.ApplicationUri);
+                ApplicationUriTextBox.Text = RegistrationModel.ReplaceLocalhost(configuration.ApplicationUri);
                 await ReadRegistrationAsync(true);
 
                 ApplicationNameTextBox.Text = configuration.ApplicationName;
@@ -651,7 +574,7 @@ namespace Opc.Ua.Gds.Client
             {
                 DirectoryInfo directory = new DirectoryInfo(m_lastDirPath);
 
-                string configurationFile = RemoveSpecialFolders(ConfigurationFileTextBox.Text.Trim());
+                string configurationFile = RegistrationModel.RemoveSpecialFolders(ConfigurationFileTextBox.Text.Trim());
 
                 if (!String.IsNullOrEmpty(configurationFile))
                 {
@@ -686,7 +609,7 @@ namespace Opc.Ua.Gds.Client
                 }
                 else
                 {
-                    ConfigurationFileTextBox.Text = AddSpecialFolders(dialog.FileName);
+                    ConfigurationFileTextBox.Text = RegistrationModel.AddSpecialFolders(dialog.FileName);
                     InitializePullConfiguration(ConfigurationFileTextBox.Text);
                 }
 
@@ -756,7 +679,7 @@ namespace Opc.Ua.Gds.Client
             {
                 DirectoryInfo directory = new DirectoryInfo(m_lastDirPath);
 
-                string storePath = RemoveSpecialFolders(CertificateStorePathTextBox.Text.Trim());
+                string storePath = RegistrationModel.RemoveSpecialFolders(CertificateStorePathTextBox.Text.Trim());
 
                 if (!String.IsNullOrEmpty(storePath))
                 {
@@ -788,7 +711,7 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = directory.FullName;
 
-                CertificateStorePathTextBox.Text = AddSpecialFolders(directory.FullName);
+                CertificateStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(directory.FullName);
             }
             catch (Exception ex)
             {
@@ -798,9 +721,9 @@ namespace Opc.Ua.Gds.Client
 
         private void SetCertificatePublicKey(string path)
         {
-            CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(path);
+            CertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(path);
 
-            X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
+            X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RegistrationModel.RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
 
             try
             {
@@ -860,7 +783,7 @@ namespace Opc.Ua.Gds.Client
             {
                 DirectoryInfo directory = new DirectoryInfo(m_lastDirPath);
 
-                string path = RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text.Trim());
+                string path = RegistrationModel.RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text.Trim());
 
                 if (!String.IsNullOrEmpty(path))
                 {
@@ -895,9 +818,9 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = new FileInfo(dialog.FileName).Directory.FullName;
 
-                CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(dialog.FileName);
+                CertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(dialog.FileName);
 
-                X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
+                X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RegistrationModel.RemoveSpecialFolders(CertificatePublicKeyPathTextBox.Text));
 
                 try
                 {
@@ -940,7 +863,7 @@ namespace Opc.Ua.Gds.Client
             {
                 DirectoryInfo directory = new DirectoryInfo(m_lastDirPath);
 
-                string path = RemoveSpecialFolders(CertificatePrivateKeyPathTextBox.Text.Trim());
+                string path = RegistrationModel.RemoveSpecialFolders(CertificatePrivateKeyPathTextBox.Text.Trim());
 
                 if (!String.IsNullOrEmpty(path))
                 {
@@ -975,7 +898,7 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = new FileInfo(dialog.FileName).Directory.FullName;
 
-                CertificatePrivateKeyPathTextBox.Text = AddSpecialFolders(dialog.FileName);
+                CertificatePrivateKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(dialog.FileName);
             }
             catch (Exception ex)
             {
@@ -989,7 +912,7 @@ namespace Opc.Ua.Gds.Client
             {
                 DirectoryInfo directory = new DirectoryInfo(m_lastDirPath);
 
-                string path = RemoveSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text.Trim());
+                string path = RegistrationModel.RemoveSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text.Trim());
 
                 if (!String.IsNullOrEmpty(path))
                 {
@@ -1024,9 +947,9 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = new FileInfo(dialog.FileName).Directory.FullName;
 
-                CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(dialog.FileName);
+                CertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(dialog.FileName);
 
-                X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RemoveSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text));
+                X509Certificate2 certificate = GdsCertificateLoader.LoadCertificateFromFile(RegistrationModel.RemoveSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text));
 
                 try
                 {
@@ -1060,7 +983,7 @@ namespace Opc.Ua.Gds.Client
             {
                 DirectoryInfo directory = new DirectoryInfo(m_lastDirPath);
 
-                string path = RemoveSpecialFolders(HttpsCertificatePrivateKeyPathTextBox.Text.Trim());
+                string path = RegistrationModel.RemoveSpecialFolders(HttpsCertificatePrivateKeyPathTextBox.Text.Trim());
 
                 if (!String.IsNullOrEmpty(path))
                 {
@@ -1095,7 +1018,7 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = new FileInfo(dialog.FileName).Directory.FullName;
 
-                HttpsCertificatePrivateKeyPathTextBox.Text = AddSpecialFolders(dialog.FileName);
+                HttpsCertificatePrivateKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(dialog.FileName);
             }
             catch (Exception ex)
             {
@@ -1147,7 +1070,7 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = directory.FullName;
 
-                TrustListStorePathTextBox.Text = AddSpecialFolders(directory.FullName);
+                TrustListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(directory.FullName);
             }
             catch (Exception ex)
             {
@@ -1193,7 +1116,7 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = directory.FullName;
 
-                IssuerListStorePathTextBox.Text = AddSpecialFolders(directory.FullName);
+                IssuerListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(directory.FullName);
             }
             catch (Exception ex)
             {
@@ -1239,7 +1162,7 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = directory.FullName;
 
-                HttpsTrustListStorePathTextBox.Text = AddSpecialFolders(directory.FullName);
+                HttpsTrustListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(directory.FullName);
             }
             catch (Exception ex)
             {
@@ -1285,7 +1208,7 @@ namespace Opc.Ua.Gds.Client
 
                 m_lastDirPath = directory.FullName;
 
-                HttpsIssuerListStorePathTextBox.Text = AddSpecialFolders(directory.FullName);
+                HttpsIssuerListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(directory.FullName);
             }
             catch (Exception ex)
             {
@@ -1297,54 +1220,9 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                string applicationName = ApplicationNameTextBox.Text.Trim();
+                bool isClient = RegistrationTypeComboBox.SelectedIndex == ClientPullManagement;
 
-                if (String.IsNullOrEmpty(applicationName))
-                {
-                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
-                    throw new ArgumentException("The Application Name must specified.", "ApplicationName");
-                    #pragma warning restore CA2208
-                }
-
-                applicationName = ReplaceLocalhost(applicationName);
-
-                string applicationUri = ApplicationUriTextBox.Text.Trim();
-
-                if (String.IsNullOrEmpty(applicationUri))
-                {
-                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
-                    throw new ArgumentException("The Application URI must specified.", "ApplicationUri");
-                    #pragma warning restore CA2208
-                }
-
-                if (!Uri.IsWellFormedUriString(applicationUri, UriKind.Absolute))
-                {
-                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
-                    throw new ArgumentException(applicationUri + "is not a valid URI.", "ApplicationUri");
-                    #pragma warning restore CA2208
-                }
-
-                applicationUri = ReplaceLocalhost(applicationUri);
-
-                string productUri = ProductUriTextBox.Text.Trim();
-
-                if (String.IsNullOrEmpty(productUri))
-                {
-                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
-                    throw new ArgumentException("The Product URI must specified.", "ProductUri");
-                    #pragma warning restore CA2208
-                }
-
-                if (!Uri.IsWellFormedUriString(productUri, UriKind.Absolute))
-                {
-                    #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
-                    throw new ArgumentException(productUri + "is not a valid URI.", "ProductUri");
-                    #pragma warning restore CA2208
-                }
-
-                productUri = ReplaceLocalhost(productUri);
-
-                if (RegistrationTypeComboBox.SelectedIndex == ClientPullManagement)
+                if (isClient)
                 {
                     DiscoveryUrlsTextBox.Tag = null;
                     DiscoveryUrlsTextBox.Text = null;
@@ -1352,91 +1230,42 @@ namespace Opc.Ua.Gds.Client
                     ServerCapabilitiesTextBox.Text = null;
                 }
 
-                IList<string> discoveryUrls = DiscoveryUrlsTextBox.Tag as IList<string>;
-
-                if (RegistrationTypeComboBox.SelectedIndex != ClientPullManagement)
-                {
-                    if (discoveryUrls == null || discoveryUrls.Count == 0)
-                    {
-                        #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
-                        throw new ArgumentException("At least one Discovery URL must specified.", "DiscoveryUrls");
-                        #pragma warning restore CA2208
-                    }
-                }
-
-                IList<string> capabilities = ServerCapabilitiesTextBox.Tag as IList<string>;
-
-                if (RegistrationTypeComboBox.SelectedIndex != ClientPullManagement)
-                {
-                    if (capabilities == null || capabilities.Count == 0)
-                    {
-                        #pragma warning disable CA2208 // Justification: Public sample API compatibility is preserved.
-                        throw new ArgumentException("At least one Server Capability must specified.", "ServerCapabilities");
-                        #pragma warning restore CA2208
-                    }
-                }
+                // the model checks the fields and builds the record; a failure reaches the
+                // handler below as the ArgumentException it always was.
+                var registration = new ApplicationRegistration(
+                    ApplicationNameTextBox.Text,
+                    ApplicationUriTextBox.Text,
+                    ProductUriTextBox.Text,
+                    isClient,
+                    DiscoveryUrlsTextBox.Tag as IList<string>,
+                    ServerCapabilitiesTextBox.Tag as IList<string>);
 
                 ApplicationRecordDataType recordToReplace = ApplicationIdTextBox.Tag as ApplicationRecordDataType;
 
-                var records = await m_gds.FindApplicationAsync(applicationUri);
+                recordToReplace = await ChooseRecordAsync(
+                    RegistrationModel.ReplaceLocalhost(ApplicationUriTextBox.Text.Trim()),
+                    recordToReplace,
+                    recordToReplace?.ApplicationId ?? NodeId.Null);
 
-                if (records != null)
-                {
-                    if (records.Count > 1)
-                    {
-                        #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                        recordToReplace = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records.ToArray(), recordToReplace?.ApplicationId ?? NodeId.Null);
-                        #pragma warning restore CA2000
-                    }
-                    else if (records.Count > 0)
-                    {
-                        recordToReplace = records[0];
-                    }
-                }
+                ApplicationRecordDataType record = await m_model.RegisterAsync(registration, recordToReplace);
 
-                if (recordToReplace == null)
-                {
-                    recordToReplace = new ApplicationRecordDataType();
-                }
+                ApplicationIdTextBox.Text = Utils.Format("{0}", record.ApplicationId);
+                ApplicationIdTextBox.Tag = record;
 
-                List<string> urls = new List<string>();
+                ApplicationNameTextBox.Text = Utils.Format("{0}", record.ApplicationNames[0]);
+                ApplicationUriTextBox.Text = record.ApplicationUri;
+                ProductUriTextBox.Text = record.ProductUri;
+                SetDiscoveryUrls(record.DiscoveryUrls.ToArray());
 
-                if (discoveryUrls != null)
-                {
-                    foreach (var discoveryUrl in discoveryUrls)
-                    {
-                        urls.Add(ReplaceLocalhost(discoveryUrl));
-                    }
-                }
-
-                recordToReplace.ApplicationUri = applicationUri;
-                recordToReplace.ApplicationType = (RegistrationTypeComboBox.SelectedIndex != ClientPullManagement) ? ApplicationType.Server : ApplicationType.Client;
-                recordToReplace.ApplicationNames = new LocalizedText[] { new LocalizedText(applicationName) };
-                recordToReplace.ProductUri = productUri;
-                recordToReplace.DiscoveryUrls = urls;
-                recordToReplace.ServerCapabilities = (capabilities != null) ? new List<string>(capabilities) : new List<string>();
-
-                var applicationId = await m_gds.RegisterApplicationAsync(recordToReplace);
-
-                recordToReplace.ApplicationId = applicationId;
-
-                ApplicationIdTextBox.Text = Utils.Format("{0}", applicationId);
-                ApplicationIdTextBox.Tag = recordToReplace;
-
-                ApplicationNameTextBox.Text = applicationName;
-                ApplicationUriTextBox.Text = applicationUri;
-                ProductUriTextBox.Text = productUri;
-                SetDiscoveryUrls(urls);
-
-                CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(CertificatePublicKeyPathTextBox.Text);
-                CertificatePrivateKeyPathTextBox.Text = AddSpecialFolders(CertificatePrivateKeyPathTextBox.Text);
-                CertificateStorePathTextBox.Text = AddSpecialFolders(CertificateStorePathTextBox.Text);
-                TrustListStorePathTextBox.Text = AddSpecialFolders(TrustListStorePathTextBox.Text);
-                IssuerListStorePathTextBox.Text = AddSpecialFolders(IssuerListStorePathTextBox.Text);
-                HttpsCertificatePublicKeyPathTextBox.Text = AddSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text);
-                HttpsCertificatePrivateKeyPathTextBox.Text = AddSpecialFolders(HttpsCertificatePrivateKeyPathTextBox.Text);
-                HttpsTrustListStorePathTextBox.Text = AddSpecialFolders(HttpsTrustListStorePathTextBox.Text);
-                HttpsIssuerListStorePathTextBox.Text = AddSpecialFolders(HttpsIssuerListStorePathTextBox.Text);
+                CertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(CertificatePublicKeyPathTextBox.Text);
+                CertificatePrivateKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(CertificatePrivateKeyPathTextBox.Text);
+                CertificateStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(CertificateStorePathTextBox.Text);
+                TrustListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(TrustListStorePathTextBox.Text);
+                IssuerListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(IssuerListStorePathTextBox.Text);
+                HttpsCertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text);
+                HttpsCertificatePrivateKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(HttpsCertificatePrivateKeyPathTextBox.Text);
+                HttpsTrustListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(HttpsTrustListStorePathTextBox.Text);
+                HttpsIssuerListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(HttpsIssuerListStorePathTextBox.Text);
 
                 UnregisterApplicationButton.Enabled = true;
 
@@ -1455,6 +1284,41 @@ namespace Opc.Ua.Gds.Client
             {
                 Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Text, ex);
             }
+        }
+
+        /// <summary>
+        /// The record the Global Discovery Server holds for an application uri, asking which
+        /// one when it holds several.
+        /// </summary>
+        /// <remarks>
+        /// More than one record for the same uri is not an error - the application may have
+        /// been registered from several machines - and which of them is meant is the one
+        /// question in the registration a person has to answer, which is why it is here and
+        /// not in the model.
+        /// </remarks>
+        /// <param name="applicationUri">The uri to look for.</param>
+        /// <param name="fallback">What to return when the server holds no record.</param>
+        /// <param name="preselected">The record to preselect in the dialog.</param>
+        private async Task<ApplicationRecordDataType> ChooseRecordAsync(
+            string applicationUri,
+            ApplicationRecordDataType fallback,
+            NodeId preselected)
+        {
+            IReadOnlyList<ApplicationRecordDataType> records = await m_model.FindApplicationsAsync(applicationUri);
+
+            if (records.Count == 0)
+            {
+                return fallback;
+            }
+
+            if (records.Count == 1)
+            {
+                return records[0];
+            }
+
+            #pragma warning disable CA1849, CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
+            return new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records.ToArray(), preselected);
+            #pragma warning restore CA1849, CA2000
         }
 
         private async Task ReadRegistrationAsync(bool silent)
@@ -1485,27 +1349,13 @@ namespace Opc.Ua.Gds.Client
                 return;
             }
 
-            applicationUri = ReplaceLocalhost(applicationUri);
+            applicationUri = RegistrationModel.ReplaceLocalhost(applicationUri);
 
-            ApplicationRecordDataType existingRecord = null;
+            ApplicationRecordDataType existingRecord;
 
             try
             {
-                var records = await m_gds.FindApplicationAsync(applicationUri);
-
-                if (records != null)
-                {
-                    if (records.Count > 1)
-                    {
-                        #pragma warning disable CA1849, CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                        existingRecord = new ViewApplicationRecordsDialog(m_gds).ShowDialog(m_logger, Parent, records.ToArray(), NodeId.Null);
-                        #pragma warning restore CA1849, CA2000
-                    }
-                    else if (records.Count > 0)
-                    {
-                        existingRecord = records[0];
-                    }
-                }
+                existingRecord = await ChooseRecordAsync(applicationUri, null, NodeId.Null);
             }
             catch (Exception)
             {
@@ -1549,16 +1399,16 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                ConfigurationFileTextBox.Text = AddSpecialFolders(ConfigurationFileTextBox.Text);
-                CertificateStorePathTextBox.Text = AddSpecialFolders(CertificateStorePathTextBox.Text);
-                CertificatePublicKeyPathTextBox.Text = AddSpecialFolders(CertificatePublicKeyPathTextBox.Text);
-                CertificatePrivateKeyPathTextBox.Text = AddSpecialFolders(CertificatePrivateKeyPathTextBox.Text);
-                TrustListStorePathTextBox.Text = AddSpecialFolders(TrustListStorePathTextBox.Text);
-                IssuerListStorePathTextBox.Text = AddSpecialFolders(IssuerListStorePathTextBox.Text);
-                HttpsCertificatePublicKeyPathTextBox.Text = AddSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text);
-                HttpsCertificatePrivateKeyPathTextBox.Text = AddSpecialFolders(HttpsCertificatePrivateKeyPathTextBox.Text);
-                HttpsTrustListStorePathTextBox.Text = AddSpecialFolders(HttpsTrustListStorePathTextBox.Text);
-                HttpsIssuerListStorePathTextBox.Text = AddSpecialFolders(HttpsIssuerListStorePathTextBox.Text);
+                ConfigurationFileTextBox.Text = RegistrationModel.AddSpecialFolders(ConfigurationFileTextBox.Text);
+                CertificateStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(CertificateStorePathTextBox.Text);
+                CertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(CertificatePublicKeyPathTextBox.Text);
+                CertificatePrivateKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(CertificatePrivateKeyPathTextBox.Text);
+                TrustListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(TrustListStorePathTextBox.Text);
+                IssuerListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(IssuerListStorePathTextBox.Text);
+                HttpsCertificatePublicKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(HttpsCertificatePublicKeyPathTextBox.Text);
+                HttpsCertificatePrivateKeyPathTextBox.Text = RegistrationModel.AddSpecialFolders(HttpsCertificatePrivateKeyPathTextBox.Text);
+                HttpsTrustListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(HttpsTrustListStorePathTextBox.Text);
+                HttpsIssuerListStorePathTextBox.Text = RegistrationModel.AddSpecialFolders(HttpsIssuerListStorePathTextBox.Text);
 
                 ControlToData();
 
@@ -1578,7 +1428,7 @@ namespace Opc.Ua.Gds.Client
             {
                 if (ApplicationIdTextBox.Tag is ApplicationRecordDataType record)
                 {
-                    await m_gds.UnregisterApplicationAsync(record.ApplicationId);
+                    await m_model.UnregisterAsync(record.ApplicationId);
 
                     ApplicationIdTextBox.Text = null;
                     ApplicationIdTextBox.Tag = null;
@@ -1686,7 +1536,7 @@ namespace Opc.Ua.Gds.Client
                 DirectoryInfo directory = new DirectoryInfo(path);
 
                 string name = ApplicationUriTextBox.Text.Trim();
-                name = HostnameToLocalhost(name);
+                name = RegistrationModel.HostnameToLocalhost(name);
 
                 if (name != null)
                 {
@@ -1726,9 +1576,9 @@ namespace Opc.Ua.Gds.Client
                 m_lastSavePath = new FileInfo(dialog.FileName).Directory.FullName;
 
                 // save localhost instead of hostname so saved files will be portable.
-                m_application.ApplicationName = HostnameToLocalhost(m_application.ApplicationName);
-                m_application.ApplicationUri = HostnameToLocalhost(m_application.ApplicationUri);
-                m_application.ProductUri = HostnameToLocalhost(m_application.ProductUri);
+                m_application.ApplicationName = RegistrationModel.HostnameToLocalhost(m_application.ApplicationName);
+                m_application.ApplicationUri = RegistrationModel.HostnameToLocalhost(m_application.ApplicationUri);
+                m_application.ProductUri = RegistrationModel.HostnameToLocalhost(m_application.ProductUri);
 
                 if (m_application.DiscoveryUrl != null)
                 {
@@ -1736,7 +1586,7 @@ namespace Opc.Ua.Gds.Client
 
                     foreach (var discoveryUrl in m_application.DiscoveryUrl)
                     {
-                        urls.Add(HostnameToLocalhost(discoveryUrl));
+                        urls.Add(RegistrationModel.HostnameToLocalhost(discoveryUrl));
                     }
 
                     m_application.DiscoveryUrl = urls.ToArray();
@@ -1753,9 +1603,9 @@ namespace Opc.Ua.Gds.Client
                 }
                 finally
                 {
-                    m_application.ApplicationName = ReplaceLocalhost(m_application.ApplicationName);
-                    m_application.ApplicationUri = ReplaceLocalhost(m_application.ApplicationUri);
-                    m_application.ProductUri = ReplaceLocalhost(m_application.ProductUri);
+                    m_application.ApplicationName = RegistrationModel.ReplaceLocalhost(m_application.ApplicationName);
+                    m_application.ApplicationUri = RegistrationModel.ReplaceLocalhost(m_application.ApplicationUri);
+                    m_application.ProductUri = RegistrationModel.ReplaceLocalhost(m_application.ProductUri);
 
                     if (m_application.DiscoveryUrl != null)
                     {
@@ -1763,7 +1613,7 @@ namespace Opc.Ua.Gds.Client
 
                         foreach (var discoveryUrl in m_application.DiscoveryUrl)
                         {
-                            urls.Add(ReplaceLocalhost(discoveryUrl));
+                            urls.Add(RegistrationModel.ReplaceLocalhost(discoveryUrl));
                         }
 
                         m_application.DiscoveryUrl = urls.ToArray();
@@ -1823,7 +1673,7 @@ namespace Opc.Ua.Gds.Client
                 else
                 {
                     InitializePullConfiguration(dialog.FileName);
-                    ConfigurationFileTextBox.Text = AddSpecialFolders(dialog.FileName);
+                    ConfigurationFileTextBox.Text = RegistrationModel.AddSpecialFolders(dialog.FileName);
                 }
 
                 ControlToData();

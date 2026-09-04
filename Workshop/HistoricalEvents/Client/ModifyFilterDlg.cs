@@ -34,6 +34,7 @@ using System.Text;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.Client;
 
 namespace Quickstarts.HistoricalEvents.Client
 {

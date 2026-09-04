@@ -33,7 +33,7 @@ using System.Collections.Generic;
 using Opc.Ua;
 using Opc.Ua.Client;
 
-namespace Opc.Ua.Client.Controls
+namespace Opc.Ua.Samples.Client
 {
     /// <summary>
     /// Stores a type declaration retrieved from a server.

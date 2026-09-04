@@ -33,6 +33,7 @@ using System.Text;
 using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Client.Controls
 {

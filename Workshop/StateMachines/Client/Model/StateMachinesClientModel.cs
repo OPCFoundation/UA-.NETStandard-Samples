@@ -324,6 +324,7 @@ namespace Quickstarts.StateMachines.Client.Model
     /// stream, after a reconnect - is reported through <see cref="PermittedCausesChanged"/>.
     /// </para>
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The handles below are taken, cleared and released by OnDetachingAsync, which the detach of the base class runs - on a detach as well as on a dispose. The analyzer does not follow an asynchronous release through a virtual hook.")]
     public sealed class StateMachinesClientModel : SampleClientModel
     {
         /// <summary>
@@ -859,6 +860,26 @@ namespace Quickstarts.StateMachines.Client.Model
             if (streaming != null)
             {
                 await streaming.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Releases the refresh lock, which outlives a detach.
+        /// </summary>
+        /// <remarks>
+        /// The subscription and its pump belong to the session and are released by
+        /// <see cref="OnDetachingAsync"/>, so that they are gone again whenever the model
+        /// is detached. The semaphore which serialises the refreshes belongs to the model
+        /// itself and only goes with it.
+        /// </remarks>
+        /// <param name="disposing">True if managed resources should be disposed.</param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                m_refresh.Dispose();
             }
         }
 

@@ -71,9 +71,31 @@ namespace Quickstarts.AlarmConditionClient
         #endregion
 
         #region Private Fields
-#pragma warning disable CA2213 // Justification: disposed asynchronously by AuditEventForm_FormClosing.
         private readonly AuditTrailModel m_auditTrail;
-#pragma warning restore CA2213
+        #endregion
+
+        #region Overrides
+        /// <summary>
+        /// Releases the resources of the window, and with them the trail it owns.
+        /// </summary>
+        /// <remarks>
+        /// This is hand written and therefore lives here rather than in the designer
+        /// partial: the trail is disposed with the window. Its synchronous Dispose runs
+        /// the teardown on a thread pool thread and waits for it, which is what a Dispose
+        /// that cannot await needs. The closing handler has normally ended the trail
+        /// already by the time this runs, and a second dispose returns at once.
+        /// </remarks>
+        /// <param name="disposing">True if managed resources should be disposed.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                components?.Dispose();
+                m_auditTrail?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
         #endregion
 
         #region Public Interface

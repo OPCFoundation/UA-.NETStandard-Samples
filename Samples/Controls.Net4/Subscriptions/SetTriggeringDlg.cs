@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Sample.Controls
 {

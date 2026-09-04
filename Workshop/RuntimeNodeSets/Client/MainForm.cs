@@ -48,7 +48,8 @@ namespace Quickstarts.RuntimeNodeSets.Client
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
         /// <param name="telemetry">The telemetry context of the client.</param>
-        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
+        /// <param name="model">The client model of the sample, from the container.</param>
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry, RuntimeNodeSetsClientModel model)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -66,9 +67,10 @@ namespace Quickstarts.RuntimeNodeSets.Client
 
             ModeCB.SelectedIndex = 0;
 
-            // created here, on the thread of the window, so that the model raises its
-            // events on this thread and the handlers below can touch the controls directly
-            m_model = new RuntimeNodeSetsClientModel(telemetry);
+            // created by the container while this constructor runs, so on the thread of
+            // the window: that is the context the model captures for its events, and it is
+            // why the handlers below can touch the controls directly
+            m_model = model ?? throw new ArgumentNullException(nameof(model));
             m_model.WatchedValueChanged += Model_WatchedValueChanged;
             m_model.Error += Model_Error;
 

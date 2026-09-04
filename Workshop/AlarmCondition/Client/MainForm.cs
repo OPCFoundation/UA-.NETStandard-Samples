@@ -69,7 +69,8 @@ namespace Quickstarts.AlarmConditionClient
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
         /// <param name="telemetry">The telemetry context of the client.</param>
-        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry)
+        /// <param name="model">The client model of the sample, from the container.</param>
+        public MainForm(ApplicationConfiguration configuration, ITelemetryContext telemetry, AlarmConditionClientModel model)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -79,9 +80,10 @@ namespace Quickstarts.AlarmConditionClient
             this.Text = configuration.ApplicationName;
             m_telemetry = telemetry;
 
-            // created here, on the thread of the window, so that the model raises its
-            // events on this thread and the handlers below can touch the controls directly
-            m_model = new AlarmConditionClientModel(telemetry);
+            // created by the container while this constructor runs, so on the thread of
+            // the window: that is the context the model captures for its events, and it is
+            // why the handlers below can touch the controls directly
+            m_model = model ?? throw new ArgumentNullException(nameof(model));
             m_model.ConditionChanged += Model_ConditionChanged;
             m_model.ConditionsCleared += Model_ConditionsCleared;
             m_model.Error += Model_Error;
@@ -114,11 +116,33 @@ namespace Quickstarts.AlarmConditionClient
             "https://github.com/OPCFoundation/UA-.NETStandard-Samples/blob/master/Workshop/AlarmCondition/README.md";
 
         private readonly ITelemetryContext m_telemetry;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Detached asynchronously by MainForm_FormClosing, which cannot await a DisposeAsync.")]
         private readonly AlarmConditionClientModel m_model;
-#pragma warning disable CA2213 // Justification: the audit window is closed by the disconnect and close handlers.
         private AuditEventForm m_auditEventForm;
-#pragma warning restore CA2213
+        #endregion
+
+        #region Overrides
+        /// <summary>
+        /// Releases the resources of the window, and with them the model it owns.
+        /// </summary>
+        /// <remarks>
+        /// This is hand written and therefore lives here rather than in the designer
+        /// partial: the model is disposed with the window. The synchronous Dispose of
+        /// the model runs its detach on a thread pool thread and waits for it, which is
+        /// what a Dispose that cannot await needs. The closing handler has normally
+        /// detached already by the time this runs, and a second detach returns at once.
+        /// </remarks>
+        /// <param name="disposing">True if managed resources should be disposed.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                components?.Dispose();
+                m_model?.Dispose();
+                m_auditEventForm?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
         #endregion
 
         #region Server Menu

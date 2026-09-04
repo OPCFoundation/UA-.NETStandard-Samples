@@ -62,7 +62,9 @@ namespace Quickstarts.FileTransferClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "Quickstarts.FileTransferClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddFileTransferClient(),
                 ExceptionDlg.Show);
         }
     }

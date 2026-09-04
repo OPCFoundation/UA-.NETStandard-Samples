@@ -41,6 +41,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Historian;
 using Opc.Ua.Client.Subscriptions;
 using Opc.Ua.Client.Subscriptions.MonitoredItems;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Client.Controls
 {
@@ -212,36 +213,6 @@ namespace Opc.Ua.Client.Controls
         }
         #endregion
 
-        #region PropertyWithHistory Class
-        /// <summary>
-        /// Stores the metadata about a property with history to read or update.
-        /// </summary>
-        private sealed class PropertyWithHistory
-        {
-            public PropertyWithHistory()
-            {
-            }
-
-            public PropertyWithHistory(ReferenceDescription reference, byte accessLevel)
-            {
-                DisplayText = reference.ToString();
-                NodeId = (NodeId)reference.NodeId;
-                BrowseName = reference.BrowseName;
-                AccessLevel = accessLevel;
-            }
-
-            public override string ToString()
-            {
-                return DisplayText;
-            }
-
-            public string DisplayText;
-            public NodeId NodeId;
-            public QualifiedName BrowseName;
-            public byte AccessLevel;
-        }
-        #endregion
-
         #region Private Fields
         private ISession m_session;
         private ITelemetryContext m_telemetry;
@@ -261,7 +232,7 @@ namespace Opc.Ua.Client.Controls
         private IAsyncEnumerator<HistoryRow> m_reader;
         private bool m_timesChanged;
         private HistoricalDataConfigurationState m_configuration;
-        private List<PropertyWithHistory> m_properties;
+        private List<HistoricalProperty> m_properties;
         #endregion
 
         #region HistoryRow Class
@@ -613,7 +584,7 @@ namespace Opc.Ua.Client.Controls
 
             if (!(nodeId).IsNull)
             {
-                m_properties = await FindPropertiesWithHistoryAsync(ct);
+                m_properties = await SampleHistory.FindPropertiesWithHistoryAsync(m_session, m_nodeId, ct);
 
                 if (m_properties == null || m_properties.Count <= 1)
                 {
@@ -628,7 +599,7 @@ namespace Opc.Ua.Client.Controls
                     PropertyCB.Visible = true;
                 }
 
-                m_configuration = await ReadConfigurationAsync(ct);
+                m_configuration = await SampleHistory.ReadConfigurationAsync(m_session, m_nodeId, ct);
 
                 // whether history can be read is what the access level of the node says,
                 // not whether it carries a HistoricalDataConfiguration companion object:
@@ -636,7 +607,7 @@ namespace Opc.Ua.Client.Controls
                 // variable without one. Reading the companion object is still worth doing
                 // - it is what the archive limits below come from - but a node which does
                 // not have one keeps every read type it is entitled to.
-                if (!await IsHistoryReadableAsync(ct).ConfigureAwait(true))
+                if (!await SampleHistory.IsHistoryReadableAsync(m_session, GetSelectedNode(), ct).ConfigureAwait(true))
                 {
                     this.ReadTypeCB.Enabled = false;
                     this.ReadTypeCB.SelectedItem = HistoryReadType.Subscribe;
@@ -647,14 +618,14 @@ namespace Opc.Ua.Client.Controls
 
                     if (!m_timesChanged)
                     {
-                        DateTime startTime = await ReadFirstDateAsync(ct);
+                        DateTime startTime = await SampleHistory.ReadFirstDateAsync(m_session, GetSelectedNode(), m_configuration, ct);
 
                         if (startTime != DateTime.MinValue)
                         {
                             StartTimeDP.Value = startTime;
                         }
 
-                        DateTime endTime = await ReadLastDateAsync(ct);
+                        DateTime endTime = await SampleHistory.ReadLastDateAsync(m_session, GetSelectedNode(), ct);
 
                         if (endTime != DateTime.MinValue)
                         {
@@ -734,329 +705,6 @@ namespace Opc.Ua.Client.Controls
         #endregion
 
         #region Private Methods
-        /// <summary>
-        /// Recursively collects the variables in a NodeState and returns a collection of BrowsePaths.
-        /// </summary>
-        public void GetBrowsePathFromNodeState(
-            ISystemContext context,
-            NodeId rootId,
-            NodeState parent,
-            RelativePath parentPath,
-            IList<BrowsePath> browsePaths)
-        {
-            List<BaseInstanceState> children = new List<BaseInstanceState>();
-            parent.GetChildren(context, children);
-
-            for (int ii = 0; ii < children.Count; ii++)
-            {
-                BaseInstanceState child = children[ii];
-
-                BrowsePath browsePath = new BrowsePath();
-                browsePath.StartingNode = rootId;
-                browsePath.Handle = child;
-
-                List<RelativePathElement> elements = new List<RelativePathElement>();
-
-                if (parentPath != null)
-                {
-                    elements.AddRange(parentPath.Elements);
-                }
-
-                RelativePathElement element = new RelativePathElement();
-                element.ReferenceTypeId = child.ReferenceTypeId;
-                element.IsInverse = false;
-                element.IncludeSubtypes = false;
-                element.TargetName = child.BrowseName;
-
-                elements.Add(element);
-
-                browsePath.RelativePath.Elements = elements;
-
-                if (child.NodeClass == NodeClass.Variable)
-                {
-                    browsePaths.Add(browsePath);
-                }
-
-                GetBrowsePathFromNodeState(context, rootId, child, browsePath.RelativePath, browsePaths);
-            }
-        }
-
-        /// <summary>
-        /// Reads the historical configuration for the node.
-        /// </summary>
-        private async Task<List<PropertyWithHistory>> FindPropertiesWithHistoryAsync(CancellationToken ct = default)
-        {
-            BrowseDescription nodeToBrowse = new BrowseDescription();
-            nodeToBrowse.NodeId = m_nodeId;
-            nodeToBrowse.ReferenceTypeId = Opc.Ua.ReferenceTypeIds.HasProperty;
-            nodeToBrowse.IncludeSubtypes = true;
-            nodeToBrowse.BrowseDirection = BrowseDirection.Forward;
-            nodeToBrowse.NodeClassMask = 0;
-            nodeToBrowse.ResultMask = (uint)(BrowseResultMask.DisplayName | BrowseResultMask.BrowseName);
-
-            List<ReferenceDescription> references = await ClientUtils.BrowseAsync(m_session, nodeToBrowse, false, ct);
-
-            List<ReadValueId> nodesToRead = new List<ReadValueId>();
-
-            for (int ii = 0; ii < references.Count; ii++)
-            {
-                if (references[ii].NodeId.IsAbsolute)
-                {
-                    continue;
-                }
-
-                ReadValueId nodeToRead = new ReadValueId();
-                nodeToRead.NodeId = (NodeId)references[ii].NodeId;
-                nodeToRead.AttributeId = Attributes.AccessLevel;
-                nodeToRead.Handle = references[ii];
-                nodesToRead.Add(nodeToRead);
-            }
-
-            List<PropertyWithHistory> properties = new List<PropertyWithHistory>();
-            properties.Add(new PropertyWithHistory() { DisplayText = "(none)", NodeId = m_nodeId, AccessLevel = AccessLevels.HistoryReadOrWrite });
-
-            if (nodesToRead.Count > 0)
-            {
-                ReadResponse response = await m_session.ReadAsync(
-                    null,
-                    0,
-                    TimestampsToReturn.Neither,
-                    nodesToRead,
-                    ct);
-
-                List<DataValue> values = response.Results.ToList();
-                List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-                ClientBase.ValidateResponse(values, nodesToRead);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-                for (int ii = 0; ii < nodesToRead.Count; ii++)
-                {
-                    byte accessLevel = values[ii].GetValue<byte>(0);
-
-                    if ((accessLevel & AccessLevels.HistoryRead) != 0)
-                    {
-                        properties.Add(new PropertyWithHistory((ReferenceDescription)nodesToRead[ii].Handle, accessLevel));
-                    }
-                }
-            }
-
-            return properties;
-        }
-
-        /// <summary>
-        /// Reads the historical configuration for the node.
-        /// </summary>
-        private async Task<HistoricalDataConfigurationState> ReadConfigurationAsync(CancellationToken ct = default)
-        {
-            // load the defaults for the historical configuration object.
-            HistoricalDataConfigurationState configuration = new HistoricalDataConfigurationState(null);
-
-            configuration.Definition = PropertyState<string>.With<VariantBuilder>(configuration);
-            configuration.MaxTimeInterval = PropertyState<double>.With<VariantBuilder>(configuration);
-            configuration.MinTimeInterval = PropertyState<double>.With<VariantBuilder>(configuration);
-            configuration.ExceptionDeviation = PropertyState<double>.With<VariantBuilder>(configuration);
-            configuration.ExceptionDeviationFormat = PropertyState<ExceptionDeviationFormat>.With<EnumerationBuilder<ExceptionDeviationFormat>>(configuration);
-            configuration.StartOfArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(configuration);
-            configuration.StartOfOnlineArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(configuration);
-
-            configuration.Create(
-                m_session.SystemContext,
-                NodeId.Null,
-                new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration),
-                LocalizedText.Null,
-                false);
-
-            // get the browse paths to query.
-            RelativePathElement element = new RelativePathElement();
-            element.ReferenceTypeId = Opc.Ua.ReferenceTypeIds.HasHistoricalConfiguration;
-            element.IsInverse = false;
-            element.IncludeSubtypes = false;
-            element.TargetName = new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration);
-
-            RelativePath relativePath = new RelativePath();
-            relativePath.Elements = new List<RelativePathElement> { element };
-
-            List<BrowsePath> pathsToTranslate = new List<BrowsePath>();
-
-            GetBrowsePathFromNodeState(
-                m_session.SystemContext,
-                m_nodeId,
-                configuration,
-                relativePath,
-                pathsToTranslate);
-
-            // translate browse paths.
-
-            TranslateBrowsePathsToNodeIdsResponse response = await m_session.TranslateBrowsePathsToNodeIdsAsync(
-                null,
-                pathsToTranslate,
-                ct);
-
-            List<BrowsePathResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-
-            ClientBase.ValidateResponse(results, pathsToTranslate);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, pathsToTranslate);
-
-            // build list of values to read.
-            List<ReadValueId> valuesToRead = new List<ReadValueId>();
-
-            for (int ii = 0; ii < pathsToTranslate.Count; ii++)
-            {
-                BaseVariableState variable = (BaseVariableState)pathsToTranslate[ii].Handle;
-                variable.Value = null;
-                variable.StatusCode = StatusCodes.BadNotSupported;
-
-                if (StatusCode.IsBad(results[ii].StatusCode) || results[ii].Targets.Count == 0)
-                {
-                    continue;
-                }
-
-                if (results[ii].Targets[0].RemainingPathIndex == UInt32.MaxValue && !results[ii].Targets[0].TargetId.IsAbsolute)
-                {
-                    variable.NodeId = (NodeId)results[ii].Targets[0].TargetId;
-
-                    ReadValueId valueToRead = new ReadValueId();
-                    valueToRead.NodeId = variable.NodeId;
-                    valueToRead.AttributeId = Attributes.Value;
-                    valueToRead.Handle = variable;
-                    valuesToRead.Add(valueToRead);
-                }
-            }
-
-            // read the values.
-            if (valuesToRead.Count > 0)
-            {
-                ReadResponse response2 = await m_session.ReadAsync(
-                    null,
-                    0,
-                    TimestampsToReturn.Neither,
-                    valuesToRead,
-                    ct);
-
-                List<DataValue> values = response2.Results.ToList();
-                diagnosticInfos = response2.DiagnosticInfos.ToList();
-
-                ClientBase.ValidateResponse(values, valuesToRead);
-                ClientBase.ValidateDiagnosticInfos(diagnosticInfos, valuesToRead);
-
-                for (int ii = 0; ii < valuesToRead.Count; ii++)
-                {
-                    BaseVariableState variable = (BaseVariableState)valuesToRead[ii].Handle;
-                    variable.WrappedValue = values[ii].WrappedValue;
-                    variable.StatusCode = values[ii].StatusCode;
-                }
-            }
-
-            return configuration;
-        }
-
-        /// <summary>
-        /// Returns whether the node the control points at offers its history.
-        /// </summary>
-        /// <remarks>
-        /// A variable says so in the history bit of its access level. Anything which is
-        /// not a variable - a folder, an object, a method - has no access level and no
-        /// history, and the control offers a live subscription for it instead.
-        /// </remarks>
-        private async Task<bool> IsHistoryReadableAsync(CancellationToken ct = default)
-        {
-            var nodesToRead = new List<ReadValueId> {
-                new() { NodeId = GetSelectedNode(), AttributeId = Attributes.AccessLevel },
-            };
-
-            ReadResponse response = await m_session
-                .ReadAsync(null, 0, TimestampsToReturn.Neither, nodesToRead, ct)
-                .ConfigureAwait(true);
-
-            DataValue accessLevel = response.Results.ToList()[0];
-
-            return StatusCode.IsGood(accessLevel.StatusCode) &&
-                accessLevel.WrappedValue.TryGetValue(out byte flags) &&
-                (flags & AccessLevels.HistoryRead) != 0;
-        }
-
-        /// <summary>
-        /// Reads the first date in the archive (truncates milliseconds and converts to local).
-        /// </summary>
-        private async Task<DateTime> ReadFirstDateAsync(CancellationToken ct = default)
-        {
-            // use the historical data configuration if available.
-            if (m_configuration != null)
-            {
-                if (StatusCode.IsGood(m_configuration.StartOfOnlineArchive.StatusCode))
-                {
-                    return m_configuration.StartOfOnlineArchive.Value.ToLocalTime();
-                }
-
-                if (StatusCode.IsGood(m_configuration.StartOfArchive.StatusCode))
-                {
-                    return m_configuration.StartOfArchive.Value.ToLocalTime();
-                }
-            }
-
-            // do it the hard way (may take a long time with some servers).
-            return await ReadEdgeOfArchiveAsync(
-                new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                DateTime.MinValue,
-                ct).ConfigureAwait(true);
-        }
-
-        /// <summary>
-        /// Reads the last date in the archive (truncates milliseconds and converts to local).
-        /// </summary>
-        private async Task<DateTime> ReadLastDateAsync(CancellationToken ct = default)
-        {
-            DateTime endTime = await ReadEdgeOfArchiveAsync(
-                DateTime.MinValue,
-                DateTime.UtcNow.AddDays(1),
-                ct).ConfigureAwait(true);
-
-            // one second past the last sample, so that a read of the whole archive
-            // has it inside its window rather than on the edge of it.
-            return endTime != DateTime.MinValue ? endTime.AddSeconds(1) : endTime;
-        }
-
-        /// <summary>
-        /// Reads the one sample at an edge of the archive, as a local time truncated
-        /// to the second so that it can be shown in a date picker.
-        /// </summary>
-        /// <remarks>
-        /// One end of the window is left unset. A read without an end time runs
-        /// forwards from its start and a read without a start time runs backwards
-        /// from its end, so asking for a single value either way answers with the
-        /// sample at that end of the archive. Leaving the loop after that one value
-        /// is what releases the continuation point the server opened for the rest.
-        /// </remarks>
-        private async Task<DateTime> ReadEdgeOfArchiveAsync(DateTime startTime, DateTime endTime, CancellationToken ct)
-        {
-            await foreach (DataValue value in m_historian.ReadRawAsync(
-                GetSelectedNode(),
-                startTime,
-                endTime,
-                maxValuesPerNode: 1,
-                returnBounds: false,
-                TimestampsToReturn.Source,
-                ct).ConfigureAwait(true))
-            {
-                DateTime timestamp = (DateTime)value.SourceTimestamp;
-
-                return new DateTime(
-                    timestamp.Year,
-                    timestamp.Month,
-                    timestamp.Day,
-                    timestamp.Hour,
-                    timestamp.Minute,
-                    timestamp.Second,
-                    0,
-                    DateTimeKind.Utc).ToLocalTime();
-            }
-
-            return DateTime.MinValue;
-        }
-
         /// <summary>
         /// Creates the subscription.
         /// </summary>
@@ -1258,7 +906,7 @@ namespace Opc.Ua.Client.Controls
         {
             if (PropertyCB.SelectedIndex >= 0)
             {
-                return ((PropertyWithHistory)PropertyCB.SelectedItem).NodeId;
+                return ((HistoricalProperty)PropertyCB.SelectedItem).NodeId;
             }
 
             return m_nodeId;
@@ -1550,33 +1198,8 @@ namespace Opc.Ua.Client.Controls
             {
                 if (!openPoint.IsNull && openPoint.Length > 0)
                 {
-                    await ReleaseContinuationPointAsync(nodeId, details, openPoint).ConfigureAwait(false);
+                    await SampleHistory.ReleaseContinuationPointAsync(m_session, nodeId, details, openPoint).ConfigureAwait(false);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Tells the server the continuation point of an abandoned read is no longer
-        /// needed. A server only holds so many at a time, so this is best effort but
-        /// not optional.
-        /// </summary>
-        private async Task ReleaseContinuationPointAsync(NodeId nodeId, ExtensionObject details, ByteString continuationPoint)
-        {
-            try
-            {
-                await m_session.HistoryReadAsync(
-                    null,
-                    details,
-                    TimestampsToReturn.Neither,
-                    true,
-                    new List<HistoryReadValueId> {
-                        new HistoryReadValueId { NodeId = nodeId, ContinuationPoint = continuationPoint },
-                    },
-                    CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (ServiceResultException)
-            {
-                // the point is gone either way once the session is done with it.
             }
         }
 
@@ -1603,7 +1226,7 @@ namespace Opc.Ua.Client.Controls
                 values.Add(value);
             }
 
-            PropertyWithHistory property = PropertyCB.SelectedItem as PropertyWithHistory;
+            HistoricalProperty property = PropertyCB.SelectedItem as HistoricalProperty;
 
             if (property != null && property.BrowseName == Opc.Ua.BrowseNames.Annotations)
             {
@@ -1617,7 +1240,7 @@ namespace Opc.Ua.Client.Controls
                 PerformUpdateType.Insert => await m_historian.InsertAsync(nodeId, values, ct),
                 PerformUpdateType.Replace => await m_historian.ReplaceAsync(nodeId, values, ct),
                 PerformUpdateType.Update => await m_historian.UpdateAsync(nodeId, values, ct),
-                _ => await RemoveAsync(nodeId, values, ct),
+                _ => await SampleHistory.RemoveAsync(m_session, nodeId, values, ct),
             };
 
             ShowOperationResults(results);
@@ -1652,35 +1275,6 @@ namespace Opc.Ua.Client.Controls
             }
 
             return results;
-        }
-
-        /// <summary>
-        /// Removes the values from the history of the node.
-        /// </summary>
-        private async Task<IList<StatusCode>> RemoveAsync(NodeId nodeId, IList<DataValue> values, CancellationToken ct = default)
-        {
-            UpdateDataDetails details = new UpdateDataDetails {
-                NodeId = nodeId,
-                PerformInsertReplace = PerformUpdateType.Remove,
-                UpdateValues = new List<DataValue>(values),
-            };
-
-            List<ExtensionObject> nodesToUpdate = new List<ExtensionObject> { new ExtensionObject(details) };
-
-            HistoryUpdateResponse response = await m_session.HistoryUpdateAsync(null, nodesToUpdate, ct);
-
-            List<HistoryUpdateResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToUpdate);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(results[0].StatusCode);
-            }
-
-            return results[0].OperationResults.ToList();
         }
 
         /// <summary>
@@ -2250,14 +1844,14 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
-                DateTime startTime = await ReadFirstDateAsync();
+                DateTime startTime = await SampleHistory.ReadFirstDateAsync(m_session, GetSelectedNode(), m_configuration);
 
                 if (startTime != DateTime.MinValue)
                 {
                     StartTimeDP.Value = startTime;
                 }
 
-                DateTime endTime = await ReadLastDateAsync();
+                DateTime endTime = await SampleHistory.ReadLastDateAsync(m_session, GetSelectedNode());
 
                 if (endTime != DateTime.MinValue)
                 {

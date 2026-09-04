@@ -12,6 +12,24 @@ The Solution is split into these projects:
 - **GlobalDiscoveryClientLibrary:** Common Global Discovery Client classes for .Net 4.6 and .Net Standard.
 - **GlobalDiscoveryClientTest:** Unit tests for .Net Standard Global Discovery client and server libraries.
 
+### Where the client keeps its logic
+
+The three panels of `GlobalDiscoveryClient` - registration, certificate and trust list -
+keep what they do to the server in a `Model/` namespace beside them, the way the Workshop
+clients do (see [`Samples/Client.Common`](../Client.Common/README.md)):
+
+| Model | What it does |
+|---|---|
+| `RegistrationModel` | finds, registers and unregisters the application record, and checks the fields a record is built from |
+| `CertificateModel` | finds the certificate an application runs on, asks the GDS for a new one in either the pull or the push model, and puts the answer in its store or its files |
+| `TrustListModel` | reads a trust list off a push server, pulls the one the GDS holds into the local stores, and pushes it back |
+
+Nothing in those models references Windows Forms, which
+`Tests/SampleClientModels.Tests/ModelContractTests` checks by reflection. The two questions
+a person has to answer stayed with the panels and reach the models as delegates: whether an
+existing certificate file may be overwritten, and which record is meant when the GDS holds
+several for one application uri.
+
 ## How to build and run the Windows OPC UA Global Discovery Server
 1. Open the solution **UA Global Discovery Server.sln** with VisualStudio.
 2. Choose the project `GlobalDiscoveryServer` in the Solution Explorer and set it with a right click as `Startup Project`.

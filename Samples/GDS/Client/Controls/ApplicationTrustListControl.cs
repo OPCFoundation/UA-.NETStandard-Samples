@@ -1,5 +1,5 @@
 /* ========================================================================
- * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
+ * Copyright (c) 2005-2020 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
  *
@@ -28,17 +28,24 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Forms;
-using System.Security.Cryptography.X509Certificates;
-using Opc.Ua.Gds;
-using System.Threading.Tasks;
-using Opc.Ua.Security.Certificates;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using Opc.Ua.Gds.Client.Model;
 
 namespace Opc.Ua.Gds.Client
 {
+    /// <summary>
+    /// Shows the trust list of the selected application and offers the four things which
+    /// can be done with it: reload it, merge the one the GDS holds into it, replace it with
+    /// the one the GDS holds, and push it back to a server.
+    /// </summary>
+    /// <remarks>
+    /// The reads, the writes and the certificate stores belong to the
+    /// <see cref="TrustListModel"/>; this control shows what it returns and asks the
+    /// questions the model must not ask.
+    /// </remarks>
     public partial class ApplicationTrustListControl : UserControl
     {
         public ApplicationTrustListControl()
@@ -48,27 +55,19 @@ namespace Opc.Ua.Gds.Client
             TrustListMasksComboBox.SelectedItem = TrustListMasks.All;
         }
 
-        private GlobalDiscoveryServerClient m_gds;
-        private ServerPushConfigurationClient m_server;
-        private RegisteredApplication m_application;
-        private string m_trustListStorePath;
-        private string m_issuerListStorePath;
+        private readonly TrustListModel m_model = new TrustListModel();
         private ITelemetryContext m_telemetry;
 
         public async Task Initialize(GlobalDiscoveryServerClient gds, ServerPushConfigurationClient server, RegisteredApplication application, bool isHttps, ITelemetryContext telemetry, CancellationToken ct = default)
         {
-            m_gds = gds;
-            m_server = server;
-            m_application = application;
             m_telemetry = telemetry;
+            m_model.Initialize(gds, server, application, isHttps, telemetry);
 
             // display local trust list.
-            if (application != null)
+            if (m_model.HasApplication)
             {
-                m_trustListStorePath = (isHttps) ? m_application.HttpsTrustListStorePath : m_application.TrustListStorePath;
-                m_issuerListStorePath = (isHttps) ? m_application.HttpsIssuerListStorePath : m_application.IssuerListStorePath;
-                await CertificateStoreControl.Initialize(telemetry, m_trustListStorePath, m_issuerListStorePath, null, ct);
-                MergeWithGdsButton.Enabled = !String.IsNullOrEmpty(m_trustListStorePath) || m_application.RegistrationType == RegistrationType.ServerPush;
+                await CertificateStoreControl.Initialize(telemetry, m_model.TrustListStorePath, m_model.IssuerListStorePath, null, ct);
+                MergeWithGdsButton.Enabled = m_model.CanPullFromGds;
             }
 
             ApplyChangesButton.Enabled = false;
@@ -78,32 +77,26 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                if (m_application != null)
-                {
-                    if (m_application.RegistrationType == RegistrationType.ServerPush)
-                    {
-                        TrustListMasks masks;
-
-                        if (!Enum.TryParse(TrustListMasksComboBox.SelectedItem.ToString(), out masks))
-                            masks = TrustListMasks.All;
-                        var trustList = await m_server.ReadTrustListAsync(masks);
-                        var rejectedCertificates = await m_server.GetRejectedListAsync();
-                        var rejectedList = new X509Certificate2Collection();
-                        foreach (var certificate in rejectedCertificates)
-                        {
-                            rejectedList.Add(certificate.AsX509Certificate2());
-                        }
-                        CertificateStoreControl.Initialize(trustList, rejectedList, true);
-                    }
-                    else
-                    {
-                        await CertificateStoreControl.Initialize(m_telemetry, m_trustListStorePath, m_issuerListStorePath, null);
-                    }
-                }
-                else
+                if (!m_model.HasApplication)
                 {
                     await CertificateStoreControl.Initialize(m_telemetry, null, null, null);
+                    return;
                 }
+
+                if (m_model.IsServerPush)
+                {
+                    if (!Enum.TryParse(TrustListMasksComboBox.SelectedItem.ToString(), out TrustListMasks masks))
+                    {
+                        masks = TrustListMasks.All;
+                    }
+
+                    ServerTrustList lists = await m_model.ReadFromServerAsync(masks);
+
+                    CertificateStoreControl.Initialize(lists.TrustList, lists.RejectedCertificates, true);
+                    return;
+                }
+
+                await CertificateStoreControl.Initialize(m_telemetry, m_model.TrustListStorePath, m_model.IssuerListStorePath, null);
             }
             catch (Exception ex)
             {
@@ -135,164 +128,53 @@ namespace Opc.Ua.Gds.Client
             }
         }
 
-        private async Task DeleteExistingFromStoreAsync(string storePath, CancellationToken ct = default)
-        {
-            if (String.IsNullOrEmpty(storePath))
-            {
-                return;
-            }
-
-            var certificateStoreIdentifier = new CertificateStoreIdentifier(storePath);
-            using (var store = certificateStoreIdentifier.OpenStore(m_telemetry))
-            {
-                CertificateCollection certificates = await store.EnumerateAsync(ct);
-                foreach (var certificateWrapper in certificates)
-                {
-                    var certificate = certificateWrapper.AsX509Certificate2();
-                    List<string> fields = X509Utils.ParseDistinguishedName(certificate.Subject);
-
-                    if (fields.Contains("CN=UA Local Discovery Server"))
-                    {
-                        continue;
-                    }
-
-
-                    if (store is DirectoryCertificateStore ds)
-                    {
-                        if (ds.GetPrivateKeyFilePath(certificate.Thumbprint) != null)
-                        {
-                            continue;
-                        }
-
-                        string path = Utils.GetAbsoluteFilePath(m_application.CertificatePublicKeyPath, true, false, false);
-
-                        if (path != null)
-                        {
-                            if (String.Equals(path, ds.GetPublicKeyFilePath(certificate.Thumbprint), StringComparison.OrdinalIgnoreCase))
-                            {
-                                continue;
-                            }
-                        }
-
-                        path = Utils.GetAbsoluteFilePath(m_application.CertificatePrivateKeyPath, true, false, false);
-
-                        if (path != null)
-                        {
-                            if (String.Equals(path, ds.GetPrivateKeyFilePath(certificate.Thumbprint), StringComparison.OrdinalIgnoreCase))
-                            {
-                                continue;
-                            }
-                        }
-                    }
-
-                    await store.DeleteAsync(certificate.Thumbprint, ct);
-                }
-            }
-        }
-
+        /// <summary>
+        /// Downloads the trust list of the Global Discovery Server and shows what became
+        /// of it.
+        /// </summary>
+        /// <param name="deleteBeforeAdd">Whether to replace the local list rather than merge
+        /// the downloaded one into it.</param>
+        /// <param name="ct">The cancellation token.</param>
         private async Task PullFromGdsAsync(bool deleteBeforeAdd, CancellationToken ct = default)
         {
             try
             {
-                NodeId trustListId = await m_gds.GetTrustListAsync(NodeId.Parse(m_application.ApplicationId), NodeId.Null, ct);
+                TrustListPullResult pull = await m_model.PullFromGdsAsync(deleteBeforeAdd, ct);
 
-                if (trustListId.IsNull)
+                switch (pull.Outcome)
                 {
-                    await CertificateStoreControl.Initialize(m_telemetry, null, null, null, ct);
-                    return;
-                }
-
-                var trustList = await m_gds.ReadTrustListAsync(trustListId, 0, ct);
-
-                if (m_application.RegistrationType == RegistrationType.ServerPush)
-                {
-                    CertificateStoreControl.Initialize(trustList, null, deleteBeforeAdd);
-
-                    MessageBox.Show(
-                        Parent,
-                        "The trust list (include CRLs) was downloaded from the GDS. It now has to be pushed to the Server.",
-                        Parent.Text,
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-
-                    return;
-                }
-
-                if (!String.IsNullOrEmpty(m_trustListStorePath))
-                {
-                    if (deleteBeforeAdd)
+                    case TrustListPullOutcome.NoTrustList:
                     {
-                        await DeleteExistingFromStoreAsync(m_trustListStorePath, ct);
-                        await DeleteExistingFromStoreAsync(m_issuerListStorePath, ct);
+                        await CertificateStoreControl.Initialize(m_telemetry, null, null, null, ct);
+                        break;
+                    }
+
+                    case TrustListPullOutcome.AwaitingPushToServer:
+                    {
+                        CertificateStoreControl.Initialize(pull.TrustList, null, deleteBeforeAdd);
+
+                        MessageBox.Show(
+                            Parent,
+                            "The trust list (include CRLs) was downloaded from the GDS. It now has to be pushed to the Server.",
+                            Parent.Text,
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                        break;
+                    }
+
+                    default:
+                    {
+                        await CertificateStoreControl.Initialize(m_telemetry, m_model.TrustListStorePath, m_model.IssuerListStorePath, null, ct);
+
+                        MessageBox.Show(
+                            Parent,
+                            "The trust list (include CRLs) was downloaded from the GDS and saved locally.",
+                            Parent.Text,
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                        break;
                     }
                 }
-
-                if (!String.IsNullOrEmpty(m_trustListStorePath))
-                {
-                    var certificateStoreIdentifier = new CertificateStoreIdentifier(m_trustListStorePath);
-                    using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
-                    {
-                        if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.TrustedCertificates) != 0)
-                        {
-                            foreach (var certificate in trustList.TrustedCertificates.ToArray())
-                            {
-                                var x509 = GdsCertificateLoader.LoadCertificate(certificate.ToArray());
-
-                                CertificateCollection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
-                                if (certs.Count == 0)
-                                {
-                                    await store.AddAsync(Certificate.From(x509), ct: ct);
-                                }
-                            }
-                        }
-
-                        if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.TrustedCrls) != 0)
-                        {
-                            foreach (var crl in trustList.TrustedCrls.ToArray())
-                            {
-                                await store.AddCRLAsync(new X509CRL(crl.ToArray()), ct);
-                            }
-                        }
-                    }
-                }
-
-                if (!String.IsNullOrEmpty(m_application.IssuerListStorePath))
-                {
-                    var certificateStoreIdentifier = new CertificateStoreIdentifier(m_application.IssuerListStorePath);
-                    using (ICertificateStore store = certificateStoreIdentifier.OpenStore(m_telemetry))
-                    {
-                        if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.IssuerCertificates) != 0)
-                        {
-                            foreach (var certificate in trustList.IssuerCertificates.ToArray())
-                            {
-                                var x509 = GdsCertificateLoader.LoadCertificate(certificate.ToArray());
-
-                                CertificateCollection certs = await store.FindByThumbprintAsync(x509.Thumbprint, ct);
-                                if (certs.Count == 0)
-                                {
-                                    await store.AddAsync(Certificate.From(x509), ct: ct);
-                                }
-                            }
-                        }
-
-                        if ((trustList.SpecifiedLists & (uint)Opc.Ua.TrustListMasks.IssuerCrls) != 0)
-                        {
-                            foreach (var crl in trustList.IssuerCrls.ToArray())
-                            {
-                                await store.AddCRLAsync(new X509CRL(crl.ToArray()), ct);
-                            }
-                        }
-                    }
-                }
-
-                await CertificateStoreControl.Initialize(m_telemetry, m_trustListStorePath, m_issuerListStorePath, null, ct);
-
-                MessageBox.Show(
-                    Parent,
-                    "The trust list (include CRLs) was downloaded from the GDS and saved locally.",
-                    Parent.Text,
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
             }
             catch (Exception exception)
             {
@@ -304,26 +186,23 @@ namespace Opc.Ua.Gds.Client
         {
             try
             {
-                if (m_application != null)
+                if (!m_model.IsServerPush)
                 {
-                    if (m_application.RegistrationType == RegistrationType.ServerPush)
-                    {
-                        var trustList = CertificateStoreControl.GetTrustLists();
+                    return;
+                }
 
-                        bool applyChanges = await m_server.UpdateTrustListAsync(trustList);
+                bool applyChanges = await m_model.PushToServerAsync(CertificateStoreControl.GetTrustLists());
 
-                        if (applyChanges)
-                        {
-                            MessageBox.Show(
-                                Parent,
-                                "The trust list was updated, however, the apply changes command must be sent before the server will use the new trust list.",
-                                Parent.Text,
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information);
+                if (applyChanges)
+                {
+                    MessageBox.Show(
+                        Parent,
+                        "The trust list was updated, however, the apply changes command must be sent before the server will use the new trust list.",
+                        Parent.Text,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
 
-                            ApplyChangesButton.Enabled = true;
-                        }
-                    }
+                    ApplyChangesButton.Enabled = true;
                 }
             }
             catch (Exception exception)
@@ -342,29 +221,22 @@ namespace Opc.Ua.Gds.Client
             ((Control)sender).BackColor = Color.MidnightBlue;
         }
 
+        /// <summary>
+        /// Tells the server to start using the trust list which was pushed to it.
+        /// </summary>
+        /// <remarks>
+        /// A server which restarts itself to apply the changes is the expected outcome, not
+        /// a failure, and the model reports it rather than throwing it.
+        /// </remarks>
         private async void ApplyChangesButton_Click(object sender, EventArgs e)
         {
             try
             {
-                await m_server.ApplyChangesAsync();
+                await m_model.ApplyChangesAsync();
             }
             catch (Exception exception)
             {
-                var se = exception as ServiceResultException;
-
-                if (se == null || se.StatusCode != StatusCodes.BadServerHalted)
-                {
-                    Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Parent.Text, exception);
-                }
-            }
-
-            try
-            {
-                await m_server.DisconnectAsync();
-            }
-            catch
-            {
-                // ignore.
+                Opc.Ua.Client.Controls.ExceptionDlg.Show(m_telemetry, Parent.Text, exception);
             }
         }
     }

@@ -166,6 +166,7 @@ namespace Quickstarts.AliasNames.Client.Model
     /// <see cref="Outcome"/> instead of throwing on a refusal.
     /// </para>
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The handles below are taken, cleared and released by OnDetachingAsync, which the detach of the base class runs - on a detach as well as on a dispose. The analyzer does not follow an asynchronous release through a virtual hook.")]
     public sealed class AliasNamesClientModel : SampleClientModel
     {
         /// <summary>

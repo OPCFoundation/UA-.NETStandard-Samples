@@ -35,6 +35,7 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Quickstarts.HistoricalEvents.Client.Model;
+using Opc.Ua.Samples.Client;
 
 namespace Quickstarts.HistoricalEvents.Client
 {

@@ -60,7 +60,9 @@ namespace Quickstarts.AlarmConditionClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "AlarmConditionClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddAlarmConditionClient(),
                 ExceptionDlg.Show);
         }
     }

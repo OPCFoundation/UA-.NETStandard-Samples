@@ -35,6 +35,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using System.Threading.Tasks;
 using System.Threading;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Client.Controls
 {

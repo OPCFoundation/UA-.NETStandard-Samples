@@ -62,7 +62,9 @@ namespace Quickstarts.ViewsClient
                     .AddSampleApplication(options => {
                         options.ApplicationType = ApplicationType.Client;
                         options.ConfigurationFile = "Quickstarts.ViewsClient.Config.xml";
-                    }),
+                    })
+                    // the client model the main form is built on
+                    .AddViewsClient(),
                 ExceptionDlg.Show);
         }
     }

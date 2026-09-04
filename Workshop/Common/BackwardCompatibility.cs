@@ -36,6 +36,21 @@ using Opc.Ua.Configuration;
 
 namespace Quickstarts
 {
+    /// <summary>
+    /// The controls of the shared libraries under the names the Quickstart samples used to
+    /// have for them, so that code written against the old namespace still compiles.
+    /// </summary>
+    /// <remarks>
+    /// This is all the Quickstart library is now. Everything else it held was either a copy
+    /// of something in the shared libraries - the same instance declaration walk as
+    /// <c>ClientUtils</c>, the same browse helpers as <c>SampleSession</c>, an older fork of
+    /// <c>SelectLocaleDlg</c> - or dead: <c>ParsedNodeId</c> duplicated the type of the same
+    /// name in <c>Opc.Ua.Server</c>, which is the one the sample servers were resolving to
+    /// anyway. What was worth keeping went to
+    /// <see href="../../Samples/Client.Common/README.md">Opc.Ua.Samples.Client</see>, which
+    /// has no user interface in it, and a client model no longer has to reference a Windows
+    /// Forms assembly to read a type model.
+    /// </remarks>
     public partial class ConnectServerCtrl : Opc.Ua.Client.Controls.ConnectServerCtrl
     {
     }

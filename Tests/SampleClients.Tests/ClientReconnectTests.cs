@@ -22,6 +22,7 @@ using Opc.Ua.Configuration;
 // the V2 engine reuses names the classic engine already has in Opc.Ua.Client
 using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
 using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+using Opc.Ua.Samples.Client;
 
 namespace Opc.Ua.Samples.Tests
 {
