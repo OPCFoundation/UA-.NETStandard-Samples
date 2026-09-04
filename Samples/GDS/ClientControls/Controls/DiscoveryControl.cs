@@ -380,7 +380,7 @@ namespace Opc.Ua.Gds.Client.Controls
             if (RootFolders.GlobalDiscovery.Equals(e.Node.Tag))
             {
                 #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                var servers = new ViewServersOnNetworkDialog(m_gds, m_telemetry).ShowDialog(this, ref m_filters);
+                var servers = Windows.Create<ViewServersOnNetworkDialog>(m_gds).ShowDialog(this, ref m_filters);
                 #pragma warning restore CA2000
 
                 if (servers != null)
@@ -857,7 +857,7 @@ namespace Opc.Ua.Gds.Client.Controls
                         e.Node.Nodes.Clear();
 
                         #pragma warning disable CA2000 // Justification: WinForms/sample ownership or lifetime is managed outside the local scope.
-                        var servers = new ViewServersOnNetworkDialog(m_gds, m_telemetry).ShowDialog(this, ref m_filters);
+                        var servers = Windows.Create<ViewServersOnNetworkDialog>(m_gds).ShowDialog(this, ref m_filters);
                         #pragma warning restore CA2000
 
                         if (servers != null)

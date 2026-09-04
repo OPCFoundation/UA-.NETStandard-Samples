@@ -35,27 +35,30 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
     /// <summary>
     /// Prompts the user to select an area to use as an event filter.
     /// </summary>
-    public partial class ModifyFilterDlg : Form
+    public partial class ModifyFilterDlg : SampleForm
     {
         #region Constructors
         /// <summary>
         /// Creates an empty form.
         /// </summary>
-        public ModifyFilterDlg()
+        public ModifyFilterDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private FilterDeclaration m_filter;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
 
         /// <summary>
         /// The supported filter operators.
@@ -97,11 +100,9 @@ namespace Quickstarts.HistoricalEvents.Client
         /// <summary>
         /// Displays the available areas in a tree view.
         /// </summary>
-        public bool ShowDialog(FilterDeclaration filter, ITelemetryContext telemetry)
+        public bool ShowDialog(FilterDeclaration filter)
         {
             m_filter = filter;
-            m_telemetry = telemetry;
-
             Populate();
 
             // display the dialog.
@@ -355,7 +356,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
                 if (field.Declaration.InstanceDeclaration.ValueRank == ValueRanks.Scalar)
                 {
-                    using SetValueDlg dialog = new SetValueDlg();
+                    using SetValueDlg dialog = Windows.Create<SetValueDlg>();
                     Variant? value = dialog.ShowDialog(field.FilterValue, field.Declaration.InstanceDeclaration.BuiltInType);
 
                     if (value != null)

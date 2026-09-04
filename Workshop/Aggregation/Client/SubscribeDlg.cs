@@ -35,13 +35,14 @@ using System.Data;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace AggregationClient
 {
     /// <summary>
     /// Prompts the user to select an area to use as an event filter.
     /// </summary>
-    public partial class SubscribeDlg : Form
+    public partial class SubscribeDlg : SampleForm
     {
         #region Constructors
         /// <summary>

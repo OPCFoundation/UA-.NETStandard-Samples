@@ -500,7 +500,7 @@ namespace Opc.Ua.Sample.Controls
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                m_createDialog.Show(m_subscription, false, m_telemetry);
+                m_createDialog.Show(m_subscription, false);
             }
             catch (Exception exception)
             {
@@ -533,7 +533,7 @@ namespace Opc.Ua.Sample.Controls
                     m_createDialog.FormClosing += new FormClosingEventHandler(CreateDialog_FormClosing);
                 }
 
-                m_createDialog.Show(m_subscription, true, m_telemetry);
+                m_createDialog.Show(m_subscription, true);
             }
             catch (Exception exception)
             {

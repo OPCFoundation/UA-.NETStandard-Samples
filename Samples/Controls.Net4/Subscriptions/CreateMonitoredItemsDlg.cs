@@ -51,7 +51,7 @@ namespace Opc.Ua.Sample.Controls
     public partial class CreateMonitoredItemsDlg : SampleForm
     {
         #region Constructors
-        public CreateMonitoredItemsDlg()
+        public CreateMonitoredItemsDlg(ITelemetryContext telemetry)
         {
             InitializeComponent();
             this.Icon = ClientUtils.GetAppIcon();
@@ -59,12 +59,14 @@ namespace Opc.Ua.Sample.Controls
             m_StateChangedCallback = new Action<ISubscription, SubscriptionState, PublishState>(OnSubscriptionStateChanged);
 
             FormClosing += new FormClosingEventHandler(CreateMonitoredItemsDlg_FormClosing);
+
+            m_telemetry = telemetry;
         }
         #endregion
 
         #region Private Fields
         private SubscriptionHandle m_subscription;
-        private ITelemetryContext m_telemetry;
+        private readonly ITelemetryContext m_telemetry;
         private readonly Action<ISubscription, SubscriptionState, PublishState> m_StateChangedCallback;
         #endregion
 
@@ -72,7 +74,7 @@ namespace Opc.Ua.Sample.Controls
         /// <summary>
         /// Displays the dialog.
         /// </summary>
-        public void Show(SubscriptionHandle subscription, bool useTypeModel, ITelemetryContext telemetry)
+        public void Show(SubscriptionHandle subscription, bool useTypeModel)
         {
             if (subscription == null) throw new ArgumentNullException(nameof(subscription));
 
@@ -87,14 +89,12 @@ namespace Opc.Ua.Sample.Controls
 
             // start receiving notifications from the new subscription.
             m_subscription = subscription;
-            m_telemetry = telemetry;
-
             m_subscription.Callbacks.StateChangedCallback += m_StateChangedCallback;
 
             BrowseCTRL.AllowPick = true;
-            BrowseCTRL.SetViewAsync(subscription.Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, NodeId.Null, telemetry);
+            BrowseCTRL.SetViewAsync(subscription.Session, (useTypeModel) ? BrowseViewType.ObjectTypes : BrowseViewType.Objects, NodeId.Null, m_telemetry);
 
-            MonitoredItemsCTRL.Initialize(subscription, telemetry);
+            MonitoredItemsCTRL.Initialize(subscription, m_telemetry);
         }
         #endregion
 

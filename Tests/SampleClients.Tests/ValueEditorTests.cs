@@ -266,9 +266,11 @@ namespace Opc.Ua.Samples.Tests
                 _ =>
                 {
                     using var form = new Form();
+                    using var windows = new TestWindowFactory();
                     using var editor = new EditComplexValueCtrl();
                     editor.Dock = DockStyle.Fill;
                     form.Controls.Add(editor);
+                    windows.AttachTo(form);
                     form.Show();
 
                     editor.ShowValue(TypeInfo.Arrays.Int32, "Test", Variant.From((ArrayOf<int>)new int[] { 1, 2, 3 }));
@@ -299,9 +301,11 @@ namespace Opc.Ua.Samples.Tests
                 _ =>
                 {
                     using var form = new Form();
+                    using var windows = new TestWindowFactory();
                     using var editor = new EditComplexValueCtrl();
                     editor.Dock = DockStyle.Fill;
                     form.Controls.Add(editor);
+                    windows.AttachTo(form);
                     form.Show();
 
                     var argument = new Argument("Iterations", DataTypeIds.UInt32, ValueRanks.Scalar, "The number of iterations.");
@@ -341,9 +345,11 @@ namespace Opc.Ua.Samples.Tests
                 async _ =>
                 {
                     using var form = new Form();
+                    using var windows = new TestWindowFactory();
                     using var editor = new EditComplexValueCtrl();
                     editor.Dock = DockStyle.Fill;
                     form.Controls.Add(editor);
+                    windows.AttachTo(form);
                     form.Show();
 
                     var dataValue = new DataValue(Variant.From(3.14), StatusCodes.Good, DateTimeUtc.Now, DateTimeUtc.Now);
@@ -372,9 +378,11 @@ namespace Opc.Ua.Samples.Tests
                 async _ =>
                 {
                     using var form = new Form();
+                    using var windows = new TestWindowFactory();
                     using var list = new DataListCtrl();
                     list.Dock = DockStyle.Fill;
                     form.Controls.Add(list);
+                    windows.AttachTo(form);
                     form.Show();
 
                     var dataValue = new DataValue(

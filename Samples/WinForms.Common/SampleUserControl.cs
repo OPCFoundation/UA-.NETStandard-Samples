@@ -30,18 +30,17 @@ namespace Opc.Ua.Samples.WinForms
         /// <summary>
         /// The factory the control creates the windows it opens with.
         /// </summary>
+        /// <exception cref="System.InvalidOperationException">The control is not on a
+        /// window the container created.</exception>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IWindowFactory Windows
+        public IWindowFactory Windows => m_windows ??= WindowServices.RequireWindows(this);
+
+        /// <inheritdoc/>
+        IWindowFactory IWindowFactoryConsumer.Windows
         {
-            get => m_windows ??= WindowServices.FindWindows(this);
+            get => m_windows;
             set => m_windows = value;
         }
-
-        /// <summary>
-        /// The factory the control creates the windows it opens with, which says so
-        /// when the control is not on a form the container created.
-        /// </summary>
-        protected IWindowFactory RequiredWindows => WindowServices.RequireWindows(this, m_windows);
     }
 }

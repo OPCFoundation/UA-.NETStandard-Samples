@@ -34,6 +34,7 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Quickstarts.DataAccessClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.DataAccessClient
 {
@@ -45,7 +46,7 @@ namespace Quickstarts.DataAccessClient
     /// Next fetches the next page with the continuation point of the last one, Stop
     /// releases that continuation point. The reads themselves are done by the model.
     /// </remarks>
-    public partial class ReadHistoryDlg : Form
+    public partial class ReadHistoryDlg : SampleForm
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadHistoryDlg"/> class.

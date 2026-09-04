@@ -36,6 +36,7 @@ using System.Windows.Forms;
 using AggregationClient.Model;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
+using Opc.Ua.Samples.WinForms;
 
 namespace AggregationClient
 {
@@ -47,7 +48,7 @@ namespace AggregationClient
     /// place, which is what the sample shows: a session keeps its subscriptions and its
     /// node cache while its user or its locale changes.
     /// </remarks>
-    public partial class SetUserAndLocaleDlg: Form
+    public partial class SetUserAndLocaleDlg: SampleForm
     {
         #region Constructors
         /// <summary>

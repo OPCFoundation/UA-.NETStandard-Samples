@@ -34,6 +34,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.ViewsClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.ViewsClient
 {
@@ -47,7 +48,7 @@ namespace Quickstarts.ViewsClient
     /// when the user picks a view, gives the view description the model prepares to the
     /// browse control, so that its tree browses through the view.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

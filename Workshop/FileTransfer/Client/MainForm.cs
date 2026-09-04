@@ -38,6 +38,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.FileTransferClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.FileTransferClient
 {
@@ -58,7 +59,7 @@ namespace Quickstarts.FileTransferClient
     /// stay valid and nothing has to be rebuilt.
     /// </para>
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

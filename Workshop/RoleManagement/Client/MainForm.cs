@@ -17,6 +17,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.RoleManagement.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.RoleManagement.Client
 {
@@ -42,7 +43,7 @@ namespace Quickstarts.RoleManagement.Client
     /// against 2.0.0-preview.4, which the model explains.
     /// </para>
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

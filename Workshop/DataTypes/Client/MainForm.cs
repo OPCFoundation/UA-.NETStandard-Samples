@@ -34,6 +34,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.DataTypes.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.DataTypes
 {
@@ -46,7 +47,7 @@ namespace Quickstarts.DataTypes
     /// loads the structured types of the server. The browse control and the value dialog
     /// then read through that session and show the structures decoded.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -253,7 +254,7 @@ namespace Quickstarts.DataTypes
 
                 if (reference != null && m_model.IsConnected)
                 {
-                    using (EditComplexValue2Dlg dialog = new EditComplexValue2Dlg())
+                    using (EditComplexValue2Dlg dialog = Windows.Create<EditComplexValue2Dlg>())
                     {
                         await dialog.ShowDialogAsync(m_model.Session, (NodeId)reference.NodeId, Variant.Null, "Read/Write Value");
                     }
@@ -287,7 +288,7 @@ namespace Quickstarts.DataTypes
                     return;
                 }
 
-                using (SchemaDlg dialog = new SchemaDlg())
+                using (SchemaDlg dialog = Windows.Create<SchemaDlg>())
                 {
                     dialog.ShowDialog(m_model);
                 }

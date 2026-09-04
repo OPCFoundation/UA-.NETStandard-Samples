@@ -35,6 +35,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace AggregationClient
 {
@@ -46,7 +47,7 @@ namespace AggregationClient
     /// session the connect control opens to the <see cref="AggregationClientModel"/>,
     /// which is what the dialogs of this sample browse and change the session through.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

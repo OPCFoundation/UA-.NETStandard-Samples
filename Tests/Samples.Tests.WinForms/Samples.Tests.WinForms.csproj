@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Samples.Tests.Common\Samples.Tests.Common.csproj" />
     <ProjectReference Include="..\..\Samples\ClientControls.Net4\UA Client Controls.csproj" />
+    <ProjectReference Include="..\..\Samples\WinForms.Common\Opc.Ua.Samples.WinForms.csproj" />
   </ItemGroup>
 
 </Project>

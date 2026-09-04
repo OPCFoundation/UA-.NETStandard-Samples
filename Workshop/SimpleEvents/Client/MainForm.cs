@@ -34,6 +34,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.SimpleEvents.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.SimpleEvents.Client
 {
@@ -46,7 +47,7 @@ namespace Quickstarts.SimpleEvents.Client
     /// as long as it is attached. The window only turns each event the model reports into
     /// a row of its list.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -299,7 +300,7 @@ namespace Quickstarts.SimpleEvents.Client
                 }
 
                 string locale;
-                using (SelectLocaleDlg dialog = new SelectLocaleDlg())
+                using (SelectLocaleDlg dialog = Windows.Create<SelectLocaleDlg>())
                 {
                     locale = await dialog.ShowDialogAsync(m_model.Session);
                 }

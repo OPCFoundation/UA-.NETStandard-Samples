@@ -34,6 +34,7 @@ using System.Windows.Forms;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Quickstarts.AlarmConditionClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.AlarmConditionClient
 {
@@ -46,7 +47,7 @@ namespace Quickstarts.AlarmConditionClient
     /// event on the thread of the window. Closing the window disposes the model, which
     /// ends the stream and deletes the subscription on the server.
     /// </remarks>
-    public partial class AuditEventForm : Form
+    public partial class AuditEventForm : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -173,7 +174,7 @@ namespace Quickstarts.AlarmConditionClient
                     return;
                 }
 
-                using (var dialog = new ViewEventDetailsDlg())
+                using (var dialog = Windows.Create<ViewEventDetailsDlg>())
                 {
                     dialog.ShowDialog(snapshot.Details.Filter, snapshot.Details.Fields);
                 }

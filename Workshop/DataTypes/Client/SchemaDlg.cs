@@ -11,6 +11,7 @@ using System;
 using System.Windows.Forms;
 using Opc.Ua.Schema;
 using Quickstarts.DataTypes.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.DataTypes
 {
@@ -26,7 +27,7 @@ namespace Quickstarts.DataTypes
     /// <c>DataTypeDefinition</c> Attribute the server sent, and the documents are produced
     /// the same way either way.
     /// </remarks>
-    public partial class SchemaDlg : Form
+    public partial class SchemaDlg : SampleForm
     {
         /// <summary>
         /// The formats the dialog offers, with the labels it shows for them.

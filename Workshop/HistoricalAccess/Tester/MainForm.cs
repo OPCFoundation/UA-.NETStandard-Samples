@@ -40,10 +40,11 @@ using System.Xml.Serialization;
 using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Server;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts
 {
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         public MainForm(ITelemetryContext telemetry)
         {

@@ -33,6 +33,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Quickstarts.EmptyClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.EmptyClient
 {
@@ -46,7 +47,7 @@ namespace Quickstarts.EmptyClient
     /// The window itself only renders what the model reports and turns clicks into calls
     /// on it.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

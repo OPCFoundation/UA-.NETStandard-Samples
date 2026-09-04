@@ -37,6 +37,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.PerfTestClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.PerfTestClient
 {
@@ -49,7 +50,7 @@ namespace Quickstarts.PerfTestClient
     /// model how many items to monitor and how fast, reads its counters on a timer, and
     /// stops the test when the user asks.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

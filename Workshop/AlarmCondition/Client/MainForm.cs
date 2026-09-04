@@ -37,6 +37,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.AlarmConditionClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.AlarmConditionClient
 {
@@ -52,7 +53,7 @@ namespace Quickstarts.AlarmConditionClient
     /// refusal of the server comes back as the status of a row and goes into its comment
     /// column, the way the sample has always shown it.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -436,9 +437,9 @@ namespace Quickstarts.AlarmConditionClient
         /// Asks the operator for the comment which accompanies a condition Method.
         /// </summary>
         /// <returns>The comment, or a null text when the operator cancelled.</returns>
-        private static LocalizedText PromptForComment()
+        private LocalizedText PromptForComment()
         {
-            using (var dialog = new AddCommentDlg())
+            using (var dialog = Windows.Create<AddCommentDlg>())
             {
 #pragma warning disable CA1849 // Justification: Sample dialog API is synchronous and preserves current WinForms flow.
                 string comment = dialog.ShowDialog(String.Empty);
@@ -927,7 +928,7 @@ namespace Quickstarts.AlarmConditionClient
                     return;
                 }
 
-                using (var dialog = new ViewEventDetailsDlg())
+                using (var dialog = Windows.Create<ViewEventDetailsDlg>())
                 {
                     dialog.ShowDialog(details.Filter, details.Fields);
                 }
@@ -1025,7 +1026,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 NodeId areaId;
 
-                using (var dialog = new SetAreaFilterDlg())
+                using (var dialog = Windows.Create<SetAreaFilterDlg>())
                 {
                     areaId = dialog.ShowDialog(m_model);
                 }
@@ -1059,7 +1060,7 @@ namespace Quickstarts.AlarmConditionClient
 
                 int selectedResponse;
 
-                using (var responseDialog = new DialogResponseDlg())
+                using (var responseDialog = Windows.Create<DialogResponseDlg>())
                 {
                     selectedResponse = responseDialog.ShowDialog(snapshot.DialogPrompt, snapshot.DialogResponses);
                 }
@@ -1092,7 +1093,7 @@ namespace Quickstarts.AlarmConditionClient
                 if (m_auditEventForm == null)
                 {
                     AuditTrailModel auditTrail = m_model.CreateAuditTrail();
-                    var auditEventForm = new AuditEventForm(auditTrail);
+                    var auditEventForm = Windows.Create<AuditEventForm>(auditTrail);
 
                     try
                     {

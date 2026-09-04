@@ -36,6 +36,7 @@ using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Quickstarts.HistoricalEvents.Client.Model;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
@@ -46,7 +47,7 @@ namespace Quickstarts.HistoricalEvents.Client
     /// The dialog only renders: the model browses the subtypes of a type when a node of
     /// the tree is expanded, and describes the fields of a type when one is selected.
     /// </remarks>
-    public partial class SelectTypeDlg : Form
+    public partial class SelectTypeDlg : SampleForm
     {
         #region Constructors
         /// <summary>

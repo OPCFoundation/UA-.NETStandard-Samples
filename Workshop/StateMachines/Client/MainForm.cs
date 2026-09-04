@@ -37,6 +37,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.StateMachines.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.StateMachines.Client
 {
@@ -59,7 +60,7 @@ namespace Quickstarts.StateMachines.Client
     /// the parent. The Part 16 client API which reads all of that lives in the model.
     /// </para>
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

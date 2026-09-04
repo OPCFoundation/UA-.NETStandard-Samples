@@ -29,22 +29,21 @@ namespace Opc.Ua.Samples.WinForms
         /// The factory the form creates the windows it opens with.
         /// </summary>
         /// <remarks>
-        /// Set by the container when the form is created. A form which was shown from
-        /// another form of the sample without being created by the factory - a designer
-        /// surface, or a test which constructs it directly - finds it through its owner.
+        /// Handed to the form by the container which created it. A form which was opened
+        /// by another window of the sample without going through the factory finds it
+        /// through its owner instead.
         /// </remarks>
+        /// <exception cref="System.InvalidOperationException">The form was not created
+        /// by the container and is not owned by a window which was.</exception>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IWindowFactory Windows
+        public IWindowFactory Windows => m_windows ??= WindowServices.RequireWindows(this);
+
+        /// <inheritdoc/>
+        IWindowFactory IWindowFactoryConsumer.Windows
         {
-            get => m_windows ??= WindowServices.FindWindows(this);
+            get => m_windows;
             set => m_windows = value;
         }
-
-        /// <summary>
-        /// The factory the form creates the windows it opens with, which says so when
-        /// the form was not created by the container.
-        /// </summary>
-        protected IWindowFactory RequiredWindows => WindowServices.RequireWindows(this, m_windows);
     }
 }

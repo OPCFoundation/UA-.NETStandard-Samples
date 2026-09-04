@@ -17,6 +17,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.NodeManagement.Client.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.NodeManagement.Client
 {
@@ -38,7 +39,7 @@ namespace Quickstarts.NodeManagement.Client
     /// open to its clients, and a node whose node manager never opted in at all.
     /// </para>
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>

@@ -36,6 +36,7 @@ using Opc.Ua;
 using Opc.Ua.Client.Controls;
 using Quickstarts.HistoricalEvents.Client.Model;
 using Opc.Ua.Samples.Client;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.HistoricalEvents.Client
 {
@@ -51,7 +52,7 @@ namespace Quickstarts.HistoricalEvents.Client
     /// Next fetches the next page with what the last one handed back, Stop releases the
     /// continuation point. The reads themselves are done by the model.
     /// </remarks>
-    public partial class ReadEventHistoryDlg : Form
+    public partial class ReadEventHistoryDlg : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -276,7 +277,7 @@ namespace Quickstarts.HistoricalEvents.Client
                 }
 
                 // a shared dialog which browses the server itself.
-                using var dialog = new SelectNodeDlg();
+                using var dialog = Windows.Create<SelectNodeDlg>();
                 NodeId areaId = await dialog.ShowDialogAsync(m_model.Session, Opc.Ua.ObjectIds.Server, "Select Event Area", m_model.Telemetry, default, Opc.Ua.ReferenceTypeIds.HasEventSource);
 
                 if (areaId.IsNull)
@@ -303,7 +304,7 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                using var dialog = new SelectTypeDlg();
+                using var dialog = Windows.Create<SelectTypeDlg>();
                 TypeDeclaration type = await dialog.ShowDialogAsync(m_model, Opc.Ua.ObjectTypeIds.BaseEventType, "Select Event Type");
 
                 if (type == null)
@@ -331,8 +332,8 @@ namespace Quickstarts.HistoricalEvents.Client
                     return;
                 }
 
-                using var dialog = new ModifyFilterDlg();
-                if (!dialog.ShowDialog(m_filter, m_model.Telemetry))
+                using var dialog = Windows.Create<ModifyFilterDlg>();
+                if (!dialog.ShowDialog(m_filter))
                 {
                     return;
                 }

@@ -39,6 +39,7 @@ using Opc.Ua.Client;
 using Opc.Ua.Client.Controls;
 using Opc.Ua.Samples.Client;
 using Quickstarts.DataAccessClient.Model;
+using Opc.Ua.Samples.WinForms;
 
 namespace Quickstarts.DataAccessClient
 {
@@ -51,7 +52,7 @@ namespace Quickstarts.DataAccessClient
     /// window fills the tree and the lists from what the model returns, tells it which
     /// nodes the user picked, and writes the values the model reports into the rows.
     /// </remarks>
-    public partial class MainForm : Form
+    public partial class MainForm : SampleForm
     {
         #region Constructors
         /// <summary>
@@ -583,7 +584,7 @@ namespace Quickstarts.DataAccessClient
                     return;
                 }
 
-                using (var dialog = new ReadHistoryDlg())
+                using (var dialog = Windows.Create<ReadHistoryDlg>())
                 {
                     await dialog.ShowDialogAsync(m_model, node.NodeId, node.Text);
                 }
@@ -839,7 +840,7 @@ namespace Quickstarts.DataAccessClient
         {
             DataValue current = await m_model.ReadAttributeAsync(nodeId, Attributes.Value);
 
-            using (var dialog = new WriteValueDlg())
+            using (var dialog = Windows.Create<WriteValueDlg>())
             {
                 dialog.ShowDialog(
                     current,
@@ -891,7 +892,7 @@ namespace Quickstarts.DataAccessClient
                 string locale;
 
                 // a shared dialog which browses the locales of the server itself.
-                using (var dialog = new SelectLocaleDlg())
+                using (var dialog = Windows.Create<SelectLocaleDlg>())
                 {
                     locale = await dialog.ShowDialogAsync(m_model.Session);
                 }
