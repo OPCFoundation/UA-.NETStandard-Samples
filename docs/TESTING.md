@@ -9,20 +9,28 @@ automatically for every sample:
 Anything beyond that is out of scope. A sample that starts, serves its address space,
 and answers a browse/read is considered working.
 
-## The four tiers
+## The five tiers
 
 | Tier | What it proves | Needs a network? | Needs a desktop? | Runtime |
 |------|----------------|------------------|------------------|---------|
 | 0 — Configuration | Every `*.Config.xml` parses and validates; client URLs match their server's endpoint; ports don't collide | no | no | seconds |
 | 1 — Server smoke | Every sample server starts headless and answers a real OPC UA session (browse, read, sample-specific check) | localhost | no | ~1 min |
 | 1.5 — Node managers | Every sample node manager still does the thing it was written to demonstrate | localhost | no | ~1.5 min |
+| 1.7 — Client models | Every Workshop client model does what its window asks of it, driven without the window | localhost | no | ~2 min |
 | 2 — Client smoke | Every WinForms client builds its main form, connects to its own sample server, and completes its post-connect logic | localhost | yes | ~2-3 min |
 
 Tier 0 and Tier 1 run anywhere, including Linux agents for Tier 0. Tier 2 is Windows-only and
 is tagged `[Category("RequiresDesktop")]` so it can be excluded where there is no window
 station. CI runs all of them: the `Test Samples` job is on a Windows agent.
 
-Tier 1.5 is the odd one out and is worth explaining. The other three ask whether a sample
+Tier 1.7 is the client-side counterpart of tier 1.5. Since the Workshop clients keep their
+OPC UA logic in a `Model/<Sample>ClientModel` which never references Windows Forms (see
+[`Samples/Client.Common`](../Samples/Client.Common/README.md)), that logic can be attached to
+a managed session and driven directly - no STA thread, no message loop, no reflection into
+private handlers. Tier 2 still builds every form and connects it, because the wiring from
+the form to the model is the part only a form can prove.
+
+Tier 1.5 is the odd one out and is worth explaining. The others ask whether a sample
 works; this one asks whether it still does what it *means*. It exists because the sample node
 managers are due to be migrated, and a rewrite of a node manager is exactly the kind of change
 which leaves a server starting, browsing and reading perfectly while quietly dropping the
@@ -30,7 +38,7 @@ behaviour the sample was written to show. Tier 1 would not notice any of that.
 
 ### Why this works at all
 
-Three properties of the samples make headless testing cheap:
+Four properties of the samples make headless testing cheap:
 
 1. **Server `Main` methods are UI-free until the last line.** Every sample server registers
    itself through a composition root next to its entry point (`AddXServer()` in
@@ -48,6 +56,12 @@ Three properties of the samples make headless testing cheap:
    helper drives every client. No UI automation, no changes to the samples.
 3. **Endpoints are hard-coded and paired.** The client URL sits in `MainForm.cs`, the server
    endpoint in `*.Config.xml`. That pairing is machine-checkable, which is Tier 0's job.
+4. **Every Workshop client keeps its OPC UA logic in a model the tests can drive without a
+   window.** `Model/<Sample>ClientModel` derives from `SampleClientModel`, takes the session
+   through `AttachAsync`, and reports through properties and events. Nothing in a `Model`
+   namespace references Windows Forms - `ModelContractTests` checks that by reflection - so
+   Tier 1.7 attaches the model to a managed session on the sample server and asks it what
+   the window would ask.
 
 ## Layout
 
@@ -60,6 +74,7 @@ Tests/
   SampleConfiguration.Tests/   # Tier 0. No project references, no network.
   SampleServers.Tests/         # Tier 1. Starts the servers from Samples.Servers.Hosting.
   SampleNodeManagers.Tests/    # Tier 1.5. One fixture per node manager, over a real session.
+  SampleClientModels.Tests/    # Tier 1.7. One fixture per client model, over a managed session. No WinForms.
   SampleClients.Tests/         # Tier 2. References the sample *client* projects.
 ```
 
@@ -151,6 +166,7 @@ cannot miss.
 dotnet test Tests/SampleConfiguration.Tests
 dotnet test Tests/SampleServers.Tests
 dotnet test Tests/SampleNodeManagers.Tests
+dotnet test Tests/SampleClientModels.Tests
 dotnet test Tests/SampleClients.Tests
 ```
 
@@ -412,6 +428,37 @@ a condition holds, `DataChangeCapture` collects notifications from a subscriptio
 gives up, which is the difference between a failure that explains itself and one that does not.
 Nothing assumes it has seen the *first* event of a run either: the simulations have been going
 since the server started.
+
+## What Tier 1.7 checks today
+
+One fixture per Workshop client model, each starting its sample server once and opening a
+fresh managed session per test - the same kind of session the shared connect control opens,
+on the V2 subscription engine, which is why `TestClient.ConnectManagedAsync` exists next to
+the plain connect the other tiers use. A test creates the model the way the window does,
+attaches it to the session, calls what the window's buttons call, and waits on an
+`EventSink<T>` for what the window's handlers would have rendered.
+
+Three things about this tier which are not obvious from the code:
+
+- **There is no synchronization context**, so a model raises its events inline on the
+  publish worker of the engine. That is by design: a model posts to the context it was
+  created on (a window's message loop) and raises inline when there is none. The sink is
+  therefore thread safe, and it counts how many handlers are inside it at once - which is
+  how `AlarmConditionClientModelTests` proves that the condition list is now updated one
+  event at a time, in order. The one test of the marshalling itself is in
+  `EmptyClientModelTests`: a recording context stands in for the message loop and has to
+  see every event go through `Post`, never `Send`.
+- **The model is disposed before the session.** A model deletes its subscriptions on
+  detach, and closing a session which still carries one waits for the publish pipeline to
+  drain; the fixture base keeps that order so a teardown does not cost five seconds per test.
+- **`ModelContractTests` is the rule, not a smoke test.** Every type in a `Model` namespace
+  of every client is checked by reflection for a field, property, event, parameter or
+  return type from `System.Windows.Forms`, `System.Drawing` or the shared control library.
+  The models live in the same assembly as their window, so nothing else enforces it. It
+  also fails for a client without a model, so a new sample cannot be copied from the
+  template and quietly grow its logic back into the form.
+
+The per-client table under Tier 2 says what each fixture drives.
 
 ## What Tier 2 checks today
 

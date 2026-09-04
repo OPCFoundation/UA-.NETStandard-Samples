@@ -189,3 +189,12 @@ stack register it rather than constructing it. The Global Discovery Client is th
 `LocalDiscoveryServerClient` as constructor parameters. Which session those clients open is then
 one registration rather than three `new` expressions in a form constructor - and the container,
 not the form, owns their lifetime.
+
+## The client models
+
+What a Windows Forms client does *after* it is connected - browse, subscribe, call, watch -
+does not live in its form either. Every Workshop client keeps that in a `Model/<Sample>ClientModel`
+which knows nothing about the window, built on the base class and helpers of
+[`Samples/Client.Common`](../Client.Common/README.md). The form hands the session of the shared
+connect control to the model and renders what the model reports; the model tier of the tests
+drives the model without a window.
