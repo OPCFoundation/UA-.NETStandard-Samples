@@ -244,14 +244,6 @@ namespace Quickstarts.HistoricalAccessServer
             DateTime startTime = DateTime.UtcNow.AddHours(-1);
             startTime = new DateTime(startTime.Year, startTime.Month, startTime.Day, startTime.Hour, 0, 0, DateTimeKind.Utc);
 
-            // check for existing data.
-            if (dataset.Tables[0].Rows.Count > 0)
-            {
-                int index = dataset.Tables[0].DefaultView.Count;
-                DateTime endTime = (DateTime)dataset.Tables[0].DefaultView[index - 1].Row[0];
-                endTime = startTime.AddMilliseconds(item.SamplingInterval);
-            }
-
             DateTime currentTime = startTime;
             Opc.Ua.Test.DataGenerator generator = new Opc.Ua.Test.DataGenerator(null, m_telemetry);
 
