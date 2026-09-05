@@ -14,4 +14,11 @@
     <NoWarn>$(NoWarn);CA1707;CA1054;CA1056;CA2007</NoWarn>
   </PropertyGroup>
 
+  <!-- Code coverage: the 'XPlat Code Coverage' data collector used in CI
+       (see .azurepipelines/test.yml) instruments the sample assemblies through
+       coverlet.collector, so every test project needs it on the test host. -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <PackageReference Include="coverlet.collector" Version="6.0.4" PrivateAssets="All" />
+  </ItemGroup>
+
 </Project>
