@@ -536,24 +536,24 @@ namespace Opc.Ua.Samples.Tests
                 ExpandedNodeId.ToNodeId(registrar.NodeId, gdsClient.Session.NamespaceUris),
                 NullTelemetry.Instance);
 
-            byte[][] tickets = [[1, 2, 3, 4]];
+            ByteString[] tickets = [new byte[] { 1, 2, 3, 4 }.ToByteString()];
 
-            int[] registered = await client.RegisterTicketsAsync(tickets, ct).ConfigureAwait(true);
+            ArrayOf<StatusCode> registered = await client.RegisterTicketsAsync(tickets, ct).ConfigureAwait(true);
 
-            Assert.That(registered, Has.Length.EqualTo(1), "RegisterTickets did not report a result per ticket.");
+            Assert.That(registered.Count, Is.EqualTo(1), "RegisterTickets did not report a result per ticket.");
             Assert.That(
-                StatusCode.IsGood(new StatusCode((uint)registered[0])),
+                StatusCode.IsGood(registered[0]),
                 Is.True,
                 "The registrar rejected the ticket.");
 
             phase.Enter("removing the onboarding ticket again");
 
-            int[] removed = await client.UnregisterTicketsAsync(tickets, CancellationToken.None)
+            ArrayOf<StatusCode> removed = await client.UnregisterTicketsAsync(tickets, CancellationToken.None)
                 .ConfigureAwait(true);
 
-            Assert.That(removed, Has.Length.EqualTo(1), "UnregisterTickets did not report a result per ticket.");
+            Assert.That(removed.Count, Is.EqualTo(1), "UnregisterTickets did not report a result per ticket.");
             Assert.That(
-                StatusCode.IsGood(new StatusCode((uint)removed[0])),
+                StatusCode.IsGood(removed[0]),
                 Is.True,
                 "The registrar did not remove the ticket it had just accepted.");
         }

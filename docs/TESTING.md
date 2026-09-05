@@ -322,7 +322,8 @@ is what every other sample in the repository uses.
 `s_knownIssues` in `SampleServerTests` (and the same list in `SampleClientTests`) reports a
 listed sample as **ignored** rather than failed, and fails the moment it starts working, so
 an entry cannot rot. Both lists are used sparingly: a sample that is broken is worth fixing,
-not parking. Both lists are currently empty.
+not parking. Both lists are currently empty - the StateMachines subscription failure that
+was briefly parked turned out to be the test pressing the wrong cause, fixed for good.
 
 ## What Tier 1.5 checks today
 

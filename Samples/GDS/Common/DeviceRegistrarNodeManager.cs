@@ -82,14 +82,17 @@ namespace Opc.Ua.Gds.Server
         private readonly ITicketStore m_ticketStore;
 
         /// <summary>
-        /// Creates the node manager over the supplied ticket store.
+        /// Creates the node manager over the supplied ticket store. The Onboarding
+        /// companion model namespace is the manager's second namespace, because the two
+        /// Method nodes carry the model's type-declaration NodeIds - see
+        /// <see cref="CreateTicketMethod"/>.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="ticketStore"/> is <c>null</c>.</exception>
         public DeviceRegistrarNodeManager(
             IServerInternal server,
             ApplicationConfiguration configuration,
             ITicketStore ticketStore)
-            : base(server, configuration, NamespaceUri)
+            : base(server, configuration, NamespaceUri, Opc.Ua.Onboarding.Namespaces.OpcUaOnboarding)
         {
             m_ticketStore = ticketStore ?? throw new ArgumentNullException(nameof(ticketStore));
         }
@@ -110,8 +113,14 @@ namespace Opc.Ua.Gds.Server
             };
             #pragma warning restore CA2000
 
-            MethodState register = CreateTicketMethod(registrar, "RegisterTickets");
-            MethodState unregister = CreateTicketMethod(registrar, "UnregisterTickets");
+            MethodState register = CreateTicketMethod(
+                registrar,
+                "RegisterTickets",
+                Opc.Ua.Onboarding.MethodIds.DeviceRegistrarAdminType_RegisterTickets);
+            MethodState unregister = CreateTicketMethod(
+                registrar,
+                "UnregisterTickets",
+                Opc.Ua.Onboarding.MethodIds.DeviceRegistrarAdminType_UnregisterTickets);
 
             registrar.AddChild(register);
             registrar.AddChild(unregister);
@@ -139,9 +148,14 @@ namespace Opc.Ua.Gds.Server
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Two details are dictated by the SDK rather than by Part 21. The BrowseNames are
-        /// created in namespace 0, because <c>OnboardingClient</c> resolves the two Methods
-        /// with an ns=0 browse path and finds nothing otherwise. And the <c>Tickets</c>
+        /// Three details are dictated by the SDK rather than by Part 21, and they let both
+        /// client generations call the Methods. The NodeId is the type-declaration MethodId
+        /// of the Onboarding companion model, because the current generated
+        /// <c>OnboardingClient</c> calls that id on the wrapped instance directly - which
+        /// OPC UA Part 4 permits - and this hand-built registrar has no instantiated type to
+        /// answer for it otherwise. The BrowseName stays in namespace 0, because the earlier
+        /// <c>OnboardingClient</c> generation resolves the Methods with an ns=0 browse path.
+        /// And the <c>Tickets</c>
         /// argument is declared as a <c>ByteString</c> array rather than as the Part 21
         /// <c>EncodedTicket</c> alias: <c>MethodState</c> type-checks every input argument
         /// against the declared DataType, and ns=0 models <c>EncodedTicket</c> with
@@ -149,11 +163,14 @@ namespace Opc.Ua.Gds.Server
         /// actually exchange would be rejected with <c>Bad_TypeMismatch</c>.
         /// </para>
         /// </remarks>
-        private MethodState CreateTicketMethod(NodeState parent, string name)
+        private MethodState CreateTicketMethod(
+            NodeState parent,
+            string name,
+            ExpandedNodeId typeMethodId)
         {
             #pragma warning disable CA2000 // Justification: Node ownership is transferred to the server address space.
             var method = new MethodState(parent) {
-                NodeId = new NodeId(name, NamespaceIndex),
+                NodeId = ExpandedNodeId.ToNodeId(typeMethodId, SystemContext.NamespaceUris),
                 BrowseName = new QualifiedName(name),
                 DisplayName = new LocalizedText(name),
                 ReferenceTypeId = ReferenceTypeIds.HasComponent,

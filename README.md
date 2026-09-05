@@ -126,13 +126,32 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 ## Getting Started
 All the tools you need for .Net Standard come with the .Net Core tools. See [here](https://docs.microsoft.com/en-us/dotnet/articles/core/getting-started) for what you need.
 
-## Preview NuGet packages
+## Preview NuGet feed
 
-The samples build against the preview packages of the OPC UA .NET Standard stack from the
-public [nuget.org](https://www.nuget.org/packages/OPCFoundation.NetStandard.Opc.Ua/) feed -
-no authentication or extra package source is needed. The version the samples currently build
-against is pinned in a single place, the `OpcUaNetStandardVersion` property in
-[targets.props](targets.props).
+The samples build against the preview packages of the OPC UA .NET Standard stack, which
+[the nuget-publish workflow](https://github.com/OPCFoundation/UA-.NETStandard/blob/master/.github/workflows/nuget-publish.yml)
+publishes to the [GitHub Packages feed of the OPC Foundation organization](https://github.com/orgs/OPCFoundation/packages)
+on every master build. The feed is declared in [Nuget.Config](Nuget.Config):
+
+```
+https://nuget.pkg.github.com/OPCFoundation/index.json
+```
+
+GitHub Packages requires authentication even for public feeds. To restore locally, create a
+[personal access token](https://github.com/settings/tokens) with the `read:packages` scope and store
+it for the feed once (in your user-level NuGet configuration, not in the repository):
+
+```
+dotnet nuget update source opcfoundation-github --username <your-github-username> --password <your-token> --store-password-in-clear-text
+```
+
+Alternatively add the credentials to `%AppData%\NuGet\NuGet.Config` (Windows) or
+`~/.nuget/NuGet/NuGet.Config` (Linux/macOS) with the same `opcfoundation-github` key. The CI
+pipelines authenticate with the `GITHUB_PACKAGES_TOKEN` secret pipeline variable, see
+[.azurepipelines](.azurepipelines).
+
+The version the samples currently build against is pinned in a single place, the
+`OpcUaNetStandardVersion` property in [targets.props](targets.props).
 
 ## Debugging the Opc.Ua.Core Nuget packages
 
