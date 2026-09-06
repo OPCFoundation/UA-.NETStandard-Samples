@@ -35,10 +35,11 @@ features that work together:
 ## What the sample shows
 
 The four client use cases below are the ones the OPC Foundation `DurableSubscription`
-and `TransferSubscription` documents describe. All four reduce to the same two SDK
-calls — `Subscription.SetSubscriptionDurableAsync` to make a subscription durable and
-`Session.TransferSubscriptionsAsync` (which `SessionExtensions.Load` performs for you)
-to take it over.
+and `TransferSubscription` documents describe. All four reduce to the same two calls of
+the V2 subscription engine (`Opc.Ua.Client.Subscriptions`) — `ISubscription.SetAsDurableAsync`
+to make a subscription durable and `ISubscriptionManager.LoadAsync` with
+`transferSubscriptions: true` (which drives `GetMonitoredItems` and `TransferSubscriptions`
+for you) to take it over.
 
 ### 1. Transfer from an active session
 
@@ -57,13 +58,13 @@ back. The client model sets this flag on every session it opens.
 
 This is the case the sample drives end to end. The client:
 
-1. creates a durable subscription and calls `SetSubscriptionDurableAsync`;
-2. on **Save & Restart**, writes the subscription to disk with
-   `SessionExtensions.Save`, closes the session without deleting the subscription, and
-   calls `Application.Restart()`;
-3. on the next start, opens a fresh session, calls `SessionExtensions.Load` with
-   `transferSubscriptions: true` — which rebuilds the subscription objects from the file
-   *and* transfers them back from the server — and the values the server queued while the
+1. creates a durable subscription and calls `ISubscription.SetAsDurableAsync`;
+2. on **Save & Restart**, snapshots the subscription to disk with
+   `ISubscriptionManager.SaveAsync`, closes the session without deleting the subscription,
+   and calls `Application.Restart()`;
+3. on the next start, opens a fresh session, calls `ISubscriptionManager.LoadAsync` with
+   `transferSubscriptions: true` — which rebuilds the subscription on the session from the
+   file *and* transfers it back from the server — and the values the server queued while the
    process was down arrive marked **recovered**, before the live values continue.
 
 The persisted subscription outlives the process, which is what separates this from
@@ -137,20 +138,20 @@ the client was down.
 
 ## Notes for implementers
 
-* **The subscription is made durable *after* it is created.** `SetSubscriptionDurable`
+* **The subscription is made durable *after* it is created.** `SetAsDurableAsync`
   is a call on an existing subscription; the server may revise the requested lifetime
   down to `MaxDurableSubscriptionLifetimeInHours`, and the client uses the revised value.
 * **`DeleteSubscriptionsOnClose` has to be cleared on the session, not the
   subscription**, and before the session closes. The client model sets it on every
   session it opens so that a close, expected or not, always leaves the subscription
   behind.
-* **`Save`/`Load` persist the client's view of the subscription, not the server's
-  data.** The queued notifications live on the server; the file only carries what the
-  new session needs to re-create the subscription objects and ask for the transfer. The
-  `transferSubscriptions: true` argument of `Load` is what turns the loaded objects into
-  a real `TransferSubscriptions` call.
+* **`SaveAsync`/`LoadAsync` persist the client's view of the subscription, not the
+  server's data.** The queued notifications live on the server; the file only carries what
+  the new session needs to re-create the subscription and ask for the transfer. The
+  `transferSubscriptions: true` argument of `LoadAsync` is what turns the loaded
+  subscription into a real `TransferSubscriptions` call.
 * **Recovered values are ordinary notifications.** They arrive through the same
-  `FastDataChangeCallback` as live ones; the sample tells them apart by their
+  subscription `DataChangeCallback` as live ones; the sample tells them apart by their
   `SourceTimestamp` — a value sampled before the transfer was queued while the client
   was gone, a later one is live. Those timestamps span the downtime, which is how you
   can see that nothing was dropped.
@@ -158,9 +159,10 @@ the client was down.
   self-contained, so the client and server do not have to trust each other's certificate.
   A real durable-subscription client would use a secure endpoint; the transfer logic is
   identical.
-* **The client uses the classic `Opc.Ua.Client` session API** (`Session`,
-  `Subscription`, `MonitoredItem`), because `SetSubscriptionDurable`,
-  `GetMonitoredItems` and the `Save`/`Load` helpers live there.
+* **The client uses the V2 subscription engine** (`Opc.Ua.Client.Subscriptions`:
+  `ISubscription`, `ISubscriptionManager`, `MonitoredItemOptions`) on a managed session,
+  the same engine the other client samples in this repository use. `SetAsDurableAsync`,
+  the save/load helpers and transfer-on-load all live there.
 
 ## What this sample does not cover
 

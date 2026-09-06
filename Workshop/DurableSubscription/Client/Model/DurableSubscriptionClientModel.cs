@@ -8,7 +8,6 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -16,9 +15,17 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Subscriptions;
+using Opc.Ua.Samples.Client;
 
 namespace Quickstarts.DurableSubscriptionClient.Model
 {
+    // the V2 subscription engine reuses names the classic engine has in Opc.Ua.Client, so
+    // the client types of the engine are aliased to win over the using directives above.
+    using IMonitoredItem = Opc.Ua.Client.Subscriptions.MonitoredItems.IMonitoredItem;
+    using MonitoredItemOptions = Opc.Ua.Client.Subscriptions.MonitoredItems.MonitoredItemOptions;
+    using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
+
     /// <summary>
     /// One data change the client received for the watched value.
     /// </summary>
@@ -80,18 +87,22 @@ namespace Quickstarts.DurableSubscriptionClient.Model
     /// </summary>
     /// <remarks>
     /// The four client use cases of <c>Docs/DurableSubscription.md</c> and
-    /// <c>Docs/TransferSubscription.md</c> all reduce to the same two calls of the client
-    /// SDK: <see cref="Opc.Ua.Client.Subscription.SetSubscriptionDurableAsync"/> makes a
-    /// subscription durable, and <see cref="Opc.Ua.Client.ISession.TransferSubscriptionsAsync"/>
-    /// takes it over into a session:
+    /// <c>Docs/TransferSubscription.md</c> all reduce to a small set of calls of the V2
+    /// subscription engine (<c>Opc.Ua.Client.Subscriptions</c>):
+    /// <see cref="Opc.Ua.Client.Subscriptions.ISubscription.SetAsDurableAsync(TimeSpan, CancellationToken)"/>
+    /// makes a subscription durable, and
+    /// <see cref="Opc.Ua.Client.Subscriptions.ISubscriptionManager.LoadAsync"/> with
+    /// <c>transferSubscriptions: true</c> takes a persisted subscription over into a new
+    /// session (which drives the GetMonitoredItems/TransferSubscriptions services under the
+    /// hood):
     /// <list type="number">
     /// <item>from an active session - transfer a subscription owned by another live session;</item>
     /// <item>from a closed session with <c>DeleteSubscriptionsOnClose = false</c> - the
     /// close leaves the subscription on the server, a new session transfers it back;</item>
     /// <item>from persisted storage across a client restart - what this sample does with
-    /// <see cref="Opc.Ua.Client.SessionExtensions.Save(Opc.Ua.Client.ISession, string, IEnumerable{Opc.Ua.Client.Subscription}, IEnumerable{Type})"/>
-    /// and <see cref="Opc.Ua.Client.SessionExtensions.Load(Opc.Ua.Client.ISession, string, bool, IEnumerable{Type})"/>;</item>
-    /// <item>after a failed reconnect - the reconnect handler of the SDK transfers the
+    /// <see cref="Opc.Ua.Client.Subscriptions.ISubscriptionManager.SaveAsync"/> and
+    /// <see cref="Opc.Ua.Client.Subscriptions.ISubscriptionManager.LoadAsync"/>;</item>
+    /// <item>after a failed reconnect - the managed session of the V2 engine transfers the
     /// subscription back when the session cannot be reactivated.</item>
     /// </list>
     /// The window creates the model on its own thread, so the model captures that thread's
@@ -102,14 +113,19 @@ namespace Quickstarts.DurableSubscriptionClient.Model
     {
         // one hour, the smallest lifetime the server is asked to keep the durable
         // subscription alive without a publish from the client.
-        private const uint DurableLifetimeHours = 1;
+        private static readonly TimeSpan s_durableLifetime = TimeSpan.FromHours(1);
 
         private readonly ITelemetryContext m_telemetry;
         private readonly ILogger m_logger;
         private readonly SynchronizationContext m_syncContext;
 
+        // the V2 engine takes the notification handler when the subscription is created, so
+        // the model owns one for its whole lifetime and points it at its own method. The
+        // same handler is handed back for a subscription which is transferred back on load.
+        private readonly SubscriptionCallbacks m_callbacks = new SubscriptionCallbacks();
+
         private ISession m_session;
-        private Subscription m_subscription;
+        private ISubscription m_subscription;
 
         // the moment a transfer was requested. A value whose source timestamp is older
         // was queued by the server while the client was gone (recovered); a newer value is
@@ -126,6 +142,7 @@ namespace Quickstarts.DurableSubscriptionClient.Model
             m_telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
             m_logger = telemetry.CreateLogger<DurableSubscriptionClientModel>();
             m_syncContext = SynchronizationContext.Current ?? new SynchronizationContext();
+            m_callbacks.DataChangeCallback = OnDataChanges;
         }
 
         /// <summary>
@@ -183,31 +200,21 @@ namespace Quickstarts.DurableSubscriptionClient.Model
                 return;
             }
 
-            Report("Selecting the server endpoint (no security, for the sample)...");
-
-            // no security keeps the sample self contained: the server offers a None
-            // policy, so the client and the server do not have to trust each other's
-            // certificate for the durable subscription flow to be shown.
-            EndpointDescription endpointDescription = await CoreClientUtils
-                .SelectEndpointAsync(configuration, endpointUrl, useSecurity: false, m_telemetry, ct)
-                .ConfigureAwait(false);
-
-            var endpointConfiguration = EndpointConfiguration.Create(configuration);
-            var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
-
             Report("Creating the session...");
 
-            var sessionFactory = new DefaultSessionFactory(m_telemetry);
-
-            ISession session = await sessionFactory.CreateAsync(
+            // the managed session of the V2 client brings its own reconnect policy and, in
+            // particular, the V2 subscription engine (its subscription manager) the durable
+            // subscription flow relies on. A DefaultSessionFactory session would not carry
+            // that engine, so SampleSessionFactory (a ManagedSessionFactory) is used.
+            ISession session = await SampleSessionFactory.ConnectAsync(
                 configuration,
-                endpoint,
-                updateBeforeConnect: false,
-                sessionName: "Durable Subscription Client",
-                sessionTimeout: 60000,
+                endpointUrl,
+                useSecurity: false,
                 identity: new UserIdentity(),
-                preferredLocales: default,
-                ct).ConfigureAwait(false);
+                sessionName: "Durable Subscription Client",
+                telemetry: m_telemetry,
+                sessionTimeout: 60000,
+                ct: ct).ConfigureAwait(false);
 
             // the subscription has to survive the close of the session which owns it, so
             // the server keeps it for the next session to transfer back. This is the
@@ -230,12 +237,14 @@ namespace Quickstarts.DurableSubscriptionClient.Model
         /// Creates a durable subscription which watches the server's <c>CurrentTime</c>.
         /// </summary>
         /// <remarks>
-        /// The subscription is created, one monitored item is added, and then
-        /// <see cref="Opc.Ua.Client.Subscription.SetSubscriptionDurableAsync"/> asks the
-        /// server to keep it and its queued notifications alive without the client for
-        /// <see cref="DurableLifetimeHours"/> hours.
-        /// <see cref="Opc.Ua.Client.Subscription.GetMonitoredItemsAsync"/> reads back the
-        /// server side handles, which is what a transfer into another session needs.
+        /// The subscription is created on the V2 subscription engine, one monitored item is
+        /// added (the engine applies it on its own worker, so
+        /// <see cref="SampleSession.WaitForPendingChangesAsync"/> waits for that to settle),
+        /// and then <see cref="Opc.Ua.Client.Subscriptions.ISubscription.SetAsDurableAsync(TimeSpan, CancellationToken)"/>
+        /// asks the server to keep the subscription and its queued notifications alive
+        /// without the client for <see cref="s_durableLifetime"/>. The server side monitored
+        /// item handles a later transfer relies on are read for the caller by the engine
+        /// itself during transfer-on-load.
         /// </remarks>
         /// <param name="ct">The cancellation token.</param>
         public async Task CreateDurableSubscriptionAsync(CancellationToken ct = default)
@@ -249,11 +258,9 @@ namespace Quickstarts.DurableSubscriptionClient.Model
 
             Report("Creating the subscription...");
 
-            var subscription = new Subscription(
-                m_telemetry,
-                new SubscriptionOptions {
-                    DisplayName = "Durable Subscription",
-                    PublishingInterval = 1000,
+            var options = new OptionsMonitor<SubscriptionOptions>(
+                SampleSession.DefaultSubscriptionOptions with {
+                    PublishingInterval = TimeSpan.FromSeconds(1),
                     KeepAliveCount = 10,
                     LifetimeCount = 1000,
                     MaxNotificationsPerPublish = 1000,
@@ -261,53 +268,40 @@ namespace Quickstarts.DurableSubscriptionClient.Model
                     Priority = 1,
                 });
 
-            session.AddSubscription(subscription);
-            await subscription.CreateAsync(ct).ConfigureAwait(false);
+            ISubscription subscription = SampleSession.AddSubscription(session, m_callbacks, options);
 
-            var monitoredItem = new MonitoredItem(
-                m_telemetry,
-                new MonitoredItemOptions {
-                    DisplayName = "CurrentTime",
+            // adding the item to the collection is the create request; the engine applies
+            // it on its own worker, there is no ApplyChanges to call.
+            subscription.MonitoredItems.TryAdd(
+                "CurrentTime",
+                new OptionsMonitor<MonitoredItemOptions>(new MonitoredItemOptions {
                     StartNodeId = VariableIds.Server_ServerStatus_CurrentTime,
                     AttributeId = Attributes.Value,
                     MonitoringMode = MonitoringMode.Reporting,
-                    SamplingInterval = 500,
+                    SamplingInterval = TimeSpan.FromMilliseconds(500),
                     QueueSize = 1000,
                     DiscardOldest = false,
-                });
+                }),
+                out IMonitoredItem _);
 
-            subscription.AddItem(monitoredItem);
-            await subscription.ApplyChangesAsync(ct).ConfigureAwait(false);
-
-            subscription.FastDataChangeCallback = OnDataChange;
+            await SampleSession
+                .WaitForPendingChangesAsync(subscription, SampleSubscription.DefaultApplyTimeout, ct)
+                .ConfigureAwait(false);
 
             // ask the server to make the subscription durable; the server may revise the
             // lifetime down to what its configuration allows.
-            (bool durable, uint revisedLifetimeHours) = await subscription
-                .SetSubscriptionDurableAsync(DurableLifetimeHours, ct)
-                .ConfigureAwait(false);
-
-            if (!durable)
+            try
             {
+                TimeSpan revisedLifetime = await subscription
+                    .SetAsDurableAsync(s_durableLifetime, ct)
+                    .ConfigureAwait(false);
+
+                Report($"Durable subscription created, kept alive for {revisedLifetime.TotalHours:0.#} hour(s) without the client.");
+            }
+            catch (ServiceResultException exception)
+            {
+                m_logger.LogWarning(exception, "The server did not make the subscription durable.");
                 Report("The server did not make the subscription durable. Is DurableSubscriptionsEnabled set?");
-            }
-            else
-            {
-                Report($"Durable subscription created, kept alive for {revisedLifetimeHours} hour(s) without the client.");
-            }
-
-            // the server side monitored item handles, which a transfer into another
-            // session relies on (GetMonitoredItems, OPC UA Part 4).
-            (bool ok, ArrayOf<uint> serverHandles, ArrayOf<uint> clientHandles) = await subscription
-                .GetMonitoredItemsAsync(ct)
-                .ConfigureAwait(false);
-
-            if (ok && m_logger.IsEnabled(LogLevel.Information))
-            {
-                m_logger.LogInformation(
-                    "GetMonitoredItems returned {Count} item(s) for subscription {SubscriptionId}.",
-                    serverHandles.Count,
-                    subscription.Id);
             }
 
             m_subscription = subscription;
@@ -319,10 +313,10 @@ namespace Quickstarts.DurableSubscriptionClient.Model
         /// </summary>
         /// <remarks>
         /// This is the client side of the third use case: persisted storage across a client
-        /// restart. The subscription structure is saved with
-        /// <see cref="Opc.Ua.Client.SessionExtensions.Save(Opc.Ua.Client.ISession, string, IEnumerable{Opc.Ua.Client.Subscription}, IEnumerable{Type})"/>;
-        /// the server keeps the live subscription because the session was told not to delete
-        /// it on close.
+        /// restart. The subscription structure is snapshotted with
+        /// <see cref="Opc.Ua.Client.Subscriptions.ISubscriptionManager.SaveAsync"/>; the
+        /// server keeps the live subscription because the session was told not to delete it
+        /// on close.
         /// </remarks>
         /// <param name="ct">The cancellation token.</param>
         public async Task PersistAndDropSessionAsync(CancellationToken ct = default)
@@ -334,19 +328,28 @@ namespace Quickstarts.DurableSubscriptionClient.Model
                 throw new InvalidOperationException("There is no durable subscription to persist.");
             }
 
+            if (!session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                throw new InvalidOperationException("The session does not run the V2 subscription engine.");
+            }
+
             Report($"Saving the subscription to {PersistedSubscriptionFile}...");
 
-            session.Save(PersistedSubscriptionFile, new[] { m_subscription }, null);
+            using (FileStream stream = File.Create(PersistedSubscriptionFile))
+            {
+                await manager
+                    .SaveAsync(stream, session.MessageContext, new[] { m_subscription }, ct)
+                    .ConfigureAwait(false);
+            }
 
-            // stop delivering while the session goes away.
-            m_subscription.FastDataChangeCallback = null;
+            // stop tracking the subscription; the engine tears down its client side when
+            // the session closes, and the server keeps the durable subscription itself.
             m_subscription = null;
 
             // leave the subscription on the server for the next session to transfer back.
             session.DeleteSubscriptionsOnClose = false;
 
-            await session.CloseAsync(10000, closeChannel: true, ct).ConfigureAwait(false);
-            session.Dispose();
+            await SampleSession.CloseAndDisposeAsync(session, ct).ConfigureAwait(false);
             m_session = null;
 
             Report("Subscription persisted. Restart the client to transfer it back.");
@@ -360,22 +363,32 @@ namespace Quickstarts.DurableSubscriptionClient.Model
         {
             ISession session = RequireSession();
 
+            if (!session.TryGetSubscriptionManager(out ISubscriptionManager manager))
+            {
+                Report("The session does not run the V2 subscription engine; cannot transfer back.");
+                return;
+            }
+
             Report("Loading the persisted subscription and transferring it back...");
 
             // any value the server queued was sampled before now, while the client was
             // gone; a value sampled after this point is live. Set the threshold before the
-            // transfer so the classification in OnDataChange is correct for the first
+            // transfer so the classification in OnDataChanges is correct for the first
             // notification that arrives.
             m_recoverThresholdUtc = DateTime.UtcNow;
 
-            // load rebuilds the subscription objects from the file and, because transfer
-            // is requested, transfers them back from the server into this session.
-            List<Subscription> loaded = (await Task
-                .FromResult(session.Load(PersistedSubscriptionFile, transferSubscriptions: true, null))
-                .ConfigureAwait(false))
-                .ToList();
+            // load rebuilds the subscription on this session and, because transfer is
+            // requested, takes it back from the server (GetMonitoredItems and
+            // TransferSubscriptions under the hood). The same callbacks handle its
+            // notifications, matched to the restored subscription by its saved name.
+            using (FileStream stream = File.OpenRead(PersistedSubscriptionFile))
+            {
+                await manager
+                    .LoadAsync(stream, session.MessageContext, _ => m_callbacks, transferSubscriptions: true, ct)
+                    .ConfigureAwait(false);
+            }
 
-            Subscription subscription = loaded.FirstOrDefault();
+            ISubscription subscription = manager.Items.FirstOrDefault();
 
             if (subscription == null)
             {
@@ -384,8 +397,6 @@ namespace Quickstarts.DurableSubscriptionClient.Model
                 TryDeletePersistedFile();
                 return;
             }
-
-            subscription.FastDataChangeCallback = OnDataChange;
 
             m_subscription = subscription;
 
@@ -412,26 +423,36 @@ namespace Quickstarts.DurableSubscriptionClient.Model
                 return;
             }
 
-            if (m_subscription != null)
-            {
-                m_subscription.FastDataChangeCallback = null;
-                m_subscription = null;
-            }
-
             m_recoverThresholdUtc = DateTime.MinValue;
+
+            ISubscription subscription = m_subscription;
+            m_subscription = null;
+
+            // disposing a V2 subscription deletes it on the server and removes it from the
+            // manager, which is what ends the durable subscription for good.
+            if (deleteSubscription && subscription != null)
+            {
+                try
+                {
+                    await subscription.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    m_logger.LogError(exception, "Error deleting the subscription.");
+                }
+            }
 
             session.DeleteSubscriptionsOnClose = deleteSubscription;
 
             try
             {
-                await session.CloseAsync(10000, closeChannel: true, ct).ConfigureAwait(false);
+                await SampleSession.CloseAndDisposeAsync(session, ct).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
                 m_logger.LogError(exception, "Error closing the session.");
             }
 
-            session.Dispose();
             m_session = null;
 
             Report(deleteSubscription
@@ -442,26 +463,20 @@ namespace Quickstarts.DurableSubscriptionClient.Model
         /// <inheritdoc/>
         public void Dispose()
         {
-            Subscription subscription = m_subscription;
-
-            if (subscription != null)
-            {
-                subscription.FastDataChangeCallback = null;
-                subscription.Dispose();
-                m_subscription = null;
-            }
+            // let the durable subscription go without deleting it: it stays on the server so
+            // it can still be transferred back on the next run. The client side object is
+            // torn down with the session.
+            m_subscription = null;
 
             ISession session = m_session;
 
             if (session != null)
             {
-                // leave the durable subscription on the server when the window closes, so
-                // it can still be transferred back on the next run.
                 session.DeleteSubscriptionsOnClose = false;
 
                 try
                 {
-                    session.CloseAsync(5000, closeChannel: true, CancellationToken.None)
+                    SampleSession.CloseAndDisposeAsync(session, CancellationToken.None)
                         .GetAwaiter().GetResult();
                 }
                 catch (Exception exception)
@@ -469,32 +484,27 @@ namespace Quickstarts.DurableSubscriptionClient.Model
                     m_logger.LogError(exception, "Error closing the session on dispose.");
                 }
 
-                session.Dispose();
                 m_session = null;
             }
         }
 
-        private void OnDataChange(
-            Subscription subscription,
-            DataChangeNotification notification,
-            ArrayOf<string> stringTable)
+        private void OnDataChanges(
+            ISubscription subscription,
+            uint sequenceNumber,
+            DateTime publishTime,
+            DataValueChange[] notifications,
+            PublishState publishState)
         {
-            if (notification?.MonitoredItems == null)
+            if (notifications == null)
             {
                 return;
             }
 
             DateTime thresholdUtc = m_recoverThresholdUtc;
 
-            foreach (MonitoredItemNotification item in notification.MonitoredItems)
+            foreach (DataValueChange change in notifications)
             {
-                if (item?.Value == null)
-                {
-                    continue;
-                }
-
-                uint sequenceNumber = item.Message?.SequenceNumber ?? 0;
-                DataValue value = item.Value;
+                DataValue value = change.Value;
 
                 // a value sampled before the transfer was queued while the client was gone.
                 bool recovered = thresholdUtc > DateTime.MinValue
