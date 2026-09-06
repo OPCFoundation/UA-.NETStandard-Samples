@@ -131,6 +131,16 @@ namespace Opc.Ua.Samples.Tests
             },
             new SampleDefinition
             {
+                Name = "DurableSubscription",
+                ServerProject = "Workshop/DurableSubscription/Server/DurableSubscription Server.csproj",
+                ServerConfig = "Workshop/DurableSubscription/Server/Quickstarts.DurableSubscriptionServer.Config.xml",
+                ServerUrl = "opc.tcp://localhost:62581/Quickstarts/DurableSubscriptionServer",
+                ClientProject = "Workshop/DurableSubscription/Client/DurableSubscription Client.csproj",
+                ClientConfig = "Workshop/DurableSubscription/Client/Quickstarts.DurableSubscriptionClient.Config.xml",
+                ClientEndpointSource = "Workshop/DurableSubscription/Client/MainForm.Designer.cs",
+            },
+            new SampleDefinition
+            {
                 Name = "Empty",
                 ServerProject = "Workshop/Empty/Server/Empty Server.csproj",
                 ServerConfig = "Workshop/Empty/Server/Quickstarts.EmptyServer.Config.xml",

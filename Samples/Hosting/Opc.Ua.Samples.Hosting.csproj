@@ -3,7 +3,7 @@
        targeting pack it needs is only available on Windows builds. The console
        samples build against the platform neutral targets on every platform. -->
   <Choose>
-    <When Condition="true">
+    <When Condition="$([MSBuild]::IsOsPlatform('Windows'))">
       <PropertyGroup>
         <TargetFrameworks>net8.0;net10.0;net10.0-windows</TargetFrameworks>
       </PropertyGroup>

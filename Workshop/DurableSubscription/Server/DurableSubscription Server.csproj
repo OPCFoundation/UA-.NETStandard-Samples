@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Quickstarts.DurableSubscriptionServer</RootNamespace>
+    <AssemblyName>Quickstarts.DurableSubscriptionServer</AssemblyName>
+    <ApplicationIcon>App.ico</ApplicationIcon>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\..\..\bin\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="App.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <Content Include="Quickstarts.DurableSubscriptionServer.Config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Samples\ServerControls.Net4\UA Server Controls.csproj" />
+    <ProjectReference Include="..\..\..\Samples\Hosting\Opc.Ua.Samples.Hosting.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Bindings.Https">
+      <Version>$(OpcUaNetStandardVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
+      <Version>$(OpcUaNetStandardVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Quickstarts.Servers">
+      <Version>$(OpcUaNetStandardVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>
