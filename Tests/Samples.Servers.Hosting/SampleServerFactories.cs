@@ -46,6 +46,7 @@ namespace Opc.Ua.Samples.Tests
                 ["Boiler"] = (services, file, configure) => services.AddBoilerServer(file, configure),
                 ["DataAccess"] = (services, file, configure) => services.AddDataAccessServer(file, configure),
                 ["DataTypes"] = (services, file, configure) => services.AddDataTypesServer(file, configure),
+                ["DurableSubscription"] = (services, file, configure) => services.AddDurableSubscriptionServer(file, configure),
                 ["Empty"] = (services, file, configure) => services.AddEmptyServer(file, configure),
                 ["FileTransfer"] = (services, file, configure) => services.AddFileTransferServer(file, configure),
                 ["HistoricalAccess"] = (services, file, configure) => services.AddHistoricalAccessServer(file, configure),
