@@ -150,9 +150,9 @@ the client was down.
   `transferSubscriptions: true` argument of `Load` is what turns the loaded objects into
   a real `TransferSubscriptions` call.
 * **Recovered values are ordinary notifications.** They arrive through the same
-  `FastDataChangeCallback` as live ones; the sample tells them apart by watching for the
-  first keep-alive after the transfer (`PublishStateChangedMask.KeepAlive`), after which
-  everything is live. Their `SourceTimestamp` values span the downtime, which is how you
+  `FastDataChangeCallback` as live ones; the sample tells them apart by their
+  `SourceTimestamp` — a value sampled before the transfer was queued while the client
+  was gone, a later one is live. Those timestamps span the downtime, which is how you
   can see that nothing was dropped.
 * **The sample connects without security** (`SecurityPolicy` `None`) to stay
   self-contained, so the client and server do not have to trust each other's certificate.

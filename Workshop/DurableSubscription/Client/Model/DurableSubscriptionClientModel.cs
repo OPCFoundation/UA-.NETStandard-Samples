@@ -111,9 +111,11 @@ namespace Quickstarts.DurableSubscriptionClient.Model
         private ISession m_session;
         private Subscription m_subscription;
 
-        // set while the queued values of a transferred subscription are being delivered,
-        // so the window can tell recovered values from live ones.
-        private volatile bool m_recovering;
+        // the moment a transfer was requested. A value whose source timestamp is older
+        // was queued by the server while the client was gone (recovered); a newer value is
+        // live. This is robust even when the watched node changes on every publish, which
+        // would keep a keep-alive from ever marking the end of the recovery.
+        private DateTime m_recoverThresholdUtc = DateTime.MinValue;
 
         /// <summary>
         /// Creates the model.
@@ -360,6 +362,12 @@ namespace Quickstarts.DurableSubscriptionClient.Model
 
             Report("Loading the persisted subscription and transferring it back...");
 
+            // any value the server queued was sampled before now, while the client was
+            // gone; a value sampled after this point is live. Set the threshold before the
+            // transfer so the classification in OnDataChange is correct for the first
+            // notification that arrives.
+            m_recoverThresholdUtc = DateTime.UtcNow;
+
             // load rebuilds the subscription objects from the file and, because transfer
             // is requested, transfers them back from the server into this session.
             List<Subscription> loaded = (await Task
@@ -372,15 +380,12 @@ namespace Quickstarts.DurableSubscriptionClient.Model
             if (subscription == null)
             {
                 Report("The persisted file held no subscription.");
+                m_recoverThresholdUtc = DateTime.MinValue;
                 TryDeletePersistedFile();
                 return;
             }
 
-            // deliver the queued values as recovered, then flip to live once the burst is
-            // drained by the first keep alive.
-            m_recovering = true;
             subscription.FastDataChangeCallback = OnDataChange;
-            subscription.PublishStatusChanged += OnPublishStatusChanged;
 
             m_subscription = subscription;
 
@@ -388,7 +393,7 @@ namespace Quickstarts.DurableSubscriptionClient.Model
             // session and will be persisted again on the next drop.
             TryDeletePersistedFile();
 
-            Report("Subscription transferred. Recovering the values queued while the client was gone...");
+            Report("Subscription transferred. Values queued while the client was gone are marked recovered.");
         }
 
         /// <summary>
@@ -410,9 +415,10 @@ namespace Quickstarts.DurableSubscriptionClient.Model
             if (m_subscription != null)
             {
                 m_subscription.FastDataChangeCallback = null;
-                m_subscription.PublishStatusChanged -= OnPublishStatusChanged;
                 m_subscription = null;
             }
+
+            m_recoverThresholdUtc = DateTime.MinValue;
 
             session.DeleteSubscriptionsOnClose = deleteSubscription;
 
@@ -478,7 +484,7 @@ namespace Quickstarts.DurableSubscriptionClient.Model
                 return;
             }
 
-            bool recovered = m_recovering;
+            DateTime thresholdUtc = m_recoverThresholdUtc;
 
             foreach (MonitoredItemNotification item in notification.MonitoredItems)
             {
@@ -490,21 +496,12 @@ namespace Quickstarts.DurableSubscriptionClient.Model
                 uint sequenceNumber = item.Message?.SequenceNumber ?? 0;
                 DataValue value = item.Value;
 
+                // a value sampled before the transfer was queued while the client was gone.
+                bool recovered = thresholdUtc > DateTime.MinValue
+                    && value.SourceTimestamp.ToDateTime() < thresholdUtc;
+
                 m_syncContext.Post(
                     _ => Raise(ValueReceived, new DurableValueEventArgs(value, sequenceNumber, recovered)),
-                    null);
-            }
-        }
-
-        private void OnPublishStatusChanged(Subscription subscription, PublishStateChangedEventArgs e)
-        {
-            // the first keep alive after the queued burst marks the end of the recovery:
-            // everything after it is live.
-            if (m_recovering && (e.Status & PublishStateChangedMask.KeepAlive) != 0)
-            {
-                m_recovering = false;
-                m_syncContext.Post(
-                    _ => Report("Recovery complete. Now receiving live values."),
                     null);
             }
         }

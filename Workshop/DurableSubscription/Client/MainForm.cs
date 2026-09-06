@@ -194,7 +194,7 @@ namespace Quickstarts.DurableSubscriptionClient
         {
             DataValue value = e.Value;
 
-            var item = new ListViewItem(value.SourceTimestamp.ToLocalTime().ToString("HH:mm:ss.fff"));
+            var item = new ListViewItem(value.SourceTimestamp.ToDateTime().ToLocalTime().ToString("HH:mm:ss.fff"));
             item.SubItems.Add(value.WrappedValue.ToString());
             item.SubItems.Add(e.SequenceNumber.ToString());
             item.SubItems.Add(e.Recovered ? "recovered" : "live");
