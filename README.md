@@ -132,9 +132,13 @@ dotnet nuget update source opcfoundation-github --username <your-github-username
 ```
 
 Alternatively add the credentials to `%AppData%\NuGet\NuGet.Config` (Windows) or
-`~/.nuget/NuGet/NuGet.Config` (Linux/macOS) with the same `opcfoundation-github` key. The CI
-pipelines authenticate with the `GITHUB_PACKAGES_TOKEN` secret pipeline variable, see
-[.azurepipelines](.azurepipelines).
+`~/.nuget/NuGet/NuGet.Config` (Linux/macOS) with the same `opcfoundation-github` key.
+
+The [Azure DevOps pipelines](.azurepipelines) authenticate through the `Github-Feed` NuGet
+service connection of the Azure DevOps project, which the `NuGetAuthenticate` task hands to
+the restore steps. The service connection is of type NuGet with basic authentication: the
+feed URL must match the one in [Nuget.Config](Nuget.Config) exactly, the username can be
+anything, and the password is a token with the `read:packages` scope as above.
 
 The version the samples currently build against is pinned in a single place, the
 `OpcUaNetStandardVersion` property in [targets.props](targets.props).
