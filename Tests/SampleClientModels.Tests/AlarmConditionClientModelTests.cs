@@ -333,12 +333,14 @@ namespace Opc.Ua.Samples.Tests
             // the trail ran and stops cleanly whether or not the server reported anything
             Assert.That(auditTrail.IsRunning, Is.True, "The audit trail stopped on its own.");
 
-            // the stack of 2.0.0-preview.4 does not deliver audit events to a subscriber:
-            // Auditing reads true and the Method answers Good, but nothing of the
-            // AuditUpdateMethodEventType family ever reaches a monitored item of the Server
-            // object, while a model change event from the same object does. The expectation
-            // is written the right way round and reported as ignored until it holds, the
-            // bargain the node manager tier makes with its known issues.
+            // no audit event of a condition Method call reaches a subscriber: Auditing
+            // reads true in the configuration of this sample and AddComment answers Good,
+            // but nothing of the AuditUpdateMethodEventType family arrives on a monitored
+            // item of the Server object, while a model change event from the same object
+            // does - and the RoleSet Methods of the RoleManagement sample are audited on
+            // the same stack. The expectation is written the right way round and reported
+            // as ignored until it holds, the bargain the node manager tier makes with its
+            // known issues.
             await KnownIssueAsync(
                 async () => {
                     Assert.That(
@@ -353,8 +355,8 @@ namespace Opc.Ua.Samples.Tests
                     Assert.That(audited.Snapshot.Time, Is.Not.Null, "The audit event carries no time.");
                     Assert.That(audited.Snapshot.Details, Is.Not.Null, "The audit event has no raw fields for the details dialog.");
                 },
-                "the stack of 2.0.0-preview.4 delivers no audit event of any type to a subscriber " +
-                "(reproduced on the RoleManagement and NodeManagement samples as well).")
+                "no audit event of a condition Method call reaches a subscriber, although the " +
+                "RoleSet Methods of the RoleManagement sample are audited on the same stack.")
                 .ConfigureAwait(false);
         }
 

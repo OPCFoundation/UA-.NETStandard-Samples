@@ -381,18 +381,23 @@ enabling, and the refresh replays one dialog per source until somebody answers i
 
 ### Recorded issues
 
-No expectation is recorded right now. The last three paid out on the bump to
+No expectation is recorded in this tier right now. Three paid out on the bump to
 `2.0.301.4181-preview`: the two structure default values in `DataTypesNodeManagerTests`
-([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401)) and
-the audit trail in `RoleManagementNodeManagerTests`. Before that two more paid out when
-their node managers were migrated. The mechanism stays, because it is what made that happen.
-An expectation written the way the sample is *meant* to behave is reported as **ignored**
-through `KnownIssue.RecordAsync`, and - like `s_knownIssues` in Tier 1 - an entry fails the
-moment it starts passing, so it cannot rot. That has already happened nine times. Three were
-expectations that were wrong about the harness rather than about the sample, one of them
-caught by CI rather than locally: an entry which held on a developer machine and not on a
-build agent, which is the most useful kind to be told about. The other six were the
-bargain paying out as designed.
+([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401), fixed
+by UA-.NETStandard#4414) and the audit trail in `RoleManagementNodeManagerTests`. Before that
+two more paid out when their node managers were migrated. The mechanism stays, because it is
+what made that happen. An expectation written the way the sample is *meant* to behave is
+reported as **ignored** through `KnownIssue.RecordAsync`, and - like `s_knownIssues` in
+Tier 1 - an entry fails the moment it starts passing, so it cannot rot. That has already
+happened nine times. Three were expectations that were wrong about the harness rather than
+about the sample, one of them caught by CI rather than locally: an entry which held on a
+developer machine and not on a build agent, which is the most useful kind to be told about.
+The other six were the bargain paying out as designed.
+
+Tier 1.7 keeps two of its own, both still ignored: a compiled type cannot hand over its own
+`DataTypeDefinition`
+([UA-.NETStandard#4424](https://github.com/OPCFoundation/UA-.NETStandard/issues/4424)) and
+the AlarmCondition audit trail records no `AddComment`.
 
 The SimpleEvents events arrived with the sample's own fields (`CycleId`, `CurrentStep`,
 `Steps`) empty even though they were on the event and the server had accepted the select

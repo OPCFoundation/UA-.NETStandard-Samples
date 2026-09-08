@@ -60,7 +60,7 @@ connects, and produces its schema anyway. That is also the case a
 [runtime NodeSet](../RuntimeNodeSets/README.md) creates - a server which read its model out
 of a NodeSet2 document at run time publishes exactly the same Attribute.
 
-> **On 2.0.0-preview.4 only the browsed route carries anything.** The ModelDesign source
+> **Only the browsed route carries anything today.** The ModelDesign source
 > generator does not implement `IDataTypeDefinitionSource` on the structures it emits - a
 > generated `CarType` has the right `TypeId` but no `GetDataTypeDefinition` - so the
 > compiled branch of `DataTypesClientModel` registers nothing and every type in the list is
@@ -104,8 +104,8 @@ flavours of the Part 6 JSON encoding.
   ([UA-.NETStandard#4424](https://github.com/OPCFoundation/UA-.NETStandard/issues/4424)).
   `DefaultSchemaProvider` is public and takes an `IEnumerable<IUaSchemaGenerator>`, but
   `XsdSchemaGenerator`, `BsdSchemaGenerator` and `JsonSchemaGenerator` are not, so
-  `AddSchemaGeneration()` on a service collection is the only way to a working provider on
-  2.0.0-preview.4. A client which is built around a host container registers it there and
+  `AddSchemaGeneration()` on a service collection is the only way to a working provider.
+  A client which is built around a host container registers it there and
   takes an `ISchemaProvider` in a constructor; the window of this sample creates its model
   itself, so [`DataTypesClientModel`](Client/Model/DataTypesClientModel.cs) owns the
   registration.
