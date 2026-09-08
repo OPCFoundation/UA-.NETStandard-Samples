@@ -31,7 +31,6 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -91,10 +90,11 @@ namespace Quickstarts.HistoricalEvents.Server
         /// The capabilities every notifier of this archive has.
         /// </summary>
         /// <remarks>
-        /// Only the data half of these flags rolls up into the
-        /// HistoryServerCapabilities node, and this archive holds events rather than
-        /// values, so the read flags - which default to true - are cleared here and
-        /// the node manager sets the event flags of that node by hand.
+        /// These flags are both an advertisement and a gate: the diagnostics node
+        /// manager rolls them up into the HistoryServerCapabilities node, and the
+        /// dispatcher refuses an operation the provider does not claim. This archive
+        /// holds events rather than values, so the four data read flags - which default
+        /// to true - are cleared and the five event flags are raised.
         /// </remarks>
         public override ValueTask<HistorianNodeCapabilities> GetCapabilitiesAsync(NodeId nodeId, CancellationToken ct)
         {
@@ -125,43 +125,43 @@ namespace Quickstarts.HistoricalEvents.Server
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> InsertEventsAsync(
+        public ValueTask<HistorianUpdateOutcome<HistorianEventRecord>> InsertEventsAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<HistorianEventRecord> events,
+            ArrayOf<HistorianEventRecord> events,
             CancellationToken ct)
         {
             return WriteEventsAsync(context, nodeId, events, PerformUpdateType.Insert);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> ReplaceEventsAsync(
+        public ValueTask<HistorianUpdateOutcome<HistorianEventRecord>> ReplaceEventsAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<HistorianEventRecord> events,
+            ArrayOf<HistorianEventRecord> events,
             CancellationToken ct)
         {
             return WriteEventsAsync(context, nodeId, events, PerformUpdateType.Replace);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> UpdateEventsAsync(
+        public ValueTask<HistorianUpdateOutcome<HistorianEventRecord>> UpdateEventsAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<HistorianEventRecord> events,
+            ArrayOf<HistorianEventRecord> events,
             CancellationToken ct)
         {
             return WriteEventsAsync(context, nodeId, events, PerformUpdateType.Update);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> DeleteEventsAsync(
+        public ValueTask<HistorianUpdateOutcome<HistorianEventRecord>> DeleteEventsAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<ByteString> eventIds,
+            ArrayOf<ByteString> eventIds,
             CancellationToken ct)
         {
-            if (eventIds == null)
+            if (eventIds.IsNull)
             {
                 throw new ArgumentNullException(nameof(eventIds));
             }
@@ -183,10 +183,10 @@ namespace Quickstarts.HistoricalEvents.Server
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error deleting from the event history of {NodeId}.", nodeId);
-                return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, eventIds.Count));
+                return Outcome(RepeatStatus(StatusCodes.BadUnexpectedError, eventIds.Count));
             }
 
-            return new ValueTask<IList<StatusCode>>(results);
+            return Outcome(results);
         }
         #endregion
 
@@ -300,12 +300,22 @@ namespace Quickstarts.HistoricalEvents.Server
         /// Flattens an event into the record the framework works in: every field the
         /// request refers to, keyed by the browse path which addresses it.
         /// </summary>
+        /// <remarks>
+        /// A record carries the same fields twice. <c>Fields</c> is keyed by the
+        /// browse path alone, which is what a client reading the flat form sees;
+        /// <c>QualifiedFields</c> keeps the whole identity of the select clause -
+        /// its event type, attribute and index range as well - which is what the
+        /// framework projects the answer from and evaluates the where clause
+        /// against. Two clauses which differ only in their event type collapse onto
+        /// one browse path, so filling the qualified form is what keeps them apart.
+        /// </remarks>
         private HistorianEventRecord CreateRecord(
             BaseEventState e,
             FilterContext filterContext,
             IReadOnlyList<SimpleAttributeOperand> operands)
         {
-            var fields = new Dictionary<string, Variant>(StringComparer.Ordinal);
+            var fields = new List<KeyValuePair<string, Variant>>(operands.Count);
+            var qualifiedFields = new List<KeyValuePair<HistorianEventFieldKey, Variant>>(operands.Count);
 
             foreach (SimpleAttributeOperand operand in operands)
             {
@@ -321,14 +331,22 @@ namespace Quickstarts.HistoricalEvents.Server
                     value = Variant.From(m_server.ResourceManager.Translate(filterContext.PreferredLocales, text));
                 }
 
-                fields[BuildOperandKey(operand.BrowsePath)] = value;
+                fields.Add(new KeyValuePair<string, Variant>(
+                    HistorianEventFieldKey.BuildPath(operand.BrowsePath),
+                    value));
+
+                qualifiedFields.Add(new KeyValuePair<HistorianEventFieldKey, Variant>(
+                    HistorianEventFieldKey.FromOperand(operand),
+                    value));
             }
 
             return new HistorianEventRecord(
                 e.EventId?.Value ?? ByteString.Empty,
                 e.TypeDefinitionId,
                 new DateTimeUtc(e.Time?.Value ?? DateTime.MinValue),
-                fields);
+                fields) {
+                QualifiedFields = qualifiedFields
+            };
         }
 
         /// <summary>
@@ -343,7 +361,9 @@ namespace Quickstarts.HistoricalEvents.Server
 
             void Add(SimpleAttributeOperand operand)
             {
-                if (operand != null && operand.BrowsePath.Count > 0 && seen.Add(BuildOperandKey(operand.BrowsePath)))
+                if (operand != null &&
+                    operand.BrowsePath.Count > 0 &&
+                    seen.Add(HistorianEventFieldKey.BuildPath(operand.BrowsePath)))
                 {
                     operands.Add(operand);
                 }
@@ -366,32 +386,6 @@ namespace Quickstarts.HistoricalEvents.Server
             }
 
             return operands;
-        }
-
-        /// <summary>
-        /// The key a browse path is stored and looked up under: the names of its
-        /// segments joined by a slash, the way the framework builds it.
-        /// </summary>
-        private static string BuildOperandKey(ArrayOf<QualifiedName> browsePath)
-        {
-            if (browsePath.Count == 1)
-            {
-                return browsePath[0].Name ?? String.Empty;
-            }
-
-            var key = new StringBuilder();
-
-            for (int ii = 0; ii < browsePath.Count; ii++)
-            {
-                if (ii > 0)
-                {
-                    key.Append('/');
-                }
-
-                key.Append(browsePath[ii].Name);
-            }
-
-            return key.ToString();
         }
 
         /// <summary>
@@ -495,13 +489,13 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Applies the per event insert, replace or update to the archive.
         /// </summary>
-        private ValueTask<IList<StatusCode>> WriteEventsAsync(
+        private ValueTask<HistorianUpdateOutcome<HistorianEventRecord>> WriteEventsAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<HistorianEventRecord> events,
+            ArrayOf<HistorianEventRecord> events,
             PerformUpdateType performUpdateType)
         {
-            if (events == null)
+            if (events.IsNull)
             {
                 throw new ArgumentNullException(nameof(events));
             }
@@ -526,10 +520,26 @@ namespace Quickstarts.HistoricalEvents.Server
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error writing to the event history of {NodeId}.", nodeId);
-                return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, events.Count));
+                return Outcome(RepeatStatus(StatusCodes.BadUnexpectedError, events.Count));
             }
 
-            return new ValueTask<IList<StatusCode>>(results);
+            return Outcome(results);
+        }
+
+        /// <summary>
+        /// Wraps the per event statuses of an update in the outcome the framework
+        /// reports back.
+        /// </summary>
+        /// <remarks>
+        /// The outcome carries no old values: the generator overwrites a row in
+        /// place and hands back nothing of what stood there, so there is nothing
+        /// this provider could report to the audit trail.
+        /// </remarks>
+        private static ValueTask<HistorianUpdateOutcome<HistorianEventRecord>> Outcome(
+            ArrayOf<StatusCode> results)
+        {
+            return new ValueTask<HistorianUpdateOutcome<HistorianEventRecord>>(
+                new HistorianUpdateOutcome<HistorianEventRecord>(results));
         }
 
         /// <summary>
@@ -619,7 +629,7 @@ namespace Quickstarts.HistoricalEvents.Server
             byte[] state = new byte[12];
             BinaryPrimitives.WriteInt64BigEndian(state, timestamp.Ticks);
             BinaryPrimitives.WriteInt32BigEndian(state.AsSpan(8), returnedAtTimestamp);
-            return new HistorianResumeToken(state);
+            return new HistorianResumeToken(new ByteString(state));
         }
 
         /// <summary>
@@ -648,7 +658,12 @@ namespace Quickstarts.HistoricalEvents.Server
             ReadRawData = false,
             ReadModifiedData = false,
             ReadAtTime = false,
-            ReadProcessedData = false
+            ReadProcessedData = false,
+            ReadEventHistory = true,
+            InsertEvent = true,
+            ReplaceEvent = true,
+            UpdateEvent = true,
+            DeleteEvent = true
         };
 
         private readonly IServerInternal m_server;

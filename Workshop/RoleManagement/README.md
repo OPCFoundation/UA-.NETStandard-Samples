@@ -125,7 +125,7 @@ attribute other than the Value is checked against the restrictions too.
 > which node carries what.
 >
 > `ApplyRestrictionsToBrowse` does **not** take the node out of the reference list of its
-> parent in 2.0.0-preview.4: the per-reference filter of a Browse applies role permissions
+> parent: the per-reference filter of a Browse applies role permissions
 > only, so `MaintenanceNote` is still listed below the machine on an unencrypted channel and
 > only a Browse of the node itself is refused.
 
@@ -160,12 +160,9 @@ those Methods — but only when the server sets `AuditingEnabled`, which this sa
 The client subscribes to `AuditEventType` on the Server object and lists what arrives in its
 third panel.
 
-> **The panel stays empty against 2.0.0-preview.4.** Measured: `Server.Auditing` reads
-> `true`, `AddIdentity` answers `Good`, and a subscription on the same Server object does
-> receive a `GeneralModelChangeEvent` — so neither the configuration of the sample nor the
-> event path is the problem, and no audit event of any type reaches a subscriber. The
-> tier 1.5 fixture is written the right way round and recorded as a known issue, so it turns
-> into a failure asking for the note to be removed the moment the stack delivers them.
+What a subscriber is shown depends on the Session it subscribed on: a monitored item is
+evaluated against the effective identity of that Session, so an operator sees less of the
+trail than the system administrator does.
 
 ## Running it
 
@@ -203,20 +200,14 @@ on the encrypted endpoints.
 * The standard address space reserves the `RoleType` nodes themselves for the `SecurityAdmin`
   Role, so an ordinary Session cannot browse to `AddIdentity` at all. The client shows
   *(not visible to this session)* in the identities column rather than an error.
-* `IRoleManager.AddEndpoint` refuses an entry whose `EndpointUrl` is empty, although Part 18
-  §4.4.2 says a field left at its default value is ignored during the comparison — so a rule
-  which constrains the security mode alone matches everything but cannot be stored. The
-  server copies the endpoint descriptions it actually advertises instead, which is why that
-  part of the Role configuration runs as an `IServerStartupTask` (`WorkstationEndpoints`)
-  rather than in `SampleUsers.ConfigureRoles`: the URLs are not known before the start, and
-  the comparison is an exact string match. Declaring the wildcard in the role configuration
-  of the stack would be worse than either, because it applies its endpoint entries without
-  looking at what `AddEndpoint` answered — the Role would end up granted everywhere.
-  ([UA-.NETStandard#4412](https://github.com/OPCFoundation/UA-.NETStandard/issues/4412))
+* An `EndpointType` field left at its default value is ignored during the comparison
+  (Part 18 §4.4.2), so `{ SecurityMode = SignAndEncrypt }` is a complete filter meaning
+  "every encrypted endpoint". `WorkstationEndpoints` stores that one entry rather than a
+  copy of every endpoint description the server advertises, whose URLs are compared as
+  exact strings and would stop matching the moment a host name is spelled differently.
 * `ApplyRestrictionsToBrowse` covers a Browse of the restricted node itself, and a
   `TranslateBrowsePathsToNodeIds` which starts there, but not the reference to it in its
   parent's browse result: that per-reference filter applies role permissions only.
-* No audit event reaches a subscriber in 2.0.0-preview.4 — see §4 above.
 
 ## What this sample does not cover
 

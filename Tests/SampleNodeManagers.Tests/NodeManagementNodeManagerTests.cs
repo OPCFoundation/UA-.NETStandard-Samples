@@ -98,8 +98,9 @@ namespace Opc.Ua.Samples.Tests
         /// With an empty RequestedNewNodeId the master node manager routes the item by the
         /// namespace of the <b>BrowseName</b>, which is the trap of this service: a browse
         /// name in namespace zero would be routed to the core node manager and refused. The
-        /// identifier itself comes from <c>INodeIdFactory.New</c>, which the sample overrides
-        /// to build a readable string identifier.
+        /// identifier itself is minted by the NodeId factory of the node manager, which the
+        /// sample puts into <c>String</c> mode so that the identifier is the browse path
+        /// the node was created under.
         /// </para>
         /// </remarks>
         [Test]
@@ -125,9 +126,14 @@ namespace Opc.Ua.Samples.Tests
                     "The new node has to land in the namespace of the node manager which owns it.");
 
                 Assert.That(
+                    result.AddedNodeId.IdType,
+                    Is.EqualTo(IdType.String),
+                    "The sample puts its NodeId factory into String mode.");
+
+                Assert.That(
                     result.AddedNodeId.IdentifierAsString,
-                    Does.Match("^Valve201-[0-9]+$"),
-                    "The sample overrides INodeIdFactory.New to build the identifier from the browse name.");
+                    Does.Contain("Valve201"),
+                    "A String identifier is the canonical browse path, so it names the node.");
             });
         }
 

@@ -82,20 +82,6 @@ namespace Opc.Ua.Samples.Tests
                     "The value has to keep the fields the derived structure adds to the one the property is declared as.");
             });
 
-            // the type id of the structure has to name one of the encodings the sample
-            // serves, otherwise a client has nothing to decode it with. The source
-            // generator of 2.0.0-preview.4 emits the design's default value as bare XML and
-            // the XML decoder leaves an extension object without a TypeId undecoded, so the
-            // value arrives with a null TypeId until the stack fixes it.
-            await KnownIssueAsync(
-                () => {
-                    Assert.That(value.WrappedValue.TryGetValue(out ExtensionObject encoded), Is.True, "The primary vehicle is a structure, so it arrives as an extension object.");
-                    Assert.That(encoded.TypeId.IsNull, Is.False, "The structure has to name the encoding it was written with.");
-                    return Task.CompletedTask;
-                },
-                "OPCFoundation/UA-.NETStandard#4401: a structure default value generated from a " +
-                "ModelDesign is served as an ExtensionObject with a null TypeId.")
-                .ConfigureAwait(false);
         }
 
         [Test]
@@ -147,7 +133,7 @@ namespace Opc.Ua.Samples.Tests
         /// generated class carries the definition its model design declared.
         /// </summary>
         /// <remarks>
-        /// The source generator of 2.0.0-preview.4 does not emit
+        /// The source generator does not emit
         /// <c>IDataTypeDefinitionSource</c> on the structures it generates, so the model's
         /// compiled branch registers nothing and <c>CarType</c> arrives off the wire like
         /// every other type. This is recorded rather than asserted, and starts failing the
@@ -170,7 +156,7 @@ namespace Opc.Ua.Samples.Tests
                     return Task.CompletedTask;
                 },
                 "OPCFoundation/UA-.NETStandard#4424: " +
-                "the ModelDesign source generator of 2.0.0-preview.4 does not implement " +
+                "the ModelDesign source generator does not implement " +
                 "IDataTypeDefinitionSource on the structures it generates, so a compiled type " +
                 "cannot hand over its own DataTypeDefinition.")
                 .ConfigureAwait(false);

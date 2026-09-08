@@ -3,7 +3,7 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Opc.Ua.Gds.Client</RootNamespace>
-    <AssemblyName>Opc.Ua.Gds.Client</AssemblyName>
+    <AssemblyName>Quickstarts.GlobalDiscoveryClient</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
@@ -49,7 +49,7 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Client.Common">
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Gds.Client">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
   </ItemGroup>

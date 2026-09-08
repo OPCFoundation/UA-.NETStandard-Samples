@@ -939,7 +939,7 @@ namespace Opc.Ua.Client.Controls
                     PageSize,
                     ReturnBoundsCK.Checked,
                     TimestampsToReturn.Both,
-                    ct)),
+                    cancellationToken: ct)),
                 false,
                 ct);
         }
@@ -963,7 +963,7 @@ namespace Opc.Ua.Client.Controls
                     times,
                     UseSimpleBoundsCK.Checked,
                     TimestampsToReturn.Both,
-                    ct)),
+                    cancellationToken: ct)),
                 false,
                 ct);
         }
@@ -989,7 +989,7 @@ namespace Opc.Ua.Client.Controls
                     (double)ProcessingIntervalNP.Value,
                     null,
                     TimestampsToReturn.Both,
-                    ct)),
+                    cancellationToken: ct)),
                 false,
                 ct);
         }
@@ -1235,7 +1235,7 @@ namespace Opc.Ua.Client.Controls
 
             NodeId nodeId = GetSelectedNode();
 
-            IList<StatusCode> results = updateType switch {
+            ArrayOf<StatusCode> results = updateType switch {
                 PerformUpdateType.Insert => await m_historian.InsertAsync(nodeId, values, ct),
                 PerformUpdateType.Replace => await m_historian.ReplaceAsync(nodeId, values, ct),
                 PerformUpdateType.Update => await m_historian.UpdateAsync(nodeId, values, ct),
@@ -1248,7 +1248,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Writes the annotations on display back to the variable they belong to.
         /// </summary>
-        private async Task<IList<StatusCode>> WriteAnnotationsAsync(
+        private async Task<ArrayOf<StatusCode>> WriteAnnotationsAsync(
             IList<DataValue> values,
             PerformUpdateType updateType,
             CancellationToken ct = default)
@@ -1279,7 +1279,7 @@ namespace Opc.Ua.Client.Controls
         /// <summary>
         /// Shows what the archive answered for each of the values on display.
         /// </summary>
-        private void ShowOperationResults(IList<StatusCode> results)
+        private void ShowOperationResults(ArrayOf<StatusCode> results)
         {
             ResultsDV.Columns[ResultsDV.Columns.Count - 1].Visible = true;
 
@@ -1330,7 +1330,7 @@ namespace Opc.Ua.Client.Controls
                 times.Add((DateTime)((DataValue)row.Row[9]).SourceTimestamp);
             }
 
-            IList<StatusCode> results = await m_historian.DeleteAtTimeAsync(m_nodeId, times, ct);
+            ArrayOf<StatusCode> results = await m_historian.DeleteAtTimeAsync(m_nodeId, times, ct);
 
             ShowOperationResults(results);
         }

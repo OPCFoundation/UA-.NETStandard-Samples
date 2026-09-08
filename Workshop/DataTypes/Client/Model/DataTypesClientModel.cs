@@ -62,7 +62,7 @@ namespace Quickstarts.DataTypes.Model
     /// <c>DataTypeDefinition</c> Attribute of a data type node. The
     /// <see cref="ISchemaProvider"/> does not care which - the same call produces the same
     /// document for a type the client has known since build time and for one it met a
-    /// moment ago. On 2.0.0-preview.4 only the second route carries anything; see
+    /// moment ago. Only the second route carries anything today; see
     /// <see cref="s_compiledTypes"/>.
     /// </para>
     /// </remarks>
@@ -73,7 +73,7 @@ namespace Quickstarts.DataTypes.Model
         // IDataTypeDefinitionSource hands over the definition its model design declared,
         // and no browse is needed for it at all.
         //
-        // On 2.0.0-preview.4 the generator does not emit that interface, so this list
+        // The generator does not emit that interface yet, so this list
         // registers nothing yet and every definition below comes off the wire instead
         // (UA-.NETStandard#4424). The branch is kept because the interface is the
         // supported way to reach a compiled definition, and because it is what makes the
@@ -173,9 +173,14 @@ namespace Quickstarts.DataTypes.Model
 
             // the type system is loaded for the whole server, including the types no
             // node references yet, so that a value of any structure the server defines
-            // can be decoded.
+            // can be decoded. Both arguments are named: the first one is
+            // onlyEnumTypes, and passing true there leaves every structure of the
+            // server undecoded - which looks like a working client until it reads one.
             var typeSystem = ComplexTypeSystemClientExtensions.Create(session, Telemetry);
-            await typeSystem.LoadAsync(true, true, ct).ConfigureAwait(false);
+
+            await typeSystem
+                .LoadAsync(onlyEnumTypes: false, throwOnError: true, ct)
+                .ConfigureAwait(false);
 
             TypeSystemLoaded = true;
 

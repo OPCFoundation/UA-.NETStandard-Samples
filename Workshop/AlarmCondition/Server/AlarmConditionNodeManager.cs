@@ -182,9 +182,11 @@ namespace Quickstarts.AlarmConditionServer
         /// <remarks>
         /// The sequence is the one the generated node manager of a ModelDesign follows: the
         /// predefined nodes first, then the builder, then
+        /// <see cref="FluentNodeManagerBase.RegisterAuthoredNodesAsync"/> and
         /// <see cref="FluentNodeManagerBase.CompleteConfigureAsync"/>, which publishes the
         /// references written in <see cref="Configure"/> to the node managers which own their
-        /// targets, and finally <see cref="NodeManagerBuilder.Seal"/>, which starts the
+        /// targets, and finally
+        /// <see cref="FluentNodeManagerBase.SealConfigurationAsync"/>, which starts the
         /// simulation cycle.
         /// </remarks>
         public override async ValueTask CreateAddressSpaceAsync(
@@ -215,8 +217,12 @@ namespace Quickstarts.AlarmConditionServer
                 await AddPredefinedNodeAsync(SystemContext, source, cancellationToken).ConfigureAwait(false);
             }
 
-            NodeManagerBuilder builder = CreateFluentBuilder(NamespaceIndex)
-                .Configure(nodeManager => Configure(nodeManager, rootAreas));
+            NodeManagerBuilder builder = CreateFluentBuilder(NamespaceIndex);
+            Configure(builder, rootAreas);
+
+            // the nodes Configure created are staged by the builder, not registered. This
+            // pass hands them to the manager, so the sweep below sees them.
+            await RegisterAuthoredNodesAsync(builder, cancellationToken).ConfigureAwait(false);
 
             // the inverse HasNotifier references Configure wrote to the Server object belong
             // to the node manager which owns it. This pass hands them over, and registers
@@ -225,7 +231,7 @@ namespace Quickstarts.AlarmConditionServer
 
             // start the simulation.
             m_system.StartSimulation();
-            builder.Seal();
+            await SealConfigurationAsync(builder, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

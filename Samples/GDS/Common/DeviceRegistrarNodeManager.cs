@@ -56,7 +56,7 @@ namespace Opc.Ua.Gds.Server
     /// <para>
     /// The nodes are built by hand rather than generated from the companion model: the
     /// Onboarding model ships as a design file in the SDK repository but its generated node
-    /// classes are not part of the <c>Opc.Ua.Gds.Common</c> NuGet package, so there is no
+    /// classes are not part of the <c>Opc.Ua.Gds</c> NuGet package, so there is no
     /// <c>DeviceRegistrarAdminState</c> to instantiate. The Object therefore carries
     /// <c>BaseObjectType</c> as its TypeDefinition instead of <c>DeviceRegistrarAdminType</c>,
     /// and lives in this sample's own namespace. Everything a client calls - the two Method

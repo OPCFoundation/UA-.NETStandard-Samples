@@ -39,19 +39,6 @@ C# namespace.
 The type model is built with `ModelSourceGeneratorOmitFluentApi=true`: the library is
 shared with the client and must not depend on `Opc.Ua.Server`.
 
-### Known gap on 2.0.0-preview.4
-
-The generated node sets keep the default values of a model as the XML the design
-declares, decoded when the nodes are created. An `ExtensionObject` written that way has
-no `TypeId`, and the XML decoder of the SDK only resolves a body by its type id, never by
-its element name (`XmlDecoder.ReadExtensionObjectBody`). The structured default values
-of the sample - the driver's `PrimaryVehicle`, the `VehiclesInLot` - therefore load as raw
-XML with a null type id, which a client cannot decode; values a client writes round-trip
-as before. Two of the node manager tests of the sample record this as a known issue
-([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401))
-and start failing the moment the SDK resolves such bodies, which is when the wrappers come
-off.
-
 ## Schemas at run time
 
 The client can hand any of the server's data types to the SDK and get an **XSD, an OPC
@@ -73,7 +60,7 @@ connects, and produces its schema anyway. That is also the case a
 [runtime NodeSet](../RuntimeNodeSets/README.md) creates - a server which read its model out
 of a NodeSet2 document at run time publishes exactly the same Attribute.
 
-> **On 2.0.0-preview.4 only the browsed route carries anything.** The ModelDesign source
+> **Only the browsed route carries anything today.** The ModelDesign source
 > generator does not implement `IDataTypeDefinitionSource` on the structures it emits - a
 > generated `CarType` has the right `TypeId` but no `GetDataTypeDefinition` - so the
 > compiled branch of `DataTypesClientModel` registers nothing and every type in the list is
@@ -117,8 +104,8 @@ flavours of the Part 6 JSON encoding.
   ([UA-.NETStandard#4424](https://github.com/OPCFoundation/UA-.NETStandard/issues/4424)).
   `DefaultSchemaProvider` is public and takes an `IEnumerable<IUaSchemaGenerator>`, but
   `XsdSchemaGenerator`, `BsdSchemaGenerator` and `JsonSchemaGenerator` are not, so
-  `AddSchemaGeneration()` on a service collection is the only way to a working provider on
-  2.0.0-preview.4. A client which is built around a host container registers it there and
+  `AddSchemaGeneration()` on a service collection is the only way to a working provider.
+  A client which is built around a host container registers it there and
   takes an `ISchemaProvider` in a constructor; the window of this sample creates its model
   itself, so [`DataTypesClientModel`](Client/Model/DataTypesClientModel.cs) owns the
   registration.

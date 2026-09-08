@@ -84,6 +84,22 @@ namespace TestData
         {
             return new ValueTask<bool>(m_system.IsHistoryArchived(nodeId));
         }
+
+        /// <summary>
+        /// What every archived variable of the test system offers.
+        /// </summary>
+        /// <remarks>
+        /// The capabilities are both an advertisement and a gate: the diagnostics node
+        /// manager rolls them up into the HistoryServerCapabilities node, and the
+        /// dispatcher refuses what the provider does not claim. The archive keeps both
+        /// timestamps of every sample, so a client may ask for the server timestamp as
+        /// well; the update flags stay at their default of false, which is what makes
+        /// this a read only archive. The four read flags default to true.
+        /// </remarks>
+        public override ValueTask<HistorianNodeCapabilities> GetCapabilitiesAsync(NodeId nodeId, CancellationToken ct)
+        {
+            return new ValueTask<HistorianNodeCapabilities>(s_capabilities);
+        }
         #endregion
 
         #region IHistorianDataProvider Members
@@ -114,25 +130,25 @@ namespace TestData
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> InsertAsync(HistorianOperationContext context, NodeId nodeId, IList<DataValue> values, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<DataValue>> InsertAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<DataValue> values, CancellationToken ct)
         {
-            return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadHistoryOperationUnsupported, values.Count));
+            return Unsupported(values.Count);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> ReplaceAsync(HistorianOperationContext context, NodeId nodeId, IList<DataValue> values, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<DataValue>> ReplaceAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<DataValue> values, CancellationToken ct)
         {
-            return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadHistoryOperationUnsupported, values.Count));
+            return Unsupported(values.Count);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> UpdateAsync(HistorianOperationContext context, NodeId nodeId, IList<DataValue> values, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<DataValue>> UpdateAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<DataValue> values, CancellationToken ct)
         {
-            return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadHistoryOperationUnsupported, values.Count));
+            return Unsupported(values.Count);
         }
 
         /// <inheritdoc/>
-        public ValueTask<StatusCode> DeleteRawAsync(
+        public ValueTask<HistorianUpdateOutcome<DataValue>> DeleteRawAsync(
             HistorianOperationContext context,
             NodeId nodeId,
             DateTimeUtc startTime,
@@ -140,21 +156,37 @@ namespace TestData
             bool isDeleteModified,
             CancellationToken ct)
         {
-            return new ValueTask<StatusCode>((StatusCode)StatusCodes.BadHistoryOperationUnsupported);
+            // a delete over a window is one operation, so it answers with one status.
+            return Unsupported(1);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> DeleteAtTimeAsync(
+        public ValueTask<HistorianUpdateOutcome<DataValue>> DeleteAtTimeAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<DateTimeUtc> timestamps,
+            ArrayOf<DateTimeUtc> timestamps,
             CancellationToken ct)
         {
-            return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadHistoryOperationUnsupported, timestamps.Count));
+            return Unsupported(timestamps.Count);
         }
         #endregion
 
         #region Private Methods
+        /// <summary>
+        /// Answers an update operation which the read only archive cannot honour.
+        /// </summary>
+        /// <remarks>
+        /// The outcome carries one status per requested entry and no old values:
+        /// nothing was replaced or deleted, so there is nothing to report to the
+        /// audit trail.
+        /// </remarks>
+        private static ValueTask<HistorianUpdateOutcome<DataValue>> Unsupported(int count)
+        {
+            return new ValueTask<HistorianUpdateOutcome<DataValue>>(
+                new HistorianUpdateOutcome<DataValue>(
+                    RepeatStatus(StatusCodes.BadHistoryOperationUnsupported, count)));
+        }
+
         /// <summary>
         /// Builds one page of a raw read over the archived samples, which are
         /// sorted by source timestamp.
@@ -406,7 +438,7 @@ namespace TestData
         {
             byte[] state = new byte[8];
             BinaryPrimitives.WriteInt64BigEndian(state, timestamp.Ticks);
-            return new HistorianResumeToken(state);
+            return new HistorianResumeToken(new ByteString(state));
         }
 
         /// <summary>
@@ -426,6 +458,10 @@ namespace TestData
 
         #region Private Fields
         private const uint kDefaultPageSize = 1000;
+
+        private static readonly HistorianNodeCapabilities s_capabilities = new HistorianNodeCapabilities {
+            ServerTimestampSupported = true
+        };
 
         private readonly TestDataSystem m_system;
         private readonly ILogger m_logger;

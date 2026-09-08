@@ -277,9 +277,11 @@ namespace Quickstarts.StateMachines.Server
         /// <remarks>
         /// The sequence is the one the generated node manager of a ModelDesign follows: the
         /// predefined nodes first, then the builder, then
+        /// <see cref="FluentNodeManagerBase.RegisterAuthoredNodesAsync"/> and
         /// <see cref="FluentNodeManagerBase.CompleteConfigureAsync"/>, which publishes the
         /// references written in <see cref="Configure"/> to the node managers which own their
-        /// targets, and finally <see cref="NodeManagerBuilder.Seal"/>.
+        /// targets, and finally
+        /// <see cref="FluentNodeManagerBase.SealConfigurationAsync"/>.
         /// </remarks>
         public override async ValueTask CreateAddressSpaceAsync(
             IDictionary<NodeId, IList<IReference>> externalReferences,
@@ -294,14 +296,19 @@ namespace Quickstarts.StateMachines.Server
             BaseObjectState machine = CreateMachine();
             await AddPredefinedNodeAsync(SystemContext, machine, cancellationToken).ConfigureAwait(false);
 
-            NodeManagerBuilder builder = CreateFluentBuilder(NamespaceIndex).Configure(Configure);
+            NodeManagerBuilder builder = CreateFluentBuilder(NamespaceIndex);
+            Configure(builder);
+
+            // the properties Configure created are staged by the builder, not registered.
+            // This pass hands them to the manager, so the sweep below sees them.
+            await RegisterAuthoredNodesAsync(builder, cancellationToken).ConfigureAwait(false);
 
             // the inverse references Configure wrote to the Objects folder and to the Server
             // object belong to other node managers. This pass hands them over, and registers
             // the machine as a root notifier on the strength of its HasNotifier reference.
             await CompleteConfigureAsync(externalReferences, cancellationToken).ConfigureAwait(false);
 
-            builder.Seal();
+            await SealConfigurationAsync(builder, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>

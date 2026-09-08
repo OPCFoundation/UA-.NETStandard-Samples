@@ -315,7 +315,7 @@ namespace Quickstarts.HistoricalEvents.Server
             ReportType reportType,
             string eventId,
             DateTime sourceTimestamp,
-            IReadOnlyDictionary<string, Variant> fields,
+            ArrayOf<KeyValuePair<string, Variant>> fields,
             string defaultWellId,
             PerformUpdateType performUpdateType)
         {
@@ -384,7 +384,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// Returns a text field of an incoming event, or the fallback when it is
         /// missing or does not carry the type the column expects.
         /// </summary>
-        private static string GetText(IReadOnlyDictionary<string, Variant> fields, string browseName, string fallback = null)
+        private static string GetText(ArrayOf<KeyValuePair<string, Variant>> fields, string browseName, string fallback = null)
         {
             return TryGetField(fields, browseName, out Variant value) &&
                 value.TryGetValue(out string text) &&
@@ -397,7 +397,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// Returns a measurement of an incoming event, zero when it is missing or
         /// does not carry the type the column expects.
         /// </summary>
-        private static double GetNumber(IReadOnlyDictionary<string, Variant> fields, string browseName)
+        private static double GetNumber(ArrayOf<KeyValuePair<string, Variant>> fields, string browseName)
         {
             return TryGetField(fields, browseName, out Variant value) && value.TryGetValue(out double number)
                 ? number
@@ -408,7 +408,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// Returns a timestamp field of an incoming event, or the fallback when it is
         /// missing or does not carry the type the column expects.
         /// </summary>
-        private static DateTime GetTimestamp(IReadOnlyDictionary<string, Variant> fields, string browseName, DateTime fallback)
+        private static DateTime GetTimestamp(ArrayOf<KeyValuePair<string, Variant>> fields, string browseName, DateTime fallback)
         {
             return TryGetField(fields, browseName, out Variant value) && value.TryGetValue(out DateTimeUtc timestamp)
                 ? (DateTime)timestamp
@@ -418,11 +418,19 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Looks a field of an incoming event up by the browse path which addresses it.
         /// </summary>
-        private static bool TryGetField(IReadOnlyDictionary<string, Variant> fields, string key, out Variant value)
+        private static bool TryGetField(ArrayOf<KeyValuePair<string, Variant>> fields, string key, out Variant value)
         {
-            if (fields != null)
+            // the fields of a record are a list, not a map: an event carries the few
+            // fields the client selected, so a scan is what a lookup costs.
+            for (int ii = 0; ii < fields.Count; ii++)
             {
-                return fields.TryGetValue(key, out value);
+                KeyValuePair<string, Variant> field = fields[ii];
+
+                if (String.Equals(field.Key, key, StringComparison.Ordinal))
+                {
+                    value = field.Value;
+                    return true;
+                }
             }
 
             value = Variant.Null;
@@ -438,7 +446,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// The table stores the short name of it, which is what the report is built
         /// back from.
         /// </remarks>
-        private static string GetEngineeringUnits(IReadOnlyDictionary<string, Variant> fields, string measurement)
+        private static string GetEngineeringUnits(ArrayOf<KeyValuePair<string, Variant>> fields, string measurement)
         {
             string key = measurement + "/" + Opc.Ua.BrowseNames.EngineeringUnits;
 

@@ -136,16 +136,13 @@ namespace Quickstarts.RuntimeNodeSets.Server
 
         /// <inheritdoc/>
         /// <remarks>
-        /// The vendor model is published here rather than in the composition root, and
-        /// the reason is the one thing about <see cref="INodeManagerLifecycle"/> which is
-        /// easy to get wrong: <see cref="INodeManagerLifecycle.Registrations"/> lists the
-        /// node managers the lifecycle itself added, and a node manager the server was
-        /// composed with is not one of them. Reload and Remove take a
-        /// <see cref="NodeManagerRegistration"/>, so a model which is going to be
-        /// replaced has to be added through the lifecycle to begin with. A model which
-        /// only has to be served - the control model of this sample - is better off in
-        /// the composition root.
-        /// Reported as UA-.NETStandard#4421.
+        /// The vendor model is published here rather than in the composition root so
+        /// that the registration it produces is in hand: Reload and Remove take a
+        /// <see cref="NodeManagerRegistration"/>, and this is where the sample gets one
+        /// to keep. A node manager composed before start up is adopted into
+        /// <see cref="INodeManagerLifecycle.Registrations"/> once the server is up, so
+        /// it could be found there instead; a model which only has to be served - the
+        /// control model of this sample - is still better off in the composition root.
         /// </remarks>
         async ValueTask IServerStartupTask.OnServerStartedAsync(
             IServerContext server,
@@ -187,10 +184,7 @@ namespace Quickstarts.RuntimeNodeSets.Server
 
             void Wire(string browsePath, GenericMethodCalledEventHandler2Async handler)
             {
-                INodeBuilder<MethodState> method = builder.Node<MethodState>(browsePath);
-
-                BindInputArguments(builder.Context, method.Node);
-                method.OnCall(handler);
+                builder.Node<MethodState>(browsePath).OnCall(handler);
             }
         }
 
@@ -221,76 +215,6 @@ namespace Quickstarts.RuntimeNodeSets.Server
             {
                 m_busy = false;
             }
-        }
-
-        /// <summary>
-        /// Gives a Method which came out of a NodeSet2 document the typed
-        /// <see cref="MethodState.InputArguments"/> Property that <c>Call</c> validates
-        /// against.
-        /// </summary>
-        /// <remarks>
-        /// A gap in 2.0.0-preview.4 (UA-.NETStandard#4422), and one every server which
-        /// serves Methods from a
-        /// NodeSet2 document runs into. The importer materializes the
-        /// <c>InputArguments</c> Property as an untyped <see cref="PropertyState"/> child
-        /// and never assigns it to <see cref="MethodState.InputArguments"/>, which stays
-        /// <c>null</c>. A Client reads the Property and sees the arguments the document
-        /// declares, but <c>Call</c> compares its arguments against the typed Property,
-        /// finds none, and answers <see cref="StatusCodes.BadTooManyArguments"/> for every
-        /// call that carries one.
-        /// <para>
-        /// <see cref="NodeState.CreateChild"/> with <c>createOrReplace</c> creates the
-        /// typed Property and assigns it - <c>PropertyState&lt;T&gt;</c> is abstract, so
-        /// it cannot be constructed directly - and the declared arguments are decoded out
-        /// of the imported child before it is dropped. The method returns without doing
-        /// anything once the SDK materializes the typed Property itself.
-        /// </para>
-        /// </remarks>
-        private static void BindInputArguments(ISystemContext context, MethodState method)
-        {
-            if (method.InputArguments != null)
-            {
-                return;
-            }
-
-            var children = new List<BaseInstanceState>();
-            method.GetChildren(context, children);
-
-            BaseVariableState imported = null;
-
-            foreach (BaseInstanceState child in children)
-            {
-                if (child is BaseVariableState variable &&
-                    variable.BrowseName.Name == BrowseNames.InputArguments)
-                {
-                    imported = variable;
-                    break;
-                }
-            }
-
-            if (imported == null)
-            {
-                // a Method which declares no arguments, such as Remove
-                return;
-            }
-
-            bool decoded = imported.WrappedValue.TryGetValue(out ArrayOf<ExtensionObject> encoded);
-
-            method.RemoveChild(imported);
-            method.CreateChild(context, new QualifiedName(BrowseNames.InputArguments), true);
-
-            if (method.InputArguments == null)
-            {
-                throw new ServiceResultException(
-                    StatusCodes.BadInternalError,
-                    $"The InputArguments of {method.BrowseName} could not be materialized.");
-            }
-
-            method.InputArguments.NodeId = imported.NodeId;
-            method.InputArguments.DisplayName = imported.DisplayName;
-            method.InputArguments.Value = decoded
-                ? ExtensionObject.ToArray<Argument>(encoded)
-                : default;
         }
 
         /// <summary>

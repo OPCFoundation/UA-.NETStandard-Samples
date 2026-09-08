@@ -532,7 +532,7 @@ namespace Opc.Ua.Samples.Tests
         /// ApplyRestrictionsToBrowse on top, so browsing the node itself is refused too.
         /// </para>
         /// <para>
-        /// What ApplyRestrictionsToBrowse does <b>not</b> do in 2.0.0-preview.4 is take the
+        /// What ApplyRestrictionsToBrowse does <b>not</b> do is take the
         /// node out of the reference list of its parent: the per reference filter of a Browse
         /// applies role permissions only, so the maintenance note is still listed below the
         /// machine on an unencrypted channel and only the browse of the node itself is
@@ -925,12 +925,10 @@ namespace Opc.Ua.Samples.Tests
         /// not, so the flag and this fixture belong together.
         /// </para>
         /// <para>
-        /// This is recorded as a known issue because no audit event of any type reaches a
-        /// client in 2.0.0-preview.4, on this sample or on any other. Measured: the server
-        /// reports Server.Auditing as true, AddIdentity answers Good, and a subscription on
-        /// the Server object receives a GeneralModelChangeEvent from that same object - so
-        /// the event path itself works - while neither the RoleMappingRuleChanged event of
-        /// this fixture nor an AuditCreateSessionEvent from opening a session arrives.
+        /// The subscription is opened on the Session of the system administrator. A
+        /// monitored item is evaluated against the effective identity of the Session which
+        /// created it, so which audit events reach a subscriber depends on the Roles that
+        /// Session holds.
         /// </para>
         /// </remarks>
         [Test]
@@ -976,44 +974,36 @@ namespace Opc.Ua.Samples.Tests
                     Is.True,
                     $"AddIdentity failed: {added.StatusCode}");
 
-                await KnownIssueAsync(
-                    async () => {
-                        CapturedEvent reported = await audit
-                            .WaitAsync(
-                                candidate => candidate.Field(BrowseNames.SourceNode)
-                                    .TryGetValue(out NodeId source) &&
-                                    source == ObjectIds.WellKnownRole_Operator,
-                                TimeSpan.FromSeconds(20),
-                                "the server has to audit a change to the role configuration",
-                                ct)
-                            .ConfigureAwait(false);
-
-                        await TestContext.Out
-                            .WriteLineAsync($"The server audited: {reported}")
-                            .ConfigureAwait(false);
-
-                        Assert.Multiple(() => {
-                            Assert.That(
-                                reported.EventType,
-                                Is.EqualTo(ObjectTypeIds.RoleMappingRuleChangedAuditEventType),
-                                "The filter asked for that type and its subtypes.");
-
-                            Assert.That(
-                                reported.Field("Status").TryGetValue(out bool succeeded) && succeeded,
-                                Is.True,
-                                "The audit event of a change which was applied reports Status true.");
-
-                            Assert.That(
-                                reported.Field("MethodId").TryGetValue(out NodeId methodId) && !methodId.IsNull,
-                                Is.True,
-                                "An AuditUpdateMethodEventType names the Method which was called.");
-                        });
-                    },
-                    "2.0.0-preview.4 delivers no audit event to a subscription on the Server " +
-                    "object. Server.Auditing reads true and the Method answered Good, and a " +
-                    "GeneralModelChangeEvent from the same object does arrive, so this is not " +
-                    "the configuration of the sample and not the event path.")
+                CapturedEvent reported = await audit
+                    .WaitAsync(
+                        candidate => candidate.Field(BrowseNames.SourceNode)
+                            .TryGetValue(out NodeId source) &&
+                            source == ObjectIds.WellKnownRole_Operator,
+                        TimeSpan.FromSeconds(20),
+                        "the server has to audit a change to the role configuration",
+                        ct)
                     .ConfigureAwait(false);
+
+                await TestContext.Out
+                    .WriteLineAsync($"The server audited: {reported}")
+                    .ConfigureAwait(false);
+
+                Assert.Multiple(() => {
+                    Assert.That(
+                        reported.EventType,
+                        Is.EqualTo(ObjectTypeIds.RoleMappingRuleChangedAuditEventType),
+                        "The filter asked for that type and its subtypes.");
+
+                    Assert.That(
+                        reported.Field("Status").TryGetValue(out bool succeeded) && succeeded,
+                        Is.True,
+                        "The audit event of a change which was applied reports Status true.");
+
+                    Assert.That(
+                        reported.Field("MethodId").TryGetValue(out NodeId methodId) && !methodId.IsNull,
+                        Is.True,
+                        "An AuditUpdateMethodEventType names the Method which was called.");
+                });
             }
             finally
             {
