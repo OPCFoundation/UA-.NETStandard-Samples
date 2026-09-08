@@ -28,7 +28,14 @@ jobs:
   pool:
     vmImage: $(poolImage)
   steps:
+  # The OPC UA preview packages come from the OPC Foundation GitHub Packages
+  # feed, which requires authentication even though it is public. The
+  # Github-Feed NuGet service connection holds the credentials (a GitHub
+  # personal access token with the read:packages scope) for the feed URL
+  # declared in Nuget.Config, see 'Preview NuGet feed' in README.md.
   - task: NuGetAuthenticate@1
+    inputs:
+      nuGetServiceConnections: 'Github-Feed'
   - task: NuGetToolInstaller@1
     inputs:
       versionSpec: '>=7.0.x'

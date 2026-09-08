@@ -264,21 +264,21 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 var client = new OnboardingClient(m_session, m_registrarNodeId, m_telemetry);
 
-                byte[][] tickets = new byte[m_tickets.Count][];
+                ByteString[] tickets = new ByteString[m_tickets.Count];
 
                 for (int ii = 0; ii < m_tickets.Count; ii++)
                 {
-                    tickets[ii] = m_tickets[ii].Ticket;
+                    tickets[ii] = m_tickets[ii].Ticket.ToByteString();
                 }
 
-                int[] results = register
+                ArrayOf<StatusCode> results = register
                     ? await client.RegisterTicketsAsync(tickets)
                     : await client.UnregisterTicketsAsync(tickets);
 
                 for (int ii = 0; ii < TicketsListView.Items.Count; ii++)
                 {
-                    TicketsListView.Items[ii].SubItems[2].Text = ii < results.Length
-                        ? new StatusCode((uint)results[ii]).ToString()
+                    TicketsListView.Items[ii].SubItems[2].Text = ii < results.Count
+                        ? results[ii].ToString()
                         : "---";
                 }
 
@@ -286,7 +286,7 @@ namespace Opc.Ua.Gds.Client.Controls
                     CultureInfo.CurrentCulture,
                     "{0} {1} ticket(s).",
                     register ? "Registered" : "Unregistered",
-                    results.Length);
+                    results.Count);
             }
             catch (Exception exception)
             {

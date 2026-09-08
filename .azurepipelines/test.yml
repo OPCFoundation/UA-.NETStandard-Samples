@@ -18,7 +18,11 @@ jobs:
     DOTNET_CLI_TELEMETRY_OPTOUT: true
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   steps:
+  # see ci.yml: the Github-Feed NuGet service connection authenticates the
+  # OPC Foundation GitHub Packages feed declared in Nuget.Config.
   - task: NuGetAuthenticate@1
+    inputs:
+      nuGetServiceConnections: 'Github-Feed'
   - task: UseDotNet@2
     displayName: 'Install .NET 10.0'
     inputs:
