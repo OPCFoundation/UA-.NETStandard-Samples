@@ -133,7 +133,7 @@ dotnet nuget update source opcfoundation-github --username <your-github-username
 
 Alternatively add the credentials to `%AppData%\NuGet\NuGet.Config` (Windows) or
 `~/.nuget/NuGet/NuGet.Config` (Linux/macOS) with the same `opcfoundation-github` key. The CI
-pipelines authenticate with the `GITHUB_PACKAGES_TOKEN` secret pipeline variable, see
+pipelines authenticate with the `opcfoundation-org` secret pipeline variable, see
 [.azurepipelines](.azurepipelines).
 
 The version the samples currently build against is pinned in a single place, the
