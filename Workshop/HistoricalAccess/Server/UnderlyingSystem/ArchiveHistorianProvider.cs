@@ -58,16 +58,20 @@ namespace Quickstarts.HistoricalAccessServer
     /// per item settings recorded in the archive files - stepped interpolation and
     /// the aggregate configuration - are honoured, the way the sample always did.
     ///
-    /// Two of the interfaces implemented here are offers rather than obligations, and
-    /// the framework of this SDK version does not take either up: the atomic update
-    /// path of <see cref="IHistorianTransactionalProvider"/> has no caller yet, and
-    /// <see cref="IHistorianBulkInsertProvider"/> is reached only from the automatic
-    /// value capture pipeline, which this sample does not use because its archive is
-    /// filled from files rather than from live values. They are implemented anyway,
-    /// because what a store has to do to honour them is the part worth showing: the
-    /// batch is what a store with real transactions commits or discards as a whole,
-    /// and it is where the cost of a write - the lock and the reload, not the value -
-    /// is paid once instead of once per value.
+    /// <see cref="IHistorianTransactionalProvider"/> is what the dispatcher reaches for
+    /// when a client asks for an atomic history update, so the batch this provider
+    /// commits or discards as a whole is on the service path.
+    /// <see cref="IHistorianBulkInsertProvider"/> is an offer rather than an obligation:
+    /// it is reached only from the automatic value capture pipeline, which this sample
+    /// does not use because its archive is filled from files rather than from live
+    /// values. It is implemented anyway, because what a store has to do to honour it is
+    /// the part worth showing - it is where the cost of a write, the lock and the
+    /// reload rather than the value, is paid once instead of once per value.
+    ///
+    /// An update answers with a <see cref="HistorianUpdateOutcome{T}"/>: one status per
+    /// requested entry, and the values the operation displaced for the audit trail. The
+    /// archive of an item is a DataSet which overwrites a row in place, so this provider
+    /// has no old value to report and leaves that half empty.
     ///
     /// The provider also feeds the server-wide HistoryServerCapabilities flags: the
     /// diagnostics node manager asks every registered provider for its capabilities
@@ -168,25 +172,25 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> InsertAsync(HistorianOperationContext context, NodeId nodeId, IList<DataValue> values, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<DataValue>> InsertAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<DataValue> values, CancellationToken ct)
         {
             return UpdateDataAsync(context, nodeId, values, PerformUpdateType.Insert);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> ReplaceAsync(HistorianOperationContext context, NodeId nodeId, IList<DataValue> values, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<DataValue>> ReplaceAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<DataValue> values, CancellationToken ct)
         {
             return UpdateDataAsync(context, nodeId, values, PerformUpdateType.Replace);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> UpdateAsync(HistorianOperationContext context, NodeId nodeId, IList<DataValue> values, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<DataValue>> UpdateAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<DataValue> values, CancellationToken ct)
         {
             return UpdateDataAsync(context, nodeId, values, PerformUpdateType.Update);
         }
 
         /// <inheritdoc/>
-        public ValueTask<StatusCode> DeleteRawAsync(
+        public ValueTask<HistorianUpdateOutcome<DataValue>> DeleteRawAsync(
             HistorianOperationContext context,
             NodeId nodeId,
             DateTimeUtc startTime,
@@ -202,28 +206,33 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (item == null || !TryReload(item, context))
                     {
-                        return new ValueTask<StatusCode>((StatusCode)StatusCodes.BadNodeIdUnknown);
+                        // a delete over a window is one operation, so it answers with
+                        // one status.
+                        return Outcome<DataValue>(RepeatStatus(StatusCodes.BadNodeIdUnknown, 1));
                     }
 
-                    return new ValueTask<StatusCode>((StatusCode)item.DeleteHistory(
-                        context.SystemContext,
-                        (DateTime)startTime,
-                        (DateTime)endTime,
-                        isDeleteModified));
+                    return Outcome<DataValue>(new StatusCode[]
+                    {
+                        item.DeleteHistory(
+                            context.SystemContext,
+                            (DateTime)startTime,
+                            (DateTime)endTime,
+                            isDeleteModified)
+                    });
                 }
             }
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error deleting the history of {NodeId}.", nodeId);
-                return new ValueTask<StatusCode>((StatusCode)StatusCodes.BadUnexpectedError);
+                return Outcome<DataValue>(RepeatStatus(StatusCodes.BadUnexpectedError, 1));
             }
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> DeleteAtTimeAsync(
+        public ValueTask<HistorianUpdateOutcome<DataValue>> DeleteAtTimeAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<DateTimeUtc> timestamps,
+            ArrayOf<DateTimeUtc> timestamps,
             CancellationToken ct)
         {
             try
@@ -234,7 +243,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (item == null || !TryReload(item, context))
                     {
-                        return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadNodeIdUnknown, timestamps.Count));
+                        return Outcome<DataValue>(RepeatStatus(StatusCodes.BadNodeIdUnknown, timestamps.Count));
                     }
 
                     StatusCode[] results = new StatusCode[timestamps.Count];
@@ -244,43 +253,43 @@ namespace Quickstarts.HistoricalAccessServer
                         results[ii] = item.DeleteHistory(context.SystemContext, (DateTime)timestamps[ii]);
                     }
 
-                    return new ValueTask<IList<StatusCode>>(results);
+                    return Outcome<DataValue>(results);
                 }
             }
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error deleting the history of {NodeId}.", nodeId);
-                return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, timestamps.Count));
+                return Outcome<DataValue>(RepeatStatus(StatusCodes.BadUnexpectedError, timestamps.Count));
             }
         }
         #endregion
 
         #region IHistorianTransactionalProvider Members
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> InsertAtomicAsync(
+        public ValueTask<HistorianUpdateOutcome<DataValue>> InsertAtomicAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<DataValue> values,
+            ArrayOf<DataValue> values,
             CancellationToken ct)
         {
             return UpdateDataAtomicAsync(context, nodeId, values, PerformUpdateType.Insert);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> ReplaceAtomicAsync(
+        public ValueTask<HistorianUpdateOutcome<DataValue>> ReplaceAtomicAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<DataValue> values,
+            ArrayOf<DataValue> values,
             CancellationToken ct)
         {
             return UpdateDataAtomicAsync(context, nodeId, values, PerformUpdateType.Replace);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> UpdateAtomicAsync(
+        public ValueTask<HistorianUpdateOutcome<DataValue>> UpdateAtomicAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<DataValue> values,
+            ArrayOf<DataValue> values,
             CancellationToken ct)
         {
             return UpdateDataAtomicAsync(context, nodeId, values, PerformUpdateType.Update);
@@ -294,31 +303,34 @@ namespace Quickstarts.HistoricalAccessServer
         /// not the writing of the value, so a batch takes the lock once and reloads
         /// each item once however many values are meant for it.
         /// </remarks>
-        public ValueTask<IReadOnlyDictionary<NodeId, IList<StatusCode>>> InsertBatchAsync(
+        public ValueTask<ArrayOf<HistorianUpdateOutcome<DataValue>>> InsertBatchAsync(
             HistorianOperationContext context,
-            IReadOnlyDictionary<NodeId, IList<DataValue>> batch,
+            ArrayOf<HistorianDataBatch> batch,
             CancellationToken ct)
         {
-            if (batch == null)
+            if (batch.IsNull)
             {
                 throw new ArgumentNullException(nameof(batch));
             }
 
-            var results = new Dictionary<NodeId, IList<StatusCode>>(batch.Count);
+            var results = new HistorianUpdateOutcome<DataValue>[batch.Count];
 
             try
             {
                 lock (m_system.SyncRoot)
                 {
-                    foreach (KeyValuePair<NodeId, IList<DataValue>> entry in batch)
+                    for (int ii = 0; ii < batch.Count; ii++)
                     {
+                        HistorianDataBatch entry = batch[ii];
+
                         // the batch covers several nodes, so the node the context
                         // carries cannot be the one this entry is about.
-                        ArchiveItemState item = ResolveById(context, entry.Key);
+                        ArchiveItemState item = ResolveById(context, entry.NodeId);
 
-                        results[entry.Key] = item == null || !TryReload(item, context)
-                            ? RepeatStatus(StatusCodes.BadNodeIdUnknown, entry.Value.Count)
-                            : UpdateItem(item, context, entry.Value, PerformUpdateType.Insert);
+                        results[ii] = new HistorianUpdateOutcome<DataValue>(
+                            item == null || !TryReload(item, context)
+                                ? RepeatStatus(StatusCodes.BadNodeIdUnknown, entry.Values.Count)
+                                : UpdateItem(item, context, entry.Values, PerformUpdateType.Insert));
                     }
                 }
             }
@@ -326,13 +338,14 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 m_logger.LogError(e, "Unexpected error inserting a batch of {Count} nodes into the archive.", batch.Count);
 
-                foreach (KeyValuePair<NodeId, IList<DataValue>> entry in batch)
+                for (int ii = 0; ii < batch.Count; ii++)
                 {
-                    results[entry.Key] = RepeatStatus(StatusCodes.BadUnexpectedError, entry.Value.Count);
+                    results[ii] = new HistorianUpdateOutcome<DataValue>(
+                        RepeatStatus(StatusCodes.BadUnexpectedError, batch[ii].Values.Count));
                 }
             }
 
-            return new ValueTask<IReadOnlyDictionary<NodeId, IList<StatusCode>>>(results);
+            return new ValueTask<ArrayOf<HistorianUpdateOutcome<DataValue>>>(results);
         }
         #endregion
 
@@ -377,7 +390,7 @@ namespace Quickstarts.HistoricalAccessServer
 
         #region IHistorianAtTimeProvider Members
         /// <inheritdoc/>
-        public ValueTask<IList<DataValue>> ReadAtTimeAsync(
+        public ValueTask<ArrayOf<DataValue>> ReadAtTimeAsync(
             HistorianOperationContext context,
             HistorianAtTimeReadRequest request,
             CancellationToken ct)
@@ -397,7 +410,7 @@ namespace Quickstarts.HistoricalAccessServer
                             values.Add(DataValue.FromStatusCode(StatusCodes.BadNoData, requestedTime));
                         }
 
-                        return new ValueTask<IList<DataValue>>(values);
+                        return new ValueTask<ArrayOf<DataValue>>(values);
                     }
 
                     DataView view = item.ReadHistory(DateTime.MinValue, DateTime.MaxValue, false);
@@ -408,7 +421,7 @@ namespace Quickstarts.HistoricalAccessServer
                     }
                 }
 
-                return new ValueTask<IList<DataValue>>(values);
+                return new ValueTask<ArrayOf<DataValue>>(values);
             }
             catch (Exception e)
             {
@@ -421,7 +434,7 @@ namespace Quickstarts.HistoricalAccessServer
                     errors.Add(DataValue.FromStatusCode(StatusCodes.BadUnexpectedError, requestedTime));
                 }
 
-                return new ValueTask<IList<DataValue>>(errors);
+                return new ValueTask<ArrayOf<DataValue>>(errors);
             }
         }
         #endregion
@@ -537,28 +550,28 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> InsertAnnotationsAsync(HistorianOperationContext context, NodeId nodeId, IList<Annotation> annotations, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<Annotation>> InsertAnnotationsAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<Annotation> annotations, CancellationToken ct)
         {
             return UpdateAnnotationsAsync(context, nodeId, annotations, PerformUpdateType.Insert);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> ReplaceAnnotationsAsync(HistorianOperationContext context, NodeId nodeId, IList<Annotation> annotations, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<Annotation>> ReplaceAnnotationsAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<Annotation> annotations, CancellationToken ct)
         {
             return UpdateAnnotationsAsync(context, nodeId, annotations, PerformUpdateType.Replace);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> UpdateAnnotationsAsync(HistorianOperationContext context, NodeId nodeId, IList<Annotation> annotations, CancellationToken ct)
+        public ValueTask<HistorianUpdateOutcome<Annotation>> UpdateAnnotationsAsync(HistorianOperationContext context, NodeId nodeId, ArrayOf<Annotation> annotations, CancellationToken ct)
         {
             return UpdateAnnotationsAsync(context, nodeId, annotations, PerformUpdateType.Update);
         }
 
         /// <inheritdoc/>
-        public ValueTask<IList<StatusCode>> DeleteAnnotationsAsync(
+        public ValueTask<HistorianUpdateOutcome<Annotation>> DeleteAnnotationsAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<DateTimeUtc> annotationTimes,
+            ArrayOf<DateTimeUtc> annotationTimes,
             CancellationToken ct)
         {
             try
@@ -569,7 +582,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (item == null || !TryReload(item, context))
                     {
-                        return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadNodeIdUnknown, annotationTimes.Count));
+                        return Outcome<Annotation>(RepeatStatus(StatusCodes.BadNodeIdUnknown, annotationTimes.Count));
                     }
 
                     StatusCode[] results = new StatusCode[annotationTimes.Count];
@@ -579,13 +592,13 @@ namespace Quickstarts.HistoricalAccessServer
                         results[ii] = item.DeleteAnnotations((DateTime)annotationTimes[ii]);
                     }
 
-                    return new ValueTask<IList<StatusCode>>(results);
+                    return Outcome<Annotation>(results);
                 }
             }
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error deleting the annotations of {NodeId}.", nodeId);
-                return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, annotationTimes.Count));
+                return Outcome<Annotation>(RepeatStatus(StatusCodes.BadUnexpectedError, annotationTimes.Count));
             }
         }
         #endregion
@@ -754,12 +767,27 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <summary>
+        /// Wraps the per entry statuses of an update in the outcome the framework
+        /// reports back.
+        /// </summary>
+        /// <remarks>
+        /// The outcome carries no old values. The archive of an item is a DataSet
+        /// which overwrites a row in place, so what a replace or a delete displaced
+        /// is gone by the time the call returns and there is nothing this provider
+        /// could hand to the audit trail.
+        /// </remarks>
+        private static ValueTask<HistorianUpdateOutcome<T>> Outcome<T>(ArrayOf<StatusCode> results)
+        {
+            return new ValueTask<HistorianUpdateOutcome<T>>(new HistorianUpdateOutcome<T>(results));
+        }
+
+        /// <summary>
         /// Applies the per value insert, replace or update to the archive.
         /// </summary>
-        private ValueTask<IList<StatusCode>> UpdateDataAsync(
+        private ValueTask<HistorianUpdateOutcome<DataValue>> UpdateDataAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<DataValue> values,
+            ArrayOf<DataValue> values,
             PerformUpdateType performUpdateType)
         {
             try
@@ -770,17 +798,17 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (item == null || !TryReload(item, context))
                     {
-                        return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadNodeIdUnknown, values.Count));
+                        return Outcome<DataValue>(RepeatStatus(StatusCodes.BadNodeIdUnknown, values.Count));
                     }
 
-                    return new ValueTask<IList<StatusCode>>(
+                    return Outcome<DataValue>(
                         UpdateItem(item, context, values, performUpdateType));
                 }
             }
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error updating the history of {NodeId}.", nodeId);
-                return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, values.Count));
+                return Outcome<DataValue>(RepeatStatus(StatusCodes.BadUnexpectedError, values.Count));
             }
         }
 
@@ -799,10 +827,10 @@ namespace Quickstarts.HistoricalAccessServer
         /// convention the in memory historian of the SDK uses for a batch it rolled
         /// back.
         /// </remarks>
-        private ValueTask<IList<StatusCode>> UpdateDataAtomicAsync(
+        private ValueTask<HistorianUpdateOutcome<DataValue>> UpdateDataAtomicAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<DataValue> values,
+            ArrayOf<DataValue> values,
             PerformUpdateType performUpdateType)
         {
             try
@@ -813,7 +841,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (item == null || !TryReload(item, context))
                     {
-                        return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadNodeIdUnknown, values.Count));
+                        return Outcome<DataValue>(RepeatStatus(StatusCodes.BadNodeIdUnknown, values.Count));
                     }
 
                     StatusCode[] results = UpdateItem(item, context, values, performUpdateType, commit: false);
@@ -822,7 +850,7 @@ namespace Quickstarts.HistoricalAccessServer
                     if (failed < 0)
                     {
                         item.CommitChanges();
-                        return new ValueTask<IList<StatusCode>>(results);
+                        return Outcome<DataValue>(results);
                     }
 
                     item.RollbackChanges();
@@ -831,13 +859,13 @@ namespace Quickstarts.HistoricalAccessServer
                     Array.Fill(results, (StatusCode)StatusCodes.BadHistoryOperationUnsupported);
                     results[failed] = reason;
 
-                    return new ValueTask<IList<StatusCode>>(results);
+                    return Outcome<DataValue>(results);
                 }
             }
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error updating the history of {NodeId} atomically.", nodeId);
-                return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, values.Count));
+                return Outcome<DataValue>(RepeatStatus(StatusCodes.BadUnexpectedError, values.Count));
             }
         }
 
@@ -847,7 +875,7 @@ namespace Quickstarts.HistoricalAccessServer
         private static StatusCode[] UpdateItem(
             ArchiveItemState item,
             HistorianOperationContext context,
-            IList<DataValue> values,
+            ArrayOf<DataValue> values,
             PerformUpdateType performUpdateType,
             bool commit = true)
         {
@@ -864,10 +892,10 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Applies the per annotation insert, replace or update to the archive.
         /// </summary>
-        private ValueTask<IList<StatusCode>> UpdateAnnotationsAsync(
+        private ValueTask<HistorianUpdateOutcome<Annotation>> UpdateAnnotationsAsync(
             HistorianOperationContext context,
             NodeId nodeId,
-            IList<Annotation> annotations,
+            ArrayOf<Annotation> annotations,
             PerformUpdateType performUpdateType)
         {
             try
@@ -878,7 +906,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                     if (item == null || !TryReload(item, context))
                     {
-                        return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadNodeIdUnknown, annotations.Count));
+                        return Outcome<Annotation>(RepeatStatus(StatusCodes.BadNodeIdUnknown, annotations.Count));
                     }
 
                     StatusCode[] results = new StatusCode[annotations.Count];
@@ -891,13 +919,13 @@ namespace Quickstarts.HistoricalAccessServer
                             : item.UpdateAnnotations(annotations[ii], performUpdateType);
                     }
 
-                    return new ValueTask<IList<StatusCode>>(results);
+                    return Outcome<Annotation>(results);
                 }
             }
             catch (Exception e)
             {
                 m_logger.LogError(e, "Unexpected error updating the annotations of {NodeId}.", nodeId);
-                return new ValueTask<IList<StatusCode>>(RepeatStatus(StatusCodes.BadUnexpectedError, annotations.Count));
+                return Outcome<Annotation>(RepeatStatus(StatusCodes.BadUnexpectedError, annotations.Count));
             }
         }
 
@@ -1295,7 +1323,7 @@ namespace Quickstarts.HistoricalAccessServer
         {
             byte[] state = new byte[8];
             BinaryPrimitives.WriteInt64BigEndian(state, timestamp.Ticks);
-            return new HistorianResumeToken(state);
+            return new HistorianResumeToken(new ByteString(state));
         }
 
         /// <summary>
@@ -1321,7 +1349,7 @@ namespace Quickstarts.HistoricalAccessServer
             byte[] state = new byte[12];
             BinaryPrimitives.WriteInt64BigEndian(state, timestamp.Ticks);
             BinaryPrimitives.WriteInt32BigEndian(state.AsSpan(8), returnedAtTimestamp);
-            return new HistorianResumeToken(state);
+            return new HistorianResumeToken(new ByteString(state));
         }
 
         /// <summary>

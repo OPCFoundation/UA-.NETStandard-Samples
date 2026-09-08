@@ -124,7 +124,7 @@ namespace Quickstarts.HistoricalAccess.Client.Model
                 maxValues,
                 returnBounds: false,
                 TimestampsToReturn.Both,
-                ct).ConfigureAwait(false))
+                cancellationToken: ct).ConfigureAwait(false))
             {
                 values.Add(value);
 

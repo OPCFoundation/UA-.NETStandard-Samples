@@ -16,23 +16,25 @@ using Opc.Ua.Server.Hosting;
 namespace Quickstarts.HistoricalEvents.Server
 {
     /// <summary>
-    /// Advertises the event history the server serves: the
-    /// <c>HistoryServerCapabilities</c> object says that events can be read, inserted,
-    /// replaced, updated and deleted, and the <c>Server</c> object gets the
-    /// <c>HistoryRead</c> flag of its EventNotifier. A client which asks the server
-    /// what it can do before it subscribes gets the right answer.
+    /// Gives the <c>Server</c> object the <c>HistoryRead</c> flag of its EventNotifier,
+    /// so that a client which asks whether the server keeps a history of its events
+    /// before it subscribes gets the right answer.
     /// </summary>
     /// <remarks>
-    /// The capabilities node is owned by the diagnostics node manager of the stack and
-    /// the flags are not rolled up from the node managers which serve history, so
-    /// something has to set them. This runs once the server has started, with the
-    /// complete address space - the seam of the stack for what used to be an override
-    /// of <c>OnNodeManagerStarted</c> in a server class of the sample.
+    /// The <c>HistoryServerCapabilities</c> flags themselves are not set here any more:
+    /// the diagnostics node manager rolls them up from what every registered historian
+    /// provider claims in <c>GetCapabilitiesAsync</c>, and
+    /// <see cref="WellReportHistorianProvider"/> claims the five event operations it
+    /// serves. What is left is the EventNotifier of the Server object, which is derived
+    /// from the same roll-up but only when something asks for it. This runs once the
+    /// server has started, with the complete address space - the seam of the stack for
+    /// what used to be an override of <c>OnNodeManagerStarted</c> in a server class of
+    /// the sample.
     /// </remarks>
     public sealed class HistoricalEventsCapabilities : IServerStartupTask
     {
         /// <inheritdoc/>
-        public async ValueTask OnServerStartedAsync(
+        public ValueTask OnServerStartedAsync(
             IServerContext server,
             CancellationToken cancellationToken)
         {
@@ -40,19 +42,7 @@ namespace Quickstarts.HistoricalEvents.Server
             // server context deliberately does not hand out; the live server does.
             IDiagnosticsNodeManager diagnostics = ((IServerInternal)server).DiagnosticsNodeManager;
 
-            HistoryServerCapabilitiesState capabilities = await diagnostics
-                .GetDefaultHistoryCapabilitiesAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            capabilities.AccessHistoryEventsCapability.Value = true;
-            capabilities.InsertEventCapability.Value = true;
-            capabilities.ReplaceEventCapability.Value = true;
-            capabilities.UpdateEventCapability.Value = true;
-            capabilities.DeleteEventCapability.Value = true;
-
-            await diagnostics
-                .UpdateServerEventNotifierAsync(cancellationToken)
-                .ConfigureAwait(false);
+            return diagnostics.UpdateServerEventNotifierAsync(cancellationToken);
         }
     }
 }

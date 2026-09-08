@@ -138,29 +138,6 @@ Removing a model takes its nodes off the server but **leaves its namespace in th
 namespace table**. Namespace indexes a client already resolved therefore stay valid, and
 `Load` puts the same model back under the same indexes.
 
-## Known gap on 2.0.0-preview.4
-
-**A Method imported from a NodeSet2 document loses its typed `InputArguments`.** The
-importer materializes the `InputArguments` Property as an untyped `PropertyState` child
-and never assigns it to `MethodState.InputArguments`, which stays `null`. A client reads
-the Property and sees the arguments the document declares — but `Call` validates against
-the typed Property, finds none, and answers `BadTooManyArguments` for every call which
-carries an argument.
-
-`RuntimeNodeSetController.BindInputArguments` repairs it in the `Configure` hook:
-`NodeState.CreateChild` with `createOrReplace` creates the typed Property and assigns it
-(`PropertyState<T>` is abstract and cannot be constructed directly), and the declared
-arguments are decoded out of the imported child before that child is dropped. The method
-returns without doing anything as soon as the SDK materializes the typed Property itself,
-so it can be deleted rather than maintained.
-
-Anyone serving Methods out of a vendor NodeSet2 on this preview needs the same six lines.
-Raised upstream as
-[UA-.NETStandard#4422](https://github.com/OPCFoundation/UA-.NETStandard/issues/4422), which
-is the symptom
-[#1056](https://github.com/OPCFoundation/UA-.NETStandard/issues/1056) first reported in
-2022 for a hand-rolled `UANodeSet.Import`.
-
 ## Running it
 
 ```bash

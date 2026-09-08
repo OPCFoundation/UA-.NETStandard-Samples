@@ -29,7 +29,7 @@ namespace Quickstarts.NodeManagement.Server
     /// </para>
     /// <list type="number">
     ///   <item>
-    ///   <see cref="New"/> chooses what a server assigned NodeId looks like. A client may
+    ///   The NodeId factory chooses what a server assigned NodeId looks like. A client may
     ///   leave <c>RequestedNewNodeId</c> empty, and then this is what answers.
     ///   </item>
     ///   <item>
@@ -63,38 +63,6 @@ namespace Quickstarts.NodeManagement.Server
         /// implemented in the SDK for all of them.
         /// </remarks>
         public override bool AllowNodeManagement => true;
-
-        /// <summary>
-        /// Chooses the NodeId of a node the client did not name one for.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// A client may send an empty <c>RequestedNewNodeId</c> and leave the identifier to
-        /// the server, which is what <c>INodeIdFactory.New</c> is for. The base
-        /// implementation counts up a numeric identifier seeded from the clock; this sample
-        /// builds a string identifier from the browse name instead, so that a node which a
-        /// client created is recognisable as such in a browse, and so that a server assigned
-        /// identifier can never collide with the numeric identifiers of the model.
-        /// </para>
-        /// <para>
-        /// A node whose NodeId is already set - every node of the model, while it is being
-        /// loaded - keeps it. Overriding this without that check renumbers the model.
-        /// </para>
-        /// </remarks>
-        public override NodeId New(ISystemContext context, NodeState node)
-        {
-            if (node == null || !node.NodeId.IsNull || node.BrowseName.IsNull)
-            {
-                return base.New(context, node);
-            }
-
-            return new NodeId(
-                Utils.Format(
-                    "{0}-{1}",
-                    node.BrowseName.Name,
-                    Utils.IncrementIdentifier(ref m_lastAddedNode)),
-                NamespaceIndex);
-        }
 
         /// <summary>
         /// Adds one node, if it belongs below the folder this sample opens to its clients.
@@ -190,6 +158,16 @@ namespace Quickstarts.NodeManagement.Server
         /// </summary>
         partial void Configure(INodeManagementNodeManagerBuilder builder)
         {
+            // A client may send an empty RequestedNewNodeId and leave the identifier to
+            // the server. The stack mints it through the NodeId factory of this manager,
+            // which defaults to a numeric identifier hashed from the browse path. This
+            // sample asks for the path itself instead, so that a node a client created
+            // is recognisable as such in a browse, and so that a server assigned
+            // identifier can never collide with the numeric identifiers of the model.
+            // Selecting the style is all there is to it - a `New` override is what this
+            // took before the stack grew the factory.
+            NodeIdFactory = NodeIdFactory.WithMode(NodeIdAssignmentMode.String);
+
             m_plant = builder.Plant.Node;
             m_devices = builder.Plant.Devices.Node;
             m_commissioned = builder.Plant.Commissioned.Node;
@@ -278,7 +256,6 @@ namespace Quickstarts.NodeManagement.Server
         private BaseVariableState m_deviceCount;
         private HashSet<NodeId> m_modelNodes;
         private NodeId m_devicesNodeVersion;
-        private uint m_lastAddedNode;
         #endregion
     }
 }

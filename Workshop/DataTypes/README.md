@@ -39,19 +39,6 @@ C# namespace.
 The type model is built with `ModelSourceGeneratorOmitFluentApi=true`: the library is
 shared with the client and must not depend on `Opc.Ua.Server`.
 
-### Known gap on 2.0.0-preview.4
-
-The generated node sets keep the default values of a model as the XML the design
-declares, decoded when the nodes are created. An `ExtensionObject` written that way has
-no `TypeId`, and the XML decoder of the SDK only resolves a body by its type id, never by
-its element name (`XmlDecoder.ReadExtensionObjectBody`). The structured default values
-of the sample - the driver's `PrimaryVehicle`, the `VehiclesInLot` - therefore load as raw
-XML with a null type id, which a client cannot decode; values a client writes round-trip
-as before. Two of the node manager tests of the sample record this as a known issue
-([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401))
-and start failing the moment the SDK resolves such bodies, which is when the wrappers come
-off.
-
 ## Schemas at run time
 
 The client can hand any of the server's data types to the SDK and get an **XSD, an OPC

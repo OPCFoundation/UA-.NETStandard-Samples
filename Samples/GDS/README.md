@@ -310,7 +310,7 @@ extensions. Pick any small file to see the round trip: register it, run `tickets
 then unregister it again.
 
 Two caveats, both about the SDK rather than about Part 21: the Onboarding companion model ships as a design file in
-the stack repository but its generated node classes are not in the `Opc.Ua.Gds.Common` package, so the sample builds
+the stack repository but its generated node classes are not in the `Opc.Ua.Gds` package, so the sample builds
 the nodes by hand under `BaseObjectType` in a namespace of its own; and the Method BrowseNames are created in
 namespace 0 because `OnboardingClient` resolves them with an ns=0 browse path. The device-facing `ProvideIdentities`
 flow is not part of the sample.

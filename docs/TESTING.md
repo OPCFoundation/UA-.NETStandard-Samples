@@ -381,21 +381,17 @@ enabling, and the refresh replays one dialog per source until somebody answers i
 
 ### Recorded issues
 
-Two expectations are recorded right now, both in `DataTypesNodeManagerTests`: the structure
-default value of `ParkingLot/DriverOfTheMonth/PrimaryVehicle` arrives as an extension object
-without a `TypeId`, and the registered activator therefore cannot turn it back into a
-`BicycleType`. The source generator of 2.0.0-preview.4 emits a design's structured
-`DefaultValue` as bare XML, and the XML decoder of the stack leaves an extension object
-without a `TypeId` undecoded
-([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401)); the
-entries pay out when the stack ships the fix. Before that the last two entries paid out when
+No expectation is recorded right now. The last three paid out on the bump to
+`2.0.301.4181-preview`: the two structure default values in `DataTypesNodeManagerTests`
+([UA-.NETStandard#4401](https://github.com/OPCFoundation/UA-.NETStandard/issues/4401)) and
+the audit trail in `RoleManagementNodeManagerTests`. Before that two more paid out when
 their node managers were migrated. The mechanism stays, because it is what made that happen.
 An expectation written the way the sample is *meant* to behave is reported as **ignored**
 through `KnownIssue.RecordAsync`, and - like `s_knownIssues` in Tier 1 - an entry fails the
-moment it starts passing, so it cannot rot. That has already happened six times. Three were
+moment it starts passing, so it cannot rot. That has already happened nine times. Three were
 expectations that were wrong about the harness rather than about the sample, one of them
 caught by CI rather than locally: an entry which held on a developer machine and not on a
-build agent, which is the most useful kind to be told about. The other three were the
+build agent, which is the most useful kind to be told about. The other six were the
 bargain paying out as designed.
 
 The SimpleEvents events arrived with the sample's own fields (`CycleId`, `CurrentStep`,

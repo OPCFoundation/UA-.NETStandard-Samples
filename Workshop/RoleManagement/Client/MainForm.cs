@@ -39,8 +39,8 @@ namespace Quickstarts.RoleManagement.Client
     /// with its Endpoints filters, CustomConfiguration flags and identity rules; the
     /// buttons are deliberately left enabled for every account, because seeing the server
     /// answer BadUserAccessDenied or BadSecurityModeInsufficient is the point. The lower
-    /// list is the audit trail the server reports for those changes - it stays empty
-    /// against 2.0.0-preview.4, which the model explains.
+    /// list is the audit trail the server reports for those changes, as far as the current
+    /// Session is allowed to see it.
     /// </para>
     /// </remarks>
     public partial class MainForm : SampleForm

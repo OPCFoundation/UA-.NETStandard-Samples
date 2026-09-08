@@ -147,8 +147,9 @@ namespace Quickstarts.RoleManagement.Client.Model
     /// </para>
     /// <para>
     /// The third part is the audit trail the server reports for those changes, streamed
-    /// through <see cref="AuditEventReceived"/> for as long as the model is attached. It
-    /// stays empty against 2.0.0-preview.4 - see <see cref="PumpAuditEventsAsync"/>.
+    /// through <see cref="AuditEventReceived"/> for as long as the model is attached - as
+    /// far as the Session it subscribed on is allowed to see it, see
+    /// <see cref="PumpAuditEventsAsync"/>.
     /// </para>
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The handles below are taken, cleared and released by OnDetachingAsync, which the detach of the base class runs - on a detach as well as on a dispose. The analyzer does not follow an asynchronous release through a virtual hook.")]
@@ -652,11 +653,10 @@ namespace Quickstarts.RoleManagement.Client.Model
         /// beside it.
         /// </para>
         /// <para>
-        /// The trail stays empty against 2.0.0-preview.4: the server reports Server.Auditing
-        /// as true and the Methods answer Good, but no audit event reaches a subscriber. A
-        /// GeneralModelChangeEvent from the same Server object does arrive, so this is the
-        /// stack rather than the subscription. The subscription is here because it is what a
-        /// client is supposed to do, and it starts reporting the moment that is fixed.
+        /// What a subscriber is shown depends on the Session it subscribed on: a monitored
+        /// item is evaluated against the effective identity of that Session, so a client
+        /// connected as an operator sees less of the trail than one connected as the
+        /// system administrator.
         /// </para>
         /// <para>
         /// The loop runs on a publish worker of the engine: the lookup of the event type

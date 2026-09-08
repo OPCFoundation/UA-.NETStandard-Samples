@@ -407,7 +407,7 @@ namespace Opc.Ua.Samples.Client
         /// <param name="values">The values to remove.</param>
         /// <param name="ct">The cancellation token.</param>
         /// <exception cref="ServiceResultException">The server rejected the update as a whole.</exception>
-        public static async Task<IList<StatusCode>> RemoveAsync(
+        public static async Task<ArrayOf<StatusCode>> RemoveAsync(
             ISession session,
             NodeId nodeId,
             IList<DataValue> values,
@@ -438,7 +438,7 @@ namespace Opc.Ua.Samples.Client
                 throw new ServiceResultException(results[0].StatusCode);
             }
 
-            return results[0].OperationResults.ToList();
+            return results[0].OperationResults;
         }
 
         /// <summary>
@@ -468,7 +468,7 @@ namespace Opc.Ua.Samples.Client
                 maxValuesPerNode: 1,
                 returnBounds: false,
                 TimestampsToReturn.Source,
-                ct).ConfigureAwait(false))
+                cancellationToken: ct).ConfigureAwait(false))
             {
                 DateTime timestamp = (DateTime)value.SourceTimestamp;
 
