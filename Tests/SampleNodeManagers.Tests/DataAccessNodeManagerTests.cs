@@ -27,9 +27,10 @@ namespace Opc.Ua.Samples.Tests
     /// the duration of the operation. The same block appears under several paths, which is
     /// the part of the design a rewrite is most likely to lose, so it is checked here.
     ///
-    /// The node manager is built directly on the AsyncCustomNodeManager of the SDK, and
-    /// the tag variables route their writes to the underlying system through the
-    /// asynchronous write handler.
+    /// The node manager is a hand-written FluentNodeManagerBase of the SDK: the segments
+    /// and blocks are a virtual node family it registers on the fluent builder, and the
+    /// tag variables route their writes to the underlying system through the asynchronous
+    /// write handler.
     /// </remarks>
     [TestFixture]
     [Category("NodeManager")]

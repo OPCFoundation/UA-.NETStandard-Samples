@@ -33,6 +33,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Opc.Ua.Server.Fluent;
 
 namespace Quickstarts.DataAccessServer
 {
@@ -60,7 +61,32 @@ namespace Quickstarts.DataAccessServer
     /// <summary>
     /// A node manager for a server that exposes several variables.
     /// </summary>
-    public class DataAccessServerNodeManager : AsyncCustomNodeManager
+    /// <remarks>
+    /// <para>
+    /// The plant hierarchy this sample serves lives in an underlying system, not in an
+    /// address space: a segment or a block exists only as a path, and the node which
+    /// represents it is built from a string node id for the duration of one operation
+    /// and discarded again. That is a virtual node family, registered on the fluent
+    /// builder with <see cref="VirtualNodeBuilderExtensions.ResolveNodes"/> - the
+    /// predicate recognizes the shape of the identifier, the resolver asks the
+    /// underlying system what is at that path, and the base node manager owns the
+    /// handle, the operation cache and the validation.
+    /// </para>
+    /// <para>
+    /// A block which somebody monitors is the exception to being discarded: the same
+    /// instance has to serve every monitored item of that block, because it is what
+    /// the underlying system reports its changes to. The family therefore takes part
+    /// in the monitored item lifecycle, and the resolver hands out the retained block
+    /// while it is monitored.
+    /// </para>
+    /// <para>
+    /// There is no information model: a manager whose whole address space is computed
+    /// has nothing to declare in one. It therefore drives the fluent builder itself in
+    /// <see cref="CreateAddressSpaceAsync"/>, in the sequence the node manager
+    /// generated from a ModelDesign follows.
+    /// </para>
+    /// </remarks>
+    public class DataAccessServerNodeManager : FluentNodeManagerBase
     {
         #region Constructors
         /// <summary>
@@ -133,6 +159,8 @@ namespace Quickstarts.DataAccessServer
         /// The externalReferences is an out parameter that allows the node manager to link to nodes
         /// in other node managers. For example, the 'Objects' node is managed by the CoreNodeManager and
         /// should have a reference to the root folder node(s) exposed by this node manager.
+        /// The top level segments are not nodes of this manager, so their references to the
+        /// Objects folder are written by hand rather than mirrored from a registered node.
         /// </remarks>
         public override async ValueTask CreateAddressSpaceAsync(
             IDictionary<NodeId, IList<IReference>> externalReferences,
@@ -162,8 +190,26 @@ namespace Quickstarts.DataAccessServer
                 references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, segmentId));
             }
 
+            NodeManagerBuilder builder = CreateFluentBuilder(NamespaceIndex);
+            Configure(builder);
+
+            await RegisterAuthoredNodesAsync(builder, cancellationToken).ConfigureAwait(false);
+            await CompleteConfigureAsync(externalReferences, cancellationToken).ConfigureAwait(false);
+            await SealConfigurationAsync(builder, cancellationToken).ConfigureAwait(false);
+
             // start the simulation.
             m_system.StartSimulation(Server.Telemetry);
+        }
+
+        /// <summary>
+        /// Registers the segments and blocks as a virtual node family.
+        /// </summary>
+        private void Configure(INodeManagerBuilder builder)
+        {
+            builder
+                .ResolveNodes(IsSegmentOrBlockId, ResolveSegmentOrBlockAsync)
+                .OnMonitoredItemCreated(OnBlockMonitoredItemCreated)
+                .OnMonitoredItemDeleted(OnBlockMonitoredItemDeletedAsync);
         }
 
         /// <summary>
@@ -176,238 +222,121 @@ namespace Quickstarts.DataAccessServer
 
             await base.DeleteAddressSpaceAsync(cancellationToken).ConfigureAwait(false);
         }
+        #endregion
+
+        #region Virtual Segments and Blocks
+        /// <summary>
+        /// Recognizes the identifier of a segment or a block.
+        /// </summary>
+        /// <remarks>
+        /// Both are string identifiers which name a root type, a path in the underlying
+        /// system and optionally a component within it. Whether the path names anything
+        /// is the business of the resolver.
+        /// </remarks>
+        private static bool IsSegmentOrBlockId(NodeId nodeId)
+        {
+            return nodeId.IdType == IdType.String;
+        }
 
         /// <summary>
-        /// Returns a unique handle for the node.
+        /// Builds the segment, block or component of a block a node id names, or
+        /// returns nothing when the underlying system has nothing at that path.
         /// </summary>
-        protected override ValueTask<NodeHandle> GetManagerHandleAsync(
-            ServerSystemContext context,
+        private ValueTask<NodeState> ResolveSegmentOrBlockAsync(
+            ISystemContext context,
             NodeId nodeId,
-            IDictionary<NodeId, NodeState> cache,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
         {
-            // quickly exclude nodes that are not in the namespace.
-            if (!IsNodeIdInNamespace(nodeId))
-            {
-                return new ValueTask<NodeHandle>();
-            }
-
-            // check for nodes that are being currently monitored.
-            MonitoredNode2 monitoredNode = null;
-
-            if (MonitoredNodes.TryGetValue(nodeId, out monitoredNode))
-            {
-                NodeHandle handle = new NodeHandle();
-
-                handle.NodeId = nodeId;
-                handle.Validated = true;
-                handle.Node = monitoredNode.Node;
-
-                return new ValueTask<NodeHandle>(handle);
-            }
-
-            if (nodeId.IdType != IdType.String)
-            {
-                NodeState node = null;
-
-                if (PredefinedNodes.TryGetValue(nodeId, out node))
-                {
-                    NodeHandle handle = new NodeHandle();
-
-                    handle.NodeId = nodeId;
-                    handle.Node = node;
-                    handle.Validated = true;
-
-                    return new ValueTask<NodeHandle>(handle);
-                }
-            }
-
-            // parse the identifier.
+            // check if the node id has been parsed.
             ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
 
-            if (parsedNodeId != null)
+            if (parsedNodeId == null)
             {
-                NodeHandle handle = new NodeHandle();
-
-                handle.NodeId = nodeId;
-                handle.Validated = false;
-                handle.Node = null;
-                handle.ParsedNodeId = parsedNodeId;
-
-                return new ValueTask<NodeHandle>(handle);
+                return default;
             }
 
-            return new ValueTask<NodeHandle>();
-        }
+            NodeState root;
 
-        /// <summary>
-        /// Verifies that the specified node exists.
-        /// </summary>
-        protected override ValueTask<NodeState> ValidateNodeAsync(
-            ServerSystemContext context,
-            NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache,
-            CancellationToken cancellationToken = default)
-        {
-            return new ValueTask<NodeState>(ValidateNode(context, handle, cache));
-        }
-
-        /// <summary>
-        /// Verifies that the specified node exists.
-        /// </summary>
-        private NodeState ValidateNode(
-            ServerSystemContext context,
-            NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache)
-        {
-            // not valid if no root.
-            if (handle == null)
+            // validate a segment.
+            if (parsedNodeId.RootType == ModelUtils.Segment)
             {
-                return null;
-            }
+                UnderlyingSystemSegment segment = m_system.FindSegment(parsedNodeId.RootId);
 
-            // check if previously validated.
-            if (handle.Validated)
-            {
-                return handle.Node;
-            }
-
-            NodeState target = null;
-
-            // check if already in the cache.
-            if (cache != null)
-            {
-                if (cache.TryGetValue(handle.NodeId, out target))
+                // segment does not exist.
+                if (segment == null)
                 {
-                    // nulls mean a NodeId which was previously found to be invalid has been referenced again.
-                    if (target == null)
-                    {
-                        return null;
-                    }
-
-                    handle.Node = target;
-                    handle.Validated = true;
-                    return handle.Node;
+                    return default;
                 }
 
-                target = null;
-            }
+                NodeId rootId = ModelUtils.ConstructIdForSegment(segment.Id, NamespaceIndex);
 
-            try
-            {
-                // check if the node id has been parsed.
-                ParsedNodeId parsedNodeId = handle.ParsedNodeId as ParsedNodeId;
-
-                if (parsedNodeId == null)
-                {
-                    return null;
-                }
-
-                NodeState root = null;
-
-                // validate a segment.
-                if (parsedNodeId.RootType == ModelUtils.Segment)
-                {
-                    UnderlyingSystemSegment segment = m_system.FindSegment(parsedNodeId.RootId);
-
-                    // segment does not exist.
-                    if (segment == null)
-                    {
-                        return null;
-                    }
-
-                    NodeId rootId = ModelUtils.ConstructIdForSegment(segment.Id, NamespaceIndex);
-
-                    // create a temporary object to use for the operation.
+                // create a temporary object to use for the operation.
 #pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node handle/cache.
-                    root = new SegmentState(context, rootId, segment);
+                root = new SegmentState(context, rootId, segment);
 #pragma warning restore CA2000
-                }
+            }
 
-                // validate segment.
-                else if (parsedNodeId.RootType == ModelUtils.Block)
+            // validate a block.
+            else if (parsedNodeId.RootType == ModelUtils.Block)
+            {
+                // validate the block.
+                UnderlyingSystemBlock block = m_system.FindBlock(parsedNodeId.RootId);
+
+                // block does not exist.
+                if (block == null)
                 {
-                    // validate the block.
-                    UnderlyingSystemBlock block = m_system.FindBlock(parsedNodeId.RootId);
-
-                    // block does not exist.
-                    if (block == null)
-                    {
-                        return null;
-                    }
-
-                    NodeId rootId = ModelUtils.ConstructIdForBlock(block.Id, NamespaceIndex);
-
-                    // check for blocks that are being currently monitored.
-                    BlockState node = null;
-
-                    if (m_blocks.TryGetValue(rootId, out node))
-                    {
-                        root = node;
-                    }
-
-                    // create a temporary object to use for the operation.
-                    else
-                    {
-#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node handle/cache.
-                        root = new BlockState(this, rootId, block);
-#pragma warning restore CA2000
-                    }
+                    return default;
                 }
 
-                // unknown root type.
+                NodeId rootId = ModelUtils.ConstructIdForBlock(block.Id, NamespaceIndex);
+
+                // check for blocks that are being currently monitored: every monitored
+                // item of a block has to see the same instance, because that is the one
+                // the underlying system reports its changes to.
+                if (m_blocks.TryGetValue(rootId, out BlockState node))
+                {
+                    root = node;
+                }
+
+                // create a temporary object to use for the operation.
                 else
                 {
-                    return null;
+#pragma warning disable CA2000 // Justification: NodeState ownership is transferred to the node handle/cache.
+                    root = new BlockState(this, rootId, block);
+#pragma warning restore CA2000
                 }
-
-                // all done if no components to validate.
-                if (String.IsNullOrEmpty(parsedNodeId.ComponentPath))
-                {
-                    handle.Validated = true;
-                    handle.Node = target = root;
-                    return handle.Node;
-                }
-
-                // validate component.
-                NodeState component = root.FindChildBySymbolicName(context, parsedNodeId.ComponentPath);
-
-                // component does not exist.
-                if (component == null)
-                {
-                    return null;
-                }
-
-                // found a valid component.
-                handle.Validated = true;
-                handle.Node = target = component;
-                return handle.Node;
             }
-            finally
+
+            // unknown root type.
+            else
             {
-                // store the node in the cache to optimize subsequent lookups.
-                if (cache != null)
-                {
-                    cache.Add(handle.NodeId, target);
-                }
+                return default;
             }
+
+            // all done if no components to validate.
+            if (String.IsNullOrEmpty(parsedNodeId.ComponentPath))
+            {
+                return new ValueTask<NodeState>(root);
+            }
+
+            // validate component.
+            return new ValueTask<NodeState>(
+                root.FindChildBySymbolicName(context, parsedNodeId.ComponentPath));
         }
         #endregion
 
-        #region Overridden Methods
+        #region Monitoring
         /// <summary>
-        /// Called after creating a MonitoredItem.
+        /// Starts the block a monitored item was created for and retains it.
         /// </summary>
-        /// <param name="context">The context.</param>
-        /// <param name="handle">The handle for the node.</param>
-        /// <param name="monitoredItem">The monitored item.</param>
-        protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
+        private void OnBlockMonitoredItemCreated(
+            ISystemContext context,
+            NodeState source,
+            ISampledDataChangeMonitoredItem monitoredItem)
         {
-            BlockState block = handle.Node.GetHierarchyRoot() as BlockState;
-
-            if (block != null)
+            if (source.GetHierarchyRoot() is BlockState block)
             {
-                block.StartMonitoring(context);
+                block.StartMonitoring((ServerSystemContext)context);
 
                 // need to save the block to ensure that multiple monitored items use the same instance.
                 m_blocks[block.NodeId] = block;
@@ -415,27 +344,19 @@ namespace Quickstarts.DataAccessServer
         }
 
         /// <summary>
-        /// Called after deleting a MonitoredItem.
+        /// Stops the block again once nothing monitors it any more.
         /// </summary>
-        /// <param name="context">The context.</param>
-        /// <param name="handle">The handle for the node.</param>
-        /// <param name="monitoredItem">The monitored item.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        protected override ValueTask OnMonitoredItemDeletedAsync(
-            ServerSystemContext context,
-            NodeHandle handle,
+        private ValueTask OnBlockMonitoredItemDeletedAsync(
+            ISystemContext context,
+            NodeState source,
             ISampledDataChangeMonitoredItem monitoredItem,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
         {
-            BlockState block = handle.Node.GetHierarchyRoot() as BlockState;
-
-            if (block != null)
+            if (source.GetHierarchyRoot() is BlockState block &&
+                !block.StopMonitoring((ServerSystemContext)context))
             {
-                if (!block.StopMonitoring(context))
-                {
-                    // can remove the block since all monitored items for the block are gone.
-                    m_blocks.TryRemove(block.NodeId, out _);
-                }
+                // can remove the block since all monitored items for the block are gone.
+                m_blocks.TryRemove(block.NodeId, out _);
             }
 
             return default;
