@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<opc:ModelDesign
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:opc="http://opcfoundation.org/UA/ModelDesign.xsd"
+  xmlns:ua="http://opcfoundation.org/UA/"
+  xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+	xmlns="http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Site/"
+  TargetNamespace="http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Site/"
+>
+  <opc:Namespaces>
+    <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/</opc:Namespace>
+    <opc:Namespace Name="Site" Prefix="Quickstarts.RuntimeNodeSets.Site" InternalPrefix="Quickstarts.RuntimeNodeSets.Site">http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Site/</opc:Namespace>
+  </opc:Namespaces>
+
+  <!--
+  The model an OEM compiles into its server, and the half of this sample which meets a
+  NodeSet2 document through builder.Import rather than through AddRuntimeNodeSet.
+
+  The OEM knows what a station is. It does not know how many stations a particular site
+  has, nor what is bolted onto them - so Site declares two placeholder stations and the
+  integrator ships a NodeSet2 document beside the server which fills them in. Station1 is
+  replaced by the document, Station2 is left as the model declares it, and the difference
+  between the two is browsable side by side.
+
+  Every node here has a fixed identifier (ModelDesign.csv), because the overlay documents
+  in NodeSets/Site.*.NodeSet2.xml name them: an overlay is written against the identifiers
+  of the model it overlays.
+  -->
+  <opc:Method SymbolicName="ResetMethodType">
+    <opc:Description>Returns a station to its idle state.</opc:Description>
+    <opc:InputArguments>
+      <opc:Argument Name="ClearFaults" DataType="ua:Boolean">
+        <opc:Description>Whether the fault latch is cleared as well.</opc:Description>
+      </opc:Argument>
+    </opc:InputArguments>
+    <opc:OutputArguments>
+      <opc:Argument Name="Accepted" DataType="ua:Boolean">
+        <opc:Description>Whether the station accepted the reset.</opc:Description>
+      </opc:Argument>
+    </opc:OutputArguments>
+  </opc:Method>
+
+  <opc:ObjectType SymbolicName="StationType" BaseType="ua:BaseObjectType">
+    <opc:Description>One station of a conveyor site. The type the OEM ships.</opc:Description>
+    <opc:Children>
+      <opc:Variable SymbolicName="Throughput" DataType="ua:Double" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="Read" ModellingRule="Mandatory">
+        <opc:Description>Parts per minute leaving the station.</opc:Description>
+      </opc:Variable>
+      <opc:Variable SymbolicName="Status" DataType="ua:String" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="Read" ModellingRule="Mandatory">
+        <opc:Description>What the station is doing.</opc:Description>
+      </opc:Variable>
+      <opc:Method SymbolicName="Reset" TypeDefinition="ResetMethodType" ModellingRule="Mandatory">
+        <opc:Description>Returns the station to its idle state.</opc:Description>
+      </opc:Method>
+    </opc:Children>
+  </opc:ObjectType>
+
+  <!--
+  The two stations are declared on the TYPE, not on the instance, and that is what makes
+  them slots an overlay can fill. A generated state class dispatches its declared children
+  by BrowseName, which is how an imported child with the same name is adopted into the slot
+  instead of being appended next to the node already there. An instance of a plain
+  ua:BaseObjectType has no such class and no slots: the same document would then add a
+  second Station1 beside the first.
+  -->
+  <opc:ObjectType SymbolicName="SiteType" BaseType="ua:BaseObjectType">
+    <opc:Description>A site of two stations. The frame the OEM ships for the integrator to fill in.</opc:Description>
+    <opc:Children>
+      <opc:Object SymbolicName="Station1" TypeDefinition="StationType" ModellingRule="Mandatory">
+        <opc:Description>The slot the overlay document replaces with the station this site really has.</opc:Description>
+      </opc:Object>
+      <opc:Object SymbolicName="Station2" TypeDefinition="StationType" ModellingRule="Mandatory">
+        <opc:Description>The slot no document claims. It stays exactly as the model declares it.</opc:Description>
+      </opc:Object>
+    </opc:Children>
+  </opc:ObjectType>
+
+  <opc:Object SymbolicName="Site" TypeDefinition="SiteType">
+    <opc:Description>The site the overlay documents describe.</opc:Description>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:Object>
+
+</opc:ModelDesign>

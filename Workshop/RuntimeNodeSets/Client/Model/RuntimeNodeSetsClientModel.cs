@@ -65,6 +65,24 @@ namespace Quickstarts.RuntimeNodeSets.Client.Model
     public sealed record VendorNode(string Name, NodeId NodeId, int Depth, string Value);
 
     /// <summary>
+    /// One node of the site model, and whether the type of its parent declares it.
+    /// </summary>
+    /// <param name="Name">The browse name.</param>
+    /// <param name="NodeId">The node.</param>
+    /// <param name="Depth">How far below <c>Site</c> the node sits.</param>
+    /// <param name="Value">The value of a variable, or the status when it could not be
+    /// read; empty for an object.</param>
+    /// <param name="DeclaredByType">Whether the TypeDefinition of the parent declares a
+    /// child of this browse name. <c>false</c> is a node which can only have come from
+    /// the overlay document.</param>
+    public sealed record SiteNode(
+        string Name,
+        NodeId NodeId,
+        int Depth,
+        string Value,
+        bool DeclaredByType);
+
+    /// <summary>
     /// The payload of <see cref="RuntimeNodeSetsClientModel.WatchedValueChanged"/>.
     /// </summary>
     public sealed class WatchedValueEventArgs : EventArgs
@@ -119,6 +137,13 @@ namespace Quickstarts.RuntimeNodeSets.Client.Model
         /// </summary>
         public const string ControlNamespaceUri =
             "http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Control/";
+
+        /// <summary>
+        /// The namespace of the site model, which is compiled into the server and
+        /// extended by the NodeSet2 documents it overlays at start up.
+        /// </summary>
+        public const string SiteNamespaceUri =
+            "http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Site/";
 
         private const string kWatchedItem = "Conveyor1/Speed";
 
@@ -221,6 +246,57 @@ namespace Quickstarts.RuntimeNodeSets.Client.Model
             }
 
             await AppendAsync(session, nodes, lineId, 0, new HashSet<NodeId> { lineId }, ct)
+                .ConfigureAwait(false);
+
+            return nodes;
+        }
+
+        /// <summary>
+        /// Browses the site model - the half of the server whose model is compiled in and
+        /// whose stations come out of a NodeSet2 overlay.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The overlay is invisible on the wire: an imported node is an ordinary node of
+        /// an ordinary node manager, and nothing in a Browse response says which document
+        /// it came from. What a Client <em>can</em> see is that the address space says
+        /// more than the type model does, and that is what
+        /// <see cref="SiteNode.DeclaredByType"/> reports: for every node, whether the
+        /// TypeDefinition of its parent declares a child of that browse name.
+        /// </para>
+        /// <para>
+        /// Against this server the answer separates the three stations: <c>Station1</c>
+        /// and <c>Station2</c> are slots <c>SiteType</c> declares, <c>Station3</c> is not
+        /// declared anywhere and neither is <c>Station3/Temperature</c> - both of them
+        /// exist only because the documents put them there. <c>Station1</c> also proves
+        /// the other half of the rule by what it is missing: <c>StationType</c> declares a
+        /// <c>Reset</c> and the replacement has none, because an imported instance carries
+        /// exactly the children its document declares.
+        /// </para>
+        /// </remarks>
+        /// <param name="ct">The cancellation token.</param>
+        public async Task<IReadOnlyList<SiteNode>> BrowseSiteModelAsync(CancellationToken ct = default)
+        {
+            ISession session = RequireSession();
+
+            var wellKnownNamespaceUris = new NamespaceTable();
+            wellKnownNamespaceUris.Append(SiteNamespaceUri);
+
+            List<NodeId> roots = await SampleSession.TranslateBrowsePathsAsync(
+                session,
+                Opc.Ua.ObjectIds.ObjectsFolder,
+                wellKnownNamespaceUris,
+                ct,
+                "1:Site").ConfigureAwait(false);
+
+            var nodes = new List<SiteNode>();
+
+            if (roots.Count == 0 || roots[0].IsNull)
+            {
+                return nodes;
+            }
+
+            await AppendSiteAsync(session, nodes, roots[0], 0, new HashSet<NodeId> { roots[0] }, ct)
                 .ConfigureAwait(false);
 
             return nodes;
@@ -520,6 +596,116 @@ namespace Quickstarts.RuntimeNodeSets.Client.Model
                     await AppendAsync(session, nodes, nodeId, depth + 1, visited, ct).ConfigureAwait(false);
                 }
             }
+        }
+
+        /// <summary>
+        /// Appends the children of a node of the site model, marking each one with
+        /// whether the type of its parent declares it.
+        /// </summary>
+        private static async Task AppendSiteAsync(
+            ISession session,
+            List<SiteNode> nodes,
+            NodeId parentId,
+            int depth,
+            HashSet<NodeId> visited,
+            CancellationToken ct)
+        {
+            ISet<string> declared = await DeclaredChildrenAsync(session, parentId, ct)
+                .ConfigureAwait(false);
+
+            var nodeToBrowse = new BrowseDescription {
+                NodeId = parentId,
+                BrowseDirection = BrowseDirection.Forward,
+                ReferenceTypeId = Opc.Ua.ReferenceTypeIds.HierarchicalReferences,
+                IncludeSubtypes = true,
+                NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable | NodeClass.Method),
+                ResultMask = (uint)BrowseResultMask.All,
+            };
+
+            List<ReferenceDescription> references = await SampleSession
+                .BrowseAsync(session, nodeToBrowse, false, ct)
+                .ConfigureAwait(false);
+
+            if (references == null)
+            {
+                return;
+            }
+
+            foreach (ReferenceDescription reference in references)
+            {
+                NodeId nodeId = ExpandedNodeId.ToNodeId(reference.NodeId, session.NamespaceUris);
+
+                nodes.Add(new SiteNode(
+                    reference.BrowseName.Name,
+                    nodeId,
+                    depth,
+                    await ValueOfAsync(session, nodeId, reference.NodeClass, ct).ConfigureAwait(false),
+                    declared.Contains(reference.BrowseName.Name)));
+
+                if (reference.NodeClass == NodeClass.Object && visited.Add(nodeId))
+                {
+                    await AppendSiteAsync(session, nodes, nodeId, depth + 1, visited, ct)
+                        .ConfigureAwait(false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The browse names the TypeDefinition of a node declares as children.
+        /// </summary>
+        /// <remarks>
+        /// Two browses - one for the HasTypeDefinition reference, one for the children of
+        /// the type - and no compiled knowledge of the model. A node with no type
+        /// definition declares nothing.
+        /// </remarks>
+        private static async Task<ISet<string>> DeclaredChildrenAsync(
+            ISession session,
+            NodeId nodeId,
+            CancellationToken ct)
+        {
+            var names = new HashSet<string>(StringComparer.Ordinal);
+
+            List<ReferenceDescription> types = await SampleSession.BrowseAsync(
+                session,
+                new BrowseDescription {
+                    NodeId = nodeId,
+                    BrowseDirection = BrowseDirection.Forward,
+                    ReferenceTypeId = Opc.Ua.ReferenceTypeIds.HasTypeDefinition,
+                    IncludeSubtypes = false,
+                    ResultMask = (uint)BrowseResultMask.All,
+                },
+                false,
+                ct).ConfigureAwait(false);
+
+            if (types == null || types.Count == 0)
+            {
+                return names;
+            }
+
+            NodeId typeId = ExpandedNodeId.ToNodeId(types[0].NodeId, session.NamespaceUris);
+
+            List<ReferenceDescription> children = await SampleSession.BrowseAsync(
+                session,
+                new BrowseDescription {
+                    NodeId = typeId,
+                    BrowseDirection = BrowseDirection.Forward,
+                    ReferenceTypeId = Opc.Ua.ReferenceTypeIds.HierarchicalReferences,
+                    IncludeSubtypes = true,
+                    NodeClassMask = (uint)(NodeClass.Object | NodeClass.Variable | NodeClass.Method),
+                    ResultMask = (uint)BrowseResultMask.All,
+                },
+                false,
+                ct).ConfigureAwait(false);
+
+            if (children != null)
+            {
+                foreach (ReferenceDescription child in children)
+                {
+                    names.Add(child.BrowseName.Name);
+                }
+            }
+
+            return names;
         }
 
         /// <summary>

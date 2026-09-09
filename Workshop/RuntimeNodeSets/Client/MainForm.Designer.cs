@@ -60,6 +60,12 @@ namespace Quickstarts.RuntimeNodeSets.Client
             this.ReloadBTN = new System.Windows.Forms.Button();
             this.RemoveBTN = new System.Windows.Forms.Button();
             this.RefreshBTN = new System.Windows.Forms.Button();
+            this.SiteGB = new System.Windows.Forms.GroupBox();
+            this.SiteLV = new System.Windows.Forms.ListView();
+            this.SiteNodeCH = new System.Windows.Forms.ColumnHeader();
+            this.SiteNodeIdCH = new System.Windows.Forms.ColumnHeader();
+            this.SiteValueCH = new System.Windows.Forms.ColumnHeader();
+            this.SiteOriginCH = new System.Windows.Forms.ColumnHeader();
             this.WatchGB = new System.Windows.Forms.GroupBox();
             this.WatchLV = new System.Windows.Forms.ListView();
             this.WatchTimeCH = new System.Windows.Forms.ColumnHeader();
@@ -137,6 +143,7 @@ namespace Quickstarts.RuntimeNodeSets.Client
             // MainPN
             //
             this.MainPN.Controls.Add(this.ModelGB);
+            this.MainPN.Controls.Add(this.SiteGB);
             this.MainPN.Controls.Add(this.WatchGB);
             this.MainPN.Controls.Add(this.ControlPN);
             this.MainPN.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -275,17 +282,65 @@ namespace Quickstarts.RuntimeNodeSets.Client
             // NodeCH
             //
             this.NodeCH.Text = "Node";
-            this.NodeCH.Width = 320;
+            this.NodeCH.Width = 180;
             //
             // NodeIdCH
             //
             this.NodeIdCH.Text = "NodeId";
-            this.NodeIdCH.Width = 260;
+            this.NodeIdCH.Width = 150;
             //
             // ValueCH
             //
             this.ValueCH.Text = "Value";
-            this.ValueCH.Width = 240;
+            this.ValueCH.Width = 100;
+            //
+            // SiteGB
+            //
+            this.SiteGB.Controls.Add(this.SiteLV);
+            this.SiteGB.Dock = System.Windows.Forms.DockStyle.Right;
+            this.SiteGB.Location = new System.Drawing.Point(456, 66);
+            this.SiteGB.Name = "SiteGB";
+            this.SiteGB.Size = new System.Drawing.Size(424, 230);
+            this.SiteGB.TabIndex = 3;
+            this.SiteGB.TabStop = false;
+            this.SiteGB.Text = "The site model, after the NodeSet2 overlay was imported into it";
+            //
+            // SiteLV
+            //
+            this.SiteLV.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.SiteNodeCH,
+            this.SiteNodeIdCH,
+            this.SiteValueCH,
+            this.SiteOriginCH});
+            this.SiteLV.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.SiteLV.FullRowSelect = true;
+            this.SiteLV.Location = new System.Drawing.Point(3, 16);
+            this.SiteLV.MultiSelect = false;
+            this.SiteLV.Name = "SiteLV";
+            this.SiteLV.Size = new System.Drawing.Size(418, 211);
+            this.SiteLV.TabIndex = 0;
+            this.SiteLV.UseCompatibleStateImageBehavior = false;
+            this.SiteLV.View = System.Windows.Forms.View.Details;
+            //
+            // SiteNodeCH
+            //
+            this.SiteNodeCH.Text = "Node";
+            this.SiteNodeCH.Width = 150;
+            //
+            // SiteNodeIdCH
+            //
+            this.SiteNodeIdCH.Text = "NodeId";
+            this.SiteNodeIdCH.Width = 90;
+            //
+            // SiteValueCH
+            //
+            this.SiteValueCH.Text = "Value";
+            this.SiteValueCH.Width = 80;
+            //
+            // SiteOriginCH
+            //
+            this.SiteOriginCH.Text = "Declared by the type";
+            this.SiteOriginCH.Width = 130;
             //
             // WatchGB
             //
@@ -441,6 +496,12 @@ namespace Quickstarts.RuntimeNodeSets.Client
         private System.Windows.Forms.ColumnHeader NodeCH;
         private System.Windows.Forms.ColumnHeader NodeIdCH;
         private System.Windows.Forms.ColumnHeader ValueCH;
+        private System.Windows.Forms.GroupBox SiteGB;
+        private System.Windows.Forms.ListView SiteLV;
+        private System.Windows.Forms.ColumnHeader SiteNodeCH;
+        private System.Windows.Forms.ColumnHeader SiteNodeIdCH;
+        private System.Windows.Forms.ColumnHeader SiteValueCH;
+        private System.Windows.Forms.ColumnHeader SiteOriginCH;
         private System.Windows.Forms.GroupBox WatchGB;
         private System.Windows.Forms.ListView WatchLV;
         private System.Windows.Forms.ColumnHeader WatchTimeCH;

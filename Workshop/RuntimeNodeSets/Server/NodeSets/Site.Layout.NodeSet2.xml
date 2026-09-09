@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What this particular site is laid out like: the first of the two documents the
+     SiteNodeManager overlays onto its own generated model with builder.Import.
+
+     It writes into the namespace of the compiled model rather than one of its own,
+     which is the whole point of an overlay: ns=1 here is
+     http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Site/, and the identifiers
+     below 1000 it names (i=100 Site, i=10 StationType, i=13 StationType/Reset) are the
+     ones ModelDesign.csv fixed for the model.
+
+     Two different things happen to the two stations declared here:
+
+       * Station1 carries the BrowseName of a child the generated Site already declares,
+         so it REPLACES that placeholder. The generated node (i=101) and every child of
+         it this document does not carry over - Status and Reset - leave the address
+         space, and the references which pointed at i=101 are retargeted at i=5001.
+       * Station3 has no counterpart in the model, so it is simply added below Site, a
+         node the manager already owns.
+
+     Site.Instrumentation.NodeSet2.xml hangs more nodes off Station3. It is imported in
+     the same Configure pass, which is what lets it name a parent that only exists
+     here. -->
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+  <NamespaceUris>
+    <Uri>http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Site/</Uri>
+  </NamespaceUris>
+  <Models>
+    <Model ModelUri="http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Site/" Version="1.0.0" PublicationDate="2026-01-15T00:00:00Z">
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05.04" PublicationDate="2024-04-25T00:00:00Z" />
+    </Model>
+  </Models>
+  <Aliases>
+    <Alias Alias="Double">i=11</Alias>
+    <Alias Alias="String">i=12</Alias>
+    <Alias Alias="HasTypeDefinition">i=40</Alias>
+    <Alias Alias="HasComponent">i=47</Alias>
+  </Aliases>
+
+  <!-- Replaces the generated Site/Station1 placeholder (ns=1;i=101). Same BrowseName,
+       same parent, same type - a different node. -->
+  <UAObject NodeId="ns=1;i=5001" BrowseName="1:Station1" ParentNodeId="ns=1;i=100">
+    <DisplayName>Station1</DisplayName>
+    <Description>Palletiser P-14. The station this site actually has in the first slot.</Description>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">ns=1;i=10</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=100</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=5002</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=5003</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=5002" BrowseName="1:Throughput" ParentNodeId="ns=1;i=5001" DataType="Double" AccessLevel="1">
+    <DisplayName>Throughput</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=5001</Reference>
+    </References>
+    <Value>
+      <Double xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">0</Double>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=5003" BrowseName="1:Status" ParentNodeId="ns=1;i=5001" DataType="String" AccessLevel="1">
+    <DisplayName>Status</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=5001</Reference>
+    </References>
+    <Value>
+      <String xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">Idle</String>
+    </Value>
+  </UAVariable>
+
+  <!-- Not a slot: the model knows nothing about a third station. It is added below
+       Site, which the manager already owns. -->
+  <UAObject NodeId="ns=1;i=5010" BrowseName="1:Station3" ParentNodeId="ns=1;i=100">
+    <DisplayName>Station3</DisplayName>
+    <Description>Wrapper W-2. A station the OEM model does not declare at all.</Description>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">ns=1;i=10</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=100</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=5011</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=5011" BrowseName="1:Throughput" ParentNodeId="ns=1;i=5010" DataType="Double" AccessLevel="1">
+    <DisplayName>Throughput</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=5010</Reference>
+    </References>
+    <Value>
+      <Double xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">0</Double>
+    </Value>
+  </UAVariable>
+</UANodeSet>
