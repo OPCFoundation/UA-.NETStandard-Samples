@@ -2,7 +2,7 @@
  * Copyright (c) 2005-2019 The OPC Foundation, Inc. All rights reserved.
  *
  * OPC Foundation MIT License 1.00
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
  * copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -38,6 +38,18 @@ namespace Quickstarts.HistoricalAccessServer
     /// <summary>
     /// Stores the metadata for a node representing an item in the archive.
     /// </summary>
+    /// <remarks>
+    /// The item carries its Annotations property from the start, because the
+    /// archive files ship with annotations and the property is what a client
+    /// reads them through. The HistoricalDataConfiguration companion object is
+    /// not built here any more: the node manager asks the historian builder of
+    /// the SDK to install it from what the provider reports for the item, which
+    /// is the same information the archive file holds.
+    ///
+    /// Every write reports what it displaced. A replace hands back the value
+    /// which stood at the timestamp, a delete the values it removed, and the
+    /// provider passes them on for the audit trail of the update.
+    /// </remarks>
     public class ArchiveItemState : Opc.Ua.DataItemState
     {
         /// <summary>
@@ -82,29 +94,17 @@ namespace Quickstarts.HistoricalAccessServer
             this.AddChild(m_annotations);
 
             m_annotations.NodeId = NodeTypes.ConstructIdForComponent(m_annotations, namespaceIndex);
-
-            m_configuration = new HistoricalDataConfigurationState(this);
-            m_configuration.MaxTimeInterval = PropertyState<double>.With<VariantBuilder>(m_configuration);
-            m_configuration.MinTimeInterval = PropertyState<double>.With<VariantBuilder>(m_configuration);
-            m_configuration.StartOfArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(m_configuration);
-            m_configuration.StartOfOnlineArchive = PropertyState<DateTimeUtc>.With<VariantBuilder>(m_configuration);
-
-            m_configuration.Create(
-                context,
-                NodeId.Null,
-                new QualifiedName(Opc.Ua.BrowseNames.HAConfiguration),
-                LocalizedText.Null,
-                true);
-
-            m_configuration.SymbolicName = Opc.Ua.BrowseNames.HAConfiguration;
-            m_configuration.ReferenceTypeId = ReferenceTypeIds.HasHistoricalConfiguration;
-
-            this.AddChild(m_configuration);
         }
 
         /// <summary>
         /// Loads the configuration.
         /// </summary>
+        /// <remarks>
+        /// The archive file owns the Historizing flag of the item: a recording which is
+        /// finished says false, one the simulation still appends to says true. The
+        /// node manager therefore historizes an item without touching that flag, and
+        /// the flag is whatever the file last said.
+        /// </remarks>
         public void LoadConfiguration(ISystemContext context, ITelemetryContext telemetry)
         {
             DataFileReader reader = new DataFileReader();
@@ -114,16 +114,6 @@ namespace Quickstarts.HistoricalAccessServer
                 this.DataType = TypeInfo.GetDataTypeId(new TypeInfo(m_archiveItem.DataType, ValueRanks.Scalar));
                 this.ValueRank = m_archiveItem.ValueRank;
                 this.Historizing = m_archiveItem.Archiving;
-
-                m_configuration.MinTimeInterval.Value = m_archiveItem.SamplingInterval;
-                m_configuration.MaxTimeInterval.Value = m_archiveItem.SamplingInterval;
-                m_configuration.Stepped.Value = m_archiveItem.Stepped;
-
-                AggregateConfiguration configuration = m_archiveItem.AggregateConfiguration;
-                m_configuration.AggregateConfiguration.PercentDataGood.Value = configuration.PercentDataGood;
-                m_configuration.AggregateConfiguration.PercentDataBad.Value = configuration.PercentDataBad;
-                m_configuration.AggregateConfiguration.UseSlopedExtrapolation.Value = configuration.UseSlopedExtrapolation;
-                m_configuration.AggregateConfiguration.TreatUncertainAsBad.Value = configuration.TreatUncertainAsBad;
             }
         }
 
@@ -138,13 +128,6 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 DataFileReader reader = new DataFileReader();
                 reader.LoadHistoryData(context, m_archiveItem);
-
-                // set the start of the archive.
-                if (m_archiveItem.DataSet.Tables[0].DefaultView.Count > 0)
-                {
-                    m_configuration.StartOfArchive.Value = (DateTime)m_archiveItem.DataSet.Tables[0].DefaultView[0].Row[0];
-                    m_configuration.StartOfOnlineArchive.Value = m_configuration.StartOfArchive.Value;
-                }
 
                 if (m_archiveItem.Archiving)
                 {
@@ -163,8 +146,29 @@ namespace Quickstarts.HistoricalAccessServer
                     NewSamples(context);
                 }
             }
+        }
 
+        /// <summary>
+        /// The time of the first sample in the archive, or MinValue while the
+        /// archive has not been loaded or holds nothing.
+        /// </summary>
+        /// <remarks>
+        /// The historian provider reports this as the start of the archive, and the
+        /// SDK writes it into the HistoricalDataConfiguration object of the item.
+        /// </remarks>
+        public DateTime StartOfArchive
+        {
+            get
+            {
+                DataView view = m_archiveItem.DataSet?.Tables[0].DefaultView;
 
+                if (view == null || view.Count == 0)
+                {
+                    return DateTime.MinValue;
+                }
+
+                return (DateTime)view[0].Row[0];
+            }
         }
 
         /// <summary>
@@ -232,9 +236,19 @@ namespace Quickstarts.HistoricalAccessServer
         /// Whether to commit the change. A caller which applies a batch of values
         /// atomically passes false and commits or rolls the whole batch back itself.
         /// </param>
-        public uint UpdateHistory(ServerSystemContext context, DataValue value, PerformUpdateType performUpdateType, bool commit = true)
+        /// <param name="displaced">
+        /// The value which stood at the timestamp before a replace, or null when
+        /// the write inserted a new one or was refused.
+        /// </param>
+        /// <remarks>
+        /// The row of a replaced value is rewritten in place, so the value it held
+        /// is copied out before that happens: it is what the audit event of the
+        /// update reports as the old value.
+        /// </remarks>
+        public uint UpdateHistory(ServerSystemContext context, DataValue value, PerformUpdateType performUpdateType, bool commit, out DataValue? displaced)
         {
             bool replaced = false;
+            displaced = null;
 
             if (performUpdateType == PerformUpdateType.Remove)
             {
@@ -269,6 +283,7 @@ namespace Quickstarts.HistoricalAccessServer
 
                 replaced = true;
                 row = matches[0].Row;
+                displaced = (DataValue)row[2];
             }
 
             // add record indicating it was inserted.
@@ -332,19 +347,23 @@ namespace Quickstarts.HistoricalAccessServer
                 m_archiveItem.DataSet.AcceptChanges();
             }
 
-            return StatusCodes.Good.Code;
+            return replaced ? StatusCodes.GoodEntryReplaced.Code : StatusCodes.GoodEntryInserted.Code;
         }
 
         /// <summary>
         /// Updates the annotation history.
         /// </summary>
+        /// <param name="annotation">The annotation to write.</param>
+        /// <param name="performUpdateType">Whether the annotation may be created, replaced or both.</param>
+        /// <param name="displaced">The annotation which was replaced, or null.</param>
         /// <remarks>
         /// The annotation time is the storage key. Two users may annotate the same
         /// instant, so an existing record is only replaced when the user matches.
         /// </remarks>
-        public uint UpdateAnnotations(Annotation annotation, PerformUpdateType performUpdateType)
+        public uint UpdateAnnotations(Annotation annotation, PerformUpdateType performUpdateType, out Annotation displaced)
         {
             bool replaced = false;
+            displaced = null;
             DateTime annotationTime = (DateTime)annotation.AnnotationTime;
 
             DataRow row = null;
@@ -363,6 +382,7 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     row = existing.Row;
+                    displaced = current;
                     break;
                 }
             }
@@ -393,13 +413,15 @@ namespace Quickstarts.HistoricalAccessServer
             // accept all changes.
             m_archiveItem.DataSet.AcceptChanges();
 
-            return StatusCodes.Good.Code;
+            return replaced ? StatusCodes.GoodEntryReplaced.Code : StatusCodes.GoodEntryInserted.Code;
         }
 
         /// <summary>
         /// Deletes the annotations recorded at the specified annotation time.
         /// </summary>
-        public uint DeleteAnnotations(DateTime annotationTime)
+        /// <param name="annotationTime">The time the annotations belong to.</param>
+        /// <param name="deleted">The annotations which were removed.</param>
+        public uint DeleteAnnotations(DateTime annotationTime, IList<Annotation> deleted)
         {
             DataRowView[] matches = m_archiveItem.DataSet.Tables[2].DefaultView.FindRows(annotationTime);
 
@@ -412,6 +434,7 @@ namespace Quickstarts.HistoricalAccessServer
 
             foreach (DataRowView match in matches)
             {
+                deleted.Add((Annotation)match.Row[5]);
                 rowsToDelete.Add(match.Row);
             }
 
@@ -429,7 +452,10 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Deletes the value recorded at the specified source timestamp.
         /// </summary>
-        public uint DeleteHistory(ServerSystemContext context, DateTime sourceTimestamp)
+        /// <param name="context">The context of the operation.</param>
+        /// <param name="sourceTimestamp">The timestamp of the value to delete.</param>
+        /// <param name="deleted">The values which were removed.</param>
+        public uint DeleteHistory(ServerSystemContext context, DateTime sourceTimestamp, IList<DataValue> deleted)
         {
             DataRowView[] matches = m_archiveItem.DataSet.Tables[0].DefaultView.FindRows(sourceTimestamp);
 
@@ -444,6 +470,7 @@ namespace Quickstarts.HistoricalAccessServer
             {
                 // record the deleted value in the modified history.
                 AddModificationRecord(context, match.Row, HistoryUpdateType.Delete);
+                deleted.Add((DataValue)match.Row[2]);
                 rowsToDelete.Add(match.Row);
             }
 
@@ -459,9 +486,14 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <summary>
-        /// Deletes a value from the history.
+        /// Deletes a range of values from the history.
         /// </summary>
-        public uint DeleteHistory(ServerSystemContext context, DateTime startTime, DateTime endTime, bool isModified)
+        /// <param name="context">The context of the operation.</param>
+        /// <param name="startTime">The start of the range, inclusive.</param>
+        /// <param name="endTime">The end of the range, exclusive.</param>
+        /// <param name="isModified">Whether to delete from the modified history instead of the current data.</param>
+        /// <param name="deleted">The values which were removed.</param>
+        public uint DeleteHistory(ServerSystemContext context, DateTime startTime, DateTime endTime, bool isModified, IList<DataValue> deleted)
         {
             // ensure time goes up.
             if (endTime < startTime)
@@ -495,6 +527,7 @@ namespace Quickstarts.HistoricalAccessServer
                     AddModificationRecord(context, view[ii].Row, HistoryUpdateType.Delete);
                 }
 
+                deleted.Add((DataValue)view[ii].Row[2]);
                 rowsToDelete.Add(view[ii].Row);
             }
 
@@ -713,8 +746,20 @@ namespace Quickstarts.HistoricalAccessServer
             get { return m_subscribeCount; }
             set { m_subscribeCount = value; }
         }
-private ArchiveItem m_archiveItem;
-        private HistoricalDataConfigurationState m_configuration;
+
+        /// <summary>
+        /// Whether the node manager has historized the item through the SDK: its
+        /// HistoricalDataConfiguration object is installed and its history bits
+        /// are in place.
+        /// </summary>
+        /// <remarks>
+        /// The items loaded from resources are historized while the address space
+        /// is built; an item behind a file in the archive root is materialized on
+        /// its first use, and historized then.
+        /// </remarks>
+        public bool IsHistorized { get; set; }
+
+        private ArchiveItem m_archiveItem;
         private PropertyState<Annotation> m_annotations;
         private int m_subscribeCount;
         private List<DataValue> m_pattern;

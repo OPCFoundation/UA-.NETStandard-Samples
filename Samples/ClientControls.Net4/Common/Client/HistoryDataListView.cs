@@ -232,6 +232,7 @@ namespace Opc.Ua.Client.Controls
         private HistoryServerCapabilitiesInfo m_capabilities;
         private IAsyncEnumerator<HistoryRow> m_reader;
         private bool m_timesChanged;
+        private bool m_isStructured;
         private HistoricalDataConfigurationState m_configuration;
         private List<HistoricalProperty> m_properties;
         #endregion
@@ -579,12 +580,17 @@ namespace Opc.Ua.Client.Controls
             m_nodeId = nodeId;
             m_configuration = null;
             m_properties = null;
+            m_isStructured = false;
             PropertyCB.Items.Clear();
             m_dataset.Clear();
             NodeIdTB.Text = await m_session.NodeCache.GetDisplayTextAsync(m_nodeId, ct);
 
             if (!(nodeId).IsNull)
             {
+                // a variable whose data type is a structure holds structured history,
+                // which is written through a different update than plain values.
+                m_isStructured = await IsStructuredAsync(nodeId, ct).ConfigureAwait(true);
+
                 m_properties = await SampleHistory.FindPropertiesWithHistoryAsync(m_session, m_nodeId, ct);
 
                 if (m_properties == null || m_properties.Count <= 1)
@@ -648,6 +654,35 @@ namespace Opc.Ua.Client.Controls
                 await ClientUtils.WaitForPendingChangesAsync(m_subscription, kApplyTimeout, ct);
                 SubscriptionStateChanged();
             }
+        }
+
+        /// <summary>
+        /// Whether the data type of a variable is a structure, which makes its
+        /// history StructuredHistoryData.
+        /// </summary>
+        /// <remarks>
+        /// Decided from the DataType attribute and the type hierarchy the server
+        /// serves. Annotations are a structure too, but they hang on a property of
+        /// the variable and have a path of their own.
+        /// </remarks>
+        private async Task<bool> IsStructuredAsync(NodeId nodeId, CancellationToken ct)
+        {
+            var nodesToRead = new List<ReadValueId> {
+                new ReadValueId { NodeId = nodeId, AttributeId = Attributes.DataType },
+            };
+
+            ReadResponse response = await m_session
+                .ReadAsync(null, 0, TimestampsToReturn.Neither, nodesToRead, ct)
+                .ConfigureAwait(false);
+
+            DataValue dataType = response.Results.ToList()[0];
+
+            if (StatusCode.IsBad(dataType.StatusCode) || !dataType.WrappedValue.TryGetValue(out NodeId dataTypeId))
+            {
+                return false;
+            }
+
+            return await m_session.NodeCache.IsTypeOfAsync(dataTypeId, DataTypeIds.Structure, ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -915,10 +950,10 @@ namespace Opc.Ua.Client.Controls
         /// Fetches the recent history.
         /// </summary>
         /// <remarks>
-        /// A modified read is the one kind the history client of the SDK cannot serve
-        /// the control: it yields the values of an answer, and the modification info
-        /// beside them - what was done to a value, when and by whom - is the whole
-        /// point of reading modified history, so that read keeps its own reader.
+        /// A modified read yields each value the archive displaced together with its
+        /// modification info - what was done to it, when and by whom - which is the
+        /// whole point of reading modified history; the history client of the SDK
+        /// keeps the two together.
         /// </remarks>
         private Task ReadRawAsync(bool isReadModified, CancellationToken ct = default)
         {
@@ -928,7 +963,16 @@ namespace Opc.Ua.Client.Controls
 
             if (isReadModified)
             {
-                return StartReadAsync(ReadModifiedRowsAsync(nodeId, startTime, endTime, PageSize, ct), true, ct);
+                return StartReadAsync(
+                    AsRows(m_historian.ReadModifiedAsync(
+                        nodeId,
+                        startTime,
+                        endTime,
+                        PageSize,
+                        TimestampsToReturn.Both,
+                        cancellationToken: ct)),
+                    true,
+                    ct);
             }
 
             return StartReadAsync(
@@ -1121,84 +1165,14 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Reads the modified history of a node, following the continuation points
-        /// the server leaves behind and releasing the one still open when the caller
-        /// stops pulling.
+        /// Presents the values of a modified read as rows, each with the modification
+        /// info the history client kept beside it.
         /// </summary>
-        /// <remarks>
-        /// This is what the history client of the SDK does for every other read; it
-        /// is spelled out here because the modification info of an answer does not
-        /// survive the sequence of values that client yields.
-        /// </remarks>
-        private async IAsyncEnumerable<HistoryRow> ReadModifiedRowsAsync(
-            NodeId nodeId,
-            DateTime startTime,
-            DateTime endTime,
-            uint maxValuesPerNode,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+        private static async IAsyncEnumerable<HistoryRow> AsRows(IAsyncEnumerable<ModifiedHistoryValue> values)
         {
-            ExtensionObject details = new ExtensionObject(new ReadRawModifiedDetails {
-                IsReadModified = true,
-                StartTime = startTime,
-                EndTime = endTime,
-                NumValuesPerNode = maxValuesPerNode,
-                ReturnBounds = false,
-            });
-
-            ByteString continuationPoint = ByteString.Empty;
-            ByteString openPoint = ByteString.Empty;
-
-            try
+            await foreach (ModifiedHistoryValue value in values.ConfigureAwait(false))
             {
-                while (true)
-                {
-                    HistoryReadValueId nodeToRead = new HistoryReadValueId {
-                        NodeId = nodeId,
-                        ContinuationPoint = continuationPoint,
-                    };
-
-                    HistoryReadResponse response = await m_session.HistoryReadAsync(
-                        null,
-                        details,
-                        TimestampsToReturn.Both,
-                        false,
-                        new List<HistoryReadValueId> { nodeToRead },
-                        ct).ConfigureAwait(false);
-
-                    HistoryReadResult result = response.Results.ToList()[0];
-
-                    if (StatusCode.IsBad(result.StatusCode))
-                    {
-                        throw new ServiceResultException(result.StatusCode);
-                    }
-
-                    openPoint = result.ContinuationPoint;
-
-                    if (ExtensionObject.ToEncodeable(result.HistoryData) is HistoryModifiedData data)
-                    {
-                        for (int ii = 0; ii < data.DataValues.Count; ii++)
-                        {
-                            yield return new HistoryRow(
-                                data.DataValues[ii],
-                                ii < data.ModificationInfos.Count ? data.ModificationInfos[ii] : null);
-                        }
-                    }
-
-                    if (result.ContinuationPoint.IsNull || result.ContinuationPoint.Length == 0)
-                    {
-                        openPoint = ByteString.Empty;
-                        yield break;
-                    }
-
-                    continuationPoint = result.ContinuationPoint;
-                }
-            }
-            finally
-            {
-                if (!openPoint.IsNull && openPoint.Length > 0)
-                {
-                    await SampleHistory.ReleaseContinuationPointAsync(m_session, nodeId, details, openPoint).ConfigureAwait(false);
-                }
+                yield return new HistoryRow(value.Value, value.Info);
             }
         }
 
@@ -1206,14 +1180,25 @@ namespace Opc.Ua.Client.Controls
         /// Writes the values on display back into the history of the node.
         /// </summary>
         /// <remarks>
-        /// Insert, replace and update go through the history client of the SDK, which
-        /// builds the details of the request and unpacks the status the archive
-        /// answered with for each value. Remove is not part of that client - it has
-        /// the two deletes of Part 11 instead - so it keeps the service call.
+        /// Every write goes through the history client of the SDK, which builds the
+        /// details of the request and unpacks the status the archive answered with
+        /// for each value. Which request it builds depends on what the rows are:
         ///
-        /// The rows on display are annotations rather than values when the annotations
-        /// property of the variable is the one being read, and an annotation is
-        /// written one at a time through the variable it belongs to.
+        /// Annotations - when the Annotations property of the variable is the one
+        /// being read - are written as a batch through the variable they belong to;
+        /// the client translates that to the property, which is also what the server
+        /// does with the node id of an annotation request. Remove is valid here, and
+        /// takes the annotations at the times of the rows out of the archive.
+        ///
+        /// Structured values - a variable whose data type is a structure - are written
+        /// as StructuredHistoryData, which keys an entry by its source timestamp and
+        /// the identity inside the value, so several entries can share an instant.
+        /// Remove is valid for those as well.
+        ///
+        /// Plain values go through the data update of Part 11. Remove is not among
+        /// the operations that update allows in version 1.05.07, so the control keeps
+        /// the plain service call for it and shows what the server answers - the two
+        /// deletes of Part 11 are what removes plain values.
         /// </remarks>
         private async Task InsertReplaceAsync(PerformUpdateType updateType, CancellationToken ct = default)
         {
@@ -1229,11 +1214,17 @@ namespace Opc.Ua.Client.Controls
 
             if (property != null && property.BrowseName == Opc.Ua.BrowseNames.Annotations)
             {
-                ShowOperationResults(await WriteAnnotationsAsync(values, updateType, ct));
+                ShowOperationResults(await m_historian.WriteAnnotationsAsync(m_nodeId, AsAnnotations(values), updateType, ct));
                 return;
             }
 
             NodeId nodeId = GetSelectedNode();
+
+            if (m_isStructured)
+            {
+                ShowOperationResults(await m_historian.UpdateStructureDataAsync(nodeId, updateType, values, ct));
+                return;
+            }
 
             ArrayOf<StatusCode> results = updateType switch {
                 PerformUpdateType.Insert => await m_historian.InsertAsync(nodeId, values, ct),
@@ -1246,34 +1237,32 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
-        /// Writes the annotations on display back to the variable they belong to.
+        /// The annotations the rows on display carry, in the order of the rows.
         /// </summary>
-        private async Task<ArrayOf<StatusCode>> WriteAnnotationsAsync(
-            IList<DataValue> values,
-            PerformUpdateType updateType,
-            CancellationToken ct = default)
+        /// <remarks>
+        /// A row which does not carry an annotation is written as an annotation at
+        /// its own timestamp with nothing in it, so the statuses the server answers
+        /// with line up with the rows.
+        /// </remarks>
+        private static ArrayOf<Annotation> AsAnnotations(IList<DataValue> values)
         {
-            List<StatusCode> results = new List<StatusCode>(values.Count);
+            var annotations = new Annotation[values.Count];
 
-            foreach (DataValue value in values)
+            for (int ii = 0; ii < values.Count; ii++)
             {
-                if (!value.WrappedValue.TryGetValue(out ExtensionObject extension) ||
-                    !extension.TryGetValue(out Annotation annotation))
+                DataValue value = values[ii];
+
+                if (value.WrappedValue.TryGetValue(out ExtensionObject extension) &&
+                    extension.TryGetValue(out Annotation annotation))
                 {
-                    results.Add(StatusCodes.BadTypeMismatch);
+                    annotations[ii] = annotation;
                     continue;
                 }
 
-                results.Add(await m_historian.WriteAnnotationAsync(
-                    m_nodeId,
-                    (DateTime)annotation.AnnotationTime,
-                    annotation.Message,
-                    annotation.UserName,
-                    updateType,
-                    ct));
+                annotations[ii] = new Annotation { AnnotationTime = value.SourceTimestamp };
             }
 
-            return results;
+            return annotations;
         }
 
         /// <summary>

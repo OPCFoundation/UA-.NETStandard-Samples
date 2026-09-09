@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Client.Historian;
 using Opc.Ua.Samples.Client;
 
 namespace Quickstarts.HistoricalEvents.Client.Model
@@ -35,30 +36,45 @@ namespace Quickstarts.HistoricalEvents.Client.Model
     public sealed record EventHistoryRequest(DateTime StartTime, DateTime EndTime, uint MaxEvents);
 
     /// <summary>
-    /// What the next page of a paged history read needs: the server keeps the state of
-    /// the read behind a continuation point, and the client has to repeat the request.
+    /// What the next page of a paged history read needs.
     /// </summary>
-    public sealed class EventHistoryContinuation
+    /// <remarks>
+    /// The history client of the SDK hands the answer of a read out as one sequence
+    /// which spans the whole time range: it issues the requests, carries the
+    /// continuation point of one into the next, and releases the one still open
+    /// when the sequence is abandoned. A continuation holds the enumerator of that
+    /// sequence between two pages; disposing it is what tells the server the rest
+    /// is not wanted.
+    /// </remarks>
+    public sealed class EventHistoryContinuation : IAsyncDisposable
     {
         internal EventHistoryContinuation(
             NodeId areaId,
             FilterDeclaration filter,
-            ReadEventDetails details,
-            ByteString continuationPoint)
+            IAsyncEnumerator<HistoryEventFieldList> reader,
+            uint pageSize)
         {
             AreaId = areaId;
             Filter = filter;
-            Details = details;
-            ContinuationPoint = continuationPoint;
+            Reader = reader;
+            PageSize = pageSize;
         }
 
         internal NodeId AreaId { get; }
 
         internal FilterDeclaration Filter { get; }
 
-        internal ReadEventDetails Details { get; }
+        internal IAsyncEnumerator<HistoryEventFieldList> Reader { get; }
 
-        internal ByteString ContinuationPoint { get; }
+        internal uint PageSize { get; }
+
+        /// <summary>
+        /// Abandons the read, which releases the continuation point the server holds.
+        /// </summary>
+        public ValueTask DisposeAsync()
+        {
+            return Reader.DisposeAsync();
+        }
     }
 
     /// <summary>
@@ -126,8 +142,8 @@ namespace Quickstarts.HistoricalEvents.Client.Model
 
     /// <summary>
     /// The client model of the Historical Events client: shows the events of one area,
-    /// from history and - while subscribed - live, and lets the user page through, filter
-    /// and delete the history.
+    /// from history and - while subscribed - live, and lets the user page through,
+    /// filter, rewrite and delete the history.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -142,6 +158,13 @@ namespace Quickstarts.HistoricalEvents.Client.Model
     /// texts the list shows are computed here, before the event is raised, so the window
     /// only writes them into a row.
     /// </para>
+    /// <para>
+    /// The history itself is read and written through the <see cref="HistoryClient"/> of
+    /// the SDK - <c>session.Historian()</c> - which builds the details of every request
+    /// from the filter, follows the continuation points of a read, and lines the fields
+    /// of an event up with the select clauses of the filter in both directions: what a
+    /// read hands out and what an insert, replace or update sends are the same shape.
+    /// </para>
     /// </remarks>
     public sealed class HistoricalEventsClientModel : SampleClientModel
     {
@@ -150,6 +173,11 @@ namespace Quickstarts.HistoricalEvents.Client.Model
         /// the generated constants (they exist in the server assembly as well).
         /// </summary>
         public const string HistoricalEventsNamespaceUri = Namespaces.HistoricalEvents;
+
+        /// <summary>
+        /// How many events one page holds when the request puts no number on it.
+        /// </summary>
+        private const uint kDefaultPageSize = 1000;
 
         private EventStream m_stream;
 
@@ -306,14 +334,11 @@ namespace Quickstarts.HistoricalEvents.Client.Model
             // ten events of the last hour.
             DateTime start = DateTime.UtcNow.AddSeconds(30);
 
-            var details = new ReadEventDetails {
-                StartTime = start,
-                EndTime = start.AddHours(-1),
-                NumValuesPerNode = 10,
-                Filter = Filter.GetFilter(),
-            };
-
-            EventHistoryPage page = await ReadPageAsync(AreaId, Filter, details, default, ct).ConfigureAwait(false);
+            EventHistoryPage page = await ReadHistoryAsync(
+                AreaId,
+                Filter,
+                new EventHistoryRequest(start, start.AddHours(-1), 10),
+                ct).ConfigureAwait(false);
 
             foreach (EventRecord record in page.Events)
             {
@@ -332,6 +357,11 @@ namespace Quickstarts.HistoricalEvents.Client.Model
         /// <summary>
         /// Reads the first page of the event history of an area.
         /// </summary>
+        /// <remarks>
+        /// The history client walks the whole range as one sequence; the model pulls
+        /// one page of it at a time so that Go, Next and Stop keep meaning what they
+        /// always did in the window.
+        /// </remarks>
         /// <param name="areaId">The area.</param>
         /// <param name="filter">The filter which selects the events and their fields.</param>
         /// <param name="request">The range and the page size.</param>
@@ -345,14 +375,20 @@ namespace Quickstarts.HistoricalEvents.Client.Model
             ArgumentNullException.ThrowIfNull(filter);
             ArgumentNullException.ThrowIfNull(request);
 
-            var details = new ReadEventDetails {
-                StartTime = request.StartTime,
-                EndTime = request.EndTime,
-                NumValuesPerNode = request.MaxEvents,
-                Filter = filter.GetFilter(),
-            };
+            ISession session = RequireSession();
 
-            return ReadPageAsync(areaId, filter, details, default, ct);
+            IAsyncEnumerator<HistoryEventFieldList> reader = session.Historian().ReadEventsAsync(
+                areaId,
+                request.StartTime,
+                request.EndTime,
+                filter.GetFilter(),
+                request.MaxEvents,
+                TimestampsToReturn.Source,
+                ct).GetAsyncEnumerator(ct);
+
+            return ReadPageAsync(
+                new EventHistoryContinuation(areaId, filter, reader, request.MaxEvents != 0 ? request.MaxEvents : kDefaultPageSize),
+                ct);
         }
 
         /// <summary>
@@ -364,33 +400,25 @@ namespace Quickstarts.HistoricalEvents.Client.Model
         {
             ArgumentNullException.ThrowIfNull(continuation);
 
-            return ReadPageAsync(
-                continuation.AreaId,
-                continuation.Filter,
-                continuation.Details,
-                continuation.ContinuationPoint,
-                ct);
+            RequireSession();
+
+            return ReadPageAsync(continuation, ct);
         }
 
         /// <summary>
         /// Tells the server that the rest of a paged read is not wanted.
         /// </summary>
+        /// <remarks>
+        /// Abandoning the sequence of the history client is what releases the
+        /// continuation point the server is holding for it.
+        /// </remarks>
         /// <param name="continuation">What the last page handed back.</param>
         /// <param name="ct">The cancellation token.</param>
         public async Task ReleaseContinuationPointAsync(EventHistoryContinuation continuation, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(continuation);
 
-            ISession session = RequireSession();
-
-            var nodesToRead = new List<HistoryReadValueId> {
-                new HistoryReadValueId {
-                    NodeId = continuation.AreaId,
-                    ContinuationPoint = continuation.ContinuationPoint,
-                },
-            };
-
-            await HistoryReadAsync(session, continuation.Details, true, nodesToRead, ct).ConfigureAwait(false);
+            await continuation.DisposeAsync().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -408,49 +436,180 @@ namespace Quickstarts.HistoricalEvents.Client.Model
             // the beginning of time, with only its Time field selected. Both bounds are
             // given: the sample server applies the window [start, end) as it is and does
             // not treat a missing end as "up to now".
-            var details = new ReadEventDetails {
-                StartTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                EndTime = DateTime.UtcNow.AddDays(1),
-                NumValuesPerNode = 1,
-                Filter = new EventFilter(),
+            var filter = new EventFilter();
+            filter.AddSelectClause(Opc.Ua.ObjectTypeIds.BaseEventType, new QualifiedName(Opc.Ua.BrowseNames.Time));
+
+            // leaving the enumeration after the first event is what releases the
+            // continuation point the server opened for the rest.
+            await foreach (HistoryEventFieldList e in session.Historian().ReadEventsAsync(
+                areaId,
+                new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                DateTime.UtcNow.AddDays(1),
+                filter,
+                maxValuesPerNode: 1,
+                TimestampsToReturn.Source,
+                ct).ConfigureAwait(false))
+            {
+                // the Time field is a DateTimeUtc, which the Variant hands out as such, not
+                // as a DateTime.
+                if (e.EventFields.Count == 0 || !e.EventFields[0].TryGetValue(out DateTimeUtc eventTime))
+                {
+                    throw new ServiceResultException(StatusCodes.BadTypeMismatch);
+                }
+
+                return (DateTime)eventTime;
+            }
+
+            throw new ServiceResultException(StatusCodes.BadNoDataAvailable);
+        }
+
+        /// <summary>
+        /// Writes events into the history of an area.
+        /// </summary>
+        /// <remarks>
+        /// The fields of a record are the node id of the event followed by the fields
+        /// of the filter, which is how a read hands them out; the write sends the same
+        /// shape back with the same filter, so the server lines the fields up with the
+        /// select clauses the way it did when it produced them. Insert refuses an event
+        /// id the history already holds, Replace one it does not, and Update takes
+        /// either.
+        /// </remarks>
+        /// <param name="areaId">The area.</param>
+        /// <param name="filter">The filter the events were read with, or built for.</param>
+        /// <param name="events">The events.</param>
+        /// <param name="updateType">Whether to insert, replace or update.</param>
+        /// <param name="ct">The cancellation token.</param>
+        /// <returns>What the server answered for each event.</returns>
+        public async Task<IReadOnlyList<StatusCode>> WriteEventsAsync(
+            NodeId areaId,
+            FilterDeclaration filter,
+            IReadOnlyList<EventRecord> events,
+            PerformUpdateType updateType,
+            CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(filter);
+            ArgumentNullException.ThrowIfNull(events);
+
+            HistoryClient historian = RequireSession().Historian();
+
+            // a write carries the select clauses of the filter and nothing else: they
+            // are what lines the fields up, and a where clause has no meaning for an
+            // update - the history client refuses one. It refuses a standard field
+            // selected twice as well, and a filter built from a type declaration
+            // selects the fields of the base event type once for the base type and
+            // once more for the report type which inherits them, so a clause which
+            // repeats an earlier one is left out together with its field.
+            IList<SimpleAttributeOperand> selectClauses = filter.GetSelectClause();
+            List<int> kept = DistinctClauses(selectClauses);
+
+            var eventFilter = new EventFilter {
+                SelectClauses = kept.Select(index => selectClauses[index]).ToArray().ToArrayOf(),
             };
 
-            details.Filter.AddSelectClause(Opc.Ua.ObjectTypeIds.BaseEventType, new QualifiedName(Opc.Ua.BrowseNames.Time));
+            var fieldLists = new HistoryEventFieldList[events.Count];
 
-            var nodeToRead = new HistoryReadValueId { NodeId = areaId };
-            var nodesToRead = new List<HistoryReadValueId> { nodeToRead };
-
-            List<HistoryReadResult> results = await HistoryReadAsync(session, details, false, nodesToRead, ct).ConfigureAwait(false);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
+            for (int ii = 0; ii < events.Count; ii++)
             {
-                throw new ServiceResultException(results[0].StatusCode);
+                IReadOnlyList<Variant> fields = events[ii].Fields;
+
+                if (fields.Count != selectClauses.Count)
+                {
+                    throw ServiceResultException.Create(
+                        StatusCodes.BadInvalidArgument,
+                        "The event carries {0} fields, the filter selects {1}.",
+                        fields.Count,
+                        selectClauses.Count);
+                }
+
+                fieldLists[ii] = new HistoryEventFieldList {
+                    EventFields = kept.Select(index => fields[index]).ToArray().ToArrayOf(),
+                };
             }
 
-            var data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryEvent;
+            ArrayOf<StatusCode> results = updateType switch {
+                PerformUpdateType.Insert => await historian.InsertEventsAsync(areaId, eventFilter, fieldLists, ct).ConfigureAwait(false),
+                PerformUpdateType.Replace => await historian.ReplaceEventsAsync(areaId, eventFilter, fieldLists, ct).ConfigureAwait(false),
+                PerformUpdateType.Update => await historian.UpdateEventsAsync(areaId, eventFilter, fieldLists, ct).ConfigureAwait(false),
+                _ => throw new ArgumentOutOfRangeException(nameof(updateType), updateType, "Events are inserted, replaced or updated; Remove is what DeleteEventsAsync does."),
+            };
 
-            // release the continuation point.
-            if (!results[0].ContinuationPoint.IsNull)
+            return results.ToArray();
+        }
+
+        /// <summary>
+        /// The indexes of the select clauses which do not repeat an earlier one: the
+        /// first clause for each attribute and browse path, whichever type declared it.
+        /// </summary>
+        private static List<int> DistinctClauses(IList<SimpleAttributeOperand> selectClauses)
+        {
+            var kept = new List<int>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+
+            for (int ii = 0; ii < selectClauses.Count; ii++)
             {
-                nodeToRead.ContinuationPoint = results[0].ContinuationPoint;
+                SimpleAttributeOperand clause = selectClauses[ii];
 
-                await HistoryReadAsync(session, details, true, nodesToRead, ct).ConfigureAwait(false);
+                string identity = clause.AttributeId + "|" +
+                    string.Join("/", clause.BrowsePath.ToArray().Select(name => name.ToString())) + "|" +
+                    clause.IndexRange;
+
+                if (seen.Add(identity))
+                {
+                    kept.Add(ii);
+                }
             }
 
-            // check if an event found.
-            if (data == null || data.Events.Count == 0 || data.Events[0].EventFields.Count == 0)
+            return kept;
+        }
+
+        /// <summary>
+        /// Replaces one field of an event in the history of an area.
+        /// </summary>
+        /// <remarks>
+        /// The record is rewritten with the new value in place of the old one and sent
+        /// back as a replace, which keeps its event id and everything else about it.
+        /// </remarks>
+        /// <param name="areaId">The area.</param>
+        /// <param name="filter">The filter the event was read with.</param>
+        /// <param name="record">The event.</param>
+        /// <param name="browseName">The field to change.</param>
+        /// <param name="value">The new value of the field.</param>
+        /// <param name="ct">The cancellation token.</param>
+        /// <returns>The record as it was written, with the texts the list shows for it.</returns>
+        public async Task<EventRecord> ReplaceEventFieldAsync(
+            NodeId areaId,
+            FilterDeclaration filter,
+            EventRecord record,
+            QualifiedName browseName,
+            Variant value,
+            CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(filter);
+            ArgumentNullException.ThrowIfNull(record);
+
+            ISession session = RequireSession();
+
+            int index = IndexOfField(filter, browseName);
+
+            if (index < 0 || index >= record.Fields.Count)
             {
-                throw new ServiceResultException(StatusCodes.BadNoDataAvailable);
+                throw ServiceResultException.Create(StatusCodes.BadNotFound, "The filter does not select the field {0}.", browseName);
             }
 
-            // the Time field is a DateTimeUtc, which the Variant hands out as such, not as
-            // a DateTime.
-            if (!data.Events[0].EventFields[0].TryGetValue(out DateTimeUtc eventTime))
+            var fields = new List<Variant>(record.Fields) {
+                [index] = value,
+            };
+
+            EventRecord replacement = await CreateRecordAsync(session, filter, fields, ct).ConfigureAwait(false);
+
+            IReadOnlyList<StatusCode> results = await WriteEventsAsync(areaId, filter, new[] { replacement }, PerformUpdateType.Replace, ct).ConfigureAwait(false);
+
+            if (results.Count == 0 || StatusCode.IsBad(results[0]))
             {
-                throw new ServiceResultException(StatusCodes.BadTypeMismatch);
+                throw new ServiceResultException(results.Count == 0 ? StatusCodes.BadUnexpectedError : results[0]);
             }
 
-            return (DateTime)eventTime;
+            return replacement;
         }
 
         /// <summary>
@@ -469,7 +628,7 @@ namespace Quickstarts.HistoricalEvents.Client.Model
             ArgumentNullException.ThrowIfNull(filter);
             ArgumentNullException.ThrowIfNull(events);
 
-            ISession session = RequireSession();
+            HistoryClient historian = RequireSession().Historian();
 
             // can't delete events if no event id.
             if (!filter.Fields.Any(field => field.InstanceDeclaration.BrowseName == Opc.Ua.BrowseNames.EventId))
@@ -478,33 +637,20 @@ namespace Quickstarts.HistoricalEvents.Client.Model
             }
 
             // build list of events to delete.
-            var details = new DeleteEventDetails { NodeId = areaId };
+            var eventIds = new List<ByteString>();
 
             foreach (EventRecord record in events)
             {
                 filter.GetValue(new QualifiedName(Opc.Ua.BrowseNames.EventId), new List<Variant>(record.Fields)).TryGetValue(out ByteString eventId);
 
-                details.EventIds = details.EventIds.AddItem(eventId);
+                eventIds.Add(eventId);
             }
 
-            // delete the events.
-            var nodesToUpdate = new List<ExtensionObject> { new ExtensionObject(details) };
-
-            HistoryUpdateResponse response = await session.HistoryUpdateAsync(null, nodesToUpdate, ct).ConfigureAwait(false);
-
-            List<HistoryUpdateResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToUpdate);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToUpdate);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(results[0].StatusCode);
-            }
+            // delete the events; the client unpacks what the server answered per event.
+            ArrayOf<StatusCode> results = await historian.DeleteEventsAsync(areaId, eventIds.ToArray(), ct).ConfigureAwait(false);
 
             // check for item level errors.
-            int failed = results[0].OperationResults.ToArray().Count(StatusCode.IsBad);
+            int failed = results.ToArray().Count(StatusCode.IsBad);
 
             if (failed > 0)
             {
@@ -517,73 +663,51 @@ namespace Quickstarts.HistoricalEvents.Client.Model
         }
 
         /// <summary>
-        /// Reads one page of the event history of an area.
+        /// Pulls one page of events off the sequence of a read.
         /// </summary>
-        private async Task<EventHistoryPage> ReadPageAsync(
-            NodeId areaId,
-            FilterDeclaration filter,
-            ReadEventDetails details,
-            ByteString continuationPoint,
-            CancellationToken ct)
+        /// <remarks>
+        /// The sequence is exhausted when it hands out fewer events than the page
+        /// holds, and the continuation is disposed then - there is no continuation
+        /// point left to release. A full page keeps the continuation, and with it the
+        /// continuation point, for the next page.
+        /// </remarks>
+        private async Task<EventHistoryPage> ReadPageAsync(EventHistoryContinuation continuation, CancellationToken ct)
         {
             ISession session = RequireSession();
 
-            var nodesToRead = new List<HistoryReadValueId> {
-                new HistoryReadValueId { NodeId = areaId, ContinuationPoint = continuationPoint },
-            };
-
-            List<HistoryReadResult> results = await HistoryReadAsync(session, details, false, nodesToRead, ct).ConfigureAwait(false);
-
-            if (StatusCode.IsBad(results[0].StatusCode))
-            {
-                throw new ServiceResultException(results[0].StatusCode);
-            }
-
             var events = new List<EventRecord>();
+            bool exhausted = false;
 
-            if (ExtensionObject.ToEncodeable(results[0].HistoryData) is HistoryEvent data)
+            try
             {
-                foreach (HistoryEventFieldList e in data.Events.ToArray())
+                for (uint ii = 0; ii < continuation.PageSize; ii++)
                 {
-                    events.Add(await CreateRecordAsync(session, filter, e.EventFields.ToList(), ct).ConfigureAwait(false));
+                    if (!await continuation.Reader.MoveNextAsync().ConfigureAwait(false))
+                    {
+                        exhausted = true;
+                        break;
+                    }
+
+                    events.Add(await CreateRecordAsync(
+                        session,
+                        continuation.Filter,
+                        continuation.Reader.Current.EventFields.ToList(),
+                        ct).ConfigureAwait(false));
                 }
             }
-
-            EventHistoryContinuation continuation = null;
-
-            if (!results[0].ContinuationPoint.IsNull && results[0].ContinuationPoint.Length > 0)
+            catch
             {
-                continuation = new EventHistoryContinuation(areaId, filter, details, results[0].ContinuationPoint);
+                await continuation.DisposeAsync().ConfigureAwait(false);
+                throw;
+            }
+
+            if (exhausted)
+            {
+                await continuation.DisposeAsync().ConfigureAwait(false);
+                return new EventHistoryPage(events, null);
             }
 
             return new EventHistoryPage(events, continuation);
-        }
-
-        /// <summary>
-        /// Sends one HistoryRead request and validates the response.
-        /// </summary>
-        private static async Task<List<HistoryReadResult>> HistoryReadAsync(
-            ISession session,
-            ReadEventDetails details,
-            bool releaseContinuationPoints,
-            List<HistoryReadValueId> nodesToRead,
-            CancellationToken ct)
-        {
-            HistoryReadResponse response = await session.HistoryReadAsync(
-                null,
-                new ExtensionObject(details),
-                TimestampsToReturn.Source,
-                releaseContinuationPoints,
-                nodesToRead,
-                ct).ConfigureAwait(false);
-
-            List<HistoryReadResult> results = response.Results.ToList();
-            List<DiagnosticInfo> diagnosticInfos = response.DiagnosticInfos.ToList();
-
-            ClientBase.ValidateResponse(results, nodesToRead);
-            ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
-
-            return results;
         }
         #endregion
 
@@ -648,6 +772,28 @@ namespace Quickstarts.HistoricalEvents.Client.Model
         public Task SetLocaleAsync(string locale, CancellationToken ct = default)
         {
             return RequireSession().ChangePreferredLocalesAsync(new List<string> { locale }, ct);
+        }
+
+        /// <summary>
+        /// Where a field sits in the fields of a record: the node id of the event comes
+        /// first, the fields of the filter after it.
+        /// </summary>
+        /// <param name="filter">The filter.</param>
+        /// <param name="browseName">The field.</param>
+        /// <returns>The index into <see cref="EventRecord.Fields"/>, or -1 when the filter does not select the field.</returns>
+        public static int IndexOfField(FilterDeclaration filter, QualifiedName browseName)
+        {
+            ArgumentNullException.ThrowIfNull(filter);
+
+            for (int ii = 0; ii < filter.Fields.Count; ii++)
+            {
+                if (filter.Fields[ii].InstanceDeclaration.BrowseName == browseName)
+                {
+                    return ii + 1;
+                }
+            }
+
+            return -1;
         }
         #endregion
 

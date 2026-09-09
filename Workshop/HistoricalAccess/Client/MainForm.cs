@@ -28,6 +28,8 @@
  * ======================================================================*/
 
 using System;
+using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Windows.Forms;
 using Opc.Ua;
@@ -81,12 +83,19 @@ namespace Quickstarts.HistoricalAccess.Client
             // why the handlers below can touch the controls directly
             m_model = model ?? throw new ArgumentNullException(nameof(model));
             m_model.Error += Model_Error;
+            m_model.AuditEventReceived += Model_AuditEventReceived;
+
+            // the audit trail of the server shows in the status bar, one update at a
+            // time, next to what the connect control reports there.
+            m_auditLB = new ToolStripStatusLabel { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
+            StatusBar.Items.Add(m_auditLB);
         }
         #endregion
 
         #region Private Fields
         private readonly ITelemetryContext m_telemetry;
         private readonly HistoricalAccessClientModel m_model;
+        private readonly ToolStripStatusLabel m_auditLB;
         #endregion
 
         #region Overrides
@@ -268,6 +277,56 @@ namespace Quickstarts.HistoricalAccess.Client
             {
                 ClientUtils.HandleException(m_telemetry, this.Text, exception);
             }
+        }
+
+        /// <summary>
+        /// Starts or stops watching the audit events the server raises for history
+        /// updates.
+        /// </summary>
+        /// <remarks>
+        /// A server only reports them while auditing is switched on, and only to a
+        /// session on an encrypted channel - the connect control uses security by
+        /// default, which is why the events arrive here.
+        /// </remarks>
+        private async void Server_WatchAuditEventsMI_CheckedChangedAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                await m_model.SetWatchingAuditEventsAsync(Server_WatchAuditEventsMI.Checked);
+
+                m_auditLB.Text = Server_WatchAuditEventsMI.Checked
+                    ? "Watching the audit events of history updates."
+                    : String.Empty;
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(m_telemetry, this.Text, exception);
+            }
+        }
+
+        /// <summary>
+        /// Shows what the server reported about a history update.
+        /// </summary>
+        private void Model_AuditEventReceived(object sender, AuditEventReceivedEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            HistoryAuditRecord record = e.Record;
+
+            m_auditLB.Text = String.Format(
+                CultureInfo.InvariantCulture,
+                "{0:HH:mm:ss} {1}: {2} {3} on {4}, {5} new, {6} old, by {7}",
+                record.Time.ToLocalTime(),
+                record.Succeeded ? "audited" : "refused",
+                record.PerformInsertReplace?.ToString() ?? "delete",
+                record.NewValueCount > 0 ? "of " + record.NewValueCount : String.Empty,
+                record.UpdatedNode.IsNull ? "history" : record.UpdatedNode.ToString(),
+                record.NewValueCount,
+                record.OldValueCount,
+                record.ClientUserId ?? "anonymous");
         }
 
         /// <summary>

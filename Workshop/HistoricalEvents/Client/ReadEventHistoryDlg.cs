@@ -92,6 +92,7 @@ namespace Quickstarts.HistoricalEvents.Client
             // the list deletes through the model, with the area and filter of the dialog.
             ResultsLV.Telemetry = m_model.Telemetry;
             ResultsLV.DeleteEvents = (events, token) => m_model.DeleteEventsAsync(m_areaId, m_filter, events, token);
+            ResultsLV.ReplaceEventField = (record, field, value, token) => m_model.ReplaceEventFieldAsync(m_areaId, m_filter, record, field, value, token);
             ResultsLV.SetColumns(m_filter);
 
             // get the beginning of data.
