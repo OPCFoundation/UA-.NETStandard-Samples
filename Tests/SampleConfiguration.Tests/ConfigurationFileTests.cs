@@ -86,6 +86,8 @@ namespace Opc.Ua.Samples.Tests
             {
                 // Samples/ReferenceServer/ReferenceServerHosting.cs
                 "Samples/ReferenceServer/Quickstarts.ReferenceServer.Config.xml",
+                // Workshop/DurableSubscription/Server/DurableSubscriptionServerHosting.cs
+                "Workshop/DurableSubscription/Server/Quickstarts.DurableSubscriptionServer.Config.xml",
                 // Samples/Server.Net4/Program.cs
                 "Samples/Server.Net4/Opc.Ua.SampleServer.Config.xml",
                 // Samples/Client.Net4/Program.cs

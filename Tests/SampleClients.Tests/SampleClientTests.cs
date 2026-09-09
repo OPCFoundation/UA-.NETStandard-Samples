@@ -135,8 +135,11 @@ namespace Opc.Ua.Samples.Tests
             // through a modal dialog, so it cannot be driven by the loop above - it has its
             // own fixture in SampleClientFormTests instead. The GDS client hosts no connect
             // control either and needs two servers, so it has one in GdsClientTests. The
-            // aggregation client also needs more than one server and is still open.
-            string[] expectedGaps = ["Aggregation", "Gds", "Sample"];
+            // aggregation client also needs more than one server and is still open. The
+            // durable subscription client hosts no shared connect control and, by design,
+            // persists its subscription and restarts its own process, which the shared loop
+            // cannot drive.
+            string[] expectedGaps = ["Aggregation", "DurableSubscription", "Gds", "Sample"];
 
             IEnumerable<string> uncovered = SampleCatalog.Clients
                 .Select(sample => sample.Name)
