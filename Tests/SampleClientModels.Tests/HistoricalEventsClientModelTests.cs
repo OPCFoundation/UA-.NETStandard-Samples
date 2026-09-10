@@ -19,6 +19,9 @@ using Quickstarts.HistoricalEvents.Client.Model;
 
 namespace Opc.Ua.Samples.Tests
 {
+    // the SDK has an EventRecord of its own in Opc.Ua; the one the model hands out is meant.
+    using EventRecord = Quickstarts.HistoricalEvents.Client.Model.EventRecord;
+
     /// <summary>
     /// What the Historical Events client exists to show, asked of its model without the
     /// window: the well test reports of the platforms arrive live and are read back from
@@ -149,6 +152,96 @@ namespace Opc.Ua.Samples.Tests
             {
                 await Model.ReleaseContinuationPointAsync(next.Continuation, ct).ConfigureAwait(false);
             }
+        }
+
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AReportIsWrittenAndRewrittenThroughTheModel(CancellationToken ct)
+        {
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            NodeId platforms = Model.AreaId;
+            FilterDeclaration filter = Model.Filter;
+            ushort ns = NamespaceIndex(HistoricalEventsClientModel.HistoricalEventsNamespaceUri);
+
+            // a report the simulation generated is the template: the same fields in the
+            // same order, with an event id and a time of our own
+            EventHistoryPage page = await Poll.UntilAsync(
+                token => Model.ReadHistoryAsync(platforms, filter, new EventHistoryRequest(kHistoryStart, kHistoryEnd, 1), token),
+                candidate => candidate.Events.Count >= 1,
+                "the event history to hold a generated report",
+                kEventTimeout,
+                ct: ct).ConfigureAwait(false);
+
+            if (page.HasMore)
+            {
+                await Model.ReleaseContinuationPointAsync(page.Continuation, ct).ConfigureAwait(false);
+            }
+
+            int eventIdIndex = HistoricalEventsClientModel.IndexOfField(filter, new QualifiedName(Opc.Ua.BrowseNames.EventId));
+            int timeIndex = HistoricalEventsClientModel.IndexOfField(filter, new QualifiedName(Opc.Ua.BrowseNames.Time));
+            int reasonIndex = HistoricalEventsClientModel.IndexOfField(filter, new QualifiedName("TestReason", ns));
+
+            Assert.That(eventIdIndex, Is.GreaterThan(0), "The default filter selects the EventId.");
+            Assert.That(timeIndex, Is.GreaterThan(0), "The default filter selects the Time.");
+            Assert.That(reasonIndex, Is.GreaterThan(0), "The default filter selects the TestReason of a report.");
+
+            ByteString eventId = Guid.NewGuid().ToByteArray().ToByteString();
+            DateTime raised = new DateTime(2021, 3, 1, 12, 0, 0, DateTimeKind.Utc).AddSeconds(DateTime.UtcNow.Second);
+
+            var fields = new List<Variant>(page.Events[0].Fields) {
+                [eventIdIndex] = Variant.From(eventId),
+                [timeIndex] = Variant.From((DateTimeUtc)raised),
+                [reasonIndex] = Variant.From("written by the model tests"),
+            };
+
+            var report = new EventRecord(fields, page.Events[0].DisplayTexts);
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    "Select clauses of the filter: " +
+                    string.Join(" | ", filter.GetSelectClause().Select(clause =>
+                        $"{clause.TypeDefinitionId}:{clause.AttributeId}:{string.Join("/", clause.BrowsePath.ToArray().Select(name => name.ToString()))}")))
+                .ConfigureAwait(false);
+
+            IReadOnlyList<StatusCode> inserted = await Model
+                .WriteEventsAsync(platforms, filter, [report], PerformUpdateType.Insert, ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out.WriteLineAsync($"Inserted through the model: {string.Join(", ", inserted)}").ConfigureAwait(false);
+
+            Assert.That(inserted[0], Is.EqualTo((StatusCode)StatusCodes.GoodEntryInserted), "The model inserts a report through the history client.");
+
+            EventRecord rewritten = await Model
+                .ReplaceEventFieldAsync(platforms, filter, report, new QualifiedName("TestReason", ns), Variant.From("corrected by the model tests"), ct)
+                .ConfigureAwait(false);
+
+            Assert.That(rewritten.Fields[reasonIndex].TryGetValue(out string reason) ? reason : null, Is.EqualTo("corrected by the model tests"));
+
+            EventHistoryPage readBack = await Model
+                .ReadHistoryAsync(platforms, filter, new EventHistoryRequest(raised.AddSeconds(-1), raised.AddSeconds(1), 0), ct)
+                .ConfigureAwait(false);
+
+            EventRecord stored = readBack.Events.FirstOrDefault(candidate =>
+                candidate.Fields[eventIdIndex].TryGetValue(out ByteString id) && id == eventId);
+
+            Assert.That(stored, Is.Not.Null, "The report which was written is read back under its event id.");
+
+            Assert.That(
+                stored.Fields[reasonIndex].TryGetValue(out string storedReason) ? storedReason : null,
+                Is.EqualTo("corrected by the model tests"),
+                "The replace rewrote the field in the history.");
+
+            await Model.DeleteEventsAsync(platforms, filter, [stored], ct).ConfigureAwait(false);
+
+            EventHistoryPage afterwards = await Model
+                .ReadHistoryAsync(platforms, filter, new EventHistoryRequest(raised.AddSeconds(-1), raised.AddSeconds(1), 0), ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                afterwards.Events.Any(candidate => candidate.Fields[eventIdIndex].TryGetValue(out ByteString id) && id == eventId),
+                Is.False,
+                "The report which was deleted is gone from the history.");
         }
 
         [Test]

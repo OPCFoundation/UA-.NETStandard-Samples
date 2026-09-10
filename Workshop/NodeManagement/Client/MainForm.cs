@@ -63,6 +63,7 @@ namespace Quickstarts.NodeManagement.Client
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62575/Quickstarts/NodeManagementServer";
             this.Text = configuration.ApplicationName;
 

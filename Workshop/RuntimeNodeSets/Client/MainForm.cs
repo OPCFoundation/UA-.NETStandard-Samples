@@ -57,6 +57,7 @@ namespace Quickstarts.RuntimeNodeSets.Client
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62579/Quickstarts/RuntimeNodeSetsServer";
             this.Text = configuration.ApplicationName;
 

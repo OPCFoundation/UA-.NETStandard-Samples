@@ -72,6 +72,7 @@ namespace Quickstarts.Boiler.Client
             this.Icon = ClientUtils.GetAppIcon();
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62567/Quickstarts/BoilerServer";
             this.Text = configuration.ApplicationName;
             m_telemetry = telemetry;

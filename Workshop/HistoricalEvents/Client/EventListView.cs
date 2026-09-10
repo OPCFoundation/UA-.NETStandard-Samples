@@ -65,6 +65,7 @@ namespace Quickstarts.HistoricalEvents.Client
 
         #region Private Fields
         private FilterDeclaration m_filter;
+        private int m_clickedColumn = -1;
         #endregion
 
         #region Public Members
@@ -81,6 +82,14 @@ namespace Quickstarts.HistoricalEvents.Client
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Func<IReadOnlyList<EventRecord>, CancellationToken, Task> DeleteEvents { get; set; }
+
+        /// <summary>
+        /// Replaces one field of an event in the history: the event, the field and its
+        /// new value go in, the event as it was written comes back.
+        /// </summary>
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public Func<EventRecord, QualifiedName, Variant, CancellationToken, Task<EventRecord>> ReplaceEventField { get; set; }
 
         /// <summary>
         /// Rebuilds the columns for a filter: one for every field the filter shows in the
@@ -174,6 +183,23 @@ namespace Quickstarts.HistoricalEvents.Client
         }
 
         /// <summary>
+        /// The field of the filter a column of the list shows.
+        /// </summary>
+        /// <remarks>
+        /// The list shows the fields the filter marks for it, in the order of the
+        /// filter, so the n-th column is the n-th such field.
+        /// </remarks>
+        private FilterDeclarationField FieldOfColumn(int column)
+        {
+            if (m_filter == null || column < 0)
+            {
+                return null;
+            }
+
+            return m_filter.Fields.Where(field => field.DisplayInList).ElementAtOrDefault(column);
+        }
+
+        /// <summary>
         /// The events behind the selected rows.
         /// </summary>
         private List<EventRecord> SelectedEvents()
@@ -193,6 +219,78 @@ namespace Quickstarts.HistoricalEvents.Client
         #endregion
 
         #region Event Handlers
+        /// <summary>
+        /// Remembers which cell the menu was opened on, so that Edit Field knows
+        /// which field is meant.
+        /// </summary>
+        private void PopupMenu_Opening(object sender, CancelEventArgs e)
+        {
+            ListViewHitTestInfo hit = EventsLV.HitTest(EventsLV.PointToClient(Control.MousePosition));
+
+            m_clickedColumn = hit.Item != null && hit.SubItem != null
+                ? hit.Item.SubItems.IndexOf(hit.SubItem)
+                : -1;
+
+            EditFieldMI.Enabled = ReplaceEventField != null && FieldOfColumn(m_clickedColumn) != null;
+        }
+
+        /// <summary>
+        /// Replaces the field of the event under the menu with a value the user types.
+        /// </summary>
+        /// <remarks>
+        /// The event is rewritten in the history as a whole - a replace keeps its
+        /// event id and every other field - and the row shows what was written.
+        /// </remarks>
+        private async void EditFieldMI_ClickAsync(object sender, EventArgs e)
+        {
+            try
+            {
+                FilterDeclarationField field = FieldOfColumn(m_clickedColumn);
+
+                if (field == null || ReplaceEventField == null || EventsLV.SelectedItems.Count == 0)
+                {
+                    return;
+                }
+
+                ListViewItem item = EventsLV.SelectedItems[0];
+
+                if (item.Tag is not EventRecord record)
+                {
+                    return;
+                }
+
+                int index = HistoricalEventsClientModel.IndexOfField(m_filter, field.InstanceDeclaration.BrowseName);
+
+                if (index < 0 || index >= record.Fields.Count)
+                {
+                    return;
+                }
+
+                using var dialog = Windows.Create<SetValueDlg>();
+                Variant? value = dialog.ShowDialog(record.Fields[index], field.InstanceDeclaration.BuiltInType);
+
+                if (value == null)
+                {
+                    return;
+                }
+
+                EventRecord written = await ReplaceEventField(record, field.InstanceDeclaration.BrowseName, value.Value, CancellationToken.None);
+
+                item.Tag = written;
+
+                for (int ii = 0; ii < written.DisplayTexts.Count && ii < item.SubItems.Count; ii++)
+                {
+                    item.SubItems[ii].Text = written.DisplayTexts[ii];
+                }
+
+                AdjustColumns();
+            }
+            catch (Exception exception)
+            {
+                ClientUtils.HandleException(Telemetry, this.Text, exception);
+            }
+        }
+
         private void ViewDetailsMI_Click(object sender, EventArgs e)
         {
             try

@@ -131,6 +131,15 @@
     </AvailableSamplingRates>
     <MaxRegistrationInterval>30000</MaxRegistrationInterval>
     <NodeManagerSaveFile>Quickstarts.HistoricalEventsServer.nodes.xml</NodeManagerSaveFile>
+
+    <!--
+    Part 11 asks a server to audit every HistoryUpdate, and the dispatcher of the stack
+    reports the audit event for each one - with the events the update displaced - but
+    only while auditing is switched on. Without this flag an update which should be
+    audited looks exactly like one which is not, so the sample turns it on and the
+    sample client subscribes to the events it produces.
+    -->
+    <AuditingEnabled>true</AuditingEnabled>
   </ServerConfiguration>
 
   <Extensions>

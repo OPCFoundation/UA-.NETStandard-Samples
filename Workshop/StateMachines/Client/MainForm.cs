@@ -85,6 +85,7 @@ namespace Quickstarts.StateMachines.Client
 
             m_telemetry = telemetry;
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62571/Quickstarts/StateMachinesServer";
             this.Text = configuration.ApplicationName;
 

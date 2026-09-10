@@ -225,6 +225,27 @@ namespace Opc.Ua.Client.Controls
         }
 
         /// <summary>
+        /// The telemetry context of the client.
+        /// </summary>
+        /// <remarks>
+        /// Set it together with <see cref="Configuration"/>: the Connect button of the
+        /// control creates the session with it, and would otherwise only have the context
+        /// of an earlier <see cref="ConnectAsync(ITelemetryContext, string, bool, uint, CancellationToken)"/>
+        /// from the window, which a click on the button may well come before.
+        /// </remarks>
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public ITelemetryContext Telemetry
+        {
+            get => m_telemetry;
+
+            set
+            {
+                m_telemetry = value;
+                m_logger = value?.CreateLogger<ConnectServerCtrl>();
+            }
+        }
+
+        /// <summary>
         /// The currently active session.
         /// </summary>
         public ISession Session => m_connection.Session;
@@ -346,8 +367,7 @@ namespace Opc.Ua.Client.Controls
                 UseSecurityCK.Checked = useSecurity;
             }
 
-            m_telemetry = telemetry;
-            m_logger = telemetry?.CreateLogger<ConnectServerCtrl>();
+            Telemetry = telemetry;
 
             return m_connection.ConnectAsync(serverUrl, useSecurity, telemetry, sessionTimeout, ct);
         }
@@ -379,8 +399,7 @@ namespace Opc.Ua.Client.Controls
             UrlCB.Text = connection.EndpointUrl.ToString();
             UseSecurityCK.Checked = useSecurity;
 
-            m_telemetry = telemetry;
-            m_logger = telemetry?.CreateLogger<ConnectServerCtrl>();
+            Telemetry = telemetry;
 
             // the security of the session follows the check box, the way it always has:
             // the discovery of the first reverse hello is what the argument steers.
@@ -574,6 +593,12 @@ namespace Opc.Ua.Client.Controls
         {
             try
             {
+                if (m_telemetry == null)
+                {
+                    throw new InvalidOperationException(
+                        "The window did not set the Telemetry of the connect control before the Connect button was used.");
+                }
+
                 // Await directly so that continuations resume on the UI thread's
                 // SynchronizationContext, keeping all control access thread-safe.
                 await this.ConnectAsync(m_telemetry, ServerUrl, UseSecurityCK.Checked);

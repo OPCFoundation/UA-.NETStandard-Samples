@@ -140,6 +140,7 @@ namespace Opc.Ua.Client.Controls
             }
 
             ServerCTRL.Configuration = configuration;
+            ServerCTRL.Telemetry = m_telemetry;
             ServerCTRL.SetAvailableUrls(urls);
 
             try

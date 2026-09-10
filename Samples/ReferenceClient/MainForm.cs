@@ -79,6 +79,7 @@ namespace Quickstarts.ReferenceClient
 
             m_reverseConnectListeners = reverseConnectListeners;
             ConnectServerCTRL.Configuration = m_configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62541/Quickstarts/ReferenceServer";
             this.Text = m_configuration.ApplicationName;
             m_telemetry = telemetry;

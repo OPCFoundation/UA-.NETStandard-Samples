@@ -63,6 +63,7 @@ namespace Quickstarts.AliasNames.Client
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62577/Quickstarts/AliasNamesServer";
             this.Text = configuration.ApplicationName;
 

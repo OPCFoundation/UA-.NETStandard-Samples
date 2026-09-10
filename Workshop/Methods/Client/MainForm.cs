@@ -72,6 +72,7 @@ namespace Quickstarts.MethodsClient
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62557/Quickstarts/MethodsServer";
             this.Text = configuration.ApplicationName;
 

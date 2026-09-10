@@ -32,6 +32,12 @@ namespace Opc.Ua.Samples.Tests
         public IReadOnlyList<DataValue> Values { get; init; } = [];
 
         /// <summary>
+        /// What was done to each value, when and by whom; one entry per value for a
+        /// modified read, empty for every other read.
+        /// </summary>
+        public IReadOnlyList<ModificationInfo> ModificationInfos { get; init; } = [];
+
+        /// <summary>
         /// The events which were read, empty for a data read.
         /// </summary>
         public IReadOnlyList<HistoryEventFieldList> Events { get; init; } = [];
@@ -395,6 +401,7 @@ namespace Opc.Ua.Samples.Tests
                 StatusCode = result.StatusCode,
                 ContinuationPoint = result.ContinuationPoint,
                 Values = payload is HistoryData data ? data.DataValues.ToArray() : [],
+                ModificationInfos = payload is HistoryModifiedData modified ? modified.ModificationInfos.ToArray() : [],
                 Events = payload is HistoryEvent events ? events.Events.ToArray() : [],
             };
         }

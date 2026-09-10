@@ -36,19 +36,44 @@ using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
 using Opc.Ua.Server.Historian;
+using Opc.Ua.Server.Historian.InMemory;
 
 namespace Quickstarts.HistoricalAccessServer
 {
     /// <summary>
     /// A node manager for a server that exposes a file based archive of recorded
-    /// values through the history services.
+    /// values through the history services, next to a handful of live variables
+    /// whose history the SDK captures for it.
     /// </summary>
     /// <remarks>
-    /// The address space is built by hand from the archive folders and files. The
-    /// history services themselves are not implemented here any more: the manager
-    /// registers an <see cref="ArchiveHistorianProvider"/> for its namespace, and
-    /// the <see cref="AsyncCustomNodeManager"/> base class routes every HistoryRead
-    /// and HistoryUpdate through the SDK's historian dispatcher to that provider.
+    /// <para>
+    /// The address space is built by hand. The history services themselves are not
+    /// implemented here: the <see cref="AsyncCustomNodeManager"/> base class routes
+    /// every HistoryRead and HistoryUpdate through the historian dispatcher of the
+    /// SDK, which resolves a provider for the node the request names.
+    /// </para>
+    /// <para>
+    /// Two providers serve this one namespace, which is what makes the resolution
+    /// order visible. The <c>Sample</c> and <c>Dynamic</c> folders hold archive items
+    /// backed by files and served by the <see cref="ArchiveHistorianProvider"/> of the
+    /// sample, registered for the namespace. The <c>Live</c> folder holds variables
+    /// backed by nothing but the in-memory engine which ships with the SDK, registered
+    /// as the default of the server and, because they share the namespace of the
+    /// archive, for each of them by node id - a node binding wins over a namespace
+    /// binding, which wins over the default. Before the registry is even asked, the
+    /// <see cref="GetHistorianProvider"/> override of this manager answers for the
+    /// nodes it recognises as its own archive items.
+    /// </para>
+    /// <para>
+    /// The live variables are the quick-start path of the SDK: nothing is written for
+    /// them but the variable itself. <c>HistorizeAsync</c> installs their
+    /// <c>HistoricalDataConfiguration</c> companion object from the capabilities the
+    /// provider reports, and every value the simulation publishes - or a client
+    /// writes - is captured into the archive on its way through
+    /// <see cref="NodeState.ClearChangeMasks"/>. One of them stores structured
+    /// history: several readings at one instant, told apart by a key inside the
+    /// value.
+    /// </para>
     /// </remarks>
     public class HistoricalAccessServerNodeManager : AsyncCustomNodeManager
     {
@@ -92,6 +117,12 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// An overrideable version of the Dispose.
         /// </summary>
+        /// <remarks>
+        /// The historian builders are not disposed here. They registered themselves
+        /// with the server when they were created, and the server drains their
+        /// capture pipelines - the samples still queued for the live variables - when
+        /// it shuts down.
+        /// </remarks>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -117,6 +148,9 @@ namespace Quickstarts.HistoricalAccessServer
         /// have NodeIds assigned to them. This implementation constructs NodeIds by constructing
         /// strings. Other implementations could assign unique integers or Guids and save the new
         /// Node in a dictionary for later lookup.
+        ///
+        /// The HistoricalDataConfiguration objects the SDK installs beside the historized
+        /// variables - and the properties below them - come through here as well.
         /// </remarks>
         public override NodeId New(ISystemContext context, NodeState node)
         {
@@ -139,14 +173,30 @@ namespace Quickstarts.HistoricalAccessServer
         {
             await base.CreateAddressSpaceAsync(externalReferences, cancellationToken).ConfigureAwait(false);
 
-            // register the historian for every node of the namespace. the base class
-            // resolves it through this registry when it dispatches the history
-            // services, and the diagnostics node manager rolls the provider
-            // capabilities up into the HistoryServerCapabilities node - which this
-            // method used to populate by hand - once every address space exists.
-            Server.UseHistorian()
+            // the file archive, registered for every node of the namespace. the base
+            // class resolves it through this registry when it dispatches the history
+            // services, and the diagnostics node manager rolls the capabilities of
+            // every registered provider up into the HistoryServerCapabilities node.
+            // this has to happen here: once every address space exists the server
+            // reconciles what each variable advertises against the providers which
+            // are registered, and clears the history bits of a variable nobody
+            // answers for.
+            m_archiveHistorian = Server.UseHistorian()
                 .UseProvider(m_historian)
                 .RegisterForNamespace(Namespaces.HistoricalAccess);
+
+            // the in-memory engine of the SDK, registered as the default of the server:
+            // it answers for any historizing node no other binding claims. the live
+            // variables below share the namespace of the archive, so each of them is
+            // also bound by node id, which is the binding which wins.
+            m_liveHistorian = Server.UseHistorian()
+                .UseInMemoryProvider(new InMemoryHistorianOptions {
+                    RawDataRetentionPeriod = TimeSpan.FromHours(1),
+                    DefaultCapabilities = s_liveCapabilities
+                })
+                .RegisterAsDefault();
+
+            m_liveProvider = (InMemoryHistorianProvider)m_liveHistorian.Provider;
 
             IList<IReference> references = null;
 
@@ -161,28 +211,48 @@ namespace Quickstarts.HistoricalAccessServer
             references.Add(new NodeStateReference(ReferenceTypeIds.Organizes, false, root.NodeId));
             root.AddReference(ReferenceTypeIds.Organizes, true, ObjectIds.ObjectsFolder);
 
-            CreateFolderFromResources(root, "Sample");
-            CreateFolderFromResources(root, "Dynamic");
+            await CreateFolderFromResourcesAsync(root, "Sample", cancellationToken).ConfigureAwait(false);
+            await CreateFolderFromResourcesAsync(root, "Dynamic", cancellationToken).ConfigureAwait(false);
+            await CreateLiveFolderAsync(root, cancellationToken).ConfigureAwait(false);
+
+            // the simulation runs for as long as the server does: the live variables
+            // publish whether or not anybody is watching, which is what makes their
+            // captured history worth reading when a client turns up.
+            m_simulationTimer = m_timeProvider.CreateTimer(
+                DoSimulation,
+                null,
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(1));
+        }
+
+        /// <summary>
+        /// Creates a folder, linked below the root of the archive.
+        /// </summary>
+        private FolderState CreateFolder(NodeState root, string folderName)
+        {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the address space/predefined node collection.
+            FolderState folder = new FolderState(root);
+#pragma warning restore CA2000
+            folder.ReferenceTypeId = ReferenceTypeIds.Organizes;
+            folder.TypeDefinitionId = ObjectTypeIds.FolderType;
+            folder.NodeId = new NodeId(folderName, NamespaceIndex);
+            folder.BrowseName = new QualifiedName(folderName, NamespaceIndex);
+            folder.DisplayName = new LocalizedText(folder.BrowseName.Name);
+            folder.WriteMask = AttributeWriteMask.None;
+            folder.UserWriteMask = AttributeWriteMask.None;
+            folder.EventNotifier = EventNotifiers.None;
+            root.AddChild(folder);
+            AddPredefinedNodeSynchronously(root);
+
+            return folder;
         }
 
         /// <summary>
         /// Creates items from embedded resources.
         /// </summary>
-        private void CreateFolderFromResources(NodeState root, string folderName)
+        private async ValueTask CreateFolderFromResourcesAsync(NodeState root, string folderName, CancellationToken cancellationToken)
         {
-#pragma warning disable CA2000 // Justification: ownership is transferred to the address space/predefined node collection.
-            FolderState dataFolder = new FolderState(root);
-#pragma warning restore CA2000
-            dataFolder.ReferenceTypeId = ReferenceTypeIds.Organizes;
-            dataFolder.TypeDefinitionId = ObjectTypeIds.FolderType;
-            dataFolder.NodeId = new NodeId(folderName, NamespaceIndex);
-            dataFolder.BrowseName = new QualifiedName(folderName, NamespaceIndex);
-            dataFolder.DisplayName = new LocalizedText(dataFolder.BrowseName.Name);
-            dataFolder.WriteMask = AttributeWriteMask.None;
-            dataFolder.UserWriteMask = AttributeWriteMask.None;
-            dataFolder.EventNotifier = EventNotifiers.None;
-            root.AddChild(dataFolder);
-            AddPredefinedNodeSynchronously(root);
+            FolderState dataFolder = CreateFolder(root, folderName);
 
             foreach (string resourcePath in Assembly.GetExecutingAssembly().GetManifestResourceNames())
             {
@@ -201,11 +271,209 @@ namespace Quickstarts.HistoricalAccessServer
                 // item - and its capabilities - by node id like any other.
                 m_system.RegisterItemState(node);
 
+                // install the companion object which describes the recording, before
+                // the item and its children are added to the address space.
+                await HistorizeArchiveItemAsync(node, cancellationToken).ConfigureAwait(false);
+
                 dataFolder.AddReference(ReferenceTypeIds.Organizes, false, node.NodeId);
                 node.AddReference(ReferenceTypeIds.Organizes, true, dataFolder.NodeId);
 
                 AddPredefinedNodeSynchronously(node);
             }
+        }
+
+        /// <summary>
+        /// Hands an archive item to the historian builder of the SDK.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// What the builder does with it: it makes sure the item advertises its
+        /// history, and it installs the <c>HistoricalDataConfigurationType</c>
+        /// companion object from what the provider reports for the item - the
+        /// stepped flag, the sampling interval, the start of the archive and the
+        /// aggregate configuration, all of which come from the archive file.
+        /// </para>
+        /// <para>
+        /// What it deliberately does not do: it leaves the Historizing attribute
+        /// alone (<c>setHistorizing: false</c>) because the archive owns it - a
+        /// finished recording says false, a recording still being appended to says
+        /// true - and it attaches no automatic capture, because the archive fills
+        /// itself from its files. The fluent builder of a source-generated manager
+        /// spells the same choice <c>historizing: null</c>.
+        /// </para>
+        /// </remarks>
+        private async ValueTask HistorizeArchiveItemAsync(ArchiveItemState item, CancellationToken cancellationToken)
+        {
+            if (item.IsHistorized)
+            {
+                return;
+            }
+
+            await m_archiveHistorian.HistorizeAsync(
+                item,
+                SystemContext,
+                setHistorizing: false,
+                autoCapture: false,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            item.IsHistorized = true;
+        }
+
+        /// <summary>
+        /// Creates the live variables, whose history the SDK keeps for the sample.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <c>Temperature</c> is what the simulation publishes once a second, and is
+        /// the plain case: a scalar with a history the capture pipeline fills.
+        /// <c>Setpoint</c> is written by clients, and shows that a Write through the
+        /// service is captured the same way. <c>LabSample</c> holds structured
+        /// history: every few seconds the simulation records three readings of one
+        /// sample at the same instant, each a <see cref="KeyValuePair"/>, and the
+        /// key inside the value is what tells them apart in the archive.
+        /// </para>
+        /// <para>
+        /// Each of them is historized with the capabilities the provider should
+        /// report for it. That is where the companion object gets its values from,
+        /// and where the dispatcher reads what it may let a client do.
+        /// </para>
+        /// </remarks>
+        private async ValueTask CreateLiveFolderAsync(NodeState root, CancellationToken cancellationToken)
+        {
+            FolderState liveFolder = CreateFolder(root, "Live");
+
+            m_temperature = CreateLiveVariable(liveFolder, "Temperature", DataTypeIds.Double, Variant.From(20.0));
+            m_temperature.Description = new LocalizedText("A simulated reading; every published value is captured into the history.");
+
+            await HistorizeLiveVariableAsync(
+                m_temperature,
+                s_liveCapabilities with {
+                    Definition = "Simulated, captured from the published value",
+                    StartOfOnlineArchive = m_timeProvider.GetUtcNow().UtcDateTime
+                },
+                cancellationToken).ConfigureAwait(false);
+
+            m_setpoint = CreateLiveVariable(liveFolder, "Setpoint", DataTypeIds.Double, Variant.From(50.0));
+            m_setpoint.Description = new LocalizedText("Written by clients; every write is captured into the history.");
+            m_setpoint.AccessLevel |= AccessLevels.CurrentWrite;
+            m_setpoint.UserAccessLevel |= AccessLevels.CurrentWrite;
+
+            await HistorizeLiveVariableAsync(
+                m_setpoint,
+                s_liveCapabilities with {
+                    Definition = "Captured from the writes of clients",
+                    StartOfOnlineArchive = m_timeProvider.GetUtcNow().UtcDateTime
+                },
+                cancellationToken).ConfigureAwait(false);
+
+            m_labSample = CreateLiveVariable(liveFolder, "LabSample", DataTypeIds.KeyValuePair, Variant.Null);
+            m_labSample.Description = new LocalizedText("Several readings per instant, told apart by the key of the value.");
+
+            // the archive of a structured variable keys its entries by the source
+            // timestamp and the Key of the KeyValuePair, so that three readings of
+            // one sample can share the instant it was taken at.
+            m_liveProvider.RegisterStructured(
+                m_labSample.NodeId,
+                KeyValuePairStructuredDataKeySelector.Instance,
+                s_structuredCapabilities);
+
+            await HistorizeLiveVariableAsync(
+                m_labSample,
+                s_structuredCapabilities with {
+                    StartOfOnlineArchive = m_timeProvider.GetUtcNow().UtcDateTime
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Creates one live variable with the Annotations property beside it.
+        /// </summary>
+        /// <remarks>
+        /// The builder would create the Annotations property itself for a provider
+        /// which accepts annotations, but it names it after the node id of the
+        /// variable; building it here gives it a node id of the sample's own scheme,
+        /// and the builder reuses what it finds.
+        /// </remarks>
+        private BaseDataVariableState CreateLiveVariable(NodeState parent, string name, NodeId dataType, Variant initialValue)
+        {
+#pragma warning disable CA2000 // Justification: ownership is transferred to the address space/predefined node collection.
+            BaseDataVariableState variable = new BaseDataVariableState(parent);
+#pragma warning restore CA2000
+            variable.ReferenceTypeId = ReferenceTypeIds.Organizes;
+            variable.TypeDefinitionId = VariableTypeIds.BaseDataVariableType;
+            variable.SymbolicName = name;
+            variable.NodeId = new NodeId("Live/" + name, NamespaceIndex);
+            variable.BrowseName = new QualifiedName(name, NamespaceIndex);
+            variable.DisplayName = new LocalizedText(name);
+            variable.WriteMask = AttributeWriteMask.None;
+            variable.UserWriteMask = AttributeWriteMask.None;
+            variable.DataType = dataType;
+            variable.ValueRank = ValueRanks.Scalar;
+            variable.AccessLevel = AccessLevels.CurrentRead;
+            variable.UserAccessLevel = AccessLevels.CurrentRead;
+            variable.MinimumSamplingInterval = MinimumSamplingIntervals.Continuous;
+            variable.WrappedValue = initialValue;
+            variable.StatusCode = StatusCodes.Good;
+            variable.Timestamp = m_timeProvider.GetUtcNow().UtcDateTime;
+
+            PropertyState annotations = new PropertyState(variable);
+            annotations.ReferenceTypeId = ReferenceTypeIds.HasProperty;
+            annotations.TypeDefinitionId = VariableTypeIds.PropertyType;
+            annotations.SymbolicName = Opc.Ua.BrowseNames.Annotations;
+            annotations.BrowseName = new QualifiedName(Opc.Ua.BrowseNames.Annotations);
+            annotations.DisplayName = new LocalizedText(annotations.BrowseName.Name);
+            annotations.DataType = DataTypeIds.Annotation;
+            annotations.ValueRank = ValueRanks.OneDimension;
+            annotations.AccessLevel = AccessLevels.HistoryReadOrWrite;
+            annotations.UserAccessLevel = AccessLevels.HistoryReadOrWrite;
+            annotations.MinimumSamplingInterval = MinimumSamplingIntervals.Indeterminate;
+            annotations.Historizing = false;
+            variable.AddChild(annotations);
+            annotations.NodeId = NodeTypes.ConstructIdForComponent(annotations, NamespaceIndex);
+
+            parent.AddChild(variable);
+
+            return variable;
+        }
+
+        /// <summary>
+        /// Historizes a live variable on the in-memory engine.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This is the whole of what the quick-start path asks of a server. The
+        /// builder registers the variable with the engine, sets its history access
+        /// bits and its Historizing attribute (<c>setHistorizing: true</c>, the
+        /// default), installs the <c>HistoricalDataConfiguration</c> companion object
+        /// from the capabilities, and - because <c>autoCapture</c> is left on -
+        /// attaches the handler which forwards every value change into the capture
+        /// sink. The sink batches the samples of all the variables of this builder
+        /// and flushes them to the engine through its bulk insert interface; the
+        /// options make it flush after a handful of samples or a tenth of a second,
+        /// whichever comes first, so a reader sees a value in the history soon after
+        /// it was published.
+        /// </para>
+        /// <para>
+        /// The node binding after it is what routes the variable to this engine
+        /// rather than to the archive provider which is registered for the whole
+        /// namespace.
+        /// </para>
+        /// </remarks>
+        private async ValueTask HistorizeLiveVariableAsync(
+            BaseDataVariableState variable,
+            HistorianNodeCapabilities capabilities,
+            CancellationToken cancellationToken)
+        {
+            await m_liveHistorian.HistorizeAsync(
+                variable,
+                SystemContext,
+                capabilities: capabilities,
+                captureOptions: s_captureOptions,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            m_liveHistorian.RegisterForNode(variable.NodeId);
+
+            AddPredefinedNodeSynchronously(variable);
         }
 
         /// <summary>
@@ -321,6 +589,14 @@ namespace Quickstarts.HistoricalAccessServer
                 return null;
             }
 
+            // an item behind a file in the archive root is materialized on its first
+            // use, and gets its companion object then. the provider takes the archive
+            // lock itself, so this runs outside of it.
+            if (target is ArchiveItemState created && !created.IsHistorized)
+            {
+                await HistorizeArchiveItemAsync(created, cancellationToken).ConfigureAwait(false);
+            }
+
             // validate component.
             if (!String.IsNullOrEmpty(pnd.ComponentPath))
             {
@@ -348,6 +624,24 @@ namespace Quickstarts.HistoricalAccessServer
         #endregion
 
         #region Overridden Methods
+        /// <summary>
+        /// Answers for the history of the nodes this manager recognises as its own,
+        /// before the registry of the server is asked.
+        /// </summary>
+        /// <remarks>
+        /// This is the first step of the resolution order of the dispatcher: a
+        /// non-null answer here is final, null falls through to the registry - the
+        /// node bindings of the live variables, then the namespace binding of the
+        /// archive, then the default. An archive item can only ever be served by
+        /// the archive provider, so the manager says so itself and saves the
+        /// registry the lookup; everything else is left to the registry, which is
+        /// where the live variables find their engine.
+        /// </remarks>
+        protected override IHistorianProvider GetHistorianProvider(NodeState node)
+        {
+            return node is ArchiveItemState ? m_historian : null;
+        }
+
         /// <summary>
         /// Validates the nodes and reads the values from the underlying source.
         /// </summary>
@@ -402,54 +696,20 @@ namespace Quickstarts.HistoricalAccessServer
             }
         }
 
-        /// <summary>
-        /// Reads the initial value for a monitored item.
-        /// </summary>
-        /// <remarks>
-        /// A monitored item with an aggregate filter whose start time lies in the
-        /// past is primed with the recorded values so the aggregates cover the
-        /// requested window; everything else takes the current value as usual.
-        /// </remarks>
-        protected override ServiceResult ReadInitialValue(
-            ISystemContext context,
-            NodeHandle handle,
-            IDataChangeMonitoredItem2 monitoredItem)
-        {
-            ArchiveItemState item = handle.Node as ArchiveItemState;
-
-            if (item == null || monitoredItem.AttributeId != Attributes.Value)
-            {
-                return base.ReadInitialValue(context, handle, monitoredItem);
-            }
-
-            MonitoredItem sampledItem = monitoredItem as MonitoredItem;
-            AggregateFilter filter = sampledItem?.Filter as AggregateFilter;
-
-            if (filter == null || filter.StartTime >= m_timeProvider.GetUtcNow().UtcDateTime.AddMilliseconds(-filter.ProcessingInterval))
-            {
-                return base.ReadInitialValue(context, handle, monitoredItem);
-            }
-
-            try
-            {
-                foreach (DataValue value in m_historian.ReadRawWindow(SystemContext, item, (DateTime)filter.StartTime, m_timeProvider.GetUtcNow().UtcDateTime))
-                {
-                    sampledItem.QueueValue(value, ServiceResult.Good);
-                }
-
-                return StatusCodes.Good;
-            }
-            catch (Exception e)
-            {
-                ServiceResult error = ServiceResult.Create(e, StatusCodes.BadUnexpectedError, "Unexpected error fetching initial values.");
-                sampledItem.QueueValue(DataValue.Null, error);
-                return error;
-            }
-        }
+        // an aggregate filter on a monitored item is revised by the base class from
+        // what the historian of the node reports: the stepped flag, the sampling
+        // interval as the smallest processing interval, and the aggregate
+        // configuration the node is computed with. a start time in the past is
+        // primed from the raw history of the node before live values follow. the
+        // sample used to do both by hand, and no longer has to.
 
         /// <summary>
         /// Called after creating a MonitoredItem.
         /// </summary>
+        /// <remarks>
+        /// The simulation of an archive item only appends to it while somebody is
+        /// monitoring it; the live variables publish regardless.
+        /// </remarks>
         protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
         {
             lock (m_system.SyncRoot)
@@ -463,104 +723,15 @@ namespace Quickstarts.HistoricalAccessServer
 
                     m_monitoredItems.TryAdd(item.ArchiveItem.UniquePath, item);
                     item.SubscribeCount++;
-
-                    if (m_simulationTimer == null)
-                    {
-                        m_simulationTimer = m_timeProvider.CreateTimer(
-                            DoSimulation,
-                            null,
-                            TimeSpan.FromMilliseconds(500),
-                            TimeSpan.FromMilliseconds(500));
-                    }
                 }
             }
-        }
-
-        /// <summary>
-        /// Revises an aggregate filter (may require knowledge of the variable being used).
-        /// </summary>
-        /// <param name="context">The context.</param>
-        /// <param name="handle">The handle.</param>
-        /// <param name="samplingInterval">The sampling interval for the monitored item.</param>
-        /// <param name="queueSize">The queue size for the monitored item.</param>
-        /// <param name="filterToUse">The filter to revise.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Good if the filter is acceptable.</returns>
-        protected override ValueTask<StatusCode> ReviseAggregateFilterAsync(
-            ServerSystemContext context,
-            NodeHandle handle,
-            double samplingInterval,
-            uint queueSize,
-            ServerAggregateFilter filterToUse,
-            CancellationToken cancellationToken = default)
-        {
-            // a processing interval of zero would keep the start-time alignment
-            // below spinning forever.
-            if (filterToUse.ProcessingInterval <= 0)
-            {
-                filterToUse.ProcessingInterval = Math.Max(samplingInterval, 1000);
-            }
-
-            // use the sampling interval to limit the processing interval.
-            if (filterToUse.ProcessingInterval < samplingInterval)
-            {
-                filterToUse.ProcessingInterval = samplingInterval;
-            }
-
-            // check if an archive item.
-            ArchiveItemState item = handle.Node as ArchiveItemState;
-
-            if (item == null)
-            {
-                // no historial data so must start in the future.
-                while (filterToUse.StartTime < m_timeProvider.GetUtcNow().UtcDateTime)
-                {
-                    filterToUse.StartTime = filterToUse.StartTime.AddMilliseconds(filterToUse.ProcessingInterval);
-                }
-
-                // use suitable defaults for values which are are not archived items.
-                filterToUse.AggregateConfiguration.UseServerCapabilitiesDefaults = false;
-                filterToUse.AggregateConfiguration.UseSlopedExtrapolation = false;
-                filterToUse.AggregateConfiguration.TreatUncertainAsBad = false;
-                filterToUse.AggregateConfiguration.PercentDataBad = 100;
-                filterToUse.AggregateConfiguration.PercentDataGood = 100;
-                filterToUse.Stepped = true;
-
-                return new ValueTask<StatusCode>((StatusCode)StatusCodes.Good);
-            }
-
-            // the item settings this reads are rewritten whenever the item reloads
-            // from its source, so they are read under the archive lock.
-            lock (m_system.SyncRoot)
-            {
-                // use the archive acquisition sampling interval to limit the processing interval.
-                if (filterToUse.ProcessingInterval < item.ArchiveItem.SamplingInterval)
-                {
-                    filterToUse.ProcessingInterval = item.ArchiveItem.SamplingInterval;
-                }
-
-                // ensure the buffer does not get overfilled.
-                while (filterToUse.StartTime.AddMilliseconds(queueSize * filterToUse.ProcessingInterval) < m_timeProvider.GetUtcNow().UtcDateTime)
-                {
-                    filterToUse.StartTime = filterToUse.StartTime.AddMilliseconds(filterToUse.ProcessingInterval);
-                }
-
-                filterToUse.Stepped = item.ArchiveItem.Stepped;
-
-                // revise the configration.
-                m_historian.ReviseAggregateConfiguration(item, filterToUse.AggregateConfiguration);
-            }
-
-            return new ValueTask<StatusCode>((StatusCode)StatusCodes.Good);
         }
 
         /// <summary>
         /// Called after deleting a MonitoredItem.
         /// </summary>
-        protected override async ValueTask OnMonitoredItemDeletedAsync(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem, CancellationToken cancellationToken = default)
+        protected override ValueTask OnMonitoredItemDeletedAsync(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem, CancellationToken cancellationToken = default)
         {
-            ITimer timerToDispose = null;
-
             lock (m_system.SyncRoot)
             {
                 if (handle.Node.GetHierarchyRoot() is ArchiveItemState item &&
@@ -573,96 +744,160 @@ namespace Quickstarts.HistoricalAccessServer
                     {
                         m_monitoredItems.Remove(item.ArchiveItem.UniquePath);
                     }
-
-                    if (m_monitoredItems.Count == 0)
-                    {
-                        timerToDispose = m_simulationTimer;
-                        m_simulationTimer = null;
-                    }
                 }
             }
 
-            if (timerToDispose != null)
-            {
-                await timerToDispose.DisposeAsync().ConfigureAwait(false);
-            }
+            return default;
         }
 
-        /// <summary>
-        /// Refuses aggregates the server has no calculator for.
-        /// </summary>
-        /// <remarks>
-        /// The historian provider computes aggregates itself so the stepped flag and
-        /// the aggregate configuration of each archive item are honoured, but a
-        /// provider read has no way to report a per-operation error, so unsupported
-        /// aggregates are refused here before the dispatch.
-        /// </remarks>
-        protected override ValueTask HistoryReadProcessedAsync(
-            ServerSystemContext context,
-            ReadProcessedDetails details,
-            TimestampsToReturn timestampsToReturn,
-            ArrayOf<HistoryReadValueId> nodesToRead,
-            IList<HistoryReadResult> results,
-            IList<ServiceResult> errors,
-            List<NodeHandle> nodesToProcess,
-            IDictionary<NodeId, NodeState> cache,
-            CancellationToken cancellationToken = default)
-        {
-            List<NodeHandle> supported = new List<NodeHandle>(nodesToProcess.Count);
-
-            foreach (NodeHandle handle in nodesToProcess)
-            {
-                if (!Server.AggregateManager.IsSupported(details.AggregateType[handle.Index]))
-                {
-                    errors[handle.Index] = StatusCodes.BadAggregateNotSupported;
-                    continue;
-                }
-
-                supported.Add(handle);
-            }
-
-            return base.HistoryReadProcessedAsync(context, details, timestampsToReturn, nodesToRead, results, errors, supported, cache, cancellationToken);
-        }
+        // a processed read for an aggregate the server has no calculator for is
+        // refused by the dispatcher with BadAggregateNotSupported before any provider
+        // is reached, so the manager no longer filters those requests itself.
         #endregion
 
         #region Private Methods
         /// <summary>
         /// Runs the simulation.
         /// </summary>
+        /// <remarks>
+        /// The archive items append their next samples to their own data sets. The
+        /// live variables just publish: setting the value, the timestamp and the
+        /// status and clearing the change masks is what fires the state change the
+        /// capture pipeline of the SDK listens to, and nothing here writes to their
+        /// history directly.
+        /// </remarks>
         private void DoSimulation(object state)
         {
             try
             {
                 lock (m_system.SyncRoot)
                 {
-                    foreach (ArchiveItemState item in m_monitoredItems.Values)
+                    if (m_monitoredItems != null)
                     {
-                        if (item.ArchiveItem.LastLoadTime.AddSeconds(10) < m_timeProvider.GetUtcNow().UtcDateTime)
+                        foreach (ArchiveItemState item in m_monitoredItems.Values)
                         {
-                            item.LoadConfiguration(SystemContext, Server.Telemetry);
-                        }
+                            if (item.ArchiveItem.LastLoadTime.AddSeconds(10) < m_timeProvider.GetUtcNow().UtcDateTime)
+                            {
+                                item.LoadConfiguration(SystemContext, Server.Telemetry);
+                            }
 
-                        foreach (DataValue value in item.NewSamples(SystemContext))
-                        {
-                            item.WrappedValue = value.WrappedValue;
-                            item.Timestamp = value.SourceTimestamp;
-                            item.StatusCode = value.StatusCode;
-                            item.ClearChangeMasks(SystemContext, true);
+                            foreach (DataValue value in item.NewSamples(SystemContext))
+                            {
+                                item.WrappedValue = value.WrappedValue;
+                                item.Timestamp = value.SourceTimestamp;
+                                item.StatusCode = value.StatusCode;
+                                item.ClearChangeMasks(SystemContext, true);
+                            }
                         }
                     }
                 }
+
+                PublishLiveValues();
             }
             catch (Exception e)
             {
                 m_logger.LogError("Unexpected error during simulation: {Message}", e.Message);
             }
         }
+
+        /// <summary>
+        /// Publishes the next values of the live variables.
+        /// </summary>
+        private void PublishLiveValues()
+        {
+            long tick = Interlocked.Increment(ref m_ticks);
+            DateTime now = m_timeProvider.GetUtcNow().UtcDateTime;
+
+            // a slow sine around room temperature, one sample per tick.
+            Publish(m_temperature, Variant.From(Math.Round(20.0 + (5.0 * Math.Sin(tick / 30.0)), 2)), now);
+
+            // one lab sample every five ticks: three readings at the same instant,
+            // each with its own key. the capture pipeline inserts them as three
+            // entries of the structured history, and the key is what keeps them
+            // apart there.
+            if (tick % 5 == 0)
+            {
+                double phase = tick / 50.0;
+
+                Publish(m_labSample, LabReading("pH", Math.Round(7.0 + (0.3 * Math.Sin(phase)), 2)), now);
+                Publish(m_labSample, LabReading("Temperature", Math.Round(20.0 + (5.0 * Math.Sin(phase)), 2)), now);
+                Publish(m_labSample, LabReading("Conductivity", Math.Round(500.0 + (50.0 * Math.Cos(phase)), 1)), now);
+            }
+        }
+
+        /// <summary>
+        /// Sets the value of a live variable and reports the change, which is what
+        /// the capture pipeline listens to.
+        /// </summary>
+        private void Publish(BaseDataVariableState variable, Variant value, DateTime timestamp)
+        {
+            variable.WrappedValue = value;
+            variable.Timestamp = timestamp;
+            variable.StatusCode = StatusCodes.Good;
+            variable.ClearChangeMasks(SystemContext, false);
+        }
+
+        /// <summary>
+        /// One reading of a lab sample: a KeyValuePair whose key names the quantity.
+        /// </summary>
+        private static Variant LabReading(string quantity, double reading)
+        {
+            return Variant.From(new ExtensionObject(new Opc.Ua.KeyValuePair {
+                Key = new QualifiedName(quantity),
+                Value = Variant.From(reading)
+            }));
+        }
         #endregion
 
         #region Private Fields
+        /// <summary>
+        /// What the in-memory engine offers for a plain live variable: the full
+        /// read and write surface of Part 11 data history, annotations included, at
+        /// the one second cadence of the simulation.
+        /// </summary>
+        private static readonly HistorianNodeCapabilities s_liveCapabilities = HistorianNodeCapabilities.DataReadWrite with {
+            InsertAnnotation = true,
+            Stepped = false,
+            MinTimeInterval = 1000,
+            MaxTimeInterval = 1000
+        };
+
+        /// <summary>
+        /// What the engine offers for the structured variable: the structured
+        /// read and update surface, plus the two deletes so a client can clear what
+        /// it wrote. A plain data insert is not among them - entries of a structured
+        /// history are written through UpdateStructureData, which carries the key.
+        /// </summary>
+        private static readonly HistorianNodeCapabilities s_structuredCapabilities = HistorianNodeCapabilities.StructuredReadWrite with {
+            DeleteRaw = true,
+            DeleteAtTime = true,
+            InsertAnnotation = true,
+            Stepped = true,
+            MinTimeInterval = 5000,
+            MaxTimeInterval = 5000,
+            Definition = "Three readings per sample, keyed by quantity"
+        };
+
+        /// <summary>
+        /// How the capture sink batches: a flush after sixteen samples or a tenth
+        /// of a second, so a value shows up in the history soon after it was
+        /// published; the defaults favour throughput over latency.
+        /// </summary>
+        private static readonly HistorianCaptureOptions s_captureOptions = new HistorianCaptureOptions {
+            BatchTarget = 16,
+            BatchWindow = TimeSpan.FromMilliseconds(100)
+        };
+
         private UnderlyingSystem m_system;
         private HistoricalAccessServerConfiguration m_configuration;
         private ArchiveHistorianProvider m_historian;
+        private HistorianBuilder m_archiveHistorian;
+        private HistorianBuilder m_liveHistorian;
+        private InMemoryHistorianProvider m_liveProvider;
+        private BaseDataVariableState m_temperature;
+        private BaseDataVariableState m_setpoint;
+        private BaseDataVariableState m_labSample;
+        private long m_ticks;
         private readonly TimeProvider m_timeProvider;
         private ITimer m_simulationTimer;
         private Dictionary<string, ArchiveItemState> m_monitoredItems;
