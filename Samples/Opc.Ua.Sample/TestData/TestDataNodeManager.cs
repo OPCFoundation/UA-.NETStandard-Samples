@@ -41,81 +41,49 @@ using Opc.Ua.Server.Historian;
 namespace TestData
 {
     /// <summary>
-    /// The node manager factory for test data.
-    /// </summary>
-    /// <remarks>
-    /// Hand-written because the node manager needs the application configuration
-    /// and its own constructor; the source generator therefore only emits the
-    /// node manager partial (<c>GenerateFactory = false</c>).
-    /// </remarks>
-    public class TestDataNodeManagerFactory : IAsyncNodeManagerFactory
-    {
-        /// <inheritdoc/>
-        public ValueTask<IAsyncNodeManager> CreateAsync(IServerInternal server, ApplicationConfiguration configuration, CancellationToken cancellationToken = default)
-        {
-#pragma warning disable CA2000 // Justification: ownership of the node manager transfers to the caller.
-            return new ValueTask<IAsyncNodeManager>(new TestDataNodeManager(
-                server,
-                configuration,
-                server.Telemetry.CreateLogger<TestDataNodeManager>()));
-#pragma warning restore CA2000
-        }
-
-        /// <inheritdoc/>
-        public ArrayOf<string> NamespacesUris
-        {
-            get
-            {
-                var nameSpaces = new List<string> {
-                    Namespaces.TestData,
-                    Namespaces.TestData + "Instance"
-                };
-                return nameSpaces;
-            }
-        }
-    }
-
-    /// <summary>
     /// A node manager for a variety of test data.
     /// </summary>
     /// <remarks>
     /// The <c>[NodeManager]</c> attribute opts this partial class in to source
     /// generation: the generator emits a sibling partial which derives from
-    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
+    /// <c>FluentNodeManagerBase</c>, loads the predefined nodes generated from
     /// <c>TestDataDesign.xml</c> as typed node states - so the passive-node
     /// replacement the old node manager did by hand is no longer needed - and
-    /// calls <see cref="Configure"/> once the address space is in place.
+    /// calls <see cref="Configure"/> once the address space is in place, plus the
+    /// factory the server registers. <c>AdditionalNamespaceUris</c> names the
+    /// second namespace, the one the node id factory hands out for dynamically
+    /// created nodes.
     /// </remarks>
-    [NodeManager(NamespaceUri = "http://test.org/UA/Data/", GenerateFactory = false)]
+    [NodeManager(
+        NamespaceUri = "http://test.org/UA/Data/",
+        AdditionalNamespaceUris = new[] { "http://test.org/UA/Data/Instance" })]
     public partial class TestDataNodeManager : ITestDataSystemCallback
     {
-        #region Constructors
+        #region Address Space Creation
         /// <summary>
-        /// Initializes the node manager.
+        /// Creates the test system the predefined nodes are loaded against.
         /// </summary>
         /// <remarks>
-        /// The typed node states created from the model pull their initial values
-        /// out of the test system through <see cref="ISystemContext.SystemHandle"/>,
-        /// so the system has to exist before the base class loads the predefined
-        /// nodes. The second namespace is the one the node id factory hands out
-        /// for dynamically created nodes.
+        /// The typed node states created from the model pull their initial values out
+        /// of the test system through <see cref="ISystemContext.SystemHandle"/>, so the
+        /// system has to exist before the base class loads them. That is one step
+        /// earlier than <see cref="Configure"/> runs, and the generated partial owns the
+        /// two argument <c>LoadPredefinedNodesAsync</c>, so this hooks the three
+        /// argument one, which the base class calls first.
         /// </remarks>
-        public TestDataNodeManager(IServerInternal server, ApplicationConfiguration configuration, ILogger<TestDataNodeManager> logger)
-        :
-            base(server, configuration, logger, Namespaces.TestData, Namespaces.TestData + "Instance")
+        protected override async ValueTask LoadPredefinedNodesAsync(
+            ISystemContext context,
+            IDictionary<NodeId, IList<IReference>> externalReferences,
+            CancellationToken cancellationToken = default)
         {
             SystemContext.NodeIdFactory = this;
 
             Server.Factory.AddEncodeableTypes(typeof(TestDataNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(TestDataNodeManager).Namespace, StringComparison.Ordinal)));
 
-            // get the configuration for the node manager.
-            m_configuration = configuration.ParseExtension<TestDataNodeManagerConfiguration>();
-
-            // use suitable defaults if no configuration exists.
-            if (m_configuration == null)
-            {
-                m_configuration = new TestDataNodeManagerConfiguration();
-            }
+            // get the configuration for the node manager, and use suitable defaults
+            // if no configuration exists.
+            m_configuration = Configuration?.ParseExtension<TestDataNodeManagerConfiguration>()
+                ?? new TestDataNodeManagerConfiguration();
 
             m_lastUsedId = m_configuration.NextUnusedId - 1;
 
@@ -126,13 +94,15 @@ namespace TestData
             // an IServerInternal which does not implement it falls back to the system clock.
             m_system = new TestDataSystem(
                 this,
-                server.NamespaceUris,
-                server.ServerUris,
-                server.Telemetry,
-                (server as ITimeProviderProvider)?.TimeProvider ?? TimeProvider.System);
+                Server.NamespaceUris,
+                Server.ServerUris,
+                Server.Telemetry,
+                (Server as ITimeProviderProvider)?.TimeProvider ?? TimeProvider.System);
 
             // update the default context.
             SystemContext.SystemHandle = m_system;
+
+            await base.LoadPredefinedNodesAsync(context, externalReferences, cancellationToken).ConfigureAwait(false);
         }
         #endregion
 

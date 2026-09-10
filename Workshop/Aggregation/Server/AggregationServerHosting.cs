@@ -77,21 +77,26 @@ namespace Microsoft.Extensions.DependencyInjection
         /// One aggregation node manager per configured endpoint. Only the first one
         /// publishes the aggregation type model.
         /// </summary>
-        private static IEnumerable<IAsyncNodeManagerFactory> CreateNodeManagerFactories(IServiceProvider provider)
+        private static ArrayOf<IAsyncNodeManagerFactory> CreateNodeManagerFactories(
+            IServiceProvider provider,
+            ApplicationConfiguration configuration)
         {
-            ApplicationConfiguration configuration = provider.GetRequiredService<ApplicationConfiguration>();
             ReverseConnectManager reverseConnectManager = provider
                 .GetRequiredService<AggregationReverseConnect>()
                 .GetOrCreate(configuration);
 
             ConfiguredEndpointCollection endpoints = configuration.ParseExtension<ConfiguredEndpointCollection>();
 
+            var factories = new List<IAsyncNodeManagerFactory>();
+
             bool ownsTypeModel = true;
             foreach (ConfiguredEndpoint endpoint in endpoints.Endpoints)
             {
-                yield return new AggregationNodeManagerFactory(endpoint, reverseConnectManager, ownsTypeModel);
+                factories.Add(new AggregationNodeManagerFactory(endpoint, reverseConnectManager, ownsTypeModel));
                 ownsTypeModel = false;
             }
+
+            return factories;
         }
     }
 
