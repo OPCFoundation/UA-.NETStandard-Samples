@@ -167,6 +167,7 @@ namespace Quickstarts.HistoricalEvents.Server
             }
 
             var results = new StatusCode[eventIds.Count];
+            var deleted = new List<HistorianEventRecord>();
 
             try
             {
@@ -174,9 +175,22 @@ namespace Quickstarts.HistoricalEvents.Server
                 {
                     for (int ii = 0; ii < eventIds.Count; ii++)
                     {
-                        results[ii] = TryGetEventId(eventIds[ii], out string eventId) && m_generator.DeleteEvent(eventId)
-                            ? StatusCodes.Good
-                            : StatusCodes.BadEventIdUnknown;
+                        if (!TryGetEventId(eventIds[ii], out string eventId) ||
+                            !m_generator.DeleteEvent(eventId, out ReportType reportType, out DataRow displaced))
+                        {
+                            results[ii] = StatusCodes.BadEventIdUnknown;
+                            continue;
+                        }
+
+                        results[ii] = StatusCodes.Good;
+
+                        // the report is gone from the table; the copy of its row is
+                        // what the audit trail gets to see, with every field the
+                        // report has, because a delete names no fields of its own.
+                        deleted.Add(CreateRecord(
+                            m_generator.GetReport(context.SystemContext, m_namespaceIndex, reportType, displaced),
+                            CreateFilterContext(context),
+                            ReportOperands(reportType)));
                     }
                 }
             }
@@ -186,7 +200,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 return Outcome(RepeatStatus(StatusCodes.BadUnexpectedError, eventIds.Count));
             }
 
-            return Outcome(results);
+            return Outcome(results, deleted);
         }
         #endregion
 
@@ -209,13 +223,7 @@ namespace Quickstarts.HistoricalEvents.Server
             HistorianEventReadRequest request)
         {
             ServerSystemContext systemContext = context.SystemContext;
-
-            var filterContext = new FilterContext(
-                systemContext.NamespaceUris,
-                systemContext.TypeTable,
-                systemContext.PreferredLocales,
-                m_server.Telemetry);
-
+            FilterContext filterContext = CreateFilterContext(context);
             IReadOnlyList<SimpleAttributeOperand> operands = CollectOperands(request.Filter);
 
             var records = new List<HistorianEventRecord>();
@@ -258,6 +266,21 @@ namespace Quickstarts.HistoricalEvents.Server
             records.Sort(CompareRecords);
 
             return records;
+        }
+
+        /// <summary>
+        /// The context the fields of an event are read in: the namespaces and types
+        /// of the server, and the locales of the session which asked.
+        /// </summary>
+        private FilterContext CreateFilterContext(HistorianOperationContext context)
+        {
+            ServerSystemContext systemContext = context.SystemContext;
+
+            return new FilterContext(
+                systemContext.NamespaceUris,
+                systemContext.TypeTable,
+                systemContext.PreferredLocales,
+                m_server.Telemetry);
         }
 
         /// <summary>
@@ -506,6 +529,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 : null;
 
             var results = new StatusCode[events.Count];
+            var displaced = new List<HistorianEventRecord>();
 
             try
             {
@@ -513,7 +537,7 @@ namespace Quickstarts.HistoricalEvents.Server
                 {
                     for (int ii = 0; ii < events.Count; ii++)
                     {
-                        results[ii] = WriteEvent(events[ii], defaultWellId, performUpdateType);
+                        results[ii] = WriteEvent(context, events[ii], defaultWellId, performUpdateType, displaced);
                     }
                 }
             }
@@ -523,23 +547,28 @@ namespace Quickstarts.HistoricalEvents.Server
                 return Outcome(RepeatStatus(StatusCodes.BadUnexpectedError, events.Count));
             }
 
-            return Outcome(results);
+            return Outcome(results, displaced);
         }
 
         /// <summary>
         /// Wraps the per event statuses of an update in the outcome the framework
-        /// reports back.
+        /// reports back, with the reports the update displaced.
         /// </summary>
         /// <remarks>
-        /// The outcome carries no old values: the generator overwrites a row in
-        /// place and hands back nothing of what stood there, so there is nothing
-        /// this provider could report to the audit trail.
+        /// A replace overwrites a row in place and a delete removes one, so the
+        /// generator copies the row out first and the provider turns the copy back
+        /// into a record. The dispatcher projects the record onto the filter of the
+        /// update and reports it in the OldValues of the audit event, which is how
+        /// an auditor sees what a report said before it was rewritten.
         /// </remarks>
         private static ValueTask<HistorianUpdateOutcome<HistorianEventRecord>> Outcome(
-            ArrayOf<StatusCode> results)
+            ArrayOf<StatusCode> results,
+            List<HistorianEventRecord> oldValues = null)
         {
             return new ValueTask<HistorianUpdateOutcome<HistorianEventRecord>>(
-                new HistorianUpdateOutcome<HistorianEventRecord>(results));
+                new HistorianUpdateOutcome<HistorianEventRecord>(
+                    results,
+                    oldValues == null ? default : new ArrayOf<HistorianEventRecord>(oldValues.ToArray())));
         }
 
         /// <summary>
@@ -551,8 +580,17 @@ namespace Quickstarts.HistoricalEvents.Server
         /// The event type only reaches the provider if the client selected it, which
         /// is why an update whose filter leaves it out is refused rather than guessed
         /// at.
+        ///
+        /// A report a replace overwrote is handed back as a record which carries the
+        /// same fields the incoming record does: those are the fields the client
+        /// selected, and the fields the audit event is projected onto.
         /// </remarks>
-        private StatusCode WriteEvent(HistorianEventRecord record, string defaultWellId, PerformUpdateType performUpdateType)
+        private StatusCode WriteEvent(
+            HistorianOperationContext context,
+            HistorianEventRecord record,
+            string defaultWellId,
+            PerformUpdateType performUpdateType,
+            List<HistorianEventRecord> displaced)
         {
             if (record == null || !TryGetReportType(record.EventType, out ReportType reportType))
             {
@@ -571,13 +609,135 @@ namespace Quickstarts.HistoricalEvents.Server
                 eventId = Guid.NewGuid().ToString();
             }
 
-            return m_generator.WriteEvent(
+            StatusCode result = m_generator.WriteEvent(
                 reportType,
                 eventId,
                 (DateTime)record.SourceTimestamp,
                 record.Fields,
                 defaultWellId,
-                performUpdateType);
+                performUpdateType,
+                out DataRow previous);
+
+            if (previous != null)
+            {
+                displaced.Add(CreateRecord(
+                    m_generator.GetReport(context.SystemContext, m_namespaceIndex, reportType, previous),
+                    CreateFilterContext(context),
+                    OperandsOf(record)));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// The fields an incoming record carries, as the operands which address them.
+        /// </summary>
+        /// <remarks>
+        /// The qualified fields keep the whole identity of each select clause, so
+        /// a record of the same shape can be built for the report the incoming one
+        /// displaced. A record which only carries the flat form is addressed by its
+        /// browse paths from the base event type.
+        /// </remarks>
+        private static IReadOnlyList<SimpleAttributeOperand> OperandsOf(HistorianEventRecord record)
+        {
+            var operands = new List<SimpleAttributeOperand>();
+
+            if (!record.QualifiedFields.IsNull && record.QualifiedFields.Count > 0)
+            {
+                foreach (KeyValuePair<HistorianEventFieldKey, Variant> field in record.QualifiedFields)
+                {
+                    operands.Add(new SimpleAttributeOperand {
+                        TypeDefinitionId = field.Key.TypeDefinitionId,
+                        AttributeId = field.Key.AttributeId,
+                        BrowsePath = field.Key.BrowsePath,
+                        IndexRange = field.Key.IndexRange
+                    });
+                }
+
+                return operands;
+            }
+
+            foreach (KeyValuePair<string, Variant> field in record.Fields)
+            {
+                operands.Add(new SimpleAttributeOperand {
+                    TypeDefinitionId = Opc.Ua.ObjectTypeIds.BaseEventType,
+                    AttributeId = Attributes.Value,
+                    BrowsePath = ParsePath(field.Key)
+                });
+            }
+
+            return operands;
+        }
+
+        /// <summary>
+        /// Every field a report of a kind has, as the operands which address them.
+        /// </summary>
+        /// <remarks>
+        /// A delete names no fields, so the report it removed is handed back whole:
+        /// the fields every event has, and the ones the report type adds.
+        /// </remarks>
+        private IReadOnlyList<SimpleAttributeOperand> ReportOperands(ReportType reportType)
+        {
+            var operands = new List<SimpleAttributeOperand>();
+
+            foreach (string name in new[] {
+                Opc.Ua.BrowseNames.EventId,
+                Opc.Ua.BrowseNames.EventType,
+                Opc.Ua.BrowseNames.SourceNode,
+                Opc.Ua.BrowseNames.SourceName,
+                Opc.Ua.BrowseNames.Time,
+                Opc.Ua.BrowseNames.Message,
+                Opc.Ua.BrowseNames.Severity })
+            {
+                operands.Add(Operand(new QualifiedName(name)));
+            }
+
+            foreach (string name in new[] { BrowseNames.NameWell, BrowseNames.UidWell, BrowseNames.TestDate, BrowseNames.TestReason })
+            {
+                operands.Add(Operand(new QualifiedName(name, m_namespaceIndex)));
+            }
+
+            if (reportType == ReportType.FluidLevelTest)
+            {
+                operands.Add(Operand(new QualifiedName(BrowseNames.FluidLevel, m_namespaceIndex)));
+                operands.Add(Operand(new QualifiedName(BrowseNames.TestedBy, m_namespaceIndex)));
+            }
+            else
+            {
+                operands.Add(Operand(new QualifiedName(BrowseNames.TestDuration, m_namespaceIndex)));
+                operands.Add(Operand(new QualifiedName(BrowseNames.InjectedFluid, m_namespaceIndex)));
+            }
+
+            return operands;
+        }
+
+        /// <summary>
+        /// An operand for the value of one field of a report.
+        /// </summary>
+        private static SimpleAttributeOperand Operand(QualifiedName browseName)
+        {
+            return new SimpleAttributeOperand {
+                TypeDefinitionId = Opc.Ua.ObjectTypeIds.BaseEventType,
+                AttributeId = Attributes.Value,
+                BrowsePath = new[] { browseName }.ToArrayOf()
+            };
+        }
+
+        /// <summary>
+        /// Turns the slash-joined key of a flat field back into the browse path it
+        /// was built from.
+        /// </summary>
+        private static ArrayOf<QualifiedName> ParsePath(string key)
+        {
+            string[] segments = key.Split('/');
+            var path = new QualifiedName[segments.Length];
+
+            for (int ii = 0; ii < segments.Length; ii++)
+            {
+                path[ii] = new QualifiedName(segments[ii]);
+            }
+
+            return path.ToArrayOf();
         }
 
         /// <summary>

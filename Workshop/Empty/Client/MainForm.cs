@@ -72,6 +72,7 @@ namespace Quickstarts.EmptyClient
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62546/Quickstarts/EmptyServer";
             this.Text = configuration.ApplicationName;
 

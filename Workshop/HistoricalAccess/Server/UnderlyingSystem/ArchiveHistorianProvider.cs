@@ -58,20 +58,23 @@ namespace Quickstarts.HistoricalAccessServer
     /// per item settings recorded in the archive files - stepped interpolation and
     /// the aggregate configuration - are honoured, the way the sample always did.
     ///
-    /// <see cref="IHistorianTransactionalProvider"/> is what the dispatcher reaches for
-    /// when a client asks for an atomic history update, so the batch this provider
-    /// commits or discards as a whole is on the service path.
-    /// <see cref="IHistorianBulkInsertProvider"/> is an offer rather than an obligation:
-    /// it is reached only from the automatic value capture pipeline, which this sample
-    /// does not use because its archive is filled from files rather than from live
-    /// values. It is implemented anyway, because what a store has to do to honour it is
-    /// the part worth showing - it is where the cost of a write, the lock and the
-    /// reload rather than the value, is paid once instead of once per value.
+    /// <see cref="IHistorianTransactionalProvider"/> is what the dispatcher prefers
+    /// whenever a provider offers it: every insert, replace and update a client sends
+    /// arrives on the atomic path, and the batch this provider commits or discards as
+    /// a whole is what the client gets. <see cref="IHistorianBulkInsertProvider"/> is
+    /// reached from the automatic value capture pipeline of the SDK, which the node
+    /// manager uses for its live variables on a different provider; this archive is
+    /// filled from files, so the path is implemented here because what a store has to
+    /// do to honour it is the part worth showing - it is where the cost of a write,
+    /// the lock and the reload rather than the value, is paid once instead of once
+    /// per value.
     ///
     /// An update answers with a <see cref="HistorianUpdateOutcome{T}"/>: one status per
-    /// requested entry, and the values the operation displaced for the audit trail. The
-    /// archive of an item is a DataSet which overwrites a row in place, so this provider
-    /// has no old value to report and leaves that half empty.
+    /// requested entry, and the values the operation displaced. The archive overwrites
+    /// a row in place, so the item copies the value out before it does and the
+    /// provider hands it on; the dispatcher writes it into the OldValues of the audit
+    /// event it reports for the update, which is how an auditor sees what a replace
+    /// or a delete cost.
     ///
     /// The provider also feeds the server-wide HistoryServerCapabilities flags: the
     /// diagnostics node manager asks every registered provider for its capabilities
@@ -130,12 +133,24 @@ namespace Quickstarts.HistoricalAccessServer
                     return new ValueTask<HistorianNodeCapabilities>(s_capabilities);
                 }
 
+                // what the archive file says about the item. the SDK reads these
+                // in two places: the HistoricalDataConfiguration object it installs
+                // beside the item is populated from them, and the aggregate filter
+                // of a monitored item is revised with them - the stepped flag, the
+                // sampling interval as the smallest processing interval and the
+                // aggregate configuration the item is meant to be computed with.
+                var configuration = new AggregateConfiguration { UseServerCapabilitiesDefaults = true };
+
+                ReviseAggregateConfiguration(item, configuration);
+
                 return new ValueTask<HistorianNodeCapabilities>(s_capabilities with {
                     Stepped = item.ArchiveItem.Stepped,
+                    Definition = item.ArchiveItem.UniquePath,
                     MinTimeInterval = item.ArchiveItem.SamplingInterval,
                     MaxTimeInterval = item.ArchiveItem.SamplingInterval,
-                    DefaultAggregateConfiguration = item.ArchiveItem.AggregateConfiguration
-                        ?? m_server.AggregateManager.GetDefaultConfiguration(NodeId.Null)
+                    StartOfArchive = item.StartOfArchive,
+                    StartOfOnlineArchive = item.StartOfArchive,
+                    DefaultAggregateConfiguration = configuration
                 });
             }
         }
@@ -211,14 +226,16 @@ namespace Quickstarts.HistoricalAccessServer
                         return Outcome<DataValue>(RepeatStatus(StatusCodes.BadNodeIdUnknown, 1));
                     }
 
-                    return Outcome<DataValue>(new StatusCode[]
-                    {
-                        item.DeleteHistory(
-                            context.SystemContext,
-                            (DateTime)startTime,
-                            (DateTime)endTime,
-                            isDeleteModified)
-                    });
+                    var deleted = new List<DataValue>();
+
+                    StatusCode result = item.DeleteHistory(
+                        context.SystemContext,
+                        (DateTime)startTime,
+                        (DateTime)endTime,
+                        isDeleteModified,
+                        deleted);
+
+                    return Outcome(new StatusCode[] { result }, deleted);
                 }
             }
             catch (Exception e)
@@ -247,13 +264,14 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     StatusCode[] results = new StatusCode[timestamps.Count];
+                    var deleted = new List<DataValue>();
 
                     for (int ii = 0; ii < timestamps.Count; ii++)
                     {
-                        results[ii] = item.DeleteHistory(context.SystemContext, (DateTime)timestamps[ii]);
+                        results[ii] = item.DeleteHistory(context.SystemContext, (DateTime)timestamps[ii], deleted);
                     }
 
-                    return Outcome<DataValue>(results);
+                    return Outcome(results, deleted);
                 }
             }
             catch (Exception e)
@@ -327,10 +345,11 @@ namespace Quickstarts.HistoricalAccessServer
                         // carries cannot be the one this entry is about.
                         ArchiveItemState item = ResolveById(context, entry.NodeId);
 
+                        // an insert displaces nothing, so the outcome carries no old values.
                         results[ii] = new HistorianUpdateOutcome<DataValue>(
                             item == null || !TryReload(item, context)
                                 ? RepeatStatus(StatusCodes.BadNodeIdUnknown, entry.Values.Count)
-                                : UpdateItem(item, context, entry.Values, PerformUpdateType.Insert));
+                                : UpdateItem(item, context, entry.Values, PerformUpdateType.Insert, commit: true, new List<DataValue>()));
                     }
                 }
             }
@@ -586,13 +605,14 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     StatusCode[] results = new StatusCode[annotationTimes.Count];
+                    var deleted = new List<Annotation>();
 
                     for (int ii = 0; ii < annotationTimes.Count; ii++)
                     {
-                        results[ii] = item.DeleteAnnotations((DateTime)annotationTimes[ii]);
+                        results[ii] = item.DeleteAnnotations((DateTime)annotationTimes[ii], deleted);
                     }
 
-                    return Outcome<Annotation>(results);
+                    return Outcome(results, deleted);
                 }
             }
             catch (Exception e)
@@ -603,51 +623,7 @@ namespace Quickstarts.HistoricalAccessServer
         }
         #endregion
 
-        #region Internal Interface
-        /// <summary>
-        /// Reads the raw values in the given window, including the bounds, for the
-        /// node manager to backfill a freshly created monitored item with an
-        /// aggregate filter reaching into the past.
-        /// </summary>
-        internal IList<DataValue> ReadRawWindow(ServerSystemContext context, ArchiveItemState item, DateTime startTime, DateTime endTime)
-        {
-            List<DataValue> values = new List<DataValue>();
-
-            lock (m_system.SyncRoot)
-            {
-                item.ReloadFromSource(context, m_server.Telemetry);
-
-                HistorianRawReadRequest request = new HistorianRawReadRequest {
-                    NodeId = item.NodeId,
-                    StartTime = startTime,
-                    EndTime = endTime,
-                    MaxValues = 0,
-                    IsForward = true,
-                    ReturnBounds = true
-                };
-
-                DateTime resumeAt = DateTime.MinValue;
-
-                while (true)
-                {
-                    HistorianPage<HistoricalDataValue> page = ReadRawPage(item, request, resumeAt);
-
-                    foreach (HistoricalDataValue value in page.Values)
-                    {
-                        values.Add(value.Value);
-                    }
-
-                    if (page.IsFinal)
-                    {
-                        break;
-                    }
-
-                    resumeAt = DecodeTimestamp(page.NextToken);
-                }
-            }
-
-            return values;
-        }
+        #region Private Methods
 
         /// <summary>
         /// Revises the aggregate configuration: the settings recorded in the archive
@@ -656,9 +632,12 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         /// <remarks>
         /// Callers hold the archive lock: the item configuration this reads is
-        /// rewritten in place whenever the item reloads from its source.
+        /// rewritten in place whenever the item reloads from its source. The same
+        /// revision is what the provider reports as the default aggregate
+        /// configuration of the item, so a monitored item with an aggregate filter
+        /// and a processed read compute with the same settings.
         /// </remarks>
-        internal void ReviseAggregateConfiguration(ArchiveItemState item, AggregateConfiguration configurationToUse)
+        private void ReviseAggregateConfiguration(ArchiveItemState item, AggregateConfiguration configurationToUse)
         {
             // set configuration from defaults.
             if (configurationToUse.UseServerCapabilitiesDefaults)
@@ -684,9 +663,7 @@ namespace Quickstarts.HistoricalAccessServer
                 configurationToUse.UseSlopedExtrapolation = false;
             }
         }
-        #endregion
 
-        #region Private Methods
         /// <summary>
         /// Returns the archive item addressed by a request.
         /// </summary>
@@ -768,17 +745,20 @@ namespace Quickstarts.HistoricalAccessServer
 
         /// <summary>
         /// Wraps the per entry statuses of an update in the outcome the framework
-        /// reports back.
+        /// reports back, with the values the update displaced.
         /// </summary>
         /// <remarks>
-        /// The outcome carries no old values. The archive of an item is a DataSet
-        /// which overwrites a row in place, so what a replace or a delete displaced
-        /// is gone by the time the call returns and there is nothing this provider
-        /// could hand to the audit trail.
+        /// The old values are not aligned with the statuses: an insert displaces
+        /// nothing and a delete over a window displaces any number of values, so
+        /// the outcome carries whatever was displaced, in the order it happened.
+        /// The dispatcher reports them in the OldValues of the audit event.
         /// </remarks>
-        private static ValueTask<HistorianUpdateOutcome<T>> Outcome<T>(ArrayOf<StatusCode> results)
+        private static ValueTask<HistorianUpdateOutcome<T>> Outcome<T>(ArrayOf<StatusCode> results, List<T> oldValues = null, bool rolledBack = false)
         {
-            return new ValueTask<HistorianUpdateOutcome<T>>(new HistorianUpdateOutcome<T>(results));
+            return new ValueTask<HistorianUpdateOutcome<T>>(new HistorianUpdateOutcome<T>(
+                results,
+                oldValues == null ? default : new ArrayOf<T>(oldValues.ToArray()),
+                transactionRolledBack: rolledBack));
         }
 
         /// <summary>
@@ -801,8 +781,11 @@ namespace Quickstarts.HistoricalAccessServer
                         return Outcome<DataValue>(RepeatStatus(StatusCodes.BadNodeIdUnknown, values.Count));
                     }
 
-                    return Outcome<DataValue>(
-                        UpdateItem(item, context, values, performUpdateType));
+                    var displaced = new List<DataValue>();
+
+                    return Outcome(
+                        UpdateItem(item, context, values, performUpdateType, commit: true, displaced),
+                        displaced);
                 }
             }
             catch (Exception e)
@@ -825,7 +808,10 @@ namespace Quickstarts.HistoricalAccessServer
         /// A value which fails answers with the reason it failed; the others answer
         /// with BadHistoryOperationUnsupported, because nothing became of them - the
         /// convention the in memory historian of the SDK uses for a batch it rolled
-        /// back.
+        /// back - and the outcome says the transaction was rolled back, which the
+        /// dispatcher turns into BadTransactionFailed for the update as a whole.
+        /// Nothing was displaced either: the values a rolled back replace took out
+        /// are back where they were.
         /// </remarks>
         private ValueTask<HistorianUpdateOutcome<DataValue>> UpdateDataAtomicAsync(
             HistorianOperationContext context,
@@ -844,13 +830,14 @@ namespace Quickstarts.HistoricalAccessServer
                         return Outcome<DataValue>(RepeatStatus(StatusCodes.BadNodeIdUnknown, values.Count));
                     }
 
-                    StatusCode[] results = UpdateItem(item, context, values, performUpdateType, commit: false);
+                    var displaced = new List<DataValue>();
+                    StatusCode[] results = UpdateItem(item, context, values, performUpdateType, commit: false, displaced);
                     int failed = Array.FindIndex(results, StatusCode.IsBad);
 
                     if (failed < 0)
                     {
                         item.CommitChanges();
-                        return Outcome<DataValue>(results);
+                        return Outcome(results, displaced);
                     }
 
                     item.RollbackChanges();
@@ -859,7 +846,7 @@ namespace Quickstarts.HistoricalAccessServer
                     Array.Fill(results, (StatusCode)StatusCodes.BadHistoryOperationUnsupported);
                     results[failed] = reason;
 
-                    return Outcome<DataValue>(results);
+                    return Outcome<DataValue>(results, rolledBack: true);
                 }
             }
             catch (Exception e)
@@ -870,20 +857,27 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <summary>
-        /// Writes the values of one item, one status per value.
+        /// Writes the values of one item, one status per value, collecting the
+        /// values the writes displaced.
         /// </summary>
         private static StatusCode[] UpdateItem(
             ArchiveItemState item,
             HistorianOperationContext context,
             ArrayOf<DataValue> values,
             PerformUpdateType performUpdateType,
-            bool commit = true)
+            bool commit,
+            IList<DataValue> displaced)
         {
             StatusCode[] results = new StatusCode[values.Count];
 
             for (int ii = 0; ii < values.Count; ii++)
             {
-                results[ii] = item.UpdateHistory(context.SystemContext, values[ii], performUpdateType, commit);
+                results[ii] = item.UpdateHistory(context.SystemContext, values[ii], performUpdateType, commit, out DataValue? previous);
+
+                if (previous.HasValue)
+                {
+                    displaced.Add(previous.Value);
+                }
             }
 
             return results;
@@ -910,16 +904,26 @@ namespace Quickstarts.HistoricalAccessServer
                     }
 
                     StatusCode[] results = new StatusCode[annotations.Count];
+                    var displaced = new List<Annotation>();
 
                     for (int ii = 0; ii < annotations.Count; ii++)
                     {
                         // the dispatcher passes null for a value it could not decode.
-                        results[ii] = annotations[ii] == null
-                            ? StatusCodes.BadTypeMismatch
-                            : item.UpdateAnnotations(annotations[ii], performUpdateType);
+                        if (annotations[ii] == null)
+                        {
+                            results[ii] = StatusCodes.BadTypeMismatch;
+                            continue;
+                        }
+
+                        results[ii] = item.UpdateAnnotations(annotations[ii], performUpdateType, out Annotation previous);
+
+                        if (previous != null)
+                        {
+                            displaced.Add(previous);
+                        }
                     }
 
-                    return Outcome<Annotation>(results);
+                    return Outcome(results, displaced);
                 }
             }
             catch (Exception e)

@@ -74,6 +74,7 @@ namespace Quickstarts.UserAuthenticationClient
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62565/Quickstarts/UserAuthenticationServer";
             this.Text = configuration.ApplicationName;
 

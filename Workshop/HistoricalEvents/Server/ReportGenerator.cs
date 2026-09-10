@@ -264,7 +264,16 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <summary>
         /// Deletes the event with the specified event id.
         /// </summary>
-        public bool DeleteEvent(string eventId)
+        /// <param name="eventId">The event id of the report, as a guid in string form.</param>
+        /// <param name="reportType">The kind of report which was deleted.</param>
+        /// <param name="displaced">A copy of the row which was deleted, or null when there was none.</param>
+        /// <returns>True when a report was deleted.</returns>
+        /// <remarks>
+        /// The row is copied before it goes: the provider reports what a delete
+        /// removed, and a row which has been deleted from its table cannot be read
+        /// any more.
+        /// </remarks>
+        public bool DeleteEvent(string eventId, out ReportType reportType, out DataRow displaced)
         {
             StringBuilder filter = new StringBuilder();
 
@@ -282,13 +291,28 @@ namespace Quickstarts.HistoricalEvents.Server
 
                 if (view.Count > 0)
                 {
+                    reportType = (ReportType)ii;
+                    displaced = CopyRow(view[0].Row);
                     view[0].Delete();
                     m_dataset.AcceptChanges();
                     return true;
                 }
             }
 
+            reportType = default;
+            displaced = null;
             return false;
+        }
+
+        /// <summary>
+        /// Copies a row into a detached row of the same table, which reads like the
+        /// original after the original has been rewritten or deleted.
+        /// </summary>
+        private static DataRow CopyRow(DataRow source)
+        {
+            DataRow copy = source.Table.NewRow();
+            copy.ItemArray = (object[])source.ItemArray.Clone();
+            return copy;
         }
 
         /// <summary>
@@ -300,6 +324,7 @@ namespace Quickstarts.HistoricalEvents.Server
         /// <param name="fields">The fields of the report, keyed by browse path.</param>
         /// <param name="defaultWellId">The well to file the report under when its fields do not name one.</param>
         /// <param name="performUpdateType">Whether the report may be created, replaced or both.</param>
+        /// <param name="displaced">A copy of the row a replace overwrote, or null when the write created one or was refused.</param>
         /// <returns>What became of the report, as a Part 11 status code.</returns>
         /// <remarks>
         /// The columns of a report are typed and the fields of an incoming event are
@@ -310,6 +335,10 @@ namespace Quickstarts.HistoricalEvents.Server
         /// Which well a report belongs to is a column of it rather than a property of
         /// the notifier it was written through, so a client which writes through the
         /// well itself and leaves the field out has the well filled in for it.
+        ///
+        /// A replace rewrites the row in place, so the row is copied out first: the
+        /// provider reports what the replace displaced, and the copy is what it
+        /// reports.
         /// </remarks>
         public StatusCode WriteEvent(
             ReportType reportType,
@@ -317,8 +346,11 @@ namespace Quickstarts.HistoricalEvents.Server
             DateTime sourceTimestamp,
             ArrayOf<KeyValuePair<string, Variant>> fields,
             string defaultWellId,
-            PerformUpdateType performUpdateType)
+            PerformUpdateType performUpdateType,
+            out DataRow displaced)
         {
+            displaced = null;
+
             DataTable table = m_dataset.Tables[(int)reportType];
             DataRow existing = FindRow(table, eventId);
 
@@ -330,6 +362,11 @@ namespace Quickstarts.HistoricalEvents.Server
             if (existing == null && performUpdateType == PerformUpdateType.Replace)
             {
                 return StatusCodes.BadNoEntryExists;
+            }
+
+            if (existing != null)
+            {
+                displaced = CopyRow(existing);
             }
 
             DataRow row = existing ?? table.NewRow();

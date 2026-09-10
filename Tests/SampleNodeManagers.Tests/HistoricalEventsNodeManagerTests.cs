@@ -367,6 +367,127 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// A report can be replaced in the history, and keeps its event id.
+        /// </summary>
+        /// <remarks>
+        /// The filter of the replace is the filter the report was written with: the
+        /// fields travel in the order the select clauses name them, so a replace
+        /// with a corrected field and the same event id rewrites the row in place.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AReportCanBeReplacedAndKeepsItsEventId(CancellationToken ct)
+        {
+            NodeId platforms = await ResolvePlatformsAsync(ct).ConfigureAwait(false);
+
+            EventFilter filter = ReportFilter();
+            ByteString eventId = NewEventId();
+            DateTime raised = BackdatedTime();
+
+            await HistoryOps
+                .UpdateEventsAsync(Session, platforms, PerformUpdateType.Insert, filter, [FluidLevelReport(eventId, raised, "Well_91423", 100.0)], ct)
+                .ConfigureAwait(false);
+
+            (StatusCode result, IReadOnlyList<StatusCode> perEvent) = await HistoryOps
+                .UpdateEventsAsync(Session, platforms, PerformUpdateType.Replace, filter, [FluidLevelReport(eventId, raised, "Well_91423", 250.0)], ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"Replacing the report: {result} / {string.Join(", ", perEvent)}")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                perEvent[0],
+                Is.EqualTo((StatusCode)StatusCodes.GoodEntryReplaced),
+                "A report which is in the history can be replaced.");
+
+            HistoryReadOutcome outcome = await HistoryOps
+                .ReadEventsAsync(Session, platforms, raised.AddSeconds(-1), raised.AddSeconds(1), 0, filter, ct)
+                .ConfigureAwait(false);
+
+            HistoryEventFieldList replaced = Find(outcome, eventId);
+
+            Assert.That(replaced, Is.Not.Null, "The replaced report is still in the history under its event id.");
+
+            Assert.That(
+                replaced.EventFields[6].TryGetValue(out double fluidLevel) ? fluidLevel : double.NaN,
+                Is.EqualTo(250.0),
+                "The replaced report carries the corrected field.");
+        }
+
+        /// <summary>
+        /// Deleting a report is audited, and the audit event says which report it was.
+        /// </summary>
+        /// <remarks>
+        /// The dispatcher reports an audit event for every event history update and
+        /// hands it the events the provider says it displaced. The sample switches
+        /// auditing on and its provider hands back a copy of the deleted row, so the
+        /// audit event of a delete carries the report which is gone. A server only
+        /// delivers audit events to a session on an encrypted channel.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task DeletingAReportIsAuditedWithTheReportItRemoved(CancellationToken ct)
+        {
+            NodeId platforms = await ResolvePlatformsAsync(ct).ConfigureAwait(false);
+
+            await using TestClient writer = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "event history auditor", null, ct)
+                .ConfigureAwait(false);
+
+            await writer.Session.FetchNamespaceTablesAsync(ct).ConfigureAwait(false);
+
+            await using EventCapture audit = await EventCapture
+                .CreateAsync(
+                    writer.Session,
+                    ObjectIds.Server,
+                    ct,
+                    ObjectTypeIds.AuditHistoryUpdateEventType,
+                    [new QualifiedName(Opc.Ua.BrowseNames.Status)],
+                    [new QualifiedName(Opc.Ua.BrowseNames.UpdatedNode)],
+                    [new QualifiedName(Opc.Ua.BrowseNames.OldValues)])
+                .ConfigureAwait(false);
+
+            EventFilter filter = ReportFilter();
+            ByteString eventId = NewEventId();
+            DateTime raised = BackdatedTime();
+
+            await HistoryOps
+                .UpdateEventsAsync(writer.Session, platforms, PerformUpdateType.Insert, filter, [FluidLevelReport(eventId, raised, "Well_24412", 77.0)], ct)
+                .ConfigureAwait(false);
+
+            (_, IReadOnlyList<StatusCode> perEvent) = await HistoryOps
+                .DeleteEventsAsync(writer.Session, platforms, [eventId], ct)
+                .ConfigureAwait(false);
+
+            Assert.That(perEvent[0], Is.EqualTo((StatusCode)StatusCodes.Good), "Deleting the report failed.");
+
+            CapturedEvent reported = await audit
+                .WaitAsync(
+                    candidate => candidate.EventType == ObjectTypeIds.AuditHistoryEventDeleteEventType
+                        && candidate.Field(Opc.Ua.BrowseNames.UpdatedNode).TryGetValue(out NodeId updated)
+                        && updated == platforms,
+                    TimeSpan.FromSeconds(20),
+                    "the audit event of the delete",
+                    ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out.WriteLineAsync($"The server audited the delete: {reported}").ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    reported.Field(Opc.Ua.BrowseNames.Status).TryGetValue(out bool succeeded) && succeeded,
+                    Is.True,
+                    "The audit event of a delete the server accepted reports Status true.");
+
+                Assert.That(
+                    reported.Field(Opc.Ua.BrowseNames.OldValues).IsNull,
+                    Is.False,
+                    "The audit event carries the report the delete removed, which the provider reported.");
+            });
+        }
+
+        /// <summary>
         /// Deleting an event which is not in the history is refused.
         /// </summary>
         [Test]

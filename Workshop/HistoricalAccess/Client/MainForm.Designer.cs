@@ -51,6 +51,7 @@ namespace Quickstarts.HistoricalAccess.Client
             this.Server_DiscoverMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Server_ConnectMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Server_DisconnectMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.Server_WatchAuditEventsMI = new System.Windows.Forms.ToolStripMenuItem();
             this.AggregatesMI = new System.Windows.Forms.ToolStripMenuItem();
             this.Aggregates_EnableSubscriptionMI = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -103,7 +104,8 @@ namespace Quickstarts.HistoricalAccess.Client
             this.ServerMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.Server_DiscoverMI,
             this.Server_ConnectMI,
-            this.Server_DisconnectMI});
+            this.Server_DisconnectMI,
+            this.Server_WatchAuditEventsMI});
             this.ServerMI.Name = "ServerMI";
             this.ServerMI.Size = new System.Drawing.Size(51, 20);
             this.ServerMI.Text = "Server";
@@ -128,7 +130,15 @@ namespace Quickstarts.HistoricalAccess.Client
             this.Server_DisconnectMI.Size = new System.Drawing.Size(127, 22);
             this.Server_DisconnectMI.Text = "Disconnect";
             this.Server_DisconnectMI.Click += new System.EventHandler(this.Server_DisconnectMI_ClickAsync);
-            // 
+            //
+            // Server_WatchAuditEventsMI
+            //
+            this.Server_WatchAuditEventsMI.CheckOnClick = true;
+            this.Server_WatchAuditEventsMI.Name = "Server_WatchAuditEventsMI";
+            this.Server_WatchAuditEventsMI.Size = new System.Drawing.Size(180, 22);
+            this.Server_WatchAuditEventsMI.Text = "Watch Audit Events";
+            this.Server_WatchAuditEventsMI.CheckedChanged += new System.EventHandler(this.Server_WatchAuditEventsMI_CheckedChangedAsync);
+            //
             // AggregatesMI
             // 
             this.AggregatesMI.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -300,6 +310,7 @@ namespace Quickstarts.HistoricalAccess.Client
         private System.Windows.Forms.ToolStripMenuItem Server_DiscoverMI;
         private System.Windows.Forms.ToolStripMenuItem Server_ConnectMI;
         private System.Windows.Forms.ToolStripMenuItem Server_DisconnectMI;
+        private System.Windows.Forms.ToolStripMenuItem Server_WatchAuditEventsMI;
         private System.Windows.Forms.Panel MainPN;
         private System.Windows.Forms.ToolStripMenuItem HelpMI;
         private System.Windows.Forms.ToolStripMenuItem Help_ContentsMI;

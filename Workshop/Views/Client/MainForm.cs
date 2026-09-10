@@ -73,6 +73,7 @@ namespace Quickstarts.ViewsClient
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62561/Quickstarts/ViewsServer";
             this.Text = configuration.ApplicationName;
 

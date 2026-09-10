@@ -80,6 +80,7 @@ namespace Quickstarts.HistoricalEvents.Client
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62553/Quickstarts/HistoricalEventsServer";
             this.Text = configuration.ApplicationName;
 
@@ -92,9 +93,11 @@ namespace Quickstarts.HistoricalEvents.Client
             m_model.FilterChanged += Model_FilterChanged;
             m_model.Error += Model_Error;
 
-            // the list deletes through the model, with the area and filter of the window.
+            // the list deletes and rewrites through the model, with the area and filter
+            // of the window.
             EventsLV.Telemetry = telemetry;
             EventsLV.DeleteEvents = DeleteEventsAsync;
+            EventsLV.ReplaceEventField = ReplaceEventFieldAsync;
         }
         #endregion
 
@@ -134,6 +137,14 @@ namespace Quickstarts.HistoricalEvents.Client
         private Task DeleteEventsAsync(IReadOnlyList<EventRecord> events, CancellationToken ct)
         {
             return m_model.DeleteEventsAsync(m_model.AreaId, m_model.Filter, events, ct);
+        }
+
+        /// <summary>
+        /// Replaces one field of an event in the history of the area the list shows.
+        /// </summary>
+        private Task<EventRecord> ReplaceEventFieldAsync(EventRecord record, QualifiedName field, Variant value, CancellationToken ct)
+        {
+            return m_model.ReplaceEventFieldAsync(m_model.AreaId, m_model.Filter, record, field, value, ct);
         }
         #endregion
 

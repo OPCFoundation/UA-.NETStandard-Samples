@@ -261,5 +261,121 @@ namespace Opc.Ua.Samples.Tests
                     "Every sample lies inside the requested window.");
             });
         }
+
+        /// <summary>
+        /// A read at a time between two samples is interpolated by the framework.
+        /// </summary>
+        /// <remarks>
+        /// The provider of this sample implements raw reads only, so a read at a
+        /// point in time runs on the fallback of the stack: it reads the raw
+        /// samples around the requested time and interpolates between them. This
+        /// is the one place in the repository where that fallback is what is under
+        /// test - the historian samples implement at-time reads natively.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task ReadAtTimeIsInterpolatedByTheFramework(CancellationToken ct)
+        {
+            NodeId archived = await PathAsync(ct, "Data", "Dynamic", "Scalar", "Int32Value")
+                .ConfigureAwait(false);
+
+            await using TestClient reader = await TestClient
+                .ConnectAsync(
+                    EndpointUrl,
+                    "at-time reader",
+                    new UserIdentity("history reader", Encoding.UTF8.GetBytes("history")),
+                    ct)
+                .ConfigureAwait(false);
+
+            DateTime endTime = DateTime.UtcNow;
+
+            IReadOnlyList<DataValue> samples = await HistoryOps
+                .ReadAllRawAsync(reader.Session, archived, endTime.AddMinutes(-10), endTime, 100, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(samples, Has.Count.GreaterThan(2), "The archive holds several samples of the last ten minutes.");
+
+            // halfway between two recorded samples, where nothing was recorded.
+            DateTime before = (DateTime)samples[1].SourceTimestamp;
+            DateTime after = (DateTime)samples[2].SourceTimestamp;
+            DateTime between = before.AddTicks((after - before).Ticks / 2);
+
+            HistoryReadOutcome outcome = await HistoryOps
+                .ReadAtTimeAsync(reader.Session, archived, [between], ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"Between {samples[1].WrappedValue} at {before:O} and {samples[2].WrappedValue} at {after:O} " +
+                    $"the read at {between:O} answers {outcome.Values[0].WrappedValue} ({outcome.Values[0].StatusCode})")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(StatusCode.IsGood(outcome.StatusCode), Is.True, $"Reading at a time failed: {outcome.StatusCode}");
+                Assert.That(outcome.Values, Has.Count.EqualTo(1), "One time asked for, one value expected.");
+                Assert.That((DateTime)outcome.Values[0].SourceTimestamp, Is.EqualTo(between), "The value carries the time asked for.");
+                Assert.That(StatusCode.IsNotBad(outcome.Values[0].StatusCode), Is.True, "Between two good samples an interpolated value is not bad.");
+                Assert.That(outcome.Values[0].WrappedValue.IsNull, Is.False, "An interpolated value carries a value.");
+            });
+        }
+
+        /// <summary>
+        /// An aggregate over the archive is computed by the framework.
+        /// </summary>
+        /// <remarks>
+        /// The provider implements no processed read, so the average runs on the
+        /// streaming fallback of the stack: the raw samples are read with their
+        /// bounds and fed through the aggregate calculator of the server, one
+        /// interval at a time. The samples are ten seconds apart, so a minute holds
+        /// six of them and an average per minute summarises rather than repeats.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AverageIsComputedByTheFramework(CancellationToken ct)
+        {
+            NodeId archived = await PathAsync(ct, "Data", "Dynamic", "Scalar", "Int32Value")
+                .ConfigureAwait(false);
+
+            await using TestClient reader = await TestClient
+                .ConnectAsync(
+                    EndpointUrl,
+                    "aggregate reader",
+                    new UserIdentity("history reader", Encoding.UTF8.GetBytes("history")),
+                    ct)
+                .ConfigureAwait(false);
+
+            DateTime endTime = DateTime.UtcNow;
+            DateTime startTime = endTime.AddMinutes(-10);
+
+            IReadOnlyList<DataValue> samples = await HistoryOps
+                .ReadAllRawAsync(reader.Session, archived, startTime, endTime, 100, ct)
+                .ConfigureAwait(false);
+
+            HistoryReadOutcome outcome = await HistoryOps.ReadProcessedAsync(
+                reader.Session,
+                archived,
+                startTime,
+                endTime,
+                60_000,
+                ObjectIds.AggregateFunction_Average,
+                ct).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync(
+                    $"Average per minute over ten minutes: {outcome.StatusCode}, " +
+                    $"{outcome.Values.Count} values from {samples.Count} samples")
+                .ConfigureAwait(false);
+
+            Assert.Multiple(() => {
+                Assert.That(StatusCode.IsGood(outcome.StatusCode), Is.True, $"Reading an average failed: {outcome.StatusCode}");
+                Assert.That(outcome.Values, Has.Count.EqualTo(10), "Ten minutes in intervals of one minute are ten averages.");
+                Assert.That(outcome.Values, Has.Count.LessThan(samples.Count), "An average summarises the raw samples rather than repeating them.");
+
+                Assert.That(
+                    outcome.Values.Select(value => (DateTime)value.SourceTimestamp),
+                    Is.Ordered.Ascending,
+                    "The averages are stamped with the start of their interval, in order.");
+            });
+        }
     }
 }

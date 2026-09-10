@@ -61,6 +61,7 @@ namespace Quickstarts.HistoricalEvents.Client
             this.EventsLV = new System.Windows.Forms.ListView();
             this.PopupMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.ViewDetailsMI = new System.Windows.Forms.ToolStripMenuItem();
+            this.EditFieldMI = new System.Windows.Forms.ToolStripMenuItem();
             this.DeleteHistoryMI = new System.Windows.Forms.ToolStripMenuItem();
             this.PopupMenu.SuspendLayout();
             this.SuspendLayout();
@@ -81,16 +82,25 @@ namespace Quickstarts.HistoricalEvents.Client
             // 
             this.PopupMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.ViewDetailsMI,
+            this.EditFieldMI,
             this.DeleteHistoryMI});
             this.PopupMenu.Name = "PopupMenu";
             this.PopupMenu.Size = new System.Drawing.Size(197, 70);
-            // 
+            this.PopupMenu.Opening += new System.ComponentModel.CancelEventHandler(this.PopupMenu_Opening);
+            //
             // ViewDetailsMI
-            // 
+            //
             this.ViewDetailsMI.Name = "ViewDetailsMI";
             this.ViewDetailsMI.Size = new System.Drawing.Size(196, 22);
             this.ViewDetailsMI.Text = "View Details...";
             this.ViewDetailsMI.Click += new System.EventHandler(this.ViewDetailsMI_Click);
+            //
+            // EditFieldMI
+            //
+            this.EditFieldMI.Name = "EditFieldMI";
+            this.EditFieldMI.Size = new System.Drawing.Size(196, 22);
+            this.EditFieldMI.Text = "Edit Field in Historian...";
+            this.EditFieldMI.Click += new System.EventHandler(this.EditFieldMI_ClickAsync);
             // 
             // DeleteHistoryMI
             // 
@@ -116,6 +126,7 @@ namespace Quickstarts.HistoricalEvents.Client
         private System.Windows.Forms.ListView EventsLV;
         private System.Windows.Forms.ContextMenuStrip PopupMenu;
         private System.Windows.Forms.ToolStripMenuItem ViewDetailsMI;
+        private System.Windows.Forms.ToolStripMenuItem EditFieldMI;
         private System.Windows.Forms.ToolStripMenuItem DeleteHistoryMI;
     }
 }
