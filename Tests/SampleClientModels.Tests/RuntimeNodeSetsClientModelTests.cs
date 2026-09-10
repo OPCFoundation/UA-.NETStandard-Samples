@@ -239,5 +239,93 @@ namespace Opc.Ua.Samples.Tests
 
             await Model.StopWatchingAsync().ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// The other half of the sample: browsing the site model shows the address space
+        /// the NodeSet2 overlay produced, and which of its nodes the type model accounts
+        /// for.
+        /// </summary>
+        /// <remarks>
+        /// This is what a Client can tell about an overlay. A Browse response never says
+        /// which document a node came from - an imported node is an ordinary node - so
+        /// the evidence is that the address space says more than the types do, and that
+        /// a slot the model declares was answered with something else.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task TheSiteModelShowsWhatTheOverlayAddedAndReplaced(CancellationToken ct)
+        {
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            IReadOnlyList<SiteNode> nodes = await Model.BrowseSiteModelAsync(ct).ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync("Site: " + string.Join(
+                    ", ",
+                    nodes.Select(node =>
+                        $"{node.Name}{(node.DeclaredByType ? string.Empty : " (from the document)")}")))
+                .ConfigureAwait(false);
+
+            IReadOnlyList<string> undeclared = nodes
+                .Where(node => !node.DeclaredByType)
+                .Select(node => node.Name)
+                .ToArray();
+
+            Assert.Multiple(() => {
+                Assert.That(
+                    nodes.Select(node => node.Name),
+                    Does.Contain("Station1").And.Contain("Station2").And.Contain("Station3"),
+                    "The site does not carry the model's two slots plus the station the overlay added.");
+
+                // the type model accounts for neither of these: they exist because the
+                // documents put them there.
+                Assert.That(
+                    undeclared,
+                    Is.EquivalentTo(new[] { "Station3", "Temperature" }),
+                    "The nodes no type declares are not the ones the overlay documents add.");
+
+                // Station1 was replaced by a document which declares no Reset, so the
+                // slot it took over lost the Method its type declares. Station2, which no
+                // document claimed, still has it.
+                Assert.That(
+                    ChildrenOf(nodes, "Station1"),
+                    Is.EquivalentTo(new[] { "Throughput", "Status" }),
+                    "The replaced station does not carry exactly what its document declares.");
+                Assert.That(
+                    ChildrenOf(nodes, "Station2"),
+                    Does.Contain("Reset"),
+                    "The slot no document claimed lost the Method its type declares.");
+            });
+        }
+
+        /// <summary>
+        /// The names one level below a node of the flattened site listing.
+        /// </summary>
+        private static IReadOnlyList<string> ChildrenOf(
+            IReadOnlyList<SiteNode> nodes,
+            string parent)
+        {
+            var children = new List<string>();
+
+            for (int ii = 0; ii < nodes.Count; ii++)
+            {
+                if (nodes[ii].Name != parent)
+                {
+                    continue;
+                }
+
+                for (int jj = ii + 1; jj < nodes.Count && nodes[jj].Depth > nodes[ii].Depth; jj++)
+                {
+                    if (nodes[jj].Depth == nodes[ii].Depth + 1)
+                    {
+                        children.Add(nodes[jj].Name);
+                    }
+                }
+
+                break;
+            }
+
+            return children;
+        }
     }
 }

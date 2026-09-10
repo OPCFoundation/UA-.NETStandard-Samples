@@ -148,6 +148,7 @@ namespace Quickstarts.RuntimeNodeSets.Client
 
                     RevisionCB.Items.Clear();
                     NodesLV.Items.Clear();
+                    SiteLV.Items.Clear();
                     WatchLV.Items.Clear();
                     StateLB.Text = string.Empty;
                     SetOperationsEnabled(false);
@@ -403,6 +404,47 @@ namespace Quickstarts.RuntimeNodeSets.Client
             finally
             {
                 NodesLV.EndUpdate();
+            }
+
+            await RefreshSiteAsync();
+        }
+
+        /// <summary>
+        /// Browses the site model and shows which of its nodes the type model accounts
+        /// for.
+        /// </summary>
+        /// <remarks>
+        /// The overlay is a start-up affair - the documents are imported once, into the
+        /// node manager the model was generated for - so unlike the vendor model this
+        /// list does not change while the server runs. The last column is what there is
+        /// to look at: <c>Station3</c> and <c>Station3/Temperature</c> are nodes no type
+        /// declares, and <c>Station1</c> is missing the <c>Reset</c> its type does
+        /// declare, because the document which replaced it does not carry one.
+        /// </remarks>
+        private async Task RefreshSiteAsync()
+        {
+            IReadOnlyList<SiteNode> nodes = await m_model.BrowseSiteModelAsync();
+
+            SiteLV.BeginUpdate();
+
+            try
+            {
+                SiteLV.Items.Clear();
+
+                foreach (SiteNode node in nodes)
+                {
+                    var item = new ListViewItem(new string(' ', node.Depth * 4) + node.Name);
+
+                    item.SubItems.Add(node.NodeId.ToString());
+                    item.SubItems.Add(node.Value);
+                    item.SubItems.Add(node.DeclaredByType ? "yes" : "no - from the document");
+
+                    SiteLV.Items.Add(item);
+                }
+            }
+            finally
+            {
+                SiteLV.EndUpdate();
             }
         }
 

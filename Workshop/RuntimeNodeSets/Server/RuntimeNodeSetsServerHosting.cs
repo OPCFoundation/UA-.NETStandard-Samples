@@ -14,6 +14,7 @@ using Opc.Ua;
 using Opc.Ua.Server;
 using Opc.Ua.Server.Hosting;
 using Quickstarts.RuntimeNodeSets.Server;
+using Quickstarts.RuntimeNodeSets.Site;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -23,10 +24,19 @@ namespace Microsoft.Extensions.DependencyInjection
     /// removes that document while the server runs.
     /// </summary>
     /// <remarks>
-    /// This sample has no node manager class, no model design and no generated code. The
-    /// address space is two NodeSet2 documents; <c>AddRuntimeNodeSet</c> is the whole of
-    /// the registration for one of them, and the other is published by
-    /// <see cref="RuntimeNodeSetController"/> once the server is up.
+    /// <para>
+    /// Three node managers, and the three ways a NodeSet2 document reaches one.
+    /// <c>AddRuntimeNodeSet</c> is the whole of the registration for the control model -
+    /// no node manager class, no model design, no generated code. The vendor model is the
+    /// same kind of document published through <see cref="RuntimeNodeSetController"/>
+    /// once the server is up, because only a registration the lifecycle made can be
+    /// reloaded or removed later.
+    /// </para>
+    /// <para>
+    /// <c>SiteNodeManager</c> is the odd one out: it has a model design and generated
+    /// code, and the documents it imports are an overlay on that model rather than an
+    /// address space of their own.
+    /// </para>
     /// </remarks>
     public static class RuntimeNodeSetsServerHosting
     {
@@ -66,6 +76,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     // reads the Models metadata of the file right here, so the namespace
                     // it claims is in the namespace table before the server starts.
                     server.AddRuntimeNodeSet(controller.ControlModelOptions());
+
+                    // the compiled half of the sample: a generated node manager which
+                    // overlays the Site.*.NodeSet2.xml documents onto its own model
+                    // through INodeManagerBuilder.Import. The factory takes the same
+                    // library out of the container.
+                    server.AddNodeManager<SiteOverlayNodeManagerFactory>();
 
                     // the vendor model is published by the controller instead, because it
                     // is the one which gets reloaded and removed and only a registration

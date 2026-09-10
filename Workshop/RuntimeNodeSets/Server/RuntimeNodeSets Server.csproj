@@ -18,9 +18,13 @@
     <EmbeddedResource Include="App.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
+    <!-- The compiled half of this sample: the OEM model the overlay documents extend.
+         ModelDesign.csv fixes the identifiers the documents name. -->
+    <AdditionalFiles Include="ModelDesign.xml" />
+    <AdditionalFiles Include="ModelDesign.csv" />
 
-    <!-- The address space of this sample. There is no model design and no source
-         generation: the NodeSet2 documents are data the server reads at run time, so
+    <!-- Every NodeSet2 document of this sample is data the server reads at run time,
+         whether it is published as its own node manager or imported as an overlay, so
          they are copied next to the executable and nothing else happens to them. -->
     <Content Include="NodeSets\*.NodeSet2.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -39,5 +43,11 @@
     <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server">
       <Version>$(OpcUaNetStandardVersion)</Version>
     </PackageReference>
+
+    <PackageReference
+      Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration"
+      Version="$(OpcUaNetStandardVersion)"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

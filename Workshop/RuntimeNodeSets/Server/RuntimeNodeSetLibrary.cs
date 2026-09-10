@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Opc.Ua.Export;
 using Opc.Ua.Server.RuntimeNodeSet;
 
 namespace Quickstarts.RuntimeNodeSets.Server
@@ -44,6 +45,18 @@ namespace Quickstarts.RuntimeNodeSets.Server
         /// </summary>
         public const string ControlNamespaceUri =
             "http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Control/";
+
+        /// <summary>
+        /// The namespace of the site model, which is compiled into the server and
+        /// extended at run time by the overlay documents.
+        /// </summary>
+        /// <remarks>
+        /// Unlike the two namespaces above, this one has a ModelDesign and generated
+        /// code behind it. The overlay documents write into it rather than into one of
+        /// their own - that is what makes them an overlay instead of a second model.
+        /// </remarks>
+        public const string SiteNamespaceUri =
+            "http://opcfoundation.org/UA/Quickstarts/RuntimeNodeSets/Site/";
 
         /// <summary>
         /// The revision the server publishes when it starts.
@@ -121,6 +134,44 @@ namespace Quickstarts.RuntimeNodeSets.Server
                 DefaultNamespaceUri = VendorNamespaceUri,
                 AllowLifecycleFromRequestCallback = true,
             };
+        }
+
+        /// <summary>
+        /// The overlay documents the site node manager imports, in the order the
+        /// sample imports them.
+        /// </summary>
+        /// <remarks>
+        /// The order is cosmetic. Both documents are imported during one
+        /// <c>Configure</c> pass, and the whole batch is linked once after the pass
+        /// returns, so a node of the second document may name a parent which only
+        /// exists in the first - or the other way round.
+        /// </remarks>
+        public static IReadOnlyList<string> OverlayFiles { get; } =
+        [
+            "Site.Layout.NodeSet2.xml",
+            "Site.Instrumentation.NodeSet2.xml",
+        ];
+
+        /// <summary>
+        /// Reads the overlay documents from disk.
+        /// </summary>
+        /// <remarks>
+        /// This is the whole of what the sample does with a document before handing it
+        /// to <c>INodeManagerBuilder.Import</c>: parse it. A server which fetches the
+        /// document over HTTP or takes it out of a database reaches the same
+        /// <see cref="UANodeSet"/> a different way.
+        /// </remarks>
+        public IReadOnlyList<UANodeSet> ReadOverlayDocuments()
+        {
+            var documents = new List<UANodeSet>(OverlayFiles.Count);
+
+            foreach (string file in OverlayFiles)
+            {
+                using FileStream stream = File.OpenRead(Path.Combine(m_directory, file));
+                documents.Add(UANodeSet.Read(stream));
+            }
+
+            return documents;
         }
 
         /// <summary>
