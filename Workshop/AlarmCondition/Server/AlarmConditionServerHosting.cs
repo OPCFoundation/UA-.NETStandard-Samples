@@ -48,7 +48,9 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             return services.AddSampleServer(
                 configurationFile ?? ConfigurationFile,
-                server => server.AddNodeManager<AlarmConditionServerNodeManagerFactory>(),
+                server => server
+                    .AddNodeManager<AlarmConditionServerNodeManagerFactory>()
+                    .AddStartupTask<FilteredRetainCapability>(),
                 configure);
         }
     }

@@ -103,7 +103,47 @@ A single `SuppressedState` carries every cause an alarm can have — the plant, 
 cause the engine just decided on and re-applies the union to the members. Clearing one cause
 therefore does not clear a suppression another cause still asks for.
 
-### 6. Alarm metrics
+### 6. Filtered retain
+
+An operator's list shows what asks for attention, so the client subscribes with a where
+clause which leaves out an alarm that is suppressed, shelved or out of service:
+
+```
+(NOT OfType(AlarmConditionType) OR SuppressedOrShelved == False) AND OfType(ConditionType)
+```
+
+A clause like that is one a condition can **fall out of without the condition ending**. The
+server goes on retaining the suppressed alarm — it is still there, it simply stopped matching
+what this client asked for — so the last event the client ever saw of it leaves a row standing
+which nothing will update again. Every other client, with a different where clause, is
+unaffected, which is why the server cannot answer this by writing `Retain = false`.
+
+**Filtered retain** (Part 9 §B.1.4) is the mechanism for it, and this sample turns it on:
+
+* Every alarm sets `ConditionState.SupportsFilteredRetain`. The flag is deliberately *not* a
+  child of the condition — Part 9 provides `SupportsFilteredRetain` on the `ConditionType`
+  only — so it is set on the node rather than created from the type model, and
+  `CreateBranch` gives a branch its own copy.
+* [`FilteredRetainCapability`](Server/FilteredRetainCapability.cs) sets the Property on the
+  `ConditionType` node, which is where a client asks whether the server supports the concept
+  at all. The standard address space ships it `false`.
+* The stack does the rest. A monitored item remembers which conditions currently pass its
+  where clause; one which drops out is delivered **one more time**, with `Retain = false`
+  substituted into the fields for that client only, and then forgotten. It owes nothing
+  further until the condition comes back into scope.
+
+The client treats every event with `Retain = false` the same way, whichever of the two it is
+— an alarm the plant and the operator are done with, or one which left this client's filter:
+the row leaves the list. Suppress an alarm and it disappears at once; unsuppress it and it
+comes back. Without filtered retain the row would stand until the operator pressed *Refresh*.
+
+The `NOT OfType(AlarmConditionType)` half of the clause is not decoration.
+`SuppressedOrShelved` is declared by `AlarmConditionType`, and an operand which resolves to
+nothing makes `Equals` answer null and the whole element false — so a bare
+`SuppressedOrShelved == False` silently drops every condition which is not an alarm,
+including the `OnlineState` dialog of a source.
+
+### 7. Alarm metrics
 
 `AlarmRateTracker` counts activations into a sliding one minute window, and the simulation
 cycle copies `CurrentAlarmRate`, `MaximumAlarmRate`, `AlarmCount` and `MaximumReAlarmCount`
@@ -111,9 +151,12 @@ into the `AlarmMetrics` object of the source.
 
 ## Using the client
 
-Connect and the list fills with the conditions of the whole server. The **Flags** column shows
-the Part 9 states which are set — `Active, Latched, Silenced, Suppressed, OutOfService,
-Unacked, Unconfirmed` — so the effect of every Method below is visible in the row it acted on.
+Connect and the list fills with the conditions of the whole server which ask for attention.
+The **Flags** column shows the Part 9 states which are set — `Active, Latched, Silenced,
+Suppressed, OutOfService, Unacked, Unconfirmed` — so the effect of every Method below is
+visible in the row it acted on. A condition leaves the list when it reports `Retain = false`,
+which is either the plant and the operator being done with it or, through filtered retain,
+the alarm leaving the where clause of this client.
 
 Everything under **Conditions** goes through one `AlarmClient`, which is obtained from the
 session and delegates each call to the source generated proxy of the type that declares the
@@ -139,15 +182,19 @@ where `BadInvalidState` from a `Reset` on an alarm that is still active turns up
 
 1. **Latching.** Select the `Green` alarm of a Colours source, *Reset...* it while it is
    active — refused with `BadInvalidState`. *Acknowledge...*, then *Confirm...*: the alarm
-   goes inactive but stays in the list, still flagged `Latched`. Now *Reset...* it.
+   goes inactive but stays in the list, still flagged `Latched`. Now *Reset...* it: the latch
+   is what kept it retained, so clearing it takes the row out of the list.
 2. **The veto.** Answer the `OnlineState` dialog of that source with *Offline*, then try
    *Reset...* again — refused with `BadUserAccessDenied` and the reason why. The dialog arms
    itself again after every answer, so *Online* puts the source back.
-3. **Group suppression.** Select any condition of a source and *Toggle Maintenance Mode*, then
-   press *Refresh*. The alarms of that source are gone from the list, because the form filters
-   suppressed conditions out. Toggle it back and refresh again.
-4. **First in group.** Watch a Metals source and press *Refresh* while `Bronze` is active:
-   `Gold` and `Silver` are missing from the list for the same reason.
+3. **Group suppression, and filtered retain.** Select any condition of a source and *Toggle
+   Maintenance Mode*. Every alarm of that source disappears from the list within a second,
+   without a *Refresh*: the form filters suppressed conditions out, and each alarm reported
+   itself one last time with `Retain = false` on its way out of that filter. Toggle it back
+   and they return.
+4. **First in group.** Watch a Metals source: when `Bronze` goes active, `Gold` and `Silver`
+   leave the list the same way, because the leader of the group suppressed them.
+   *Suppression → Suppress...* on a single alarm does it one row at a time.
 5. **Re-alarming.** Leave an alarm unacknowledged and watch its message; every fifteen seconds
    it says it was re-alarmed and its acknowledgement is withdrawn again.
 
@@ -191,3 +238,10 @@ dotnet run --project "Workshop/AlarmCondition/Client/AlarmCondition Client.cspro
   merely got a comment would lose an operator's silence.
 * **`MaximumReAlarmCount` is optional** in `AlarmMetricsType`, so the type model does not
   materialize it on every server.
+* **A condition refresh has to hand over the condition, not the source.** A monitored item
+  resolves the condition behind an event from the handle of the snapshot it was given, and
+  that is what decides whether the condition takes part in filtered retain. This sample used
+  to overwrite the handle with the source, as a marker against replaying one source twice
+  when two areas declare it; the item then could not recognize anything a refresh replayed,
+  and filtered retain only started working once an alarm reported a live event of its own.
+  `SourceState.IsOwnCondition` is the marker instead.

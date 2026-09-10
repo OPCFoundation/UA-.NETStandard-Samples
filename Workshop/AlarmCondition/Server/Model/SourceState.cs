@@ -143,9 +143,7 @@ namespace Quickstarts.AlarmConditionServer
             // need to check if this source has already been processed during this refresh operation.
             for (int ii = 0; ii < events.Count; ii++)
             {
-                InstanceStateSnapshot e = events[ii] as InstanceStateSnapshot;
-
-                if (e != null && Object.ReferenceEquals(e.Handle, this))
+                if (events[ii] is InstanceStateSnapshot e && IsOwnCondition(e.Handle))
                 {
                     return;
                 }
@@ -154,21 +152,10 @@ namespace Quickstarts.AlarmConditionServer
             // the refresh can run concurrently with alarm changes reported by the underlying system.
             lock (m_lock)
             {
-                // report the dialog.
-                if (m_dialog != null)
+                // report the dialog. A dialog nobody has to answer is not refreshed.
+                if (m_dialog != null && m_dialog.Retain.Value)
                 {
-                    // do not refresh dialogs that are not active.
-                    if (m_dialog.Retain.Value)
-                    {
-                        // create a snapshot.
-                        InstanceStateSnapshot e = new InstanceStateSnapshot();
-                        e.Initialize(context, m_dialog);
-
-                        // set the handle of the snapshot to check for duplicates.
-                        e.Handle = this;
-
-                        events.Add(e);
-                    }
+                    events.Add(Snapshot(context, m_dialog));
                 }
 
                 // the alarm objects act as a cache for the last known state and are used to generate refresh events.
@@ -180,29 +167,50 @@ namespace Quickstarts.AlarmConditionServer
                         continue;
                     }
 
-                    // create a snapshot.
-                    InstanceStateSnapshot e = new InstanceStateSnapshot();
-                    e.Initialize(context, alarm);
-
-                    // set the handle of the snapshot to check for duplicates.
-                    e.Handle = this;
-
-                    events.Add(e);
+                    events.Add(Snapshot(context, alarm));
                 }
 
                 // report any active branches.
                 foreach (AlarmConditionState alarm in m_branches.Values)
                 {
-                    // create a snapshot.
-                    InstanceStateSnapshot e = new InstanceStateSnapshot();
-                    e.Initialize(context, alarm);
-
-                    // set the handle of the snapshot to check for duplicates.
-                    e.Handle = this;
-
-                    events.Add(e);
+                    events.Add(Snapshot(context, alarm));
                 }
             }
+        }
+        #endregion
+
+        #region Condition Refresh Support
+        /// <summary>
+        /// The state of one condition of this source, as a refresh reports it.
+        /// </summary>
+        /// <remarks>
+        /// The handle of the snapshot is the condition itself, which is what
+        /// <c>InstanceStateSnapshot.Initialize</c> leaves behind and what the live event
+        /// path of <see cref="ReportChangesAsync"/> hands over as well. A monitored item
+        /// resolves the condition behind an event through that handle, so a refresh which
+        /// overwrote it - this used to be the source, as the marker against reporting one
+        /// source twice - would replay conditions the item cannot recognize, and filtered
+        /// retain would only begin to work once an alarm reported a live event of its own.
+        /// <see cref="IsOwnCondition"/> is the marker instead.
+        /// </remarks>
+        private static InstanceStateSnapshot Snapshot(ISystemContext context, ConditionState condition)
+        {
+            var snapshot = new InstanceStateSnapshot();
+            snapshot.Initialize(context, condition);
+            return snapshot;
+        }
+
+        /// <summary>
+        /// Whether a refresh already replayed a condition which belongs to this source.
+        /// </summary>
+        /// <remarks>
+        /// More than one area may declare the same source, so one refresh walks the source
+        /// more than once. Every condition it owns - its alarms, their branches and its
+        /// dialog - was created with the source as its parent.
+        /// </remarks>
+        private bool IsOwnCondition(object handle)
+        {
+            return handle is BaseInstanceState condition && ReferenceEquals(condition.Parent, this);
         }
         #endregion
 
@@ -855,6 +863,19 @@ namespace Quickstarts.AlarmConditionServer
             node.Time.Value = DateTime.UtcNow;
             node.ReceiveTime.Value = node.Time.Value;
             node.BranchId.Value = branchId;
+
+            // Filtered retain (Part 9, B.1.4). Every alarm of this server opts in, which
+            // makes the stack report one last event for the alarm as it leaves the where
+            // clause of a client - suppressed, shelved or taken out of service, all of
+            // which the default filter of the sample client asks against. That trailing
+            // event carries Retain = false for that one client, so the operator's list
+            // drops the alarm at the moment it stops being in scope instead of keeping a
+            // row which nothing will ever update again until a condition refresh.
+            //
+            // The flag is deliberately not a child of the condition - Part 9 provides
+            // SupportsFilteredRetain on the ConditionType only - so it is set on the node
+            // rather than created from the type model, and a branch gets its own copy.
+            node.SupportsFilteredRetain = PropertyState<bool>.With<VariantBuilder>(node, true);
 
             // set up method handlers.
             node.OnEnableDisable = OnEnableDisableAlarm;

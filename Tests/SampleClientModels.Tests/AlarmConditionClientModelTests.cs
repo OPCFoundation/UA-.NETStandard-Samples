@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Opc.Ua.Client.Alarms;
 using Opc.Ua.Samples.Client;
 using Quickstarts.AlarmConditionClient.Model;
 
@@ -256,11 +257,17 @@ namespace Opc.Ua.Samples.Tests
 
             foreach (ConditionChangedEventArgs change in later.Events)
             {
-                await TestContext.Out.WriteLineAsync($"After the filter: {change.Snapshot}").ConfigureAwait(false);
+                await TestContext.Out.WriteLineAsync($"After the filter: {change.Change} {change.Snapshot}").ConfigureAwait(false);
             }
 
+            // a removal is the one event which is allowed to carry a severity the filter
+            // does not accept: filtered retain reports a condition on its way out of the
+            // where clause, and dropping below High is one of the ways out
             Assert.That(
-                later.Events.Select(change => change.Snapshot).Where(snapshot => !PassesHigh(snapshot)),
+                later.Events
+                    .Where(change => change.Change != ConditionChange.Removed)
+                    .Select(change => change.Snapshot)
+                    .Where(snapshot => !PassesHigh(snapshot)),
                 Is.Empty,
                 "A condition below High severity got through the severity filter.");
 
@@ -269,6 +276,90 @@ namespace Opc.Ua.Samples.Tests
                 Model.Conditions.Where(snapshot => !PassesHigh(snapshot)),
                 Is.Empty,
                 "The model still lists a condition of the filter which was replaced.");
+        }
+
+        /// <summary>
+        /// Suppressing an alarm takes it out of the list, without a condition refresh.
+        /// </summary>
+        /// <remarks>
+        /// The where clause of the model leaves out an alarm which is suppressed, shelved
+        /// or out of service, so suppressing one takes it out of the scope of this client
+        /// while the server carries on retaining it. Filtered retain (OPC UA Part 9,
+        /// B.1.4) is what closes that gap: the alarms of the sample server opt in, so the
+        /// server reports the alarm one last time with <c>Retain = false</c> and the model
+        /// drops it. Without it the row would stand until the operator pressed Refresh.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task SuppressingAnAlarmTakesItOutOfTheListWithoutARefresh(CancellationToken ct)
+        {
+            var conditions = new EventSink<ConditionChangedEventArgs>();
+            Model.ConditionChanged += conditions.Handle;
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            // an alarm which is listed right now. A dialog has nothing to suppress, and a
+            // branch is a snapshot of an earlier state rather than a node to call.
+            ConditionChangedEventArgs listed = await conditions
+                .WaitForAsync(
+                    change => change.Change != ConditionChange.Removed
+                        && !change.Snapshot.IsDialog
+                        && !change.Snapshot.IsBranch,
+                    "no alarm arrived after attaching. The sample server reports one every few seconds",
+                    kConditionTimeout,
+                    ct)
+                .ConfigureAwait(false);
+
+            ConditionKey key = listed.Snapshot.Key;
+
+            await TestContext.Out.WriteLineAsync($"Suppressing {listed.Snapshot}").ConfigureAwait(false);
+
+            IReadOnlyList<ConditionCallResult> results = await Model
+                .SuppressAsync(new[] { key }, true, LocalizedText.Null, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(results, Has.Count.EqualTo(1));
+            Assert.That(results[0].Succeeded, Is.True, $"The server refused to suppress the alarm: {results[0].Status}");
+
+            try
+            {
+                await WaitUntilAsync(
+                    () => conditions.Events.Any(
+                        change => change.Snapshot.Key == key && change.Change == ConditionChange.Removed),
+                    "the suppressed alarm has to leave the list on its own: it no longer passes the where " +
+                    "clause of the client, and filtered retain is what reports it one last time",
+                    kConditionTimeout,
+                    ct).ConfigureAwait(false);
+
+                ConditionSnapshot left = conditions.Events
+                    .Last(change => change.Snapshot.Key == key)
+                    .Snapshot;
+
+                await TestContext.Out.WriteLineAsync($"Left the list: {left}").ConfigureAwait(false);
+
+                Assert.That(left.Retain, Is.False, "The trailing event of a condition which left the filter carries Retain false.");
+
+                Assert.That(
+                    Model.Conditions.Select(snapshot => snapshot.Key),
+                    Does.Not.Contain(key),
+                    "The model still lists an alarm which left the scope of its filter.");
+            }
+            finally
+            {
+                // the model can no longer be asked: it only calls Methods on conditions it
+                // lists, and this one is gone. The alarm client of the session can.
+                await Session
+                    .GetAlarmClient(NullTelemetry.Instance)
+                    .UnsuppressAsync(key.ConditionId, ct: CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+
+            // and back into scope: the alarm passes the where clause again and is added
+            await WaitUntilAsync(
+                () => Model.Conditions.Any(snapshot => snapshot.Key == key),
+                "an alarm which is no longer suppressed has to come back into the list",
+                kConditionTimeout,
+                ct).ConfigureAwait(false);
         }
 
         [Test]

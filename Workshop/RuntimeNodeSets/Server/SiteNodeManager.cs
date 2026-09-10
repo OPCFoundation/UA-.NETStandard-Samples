@@ -74,11 +74,19 @@ namespace Quickstarts.RuntimeNodeSets.Site
         /// <param name="server">The server the node manager belongs to.</param>
         /// <param name="configuration">The application configuration.</param>
         /// <param name="library">The NodeSet2 documents the sample ships.</param>
+        /// <param name="namespaceUris">
+        /// The namespaces the manager owns, or null for the ones the model declares. The
+        /// parameter exists so that this constructor is not a second three argument
+        /// candidate next to the generated one, whose last parameter is a
+        /// <c>string[]</c>: the generated parameterless overload chains with a literal
+        /// <c>null</c>, which would match both.
+        /// </param>
         public SiteNodeManager(
             IServerInternal server,
             ApplicationConfiguration configuration,
-            RuntimeNodeSetLibrary library)
-            : this(server, configuration)
+            RuntimeNodeSetLibrary library,
+            string[] namespaceUris = null)
+            : this(server, configuration, namespaceUris)
         {
             m_library = library ?? throw new ArgumentNullException(nameof(library));
         }

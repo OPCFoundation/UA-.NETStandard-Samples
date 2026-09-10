@@ -131,11 +131,46 @@ namespace Opc.Ua.Samples.Tests
         /// state variables of a condition all end in "Id", so the last element alone would
         /// not tell them apart.
         /// </param>
-        public static async Task<EventCapture> CreateAsync(
+        public static Task<EventCapture> CreateAsync(
             ISession session,
             NodeId notifier,
             CancellationToken ct,
             NodeId eventTypeId = default,
+            params QualifiedName[][] extraFields)
+        {
+            return CreateAsync(
+                session,
+                notifier,
+                eventTypeId.IsNull ? null : OfType(eventTypeId),
+                ct,
+                extraFields);
+        }
+
+        /// <summary>
+        /// Subscribes to the events of a notifier with a where clause the caller built and
+        /// the standard select clauses.
+        /// </summary>
+        /// <remarks>
+        /// A where clause a condition can leave again - anything asked of the state of the
+        /// condition rather than of its type - is what filtered retain is about, and a test
+        /// of that has to say what the clause is while it still wants the usual fields.
+        /// </remarks>
+        /// <param name="session">The session to subscribe on.</param>
+        /// <param name="notifier">The node which reports the events, usually the server.</param>
+        /// <param name="whereClause">The where clause, or null to accept every event.</param>
+        /// <param name="ct">The cancellation token.</param>
+        /// <param name="extraFields">
+        /// Fields beyond the standard ones, given as the browse path to reach them. They
+        /// are addressable afterwards by the name of their last element, or by the whole
+        /// path joined with slashes where the path has more than one element - the two
+        /// state variables of a condition all end in "Id", so the last element alone would
+        /// not tell them apart.
+        /// </param>
+        public static async Task<EventCapture> CreateAsync(
+            ISession session,
+            NodeId notifier,
+            ContentFilter whereClause,
+            CancellationToken ct,
             params QualifiedName[][] extraFields)
         {
             ArgumentNullException.ThrowIfNull(session);
@@ -174,9 +209,9 @@ namespace Opc.Ua.Samples.Tests
 
             var filter = new EventFilter { SelectClauses = selectClauses.ToArrayOf() };
 
-            if (!eventTypeId.IsNull)
+            if (whereClause != null)
             {
-                filter.WhereClause = OfType(eventTypeId);
+                filter.WhereClause = whereClause;
             }
 
             return await CreateAsync(session, notifier, filter, fieldNames.ToArray(), ct)

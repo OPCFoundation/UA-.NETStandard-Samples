@@ -39,7 +39,8 @@ namespace Quickstarts.AlarmConditionClient.Model
     }
 
     /// <summary>
-    /// Whether a condition is new to the list or an existing one changed.
+    /// Whether a condition is new to the list, an existing one changed, or one dropped
+    /// out of it.
     /// </summary>
     public enum ConditionChange
     {
@@ -48,6 +49,14 @@ namespace Quickstarts.AlarmConditionClient.Model
 
         /// <summary>A later event of a condition which is already listed.</summary>
         Updated,
+
+        /// <summary>
+        /// The condition stopped asking for attention and left the list. The snapshot is
+        /// the last state the model saw, with <see cref="ConditionSnapshot.Retain"/>
+        /// clear; the condition is no longer part of
+        /// <see cref="AlarmConditionClientModel.Conditions"/>.
+        /// </summary>
+        Removed,
     }
 
     /// <summary>
