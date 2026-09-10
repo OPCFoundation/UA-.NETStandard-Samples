@@ -71,6 +71,7 @@ namespace Quickstarts.PerfTestClient
         {
             InitializeComponent();
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62559/Quickstarts/PerfTestServer";
             this.Text = configuration.ApplicationName;
             m_telemetry = telemetry;

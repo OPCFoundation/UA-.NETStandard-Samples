@@ -75,6 +75,7 @@ namespace Quickstarts.HistoricalAccess.Client
 
             ReadCTRL.Reset();
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62550/Quickstarts/HistoricalAccessServer";
             this.Text = configuration.ApplicationName;
 
@@ -115,6 +116,7 @@ namespace Quickstarts.HistoricalAccess.Client
             if (disposing)
             {
                 components?.Dispose();
+                m_auditLB?.Dispose();
                 m_model?.Dispose();
             }
 

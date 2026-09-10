@@ -72,6 +72,7 @@ namespace Quickstarts.SimpleEvents.Client
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62563/Quickstarts/SimpleEventsServer";
             this.Text = configuration.ApplicationName;
 

@@ -77,6 +77,7 @@ namespace Quickstarts.AlarmConditionClient
             this.Icon = ClientUtils.GetAppIcon();
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62544/Quickstarts/AlarmConditionServer";
             this.Text = configuration.ApplicationName;
             m_telemetry = telemetry;

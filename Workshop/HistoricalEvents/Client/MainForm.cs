@@ -80,6 +80,7 @@ namespace Quickstarts.HistoricalEvents.Client
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62553/Quickstarts/HistoricalEventsServer";
             this.Text = configuration.ApplicationName;
 

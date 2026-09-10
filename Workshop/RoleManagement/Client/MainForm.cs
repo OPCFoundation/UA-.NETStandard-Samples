@@ -68,6 +68,7 @@ namespace Quickstarts.RoleManagement.Client
             m_configuration = configuration;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62573/Quickstarts/RoleManagementServer";
             this.Text = configuration.ApplicationName;
 

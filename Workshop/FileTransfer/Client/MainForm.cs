@@ -83,6 +83,7 @@ namespace Quickstarts.FileTransferClient
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62569/Quickstarts/FileTransferServer";
             this.Text = configuration.ApplicationName;
 

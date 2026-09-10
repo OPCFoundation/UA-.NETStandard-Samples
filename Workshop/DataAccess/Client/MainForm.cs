@@ -77,6 +77,7 @@ namespace Quickstarts.DataAccessClient
             m_telemetry = telemetry;
 
             ConnectServerCTRL.Configuration = configuration;
+            ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62548/Quickstarts/DataAccessServer";
             this.Text = configuration.ApplicationName;
 
