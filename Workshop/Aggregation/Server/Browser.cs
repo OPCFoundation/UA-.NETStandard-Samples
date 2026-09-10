@@ -82,29 +82,28 @@ namespace AggregationServer
         /// </summary>
         /// <returns>The next reference that meets the browse criteria.</returns>
         /// <remarks>
-        /// This is the one place in the sample which blocks on a task, and it is the
-        /// browse contract of the stack that forces it: <c>NodeState.OnCreateBrowser</c>
-        /// hands back a <see cref="NodeBrowser"/> synchronously and
-        /// <c>AsyncCustomNodeManager</c> drives it with a synchronous
-        /// <see cref="NodeBrowser.Next"/> loop, so a browser which has to reach a remote
-        /// server - which is the whole point of an aggregation server - has nowhere to
-        /// await. There is no async browser seam in the stack to migrate to yet.
+        /// The asynchronous server browse and translate paths iterate through
+        /// <see cref="NextAsync"/>, which is the real implementation and awaits the
+        /// call to the aggregated server. This synchronous shape is what the remaining
+        /// synchronous consumers of the stack - the nodeset exporter, the legacy
+        /// <c>CustomNodeManager2</c> - use, and it is the one place in the sample which
+        /// blocks on a task.
         ///
         /// It does not deadlock: the browse runs on a request worker of the server and
-        /// never on a UI thread, so there is no synchronization context to rejoin. It
-        /// does hold that worker for the duration of the remote call, which is what an
-        /// async seam would fix. <see cref="NextAsync"/> is the real implementation and
-        /// is what the sample would call once the stack offers one.
+        /// never on a UI thread, so there is no synchronization context to rejoin.
         ///
         /// NodeBrowser instances are single-consumer and perform no synchronization of
         /// their own; the former DataLock is gone.
         /// </remarks>
         public override IReference Next()
         {
-            return NextAsync().GetAwaiter().GetResult();
+            return NextAsync().AsTask().GetAwaiter().GetResult();
         }
 
-        public async Task<IReference> NextAsync(CancellationToken ct = default)
+        /// <summary>
+        /// Returns the next reference, awaiting the browse of the aggregated server.
+        /// </summary>
+        public override async ValueTask<IReference> NextAsync(CancellationToken cancellationToken = default)
         {
             IReference reference = null;
 
@@ -127,7 +126,7 @@ namespace AggregationServer
             {
                 // the session to the aggregated server is opened on demand, so an
                 // internal-only browse never has to connect at all.
-                m_client ??= await m_clientProvider(ct);
+                m_client ??= await m_clientProvider(cancellationToken);
 
                 // construct request.
                 BrowseDescription nodeToBrowse = new BrowseDescription();
@@ -155,7 +154,7 @@ namespace AggregationServer
                     null,
                     0,
                     nodesToBrowse,
-                    ct);
+                    cancellationToken);
 
                 ResponseHeader responseHeader = response.ResponseHeader;
                 ArrayOf<BrowseResult> results = response.Results;
@@ -176,7 +175,7 @@ namespace AggregationServer
                     m_references = results[0].References;
                     m_continuationPoint = results[0].ContinuationPoint;
 
-                    reference = await NextChildAsync(ct);
+                    reference = await NextChildAsync(cancellationToken);
 
                     if (reference != null)
                     {
@@ -187,7 +186,7 @@ namespace AggregationServer
 
             if (m_stage == Stage.References)
             {
-                reference = await NextChildAsync(ct);
+                reference = await NextChildAsync(cancellationToken);
 
                 if (reference != null)
                 {
@@ -215,7 +214,7 @@ namespace AggregationServer
                         null,
                         0,
                         nodesToBrowse,
-                        ct);
+                        cancellationToken);
 
                     ResponseHeader responseHeader = response.ResponseHeader;
                     ArrayOf<BrowseResult> results = response.Results;
@@ -243,7 +242,7 @@ namespace AggregationServer
 
             if (m_stage == Stage.Notifiers)
             {
-                reference = await NextChildAsync(ct);
+                reference = await NextChildAsync(cancellationToken);
 
                 if (reference != null)
                 {

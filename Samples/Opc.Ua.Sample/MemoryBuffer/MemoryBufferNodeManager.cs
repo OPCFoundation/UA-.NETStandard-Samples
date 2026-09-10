@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,94 +40,49 @@ using Opc.Ua.Server.Fluent;
 namespace MemoryBuffer
 {
     /// <summary>
-    /// The factory to create the node manager for memory buffers.
-    /// </summary>
-    /// <remarks>
-    /// The factory is written by hand because the node manager needs the buffer
-    /// configuration from the application configuration, and the generated
-    /// constructor is the only place the generated partial sees the configuration:
-    /// nothing keeps it for <see cref="MemoryBufferNodeManager.Configure"/>. The
-    /// factory parses the extension and hands it to the constructor which chains
-    /// to the generated one. It advertises the same two namespaces the generated
-    /// constructor reports.
-    /// </remarks>
-    public class MemoryBufferNodeManagerFactory : IAsyncNodeManagerFactory
-    {
-        /// <inheritdoc/>
-        public ValueTask<IAsyncNodeManager> CreateAsync(IServerInternal server, ApplicationConfiguration configuration, CancellationToken cancellationToken = default)
-        {
-            // use suitable defaults if no configuration exists.
-            MemoryBufferConfiguration bufferConfiguration =
-                configuration.ParseExtension<MemoryBufferConfiguration>() ??
-                new MemoryBufferConfiguration();
-
-#pragma warning disable CA2000 // Justification: ownership of the node manager transfers to the caller.
-            return new ValueTask<IAsyncNodeManager>(new MemoryBufferNodeManager(server, configuration, bufferConfiguration));
-#pragma warning restore CA2000
-        }
-
-        /// <inheritdoc/>
-        public ArrayOf<string> NamespacesUris => [Namespaces.MemoryBuffer, Namespaces.MemoryBuffer + "/Instance"];
-    }
-
-    /// <summary>
     /// A node manager for a variety of memory buffers.
     /// </summary>
     /// <remarks>
     /// <para>
     /// The <c>[NodeManager]</c> attribute opts this partial class in to source
     /// generation: the generator emits a sibling partial which derives from
-    /// <c>AsyncCustomNodeManager</c>, loads the predefined nodes generated from
+    /// <c>FluentNodeManagerBase</c>, loads the predefined nodes generated from
     /// <c>MemoryBufferDesign.xml</c> - the MemoryBuffers folder below the Objects
-    /// folder - and calls <see cref="Configure"/> once the address space is in
-    /// place. The generated constructor reports the instance namespace named by
-    /// <c>AdditionalNamespaceUris</c> next to the namespace of the type model, so
-    /// the master node manager routes the buffers and their tags here from the
-    /// start. The factory stays hand-written, see
-    /// <see cref="MemoryBufferNodeManagerFactory"/> for why.
+    /// folder - calls <see cref="Configure"/> once the address space is in place,
+    /// and emits the factory the server registers. The generated constructor
+    /// reports the instance namespace named by <c>AdditionalNamespaceUris</c> next
+    /// to the namespace of the type model, so the master node manager routes the
+    /// buffers and their tags here from the start.
     /// </para>
     /// <para>
-    /// The buffers publish their values straight into the monitored items and the
-    /// tags do not exist as nodes: a tag is synthesized from its node id for the
-    /// duration of one service call. The fluent surface has no hook for either -
-    /// there is no way to resolve a node id which is not a predefined node, and no
-    /// way to refuse a monitored item at creation or to take over its
-    /// modification, deletion and monitoring mode changes (tracked as SDK issues
-    /// OPCFoundation/UA-.NETStandard#4397 and OPCFoundation/UA-.NETStandard#4399).
-    /// Until those land, this partial keeps the <see cref="GetManagerHandleAsync"/>
-    /// override and the four monitored item overrides, which the generated partial
-    /// leaves free: it only owns the predefined node loading, the address space
-    /// creation and the node added, node removed and monitored item created hooks.
+    /// The tags of a buffer do not exist as nodes: a tag is synthesized from its
+    /// node id for the duration of one service call, which is what lets the sample
+    /// expose potentially millions of UA nodes without keeping millions of objects
+    /// in memory. That is a virtual node family, registered on the builder with
+    /// <see cref="VirtualNodeBuilderExtensions.ResolveNodes"/>: the predicate
+    /// recognizes a tag id cheaply, the resolver materializes the tag for the
+    /// operation which asked for it, and the base node manager takes care of the
+    /// handle, the cache and the validation.
+    /// </para>
+    /// <para>
+    /// The buffers publish their values straight into the monitored items rather
+    /// than letting the server sample the tags, so the family also takes part in
+    /// monitored item creation: it refuses what its own publishing cannot honour -
+    /// a filter, an index range or a data encoding - and hands the stack a factory
+    /// for the item the buffer writes into. The stack registers that item, modifies
+    /// it and deletes it like any other; all the sample has left to do is to unhook
+    /// it from the monitoring table of its buffer when it goes away.
     /// </para>
     /// </remarks>
     [NodeManager(
         NamespaceUri = "http://samples.org/UA/MemoryBuffer",
-        AdditionalNamespaceUris = new[] { "http://samples.org/UA/MemoryBuffer/Instance" },
-        GenerateFactory = false)]
+        AdditionalNamespaceUris = new[] { "http://samples.org/UA/MemoryBuffer/Instance" })]
     public partial class MemoryBufferNodeManager
     {
-        #region Constructors
-        /// <summary>
-        /// Initializes the node manager with the buffers to expose.
-        /// </summary>
-        /// <remarks>
-        /// Chains to the generated constructor, which reports both namespaces to
-        /// the base node manager and installs this node manager as the node id
-        /// factory of the system context.
-        /// </remarks>
-        public MemoryBufferNodeManager(IServerInternal server, ApplicationConfiguration configuration, MemoryBufferConfiguration bufferConfiguration)
-        :
-            this(server, configuration)
-        {
-            m_configuration = bufferConfiguration ?? new MemoryBufferConfiguration();
-            m_buffers = new Dictionary<string, MemoryBufferState>();
-        }
-        #endregion
-
         #region Configure
         /// <summary>
         /// Creates the buffers the configuration declares once the predefined
-        /// nodes are in place.
+        /// nodes are in place, and registers their tags as a virtual node family.
         /// </summary>
         /// <remarks>
         /// The buffers are created imperatively rather than through the builder:
@@ -138,17 +94,22 @@ namespace MemoryBuffer
         {
             Server.Factory.AddEncodeableTypes(typeof(MemoryBufferNodeManager).Assembly.GetExportedTypes().Where(t => t.FullName.StartsWith(typeof(MemoryBufferNodeManager).Namespace, StringComparison.Ordinal)));
 
+            // use suitable defaults if no configuration exists.
+            MemoryBufferConfiguration bufferConfiguration =
+                Configuration?.ParseExtension<MemoryBufferConfiguration>() ??
+                new MemoryBufferConfiguration();
+
             BaseInstanceState root = FindPredefinedNode<BaseInstanceState>(
                 new NodeId(Objects.MemoryBuffers, NamespaceIndexes[0]));
 
             // create the nodes from configuration.
             ushort namespaceIndex = NamespaceIndexes[1];
 
-            if (m_configuration != null && !m_configuration.Buffers.IsNull)
+            if (!bufferConfiguration.Buffers.IsNull)
             {
-                for (int ii = 0; ii < m_configuration.Buffers.Count; ii++)
+                for (int ii = 0; ii < bufferConfiguration.Buffers.Count; ii++)
                 {
-                    MemoryBufferInstance instance = m_configuration.Buffers[ii];
+                    MemoryBufferInstance instance = bufferConfiguration.Buffers[ii];
 
                     // create a new buffer.
                     #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
@@ -184,338 +145,172 @@ namespace MemoryBuffer
                     AddPredefinedNodeSynchronously(bufferNode);
                 }
             }
+
+            // the tags are not nodes: they are recognized by their id, materialized for
+            // the operation which asked for them, and published into by their buffer.
+            builder
+                .ResolveNodes(IsTagId, ResolveTagAsync)
+                .OnCreateMonitoredItem(OnCreatingTagMonitoredItemAsync)
+                .OnMonitoredItemDeleted(OnTagMonitoredItemDeletedAsync);
         }
         #endregion
 
-        #region INodeManager Members
+        #region Virtual Tags
         /// <summary>
-        /// Returns a unique handle for the node.
+        /// Recognizes the id of a tag, which has the syntax <c>bufferName[offset]</c>.
         /// </summary>
         /// <remarks>
-        /// This must efficiently determine whether the node belongs to the node manager. If it does belong to
-        /// NodeManager it should return a handle that does not require the NodeId to be validated again when
-        /// the handle is passed into other methods such as 'Read' or 'Write'.
+        /// The predicate runs for every node id of this node manager which is not a
+        /// predefined node, so it does no more than look at the shape of the
+        /// identifier; whether the buffer exists and the offset is in range is the
+        /// business of the resolver.
         /// </remarks>
-        protected override ValueTask<NodeHandle> GetManagerHandleAsync(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache, CancellationToken cancellationToken = default)
+        private static bool IsTagId(NodeId nodeId)
         {
-            if (!IsNodeIdInNamespace(nodeId))
+            return nodeId.TryGetValue(out string id) &&
+                id != null &&
+                id.Length > 2 &&
+                id[id.Length - 1] == ']' &&
+                id.IndexOf('[', StringComparison.Ordinal) > 0;
+        }
+
+        /// <summary>
+        /// Materializes the tag a node id names, or nothing when it names no slot of
+        /// a configured buffer.
+        /// </summary>
+        /// <remarks>
+        /// The tags carry all of the metadata required to support the UA operations
+        /// and pointers to functions in the buffer object that allow the value to be
+        /// accessed. They are discarded again once the operation completes.
+        /// </remarks>
+        private ValueTask<NodeState> ResolveTagAsync(
+            ISystemContext context,
+            NodeId nodeId,
+            CancellationToken cancellationToken)
+        {
+            if (!nodeId.TryGetValue(out string id) || id == null)
             {
                 return default;
             }
 
-            if (nodeId.TryGetValue(out string id) && id != null)
+            int index = id.IndexOf('[', StringComparison.Ordinal);
+
+            // verify the buffer.
+            if (!m_buffers.TryGetValue(id.Substring(0, index), out MemoryBufferState buffer))
             {
-                // check for a reference to the buffer.
-                if (m_buffers.TryGetValue(id, out MemoryBufferState buffer))
-                {
-                    return new ValueTask<NodeHandle>(new NodeHandle
-                    {
-                        NodeId = nodeId,
-                        Node = buffer,
-                        Validated = true
-                    });
-                }
-
-                // tag ids have the syntax <bufferName>[<address>]
-                if (id[id.Length - 1] != ']')
-                {
-                    return default;
-                }
-
-                int index = id.IndexOf('[', StringComparison.Ordinal);
-
-                if (index == -1)
-                {
-                    return default;
-                }
-
-                string bufferName = id.Substring(0, index);
-
-                // verify the buffer.
-                if (!m_buffers.TryGetValue(bufferName, out buffer))
-                {
-                    return default;
-                }
-
-                // validate the address.
-                string offsetText = id.Substring(index + 1, id.Length - index - 2);
-
-                for (int ii = 0; ii < offsetText.Length; ii++)
-                {
-                    if (!Char.IsDigit(offsetText[ii]))
-                    {
-                        return default;
-                    }
-                }
-
-                // check range on offset.
-                uint offset = Convert.ToUInt32(offsetText);
-
-                if (offset >= buffer.SizeInBytes.Value)
-                {
-                    return default;
-                }
-
-                // the tags contain all of the metadata required to support the UA
-                // operations and pointers to functions in the buffer object that
-                // allow the value to be accessed. These tags are ephemeral and are
-                // discarded after the operation completes. This design pattern allows
-                // the server to expose potentially millions of UA nodes without
-                // creating millions of objects that reside in memory.
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                return new ValueTask<NodeHandle>(new NodeHandle
-                {
-                    NodeId = nodeId,
-                    Node = new MemoryTagState(buffer, offset),
-                    Validated = true
-                });
-                #pragma warning restore CA2000
+                return default;
             }
 
-            return base.GetManagerHandleAsync(context, nodeId, cache, cancellationToken);
-        }
+            // validate the address.
+            string offsetText = id.Substring(index + 1, id.Length - index - 2);
 
+            for (int ii = 0; ii < offsetText.Length; ii++)
+            {
+                if (!Char.IsDigit(offsetText[ii]))
+                {
+                    return default;
+                }
+            }
+
+            // check range on offset.
+            if (!UInt32.TryParse(offsetText, NumberStyles.None, CultureInfo.InvariantCulture, out uint offset) ||
+                offset >= buffer.SizeInBytes.Value)
+            {
+                return default;
+            }
+
+            #pragma warning disable CA2000 // Justification: ownership of the tag transfers to the caller.
+            return new ValueTask<NodeState>(new MemoryTagState(buffer, offset));
+            #pragma warning restore CA2000
+        }
+        #endregion
+
+        #region Monitoring
         /// <summary>
-        /// Creates a new monitored item for a tag and lets the buffer publish into it.
+        /// Refuses what the publishing of the buffer cannot honour, and hands the
+        /// stack the item the buffer writes into.
         /// </summary>
         /// <remarks>
-        /// This method only handles data change subscriptions. Event subscriptions are created by the SDK.
+        /// Because the buffer queues the value into the monitored item itself there is
+        /// nothing left to apply a filter, an index range or an encoding to, so asking
+        /// for one fails at creation rather than being quietly ignored.
         /// </remarks>
-        protected override async ValueTask<(ServiceResult error, MonitoringFilterResult filterResult, IMonitoredItem monitoredItem)> CreateMonitoredItemAsync(
-            ServerSystemContext context,
-            NodeHandle handle,
-            uint subscriptionId,
-            double publishingInterval,
-            DiagnosticsMasks diagnosticsMasks,
-            TimestampsToReturn timestampsToReturn,
-            MonitoredItemCreateRequest itemToCreate,
-            bool createDurable,
-            MonitoredItemIdFactory monitoredItemId,
-            CancellationToken cancellationToken = default)
+        private static ValueTask<MonitoredItemCreateDecision> OnCreatingTagMonitoredItemAsync(
+            MonitoredItemCreateContext context,
+            CancellationToken cancellationToken)
         {
-            // use default behavior for non-tag sources.
-            if (handle.Node is not MemoryTagState tag)
-            {
-                return await base.CreateMonitoredItemAsync(
-                    context,
-                    handle,
-                    subscriptionId,
-                    publishingInterval,
-                    diagnosticsMasks,
-                    timestampsToReturn,
-                    itemToCreate,
-                    createDurable,
-                    monitoredItemId,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            // validate parameters.
-            MonitoringParameters parameters = itemToCreate.RequestedParameters;
-
             // no filters supported at this time.
-            MonitoringFilter filter = (MonitoringFilter)ExtensionObject.ToEncodeable(parameters.Filter);
-
-            if (filter != null)
+            if (ExtensionObject.ToEncodeable(context.Request.RequestedParameters.Filter) is MonitoringFilter)
             {
-                return (StatusCodes.BadFilterNotAllowed, null, null);
+                return new ValueTask<MonitoredItemCreateDecision>(
+                    MonitoredItemCreateDecision.Refuse(new ServiceResult(StatusCodes.BadFilterNotAllowed)));
             }
 
             // index range not supported.
-            if (!itemToCreate.ItemToMonitor.ParsedIndexRange.IsNull)
+            if (!context.Request.ItemToMonitor.ParsedIndexRange.IsNull)
             {
-                return (StatusCodes.BadIndexRangeInvalid, null, null);
+                return new ValueTask<MonitoredItemCreateDecision>(
+                    MonitoredItemCreateDecision.Refuse(new ServiceResult(StatusCodes.BadIndexRangeInvalid)));
             }
 
             // data encoding not supported.
-            if (!itemToCreate.ItemToMonitor.DataEncoding.IsNull)
+            if (!context.Request.ItemToMonitor.DataEncoding.IsNull)
             {
-                return (StatusCodes.BadDataEncodingUnsupported, null, null);
+                return new ValueTask<MonitoredItemCreateDecision>(
+                    MonitoredItemCreateDecision.Refuse(new ServiceResult(StatusCodes.BadDataEncodingUnsupported)));
             }
 
-            // read initial value.
-            (ServiceResult error, DataValue initialValue) = await tag.ReadAttributeAsync(
-                context,
-                itemToCreate.ItemToMonitor.AttributeId,
-                itemToCreate.ItemToMonitor.ParsedIndexRange,
-                itemToCreate.ItemToMonitor.DataEncoding,
-                new DataValue(
-                    Variant.Null,
-                    StatusCodes.Good,
-                    DateTime.MinValue,
-                    DateTime.UtcNow),
-                cancellationToken).ConfigureAwait(false);
+            return new ValueTask<MonitoredItemCreateDecision>(
+                MonitoredItemCreateDecision.Use(CreateTagMonitoredItem, queueInitialValue: true));
+        }
 
-            if (ServiceResult.IsBad(error))
-            {
-                return (error, null, null);
-            }
+        /// <summary>
+        /// Creates the monitored item the buffer publishes into.
+        /// </summary>
+        /// <remarks>
+        /// The item is registered by the stack, which is what routes the later modify,
+        /// delete and monitoring mode calls back here.
+        /// </remarks>
+        private static ISampledDataChangeMonitoredItem CreateTagMonitoredItem(MonitoredItemFactoryContext context)
+        {
+            var tag = (MemoryTagState)context.Handle.Node;
+            var buffer = (MemoryBufferState)tag.Parent;
 
-            // get the monitored node for the containing buffer.
-            if (tag.Parent is not MemoryBufferState buffer)
-            {
-                return (StatusCodes.BadInternalError, null, null);
-            }
-
-            // create a globally unique identifier.
-            uint id = monitoredItemId.GetNextId();
-
-            // determine the sampling interval.
-            double samplingInterval = itemToCreate.RequestedParameters.SamplingInterval;
-
-            if (samplingInterval < 0)
-            {
-                samplingInterval = publishingInterval;
-            }
-
-            // create the item. the handle is passed on as the manager handle so the
-            // service calls route the item back to this node manager.
-            MemoryBufferMonitoredItem datachangeItem = buffer.CreateDataChangeItem(
+            return buffer.CreateDataChangeItem(
                 tag,
-                handle,
-                subscriptionId,
-                id,
-                itemToCreate.ItemToMonitor,
-                diagnosticsMasks,
-                timestampsToReturn,
-                itemToCreate.MonitoringMode,
-                itemToCreate.RequestedParameters.ClientHandle,
-                samplingInterval);
-
-            // report the initial value.
-            datachangeItem.QueueValue(initialValue, null);
-
-            return (ServiceResult.Good, null, datachangeItem);
+                context.Handle,
+                context.SubscriptionId,
+                context.MonitoredItemId,
+                context.Request.ItemToMonitor,
+                context.DiagnosticsMasks,
+                context.TimestampsToReturn,
+                context.Request.MonitoringMode,
+                context.Request.RequestedParameters.ClientHandle,
+                context.SamplingInterval);
         }
 
         /// <summary>
-        /// Modifies the parameters for a monitored item.
+        /// Takes a deleted item out of the monitoring table of its buffer.
         /// </summary>
-        protected override async ValueTask<(ServiceResult error, MonitoringFilterResult filterResult)> ModifyMonitoredItemAsync(
-            ServerSystemContext context,
-            DiagnosticsMasks diagnosticsMasks,
-            TimestampsToReturn timestampsToReturn,
-            IMonitoredItem monitoredItem,
-            MonitoredItemModifyRequest itemToModify,
-            NodeHandle handle,
-            CancellationToken cancellationToken = default)
+        private static ValueTask OnTagMonitoredItemDeletedAsync(
+            ISystemContext context,
+            NodeState source,
+            ISampledDataChangeMonitoredItem monitoredItem,
+            CancellationToken cancellationToken)
         {
-            // use default behavior for items the buffers do not own.
-            if (monitoredItem is not MemoryBufferMonitoredItem datachangeItem)
+            if (source is MemoryTagState tag &&
+                tag.Parent is MemoryBufferState buffer &&
+                monitoredItem is MemoryBufferMonitoredItem datachangeItem)
             {
-                return await base.ModifyMonitoredItemAsync(
-                    context,
-                    diagnosticsMasks,
-                    timestampsToReturn,
-                    monitoredItem,
-                    itemToModify,
-                    handle,
-                    cancellationToken).ConfigureAwait(false);
+                buffer.DeleteItem(datachangeItem);
             }
 
-            // validate parameters.
-            MonitoringParameters parameters = itemToModify.RequestedParameters;
-
-            // no filters supported at this time.
-            MonitoringFilter filter = (MonitoringFilter)ExtensionObject.ToEncodeable(parameters.Filter);
-
-            if (filter != null)
-            {
-                return (StatusCodes.BadFilterNotAllowed, null);
-            }
-
-            // modify the monitored item parameters.
-            datachangeItem.Modify(
-                diagnosticsMasks,
-                timestampsToReturn,
-                itemToModify.RequestedParameters.ClientHandle,
-                itemToModify.RequestedParameters.SamplingInterval);
-
-            return (ServiceResult.Good, null);
-        }
-
-        /// <summary>
-        /// Deletes a monitored item.
-        /// </summary>
-        protected override async ValueTask<ServiceResult> DeleteMonitoredItemAsync(
-            ServerSystemContext context,
-            IMonitoredItem monitoredItem,
-            NodeHandle handle,
-            CancellationToken cancellationToken = default)
-        {
-            // use default behavior for items the buffers do not own.
-            if (monitoredItem is not MemoryBufferMonitoredItem datachangeItem)
-            {
-                return await base.DeleteMonitoredItemAsync(
-                    context,
-                    monitoredItem,
-                    handle,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            if (handle.Node is not MemoryTagState tag || tag.Parent is not MemoryBufferState buffer)
-            {
-                return StatusCodes.BadMonitoredItemIdInvalid;
-            }
-
-            // delete the item.
-            buffer.DeleteItem(datachangeItem);
-
-            return ServiceResult.Good;
-        }
-
-        /// <summary>
-        /// Changes the monitoring mode for an item.
-        /// </summary>
-        protected override async ValueTask<ServiceResult> SetMonitoringModeAsync(
-            ServerSystemContext context,
-            IMonitoredItem monitoredItem,
-            MonitoringMode monitoringMode,
-            NodeHandle handle,
-            CancellationToken cancellationToken = default)
-        {
-            // use default behavior for items the buffers do not own.
-            if (monitoredItem is not MemoryBufferMonitoredItem datachangeItem)
-            {
-                return await base.SetMonitoringModeAsync(
-                    context,
-                    monitoredItem,
-                    monitoringMode,
-                    handle,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            MonitoringMode previousMode = datachangeItem.SetMonitoringMode(monitoringMode);
-
-            // need to provide an immediate update after enabling.
-            if (previousMode == MonitoringMode.Disabled && monitoringMode != MonitoringMode.Disabled &&
-                handle.Node is MemoryTagState tag && tag.Parent is MemoryBufferState buffer)
-            {
-                #pragma warning disable CA2000 // Justification: Sample code retains existing ownership/lifetime and behavior.
-                MemoryTagState updateTag = new MemoryTagState(buffer, datachangeItem.Offset);
-                #pragma warning restore CA2000
-
-                (ServiceResult error, DataValue initialValue) = await updateTag.ReadAttributeAsync(
-                    context,
-                    datachangeItem.AttributeId,
-                    NumericRange.Null,
-                    QualifiedName.Null,
-                    new DataValue(
-                        Variant.Null,
-                        StatusCodes.Good,
-                        DateTime.MinValue,
-                        DateTime.UtcNow),
-                    cancellationToken).ConfigureAwait(false);
-
-                datachangeItem.QueueValue(initialValue, error);
-            }
-
-            return ServiceResult.Good;
+            return default;
         }
         #endregion
 
         #region Private Fields
-        private MemoryBufferConfiguration m_configuration;
-        private Dictionary<string, MemoryBufferState> m_buffers;
+        private readonly Dictionary<string, MemoryBufferState> m_buffers = [];
         #endregion
     }
 }

@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <!-- The OPC UA .NET Standard preview version the samples build against. The
          packages come from the OPC Foundation GitHub Packages feed, see Nuget.Config. -->
-    <OpcUaNetStandardVersion>2.0.301.4181-preview</OpcUaNetStandardVersion>
+    <OpcUaNetStandardVersion>2.0.312.3680-preview</OpcUaNetStandardVersion>
   </PropertyGroup>
 
   <Choose>
@@ -45,7 +45,7 @@
     <PackageReference Include="Roslynator.Formatting.Analyzers" Version="5.0.0" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.400" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.401" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

@@ -171,11 +171,6 @@ each is one small class here and should move into the stack
 
 - the product description (`ServerProperties`) can only come from an override, hence
   `SampleServer.LoadServerProperties`;
-- `AddIdentityAuthenticator` has no factory overload, so the callback based
-  `UserNamePasswordAuthenticator` and `X509Authenticator` of the stack cannot be registered
-  through it - `SampleServerBuilderExtensions.AddIdentityAuthenticator(factory)` fills in;
-- there is no builder method for `IServerStartupTask`, nor an instance overload of
-  `AddNodeManager`, nor a registration for node managers created after the configuration load;
 - alias stores registered with `AddAliasNameStore` are not materialized as nodes;
 - `DependencyInjectionStandardServer` does not reverse connect to clients (`ReverseConnectServer`
   is a separate class), so the aggregation and UA sample servers no longer do either - their

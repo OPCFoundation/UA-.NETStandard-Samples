@@ -8,7 +8,6 @@
  * ======================================================================*/
 
 using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Opc.Ua.Server;
 using Opc.Ua.Server.Hosting;
@@ -44,42 +43,10 @@ namespace Opc.Ua.Samples.Hosting
             // sample takes both from the container it is created by.
             TServer server = m_provider.GetRequiredService<TServer>();
 
-            // the node managers which could only be described with the configuration
-            // loaded - which it is now, right before the hosted server starts the
-            // server. The registered factory types are added by the hosted server.
-            foreach (ConfiguredNodeManagerFactories configured
-                in m_provider.GetServices<ConfiguredNodeManagerFactories>())
-            {
-                foreach (IAsyncNodeManagerFactory factory in configured.Create(m_provider))
-                {
-                    server.AddNodeManager(factory);
-                }
-            }
-
+            // the node managers are added by the hosted server, from the registrations
+            // on the builder - the factory types, the factory instances and the ones
+            // which can only be created once the configuration is loaded alike.
             return server;
         }
-    }
-
-    /// <summary>
-    /// Node manager factories which are created once the configuration of the sample
-    /// has been loaded, see <c>AddNodeManagers</c>.
-    /// </summary>
-    internal sealed class ConfiguredNodeManagerFactories
-    {
-        /// <summary>
-        /// Creates the registration.
-        /// </summary>
-        /// <param name="create">Creates the factories.</param>
-        public ConfiguredNodeManagerFactories(Func<IServiceProvider, IEnumerable<IAsyncNodeManagerFactory>> create)
-        {
-            ArgumentNullException.ThrowIfNull(create);
-
-            Create = create;
-        }
-
-        /// <summary>
-        /// Creates the factories, from the container with the configuration loaded.
-        /// </summary>
-        public Func<IServiceProvider, IEnumerable<IAsyncNodeManagerFactory>> Create { get; }
     }
 }

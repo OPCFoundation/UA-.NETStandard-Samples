@@ -159,15 +159,25 @@ namespace AggregationServer
     /// The fluent builder covers the part of the address space this manager
     /// owns outright: the root folder and the status object below it.
     /// Everything else is a proxy over an address space which is materialised
-    /// lazily, one node per operation, from the aggregated server - and the
-    /// builder wires behaviour to nodes which exist when Configure runs. The
-    /// service overrides below therefore stay: browsing
-    /// (<see cref="OnCreateBrowser"/>), handle resolution and validation, the
-    /// batched Read, Write and Call forwarding, the monitored item hooks and
-    /// the event subscription forwarding. The SDK has no fluent counterpart
-    /// for a node handle resolver, for manager level batch fallbacks or for an
-    /// asynchronous monitored item completion callback; the issues
-    /// OPCFoundation/UA-.NETStandard#4397, #4398 and #4399 track those hooks.
+    /// lazily, one node per operation, from the aggregated server. That is a
+    /// virtual node family, registered with
+    /// <see cref="VirtualNodeBuilderExtensions.ResolveNodes"/>: every node id
+    /// outside the instance namespace of this manager belongs to it, the
+    /// resolver reads the node from the aggregated server, and the family
+    /// wires the browser which walks the remote address space. Forwarding a
+    /// created or deleted monitored item to the downstream subscription is
+    /// registered on the builder too, with
+    /// <see cref="MonitoredItemBuilderExtensions.OnMonitoredItemsCreated"/>
+    /// and <see cref="MonitoredItemBuilderExtensions.OnMonitoredItemsDeleted"/>.
+    ///
+    /// What stays a service override is what is batched by nature: the Read,
+    /// Write and Call forwarding turns one service call into one downstream
+    /// service call, and the modify and monitoring mode hooks reconfigure a
+    /// whole batch of forwarded items before waiting once for the downstream
+    /// engine to catch up. The per-node fluent handlers would turn each of
+    /// those into one round trip per node, which is the opposite of what an
+    /// aggregating server is for. The event subscription forwarding has no
+    /// fluent counterpart at all.
     /// </remarks>
     [NodeManager(GenerateFactory = false)]
     public partial class AggregationNodeManager
@@ -339,6 +349,20 @@ namespace AggregationServer
 
             ReportConnectionState(StatusCodes.BadNotConnected, DateTimeUtc.MinValue);
 
+            // every node id which is not one of the nodes this manager owns outright
+            // names a node of the aggregated server: it is read from there for the
+            // operation which asked for it, and browsed through the same browser as
+            // the root. Monitoring such a node is forwarded to a subscription on the
+            // downstream session once the items were created, and taken off it again
+            // when they are deleted.
+            builder
+                .ResolveNodes(IsAggregatedNodeId, ResolveAggregatedNodeAsync)
+                .OnCreateBrowser(OnCreateBrowser);
+
+            builder
+                .OnMonitoredItemsCreated(ForwardCreatedMonitoredItemsAsync)
+                .OnMonitoredItemsDeleted(ForwardDeletedMonitoredItemsAsync);
+
             // periodically connect to the aggregated server and refresh its
             // metadata. the loop replaces the timer of the synchronous manager
             // and is cancelled when the manager is disposed.
@@ -387,92 +411,44 @@ namespace AggregationServer
 
         #region INodeManager Members
         /// <summary>
-        /// Returns a unique handle for the node.
+        /// Recognizes a node id which can only belong to the aggregated server.
         /// </summary>
-        protected override ValueTask<NodeHandle> GetManagerHandleAsync(
-            ServerSystemContext context,
-            NodeId nodeId,
-            IDictionary<NodeId, NodeState> cache,
-            CancellationToken cancellationToken = default)
+        /// <remarks>
+        /// The predicate runs for every node id of this node manager which is not a
+        /// predefined node. The instance namespace holds the nodes this manager owns
+        /// outright, so an id in it which is not predefined names nothing; everything
+        /// else is a namespace mapped from the aggregated server.
+        /// </remarks>
+        private bool IsAggregatedNodeId(NodeId nodeId)
         {
-            // quickly exclude nodes that are not in the namespace.
-            if (!IsNodeIdInNamespace(nodeId))
-            {
-                return new ValueTask<NodeHandle>((NodeHandle)null);
-            }
-
-            NodeState node = null;
-
-            // check cache (the cache is used because the same node id can appear many times in a single request).
-            if (cache != null)
-            {
-                if (cache.TryGetValue(nodeId, out node))
-                {
-                    return new ValueTask<NodeHandle>(new NodeHandle(nodeId, node));
-                }
-            }
-
-            // look up predefined node.
-            if (PredefinedNodes.TryGetValue(nodeId, out node))
-            {
-                NodeHandle handle = new NodeHandle(nodeId, node);
-
-                if (cache != null)
-                {
-                    cache[nodeId] = node;
-                }
-
-                return new ValueTask<NodeHandle>(handle);
-            }
-
-            // nodes in the instance namespace which are not predefined do not exist.
-            if (nodeId.NamespaceIndex == NamespaceIndex)
-            {
-                return new ValueTask<NodeHandle>((NodeHandle)null);
-            }
-
-            // a possible node of the aggregated server.
-            return new ValueTask<NodeHandle>(new NodeHandle() { NodeId = nodeId, Validated = false });
+            return nodeId.NamespaceIndex != NamespaceIndex;
         }
 
         /// <summary>
-        /// Verifies that the specified node exists, fetching it from the
-        /// aggregated server when it is not a local node.
+        /// Reads a node of the aggregated server and maps it into a local state, or
+        /// returns nothing when the aggregated server does not have it.
         /// </summary>
-        protected override async ValueTask<NodeState> ValidateNodeAsync(
-            ServerSystemContext context,
-            NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache,
-            CancellationToken cancellationToken = default)
+        /// <remarks>
+        /// The base node manager has already looked in the operation cache and in the
+        /// component cache by the time this runs, so every call here is a node which
+        /// has to be fetched. The state it returns is discarded once the operation
+        /// completes; the browser which walks the remote children is wired by the
+        /// virtual node family rather than here.
+        /// </remarks>
+        private async ValueTask<NodeState> ResolveAggregatedNodeAsync(
+            ISystemContext context,
+            NodeId nodeId,
+            CancellationToken cancellationToken)
         {
-            // not valid if no root.
-            if (handle == null)
-            {
-                return null;
-            }
-
-            // check if previously validated.
-            if (handle.Validated)
-            {
-                return handle.Node;
-            }
-
-            // lookup in operation cache.
-            NodeState target = await FindNodeInCacheAsync(context, handle, cache, cancellationToken).ConfigureAwait(false);
-
-            if (target != null)
-            {
-                handle.Node = target;
-                handle.Validated = true;
-                return handle.Node;
-            }
+            NodeState target = null;
 
             try
             {
-                AggregationClientSession clientSession = await GetClientSessionAsync(context, cancellationToken).ConfigureAwait(false);
+                AggregationClientSession clientSession = await GetClientSessionAsync(
+                    context as ServerSystemContext, cancellationToken).ConfigureAwait(false);
 
                 // get remote node.
-                NodeId targetId = m_mapper.ToRemoteId(handle.NodeId);
+                NodeId targetId = m_mapper.ToRemoteId(nodeId);
                 ILocalNode node = await Opc.Ua.Client.SessionClientExtensions.ReadNodeAsync(
                     clientSession.Session, targetId, cancellationToken).ConfigureAwait(false);
 
@@ -579,14 +555,13 @@ namespace AggregationServer
                     }
                 }
 
-                target.NodeId = handle.NodeId;
+                target.NodeId = nodeId;
                 target.BrowseName = m_mapper.ToLocalName(node.BrowseName);
                 target.DisplayName = node.DisplayName;
                 target.Description = node.Description;
                 target.WriteMask = node.WriteMask;
                 target.UserWriteMask = node.UserWriteMask;
                 target.Handle = node;
-                target.OnCreateBrowser = OnCreateBrowser;
             }
 
             // ignore errors.
@@ -595,15 +570,7 @@ namespace AggregationServer
                 return null;
             }
 
-            // put root into operation cache.
-            if (cache != null)
-            {
-                cache[handle.NodeId] = target;
-            }
-
-            handle.Node = target;
-            handle.Validated = true;
-            return handle.Node;
+            return target;
         }
 
         /// <summary>
@@ -953,53 +920,26 @@ namespace AggregationServer
         }
 
         /// <summary>
-        /// Creates the monitored items and forwards the ones which target nodes
-        /// of the aggregated server to a subscription on the downstream session.
+        /// Forwards the monitored items which target nodes of the aggregated server
+        /// to a subscription on the downstream session.
         /// </summary>
         /// <remarks>
-        /// The base class has no asynchronous counterpart of the
-        /// <c>OnCreateMonitoredItemsComplete</c> callback the synchronous manager
-        /// used, so the forwarding happens after the base implementation created
-        /// the items - which is the same point in the operation.
+        /// Registered on the fluent builder, so the batch it receives holds exactly
+        /// the items this node manager created in the service call - the ownership
+        /// check the synchronous manager needed is the caller's business now.
         /// </remarks>
-        public override async ValueTask CreateMonitoredItemsAsync(
-            OperationContext context,
-            uint subscriptionId,
-            double publishingInterval,
-            TimestampsToReturn timestampsToReturn,
-            ArrayOf<MonitoredItemCreateRequest> itemsToCreate,
-            IList<ServiceResult> errors,
-            IList<MonitoringFilterResult> filterErrors,
-            IList<IMonitoredItem> monitoredItems,
-            bool createDurable,
-            MonitoredItemIdFactory monitoredItemIdFactory,
-            CancellationToken cancellationToken = default)
+        private async ValueTask ForwardCreatedMonitoredItemsAsync(
+            ISystemContext context,
+            ArrayOf<IMonitoredItem> monitoredItems,
+            CancellationToken cancellationToken)
         {
-            await base.CreateMonitoredItemsAsync(
-                context,
-                subscriptionId,
-                publishingInterval,
-                timestampsToReturn,
-                itemsToCreate,
-                errors,
-                filterErrors,
-                monitoredItems,
-                createDurable,
-                monitoredItemIdFactory,
-                cancellationToken).ConfigureAwait(false);
-
-            ServerSystemContext systemContext = SystemContext.Copy(context);
-
             List<MonitoredItem> toForward = new List<MonitoredItem>();
 
             for (int ii = 0; ii < monitoredItems.Count; ii++)
             {
                 MonitoredItem monitoredItem = monitoredItems[ii] as MonitoredItem;
 
-                // the list spans the whole service call, so it also carries the items
-                // other node managers created. Only forward the ones this instance
-                // created, which the base class tracks by their id.
-                if (monitoredItem == null || !MonitoredItems.ContainsKey(monitoredItem.Id))
+                if (monitoredItem == null)
                 {
                     continue;
                 }
@@ -1021,7 +961,8 @@ namespace AggregationServer
             // send request to external system.
             try
             {
-                AggregationClientSession clientSession = await GetClientSessionAsync(systemContext, cancellationToken).ConfigureAwait(false);
+                AggregationClientSession clientSession = await GetClientSessionAsync(
+                    context as ServerSystemContext, cancellationToken).ConfigureAwait(false);
 
                 await clientSession.SubscriptionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
@@ -1171,16 +1112,20 @@ namespace AggregationServer
         }
 
         /// <summary>
-        /// Called when a batch of monitored items has been deleted.
+        /// Takes the deleted monitored items off the downstream subscription.
         /// </summary>
-        protected override async ValueTask OnDeleteMonitoredItemsCompleteAsync(
-            ServerSystemContext context,
-            IList<IMonitoredItem> monitoredItems,
-            CancellationToken cancellationToken = default)
+        /// <remarks>
+        /// Registered on the fluent builder, like its create side counterpart.
+        /// </remarks>
+        private async ValueTask ForwardDeletedMonitoredItemsAsync(
+            ISystemContext context,
+            ArrayOf<IMonitoredItem> monitoredItems,
+            CancellationToken cancellationToken)
         {
             try
             {
-                AggregationClientSession clientSession = await GetClientSessionAsync(context, cancellationToken).ConfigureAwait(false);
+                AggregationClientSession clientSession = await GetClientSessionAsync(
+                    context as ServerSystemContext, cancellationToken).ConfigureAwait(false);
 
                 await clientSession.SubscriptionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
