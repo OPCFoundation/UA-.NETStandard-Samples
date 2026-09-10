@@ -68,7 +68,9 @@ namespace Quickstarts.AlarmConditionClient.Model
 #pragma warning restore CA1051
 
         /// <summary>
-        /// Whether suppressed or shelved condition events are of interest.
+        /// Whether the SuppressedOrShelved flag of a condition is ignored when the filter
+        /// is built. Set, every condition passes; clear, an alarm which is suppressed,
+        /// shelved or out of service is left out.
         /// </summary>
 #pragma warning disable CA1051 // Justification: Sample code exposes fields by design.
         public bool IgnoreSuppressedOrShelved;
@@ -185,7 +187,7 @@ namespace Quickstarts.AlarmConditionClient.Model
             ContentFilter whereClause = new ContentFilter();
 
             // the code below constructs a filter that looks like this:
-            // ((Severity >= X OR LastSeverity >= X) AND (SuppressedOrShelved == False) AND (OfType(A) OR OfType(B)))
+            // ((Severity >= X) AND (NOT OfType(AlarmConditionType) OR SuppressedOrShelved == False) AND (OfType(A) OR OfType(B)))
             //   OR OfType(RefreshStartEventType) OR OfType(RefreshEndEventType)
 
             // add the severity.
@@ -223,6 +225,20 @@ namespace Quickstarts.AlarmConditionClient.Model
 
                 // specify that the Severity property must Equal the value specified.
                 element2 = whereClause.Push(FilterOperator.Equals, new Variant(new ExtensionObject(operand1)), new Variant(new ExtensionObject(operand2)));
+
+                // SuppressedOrShelved is declared by AlarmConditionType, so an event of a
+                // condition which is not an alarm - the OnlineState dialog of a source, for
+                // one - carries no such field. An operand which resolves to nothing makes
+                // Equals answer null and the element false, so the clause on its own would
+                // silently drop every non alarm condition. Asking it only of the alarms is
+                // what keeps the dialogs of the sample in the list.
+                LiteralOperand operand3 = new LiteralOperand();
+                operand3.Value = new Variant(ObjectTypeIds.AlarmConditionType);
+
+                ContentFilterElement isAlarm = whereClause.Push(FilterOperator.OfType, new Variant(new ExtensionObject(operand3)));
+                ContentFilterElement notAnAlarm = whereClause.Push(FilterOperator.Not, new Variant(new ExtensionObject(isAlarm)));
+
+                element2 = whereClause.Push(FilterOperator.Or, new Variant(new ExtensionObject(notAnAlarm)), new Variant(new ExtensionObject(element2)));
 
                 // chain multiple elements together with an AND clause.
                 if (element1 != null)

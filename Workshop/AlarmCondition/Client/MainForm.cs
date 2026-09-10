@@ -285,7 +285,8 @@ namespace Quickstarts.AlarmConditionClient
         #region Model Events
         /// <summary>
         /// Updates the row of a condition with the snapshot the model reports, creating
-        /// the row when the condition is new.
+        /// the row when the condition is new and dropping it when the condition left the
+        /// list.
         /// </summary>
         /// <remarks>
         /// The model raises this on the thread of the window and one event at a time, so
@@ -301,6 +302,15 @@ namespace Quickstarts.AlarmConditionClient
 
             ConditionSnapshot snapshot = e.Snapshot;
             ListViewItem item = FindRow(snapshot.Key);
+
+            // the condition stopped asking for attention, or filtered retain reported it
+            // on its way out of the where clause of this client. Either way it is not part
+            // of the list any more.
+            if (e.Change == ConditionChange.Removed)
+            {
+                item?.Remove();
+                return;
+            }
 
             // create a new entry.
             if (item == null)
@@ -330,15 +340,9 @@ namespace Quickstarts.AlarmConditionClient
 
             item.Tag = snapshot;
 
-            // set the color based on the retain bit.
-            if (!snapshot.Retain)
-            {
-                item.ForeColor = Color.DimGray;
-            }
-            else
-            {
-                item.ForeColor = snapshot.IsBranch ? Color.DarkGray : Color.Empty;
-            }
+            // a branch is a previous state of a condition which is still waiting for an
+            // acknowledgement, so it is shown next to the current state but toned down.
+            item.ForeColor = snapshot.IsBranch ? Color.DarkGray : Color.Empty;
 
             // adjust the width of the columns.
             for (int ii = 0; ii < ConditionsLV.Columns.Count; ii++)

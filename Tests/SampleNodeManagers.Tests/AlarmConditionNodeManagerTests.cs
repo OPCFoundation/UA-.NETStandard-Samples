@@ -565,6 +565,136 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// The server says on the ConditionType node that it supports filtered retain.
+        /// </summary>
+        /// <remarks>
+        /// Part 9 provides SupportsFilteredRetain on the ConditionType only - the standard
+        /// nodeset gives it no modelling rule, so no condition instance carries it - and
+        /// that one node is how a client finds out whether the trailing event of B.1.4 is
+        /// something it can rely on. The standard address space ships it set to false, so a
+        /// server which supports the concept has to say so itself.
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task TheServerAdvertisesFilteredRetainOnTheConditionType(CancellationToken ct)
+        {
+            DataValue supported = await SessionOps
+                .ReadValueAsync(Session, VariableIds.ConditionType_SupportsFilteredRetain, ct)
+                .ConfigureAwait(false);
+
+            await TestContext.Out
+                .WriteLineAsync($"ConditionType.SupportsFilteredRetain = {supported.WrappedValue} ({supported.StatusCode})")
+                .ConfigureAwait(false);
+
+            Assert.That(
+                supported.WrappedValue.TryGetValue(out bool value) && value,
+                Is.True,
+                "The server reports every alarm it retains through a client's where clause, so its " +
+                "ConditionType has to advertise filtered retain.");
+        }
+
+        /// <summary>
+        /// An alarm which leaves the where clause of a client is reported to that client
+        /// one last time, with Retain false.
+        /// </summary>
+        /// <remarks>
+        /// This is filtered retain, OPC UA Part 9 B.1.4. A client which asks only for the
+        /// alarms that are not suppressed, shelved or out of service has a where clause a
+        /// condition falls out of while the condition itself carries on: the server still
+        /// retains the alarm, so nothing would ever tell the client that the row it is
+        /// showing has gone out of scope. Every alarm of this sample sets
+        /// <c>SupportsFilteredRetain</c>, which makes the stack deliver one final event as
+        /// the alarm leaves the clause and substitute <c>Retain = false</c> into it for
+        /// that one client.
+        /// <para>
+        /// What the assertion turns on is that the trailing event carries
+        /// <c>SuppressedOrShelved = true</c>: an event in that state does not satisfy the
+        /// where clause the item was created with, so no plain filter evaluation could
+        /// have delivered it.
+        /// </para>
+        /// </remarks>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnAlarmLeavingTheFilterOfAClientIsReportedOneLastTime(CancellationToken ct)
+        {
+            NodeId tank = await ResolveAreaAsync(ct, "Green", "East", "Red", kColoursSource)
+                .ConfigureAwait(false);
+
+            NodeId levelAlarm = await ChildAsync(tank, kLevelAlarm, ct).ConfigureAwait(false);
+
+            await using EventCapture capture = await CaptureUnsuppressedAlarmsAsync(ct)
+                .ConfigureAwait(false);
+
+            // the item owes a trailing event only for a condition it reported before, so
+            // the alarm has to pass the where clause once first
+            CapturedEvent inScope = await capture.WaitAsync(
+                candidate => candidate.SourceName == kColoursSource && ConditionNameOf(candidate) == kLevelAlarm,
+                TimeSpan.FromSeconds(30),
+                "the alarm reporting itself while it still passes the where clause",
+                ct).ConfigureAwait(false);
+
+            await TestContext.Out.WriteLineAsync($"In scope: {inScope}").ConfigureAwait(false);
+
+            Assert.That(
+                IsFalse(inScope, BrowseNames.SuppressedOrShelved),
+                Is.True,
+                "The where clause asks for alarms which are not suppressed or shelved, so nothing else can arrive.");
+
+            AlarmClient alarms = Session.GetAlarmClient(NullTelemetry.Instance);
+
+            try
+            {
+                await alarms.SuppressAsync(levelAlarm, ct: ct).ConfigureAwait(false);
+
+                CapturedEvent trailing = await capture.WaitAsync(
+                    candidate => candidate.SourceName == kColoursSource && ConditionNameOf(candidate) == kLevelAlarm
+                        && IsTrue(candidate, BrowseNames.SuppressedOrShelved),
+                    TimeSpan.FromSeconds(30),
+                    "the trailing event of the alarm as it leaves the where clause",
+                    ct).ConfigureAwait(false);
+
+                await TestContext.Out.WriteLineAsync($"Left the filter: {trailing}").ConfigureAwait(false);
+
+                Assert.That(
+                    IsFalse(trailing, BrowseNames.Retain),
+                    Is.True,
+                    "The trailing event has to carry Retain false, which is what tells the client to drop the row.");
+
+                // and only once. The alarm keeps changing while it is suppressed, and none
+                // of those events satisfies the where clause any more: the item consumed
+                // its record of the condition when it delivered the trailing event, so it
+                // owes nothing further until the alarm comes back into scope. Branches of
+                // the same alarm are told apart from it and are not suppressed, so they
+                // still arrive under the same condition name; only an out of scope event
+                // would be a breach.
+                Assert.ThrowsAsync<TimeoutException>(
+                    () => capture.WaitAsync(
+                        candidate => candidate.SourceName == kColoursSource && ConditionNameOf(candidate) == kLevelAlarm
+                            && IsTrue(candidate, BrowseNames.SuppressedOrShelved),
+                        TimeSpan.FromSeconds(5),
+                        "a second out of scope event of the suppressed alarm",
+                        ct),
+                    "A suppressed alarm was reported more than once: filtered retain owes exactly one trailing event.");
+            }
+            finally
+            {
+                await alarms
+                    .UnsuppressAsync(levelAlarm, ct: CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+
+            // coming back into scope puts the alarm back into the list of the client
+            CapturedEvent back = await capture.WaitAsync(
+                candidate => candidate.SourceName == kColoursSource && ConditionNameOf(candidate) == kLevelAlarm
+                    && IsFalse(candidate, BrowseNames.SuppressedOrShelved),
+                TimeSpan.FromSeconds(30),
+                "the alarm coming back into the where clause",
+                ct).ConfigureAwait(false);
+
+            await TestContext.Out.WriteLineAsync($"Back in scope: {back}").ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// An operator can silence the audible annunciation of an alarm.
         /// </summary>
         /// <remarks>
@@ -888,6 +1018,52 @@ namespace Opc.Ua.Samples.Tests
                 [new QualifiedName(BrowseNames.SilenceState), new QualifiedName(BrowseNames.Id)],
                 [new QualifiedName(BrowseNames.SuppressedState), new QualifiedName(BrowseNames.Id)],
                 [new QualifiedName(BrowseNames.OutOfServiceState), new QualifiedName(BrowseNames.Id)]);
+        }
+
+        /// <summary>
+        /// Subscribes to the alarms which are neither suppressed, shelved nor out of
+        /// service: the where clause an operator's list is built on.
+        /// </summary>
+        private Task<EventCapture> CaptureUnsuppressedAlarmsAsync(CancellationToken ct)
+        {
+            var whereClause = new ContentFilter();
+
+            ContentFilterElement isAlarm = whereClause.Push(
+                FilterOperator.OfType,
+                Variant.From(ObjectTypeIds.AlarmConditionType));
+
+            var suppressedOrShelved = new SimpleAttributeOperand {
+                TypeDefinitionId = ObjectTypeIds.BaseEventType,
+                AttributeId = Attributes.Value,
+                BrowsePath = new List<QualifiedName> { new QualifiedName(BrowseNames.SuppressedOrShelved) }.ToArrayOf(),
+            };
+
+            ContentFilterElement unsuppressed = whereClause.Push(
+                FilterOperator.Equals,
+                Variant.From(new ExtensionObject(suppressedOrShelved)),
+                Variant.From(false));
+
+            whereClause.Push(
+                FilterOperator.And,
+                Variant.From(new ExtensionObject(isAlarm)),
+                Variant.From(new ExtensionObject(unsuppressed)));
+
+            return EventCapture.CreateAsync(
+                Session,
+                ObjectIds.Server,
+                whereClause,
+                ct,
+                [new QualifiedName(BrowseNames.ConditionName)],
+                [new QualifiedName(BrowseNames.Retain)],
+                [new QualifiedName(BrowseNames.SuppressedOrShelved)]);
+        }
+
+        /// <summary>
+        /// The name of the condition an event reports on, or null.
+        /// </summary>
+        private static string ConditionNameOf(CapturedEvent captured)
+        {
+            return captured.Field(BrowseNames.ConditionName).TryGetValue(out string name) ? name : null;
         }
 
         /// <summary>

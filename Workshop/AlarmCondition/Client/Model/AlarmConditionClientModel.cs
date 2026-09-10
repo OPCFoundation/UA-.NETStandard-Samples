@@ -55,6 +55,20 @@ namespace Quickstarts.AlarmConditionClient.Model
     /// consumer is also the only writer of the condition table.
     /// </para>
     /// <para>
+    /// <b>Filtered retain.</b> The where clause of the filter leaves out an alarm which is
+    /// suppressed, shelved or out of service, so an operator's list only shows what asks
+    /// for attention. A clause like that is one a condition falls out of without the
+    /// condition itself ending: the server still retains the alarm, it simply stopped
+    /// matching what this client asked for, and the last event the client ever saw of it
+    /// would leave a row standing which nothing updates again. Filtered retain (OPC UA
+    /// Part 9, B.1.4) closes that hole - a condition whose <c>SupportsFilteredRetain</c>
+    /// is set reports one final event as it leaves the scope of a client's where clause,
+    /// with <c>Retain = false</c> substituted for that one client. The model treats every
+    /// event with <c>Retain = false</c> the same way, whichever of the two it is: the
+    /// condition leaves the list as <see cref="ConditionChange.Removed"/>. Coming back
+    /// into scope adds it again.
+    /// </para>
+    /// <para>
     /// The Part 9 Methods go through the <see cref="AlarmClient"/> of the SDK, a facade
     /// over the generated proxies of the types which declare them: the model never has to
     /// know a Method NodeId, and the facade picks the "2" variant of a Method by itself
@@ -111,7 +125,12 @@ namespace Quickstarts.AlarmConditionClient.Model
             m_filter = new FilterDefinition {
                 AreaId = ObjectIds.Server,
                 Severity = EventSeverity.Min,
-                IgnoreSuppressedOrShelved = true,
+
+                // an operator's list shows what asks for attention, so an alarm which is
+                // suppressed, shelved or out of service is filtered out. That makes the
+                // where clause one a condition leaves and comes back into, which is what
+                // filtered retain exists for: see the class remarks.
+                IgnoreSuppressedOrShelved = false,
                 EventTypes = new NodeId[] { ObjectTypeIds.ConditionType },
             };
 
@@ -151,7 +170,8 @@ namespace Quickstarts.AlarmConditionClient.Model
 
         /// <summary>
         /// Raised for every condition event which was decoded: the snapshot carries the
-        /// state of the condition after the event.
+        /// state of the condition after the event, and <see cref="ConditionChange"/> says
+        /// whether the condition joined the list, changed inside it, or left it.
         /// </summary>
         public event EventHandler<ConditionChangedEventArgs> ConditionChanged;
 
@@ -867,7 +887,9 @@ namespace Quickstarts.AlarmConditionClient.Model
                     return;
                 }
 
-                if (m_conditions.TryGetValue(key, out ConditionEntry existing))
+                bool listed = m_conditions.TryGetValue(key, out ConditionEntry existing);
+
+                if (listed)
                 {
                     // an older event of a condition which is already listed has nothing
                     // to add. The server does not reorder events, but the guard costs
@@ -877,16 +899,32 @@ namespace Quickstarts.AlarmConditionClient.Model
                     {
                         return;
                     }
-
-                    change = ConditionChange.Updated;
-                }
-                else
-                {
-                    change = ConditionChange.Added;
                 }
 
                 snapshot = CreateSnapshot(key, condition, type);
-                m_conditions[key] = new ConditionEntry(condition, snapshot, filter, fields);
+
+                if (!snapshot.Retain)
+                {
+                    // Part 9 5.5.2: a condition which reports Retain = false no longer
+                    // asks this client for attention and leaves its list. That covers
+                    // both an alarm which the plant and the operator are done with, and
+                    // the trailing event filtered retain produces for an alarm which left
+                    // the where clause of this client - suppressed, shelved or taken out
+                    // of service - and which the server itself still retains. The two are
+                    // deliberately indistinguishable here: either way the row goes.
+                    if (!listed)
+                    {
+                        return;
+                    }
+
+                    m_conditions.Remove(key);
+                    change = ConditionChange.Removed;
+                }
+                else
+                {
+                    change = listed ? ConditionChange.Updated : ConditionChange.Added;
+                    m_conditions[key] = new ConditionEntry(condition, snapshot, filter, fields);
+                }
             }
 
             Raise(ConditionChanged, new ConditionChangedEventArgs(change, snapshot));
