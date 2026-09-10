@@ -35,6 +35,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Server;
+using Opc.Ua.Server.Fluent;
 using Opc.Ua.Server.Historian;
 using Opc.Ua.Server.Historian.InMemory;
 
@@ -47,10 +48,24 @@ namespace Quickstarts.HistoricalAccessServer
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The address space is built by hand. The history services themselves are not
-    /// implemented here: the <see cref="AsyncCustomNodeManager"/> base class routes
+    /// The address space is built by hand: there is no information model to declare
+    /// what a file in the archive turns into, so the manager derives from
+    /// <see cref="FluentNodeManagerBase"/> and drives the fluent builder itself, in
+    /// the sequence the node manager generated from a ModelDesign follows. The
+    /// history services themselves are not implemented here: the base class routes
     /// every HistoryRead and HistoryUpdate through the historian dispatcher of the
     /// SDK, which resolves a provider for the node the request names.
+    /// </para>
+    /// <para>
+    /// The folders and the items which exist at startup are registered as predefined
+    /// nodes, but a file which appears in the archive root later is not: it is turned
+    /// into an item on the first request which names it, and discarded again. Those
+    /// are a virtual node family, registered on the builder with
+    /// <see cref="VirtualNodeBuilderExtensions.ResolveNodes"/> - the predicate
+    /// recognizes the shape of an archive identifier, the resolver asks the archive
+    /// what is behind it, and the base node manager owns the handle, the operation
+    /// cache and the validation. The family also carries the monitored item hooks,
+    /// which the archive items need and the live variables ignore.
     /// </para>
     /// <para>
     /// Two providers serve this one namespace, which is what makes the resolution
@@ -75,7 +90,7 @@ namespace Quickstarts.HistoricalAccessServer
     /// value.
     /// </para>
     /// </remarks>
-    public class HistoricalAccessServerNodeManager : AsyncCustomNodeManager
+    public class HistoricalAccessServerNodeManager : FluentNodeManagerBase
     {
         #region Constructors
         /// <summary>
@@ -214,6 +229,13 @@ namespace Quickstarts.HistoricalAccessServer
             await CreateFolderFromResourcesAsync(root, "Sample", cancellationToken).ConfigureAwait(false);
             await CreateFolderFromResourcesAsync(root, "Dynamic", cancellationToken).ConfigureAwait(false);
             await CreateLiveFolderAsync(root, cancellationToken).ConfigureAwait(false);
+
+            NodeManagerBuilder builder = CreateFluentBuilder(NamespaceIndex);
+            Configure(builder);
+
+            await RegisterAuthoredNodesAsync(builder, cancellationToken).ConfigureAwait(false);
+            await CompleteConfigureAsync(externalReferences, cancellationToken).ConfigureAwait(false);
+            await SealConfigurationAsync(builder, cancellationToken).ConfigureAwait(false);
 
             // the simulation runs for as long as the server does: the live variables
             // publish whether or not anybody is watching, which is what makes their
@@ -477,81 +499,56 @@ namespace Quickstarts.HistoricalAccessServer
         }
 
         /// <summary>
-        /// Returns a unique handle for the node.
+        /// Registers the archive as a virtual node family, and the hooks its items
+        /// need while somebody is monitoring them.
         /// </summary>
-        protected override async ValueTask<NodeHandle> GetManagerHandleAsync(ServerSystemContext context, NodeId nodeId, IDictionary<NodeId, NodeState> cache, CancellationToken cancellationToken = default)
+        private void Configure(INodeManagerBuilder builder)
         {
-            // check for predefined nodes.
-            NodeHandle handle = await base.GetManagerHandleAsync(context, nodeId, cache, cancellationToken).ConfigureAwait(false);
-
-            if (handle != null)
-            {
-                return handle;
-            }
-
-            // quickly exclude nodes that are not in the namespace.
-            if (!IsNodeIdInNamespace(nodeId))
-            {
-                return null;
-            }
-
-            // check for nodes that are being currently monitored.
-            if (MonitoredNodes.TryGetValue(nodeId, out MonitoredNode2 monitoredNode))
-            {
-                return new NodeHandle {
-                    NodeId = nodeId,
-                    Validated = true,
-                    Node = monitoredNode.Node
-                };
-            }
-
-            // parse the identifier.
-            ParsedNodeId parsedNodeId = ParsedNodeId.Parse(nodeId);
-
-            if (parsedNodeId != null)
-            {
-                return new NodeHandle {
-                    NodeId = nodeId,
-                    Validated = false,
-                    Node = null,
-                    ParsedNodeId = parsedNodeId
-                };
-            }
-
-            return null;
+            builder
+                .ResolveNodes(IsArchiveNodeId, ResolveArchiveNodeAsync)
+                .OnMonitoredItemCreated(OnArchiveItemMonitoredItemCreated)
+                .OnMonitoredItemDeleted(OnArchiveItemMonitoredItemDeletedAsync);
         }
 
         /// <summary>
-        /// Verifies that the specified node exists.
+        /// Recognizes the identifier of a folder or an item of the archive.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the node cache/handle for the operation.")]
-        protected override async ValueTask<NodeState> ValidateNodeAsync(
-            ServerSystemContext context,
-            NodeHandle handle,
-            IDictionary<NodeId, NodeState> cache,
-            CancellationToken cancellationToken = default)
+        /// <remarks>
+        /// The predicate runs for every node id of this node manager which is not a
+        /// predefined node, so it does no more than look at the shape of the
+        /// identifier; whether the archive has anything behind it is the business of
+        /// the resolver.
+        /// </remarks>
+        private static bool IsArchiveNodeId(NodeId nodeId)
         {
-            if (handle == null)
-            {
-                return null;
-            }
+            return nodeId.IdType == IdType.String;
+        }
 
-            // lookup in cache.
-            NodeState target = await FindNodeInCacheAsync(context, handle, cache, cancellationToken).ConfigureAwait(false);
-
-            if (target != null)
-            {
-                handle.Node = target;
-                handle.Validated = true;
-                return handle.Node;
-            }
-
-            ParsedNodeId pnd = handle.ParsedNodeId as ParsedNodeId;
+        /// <summary>
+        /// Materializes the folder or item a node id names, or returns nothing when
+        /// the archive has nothing behind it.
+        /// </summary>
+        /// <remarks>
+        /// This is the tail of the address space which is not registered up front: a
+        /// file which turns up in the archive root becomes an item on the first
+        /// request which names it. The base node manager has already looked in the
+        /// operation cache and in the component cache by the time this runs.
+        /// </remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the node cache/handle for the operation.")]
+        private async ValueTask<NodeState> ResolveArchiveNodeAsync(
+            ISystemContext context,
+            NodeId nodeId,
+            CancellationToken cancellationToken)
+        {
+            // parse the identifier.
+            ParsedNodeId pnd = ParsedNodeId.Parse(nodeId);
 
             if (pnd == null)
             {
                 return null;
             }
+
+            NodeState target = null;
 
             // check for a new node.
             try
@@ -579,7 +576,7 @@ namespace Quickstarts.HistoricalAccessServer
             catch (Exception e)
             {
                 // a node id can parse as an item without a file behind it.
-                m_logger.LogError(e, "Could not load the archive behind {NodeId}.", handle.NodeId);
+                m_logger.LogError(e, "Could not load the archive behind {NodeId}.", nodeId);
                 return null;
             }
 
@@ -600,26 +597,10 @@ namespace Quickstarts.HistoricalAccessServer
             // validate component.
             if (!String.IsNullOrEmpty(pnd.ComponentPath))
             {
-                NodeState component = target.FindChildBySymbolicName(context, pnd.ComponentPath);
-
-                // component does not exist.
-                if (component == null)
-                {
-                    return null;
-                }
-
-                target = component;
+                target = target.FindChildBySymbolicName(context, pnd.ComponentPath);
             }
 
-            // put root into cache.
-            if (cache != null)
-            {
-                cache[handle.NodeId] = target;
-            }
-
-            handle.Node = target;
-            handle.Validated = true;
-            return handle.Node;
+            return target;
         }
         #endregion
 
@@ -645,6 +626,14 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Validates the nodes and reads the values from the underlying source.
         /// </summary>
+        /// <remarks>
+        /// This stays a service override rather than a read handler on the virtual
+        /// node family: it refreshes a stale archive from disk before <em>any</em>
+        /// attribute of an item is read, and it holds the archive lock across the
+        /// read so the simulation cannot change the value fields halfway through it.
+        /// A per-node handler would only see the Value attribute, and could not take
+        /// the lock around what the base class does with what it returns.
+        /// </remarks>
         protected override async ValueTask ReadAsync(
             ServerSystemContext context,
             ArrayOf<ReadValueId> nodesToRead,
@@ -708,13 +697,17 @@ namespace Quickstarts.HistoricalAccessServer
         /// </summary>
         /// <remarks>
         /// The simulation of an archive item only appends to it while somebody is
-        /// monitoring it; the live variables publish regardless.
+        /// monitoring it; the live variables publish regardless, so the hook lets
+        /// them pass.
         /// </remarks>
-        protected override void OnMonitoredItemCreated(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem)
+        private void OnArchiveItemMonitoredItemCreated(
+            ISystemContext context,
+            NodeState source,
+            ISampledDataChangeMonitoredItem monitoredItem)
         {
             lock (m_system.SyncRoot)
             {
-                if (handle.Node.GetHierarchyRoot() is ArchiveItemState item)
+                if (source.GetHierarchyRoot() is ArchiveItemState item)
                 {
                     if (m_monitoredItems == null)
                     {
@@ -730,11 +723,15 @@ namespace Quickstarts.HistoricalAccessServer
         /// <summary>
         /// Called after deleting a MonitoredItem.
         /// </summary>
-        protected override ValueTask OnMonitoredItemDeletedAsync(ServerSystemContext context, NodeHandle handle, ISampledDataChangeMonitoredItem monitoredItem, CancellationToken cancellationToken = default)
+        private ValueTask OnArchiveItemMonitoredItemDeletedAsync(
+            ISystemContext context,
+            NodeState source,
+            ISampledDataChangeMonitoredItem monitoredItem,
+            CancellationToken cancellationToken)
         {
             lock (m_system.SyncRoot)
             {
-                if (handle.Node.GetHierarchyRoot() is ArchiveItemState item &&
+                if (source.GetHierarchyRoot() is ArchiveItemState item &&
                     m_monitoredItems != null &&
                     m_monitoredItems.TryGetValue(item.ArchiveItem.UniquePath, out ArchiveItemState monitoredItemState))
                 {

@@ -20,7 +20,7 @@ together.
 
 ## The provider model
 
-The server implements no history service at all. `AsyncCustomNodeManager` routes every
+The server implements no history service at all. The base node manager routes every
 `HistoryRead` and `HistoryUpdate` through `Opc.Ua.Server.Historian.HistorianDispatcher`, which
 resolves an `IHistorianProvider` for the node the request names and calls it with a request it
 has already validated and normalised. Everything between the wire and the store — continuation
