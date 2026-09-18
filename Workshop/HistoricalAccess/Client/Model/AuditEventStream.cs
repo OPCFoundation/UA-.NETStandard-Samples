@@ -248,7 +248,7 @@ namespace Quickstarts.HistoricalAccess.Client.Model
                 return structures.Count;
             }
 
-            if (field.Value is System.Collections.ICollection collection)
+            if (field.AsBoxedObject() is System.Collections.ICollection collection)
             {
                 return collection.Count;
             }

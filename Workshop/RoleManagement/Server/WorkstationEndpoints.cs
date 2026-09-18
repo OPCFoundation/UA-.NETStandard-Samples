@@ -25,8 +25,10 @@ namespace Quickstarts.RoleManagement.Server
     /// identity mapping rules are even looked at: the Applications it may be granted on and
     /// the Endpoints it may be granted on. With this one in place the ConfigureAdmin Role of
     /// the sample is refused to a Session which arrived on the unsecured endpoint however
-    /// good its certificate is - and on an unsecured channel there is no client certificate
-    /// to judge in the first place.
+    /// good its certificate is. The certificate token policy of the sample names a security
+    /// policy of its own, so the workstation can sign in on the unsecured endpoint and prove
+    /// it holds the certificate there too: it is this filter, not a missing certificate,
+    /// which refuses it the Role.
     /// </para>
     /// <para>
     /// Part 18 4.4.2 says a field of an EndpointType which is left at its default value is

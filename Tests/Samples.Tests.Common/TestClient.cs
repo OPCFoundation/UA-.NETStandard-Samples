@@ -59,8 +59,9 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         /// <remarks>
         /// A server which maps OPC UA Part 18 X509Subject or Thumbprint identity criteria
-        /// matches them against this certificate - the one the client sends in CreateSession -
-        /// so a test which asserts such a mapping has to know what it sent.
+        /// matches them against the user certificate of a Session, and a client opened by
+        /// ConnectWithCertificateAsync signs in with this one, so a test which asserts such a
+        /// mapping has to know what it sent.
         /// </remarks>
         public string ApplicationCertificateSubject { get; private set; }
 
@@ -126,7 +127,7 @@ namespace Opc.Ua.Samples.Tests
             CancellationToken ct = default)
         {
             return await ConnectCoreAsync(
-                endpointUrl, sessionName, identity, EndpointChoice.Any, null, ct)
+                endpointUrl, sessionName, identity, EndpointChoice.Any, null, false, ct)
                 .ConfigureAwait(false);
         }
 
@@ -142,7 +143,7 @@ namespace Opc.Ua.Samples.Tests
             CancellationToken ct = default)
         {
             return await ConnectCoreAsync(
-                endpointUrl, sessionName, null, EndpointChoice.Any, null, ct)
+                endpointUrl, sessionName, null, EndpointChoice.Any, null, false, ct)
                 .ConfigureAwait(false);
         }
 
@@ -162,7 +163,7 @@ namespace Opc.Ua.Samples.Tests
             CancellationToken ct = default)
         {
             return await ConnectCoreAsync(
-                endpointUrl, sessionName, identity, EndpointChoice.UnsecuredOnly, null, ct)
+                endpointUrl, sessionName, identity, EndpointChoice.UnsecuredOnly, null, false, ct)
                 .ConfigureAwait(false);
         }
 
@@ -182,47 +183,55 @@ namespace Opc.Ua.Samples.Tests
             CancellationToken ct = default)
         {
             return await ConnectCoreAsync(
-                endpointUrl, sessionName, identity, EndpointChoice.EncryptedOnly, null, ct)
+                endpointUrl, sessionName, identity, EndpointChoice.EncryptedOnly, null, false, ct)
                 .ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Opens a session whose application instance certificate carries the given subject.
+        /// Opens a session signed in with an X.509 user token made from the client's own
+        /// application instance certificate, created with the given subject.
         /// </summary>
         /// <remarks>
-        /// For servers which grant a Role for the certificate of the client application, as
-        /// OPC UA Part 18 4.4.3 X509Subject and Thumbprint identity criteria do. Every test
-        /// client creates its own certificate in its own throw away PKI, so two clients built
-        /// with the same subject still differ by thumbprint - which is exactly the contrast
+        /// For servers which grant a Role for a certificate, as the OPC UA Part 18 4.4.3
+        /// X509Subject and Thumbprint identity criteria do. Those are matched against the
+        /// user certificate of the Session, which only an X509IdentityToken carries, so the
+        /// client signs in with the certificate it already holds - the way a sample client
+        /// does, see <see cref="Opc.Ua.Samples.Client.SampleIdentities"/>. Every test client
+        /// creates its own certificate in its own throw away PKI, so two clients built with
+        /// the same subject still differ by thumbprint - which is exactly the contrast
         /// between the two criteria.
         /// </remarks>
         /// <param name="endpointUrl">The endpoint to connect to.</param>
         /// <param name="sessionName">The name of the session, for readable server logs.</param>
-        /// <param name="identity">The user to open the session for. Null for anonymous.</param>
         /// <param name="certificateSubject">
-        /// The subject name to create the application instance certificate with.
-        /// <c>DC=localhost</c> in it is replaced by the host name by the stack.
+        /// The subject name to create the application instance certificate with, or null for
+        /// the default one. <c>DC=localhost</c> in it is replaced by the host name by the stack.
         /// </param>
         /// <param name="encrypted">
-        /// True for an encrypted endpoint, false for the unsecured one. A client certificate
-        /// only reaches the server over a secured channel, so the same certificate on the two
-        /// endpoints is how a test tells an Endpoints filter from an identity criteria.
+        /// True for an encrypted endpoint, false for the unsecured one. The same certificate
+        /// on the two endpoints is how a test tells an Endpoints filter from an identity
+        /// criteria.
+        /// </param>
+        /// <param name="signIn">
+        /// False to open an anonymous Session instead, with the same certificate on its secure
+        /// channel only - which is how a test shows that the channel certificate earns nothing.
         /// </param>
         /// <param name="ct">The cancellation token.</param>
         public static async Task<TestClient> ConnectWithCertificateAsync(
             string endpointUrl,
             string sessionName,
-            IUserIdentity identity,
             string certificateSubject,
             bool encrypted,
+            bool signIn = true,
             CancellationToken ct = default)
         {
             return await ConnectCoreAsync(
                 endpointUrl,
                 sessionName,
-                identity,
+                null,
                 encrypted ? EndpointChoice.EncryptedOnly : EndpointChoice.UnsecuredOnly,
                 certificateSubject,
+                signIn,
                 ct)
                 .ConfigureAwait(false);
         }
@@ -307,6 +316,7 @@ namespace Opc.Ua.Samples.Tests
             IUserIdentity identity,
             EndpointChoice choice,
             string certificateSubject,
+            bool signInWithCertificate,
             CancellationToken ct)
         {
             TemporaryPki pki = null;
@@ -324,6 +334,13 @@ namespace Opc.Ua.Samples.Tests
                 ApplicationConfiguration configuration =
                     await CreateConfigurationAsync(application, pki, certificateSubject, ct)
                         .ConfigureAwait(false);
+
+                if (signInWithCertificate)
+                {
+                    identity = await Opc.Ua.Samples.Client.SampleIdentities
+                        .FromApplicationCertificateAsync(configuration, ct)
+                        .ConfigureAwait(false);
+                }
 
                 (string subject, string thumbprint) = await DescribeCertificateAsync(configuration, ct)
                     .ConfigureAwait(false);

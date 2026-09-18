@@ -35,6 +35,21 @@
       <StoreType>Directory</StoreType>
       <StorePath>%CommonApplicationData%\OPC Foundation\pki\rejected</StorePath>
     </RejectedCertificateStore>
+
+    <!--
+    The maintenance workstation earns its Role from the certificate it signs in with, which Part 18
+    matches as a USER certificate. A server trusts user certificates in a list of their own,
+    separate from the application certificates above: copy the certificate of the sample client
+    (its pki\own\certs folder) into trustedUser before signing in as the workstation.
+    -->
+    <UserIssuerCertificates>
+      <StoreType>Directory</StoreType>
+      <StorePath>%CommonApplicationData%\OPC Foundation\pki\issuerUser</StorePath>
+    </UserIssuerCertificates>
+    <TrustedUserCertificates>
+      <StoreType>Directory</StoreType>
+      <StorePath>%CommonApplicationData%\OPC Foundation\pki\trustedUser</StorePath>
+    </TrustedUserCertificates>
   </SecurityConfiguration>
 
   <TransportConfigurations></TransportConfigurations>
@@ -86,6 +101,16 @@
       </ua:UserTokenPolicy>
       <ua:UserTokenPolicy>
         <ua:TokenType>UserName_1</ua:TokenType>
+      </ua:UserTokenPolicy>
+      <!--
+      The token the maintenance workstation signs in with. Possession of the certificate is proven
+      with a signature, and naming the policy here rather than inheriting the one of the endpoint
+      lets the workstation sign in on the unsecured endpoint as well - where the Endpoints filter
+      of its Role, not a missing certificate, is what refuses it the Role.
+      -->
+      <ua:UserTokenPolicy>
+        <ua:TokenType>Certificate_2</ua:TokenType>
+        <ua:SecurityPolicyUri>http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256</ua:SecurityPolicyUri>
       </ua:UserTokenPolicy>
     </UserTokenPolicies>
 

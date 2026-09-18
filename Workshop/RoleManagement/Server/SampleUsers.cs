@@ -51,12 +51,15 @@ namespace Quickstarts.RoleManagement.Server
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The certificate the Role manager matches against is the <b>application instance
-        /// certificate of the client</b> - the one the client sends in CreateSession - not a
-        /// user certificate. That is worth saying out loud, because the criteria is named
-        /// after X.509 and Part 18 4.4.3 allows either reading: a Role granted this way
-        /// belongs to the software on that workstation, and every Session it opens holds it,
-        /// signed in or not.
+        /// The certificate the Role manager matches against is the <b>user certificate</b>
+        /// of the Session - the one in an X509IdentityToken - never the application instance
+        /// certificate of the secure channel. A Session opened with an anonymous or a user
+        /// name token has no user certificate, so it earns nothing from this rule, however the
+        /// client that opened it is called. The maintenance workstation of the sample signs
+        /// in with the certificate it already holds, its application instance certificate,
+        /// presented as a user token: the Role belongs to that machine, and only a Session
+        /// which proves it holds the private key earns it. The server has to trust the
+        /// certificate as a user certificate, in the user trust list of its configuration.
         /// </para>
         /// <para>
         /// The criteria is a normalised subject: <c>Name="Value"</c> pairs separated by
@@ -120,10 +123,10 @@ namespace Quickstarts.RoleManagement.Server
                 });
             }
 
-            // The Role which belongs to the maintenance workstation rather than to a user:
-            // it is granted for the certificate the client application presented, not for a
-            // user name, so an anonymous Session from the sample client holds it and a
-            // signed in Session from any other client does not.
+            // The Role which belongs to the maintenance workstation rather than to a person:
+            // it is granted for the certificate the workstation signs in with, not for a user
+            // name, so a Session of the sample client signed in with its own certificate holds
+            // it, and an anonymous or user name Session - from any client - does not.
             //
             // Two things this cannot say here. The Endpoints filter which goes with it is
             // applied by WorkstationEndpoints once the server knows its own endpoints. And

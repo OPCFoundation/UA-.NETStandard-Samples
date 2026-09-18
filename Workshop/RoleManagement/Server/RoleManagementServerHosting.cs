@@ -21,8 +21,10 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     /// <remarks>
     /// Everything is registered with the server builder of the stack: the role
-    /// mappings configure the role manager the stack installs on the server, the
-    /// authenticator joins its identity registry once the server has started, and the
+    /// mappings configure the role manager the stack installs on the server, the two
+    /// authenticators - one for the accounts, one for the certificate of the maintenance
+    /// workstation, judged against the user trust list of the configuration file - join
+    /// its identity registry once the server has started, and the
     /// startup task finishes the one part of the role configuration which cannot be
     /// written down before the server knows its own endpoints. The sample has no server
     /// class of its own. The entry point of the sample and the tests which host it share
@@ -57,7 +59,11 @@ namespace Microsoft.Extensions.DependencyInjection
                     .ConfigureRoles(SampleUsers.ConfigureRoles)
                     .AddStartupTask<WorkstationEndpoints>()
                     .AddIdentityAuthenticator(
-                        (_, _) => new UserNamePasswordAuthenticator(SampleUsers.AuthenticateAsync)),
+                        (_, _) => new UserNamePasswordAuthenticator(SampleUsers.AuthenticateAsync))
+                    .AddIdentityAuthenticator(
+                        (_, validator) => new X509Authenticator(
+                            validator ?? throw new InvalidOperationException(
+                                "The server has no certificate validator to judge user certificates with."))),
                 configure);
         }
     }

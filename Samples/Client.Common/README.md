@@ -138,6 +138,10 @@ The Boiler client is the reference implementation; the Empty client is the templ
   answered.
 - `SampleSessionFactory`: opens the managed session the connect control opens, for callers
   without a window (the model tests).
+- `SampleIdentities`: an X.509 user identity made from the client's own application
+  certificate, for a client which earns a Part 18 Role with a `Thumbprint` or `X509Subject`
+  rule. Those rules match the user certificate of a Session, never the certificate of its
+  secure channel.
 - `SampleConnection`: the connection of a sample client without the tool bar - discovery,
   the session, the reconnect it reports, the bounded close, the complex type load.
   `ConnectServerCtrl` is now the window half of it: two input fields, a status strip and

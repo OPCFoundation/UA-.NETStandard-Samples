@@ -63,6 +63,12 @@ namespace Opc.Ua.Samples.Tests
         private const string kAnonymous = "Anonymous";
 
         /// <summary>
+        /// The entry of the identity drop down which signs in with the certificate of the
+        /// client application.
+        /// </summary>
+        private const string kWorkstation = "Workstation certificate";
+
+        /// <summary>
         /// The columns of the node list, as the sample orders them.
         /// </summary>
         private const int kStatusColumn = 2;
@@ -158,8 +164,9 @@ namespace Opc.Ua.Samples.Tests
         /// The server maps the subject name of the application instance certificate the
         /// sample client creates for itself onto the ConfigureAdmin Role, restricted to its
         /// encrypted endpoints (Part 18 4.4.3 X509Subject and the 4.4.1 Endpoints filter).
-        /// So an <b>anonymous</b> Session from this client holds a Role which no account of
-        /// the sample can earn, and the service code is in its address space.
+        /// The criteria is matched against the user certificate of a Session, so the client
+        /// signs in with that certificate as the workstation, and then holds a Role which no
+        /// account of the sample can earn: the service code is in its address space.
         /// </para>
         /// <para>
         /// This is the fixture which holds the server's hard coded criteria to the
@@ -172,7 +179,7 @@ namespace Opc.Ua.Samples.Tests
         public async Task TheCertificateOfThisClientEarnsTheServiceCode(CancellationToken ct)
         {
             await RunAsync(async (form, token) => {
-                await ConnectAsAsync(form, kAnonymous, useSecurity: true, token).ConfigureAwait(true);
+                await ConnectAsAsync(form, kWorkstation, useSecurity: true, token).ConfigureAwait(true);
 
                 bool listed = await SampleFormDriver
                     .PumpUntilAsync(() => RowOf(form, "ServiceCode") != null, s_actionTimeout, token)
@@ -181,9 +188,9 @@ namespace Opc.Ua.Samples.Tests
                 Assert.That(
                     listed,
                     Is.True,
-                    "An anonymous Session on an encrypted endpoint has to hold the ConfigureAdmin " +
-                    "Role, because the server maps the subject of this client's certificate onto " +
-                    "it. " + Seen(form));
+                    "A Session signed in with this client's certificate on an encrypted endpoint " +
+                    "has to hold the ConfigureAdmin Role, because the server maps the subject of " +
+                    "that certificate onto it. " + Seen(form));
 
                 Assert.That(
                     ColumnOf(form, "ServiceCode", kStatusColumn),
@@ -272,10 +279,23 @@ namespace Opc.Ua.Samples.Tests
 
             ConnectServerCtrl connect = WinFormsHarness.GetConnectControl(form);
 
-            Assert.That(
-                connect.UserIdentity?.DisplayName,
-                Is.EqualTo(string.Equals(account, kAnonymous, StringComparison.Ordinal) ? null : account),
-                "Choosing an account did not reach the connect control.");
+            // the workstation certificate is loaded asynchronously, and its token is named
+            // after the certificate rather than after the entry of the drop down
+            bool workstation = string.Equals(account, kWorkstation, StringComparison.Ordinal);
+
+            bool chosen = await SampleFormDriver
+                .PumpUntilAsync(
+                    () => workstation
+                        ? connect.UserIdentity?.TokenType == UserTokenType.Certificate
+                        : string.Equals(
+                            connect.UserIdentity?.DisplayName,
+                            string.Equals(account, kAnonymous, StringComparison.Ordinal) ? null : account,
+                            StringComparison.Ordinal),
+                    s_actionTimeout,
+                    ct)
+                .ConfigureAwait(true);
+
+            Assert.That(chosen, Is.True, "Choosing an account did not reach the connect control.");
 
             ISession session = await connect
                 .ConnectAsync(NullTelemetry.Instance, s_endpointUrl, useSecurity, 30_000, ct)

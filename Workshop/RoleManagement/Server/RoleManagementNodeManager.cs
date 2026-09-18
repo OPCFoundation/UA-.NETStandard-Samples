@@ -156,8 +156,8 @@ namespace Quickstarts.RoleManagement.Server
                 AccessRestrictionType.ApplyRestrictionsToBrowse);
 
             // The service code belongs to the maintenance workstation rather than to a user:
-            // the ConfigureAdmin Role which owns it is granted by the certificate of the
-            // client application and only on the encrypted endpoint, which is configured in
+            // the ConfigureAdmin Role which owns it is granted by the certificate the
+            // workstation signs in with and only on the encrypted endpoint, which is configured in
             // SampleUsers.ConfigureRoles and WorkstationEndpoints. The node itself carries no
             // restriction, so what a Session may do with it is decided by that Role
             // configuration alone.

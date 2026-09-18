@@ -513,7 +513,7 @@ namespace Opc.Ua.Samples.Tests
         private async Task<SignedIn> SignInAsync(string account, bool encrypted, CancellationToken ct)
         {
             TestClient client = await ConnectAsync(
-                RoleManagementClientModel.IdentityFor(account),
+                await RoleManagementClientModel.IdentityForAsync(account, null, ct).ConfigureAwait(false),
                 encrypted,
                 $"{account}{(encrypted ? " encrypted" : string.Empty)}",
                 ct).ConfigureAwait(false);

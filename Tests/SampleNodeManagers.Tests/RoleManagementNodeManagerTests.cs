@@ -650,23 +650,22 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// A Role earned by the certificate of the client application, on one endpoint only.
+        /// A Role earned by the certificate a workstation signs in with, on one endpoint only.
         /// </summary>
         /// <remarks>
         /// <para>
         /// Two Part 18 features at once, because the sample configures them on the same Role
         /// and each one is the negative case of the other. The X509Subject identity criteria
-        /// of 4.4.3 matches the subject of the application instance certificate the client
-        /// sent in CreateSession - so the Role belongs to the software on that workstation
-        /// and an anonymous Session from it holds the Role. The Endpoints filter of 4.4.1 is
-        /// evaluated before any identity rule is, so the same certificate on the unsecured
-        /// endpoint earns nothing.
+        /// of 4.4.3 matches the subject of the user certificate of the Session - the one in its
+        /// X509IdentityToken - so the workstation signs in with its own application instance
+        /// certificate and holds the Role. The Endpoints filter of 4.4.1 is evaluated before
+        /// any identity rule is, so the same sign in on the unsecured endpoint earns nothing.
         /// </para>
         /// <para>
-        /// Note which certificate this is. The criteria is named after X.509 and Part 18
-        /// allows reading it as a user certificate, but the stack matches it against the
-        /// client's <b>application instance</b> certificate, which is also the only one it
-        /// has on a Session opened with an anonymous or a user name token.
+        /// Note which certificate this is not: the application instance certificate of the
+        /// secure channel. An anonymous Session from the very same client holds no Role,
+        /// because it presents no user certificate. Up to SDK 2.0.312 the stack matched the
+        /// channel certificate instead, which the sample relied on.
         /// </para>
         /// </remarks>
         [Test]
@@ -677,7 +676,7 @@ namespace Opc.Ua.Samples.Tests
 
             await using TestClient workstation = await TestClient
                 .ConnectWithCertificateAsync(
-                    EndpointUrl, "maintenance workstation", null, WorkstationSubject, encrypted: true, ct)
+                    EndpointUrl, "maintenance workstation", WorkstationSubject, encrypted: true, ct: ct)
                 .ConfigureAwait(false);
 
             await TestContext.Out
@@ -695,8 +694,8 @@ namespace Opc.Ua.Samples.Tests
             Assert.That(
                 asWorkstation,
                 Does.Contain("ServiceCode"),
-                "An anonymous Session whose client certificate matches the X509Subject rule of " +
-                "the ConfigureAdmin Role has to hold that Role. Compare the two subjects above: " +
+                "A Session signed in with a user certificate which matches the X509Subject rule " +
+                "of the ConfigureAdmin Role has to hold that Role. Compare the two subjects above: " +
                 "the criteria is a normalised subject and has to match the certificate exactly.");
 
             NodeId serviceCodeId = await SessionOps
@@ -712,9 +711,9 @@ namespace Opc.Ua.Samples.Tests
                 Is.True,
                 $"The ConfigureAdmin Role carries Write on the service code: {write}");
 
-            // a different client on the same encrypted endpoint: right endpoint, wrong subject
+            // a different client signed in with its own certificate: right endpoint, wrong subject
             await using TestClient stranger = await TestClient
-                .ConnectEncryptedAsync(EndpointUrl, "another client", null, ct)
+                .ConnectWithCertificateAsync(EndpointUrl, "another client", null, encrypted: true, ct: ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -722,12 +721,24 @@ namespace Opc.Ua.Samples.Tests
                 Does.Not.Contain("ServiceCode"),
                 "A client whose certificate carries a different subject earns nothing.");
 
-            // the workstation certificate on the unsecured endpoint: right subject, wrong
-            // endpoint - and on an unsecured channel the server has no client certificate to
-            // match in the first place
+            // the workstation subject on the secure channel of an anonymous Session: the rule
+            // matches the user certificate, and an anonymous Session has none
+            await using TestClient anonymous = await TestClient
+                .ConnectWithCertificateAsync(
+                    EndpointUrl, "anonymous workstation", WorkstationSubject, encrypted: true, signIn: false, ct: ct)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                await SessionOps.BrowseNamesAsync(anonymous.Session, machineId, ct).ConfigureAwait(false),
+                Does.Not.Contain("ServiceCode"),
+                "An anonymous Session presents no user certificate, so it cannot match an X509Subject rule.");
+
+            // the workstation signed in on the unsecured endpoint: right certificate, wrong
+            // endpoint. The certificate token policy names its own security policy, so the
+            // sign in itself succeeds there and only the Endpoints filter refuses the Role.
             await using TestClient offEndpoint = await TestClient
                 .ConnectWithCertificateAsync(
-                    EndpointUrl, "workstation without encryption", null, WorkstationSubject, encrypted: false, ct)
+                    EndpointUrl, "workstation without encryption", WorkstationSubject, encrypted: false, ct: ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -741,8 +752,8 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         /// <remarks>
         /// The counterpart of the X509Subject rule the server configures at startup: both
-        /// clients below carry the same subject, and only the one whose thumbprint the
-        /// SecurityAdmin registered earns the Role. This also exercises the criteria on the
+        /// clients below sign in with a certificate of the same subject, and only the one
+        /// whose thumbprint the SecurityAdmin registered earns the Role. This also exercises the criteria on the
         /// write path, because the rule is added over OPC UA through the AddIdentity Method
         /// of the Role rather than in the configuration of the server.
         /// </remarks>
@@ -757,11 +768,11 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await using TestClient registered = await TestClient
-                .ConnectEncryptedAsync(EndpointUrl, "the registered client", null, ct)
+                .ConnectWithCertificateAsync(EndpointUrl, "the registered client", null, encrypted: true, ct: ct)
                 .ConfigureAwait(false);
 
             await using TestClient sibling = await TestClient
-                .ConnectEncryptedAsync(EndpointUrl, "a client with the same subject", null, ct)
+                .ConnectWithCertificateAsync(EndpointUrl, "a client with the same subject", null, encrypted: true, ct: ct)
                 .ConfigureAwait(false);
 
             Assert.That(
