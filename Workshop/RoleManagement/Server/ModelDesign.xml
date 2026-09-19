@@ -43,7 +43,7 @@
         <opc:Description>The maintenance log. Written by a Supervisor, and not part of the address space of an unencrypted channel at all.</opc:Description>
       </opc:Variable>
       <opc:Variable SymbolicName="ServiceCode" DataType="ua:String" ValueRank="Scalar" TypeDefinition="ua:BaseDataVariableType" AccessLevel="ReadWrite">
-        <opc:Description>The service unlock code. Read by an Engineer, written by the maintenance workstation, which earns its Role from the certificate of the client application rather than from a user.</opc:Description>
+        <opc:Description>The service unlock code. Read by an Engineer, written by the maintenance workstation, which earns its Role from the certificate it signs in with rather than from a user name.</opc:Description>
       </opc:Variable>
       <opc:Method SymbolicName="Reset">
         <opc:Description>Returns the set point to its default. Only an Operator or an Engineer may call it.</opc:Description>

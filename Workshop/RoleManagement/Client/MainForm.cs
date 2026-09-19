@@ -88,7 +88,7 @@ namespace Quickstarts.RoleManagement.Client
             }
 
             IdentityCB.SelectedIndex = 0;
-            IdentityCB.SelectedIndexChanged += IdentityCB_SelectedIndexChanged;
+            IdentityCB.SelectedIndexChanged += IdentityCB_SelectedIndexChangedAsync;
 
             // the three Part 18 4.4.3 identity criteria this sample can produce; the model
             // fills the text box with what this client would present for each of them
@@ -191,15 +191,24 @@ namespace Quickstarts.RoleManagement.Client
         /// <remarks>
         /// The whole of the identity handling of this window is these few lines. Everything
         /// the rest of the form shows follows from which token was sent, because the server
-        /// resolves the Roles of the Session from it.
+        /// resolves the Roles of the Session from it. The workstation certificate is loaded
+        /// from the store of this client, which is why it is awaited.
         /// </remarks>
-        private void IdentityCB_SelectedIndexChanged(object sender, EventArgs e)
+        private async void IdentityCB_SelectedIndexChangedAsync(object sender, EventArgs e)
         {
             try
             {
-                ConnectServerCTRL.UserIdentity = RoleManagementClientModel.IdentityFor(IdentityCB.SelectedItem as string);
+                string account = IdentityCB.SelectedItem as string;
 
                 UpdateIdentityHint();
+
+                IUserIdentity identity = await RoleManagementClientModel.IdentityForAsync(account, m_configuration);
+
+                // a later choice made while the certificate was loading wins
+                if (string.Equals(account, IdentityCB.SelectedItem as string, StringComparison.Ordinal))
+                {
+                    ConnectServerCTRL.UserIdentity = identity;
+                }
             }
             catch (Exception exception)
             {
@@ -211,10 +220,11 @@ namespace Quickstarts.RoleManagement.Client
         /// Fills the criteria box with something the chosen criteria type accepts.
         /// </summary>
         /// <remarks>
-        /// The two certificate criteria are matched against the application instance
-        /// certificate of the <b>client</b>, so the model fills them in from this client's
-        /// own configuration. Granting a Role for one of them and reconnecting is how the
-        /// sample shows a Role which belongs to a machine rather than to a person.
+        /// The two certificate criteria are matched against the user certificate of a
+        /// Session, and this client signs in as the workstation with its own application
+        /// instance certificate, so the model fills them in from this client's own
+        /// configuration. Granting a Role for one of them and reconnecting as the workstation
+        /// is how the sample shows a Role which belongs to a machine rather than to a person.
         /// </remarks>
         private async void CriteriaCB_SelectedIndexChangedAsync(object sender, EventArgs e)
         {

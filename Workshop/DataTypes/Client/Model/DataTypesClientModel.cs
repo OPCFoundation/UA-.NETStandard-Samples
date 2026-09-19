@@ -176,7 +176,7 @@ namespace Quickstarts.DataTypes.Model
             // can be decoded. Both arguments are named: the first one is
             // onlyEnumTypes, and passing true there leaves every structure of the
             // server undecoded - which looks like a working client until it reads one.
-            var typeSystem = ComplexTypeSystemClientExtensions.Create(session, Telemetry);
+            using var typeSystem = ComplexTypeSystemClientExtensions.Create(session, Telemetry);
 
             await typeSystem
                 .LoadAsync(onlyEnumTypes: false, throwOnError: true, ct)

@@ -51,17 +51,29 @@ not its business.
 person. Its configuration uses two more parts of Part 18:
 
 * an identity mapping rule of criteria type **`X509Subject`** whose criteria is the subject
-  name of the application instance certificate the sample **client** creates for itself. Any
-  Session that client opens holds the Role, anonymous or signed in, and no Session from any
-  other client does — however it signs in.
+  name of the application instance certificate the sample **client** creates for itself. The
+  client signs in with that certificate when **Sign in as** is set to *Workstation
+  certificate*, and that Session holds the Role. An anonymous or user name Session from the
+  same client does not, and neither does a Session from any other client, however it signs in.
 * an **`Endpoints` filter** (§4.4.1), which is evaluated *before* any identity rule, so the
-  Role is refused on the unsecured endpoint. On an unsecured channel there is no client
-  certificate to judge in the first place, which makes the two halves consistent.
+  Role is refused on the unsecured endpoint. The certificate token policy names a security
+  policy of its own, so the workstation can sign in on the unsecured endpoint too; it is the
+  filter, not a missing certificate, that refuses it the Role there.
 
-> The criteria is matched against the **application instance certificate of the client** —
-> the one it sends in `CreateSession` — not against a user certificate. Part 18 §4.4.3 reads
-> either way; this is what the stack does, and it is also the only certificate a Session
-> opened with an anonymous or a user name token has.
+> The criteria is matched against the **user certificate** of the Session — the one in its
+> `X509IdentityToken` — not against the application instance certificate of the secure
+> channel. A Session opened with an anonymous or a user name token has no user certificate
+> and cannot match a `Thumbprint` or `X509Subject` rule. The workstation presents its
+> application instance certificate as a user token, which is why the rule names that
+> certificate's subject (`SampleIdentities.FromApplicationCertificateAsync` in the shared
+> client library builds the identity).
+>
+> The server has to **trust the certificate as a user certificate**. User certificates have a
+> trust list of their own (`TrustedUserCertificates`, `pki\trustedUser`), separate from the one
+> application certificates are trusted in, and the sample registers the stack's
+> `X509Authenticator` to validate against it. Copy the client's certificate from its
+> `pki\own\certs` folder into `pki\trustedUser` before signing in as the workstation; until
+> then the server answers `BadIdentityTokenRejected`.
 >
 > The criteria string is a normalised subject: `Name="Value"` pairs separated by slashes, in
 > the order CN, O, OU, DC, L, S, C. The sample writes it out in
@@ -136,9 +148,9 @@ Role manager, so the whole Part 18 §4.2/§4.4 API is available over OPC UA:
 
 * `RoleSet.AddRole` / `RemoveRole` — create and delete a Role of the server's own
 * `<Role>.AddIdentity` / `RemoveIdentity` — grant and revoke a Role for a user name, or for
-  the certificate of a client application: the drop down beside the criteria box picks
-  `UserName`, `Thumbprint` or `X509Subject`, and fills the box with what *this* client would
-  present for the last two
+  a user certificate: the drop down beside the criteria box picks `UserName`, `Thumbprint`
+  or `X509Subject`, and fills the box with what *this* client presents for the last two when
+  it signs in as the workstation
 * `<Role>.CustomConfiguration` — the *Toggle CustomConfiguration* button writes the Property
 * `<Role>.AddApplication`, `AddEndpoint`, and the `…Exclude` properties
 
@@ -178,9 +190,10 @@ In the client, pick an account in **Sign in as**, then **Server → Connect**. T
 the machine as that Session sees it, the middle list is the RoleSet, and the lower list is the
 audit trail. Reconnect as a different account to see the first two change — and reconnect with
 the **Use Security** box cleared to see what the channel decides rather than the account:
-`Calibration` and `MaintenanceNote` stop giving up their values, and `ServiceCode` disappears
-because the `ConfigureAdmin` Role this workstation earns from its certificate is only granted
-on the encrypted endpoints.
+`Calibration` and `MaintenanceNote` stop giving up their values. Sign in as *Workstation
+certificate* (after trusting it, see 1b) to see `ServiceCode` appear, and clear **Use
+Security** again to see it disappear: the `ConfigureAdmin` Role the workstation earns from its
+certificate is only granted on the encrypted endpoints.
 
 ## Notes for implementers
 

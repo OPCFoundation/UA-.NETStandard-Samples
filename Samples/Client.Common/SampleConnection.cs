@@ -388,7 +388,7 @@ namespace Opc.Ua.Samples.Client
             {
                 ReportStatus(false, DateTime.Now, "Connected, loading complex type system.");
 
-                var typeSystem = ComplexTypeSystemClientExtensions.Create(m_session, m_telemetry);
+                using var typeSystem = ComplexTypeSystemClientExtensions.Create(m_session, m_telemetry);
 
                 await typeSystem.LoadAsync(ct: ct).ConfigureAwait(false);
             }

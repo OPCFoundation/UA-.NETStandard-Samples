@@ -161,6 +161,12 @@ namespace Quickstarts.RoleManagement.Client.Model
         public const string Anonymous = "Anonymous";
 
         /// <summary>
+        /// The account which signs in with the certificate of this client application: the
+        /// maintenance workstation of the sample.
+        /// </summary>
+        public const string Workstation = "Workstation certificate";
+
+        /// <summary>
         /// The account <see cref="CriteriaOfAsync"/> offers for a UserName rule.
         /// </summary>
         public const string DefaultUserCriteria = "guest";
@@ -178,6 +184,7 @@ namespace Quickstarts.RoleManagement.Client.Model
             "supervisor1",
             "secadmin",
             "guest",
+            Workstation,
         };
 
         /// <summary>
@@ -185,9 +192,10 @@ namespace Quickstarts.RoleManagement.Client.Model
         /// </summary>
         /// <remarks>
         /// UserName is what the server maps its demonstration accounts with; the other two
-        /// are matched against the application instance certificate this client sends in
-        /// CreateSession, which is why <see cref="CriteriaOfAsync"/> can fill them in from
-        /// the client's own configuration.
+        /// are matched against the user certificate of a Session, which this client presents
+        /// when it signs in as the <see cref="Workstation"/> - its own application instance
+        /// certificate. That is why <see cref="CriteriaOfAsync"/> can fill them in from the
+        /// client's own configuration.
         /// </remarks>
         public static IReadOnlyList<IdentityCriteriaType> CriteriaTypes { get; } = new[] {
             IdentityCriteriaType.UserName,
@@ -245,12 +253,30 @@ namespace Quickstarts.RoleManagement.Client.Model
         /// is its user name.
         /// </remarks>
         /// <param name="account">One of the <see cref="Accounts"/>.</param>
+        /// <param name="configuration">The configuration of the client, which holds the
+        /// certificate the <see cref="Workstation"/> signs in with.</param>
+        /// <param name="ct">The cancellation token.</param>
         /// <returns>The identity, or null for an anonymous Session.</returns>
-        public static IUserIdentity IdentityFor(string account)
+        public static async Task<IUserIdentity> IdentityForAsync(
+            string account,
+            ApplicationConfiguration configuration,
+            CancellationToken ct = default)
         {
-            return string.IsNullOrEmpty(account) || string.Equals(account, Anonymous, StringComparison.Ordinal)
-                ? null
-                : new UserIdentity(account, Encoding.UTF8.GetBytes(account));
+            if (string.IsNullOrEmpty(account) || string.Equals(account, Anonymous, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            // the workstation is not an account: Part 18 matches its Role against the user
+            // certificate of the Session, so it signs in with the certificate it already holds
+            if (string.Equals(account, Workstation, StringComparison.Ordinal))
+            {
+                return await SampleIdentities
+                    .FromApplicationCertificateAsync(configuration, ct)
+                    .ConfigureAwait(false);
+            }
+
+            return new UserIdentity(account, Encoding.UTF8.GetBytes(account));
         }
 
         /// <summary>
@@ -266,8 +292,10 @@ namespace Quickstarts.RoleManagement.Client.Model
                 "supervisor1" => "Supervisor: writes the maintenance note, over an encrypted channel.",
                 "secadmin" => "SecurityAdmin: manages the RoleSet, over an encrypted channel.",
                 "guest" => "No Role beyond AuthenticatedUser: sees the machine, may change nothing.",
-                _ => "Anonymous: browses the machine - and with Use Security on, this workstation " +
-                     "still earns ConfigureAdmin from its certificate.",
+                Workstation => "Signs in with this client's certificate: with Use Security on, the " +
+                     "workstation earns ConfigureAdmin and the service code. The server has to " +
+                     "trust the certificate as a user certificate.",
+                _ => "Anonymous: browses the machine, may change nothing.",
             };
         }
 
@@ -327,9 +355,10 @@ namespace Quickstarts.RoleManagement.Client.Model
         /// A criteria string of the given type which this client could be matched by.
         /// </summary>
         /// <remarks>
-        /// The two certificate criteria are matched against the application instance
-        /// certificate of the <b>client</b>, so this client can fill them in from its own
-        /// configuration: a Thumbprint has to be upper case hexadecimal without separators,
+        /// The two certificate criteria are matched against the user certificate of a
+        /// Session, and the certificate this client signs in with as the
+        /// <see cref="Workstation"/> is its own application instance certificate, so it can
+        /// fill them in from its own configuration: a Thumbprint has to be upper case hexadecimal without separators,
         /// and an X509Subject the normalised form of <see cref="Part18Subject"/>. Granting a
         /// Role for one of them and reconnecting is how the sample shows a Role which belongs
         /// to a machine rather than to a person. Needs no session.
