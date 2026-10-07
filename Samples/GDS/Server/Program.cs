@@ -344,12 +344,12 @@ namespace Opc.Ua.Gds.Server
                     "sysadmin",
                     Encoding.UTF8.GetBytes("demo"),
                     [GdsRole.CertificateAuthorityAdmin, GdsRole.DiscoveryAdmin, Role.SecurityAdmin, Role
-                    .ConfigureAdmin]);
+                    .ConfigureAdmin, DeviceRegistrarNodeManager.RegistrarAdmin]);
                 userDatabase.CreateUser(
                     "appadmin",
                     Encoding.UTF8.GetBytes("demo"),
                     [Role.AuthenticatedUser, GdsRole.CertificateAuthorityAdmin, GdsRole
-                    .DiscoveryAdmin]);
+                    .DiscoveryAdmin, DeviceRegistrarNodeManager.RegistrarAdmin]);
                 userDatabase.CreateUser("appuser", Encoding.UTF8.GetBytes("demo"), [Role.AuthenticatedUser]);
 
                 userDatabase.CreateUser(

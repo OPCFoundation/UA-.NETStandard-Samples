@@ -305,7 +305,8 @@ The sample servers expose the registrar administration Object - `RegisterTickets
 an in-memory ticket store - through
 [`Samples/GDS/Common/DeviceRegistrarNodeManager.cs`](Common/DeviceRegistrarNodeManager.cs). The **Onboarding** panel
 of the GDS client loads ticket files and calls those Methods through the stack's `OnboardingClient`; type `tickets`
-at the prompt of the console GDS to see what the registrar holds.
+at the prompt of the console GDS to see what the registrar holds. Since 2.0 the stack lets only a session holding the Part 21 **RegistrarAdmin** Role
+register or unregister tickets; the standard users **appadmin** and **sysadmin** hold it.
 
 **What to pick in the file dialog.** A ticket is an `EncodedTicket` - a ByteString whose content Part 21 leaves to the
 device manufacturer. There is no standard file extension for one, and the sample cannot decode it either, because the
@@ -338,11 +339,12 @@ The sample GDS servers only implement the username/password authentication. The 
 - **System Administrator:** 
   - Username: **sysadmin**, PW: **demo**
   - This user is defined for server push management and has the ability to access the server configuration nodes of the GDS server to update the server certificate and the trust lists. Server push configuration management is not a requirement for a GDS server and only supported here to demonstrate the functionality. It is also the only user the Optional `ServerConfiguration` members are visible to.
-  - Roles: CertificateAuthorityAdmin, DiscoveryAdmin, SecurityAdmin, ConfigureAdmin 
+  - Roles: CertificateAuthorityAdmin, DiscoveryAdmin, SecurityAdmin, ConfigureAdmin, RegistrarAdmin 
 *Deprecated*
 - **GDS Administrator:** 
   - Username: **appadmin**, PW: **demo**
   - This user has the ability to register and unregister applications and to issue new certificates. It should be used by the GDS Client application to connect.
+  - Roles: AuthenticatedUser, CertificateAuthorityAdmin, DiscoveryAdmin, RegistrarAdmin (the onboarding tickets)
 - **GDS User:**
   - Username: **appuser**, PW: **demo**
   - This user has only a limited ability to search for applications.
