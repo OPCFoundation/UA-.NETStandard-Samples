@@ -51,7 +51,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 configurationFile ?? ConfigurationFile,
                 server => server
                     .AddNodeManager<HistoricalEventsNodeManagerFactory>()
-                    .AddStartupTask<HistoricalEventsCapabilities>(),
+                    .AddStartupTask<HistoricalEventsCapabilities>()
+                    // the audit events of history updates reach SecurityAdmin only
+                    .AddSampleAuditor(),
                 configure);
         }
     }

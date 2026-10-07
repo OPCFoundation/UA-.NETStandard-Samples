@@ -31,13 +31,19 @@ existing certificate file may be overwritten, and which record is meant when the
 several for one application uri.
 
 ## How to build and run the Windows OPC UA Global Discovery Server
-1. Open the solution **UA Global Discovery Server.sln** with VisualStudio.
+1. Open the solution **UA Samples.slnx** with VisualStudio.
 2. Choose the project `GlobalDiscoveryServer` in the Solution Explorer and set it with a right click as `Startup Project`.
 3. The server uses [Entity Framework Core](https://learn.microsoft.com/ef/core/) and requires a SQL server. By default the server connects to the data source `Data Source=(localdb)\MSSQLLocalDB`, the SQL Server Express LocalDB instance that is installed with Visual Studio. The default location for the database files is the user home directory. To use a different SQL server (for example a full SQL Server instance or another LocalDB instance name) modify the `gdsdbEntities` and `usersdbEntities` connection strings in the `app.config` file.
 4. Hit `Ctrl-F5` to build and execute the sample.
 5. The server loads and initializes all [Certificates](#certificates).
 6. On the first start the server automatically creates the `gdsdb` and `usersdb` databases (via Entity Framework Core `EnsureCreated`) and seeds the required tables and default data from the embedded scripts `\DB\gdsdb.edmx.sql` and `\DB\usersdb.edmx.sql`. No manual database creation or script execution is required. The account used by the connection string must have permission to create databases on the target SQL server.
 7. The server is now running and waiting for the connection of a GDS client. 
+
+> **Upgrading an existing `usersdb`:** earlier versions of `SqlUsersDatabase` hashed the type name of
+> the password buffer instead of the password, so every password of the same length was accepted.
+> The hashes now cover the password itself, which means user records created by an earlier version
+> no longer verify. Delete the users (or the `usersdb` database, which the server recreates on the
+> next start) and create them again.
 
 ## How to build and run the console OPC UA Global Discovery Server on Windows, Linux and iOS
 This section describes how to run the **NetCoreGlobalDiscoveryServer**.
@@ -371,7 +377,7 @@ Under **PKI**, the following stores contain certificates under **certs**, CRLs u
 To customize the CA certificate search for `<SubjectName>CN=IOP-2017 CA, O=OPC Foundation</SubjectName>` and enter your new subject. Then search the code and the configuration files for `SomeCompany` and enter your company name as appropriate.
 
 ## How to build and run the Windows OPC UA Global Discovery Client
-1. Open the solution **UA Global Discovery Server.sln** with VisualStudio.
+1. Open the solution **UA Samples.slnx** with VisualStudio.
 2. Choose the project `GlobalDiscoveryClient` in the Solution Explorer and set it with a right click as `Startup Project`.
 3. Hit `Ctrl-F5` to build and execute the sample.
 4. Press the `Registration` button to connect to a running GDS. Use the `GDS Administrator` credentials in [GDS Users](#gds-users) to connect and to be able to register applications and to issue certificates.

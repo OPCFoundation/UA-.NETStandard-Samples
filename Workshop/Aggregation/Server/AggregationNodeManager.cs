@@ -1625,11 +1625,16 @@ namespace AggregationServer
                 }
                 // the managed session brings its own connection state machine and reconnect
                 // policy, so no SessionReconnectHandler is wired up here.
+                //
+                // NeedUpdateFromServer only asks for an update on a secured endpoint without
+                // a certificate; the configured UpdateBeforeConnect is honored as well, because
+                // the session refuses to activate when the user token policy it selects from a
+                // configured description is not one the server returns verbatim.
                 Opc.Ua.Client.ISession session = await new Opc.Ua.Client.ManagedSessionFactory(Server.Telemetry).CreateAsync(
                     m_configuration,
                     m_reverseConnectManager,
                     m_endpoint,
-                    m_endpoint.NeedUpdateFromServer(),
+                    m_endpoint.UpdateBeforeConnect || m_endpoint.NeedUpdateFromServer(),
                     false,
                     sessionName,
                     m_sessionTimeout,

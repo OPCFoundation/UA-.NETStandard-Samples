@@ -115,11 +115,15 @@ namespace Quickstarts.FileTransferServer
                     "Publishing '{RootDirectory}' as {MountName}, {Access}.",
                     rootDirectory,
                     mountName,
-                    settings.Writable ? "writable" : "read only");
+                    !settings.Writable ? "read only"
+                        : settings.AllowAnonymousWrite ? "writable"
+                        : "writable for authenticated users");
             }
 
             m_inner = new FileSystemNodeManagerFactory(
-                new PhysicalFileSystemProvider(rootDirectory, mountName, settings.Writable));
+                new PhysicalFileSystemProvider(rootDirectory, mountName, settings.Writable)) {
+                AllowAnonymousWrite = settings.AllowAnonymousWrite,
+            };
 
             return m_inner;
         }

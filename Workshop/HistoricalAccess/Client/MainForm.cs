@@ -77,6 +77,10 @@ namespace Quickstarts.HistoricalAccess.Client
             ConnectServerCTRL.Configuration = configuration;
             ConnectServerCTRL.Telemetry = telemetry;
             ConnectServerCTRL.ServerUrl = "opc.tcp://localhost:62550/Quickstarts/HistoricalAccessServer";
+
+            // the audit events the window shows are delivered to SecurityAdmin only, over
+            // an encrypted channel (the designer turns security on)
+            ConnectServerCTRL.UserIdentity = HistoricalAccessClientModel.AuditorIdentity();
             this.Text = configuration.ApplicationName;
 
             // created by the container while this constructor runs, so on the thread of

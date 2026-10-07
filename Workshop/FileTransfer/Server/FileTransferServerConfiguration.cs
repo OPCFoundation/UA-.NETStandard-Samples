@@ -54,6 +54,7 @@ namespace Quickstarts.FileTransferServer
             m_rootDirectory = kDefaultRootDirectory;
             m_mountName = kDefaultMountName;
             m_writable = true;
+            m_allowAnonymousWrite = false;
         }
         #endregion
 
@@ -109,12 +110,29 @@ namespace Quickstarts.FileTransferServer
             get { return m_writable; }
             set { m_writable = value; }
         }
+
+        /// <summary>
+        /// Whether an anonymous session may write to a writable mount.
+        /// </summary>
+        /// <remarks>
+        /// The SDK refuses CreateFile, CreateDirectory, Delete, MoveOrCopy and opening a
+        /// file for writing to an anonymous user with <c>BadUserAccessDenied</c> unless this
+        /// is set; an authenticated user may write either way. Leave it off for a server
+        /// which is reachable by anyone.
+        /// </remarks>
+        [DataTypeField(Order = 4)]
+        public bool AllowAnonymousWrite
+        {
+            get { return m_allowAnonymousWrite; }
+            set { m_allowAnonymousWrite = value; }
+        }
         #endregion
 
         #region Private Members
         private string m_rootDirectory;
         private string m_mountName;
         private bool m_writable;
+        private bool m_allowAnonymousWrite;
         #endregion
     }
 }

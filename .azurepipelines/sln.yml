@@ -1,9 +1,9 @@
 #
-# Build all solutions on windows
+# Build the solution on windows
 #
 jobs:
 - job: buildallsln
-  displayName: Build Solutions
+  displayName: Build Solution
   pool:
     vmImage: 'windows-2025-vs2026'
   steps:
@@ -17,38 +17,33 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '10.0.x'
-  - task: NuGetToolInstaller@1
-    inputs:
-      versionSpec: '>=7.0.x'
-  - task: NuGetCommand@2
+  # MSBuild restores the .slnx itself, with the credentials NuGetAuthenticate
+  # installed above, and reads the package sources from Nuget.Config.
+  - task: MSBuild@1
     displayName: Restore Release
     inputs:
-      command: restore
-      restoreSolution: '**/*.sln'
+      solution: 'UA Samples.slnx'
       configuration: 'Release'
-      includeNuGetOrg: true
-      feedsToUse: config
-      configPath: ./Nuget.Config
+      platform: 'Any CPU'
+      msbuildArguments: '/t:Restore'
   - task: MSBuild@1
     displayName: MS Build Release
     inputs:
-      solution: '**/*.sln' 
+      solution: 'UA Samples.slnx'
       configuration: 'Release'
       platform: 'Any CPU'
-      msbuildArguments: 
-  - task: NuGetCommand@2
+      msbuildArguments:
+  - task: MSBuild@1
     displayName: Restore Debug
     inputs:
-      command: restore
-      restoreSolution: '**/*.sln'
+      solution: 'UA Samples.slnx'
       configuration: 'Debug'
-      includeNuGetOrg: true
-      feedsToUse: config
-      configPath: ./Nuget.Config
+      platform: 'Any CPU'
+      msbuildArguments: '/t:Restore'
   - task: MSBuild@1
     displayName: MS Build Debug
     inputs:
-      solution: '**/*.sln'
+      solution: 'UA Samples.slnx'
       configuration: 'Debug'
       platform: 'Any CPU'
-      msbuildArguments: 
+      msbuildArguments:

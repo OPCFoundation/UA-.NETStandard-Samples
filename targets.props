@@ -2,9 +2,10 @@
 
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
-    <!-- The OPC UA .NET Standard preview version the samples build against. The
-         packages come from the OPC Foundation GitHub Packages feed, see Nuget.Config. -->
-    <OpcUaNetStandardVersion>2.0.334.14261-preview</OpcUaNetStandardVersion>
+    <!-- The OPC UA .NET Standard version the samples build against. Releases come
+         from nuget.org, previews from the OPC Foundation GitHub Packages feed, see
+         Nuget.Config. -->
+    <OpcUaNetStandardVersion>2.0.0</OpcUaNetStandardVersion>
   </PropertyGroup>
 
   <Choose>
@@ -28,8 +29,8 @@
     <AppTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</AppTargetFrameworks>
     <AppTargetFramework>net10.0</AppTargetFramework>
     <TestsTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</TestsTargetFrameworks>
-    <LibTargetFrameworks>$(DotNetTargetFramework)netstandard2.1;net8.0;net10.0</LibTargetFrameworks>
-    <LibxTargetFrameworks>$(DotNetTargetFramework)netstandard2.1;net8.0;net10.0</LibxTargetFrameworks>
+    <LibTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</LibTargetFrameworks>
+    <LibxTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</LibxTargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>

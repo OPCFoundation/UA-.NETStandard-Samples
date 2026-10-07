@@ -15,7 +15,9 @@ Neither side of this sample implements any of that. Both use what the SDK ships.
 
 ```csharp
 AddNodeManager(new FileSystemNodeManagerFactory(
-    new PhysicalFileSystemProvider(rootDirectory, mountName, writable)));
+    new PhysicalFileSystemProvider(rootDirectory, mountName, writable)) {
+    AllowAnonymousWrite = allowAnonymousWrite,
+});
 ```
 
 `FileSystemNodeManager` (`Opc.Ua.Server.FileSystem`) turns any `IFileSystemProvider` into the
@@ -44,6 +46,7 @@ reason to override `CreateMasterNodeManagerAsync` for this.
   <RootDirectory>.\FileTransfer</RootDirectory>
   <MountName>SampleFiles</MountName>
   <Writable>true</Writable>
+  <AllowAnonymousWrite>true</AllowAnonymousWrite>
 </FileTransferServerConfiguration>
 ```
 
@@ -53,6 +56,11 @@ created if it is missing. The first time the server runs it puts a `ReadMe.txt`,
 look at; anything a user puts there afterwards is left alone. `Writable` set to `false`
 publishes the directory read only, and every write is then refused with
 `BadUserAccessDenied` without the server touching the disk.
+
+Since 2.0 the SDK refuses writes - CreateFile, CreateDirectory, Delete, MoveOrCopy and opening a
+file for writing - from an anonymous session unless `AllowAnonymousWrite` is set on the factory;
+an authenticated user may write either way. The sample turns it on because its client connects
+anonymously. Turn it off for a server which anyone can reach.
 
 The server listens on `opc.tcp://localhost:62569/Quickstarts/FileTransferServer`.
 

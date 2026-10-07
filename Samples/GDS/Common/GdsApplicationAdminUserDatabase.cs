@@ -237,6 +237,36 @@ namespace Opc.Ua.Gds.Server
             return m_users.ChangePassword(userName, oldPassword, newPassword);
         }
 
+        /// <inheritdoc/>
+        public bool CreateUser(
+            string userName,
+            ReadOnlySpan<byte> password,
+            ArrayOf<Role> roles,
+            UserConfigurationMask userConfiguration,
+            string description)
+        {
+            return m_users.CreateUser(userName, password, roles, userConfiguration, description);
+        }
+
+        /// <inheritdoc/>
+        public bool ResetPassword(
+            string userName,
+            ReadOnlySpan<byte> newPassword,
+            UserConfigurationMask userConfiguration,
+            string description)
+        {
+            return m_users.ResetPassword(userName, newPassword, userConfiguration, description);
+        }
+
+        /// <inheritdoc/>
+        public bool UpdateUserMetadata(
+            string userName,
+            UserConfigurationMask userConfiguration,
+            string description)
+        {
+            return m_users.UpdateUserMetadata(userName, userConfiguration, description);
+        }
+
         private void Load()
         {
             try

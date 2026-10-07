@@ -77,7 +77,7 @@ operation the capabilities do not claim is refused before the provider is reache
 | `IHistorianAtTimeProvider` | Implemented rather than left to the framework, so that the per item `Stepped` flag decides how a value between two samples is arrived at. |
 | `IHistorianProcessedProvider` | Implemented rather than left to the framework, so that the aggregate configuration recorded in an archive file is what the aggregate is computed with. |
 | `IHistorianAnnotationProvider` | Read / insert / replace / update / delete of annotations, keyed by their annotation time. |
-| `IHistorianTransactionalProvider` | A batch of values applied to an archive item as a whole. The dispatcher prefers this path whenever a provider offers it, so every insert, replace and update a client sends to the archive is atomic: one value which cannot be written rolls the others back, and the update answers `BadTransactionFailed`. |
+| `IHistorianTransactionalProvider` | A batch of values applied to an archive item as a whole, for a caller which asks for an atomic update: one value which cannot be written rolls the others back. The HistoryUpdate service does not use it - since 2.0 the dispatcher answers an update value by value through `IHistorianDataProvider`, as Part 11 describes, so one bad value in a batch leaves the others written. |
 | `IHistorianBulkInsertProvider` | A batch of values spread over several items, with the lock taken and each item reloaded once. This is the path the automatic capture pipeline of the SDK flushes through; the file archive fills itself from files, so the engine of the `Live` folder is where it is exercised. |
 
 The in-memory engine implements all of those and `IHistorianStructuredDataProvider` besides.
@@ -238,7 +238,12 @@ allow it for the data update, and the control shows what the server answers.
 server object and shows each one in the status bar: what kind of update it was, which node it
 hit, how many values it wrote and how many it displaced, and who asked. The server reports them
 only while `AuditingEnabled` is set in its configuration — the sample sets it — and only to a
-session on an encrypted channel, which the connect control opens by default. The
+session on an encrypted channel, which the connect control opens by default. Since 2.0 the stack
+also checks the ReceiveEvents permission on the event type, which the standard NodeSet grants on
+the audit event types to the SecurityAdmin Role alone. The server therefore has one
+demonstration account, `auditor` (the password is the user name, see
+[SampleAuditorExtensions](../../Samples/Hosting/SampleAuditorExtensions.cs)), which holds that
+Role, and the client signs in with it. The
 [client model](Client/Model/HistoricalAccessClientModel.cs) carries all of it without the
 window: the modified read, the configuration and capabilities reads, and the audit stream.
 

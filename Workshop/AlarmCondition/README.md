@@ -215,7 +215,10 @@ dotnet run --project "Workshop/AlarmCondition/Client/AlarmCondition Client.cspro
   (`AuditingEnabled`), which a server needs before it forwards an audit event at all. Even
   so, no `AuditUpdateMethodEventType` reaches a subscriber, so *View → Audit Events...*
   opens a window which never fills. The window itself works — it starts its streaming
-  subscription and tears it down again with the window.
+  subscription and tears it down again with the window. Note that since 2.0 the stack
+  delivers audit events only to a SecurityAdmin session on an encrypted channel (the
+  ReceiveEvents permission of the audit event types), which the sample client does not open;
+  the HistoricalAccess sample shows the `auditor` account that makes them arrive.
 
 ## Notes for implementers
 

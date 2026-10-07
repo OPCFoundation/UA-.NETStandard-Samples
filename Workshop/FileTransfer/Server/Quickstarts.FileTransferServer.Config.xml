@@ -143,6 +143,10 @@
         <MountName>SampleFiles</MountName>
         <!-- Set to false to publish the directory read only. -->
         <Writable>true</Writable>
+        <!-- Lets an anonymous session write as well; the SDK refuses it by default.
+             The sample client connects anonymously. Set to false, and log in with a
+             user, for a server which is reachable by anyone. -->
+        <AllowAnonymousWrite>true</AllowAnonymousWrite>
       </FileTransferServerConfiguration>
     </ua:XmlElement>
   </Extensions>

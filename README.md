@@ -83,7 +83,7 @@ These paired client/server samples each demonstrate a specific OPC UA feature se
 | [DataTypes Client](Workshop/DataTypes/Client) | **Client** | Reads custom structured data types from a DataTypes server, and generates their XSD, OPC Binary and JSON Schema documents at run time, including for the types it first meets on the wire. |
 | [FileTransfer Server](Workshop/FileTransfer/Server) | **Server** | Publishes a directory of the host as an OPC UA file system (Part 5 Annex C / Part 20 `FileType` and `FileDirectoryType`), using the file system node manager of the SDK. See the [sample overview](Workshop/FileTransfer/README.md). |
 | [FileTransfer Client](Workshop/FileTransfer/Client) | **Client** | Browses the file system of a server and uploads, downloads, creates and deletes files and directories. Works against any server which offers `Server/FileSystem`. |
-| [HistoricalAccess Server](Workshop/HistoricalAccess/Server) | **Server** | Serves a file based archive of past values through the historian provider model of the SDK (raw, modified, at-time, processed, annotations, atomic updates and deletes, with the displaced values audited), next to live variables whose history the in-memory engine of the SDK captures - one of them structured. See the [sample overview](Workshop/HistoricalAccess/README.md). |
+| [HistoricalAccess Server](Workshop/HistoricalAccess/Server) | **Server** | Serves a file based archive of past values through the historian provider model of the SDK (raw, modified, at-time, processed, annotations, updates and deletes, with the displaced values audited to a SecurityAdmin session), next to live variables whose history the in-memory engine of the SDK captures - one of them structured. See the [sample overview](Workshop/HistoricalAccess/README.md). |
 | [HistoricalAccess Client](Workshop/HistoricalAccess/Client) | **Client** | Reads, aggregates, annotates and rewrites the history of a variable on any server, through `session.Historian()`, and watches the audit trail of the history updates. |
 | [HistoricalEvents Server](Workshop/HistoricalEvents/Server) | **Server** | Serves an archive of well test reports as event history through an `IHistorianEventProvider`, including writing, replacing and deleting events with the displaced reports audited. |
 | [HistoricalEvents Client](Workshop/HistoricalEvents/Client) | **Client** | Queries, displays, rewrites and deletes historical events on a HistoricalEvents server, through `session.Historian()`. |
@@ -128,10 +128,11 @@ All the tools you need for .Net Standard come with the .Net Core tools. See [her
 
 ## Preview NuGet feed
 
-The samples build against the preview packages of the OPC UA .NET Standard stack, which
+The samples currently build against the released `2.0.0` packages on nuget.org. Preview
+packages of the OPC UA .NET Standard stack, which
 [the nuget-publish workflow](https://github.com/OPCFoundation/UA-.NETStandard/blob/master/.github/workflows/nuget-publish.yml)
 publishes to the [GitHub Packages feed of the OPC Foundation organization](https://github.com/orgs/OPCFoundation/packages)
-on every master build. The feed is declared in [Nuget.Config](Nuget.Config):
+on every master build, come from a second feed which stays declared in [Nuget.Config](Nuget.Config):
 
 ```
 https://nuget.pkg.github.com/OPCFoundation/index.json
@@ -188,10 +189,6 @@ By default all sample applications are configured to register with a Local Disco
 1. Open the `UA Samples.slnx` solution file using Visual Studio 2022 or later.
 2. Choose a project in the Solution Explorer and set it with a right click as `Startup Project`.
 3. Hit `F5` to build and execute the sample.
-
-The older `UA Sample Applications.sln`, `UA Quickstart Applications.sln`,
-`UA Aggregation.sln` and `UA Global Discovery Server.sln` files each open a
-subset of the same projects and are kept for convenience.
 
 ## How to build and run the console samples on Windows, Linux and macOS
 

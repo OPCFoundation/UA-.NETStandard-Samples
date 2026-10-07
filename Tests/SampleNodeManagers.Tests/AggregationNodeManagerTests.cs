@@ -495,7 +495,11 @@ namespace Opc.Ua.Samples.Tests
                 null,
                 description,
                 EndpointConfiguration.Create(configuration)) {
-                UpdateBeforeConnect = false,
+                // 2.0 refuses a session whose selected user token policy is not one the
+                // server returns verbatim, so the description is refreshed from the server
+                // before connecting, as the shipped configuration does, rather than trusting
+                // the hand-written policy above.
+                UpdateBeforeConnect = true,
             };
 
             endpoints.Add(endpoint);
