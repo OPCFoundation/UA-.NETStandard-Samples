@@ -20,6 +20,10 @@
     <Project Path="Workshop/DataTypes/Common/DataTypes Library.csproj" Id="a5f4c543-387e-41c6-94a3-b2f1c866d17c" />
     <Project Path="Workshop/DataTypes/Server/DataTypes Server.csproj" Id="2e23571f-9987-4ebd-a9fd-5d5dd639e071" />
   </Folder>
+  <Folder Name="/DurableSubscription/">
+    <Project Path="Workshop/DurableSubscription/Client/DurableSubscription Client.csproj" Id="294e8e8e-b4e5-40b0-baa2-21bde22671fa" />
+    <Project Path="Workshop/DurableSubscription/Server/DurableSubscription Server.csproj" Id="393ef4fb-d59a-4bcb-8efa-6af993d09700" />
+  </Folder>
   <Folder Name="/Empty/">
     <Project Path="Workshop/Empty/Client/Empty Client.csproj" Id="00fe42a0-219c-4fc7-9ec5-b3f8f1fa058f" />
     <Project Path="Workshop/Empty/Server/Empty Server.csproj" Id="d9682351-440a-46ee-93b7-63fb99c2362b" />

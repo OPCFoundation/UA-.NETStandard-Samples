@@ -486,9 +486,12 @@ namespace Quickstarts.HistoricalAccessServer
             HistorianNodeCapabilities capabilities,
             CancellationToken cancellationToken)
         {
+            // since 2.0 the builder grants HistoryRead only unless told otherwise; these
+            // variables take history updates from clients, so HistoryWrite is asked for.
             await m_liveHistorian.HistorizeAsync(
                 variable,
                 SystemContext,
+                historyAccessLevel: AccessLevels.HistoryRead | AccessLevels.HistoryWrite,
                 capabilities: capabilities,
                 captureOptions: s_captureOptions,
                 cancellationToken: cancellationToken).ConfigureAwait(false);

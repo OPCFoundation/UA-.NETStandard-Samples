@@ -65,6 +65,17 @@ namespace Quickstarts.HistoricalAccess.Client.Model
     /// </remarks>
     public sealed class HistoricalAccessClientModel : SampleClientModel
     {
+        /// <summary>
+        /// The demonstration account of the sample server which holds the SecurityAdmin
+        /// Role; its password is its user name.
+        /// </summary>
+        /// <remarks>
+        /// The stack delivers audit events to SecurityAdmin only (Part 3 §8.55: the
+        /// standard NodeSet grants ReceiveEvents on the audit event types to that Role
+        /// alone), so a session which watches them signs in with this account.
+        /// </remarks>
+        public const string AuditorAccount = "auditor";
+
         private AuditEventStream m_auditStream;
 
         /// <summary>
@@ -74,6 +85,14 @@ namespace Quickstarts.HistoricalAccess.Client.Model
         public HistoricalAccessClientModel(ITelemetryContext telemetry)
             : base(telemetry)
         {
+        }
+
+        /// <summary>
+        /// The user identity of <see cref="AuditorAccount"/>.
+        /// </summary>
+        public static IUserIdentity AuditorIdentity()
+        {
+            return new UserIdentity(AuditorAccount, System.Text.Encoding.UTF8.GetBytes(AuditorAccount));
         }
 
         /// <summary>

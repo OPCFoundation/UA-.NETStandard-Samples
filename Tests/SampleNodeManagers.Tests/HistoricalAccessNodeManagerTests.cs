@@ -739,7 +739,7 @@ namespace Opc.Ua.Samples.Tests
             NodeId item = await ResolveWritableItemAsync(ct).ConfigureAwait(false);
 
             await using TestClient writer = await TestClient
-                .ConnectEncryptedAsync(EndpointUrl, "history auditor", null, ct)
+                .ConnectEncryptedAsync(EndpointUrl, "history auditor", AuditorIdentity, ct)
                 .ConfigureAwait(false);
 
             await writer.Session.FetchNamespaceTablesAsync(ct).ConfigureAwait(false);
@@ -851,18 +851,16 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// A batch which cannot be applied as a whole leaves the archive as it was.
+        /// A batch with one value which cannot be written is answered value by value.
         /// </summary>
         /// <remarks>
-        /// The dispatcher prefers the atomic path of a provider which offers one,
-        /// so every insert a client sends to this archive is applied as a whole:
-        /// one value which cannot be written rolls the others back, they answer
-        /// that nothing became of them, and the update as a whole answers that
-        /// the transaction failed.
+        /// The provider of this archive implements the atomic path, but since 2.0 the
+        /// HistoryUpdate service does not take it: Part 11 answers an update per value,
+        /// so the value which collides says why and the other one is written.
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
-        public async Task AnAtomicBatchIsRolledBackAsAWhole(CancellationToken ct)
+        public async Task ABatchIsAnsweredValueByValue(CancellationToken ct)
         {
             NodeId item = await ResolveWritableItemAsync(ct).ConfigureAwait(false);
 
@@ -899,9 +897,9 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.Multiple(() => {
                 Assert.That(
-                    result,
-                    Is.EqualTo((StatusCode)StatusCodes.BadTransactionFailed),
-                    "An atomic batch which could not be applied fails as a transaction.");
+                    StatusCode.IsGood(result),
+                    Is.True,
+                    "The update as a whole succeeds; its values answer for themselves.");
 
                 Assert.That(
                     perValue[1],
@@ -910,13 +908,13 @@ namespace Opc.Ua.Samples.Tests
 
                 Assert.That(
                     perValue[0],
-                    Is.EqualTo((StatusCode)StatusCodes.BadHistoryOperationUnsupported),
-                    "The value which could have been written says nothing became of it.");
+                    Is.EqualTo((StatusCode)StatusCodes.GoodEntryInserted),
+                    "The value which could be written was inserted.");
 
                 Assert.That(
                     archive.Select(At),
-                    Does.Not.Contain(alsoAt),
-                    "The value which could have been written was rolled back with the batch.");
+                    Does.Contain(alsoAt),
+                    "Nothing rolls the inserted value back.");
             });
         }
 

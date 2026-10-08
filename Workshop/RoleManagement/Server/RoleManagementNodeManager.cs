@@ -89,13 +89,16 @@ namespace Quickstarts.RoleManagement.Server
             // Anonymous and the AuthenticatedUser identity criteria, so every Session holds
             // it. Naming it in a table is how a node says "anyone who got this far", and a
             // signed in Session holds AuthenticatedUser and its own Role on top of it.
+            //
+            // Call is checked on the object a Method is called on as well as on the Method
+            // (Part 4 5.12.2.2), so the Roles which may call Reset need it here too.
             Protect(
                 builder.Machine.Node,
                 (Role.Anonymous, PermissionType.Browse),
                 (Role.AuthenticatedUser, PermissionType.Browse),
                 (Role.Observer, PermissionType.Browse),
-                (Role.Operator, PermissionType.Browse),
-                (Role.Engineer, PermissionType.Browse),
+                (Role.Operator, PermissionType.Browse | PermissionType.Call),
+                (Role.Engineer, PermissionType.Browse | PermissionType.Call),
                 (Role.Supervisor, PermissionType.Browse),
                 (Role.SecurityAdmin, PermissionType.Browse));
 

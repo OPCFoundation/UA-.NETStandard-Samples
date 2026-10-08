@@ -74,6 +74,15 @@ namespace Opc.Ua.Gds.Server
             "http://opcfoundation.org/UA-.NETStandard-Samples/GDS/Onboarding/";
 
         /// <summary>
+        /// The OPC 10000-21 RegistrarAdmin Role, which the SDK requires of a caller of
+        /// <c>RegisterTickets</c> and <c>UnregisterTickets</c> since 2.0; any other caller is
+        /// answered with <c>BadUserAccessDenied</c>.
+        /// </summary>
+        public static Role RegistrarAdmin { get; } = new Role(
+            Opc.Ua.Onboarding.ObjectIds.WellKnownRole_RegistrarAdmin,
+            "RegistrarAdmin");
+
+        /// <summary>
         /// BrowseName of the registrar administration Object, the node a client passes to
         /// <c>OnboardingClient</c>.
         /// </summary>

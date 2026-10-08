@@ -10,7 +10,7 @@ There is a .Net 4.6 based aggregation server with UI and a console version of th
 ## How to build and run the OPC UA Aggregation Server
 
 ### Prerequisite: Build and run the aggregated servers
-1. Open the solution **UA-NetStandard.sln** with VisualStudio.
+1. Open the solution **UA Samples.slnx** with VisualStudio.
 2. Choose the project **UA Sample Server** in the Solution Explorer and set it with a right click as `Startup Project`.
 3. Hit `F7` to build the solution and all samples.
 4. Hit `Ctrl-F5` and execute the **UA Sample Server** sample.
@@ -21,7 +21,7 @@ There is a .Net 4.6 based aggregation server with UI and a console version of th
 Pick the Windows or the Console OPC UA Aggregation Server. 
 
 ### Build and run the Windows OPC UA Aggregation Server
-1. Open the solution **UA Aggregation.sln** with VisualStudio.
+1. Open the solution **UA Samples.slnx** with VisualStudio.
 2. Choose the project **Aggregation Server** in the Solution Explorer and set it with a right click as `Startup Project`.
 3. Hit `F5` to build and execute the sample.
 
@@ -41,7 +41,7 @@ Please follow instructions in this [article](https://docs.microsoft.com/en-us/do
 The server is now running, connecting to the aggregated servers and waiting for the connection of a OPC UA client. 
 
 ## Build and run the OPC UA Aggregation Client
-1. Open the solution **UA Aggregation.sln** with VisualStudio.
+1. Open the solution **UA Samples.slnx** with VisualStudio.
 2. Choose the project **Aggregation Client** in the Solution Explorer and set it with a right click as `Startup Project`.
 3. Hit `F5` to build and execute the sample.
 4. Press `Connect` to connect to the **Aggregation Server**.

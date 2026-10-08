@@ -9,7 +9,7 @@ This OPC Server is designed to be the default OPC UA Server when opening the [OP
 It uses the OPC Foundation UA .NET Standard Library. Therefore it supports both the opc.tcp and https transports. There is a .NET framework 4.6.2 based server with UI and a .NET Core console version of the server which runs on any OS supporting [.NET Standard](https://docs.microsoft.com/en-us/dotnet/articles/standard) or .NET 6.0 and later.
 
 ## How to build and run the Windows OPC UA Reference Server with UACTT
-1. Open the solution **UA Reference.sln** with Visual Studio.
+1. Open the solution **UA Samples.slnx** with Visual Studio.
 2. Choose the project `Reference Server` in the Solution Explorer and set it with a right click as `Startup Project`.
 3. Hit `F5` to build and execute the sample.
 

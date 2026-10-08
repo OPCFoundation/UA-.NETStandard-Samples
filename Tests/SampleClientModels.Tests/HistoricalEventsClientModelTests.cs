@@ -146,7 +146,10 @@ namespace Opc.Ua.Samples.Tests
             EventHistoryPage next = await Model.ReadNextAsync(first.Continuation, ct).ConfigureAwait(false);
 
             Assert.That(next.Events, Has.Count.EqualTo(1));
-            Assert.That(next.Events[0].Fields[0], Is.Not.EqualTo(first.Events[0].Fields[0]), "The next page repeated the first event.");
+            // the first field is the NodeId of the event, which a historical event does
+            // not have (since 2.0 it reads as null rather than as the event type), so the
+            // events are told apart by all of their fields
+            Assert.That(next.Events[0].Fields, Is.Not.EqualTo(first.Events[0].Fields), "The next page repeated the first event.");
 
             if (next.HasMore)
             {

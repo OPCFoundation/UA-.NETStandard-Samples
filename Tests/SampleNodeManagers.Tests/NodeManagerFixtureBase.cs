@@ -134,6 +134,15 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
+        /// The demonstration account of the samples which show audit events: the stack
+        /// delivers those to the SecurityAdmin Role only.
+        /// </summary>
+        protected static IUserIdentity AuditorIdentity => new UserIdentity(
+            Microsoft.Extensions.DependencyInjection.SampleAuditorExtensions.AuditorAccount,
+            System.Text.Encoding.UTF8.GetBytes(
+                Microsoft.Extensions.DependencyInjection.SampleAuditorExtensions.AuditorAccount));
+
+        /// <summary>
         /// A browse name in one of the namespaces of the sample.
         /// </summary>
         protected QualifiedName Name(string namespaceUri, string name)

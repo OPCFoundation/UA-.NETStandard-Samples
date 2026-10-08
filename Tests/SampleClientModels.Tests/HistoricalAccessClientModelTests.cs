@@ -51,6 +51,11 @@ namespace Opc.Ua.Samples.Tests
         /// </summary>
         protected override bool UseSecurity => true;
 
+        /// <summary>
+        /// The account the window signs in with: audit events reach SecurityAdmin only.
+        /// </summary>
+        protected override IUserIdentity Identity => HistoricalAccessClientModel.AuditorIdentity();
+
         protected override HistoricalAccessClientModel CreateModel(ITelemetryContext telemetry)
         {
             return new HistoricalAccessClientModel(telemetry);

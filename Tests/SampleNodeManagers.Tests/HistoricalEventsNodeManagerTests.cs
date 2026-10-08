@@ -432,7 +432,7 @@ namespace Opc.Ua.Samples.Tests
             NodeId platforms = await ResolvePlatformsAsync(ct).ConfigureAwait(false);
 
             await using TestClient writer = await TestClient
-                .ConnectEncryptedAsync(EndpointUrl, "event history auditor", null, ct)
+                .ConnectEncryptedAsync(EndpointUrl, "event history auditor", AuditorIdentity, ct)
                 .ConfigureAwait(false);
 
             await writer.Session.FetchNamespaceTablesAsync(ct).ConfigureAwait(false);

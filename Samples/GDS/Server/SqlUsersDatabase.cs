@@ -60,7 +60,7 @@ namespace Opc.Ua.Gds.Server
 
         public bool CreateUser(string userName, ReadOnlySpan<byte> password, ICollection<Role> roles)
         {
-            string passwordString = password.ToString();
+            string passwordString = Encoding.UTF8.GetString(password);
             if (string.IsNullOrEmpty(userName))
             {
                 throw new ArgumentException("UserName cannot be empty.", nameof(userName));
@@ -117,7 +117,7 @@ namespace Opc.Ua.Gds.Server
 
         public bool CheckCredentials(string userName, ReadOnlySpan<byte> password)
         {
-            string passwordString = password.ToString();
+            string passwordString = Encoding.UTF8.GetString(password);
 
             if (string.IsNullOrEmpty(userName))
             {
@@ -181,8 +181,8 @@ namespace Opc.Ua.Gds.Server
 
         public bool ChangePassword(string userName, ReadOnlySpan<byte> oldPassword, ReadOnlySpan<byte> newPassword)
         {
-            string oldPasswordString = oldPassword.ToString();
-            string newPasswordString = newPassword.ToString();
+            string oldPasswordString = Encoding.UTF8.GetString(oldPassword);
+            string newPasswordString = Encoding.UTF8.GetString(newPassword);
 
             if (string.IsNullOrEmpty(userName))
             {
@@ -216,7 +216,100 @@ namespace Opc.Ua.Gds.Server
                 return false;
             }
         }
+
+        /// <remarks>
+        /// The users table has no columns for the configuration flags and the description,
+        /// so a user can only be created with the defaults that <see cref="GetUsers"/>
+        /// reports. Anything else is rejected rather than silently dropped.
+        /// </remarks>
+        public bool CreateUser(
+            string userName,
+            ReadOnlySpan<byte> password,
+            ArrayOf<Role> roles,
+            UserConfigurationMask userConfiguration,
+            string description)
+        {
+            if (!IsDefaultMetadata(userConfiguration, description))
+            {
+                return false;
+            }
+
+            var roleList = new List<Role>();
+            foreach (Role role in roles)
+            {
+                roleList.Add(role);
+            }
+
+            return CreateUser(userName, password, roleList);
+        }
+
+        /// <remarks>
+        /// See <see cref="CreateUser(string, ReadOnlySpan{byte}, ArrayOf{Role}, UserConfigurationMask, string)"/>:
+        /// only the default metadata can be stored.
+        /// </remarks>
+        public bool ResetPassword(
+            string userName,
+            ReadOnlySpan<byte> newPassword,
+            UserConfigurationMask userConfiguration,
+            string description)
+        {
+            string newPasswordString = Encoding.UTF8.GetString(newPassword);
+
+            if (string.IsNullOrEmpty(userName))
+            {
+                throw new ArgumentException("UserName cannot be empty.", nameof(userName));
+            }
+            if (string.IsNullOrEmpty(newPasswordString))
+            {
+                throw new ArgumentException("New Password cannot be empty.", nameof(newPassword));
+            }
+            if (!IsDefaultMetadata(userConfiguration, description))
+            {
+                return false;
+            }
+            using (usersdbEntities entities = new usersdbEntities())
+            {
+                var user = entities.UserSet.SingleOrDefault(x => x.UserName == userName);
+
+                if (user == null)
+                {
+                    return false;
+                }
+
+                user.Hash = Hash(newPasswordString);
+                entities.SaveChanges();
+                return true;
+            }
+        }
+
+        /// <remarks>
+        /// See <see cref="CreateUser(string, ReadOnlySpan{byte}, ArrayOf{Role}, UserConfigurationMask, string)"/>:
+        /// only the default metadata can be stored, which leaves nothing to write.
+        /// </remarks>
+        public bool UpdateUserMetadata(
+            string userName,
+            UserConfigurationMask userConfiguration,
+            string description)
+        {
+            if (string.IsNullOrEmpty(userName))
+            {
+                throw new ArgumentException("UserName cannot be empty.", nameof(userName));
+            }
+            if (!IsDefaultMetadata(userConfiguration, description))
+            {
+                return false;
+            }
+            using (usersdbEntities entities = new usersdbEntities())
+            {
+                return entities.UserSet.Any(x => x.UserName == userName);
+            }
+        }
         #endregion
+
+        private static bool IsDefaultMetadata(UserConfigurationMask userConfiguration, string description)
+        {
+            return userConfiguration == default && string.IsNullOrEmpty(description);
+        }
 
         #region IPasswordHasher
         private string Hash(string password)

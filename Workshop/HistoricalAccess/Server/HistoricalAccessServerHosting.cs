@@ -48,7 +48,10 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             return services.AddSampleServer(
                 configurationFile ?? ConfigurationFile,
-                server => server.AddNodeManager<HistoricalAccessNodeManagerFactory>(),
+                server => server
+                    .AddNodeManager<HistoricalAccessNodeManagerFactory>()
+                    // the audit events of history updates reach SecurityAdmin only
+                    .AddSampleAuditor(),
                 configure);
         }
     }

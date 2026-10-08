@@ -51,19 +51,11 @@
         <ProjectReference Include="..\..\..\..\UA-.NETStandard\Libraries\Opc.Ua.Configuration\Opc.Ua.Configuration.csproj" />
       </ItemGroup>
     </When>
-    <When Condition="'$(Configuration)'=='Release'">
+    <Otherwise>
       <ItemGroup>
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration" Version="$(OpcUaNetStandardVersion)" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="$(OpcUaNetStandardVersion)" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server" Version="$(OpcUaNetStandardVersion)" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration" Version="$(OpcUaNetStandardVersion)" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Configuration.Debug" Version="$(OpcUaNetStandardVersion)" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client.Debug" Version="$(OpcUaNetStandardVersion)" />
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Server.Debug" Version="$(OpcUaNetStandardVersion)" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.SourceGeneration" Version="$(OpcUaNetStandardVersion)" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
       </ItemGroup>
     </Otherwise>

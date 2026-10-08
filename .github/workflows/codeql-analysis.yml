@@ -68,14 +68,10 @@ jobs:
       run: dotnet nuget update source opcfoundation-github --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}" --store-password-in-clear-text --configfile Nuget.Config
 
     - name: Restore Packages
-      run: |
-        nuget restore "UA Quickstart Applications.sln"
-        nuget restore "UA Sample Applications.sln"
+      run: msbuild.exe "UA Samples.slnx" /t:Restore /p:configuration="Release"
 
     - name: Build Solution
-      run: |
-        msbuild.exe "UA Quickstart Applications.sln" /p:configuration="Release" /p:UseSharedCompilation=false
-        msbuild.exe "UA Sample Applications.sln" /p:configuration="Release" /p:UseSharedCompilation=false
+      run: msbuild.exe "UA Samples.slnx" /p:configuration="Release" /p:UseSharedCompilation=false
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4.37.9

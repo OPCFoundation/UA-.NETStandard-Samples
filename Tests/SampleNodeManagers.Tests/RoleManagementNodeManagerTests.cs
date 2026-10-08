@@ -561,8 +561,24 @@ namespace Opc.Ua.Samples.Tests
                 Does.Contain("Calibration"),
                 "EncryptionRequired on its own does not apply to Browse.");
 
-            NodeId maintenanceNoteId = await SessionOps
+            // TranslateBrowsePathsToNodeIds is a browse operation as well, and since 2.0 it
+            // applies the restriction to the target of the path: the unencrypted Session
+            // cannot resolve the node, so the id comes from an encrypted one.
+            NodeId unresolved = await SessionOps
                 .ResolveFromAsync(plain.Session, machineId, ct, MaintenanceNote)
+                .ConfigureAwait(false);
+
+            Assert.That(
+                unresolved.IsNull,
+                Is.True,
+                "ApplyRestrictionsToBrowse keeps TranslateBrowsePathsToNodeIds from resolving the node.");
+
+            await using TestClient secure = await TestClient
+                .ConnectEncryptedAsync(EndpointUrl, "engineer with encryption", UserOf("engineer1"), ct)
+                .ConfigureAwait(false);
+
+            NodeId maintenanceNoteId = await SessionOps
+                .ResolveFromAsync(secure.Session, machineId, ct, MaintenanceNote)
                 .ConfigureAwait(false);
 
             StatusCode browsedUnencrypted = await BrowseStatusAsync(plain, maintenanceNoteId, ct)
@@ -610,10 +626,6 @@ namespace Opc.Ua.Samples.Tests
             });
 
             // the same account on the encrypted endpoint: nothing about the Roles changed
-            await using TestClient secure = await TestClient
-                .ConnectEncryptedAsync(EndpointUrl, "engineer with encryption", UserOf("engineer1"), ct)
-                .ConfigureAwait(false);
-
             IReadOnlyList<string> encrypted = await SessionOps
                 .BrowseNamesAsync(secure.Session, machineId, ct)
                 .ConfigureAwait(false);

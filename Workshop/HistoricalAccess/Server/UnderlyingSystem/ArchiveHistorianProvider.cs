@@ -58,10 +58,13 @@ namespace Quickstarts.HistoricalAccessServer
     /// per item settings recorded in the archive files - stepped interpolation and
     /// the aggregate configuration - are honoured, the way the sample always did.
     ///
-    /// <see cref="IHistorianTransactionalProvider"/> is what the dispatcher prefers
-    /// whenever a provider offers it: every insert, replace and update a client sends
-    /// arrives on the atomic path, and the batch this provider commits or discards as
-    /// a whole is what the client gets. <see cref="IHistorianBulkInsertProvider"/> is
+    /// <see cref="IHistorianTransactionalProvider"/> is the atomic path for a caller
+    /// which asks for one explicitly: the batch this provider commits or discards as a
+    /// whole. The HistoryUpdate service does not take it - Part 11 answers an update
+    /// value by value, and since 2.0 the dispatcher calls the per value methods of
+    /// <see cref="IHistorianDataProvider"/> whatever else a provider offers - so a
+    /// client which sends a batch with one bad value gets the others written.
+    /// <see cref="IHistorianBulkInsertProvider"/> is
     /// reached from the automatic value capture pipeline of the SDK, which the node
     /// manager uses for its live variables on a different provider; this archive is
     /// filled from files, so the path is implemented here because what a store has to
@@ -808,8 +811,8 @@ namespace Quickstarts.HistoricalAccessServer
         /// A value which fails answers with the reason it failed; the others answer
         /// with BadHistoryOperationUnsupported, because nothing became of them - the
         /// convention the in memory historian of the SDK uses for a batch it rolled
-        /// back - and the outcome says the transaction was rolled back, which the
-        /// dispatcher turns into BadTransactionFailed for the update as a whole.
+        /// back - and the outcome says the transaction was rolled back, which a caller
+        /// reports as BadTransactionFailed for the update as a whole.
         /// Nothing was displaced either: the values a rolled back replace took out
         /// are back where they were.
         /// </remarks>
