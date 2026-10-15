@@ -19,7 +19,8 @@ jobs:
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   steps:
   # see ci.yml: the Github-Feed NuGet service connection authenticates the
-  # OPC Foundation GitHub Packages feed declared in Nuget.Config.
+  # OPC Foundation GitHub Packages feed declared in Nuget.Config. The restore
+  # runs as a custom command so that targets.props picks the config file.
   - task: NuGetAuthenticate@1
     inputs:
       nuGetServiceConnections: 'Github-Feed'
@@ -31,11 +32,9 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Restore Tests
     inputs:
-      command: restore
+      command: custom
+      custom: restore
       projects: 'Tests/**/*.csproj'
-      includeNuGetOrg: true
-      feedsToUse: config
-      nugetConfigPath: $(Build.SourcesDirectory)/Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Build Tests
     inputs:

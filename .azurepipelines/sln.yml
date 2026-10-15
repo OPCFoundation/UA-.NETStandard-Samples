@@ -18,7 +18,8 @@ jobs:
       packageType: 'sdk'
       version: '10.0.x'
   # MSBuild restores the .slnx itself, with the credentials NuGetAuthenticate
-  # installed above, and reads the package sources from Nuget.Config.
+  # installed above, and reads the package sources from the config file targets.props
+  # picks: Nuget.Config for a preview, Nuget.Release.Config (nuget.org) for a release.
   - task: MSBuild@1
     displayName: Restore Release
     inputs:

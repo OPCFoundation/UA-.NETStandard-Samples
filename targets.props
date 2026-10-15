@@ -8,6 +8,16 @@
     <OpcUaNetStandardVersion>2.0.1</OpcUaNetStandardVersion>
   </PropertyGroup>
 
+  <!-- The GitHub Packages feed requires credentials, so it is only consulted when a
+       preview is referenced (a version with a prerelease label, e.g.
+       2.0.334.14261-preview). A release restores from nuget.org alone through
+       Nuget.Release.Config and needs no credentials, locally or in CI. A restore
+       that names its own config file (the configfile option of dotnet restore, which
+       the DotNetCoreCLI restore command always passes) overrides this. -->
+  <PropertyGroup Condition="!$(OpcUaNetStandardVersion.Contains('-'))">
+    <RestoreConfigFile>$(MSBuildThisFileDirectory)Nuget.Release.Config</RestoreConfigFile>
+  </PropertyGroup>
+
   <Choose>
     <!-- .NET 4.8 is only available on Windows builds,
           however for mono builds on linux it can be enabled.

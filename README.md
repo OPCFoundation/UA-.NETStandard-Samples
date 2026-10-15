@@ -128,7 +128,7 @@ All the tools you need for .Net Standard come with the .Net Core tools. See [her
 
 ## Preview NuGet feed
 
-The samples currently build against the released `2.0.0` packages on nuget.org. Preview
+The samples currently build against the released `2.0.1` packages on nuget.org. Preview
 packages of the OPC UA .NET Standard stack, which
 [the nuget-publish workflow](https://github.com/OPCFoundation/UA-.NETStandard/blob/master/.github/workflows/nuget-publish.yml)
 publishes to the [GitHub Packages feed of the OPC Foundation organization](https://github.com/orgs/OPCFoundation/packages)
@@ -138,7 +138,12 @@ on every master build, come from a second feed which stays declared in [Nuget.Co
 https://nuget.pkg.github.com/OPCFoundation/index.json
 ```
 
-GitHub Packages requires authentication even for public feeds. To restore locally, create a
+The feed is only consulted while a preview is referenced, that is while `OpcUaNetStandardVersion`
+in [targets.props](targets.props) carries a prerelease label (e.g. `2.0.334.14261-preview`). A
+released version restores through [Nuget.Release.Config](Nuget.Release.Config), which lists
+nuget.org alone, so neither a local nor a CI build needs credentials for the feed.
+
+GitHub Packages requires authentication even for public feeds. To restore a preview locally, create a
 [personal access token](https://github.com/settings/tokens) with the `read:packages` scope and store
 it for the feed once (in your user-level NuGet configuration, not in the repository):
 

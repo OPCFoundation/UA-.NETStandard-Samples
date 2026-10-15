@@ -32,7 +32,11 @@ jobs:
   # feed, which requires authentication even though it is public. The
   # Github-Feed NuGet service connection holds the credentials (a GitHub
   # personal access token with the read:packages scope) for the feed URL
-  # declared in Nuget.Config, see 'Preview NuGet feed' in README.md.
+  # declared in Nuget.Config, see 'Preview NuGet feed' in README.md. The feed is
+  # only consulted while targets.props references a preview; a release restores
+  # through Nuget.Release.Config (nuget.org alone). The restores below run as a
+  # custom command because the restore command passes its own config file, which
+  # would override that choice.
   - task: NuGetAuthenticate@1
     inputs:
       nuGetServiceConnections: 'Github-Feed'
@@ -47,12 +51,10 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Release Restore
     inputs:
-      command: restore
+      command: custom
+      custom: restore
       projects: '**/NetCore*.csproj'
       arguments: '--configuration Release ${{ parameters.buildoption }}'
-      includeNuGetOrg: true
-      feedsToUse: config
-      nugetConfigPath: $(Build.SourcesDirectory)/Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Release Build
     inputs:
@@ -62,12 +64,10 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Debug Restore
     inputs:
-      command: restore
+      command: custom
+      custom: restore
       projects: '**/NetCore*.csproj'
       arguments: '--configuration Debug ${{ parameters.buildoption }}'
-      includeNuGetOrg: true
-      feedsToUse: config
-      nugetConfigPath: $(Build.SourcesDirectory)/Nuget.Config
   - task: DotNetCoreCLI@2
     displayName: Debug Build
     inputs:
