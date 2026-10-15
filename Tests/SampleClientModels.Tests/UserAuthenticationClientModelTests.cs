@@ -189,8 +189,8 @@ namespace Opc.Ua.Samples.Tests
             Assert.That(Model.UserTokenPolicies, Is.Empty);
 
             // reading before an attach is a programming error of the window, not a refusal
-            Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await Model.ReadLogFilePathAsync(ct).ConfigureAwait(false));
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await Model.ReadLogFilePathAsync(ct).ConfigureAwait(false)).ConfigureAwait(false);
 
             // and the session it was on is still usable by whoever holds it
             await AttachAsync(ct).ConfigureAwait(false);

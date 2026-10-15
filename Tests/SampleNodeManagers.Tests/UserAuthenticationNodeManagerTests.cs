@@ -171,23 +171,23 @@ namespace Opc.Ua.Samples.Tests
         /// </remarks>
         [Test]
         [CancelAfter(kTimeout)]
-        public void UnknownUserIsRejected()
+        public async Task UnknownUserIsRejected()
         {
             var identity = new UserIdentity("no-such-user-8f2c", Encoding.UTF8.GetBytes("not the password"));
 
-            Exception refused = Assert.CatchAsync(
+            Exception refused = await Assert.CatchAsync(
                 async () => {
                     await using TestClient client = await TestClient
                         .ConnectWithIdentityAsync(EndpointUrl, "rejected user", identity)
                         .ConfigureAwait(false);
                 },
-                "A user the server cannot verify must not get a session.");
+                "A user the server cannot verify must not get a session.").ConfigureAwait(false);
 
             string reported = refused is ServiceResultException serviceResult
                 ? serviceResult.StatusCode.ToString()
                 : refused.GetType().Name;
 
-            TestContext.Out.WriteLine($"An unknown user was refused with {reported}: {refused.Message}");
+            await TestContext.Out.WriteLineAsync($"An unknown user was refused with {reported}: {refused.Message}").ConfigureAwait(false);
 
             Assert.That(
                 refused,

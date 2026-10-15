@@ -166,11 +166,11 @@ namespace Opc.Ua.Samples.Tests
 
         [Test]
         [CancelAfter(kTimeout)]
-        public void ReadingBeforeTheAttachIsRefused()
+        public async Task ReadingBeforeTheAttachIsRefused()
         {
-            Assert.ThrowsAsync<InvalidOperationException>(
+            await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Model.ReadRawAsync(VariableIds.Server_ServerStatus_CurrentTime, kArchiveStart, kArchiveEnd),
-                "A detached model has no session to read on.");
+                "A detached model has no session to read on.").ConfigureAwait(false);
         }
 
         [Test]

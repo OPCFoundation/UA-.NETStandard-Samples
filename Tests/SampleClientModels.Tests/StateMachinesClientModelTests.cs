@@ -147,9 +147,9 @@ namespace Opc.Ua.Samples.Tests
 
             Assert.That(Model.InterlockClear, Is.False);
 
-            ServiceResultException refused = Assert.ThrowsAsync<ServiceResultException>(
+            ServiceResultException refused = await Assert.ThrowsAsync<ServiceResultException>(
                 () => Model.CallOperationCauseAsync(OperationCause.Start, ct),
-                "The guard has to refuse Start while the interlock is open.");
+                "The guard has to refuse Start while the interlock is open.").ConfigureAwait(false);
 
             Assert.That(
                 (StatusCode)refused.StatusCode,
@@ -261,11 +261,11 @@ namespace Opc.Ua.Samples.Tests
 
         [Test]
         [CancelAfter(kTimeout)]
-        public void CallingACauseBeforeTheAttachIsRefused()
+        public async Task CallingACauseBeforeTheAttachIsRefused()
         {
-            Assert.ThrowsAsync<InvalidOperationException>(
+            await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Model.CallOperationCauseAsync(OperationCause.PowerOn),
-                "A detached model has no session to call on.");
+                "A detached model has no session to call on.").ConfigureAwait(false);
         }
 
         [Test]
@@ -355,9 +355,9 @@ namespace Opc.Ua.Samples.Tests
                 "The sub state machine is still suspended while the parent is Idle.");
 
             // and the server refuses the call itself, not only through the attribute
-            ServiceResultException refused = Assert.ThrowsAsync<ServiceResultException>(
+            ServiceResultException refused = await Assert.ThrowsAsync<ServiceResultException>(
                 () => Model.CallProductionCauseAsync(ProductionCause.StartBatch, ct),
-                "A cause of a suspended sub state machine has to be refused.");
+                "A cause of a suspended sub state machine has to be refused.").ConfigureAwait(false);
 
             Assert.That(
                 (StatusCode)refused.StatusCode,

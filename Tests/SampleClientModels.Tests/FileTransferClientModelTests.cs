@@ -57,8 +57,8 @@ namespace Opc.Ua.Samples.Tests
         public async Task RootListsTheMountOfTheServer(CancellationToken ct)
         {
             // before an attach there is no file system to ask
-            Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await Model.ListDirectoriesAsync(FileTransferClientModel.RootPath, ct).ConfigureAwait(false));
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await Model.ListDirectoriesAsync(FileTransferClientModel.RootPath, ct).ConfigureAwait(false)).ConfigureAwait(false);
 
             await AttachAsync(ct).ConfigureAwait(false);
 
