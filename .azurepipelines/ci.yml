@@ -54,7 +54,7 @@ jobs:
       command: custom
       custom: restore
       projects: '**/NetCore*.csproj'
-      arguments: '--configuration Release ${{ parameters.buildoption }}'
+      arguments: '-p:Configuration=Release ${{ parameters.buildoption }}'
   - task: DotNetCoreCLI@2
     displayName: Release Build
     inputs:
@@ -67,7 +67,7 @@ jobs:
       command: custom
       custom: restore
       projects: '**/NetCore*.csproj'
-      arguments: '--configuration Debug ${{ parameters.buildoption }}'
+      arguments: '-p:Configuration=Debug ${{ parameters.buildoption }}'
   - task: DotNetCoreCLI@2
     displayName: Debug Build
     inputs:
