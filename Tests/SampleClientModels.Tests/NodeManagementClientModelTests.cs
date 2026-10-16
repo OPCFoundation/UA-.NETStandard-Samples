@@ -254,9 +254,9 @@ namespace Opc.Ua.Samples.Tests
                 Assert.That(Model.DevicesId.IsNull, Is.True, "A detached model still holds a folder.");
             });
 
-            Assert.ThrowsAsync<InvalidOperationException>(
+            await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Model.ReadAddressSpaceAsync(ct),
-                "A detached model has no session to browse on.");
+                "A detached model has no session to browse on.").ConfigureAwait(false);
         }
 
         private static string Seen(AddressSpace addressSpace)

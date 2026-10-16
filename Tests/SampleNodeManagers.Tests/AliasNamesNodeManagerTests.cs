@@ -550,10 +550,10 @@ namespace Opc.Ua.Samples.Tests
                 null,
                 ReferenceTypeIds.AliasFor);
 
-            UnauthorizedAccessException refused = Assert.ThrowsAsync<UnauthorizedAccessException>(
+            UnauthorizedAccessException refused = await Assert.ThrowsAsync<UnauthorizedAccessException>(
                 async () => await plant
                     .AddAliasesToCategoryAsync(new[] { request }, ct)
-                    .ConfigureAwait(false));
+                    .ConfigureAwait(false)).ConfigureAwait(false);
 
             await TestContext.Out
                 .WriteLineAsync($"An anonymous AddAliasesToCategory was refused: {refused.Message}")

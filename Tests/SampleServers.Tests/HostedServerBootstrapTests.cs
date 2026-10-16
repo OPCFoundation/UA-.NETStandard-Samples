@@ -183,9 +183,9 @@ namespace Opc.Ua.Samples.Tests
 
             try
             {
-                Exception failure = Assert.CatchAsync(
+                Exception failure = await Assert.CatchAsync(
                     () => host.StartAsync(ct),
-                    "Starting without a configuration file must fail the start of the host.");
+                    "Starting without a configuration file must fail the start of the host.").ConfigureAwait(false);
 
                 await TestContext.Out.WriteLineAsync(
                     $"BoilerHostedBootstrap: startup failure -> {failure.Message}")

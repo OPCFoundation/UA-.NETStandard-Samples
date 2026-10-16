@@ -154,8 +154,8 @@ namespace Opc.Ua.Samples.Tests
 
             await using var listener = new ReverseConnectListener(bare, NullTelemetry.Instance);
 
-            ServiceResultException exception = Assert.ThrowsAsync<ServiceResultException>(
-                async () => await listener.StartAsync(ct).ConfigureAwait(false));
+            ServiceResultException exception = await Assert.ThrowsAsync<ServiceResultException>(
+                async () => await listener.StartAsync(ct).ConfigureAwait(false)).ConfigureAwait(false);
 
             Assert.That(exception.StatusCode, Is.EqualTo((uint)StatusCodes.BadConfigurationError));
         }
@@ -168,8 +168,8 @@ namespace Opc.Ua.Samples.Tests
 
             // the manager matches the ReverseHello against the endpoint url, so a wait
             // without one is a programming error rather than "accept anybody".
-            Assert.ThrowsAsync<ArgumentNullException>(
-                async () => await listener.WaitForConnectionAsync(null, null, ct).ConfigureAwait(false));
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await listener.WaitForConnectionAsync(null, null, ct).ConfigureAwait(false)).ConfigureAwait(false);
         }
 
         [Test]

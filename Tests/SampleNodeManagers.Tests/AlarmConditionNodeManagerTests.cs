@@ -389,8 +389,8 @@ namespace Opc.Ua.Samples.Tests
             Assert.That(marker, Is.Not.Null);
 
             // no subscription has the id zero, so the server has to reject this one
-            ServiceResultException rejected = Assert.ThrowsAsync<ServiceResultException>(
-                async () => await conditions.ConditionRefreshAsync(0, ct).ConfigureAwait(false));
+            ServiceResultException rejected = await Assert.ThrowsAsync<ServiceResultException>(
+                async () => await conditions.ConditionRefreshAsync(0, ct).ConfigureAwait(false)).ConfigureAwait(false);
 
             await TestContext.Out
                 .WriteLineAsync($"Rejected refresh: {rejected.StatusCode}")
@@ -667,14 +667,14 @@ namespace Opc.Ua.Samples.Tests
                 // the same alarm are told apart from it and are not suppressed, so they
                 // still arrive under the same condition name; only an out of scope event
                 // would be a breach.
-                Assert.ThrowsAsync<TimeoutException>(
+                await Assert.ThrowsAsync<TimeoutException>(
                     () => capture.WaitAsync(
                         candidate => candidate.SourceName == kColoursSource && ConditionNameOf(candidate) == kLevelAlarm
                             && IsTrue(candidate, BrowseNames.SuppressedOrShelved),
                         TimeSpan.FromSeconds(5),
                         "a second out of scope event of the suppressed alarm",
                         ct),
-                    "A suppressed alarm was reported more than once: filtered retain owes exactly one trailing event.");
+                    "A suppressed alarm was reported more than once: filtered retain owes exactly one trailing event.").ConfigureAwait(false);
             }
             finally
             {
@@ -847,8 +847,8 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out.WriteLineAsync($"Latched: {active}").ConfigureAwait(false);
 
             // resetting a latch which the process still holds has to be refused
-            ServiceResultException tooEarly = Assert.ThrowsAsync<ServiceResultException>(
-                async () => await alarms.ResetAsync(tripAlarm, ct: ct).ConfigureAwait(false));
+            ServiceResultException tooEarly = await Assert.ThrowsAsync<ServiceResultException>(
+                async () => await alarms.ResetAsync(tripAlarm, ct: ct).ConfigureAwait(false)).ConfigureAwait(false);
 
             Assert.That(
                 tooEarly.StatusCode,
@@ -895,8 +895,8 @@ namespace Opc.Ua.Samples.Tests
 
             await alarms.RespondAsync(dialog, kOffline, ct).ConfigureAwait(false);
 
-            ServiceResultException vetoed = Assert.ThrowsAsync<ServiceResultException>(
-                async () => await alarms.ResetAsync(tripAlarm, ct: ct).ConfigureAwait(false));
+            ServiceResultException vetoed = await Assert.ThrowsAsync<ServiceResultException>(
+                async () => await alarms.ResetAsync(tripAlarm, ct: ct).ConfigureAwait(false)).ConfigureAwait(false);
 
             await TestContext.Out
                 .WriteLineAsync($"Reset while offline: {vetoed.StatusCode}")
