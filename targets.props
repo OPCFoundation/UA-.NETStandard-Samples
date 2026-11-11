@@ -5,7 +5,7 @@
     <!-- The OPC UA .NET Standard version the samples build against. Releases come
          from nuget.org, previews from the OPC Foundation GitHub Packages feed, see
          Nuget.Config. -->
-    <OpcUaNetStandardVersion>2.0.1</OpcUaNetStandardVersion>
+    <OpcUaNetStandardVersion>2.0.2</OpcUaNetStandardVersion>
   </PropertyGroup>
 
   <!-- The GitHub Packages feed requires credentials, so it is only consulted when a
