@@ -8,11 +8,13 @@
  * ======================================================================*/
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Opc.Ua.Client;
@@ -75,15 +77,6 @@ namespace Opc.Ua.Samples.Tests
         private const string kGdsAdminUser = "appadmin";
 
         /// <summary>
-        /// Set on the STA thread of the harness when the registrar refused the onboarding
-        /// ticket the way issue #939 describes, and turned into an ignored result once the
-        /// harness is done - an Assert.Ignore thrown on that thread would be reported as a
-        /// failure of the harness instead. The fixture is non-parallelizable, so a static
-        /// is enough.
-        /// </summary>
-        private static volatile string s_onboardingKnownIssue;
-
-        /// <summary>
         /// The user the sample global discovery server gives the SecurityAdmin and
         /// ConfigureAdmin Roles to, and the only one its <c>ServerConfiguration</c> nodes are
         /// visible to.
@@ -123,7 +116,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             var phase = new ClientPhase();
-            s_onboardingKnownIssue = null;
+            string onboardingTicketPath = GetSampleOnboardingTicketPath(gdsSample.ServerConfig);
 
             try
             {
@@ -132,6 +125,7 @@ namespace Opc.Ua.Samples.Tests
                         clientSample,
                         gdsSample.ServerUrl,
                         managedServer.EndpointUrl,
+                        onboardingTicketPath,
                         watchdog,
                         phase,
                         ct).ConfigureAwait(true),
@@ -150,11 +144,25 @@ namespace Opc.Ua.Samples.Tests
 
                 throw;
             }
+        }
 
-            if (s_onboardingKnownIssue != null)
-            {
-                Assert.Ignore($"Known issue: {s_onboardingKnownIssue}");
-            }
+        /// <summary>
+        /// Returns where the global discovery server writes the onboarding ticket its sample
+        /// manufacturer signs: <c>Onboarding/sample-device.ticket</c> beside its PKI, which is
+        /// the parent of the <c>AuthoritiesStorePath</c> the configuration names.
+        /// </summary>
+        private static string GetSampleOnboardingTicketPath(string configPath)
+        {
+            XDocument configuration = XDocument.Load(RepositoryLayout.PathOf(configPath));
+
+            string authorities = configuration
+                .Descendants()
+                .Single(element => element.Name.LocalName == "AuthoritiesStorePath")
+                .Value;
+
+            string pki = Path.GetDirectoryName(Utils.ReplaceSpecialFolderNames(authorities));
+
+            return Path.Combine(Path.GetDirectoryName(pki), "Onboarding", "sample-device.ticket");
         }
 
         /// <summary>
@@ -173,6 +181,7 @@ namespace Opc.Ua.Samples.Tests
             SampleDefinition clientSample,
             string gdsUrl,
             string managedServerUrl,
+            string onboardingTicketPath,
             DialogWatchdog watchdog,
             ClientPhase phase,
             CancellationToken ct)
@@ -261,7 +270,7 @@ namespace Opc.Ua.Samples.Tests
 
             try
             {
-                await ConnectToTheDirectoryAsync(gdsClient, gdsUrl, configuration, phase, ct).ConfigureAwait(true);
+                await ConnectToTheDirectoryAsync(gdsClient, gdsUrl, configuration, onboardingTicketPath, phase, ct).ConfigureAwait(true);
                 await ReadTheOptionalServerConfigurationSurfaceAsync(gdsClient, gdsUrl, phase, ct)
                     .ConfigureAwait(true);
                 await ShowTheStatusOfTheManagedServerAsync(pushClient, statusPanel, managedServerUrl, phase, ct)
@@ -286,6 +295,7 @@ namespace Opc.Ua.Samples.Tests
             GlobalDiscoveryServerClient gdsClient,
             string gdsUrl,
             ApplicationConfiguration configuration,
+            string onboardingTicketPath,
             ClientPhase phase,
             CancellationToken ct)
         {
@@ -360,7 +370,7 @@ namespace Opc.Ua.Samples.Tests
                     Is.EqualTo(certificates.Count),
                     "GetCertificates returned the certificate types and the certificates ragged.");
 
-                await RegisterAnOnboardingTicketAsync(gdsClient, phase, ct).ConfigureAwait(true);
+                await RegisterAnOnboardingTicketAsync(gdsClient, onboardingTicketPath, phase, ct).ConfigureAwait(true);
             }
             finally
             {
@@ -517,6 +527,7 @@ namespace Opc.Ua.Samples.Tests
         /// </remarks>
         private static async Task RegisterAnOnboardingTicketAsync(
             GlobalDiscoveryServerClient gdsClient,
+            string onboardingTicketPath,
             ClientPhase phase,
             CancellationToken ct)
         {
@@ -544,51 +555,49 @@ namespace Opc.Ua.Samples.Tests
                 "The sample global discovery server no longer exposes the OPC 10000-21 " +
                 "registrar administration Object.");
 
-            phase.Enter("registering an onboarding ticket");
+            phase.Enter("registering the sample onboarding ticket");
 
             var client = new OnboardingClient(
                 gdsClient.Session,
                 ExpandedNodeId.ToNodeId(registrar.NodeId, gdsClient.Session.NamespaceUris),
                 NullTelemetry.Instance);
 
-            // EncodedTicket is a String subtype: a ticket is its text, not bytes.
-            string[] tickets = ["sample-onboarding-ticket"];
-
-            ArrayOf<StatusCode> registered;
-
-            try
-            {
-                registered = await client.RegisterTicketsAsync(tickets, ct).ConfigureAwait(true);
-            }
-            catch (ServiceResultException refused) when (refused.StatusCode == StatusCodes.BadConfigurationError)
-            {
-                // since SDK 2.0.2 a ticket is a signed JWS checked against a trusted
-                // manufacturer, and the sample registrar has no validator yet, so the call
-                // is refused with BadConfigurationError (#939). Only that refusal is the
-                // known issue: once the sample validates signed tickets it stops happening,
-                // and this test should then send a signed ticket instead of the plain text.
-                s_onboardingKnownIssue =
-                    "the GDS sample registrar cannot validate signed Part 21 tickets since SDK 2.0.2 " +
-                    "(https://github.com/OPCFoundation/UA-.NETStandard-Samples/issues/939).";
-                return;
-            }
-
-            Assert.That(registered.Count, Is.EqualTo(1), "RegisterTickets did not report a result per ticket.");
-
+            // the server writes a ticket signed by its sample manufacturer while it starts,
+            // which is the file a user loads into the Onboarding dialog. EncodedTicket is a
+            // String subtype: a ticket is its JWS text, not bytes. The plain text next to it
+            // carries no signature and has to be refused on its own.
             Assert.That(
-                StatusCode.IsGood(registered[0]),
+                File.Exists(onboardingTicketPath),
                 Is.True,
-                "The registrar rejected the ticket.");
+                $"The global discovery server did not write its sample ticket to {onboardingTicketPath}.");
+
+            string signedTicket = await File.ReadAllTextAsync(onboardingTicketPath, Encoding.UTF8, ct)
+                .ConfigureAwait(true);
+
+            ArrayOf<StatusCode> registered = await client
+                .RegisterTicketsAsync([signedTicket, "not-a-signed-ticket"], ct)
+                .ConfigureAwait(true);
+
+            Assert.That(registered.Count, Is.EqualTo(2), "RegisterTickets did not report a result per ticket.");
+            Assert.That(
+                registered[0],
+                Is.EqualTo((StatusCode)StatusCodes.Good),
+                "The registrar rejected the ticket its own sample manufacturer signed.");
+            Assert.That(
+                registered[1],
+                Is.EqualTo((StatusCode)StatusCodes.BadTicketInvalid),
+                "The registrar accepted a ticket without a trusted signature.");
 
             phase.Enter("removing the onboarding ticket again");
 
-            ArrayOf<StatusCode> removed = await client.UnregisterTicketsAsync(tickets, CancellationToken.None)
+            ArrayOf<StatusCode> removed = await client
+                .UnregisterTicketsAsync([signedTicket], CancellationToken.None)
                 .ConfigureAwait(true);
 
             Assert.That(removed.Count, Is.EqualTo(1), "UnregisterTickets did not report a result per ticket.");
             Assert.That(
-                StatusCode.IsGood(removed[0]),
-                Is.True,
+                removed[0],
+                Is.EqualTo((StatusCode)StatusCodes.Good),
                 "The registrar did not remove the ticket it had just accepted.");
         }
 

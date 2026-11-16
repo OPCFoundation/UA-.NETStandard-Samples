@@ -181,16 +181,17 @@ namespace Opc.Ua.Gds.Client.Controls
         /// </summary>
         /// <remarks>
         /// <para>
-        /// A ticket is an <c>EncodedTicket</c> - a String, in practice the signed JSON the
-        /// device manufacturer issues. There is no standard file extension for one, and the
-        /// sample registrar does not parse it: it stores the text verbatim and keys it by the
-        /// SHA-256 hash of its UTF-8 bytes. A file is read as UTF-8 here, and one which is
-        /// not valid UTF-8 is refused when it is added rather than sent mangled.
+        /// A ticket is an <c>EncodedTicket</c> - a String holding the RFC 7515 JWS (JSON) the
+        /// device manufacturer signs. The registrar verifies the signature against the
+        /// manufacturers it trusts and answers any other ticket with <c>Bad_TicketInvalid</c>.
+        /// The text has to reach it byte for byte, so a file is read as UTF-8 here, and one
+        /// which is not valid UTF-8 is refused when it is added rather than sent mangled.
         /// </para>
         /// <para>
-        /// The filter therefore leads with the extensions a manufacturer is likely to use but
-        /// keeps All Files, because any text file is a valid stand-in - which is what the
-        /// hint on the dialog says, so an empty filter does not read as an oversight.
+        /// There is no standard file extension for a ticket, so the filter leads with the ones
+        /// a manufacturer is likely to use and keeps All Files. The dialog starts in the folder
+        /// the sample GDS writes its signed sample ticket to, when that folder exists on this
+        /// machine.
         /// </para>
         /// </remarks>
         private void AddButton_Click(object sender, EventArgs e)
@@ -203,6 +204,22 @@ namespace Opc.Ua.Gds.Client.Controls
                 Multiselect = true,
                 CheckFileExists = true
             };
+
+            // the console GDS keeps its data under LocalApplicationData, the WinForms GDS
+            // under CommonApplicationData
+            foreach (Environment.SpecialFolder root in new[] {
+                Environment.SpecialFolder.LocalApplicationData,
+                Environment.SpecialFolder.CommonApplicationData })
+            {
+                string sampleTickets = Path.Combine(
+                    Environment.GetFolderPath(root), "OPC Foundation", "GDS", "Onboarding");
+
+                if (Directory.Exists(sampleTickets))
+                {
+                    dialog.InitialDirectory = sampleTickets;
+                    break;
+                }
+            }
 
             if (dialog.ShowDialog(this) != DialogResult.OK)
             {

@@ -308,14 +308,28 @@ of the GDS client loads ticket files and calls those Methods through the stack's
 at the prompt of the console GDS to see what the registrar holds. Since 2.0 the stack lets only a session holding the Part 21 **RegistrarAdmin** Role
 register or unregister tickets; the standard users **appadmin** and **sysadmin** hold it.
 
-**What to pick in the file dialog.** A ticket is an `EncodedTicket`, a String. Since SDK 2.0.2 it holds the signed
-JWS (JSON) text the device manufacturer issues. There is no standard file extension for one, so the dialog reads any
-file as UTF-8 text, and its *All Files* entry sits next to the conventional `*.ticket` / `*.tkt` / `*.bin` extensions.
+**Signed tickets.** A ticket is an `EncodedTicket`, a String holding an RFC 7515 JWS (JSON) that the device
+manufacturer signs. The registrar checks each ticket with the SDK's `OnboardingTicketValidator` before it stores it.
+The signature must verify against a certificate in the registrar's `TicketAuthorities` trust list. A ticket that is
+not signed, or not signed by a trusted manufacturer, gets `BadTicketInvalid` in its row of the result.
 
-> **Known issue (SDK 2.0.2):** the registrar now accepts only signed tickets from a trusted manufacturer, and the
-> sample registrar has no ticket validator yet. Until
-> [#939](https://github.com/OPCFoundation/UA-.NETStandard-Samples/issues/939) is done, `RegisterTickets` rejects every
-> ticket with `BadConfigurationError`. The dialog reports that error when you call it.
+The sample has no real manufacturer, so it plays one
+([`Samples/GDS/Common/SampleTicketAuthority.cs`](Common/SampleTicketAuthority.cs)). On first start the GDS creates
+these files under its data folder (`%LocalAppData%\OPC Foundation\GDS` for the console GDS,
+`%ProgramData%\OPC Foundation\GDS` for the WinForms GDS):
+
+| Path | Content |
+|------|---------|
+| `PKI\manufacturer` | a self-signed *Sample Device Manufacturer* certificate (RSA 2048) with its private key |
+| `PKI\ticketAuthorities\certs` | the public half of that certificate: the trust list the registrar checks tickets against |
+| `Onboarding\sample-device.ticket` | a ticket for the device `urn:opcfoundation.org:UA-NETStandard-Samples:device:SN-0001`, signed with the SDK's `OnboardingTicketWriter` |
+
+The console GDS prints the ticket path at start-up. Click **Add Ticket(s)...** on the **Onboarding** panel; the file
+dialog opens in that `Onboarding` folder. Then **Register Tickets** should report `Good`. To trust a real
+manufacturer, copy its ticket signing certificate (DER) into `PKI\ticketAuthorities\certs`. A real registrar
+never holds a manufacturer's private key; the sample keeps one only so that it can issue a ticket of its own. The
+dialog reads ticket files as UTF-8 text, so the JWS reaches the registrar byte for byte. There is no standard file
+extension for a ticket, so *All Files* sits next to the usual `*.ticket` / `*.tkt` / `*.bin` extensions.
 
 Two caveats, both about the SDK rather than about Part 21: the Onboarding companion model ships as a design file in
 the stack repository but its generated node classes are not in the `Opc.Ua.Gds` package, so the sample builds

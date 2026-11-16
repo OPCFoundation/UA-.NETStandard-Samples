@@ -49,9 +49,16 @@ namespace Opc.Ua.Gds.Server
     /// identity later is accepted without an administrator having to register it by hand.
     /// The registrar administration surface - loading and removing those tickets - is the
     /// half the SDK implements, through
-    /// <see cref="DeviceRegistrarAdminExtensions.BindToTicketStore"/> plus a ticket store
-    /// (<see cref="MemoryTicketStore"/> here), and it is the half this node manager exposes.
-    /// The device-facing <c>ProvideIdentities</c> flow is not part of the sample.
+    /// <see cref="DeviceRegistrarAdminExtensions.BindToTicketStore(BaseObjectState, ITicketStore, IOnboardingTicketValidator)"/>
+    /// plus a ticket store (<see cref="MemoryTicketStore"/> here), and it is the half this node
+    /// manager exposes. The device-facing <c>ProvideIdentities</c> flow is not part of the sample.
+    /// </para>
+    /// <para>
+    /// A ticket is a signed RFC 7515 JWS. The registrar checks each one with the SDK's
+    /// <see cref="OnboardingTicketValidator"/> against the <c>TicketAuthorities</c> trust list
+    /// before storing it, and answers a ticket that is not signed by a trusted manufacturer
+    /// with <c>Bad_TicketInvalid</c>. <see cref="SampleTicketAuthority"/> supplies that trust
+    /// list and a signed sample ticket.
     /// </para>
     /// <para>
     /// The nodes are built by hand rather than generated from the companion model: the
@@ -89,6 +96,7 @@ namespace Opc.Ua.Gds.Server
         public const string RegistrarBrowseName = "DeviceRegistrarAdmin";
 
         private readonly ITicketStore m_ticketStore;
+        private readonly ApplicationConfiguration m_configuration;
 
         /// <summary>
         /// Creates the node manager over the supplied ticket store. The Onboarding
@@ -104,6 +112,7 @@ namespace Opc.Ua.Gds.Server
             : base(server, configuration, NamespaceUri, Opc.Ua.Onboarding.Namespaces.OpcUaOnboarding)
         {
             m_ticketStore = ticketStore ?? throw new ArgumentNullException(nameof(ticketStore));
+            m_configuration = configuration;
         }
 
         /// <inheritdoc/>
@@ -134,16 +143,16 @@ namespace Opc.Ua.Gds.Server
             registrar.AddChild(register);
             registrar.AddChild(unregister);
 
-            // one call wires both Methods to the store: the SDK matches the two children by
-            // BrowseName and installs its own handlers. Without a ticket validator this
-            // overload refuses every ticket with BadConfigurationError since SDK 2.0.2 -
-            // validating signed Part 21 tickets is issue #939.
-#pragma warning disable CS0618 // Justification: replaced by the validator overload in #939.
-            registrar.BindToTicketStore(m_ticketStore);
-#pragma warning restore CS0618
+            // the registrar keeps only a ticket whose JWS signature verifies against a trusted
+            // ticket authority - the sample manufacturer, which also writes the sample ticket.
+            IOnboardingTicketValidator validator = await new SampleTicketAuthority(m_configuration, Server.Telemetry)
+                .InitializeAsync(cancellationToken)
+                .ConfigureAwait(false);
 
-            ResetOutputArgumentsBeforeCall(register);
-            ResetOutputArgumentsBeforeCall(unregister);
+            // one call wires both Methods to the store: the SDK matches the two children by
+            // BrowseName and installs its own handlers, which validate every ticket before
+            // the store sees it.
+            registrar.BindToTicketStore(m_ticketStore, validator);
 
             if (!externalReferences.TryGetValue(Opc.Ua.ObjectIds.ObjectsFolder, out IList<IReference> references))
             {
@@ -219,33 +228,6 @@ namespace Opc.Ua.Gds.Server
             }.ToArrayOf();
 
             return method;
-        }
-
-        /// <summary>
-        /// Drops the default output values <c>MethodState</c> seeds before the call.
-        /// </summary>
-        /// <remarks>
-        /// <c>MethodState</c> pre-fills the output list with one default value per declared
-        /// output Argument and then hands that list to the handler, but the SDK's
-        /// <c>BindToTicketStore</c> handler <em>appends</em> its result instead of assigning
-        /// it into the seeded slot. Left alone, the call would return two values and a client
-        /// reading <c>OutputArguments[0]</c> - which is what <c>OnboardingClient</c> does -
-        /// would get the default rather than the per-ticket results. Clearing the list first
-        /// leaves exactly the handler's own output.
-        /// </remarks>
-        private static void ResetOutputArgumentsBeforeCall(MethodState method)
-        {
-            GenericMethodCalledEventHandler2 inner = method.OnCallMethod2;
-
-            if (inner == null)
-            {
-                return;
-            }
-
-            method.OnCallMethod2 = (context, m, objectId, inputArguments, outputArguments) => {
-                outputArguments.Clear();
-                return inner(context, m, objectId, inputArguments, outputArguments);
-            };
         }
     }
 }

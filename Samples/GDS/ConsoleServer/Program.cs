@@ -570,6 +570,11 @@ namespace Opc.Ua.Gds.Server
             m_configuration = config;
             m_ldsScannerConfiguration = LdsScannerConfiguration.Parse(config);
 
+            // the registrar wrote a ticket signed by the sample manufacturer while it started
+            Console.WriteLine(
+                "Signed sample onboarding ticket: {0}",
+                new SampleTicketAuthority(config, m_telemetry).SampleTicketPath);
+
             // start periodically refreshing the GDS master AliasNames list
             // from every registered server.
             m_aliasMerger.Start(config, m_database);
