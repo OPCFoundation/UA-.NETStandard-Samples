@@ -13,7 +13,7 @@ Please follow the steps outlined [here](#contributing) to start contributing.
 
 ## Overview
 
-Sample Servers and Clients, including all required controls, targeting .NET 11, .NET 8 and .NET Framework 4.8.
+Sample Servers and Clients, including all required controls, targeting .NET 11 and .NET Framework 4.8.
 
 Integrates the offical OPC UA [NuGet](https://www.nuget.org/packages/OPCFoundation.NetStandard.Opc.Ua/) package containing the OPC UA reference implementation targeting [.NET Standard](https://docs.microsoft.com/en-us/dotnet/standard/net-standard).
 
@@ -23,7 +23,7 @@ Furthermore, cloud applications and services (such as ASP.Net, Azure Websites, A
 ## For more information and license terms, see [here](http://opcfoundation.github.io/UA-.NETStandard).
 
 ## Features included
-1. Sample Servers and Clients, including all required controls, for .NET 11, .NET 8 and .NET Framework 4.8.
+1. Sample Servers and Clients, including all required controls, for .NET 11 and .NET Framework 4.8.
 2. Sessions (including UI support in the samples).
 3. Subscriptions (including UI support in the samples).
 4. OPC UA [Aggregation Server](Workshop/Aggregation/README.md).

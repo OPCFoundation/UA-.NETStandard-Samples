@@ -5,12 +5,12 @@
   <Choose>
     <When Condition="$([MSBuild]::IsOsPlatform('Windows'))">
       <PropertyGroup>
-        <TargetFrameworks>net8.0;net11.0;net11.0-windows</TargetFrameworks>
+        <TargetFrameworks>net11.0;net11.0-windows</TargetFrameworks>
       </PropertyGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
-        <TargetFrameworks>net8.0;net11.0</TargetFrameworks>
+        <TargetFrameworks>net11.0</TargetFrameworks>
       </PropertyGroup>
     </Otherwise>
   </Choose>

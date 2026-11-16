@@ -13,15 +13,6 @@
     <EntityFrameworkCoreVersion>11.0.0</EntityFrameworkCoreVersion>
   </PropertyGroup>
 
-  <!-- Microsoft.Extensions.* 11.0.x ships no net8.0 asset (only net10.0, net11.0,
-       netstandard2.0 and net462) and warns when consumed from net8.0, so the
-       net8.0 targets stay on the 10.0.x line the stack itself was built against.
-       The target framework is a global property of the inner per-framework build,
-       so it is already known when this file is imported. -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <MicrosoftExtensionsVersion>10.0.15</MicrosoftExtensionsVersion>
-  </PropertyGroup>
-
   <!-- The GitHub Packages feed requires credentials, so it is only consulted when a
        preview is referenced (a version with a prerelease label, e.g.
        2.0.334.14261-preview). A release restores from nuget.org alone through
@@ -50,11 +41,11 @@
   </Choose>
 
   <PropertyGroup>
-    <AppTargetFrameworks>$(DotNetTargetFramework)net8.0;net11.0</AppTargetFrameworks>
+    <AppTargetFrameworks>$(DotNetTargetFramework)net11.0</AppTargetFrameworks>
     <AppTargetFramework>net11.0</AppTargetFramework>
-    <TestsTargetFrameworks>$(DotNetTargetFramework)net8.0;net11.0</TestsTargetFrameworks>
-    <LibTargetFrameworks>$(DotNetTargetFramework)net8.0;net11.0</LibTargetFrameworks>
-    <LibxTargetFrameworks>$(DotNetTargetFramework)net8.0;net11.0</LibxTargetFrameworks>
+    <TestsTargetFrameworks>$(DotNetTargetFramework)net11.0</TestsTargetFrameworks>
+    <LibTargetFrameworks>$(DotNetTargetFramework)net11.0</LibTargetFrameworks>
+    <LibxTargetFrameworks>$(DotNetTargetFramework)net11.0</LibxTargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
