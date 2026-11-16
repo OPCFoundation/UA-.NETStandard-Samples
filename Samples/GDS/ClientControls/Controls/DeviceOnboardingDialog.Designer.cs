@@ -152,10 +152,12 @@ namespace Opc.Ua.Gds.Client.Controls
             this.HintLabel.Location = new System.Drawing.Point(0, 28);
             this.HintLabel.Name = "HintLabel";
             this.HintLabel.Padding = new System.Windows.Forms.Padding(6, 0, 6, 4);
-            this.HintLabel.Size = new System.Drawing.Size(684, 32);
+            this.HintLabel.Size = new System.Drawing.Size(684, 46);
             this.HintLabel.TabIndex = 8;
-            this.HintLabel.Text = "A ticket is the signed text issued by the device manufacturer. The sample registrar " +
-                "stores it verbatim and keys it by its SHA-256 hash, so any UTF-8 text file can stand in for one.";
+            this.HintLabel.Text = "A ticket is the signed JWS text a device manufacturer issues; the registrar answers one " +
+                "without a trusted signature with BadTicketInvalid. The sample GDS plays a manufacturer itself and " +
+                "writes a signed ticket to Onboarding\\sample-device.ticket in its data folder (for example " +
+                "%LocalAppData%\\OPC Foundation\\GDS) - the file dialog opens there.";
             //
             // RegistrarLabel
             //

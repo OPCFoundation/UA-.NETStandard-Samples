@@ -20,6 +20,7 @@
     <Compile Include="..\Common\SampleServerConfigurationResetProvider.cs" Link="Common\SampleServerConfigurationResetProvider.cs" />
     <Compile Include="..\Common\DeviceRegistrarNodeManager.cs" Link="Common\DeviceRegistrarNodeManager.cs" />
     <Compile Include="..\Common\GdsNodeManagerFactories.cs" Link="Common\GdsNodeManagerFactories.cs" />
+    <Compile Include="..\Common\SampleTicketAuthority.cs" Link="Common\SampleTicketAuthority.cs" />
   </ItemGroup>
 
   <ItemGroup>
