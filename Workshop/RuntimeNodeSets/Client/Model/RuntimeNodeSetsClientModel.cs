@@ -25,19 +25,17 @@ namespace Quickstarts.RuntimeNodeSets.Client.Model
     using SubscriptionOptions = Opc.Ua.Client.Subscriptions.SubscriptionOptions;
 
     /// <summary>
-    /// Which reload the server was asked for. Mirrors the <c>ReloadMode</c> enumeration
-    /// of the control model, which no code on either side compiles.
+    /// What a reload does to the MonitoredItems of the generation it replaces. Mirrors
+    /// the <c>ReloadMode</c> enumeration of the control model, which no code on either
+    /// side compiles.
     /// </summary>
     public enum ReloadMode
     {
-        /// <summary>Drain the requests in flight, then swap.</summary>
-        Reload = 0,
+        /// <summary>Move the MonitoredItems whose node still exists to the replacement, invalidate the others.</summary>
+        Migrate = 0,
 
-        /// <summary>Swap, and let the old generation keep serving the MonitoredItems it has.</summary>
-        ShadowReload = 1,
-
-        /// <summary>Swap, and invalidate the MonitoredItems of the old generation.</summary>
-        ImmediateReload = 2,
+        /// <summary>Invalidate every MonitoredItem of the old generation.</summary>
+        Invalidate = 1,
     }
 
     /// <summary>
@@ -316,7 +314,7 @@ namespace Quickstarts.RuntimeNodeSets.Client.Model
         /// Replaces the published generation with another revision.
         /// </summary>
         /// <param name="revision">One of <see cref="AvailableRevisions"/>.</param>
-        /// <param name="mode">Which of the three reloads to ask for.</param>
+        /// <param name="mode">Which of the two transitions to ask for.</param>
         /// <param name="ct">The cancellation token.</param>
         public Task<OperationResult> ReloadAsync(
             string revision,
@@ -324,7 +322,7 @@ namespace Quickstarts.RuntimeNodeSets.Client.Model
             CancellationToken ct = default)
         {
             return CallAsync(
-                $"{mode} to {revision}",
+                $"Reloading {revision} ({mode})",
                 m_reload,
                 ct,
                 Variant.From(revision),

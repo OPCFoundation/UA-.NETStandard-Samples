@@ -62,9 +62,8 @@ namespace Quickstarts.RuntimeNodeSets.Client
             this.Text = configuration.ApplicationName;
 
             ModeCB.Items.AddRange(new object[] {
-                ReloadMode.Reload,
-                ReloadMode.ShadowReload,
-                ReloadMode.ImmediateReload,
+                ReloadMode.Migrate,
+                ReloadMode.Invalidate,
             });
 
             ModeCB.SelectedIndex = 0;
@@ -345,7 +344,7 @@ namespace Quickstarts.RuntimeNodeSets.Client
         /// The reload the user picked.
         /// </summary>
         private ReloadMode SelectedMode
-            => ModeCB.SelectedItem is ReloadMode mode ? mode : ReloadMode.Reload;
+            => ModeCB.SelectedItem is ReloadMode mode ? mode : ReloadMode.Migrate;
 
         /// <summary>
         /// Runs one operation of the control model, reports what the server answered and

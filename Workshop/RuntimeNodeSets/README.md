@@ -33,7 +33,7 @@ overlay half, where the namespace they write into is one the server generated co
 | Document | Namespace | Reaches the server through |
 |---|---|---|
 | `ModelControl.NodeSet2.xml` | `.../RuntimeNodeSets/Control/` | `AddRuntimeNodeSet` on the server builder |
-| `ConveyorLine.Rev1.NodeSet2.xml` | `.../RuntimeNodeSets/Line/` | `INodeManagerLifecycle.AddRuntimeNodeSetAsync` |
+| `ConveyorLine.Rev1.NodeSet2.xml` | `.../RuntimeNodeSets/Line/` | `INodeManagerLifecycle.PrepareAsync` + `CommitAsync` |
 | `ConveyorLine.Rev2.NodeSet2.xml` | the same | the same, on a reload |
 | `Site.Layout.NodeSet2.xml` | `.../RuntimeNodeSets/Site/` | `INodeManagerBuilder.Import`, inside `SiteNodeManager.Configure` |
 | `Site.Instrumentation.NodeSet2.xml` | the same | the same, in the same batch |
@@ -65,8 +65,9 @@ server.AddRuntimeNodeSet(controller.ControlModelOptions());
 
 ```csharp
 // Server/RuntimeNodeSetController.cs - the vendor model, once the server is up
-m_vendor = await m_lifecycle.AddRuntimeNodeSetAsync(
-    m_library.VendorOptions(RuntimeNodeSetLibrary.InitialRevision),
+m_vendor = await ApplyAsync(
+    NodeManagerBatchChange.Add(VendorFactory(revision)),
+    revision,
     cancellationToken);
 ```
 
@@ -74,59 +75,92 @@ m_vendor = await m_lifecycle.AddRuntimeNodeSetAsync(
 only has to be served. It reads the `Models` metadata of the file during the call, so the
 namespace the document claims is in the namespace table before the server starts.
 
-The vendor model takes the other route, and **the reason is the one thing about
-`INodeManagerLifecycle` which is easy to get wrong**:
+The vendor model is added through the lifecycle instead, from a startup task. Every
+replacement and removal is made against the exact `NodeManagerRegistration` it changes,
+and adding the model through the lifecycle is the simplest way to hold that registration:
+it is what the commit returns. It also lets `Load` after a `Remove` take the same route
+as the first load.
 
-> `INodeManagerLifecycle.Registrations` lists the node managers the lifecycle itself added.
-> A node manager the server was composed with is not one of them.
+> Since SDK 2.0.2, `INodeManagerLifecycle.Registrations` also lists the node managers the
+> server was composed with (built-in diagnostics, configuration and core managers aside).
+> A model registered in the composition root can therefore be found there and replaced
+> too; before 2.0.2 it could not
+> ([UA-.NETStandard#4421](https://github.com/OPCFoundation/UA-.NETStandard/issues/4421)).
 
-`ReloadAsync` and `RemoveAsync` take a `NodeManagerRegistration`, and there is no way to
-obtain one for a node manager registered in the composition root. A model which is going
-to be replaced therefore has to be **added through the lifecycle to begin with** — from a
-startup task, which is where the controller does it. A model which only has to be served
-belongs in the composition root, where its namespace is known before the first client
-connects.
+## One change, three steps: prepare, decide, commit
 
-Raised upstream as
-[UA-.NETStandard#4421](https://github.com/OPCFoundation/UA-.NETStandard/issues/4421).
+`INodeManagerLifecycle` is a transaction API. Every Method on `ModelControl` runs the same
+three steps, in `RuntimeNodeSetController.ApplyAsync`:
+
+```csharp
+await using IPreparedNodeManagerBatch prepared =
+    await m_lifecycle.PrepareAsync([change], cancellationToken);
+
+NodeManagerBatchResult result = await prepared.CommitAsync(
+    ct => DecideAsync(prepared, revision, ct),
+    cancellationToken);
+```
+
+| Step | What happens | What a client sees |
+|---|---|---|
+| `PrepareAsync` | the document is parsed, the `Configure` hook runs, the candidate address space is built privately | the old generation, unchanged |
+| the decision | called once by `CommitAsync`, after it rechecked that the routing has not changed since the prepare; throwing refuses the batch | still the old generation |
+| the commit | one routing switch publishes every change in the batch | the new generation |
+
+A batch which is not committed is disposed, which releases its candidates; `await using`
+covers every way out, and disposing a committed batch does nothing.
+
+**The change** is one of `NodeManagerBatchChange.Add(factory)`,
+`Replace(registration, factory, transition)` and `Remove(registration)`. The factory is a
+`RuntimeNodeSetNodeManagerFactory` over the same `RuntimeNodeSetOptions` the composition
+root would take. The Methods of this sample make one change each, so each batch holds one;
+a server which replaced one model and retired another it depends on would put both in the
+same array, and no request would ever see one without the other.
+
+**The decision** is where a server records a durable decision - for example which
+revision is published, so that a restart publishes the same one. A record written before
+it may describe a change which never happens, and one written after the commit may be
+lost to a crash in between. This sample persists nothing, so its decision checks what it
+is about to publish - the candidate must serve the vendor namespace and nothing else - and
+throws `BadConfigurationError` otherwise. A decision callback must not start another
+lifecycle operation; the SDK rejects one.
+
+**After the commit** the change cannot be undone. A failure while retiring the old
+generation is reported in `NodeManagerBatchResult.CleanupFailure` rather than thrown, and
+the sample logs it. `result.Registrations` holds the new registration, which the
+controller keeps for the next change.
 
 ## Calling the lifecycle from a Method handler
 
-The Methods on `ModelControl` are what the client presses, and every one of them enters
-the lifecycle from inside a request. Since SDK 2.0.2 that needs no opt-in and no caller
-context: a lifecycle commit waits for reconciliation and readiness, but not for the
-requests in flight to drain. The generation being replaced is retired asynchronously, so
-the Method call that asked for the change never waits for itself.
-
-```csharp
-await m_lifecycle.RemoveAsync(m_vendor, cancellationToken);
-```
+Every Method on `ModelControl` runs its transaction from inside a request. That needs no
+opt-in and no caller context: a commit waits for reconciliation and readiness, but not
+for the requests in flight to drain. The generation being replaced is retired
+asynchronously, so the Method call that asked for the change never waits for itself.
 
 The Methods still live on the control model, which is never reloaded and never removed,
 so that a reload never replaces the node manager serving the call that asked for it.
 
-> SDK 2.0.2 reshaped `INodeManagerLifecycle` into a prepare-and-commit transaction
-> (`PrepareAsync` with `NodeManagerBatchChange.Add`/`Replace`/`Remove`, then `CommitAsync`).
-> The single-call methods this sample uses are the SDK's compatibility layer for one
-> release and are marked obsolete.
+## The two reloads, and the only difference a client sees
 
-## The three reloads, and the only difference a client sees
+`Migrate` and `Invalidate` publish the same replacement address space. They are the two
+values of `NodeManagerMonitoredItemTransitionMode`, and they differ in one thing: what
+happens to the MonitoredItems the generation being replaced still owns. That is why the
+client has a **Watch the speed** button and a list of notifications — it is the only place
+the difference is visible.
 
-`Reload`, `ShadowReload` and `ImmediateReload` all publish the same replacement address
-space. They differ in one thing: what happens to the MonitoredItems the generation being
-replaced still owns. That is why the client has a **Watch the speed** button and a list of
-notifications — it is the only place the difference is visible.
+| `ReloadMode` | The MonitoredItems of the old generation |
+|---|---|
+| `Migrate` | move to the replacement when their node still exists, otherwise invalidated |
+| `Invalidate` | invalidated at once with `BadNodeIdUnknown`, even where the replacement has the node |
 
-| Mode | Transition | The MonitoredItems of the old generation |
-|---|---|---|
-| `Reload` | `Migrate` | move to the replacement when their node still exists, otherwise invalidated |
-| `ShadowReload` | `Migrate` | the same as `Reload` since SDK 2.0.2 |
-| `ImmediateReload` | `Invalidate` | invalidated at once with `BadNodeIdUnknown` |
-
-Watch the speed, then reload in each of the modes and look at what arrives in the list. A
+Watch the speed, then reload in each mode and look at what arrives in the list. A
 migrating reload is what a server picks when a subscription must not be disturbed by a
-model update; an immediate reload is what it picks when the old model must stop being
+model update; an invalidating reload is what it picks when the old model must stop being
 served this instant, and the `BadNodeIdUnknown` is deliberate.
+
+> Before SDK 2.0.2 the sample offered three modes - `Reload`, `ShadowReload` and
+> `ImmediateReload`. 2.0.2 left two transitions, so `ReloadMode` now has two values.
+> A caller which still sends the old `ImmediateReload` (2) gets `BadInvalidArgument`.
 
 A migrating reload can only keep an item alive because both revisions give the same node
 the same NodeId. `ns=N;i=1102` is `Conveyor1/Speed` in revision 1 and in revision 2. A
@@ -312,9 +346,9 @@ the overlay was imported into it.
 The left list is the one that moves:
 
 1. Press **Watch the speed** and wait for a value to arrive.
-2. Pick `Rev2`, pick a reload mode, press **Reload**. `Conveyor2` and the `Throughput`
+2. Pick `Rev2`, pick `Migrate` or `Invalidate`, press **Reload**. `Conveyor2` and the `Throughput`
    variables appear, the generation counter moves on, and the notification list shows what
-   that mode did to the MonitoredItem.
+   that transition did to the MonitoredItem.
 3. Press **Remove**. The model is gone from the address space; the session is not.
 4. Pick `Rev1` and press **Load**. It is back, under the same NodeIds.
 
