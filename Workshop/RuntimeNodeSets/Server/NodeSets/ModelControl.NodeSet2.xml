@@ -29,22 +29,19 @@
     <Alias Alias="HasComponent">i=47</Alias>
   </Aliases>
 
-  <!-- Which of the four ways of publishing a generation the caller wants. The names
-       are the names of the INodeManagerLifecycle methods behind them. -->
+  <!-- What a reload does to the MonitoredItems of the generation it replaces. The names
+       are the names of the two NodeManagerMonitoredItemTransitionMode values behind them. -->
   <UADataType NodeId="ns=1;i=1050" BrowseName="1:ReloadMode">
     <DisplayName>ReloadMode</DisplayName>
     <References>
       <Reference ReferenceType="HasSubtype" IsForward="false">i=29</Reference>
     </References>
     <Definition Name="1:ReloadMode">
-      <Field Name="Reload" Value="0">
-        <Description>Drains the requests in flight, then swaps. Monitored items on the old generation are deleted.</Description>
+      <Field Name="Migrate" Value="0">
+        <Description>Moves the monitored items whose node still exists to the replacement and invalidates the others.</Description>
       </Field>
-      <Field Name="ShadowReload" Value="1">
-        <Description>Swaps at once for new requests and lets the old generation keep serving the monitored items it already has.</Description>
-      </Field>
-      <Field Name="ImmediateReload" Value="2">
-        <Description>Swaps at once and invalidates the monitored items of the old generation with BadNodeIdUnknown.</Description>
+      <Field Name="Invalidate" Value="1">
+        <Description>Invalidates every monitored item of the old generation with BadNodeIdUnknown.</Description>
       </Field>
     </Definition>
   </UADataType>
@@ -139,7 +136,7 @@
 
   <UAMethod NodeId="ns=1;i=1020" BrowseName="1:Reload" ParentNodeId="ns=1;i=1000">
     <DisplayName>Reload</DisplayName>
-    <Description>Replaces the published generation with another revision, in one of the three reload modes.</Description>
+    <Description>Replaces the published generation with another revision, migrating or invalidating the monitored items of the old one.</Description>
     <References>
       <Reference ReferenceType="HasProperty">ns=1;i=1021</Reference>
       <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=1000</Reference>
@@ -186,7 +183,7 @@
               <ArrayDimensions />
               <Description>
                 <Locale />
-                <Text>Reload, ShadowReload or ImmediateReload.</Text>
+                <Text>Migrate or Invalidate.</Text>
               </Description>
             </Argument>
           </Body>

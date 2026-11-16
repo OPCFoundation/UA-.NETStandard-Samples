@@ -48,7 +48,7 @@ namespace Opc.Ua.Samples.Tests
             // every test starts from the state the server starts in
             if (await ReadLoadedRevisionAsync(default).ConfigureAwait(false) != "Rev1")
             {
-                await ReloadAsync("Rev1", ReloadMode.Reload, default).ConfigureAwait(false);
+                await ReloadAsync("Rev1", ReloadMode.Migrate, default).ConfigureAwait(false);
             }
         }
 
@@ -178,7 +178,7 @@ namespace Opc.Ua.Samples.Tests
                 Does.Not.Contain("Conveyor2"),
                 "Revision 1 already has the conveyor revision 2 adds.");
 
-            CallMethodResult result = await ReloadAsync("Rev2", ReloadMode.Reload, ct).ConfigureAwait(false);
+            CallMethodResult result = await ReloadAsync("Rev2", ReloadMode.Migrate, ct).ConfigureAwait(false);
 
             Assert.That(
                 result.StatusCode,
@@ -207,13 +207,13 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// The two reload modes which do not drain the requests in flight publish the same
-        /// address space as the plain one.
+        /// Both transitions publish the same replacement address space; they differ only
+        /// in what happens to the monitored items of the old generation.
         /// </summary>
         [Test]
         [CancelAfter(kTimeout)]
-        [TestCase(ReloadMode.ShadowReload)]
-        [TestCase(ReloadMode.ImmediateReload)]
+        [TestCase(ReloadMode.Migrate)]
+        [TestCase(ReloadMode.Invalidate)]
         public async Task EveryReloadModePublishesTheReplacement(ReloadMode mode, CancellationToken ct)
         {
             CallMethodResult result = await ReloadAsync("Rev2", mode, ct).ConfigureAwait(false);
@@ -279,8 +279,9 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// The two refusals a caller can provoke: a revision the server has no document
-        /// for, and a Load while a model is already published.
+        /// The refusals a caller can provoke: a revision the server has no document for,
+        /// a Load while a model is already published, and a reload mode the control model
+        /// does not declare - 2 was ImmediateReload before SDK 2.0.2 left two transitions.
         /// </summary>
         [Test]
         [CancelAfter(kTimeout)]
@@ -290,6 +291,9 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             CallMethodResult duplicate = await CallControlAsync("Load", ct, Variant.From("Rev2"))
+                .ConfigureAwait(false);
+
+            CallMethodResult retiredMode = await ReloadAsync("Rev2", (ReloadMode)2, ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -302,6 +306,11 @@ namespace Opc.Ua.Samples.Tests
                     duplicate.StatusCode,
                     Is.EqualTo((StatusCode)StatusCodes.BadInvalidState),
                     "A second Load over a published model was accepted.");
+
+                Assert.That(
+                    retiredMode.StatusCode,
+                    Is.EqualTo((StatusCode)StatusCodes.BadInvalidArgument),
+                    "A reload mode the control model does not declare was accepted.");
             });
         }
 
@@ -327,19 +336,16 @@ namespace Opc.Ua.Samples.Tests
         }
 
         /// <summary>
-        /// Which reload the control model was asked for. Mirrors the ReloadMode
-        /// enumeration of the control NodeSet, which is not compiled anywhere.
+        /// What a reload does to the monitored items of the old generation. Mirrors the
+        /// ReloadMode enumeration of the control NodeSet, which is not compiled anywhere.
         /// </summary>
         public enum ReloadMode
         {
-            /// <summary>Drain, then swap.</summary>
-            Reload = 0,
+            /// <summary>Move the monitored items whose node still exists, invalidate the others.</summary>
+            Migrate = 0,
 
-            /// <summary>Swap, and let the old generation keep its monitored items.</summary>
-            ShadowReload = 1,
-
-            /// <summary>Swap, and invalidate the monitored items of the old generation.</summary>
-            ImmediateReload = 2,
+            /// <summary>Invalidate the monitored items of the old generation.</summary>
+            Invalidate = 1,
         }
 
         private Task<CallMethodResult> ReloadAsync(string revision, ReloadMode mode, CancellationToken ct)

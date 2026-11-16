@@ -22,41 +22,46 @@ using Opc.Ua.Server.RuntimeNodeSet;
 namespace Quickstarts.RuntimeNodeSets.Server
 {
     /// <summary>
-    /// Which of the four ways of publishing a generation a caller of <c>Reload</c>
-    /// asked for. Mirrors the <c>ReloadMode</c> enumeration of the control NodeSet.
+    /// What a caller of <c>Reload</c> asked to happen to the MonitoredItems of the
+    /// generation being replaced. Mirrors the <c>ReloadMode</c> enumeration of the control
+    /// NodeSet, and maps onto <see cref="NodeManagerMonitoredItemTransitionMode"/>.
     /// </summary>
     public enum ReloadMode
     {
-        /// <summary>Swap, and migrate the monitored items whose node still exists (since SDK 2.0.2 the same as <see cref="ShadowReload"/>).</summary>
-        Reload = 0,
+        /// <summary>Move the monitored items whose node still exists to the replacement, invalidate the others.</summary>
+        Migrate = 0,
 
-        /// <summary>Swap, and migrate the monitored items whose node still exists.</summary>
-        ShadowReload = 1,
-
-        /// <summary>Swap at once and invalidate the monitored items of the old generation.</summary>
-        ImmediateReload = 2,
+        /// <summary>Invalidate every monitored item of the old generation.</summary>
+        Invalidate = 1,
     }
 
     /// <summary>
     /// The control model of the sample and the <see cref="INodeManagerLifecycle"/>
-    /// operations behind its Methods.
+    /// transactions behind its Methods.
     /// </summary>
     /// <remarks>
     /// <para>
     /// The sample uses both ways of publishing a NodeSet2 document, one for each half of
     /// its address space. The control model - the half which never moves - is registered
     /// in the composition root with <c>AddRuntimeNodeSet</c>. The vendor model - the half
-    /// the Methods below replace - is published from
-    /// <see cref="IServerStartupTask.OnServerStartedAsync"/> with
-    /// <see cref="RuntimeNodeSetLifecycleExtensions.AddRuntimeNodeSetAsync"/>, because
-    /// only a registration the lifecycle made can be handed back to it.
+    /// the Methods below replace - is added through the lifecycle from
+    /// <see cref="IServerStartupTask.OnServerStartedAsync"/>, so that the controller holds
+    /// the <see cref="NodeManagerRegistration"/> every later change is made against.
     /// </para>
     /// <para>
-    /// A lifecycle commit waits for reconciliation and readiness, but not for the requests
-    /// in flight to drain: the generation it replaces is retired asynchronously. A Method
-    /// call can therefore start one without waiting for itself, and needs no caller
-    /// context. The Methods still live on the control model, which is never reloaded, so
-    /// that a reload never replaces the node manager serving the call that asked for it.
+    /// Every change is one transaction in three steps, see <see cref="ApplyAsync"/>:
+    /// <see cref="INodeManagerLifecycle.PrepareAsync"/> builds the candidate privately,
+    /// a decision callback is the last point at which it can still be refused, and
+    /// <see cref="IPreparedNodeManagerBatch.CommitAsync(Func{CancellationToken, ValueTask}, CancellationToken)"/>
+    /// publishes it in one routing switch.
+    /// </para>
+    /// <para>
+    /// A commit waits for reconciliation and readiness, but not for the requests in
+    /// flight to drain: the generation it replaces is retired asynchronously. A Method
+    /// call can therefore run a transaction without waiting for itself, and needs no
+    /// caller context. The Methods still live on the control model, which is never
+    /// reloaded, so that a reload never replaces the node manager serving the call that
+    /// asked for it.
     /// </para>
     /// </remarks>
     public sealed class RuntimeNodeSetController : IServerStartupTask
@@ -136,22 +141,25 @@ namespace Quickstarts.RuntimeNodeSets.Server
         /// <inheritdoc/>
         /// <remarks>
         /// The vendor model is published here rather than in the composition root so
-        /// that the registration it produces is in hand: Reload and Remove take a
-        /// <see cref="NodeManagerRegistration"/>, and this is where the sample gets one
-        /// to keep. A node manager composed before start up is adopted into
-        /// <see cref="INodeManagerLifecycle.Registrations"/> once the server is up, so
-        /// it could be found there instead; a model which only has to be served - the
-        /// control model of this sample - is still better off in the composition root.
+        /// that the registration it produces is in hand: a replacement or a removal is
+        /// made against the exact <see cref="NodeManagerRegistration"/> it changes, and
+        /// this is where the sample gets one to keep. A node manager composed before
+        /// start up is listed in <see cref="INodeManagerLifecycle.Registrations"/> too,
+        /// so it could be found there instead; publishing it here is what lets
+        /// <c>Load</c> after a <c>Remove</c> take the same route as the first load.
         /// </remarks>
         async ValueTask IServerStartupTask.OnServerStartedAsync(
             IServerContext server,
             CancellationToken cancellationToken)
         {
-            m_vendor = await m_lifecycle.AddRuntimeNodeSetAsync(
-                m_library.VendorOptions(RuntimeNodeSetLibrary.InitialRevision),
+            string revision = RuntimeNodeSetLibrary.InitialRevision;
+
+            m_vendor = await ApplyAsync(
+                NodeManagerBatchChange.Add(VendorFactory(revision)),
+                revision,
                 cancellationToken).ConfigureAwait(false);
 
-            m_revision = RuntimeNodeSetLibrary.InitialRevision;
+            m_revision = revision;
         }
 
         /// <summary>
@@ -216,6 +224,121 @@ namespace Quickstarts.RuntimeNodeSets.Server
         }
 
         /// <summary>
+        /// The factory which builds one generation of the vendor model from a revision.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="RuntimeNodeSetNodeManagerFactory"/> is the factory
+        /// <c>AddRuntimeNodeSet</c> registers in the composition root; handed to the
+        /// lifecycle it builds the same node manager on the running server.
+        /// </remarks>
+        private RuntimeNodeSetNodeManagerFactory VendorFactory(string revision)
+        {
+            return new RuntimeNodeSetNodeManagerFactory(m_library.VendorOptions(revision));
+        }
+
+        /// <summary>
+        /// Runs one lifecycle transaction: prepare, decide, commit.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="INodeManagerLifecycle.PrepareAsync"/> takes a batch: every change in
+        /// it is published by one routing switch or none is. The Methods of this sample
+        /// each make one change, so each batch holds one. A server which replaced the
+        /// vendor model and retired a second model it depends on would put both changes
+        /// in the same array, and no request would ever see one without the other.
+        /// </para>
+        /// <para>
+        /// Preparing is where the work happens - the document is parsed, the
+        /// <see cref="RuntimeNodeSetOptions.Configure"/> hook runs and the candidate
+        /// address space is built - but nothing is published yet, and a client sees
+        /// the old generation throughout. A batch which is not committed is disposed,
+        /// which releases its candidates; <c>await using</c> covers every way out of
+        /// this method, and disposing a committed batch does nothing.
+        /// </para>
+        /// </remarks>
+        /// <param name="change">The addition, replacement or removal to publish.</param>
+        /// <param name="revision">The revision the change publishes, or null for a
+        /// removal.</param>
+        /// <param name="cancellationToken">Cancels the transaction before its decision.
+        /// Once the routing switch is published it cannot be undone.</param>
+        /// <returns>The registration of the published generation, or null for a
+        /// removal.</returns>
+        private async ValueTask<NodeManagerRegistration> ApplyAsync(
+            NodeManagerBatchChange change,
+            string revision,
+            CancellationToken cancellationToken)
+        {
+            await using IPreparedNodeManagerBatch prepared = await m_lifecycle
+                .PrepareAsync([change], cancellationToken)
+                .ConfigureAwait(false);
+
+            NodeManagerBatchResult result = await prepared
+                .CommitAsync(ct => DecideAsync(prepared, revision, ct), cancellationToken)
+                .ConfigureAwait(false);
+
+            // the change is live from here on; a failure while retiring the generation
+            // it replaced is reported beside the result rather than thrown, because
+            // nothing can make the commit undone any more
+            if (result.CleanupFailure != null)
+            {
+                m_logger.LogWarning(
+                    result.CleanupFailure,
+                    "The vendor NodeSet change was published, but retiring the old generation failed.");
+            }
+
+            return result.Registrations.Count > 0 ? result.Registrations[0] : null;
+        }
+
+        /// <summary>
+        /// The decision step of a transaction: the last moment at which the prepared
+        /// candidates can still be refused.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="IPreparedNodeManagerBatch.CommitAsync(Func{CancellationToken, ValueTask}, CancellationToken)"/>
+        /// calls it exactly once, after rechecking that the routing has not changed since
+        /// the batch was prepared and before it publishes anything. Throwing here refuses
+        /// the batch: nothing is published and the caller disposes it.
+        /// </para>
+        /// <para>
+        /// This is where a server records a durable decision - which revision is
+        /// published, so that a restart publishes the same one - because a record written
+        /// before this point may describe a change which is never made, and one written
+        /// after the commit may be lost to a crash in between. This sample persists
+        /// nothing, so its decision checks what it is about to publish: the prepared
+        /// registrations must serve the vendor namespace and nothing else. A callback
+        /// here must not start another lifecycle operation; the SDK rejects one.
+        /// </para>
+        /// </remarks>
+        private ValueTask DecideAsync(
+            IPreparedNodeManagerBatch prepared,
+            string revision,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            foreach (NodeManagerRegistration candidate in prepared.Registrations)
+            {
+                if (candidate.NamespaceUris.Count != 1 ||
+                    candidate.NamespaceUris[0] != RuntimeNodeSetLibrary.VendorNamespaceUri)
+                {
+                    throw ServiceResultException.Create(
+                        StatusCodes.BadConfigurationError,
+                        "Revision {0} does not serve the vendor namespace alone.",
+                        revision);
+                }
+            }
+
+            #pragma warning disable CA1873 // Justification: the logged values are locals read in a sample.
+            m_logger.LogDebug(
+                "Committing {Count} prepared vendor NodeSet generation(s) for revision {Revision}.",
+                prepared.Registrations.Count, revision ?? "(removal)");
+            #pragma warning restore CA1873
+
+            return ValueTask.CompletedTask;
+        }
+
+        /// <summary>
         /// Publishes a revision of the vendor model on the running server.
         /// </summary>
         private async ValueTask<ServiceResult> OnLoadAsync(
@@ -248,8 +371,9 @@ namespace Quickstarts.RuntimeNodeSets.Server
                         m_revision);
                 }
 
-                m_vendor = await m_lifecycle.AddRuntimeNodeSetAsync(
-                    m_library.VendorOptions(revision),
+                m_vendor = await ApplyAsync(
+                    NodeManagerBatchChange.Add(VendorFactory(revision)),
+                    revision,
                     cancellationToken).ConfigureAwait(false);
 
                 m_revision = revision;
@@ -302,22 +426,17 @@ namespace Quickstarts.RuntimeNodeSets.Server
                         "No revision of the vendor NodeSet is loaded. Call Load first.");
                 }
 
-                RuntimeNodeSetOptions replacement = m_library.VendorOptions(revision);
+                // the two transitions differ only in what happens to the MonitoredItems
+                // of the generation being replaced. Neither waits for the requests in
+                // flight, so a Method call may run one without deadlocking.
+                NodeManagerMonitoredItemTransitionMode transition = mode == ReloadMode.Invalidate
+                    ? NodeManagerMonitoredItemTransitionMode.Invalidate
+                    : NodeManagerMonitoredItemTransitionMode.Migrate;
 
-                // the modes differ only in what happens to the MonitoredItems of the
-                // generation being replaced. None of them waits for the requests in
-                // flight, so a Method call may start one without deadlocking.
-                m_vendor = mode switch {
-                    ReloadMode.ShadowReload => await m_lifecycle
-                        .ShadowReloadRuntimeNodeSetAsync(m_vendor, replacement, cancellationToken)
-                        .ConfigureAwait(false),
-                    ReloadMode.ImmediateReload => await m_lifecycle
-                        .ImmediateReloadRuntimeNodeSetAsync(m_vendor, replacement, cancellationToken)
-                        .ConfigureAwait(false),
-                    _ => await m_lifecycle
-                        .ReloadRuntimeNodeSetAsync(m_vendor, replacement, cancellationToken)
-                        .ConfigureAwait(false),
-                };
+                m_vendor = await ApplyAsync(
+                    NodeManagerBatchChange.Replace(m_vendor, VendorFactory(revision), transition),
+                    revision,
+                    cancellationToken).ConfigureAwait(false);
 
                 m_revision = revision;
                 long generation = m_vendor.Generation;
@@ -363,8 +482,9 @@ namespace Quickstarts.RuntimeNodeSets.Server
                         "No revision of the vendor NodeSet is loaded.");
                 }
 
-                await m_lifecycle.RemoveAsync(
-                    m_vendor,
+                await ApplyAsync(
+                    NodeManagerBatchChange.Remove(m_vendor),
+                    revision: null,
                     cancellationToken).ConfigureAwait(false);
 
                 string removed = m_revision;
@@ -433,7 +553,7 @@ namespace Quickstarts.RuntimeNodeSets.Server
             out ReloadMode mode,
             out ServiceResult error)
         {
-            mode = ReloadMode.Reload;
+            mode = ReloadMode.Migrate;
 
             if (inputArguments.Count <= index)
             {

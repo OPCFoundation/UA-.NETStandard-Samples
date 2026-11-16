@@ -58,7 +58,7 @@ namespace Opc.Ua.Samples.Tests
             }
             else if (state.LoadedRevision != "Rev1")
             {
-                await Model.ReloadAsync("Rev1", ReloadMode.Reload).ConfigureAwait(false);
+                await Model.ReloadAsync("Rev1", ReloadMode.Migrate).ConfigureAwait(false);
             }
         }
 
@@ -116,7 +116,7 @@ namespace Opc.Ua.Samples.Tests
         {
             await AttachAsync(ct).ConfigureAwait(false);
 
-            OperationResult result = await Model.ReloadAsync("Rev2", ReloadMode.Reload, ct).ConfigureAwait(false);
+            OperationResult result = await Model.ReloadAsync("Rev2", ReloadMode.Migrate, ct).ConfigureAwait(false);
 
             Assert.That(result.Succeeded, Is.True, result.ToString());
 
@@ -193,11 +193,11 @@ namespace Opc.Ua.Samples.Tests
 
         /// <summary>
         /// A MonitoredItem on the conveyor speed delivers, and keeps delivering across a
-        /// shadow reload - which is what that mode exists for.
+        /// migrating reload - which is what that transition exists for.
         /// </summary>
         [Test]
         [CancelAfter(kTimeout)]
-        public async Task AShadowReloadKeepsTheMonitoredItemAlive(CancellationToken ct)
+        public async Task AMigratingReloadKeepsTheMonitoredItemAlive(CancellationToken ct)
         {
             var values = new EventSink<WatchedValueEventArgs>();
 
@@ -216,26 +216,66 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             OperationResult reloaded = await Model
-                .ReloadAsync("Rev2", ReloadMode.ShadowReload, ct)
+                .ReloadAsync("Rev2", ReloadMode.Migrate, ct)
                 .ConfigureAwait(false);
 
             Assert.That(reloaded.Succeeded, Is.True, reloaded.ToString());
 
-            // the new generation is what a browse sees, and the item the old generation
-            // still owns is not invalidated by the swap
+            // the new generation is what a browse sees, and the item whose node revision 2
+            // still has moved to it rather than being invalidated by the swap
             IReadOnlyList<VendorNode> nodes = await Model.BrowseVendorModelAsync(ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
                     nodes.Select(node => node.Name),
                     Does.Contain("Conveyor2"),
-                    "The shadow reload did not publish revision 2.");
+                    "The migrating reload did not publish revision 2.");
 
                 Assert.That(
                     values.Events.Any(value => value.Value.StatusCode == StatusCodes.BadNodeIdUnknown),
                     Is.False,
-                    "The shadow reload invalidated the MonitoredItem it was supposed to keep.");
+                    "The migrating reload invalidated the MonitoredItem it was supposed to keep.");
             });
+
+            await Model.StopWatchingAsync().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// The other transition: an invalidating reload publishes the same replacement,
+        /// and the MonitoredItem of the old generation reports BadNodeIdUnknown even
+        /// though revision 2 has a node under the same NodeId.
+        /// </summary>
+        [Test]
+        [CancelAfter(kTimeout)]
+        public async Task AnInvalidatingReloadInvalidatesTheMonitoredItem(CancellationToken ct)
+        {
+            var values = new EventSink<WatchedValueEventArgs>();
+
+            await AttachAsync(ct).ConfigureAwait(false);
+
+            Model.WatchedValueChanged += values.Handle;
+
+            OperationResult watching = await Model.WatchSpeedAsync(ct).ConfigureAwait(false);
+
+            Assert.That(watching.Succeeded, Is.True, watching.ToString());
+
+            await values.WaitForAsync(
+                value => StatusCode.IsGood(value.Value.StatusCode),
+                "the MonitoredItem never delivered a value",
+                s_notificationTimeout,
+                ct).ConfigureAwait(false);
+
+            OperationResult reloaded = await Model
+                .ReloadAsync("Rev2", ReloadMode.Invalidate, ct)
+                .ConfigureAwait(false);
+
+            Assert.That(reloaded.Succeeded, Is.True, reloaded.ToString());
+
+            await values.WaitForAsync(
+                value => value.Value.StatusCode == StatusCodes.BadNodeIdUnknown,
+                "the invalidating reload never reported BadNodeIdUnknown",
+                s_notificationTimeout,
+                ct).ConfigureAwait(false);
 
             await Model.StopWatchingAsync().ConfigureAwait(false);
         }
