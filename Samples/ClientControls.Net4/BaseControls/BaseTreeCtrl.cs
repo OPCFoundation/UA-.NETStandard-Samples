@@ -60,15 +60,6 @@ namespace Opc.Ua.Client.Controls
 
         #region Public Interface
         /// <summary>
-        /// The TreeView contained in the Control.
-        /// </summary>
-        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
-        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
-        protected System.Windows.Forms.TreeView NodesTV;
-        #pragma warning restore CA1051
-        #pragma warning restore CA2213
-
-        /// <summary>
         /// Raised whenever a node is 'picked' in the control.
         /// </summary>
         public event TreeNodeActionEventHandler NodePicked

@@ -50,7 +50,7 @@ namespace Opc.Ua.Samples.Tests
             string[] texts = children.Select(child => child.Text).ToArray();
 
             await TestContext.Out
-                .WriteLineAsync("Objects: " + string.Join(", ", texts))
+                .WriteLineAsync("Objects: " + string.Join(", ", texts), ct)
                 .ConfigureAwait(false);
 
             Assert.That(texts, Has.Some.Contains("Server"), "The Server object is missing from the Objects folder.");
@@ -135,7 +135,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"After the refused deadband: filter '{revised[0].DeadbandText}', error '{revised[0].Error}'")
+                .WriteLineAsync($"After the refused deadband: filter '{revised[0].DeadbandText}', error '{revised[0].Error}'", ct)
                 .ConfigureAwait(false);
 
             Assert.That(revised[0].DeadbandText, Is.EqualTo("None"), "A deadband the server refused is still shown.");

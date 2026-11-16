@@ -78,7 +78,7 @@ namespace Opc.Ua.Samples.Tests
                     ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"First condition: {first.Snapshot}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"First condition: {first.Snapshot}", ct).ConfigureAwait(false);
 
             ConditionSnapshot snapshot = first.Snapshot;
 
@@ -115,7 +115,7 @@ namespace Opc.Ua.Samples.Tests
             ConditionKey key = audible.Snapshot.Key;
             int before = conditions.Events.ToList().IndexOf(audible);
 
-            await TestContext.Out.WriteLineAsync($"Silencing {audible.Snapshot}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Silencing {audible.Snapshot}", ct).ConfigureAwait(false);
 
             IReadOnlyList<ConditionCallResult> results = await Model
                 .SilenceAsync(new[] { key }, ct)
@@ -140,7 +140,7 @@ namespace Opc.Ua.Samples.Tests
                 .Last(change => change.Snapshot.Key == key)
                 .Snapshot;
 
-            await TestContext.Out.WriteLineAsync($"Now reports: {silenced}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Now reports: {silenced}", ct).ConfigureAwait(false);
 
             Assert.That(silenced.CanSilence, Is.False, "A silenced alarm still offers to be silenced.");
         }
@@ -193,7 +193,7 @@ namespace Opc.Ua.Samples.Tests
                 .ToList();
 
             await TestContext.Out
-                .WriteLineAsync($"{replayed.Count} conditions were replayed after the clear; {events.Count} events in all.")
+                .WriteLineAsync($"{replayed.Count} conditions were replayed after the clear; {events.Count} events in all.", ct)
                 .ConfigureAwait(false);
 
             // the list was cleared before it was repopulated: the first condition after
@@ -257,7 +257,7 @@ namespace Opc.Ua.Samples.Tests
 
             foreach (ConditionChangedEventArgs change in later.Events)
             {
-                await TestContext.Out.WriteLineAsync($"After the filter: {change.Change} {change.Snapshot}").ConfigureAwait(false);
+                await TestContext.Out.WriteLineAsync($"After the filter: {change.Change} {change.Snapshot}", ct).ConfigureAwait(false);
             }
 
             // a removal is the one event which is allowed to carry a severity the filter
@@ -312,7 +312,7 @@ namespace Opc.Ua.Samples.Tests
 
             ConditionKey key = listed.Snapshot.Key;
 
-            await TestContext.Out.WriteLineAsync($"Suppressing {listed.Snapshot}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Suppressing {listed.Snapshot}", ct).ConfigureAwait(false);
 
             IReadOnlyList<ConditionCallResult> results = await Model
                 .SuppressAsync(new[] { key }, true, LocalizedText.Null, ct)
@@ -335,7 +335,7 @@ namespace Opc.Ua.Samples.Tests
                     .Last(change => change.Snapshot.Key == key)
                     .Snapshot;
 
-                await TestContext.Out.WriteLineAsync($"Left the list: {left}").ConfigureAwait(false);
+                await TestContext.Out.WriteLineAsync($"Left the list: {left}", ct).ConfigureAwait(false);
 
                 Assert.That(left.Retain, Is.False, "The trailing event of a condition which left the filter carries Retain false.");
 

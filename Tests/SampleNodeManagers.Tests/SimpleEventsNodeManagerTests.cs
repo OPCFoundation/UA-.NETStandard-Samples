@@ -92,7 +92,7 @@ namespace Opc.Ua.Samples.Tests
                 "a system cycle started event",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Event: {reported}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Event: {reported}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
@@ -177,7 +177,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Cycles: {firstCycle} then {CycleNumberOf(later)}")
+                .WriteLineAsync($"Cycles: {firstCycle} then {CycleNumberOf(later)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -253,7 +253,7 @@ namespace Opc.Ua.Samples.Tests
             var record = (SystemCycleStatusEventTypeRecord)decoders.Decode(reported.RawFields);
 
             await TestContext.Out
-                .WriteLineAsync($"Decoded: {record.GetType().Name} cycle {record.CycleId}")
+                .WriteLineAsync($"Decoded: {record.GetType().Name} cycle {record.CycleId}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {

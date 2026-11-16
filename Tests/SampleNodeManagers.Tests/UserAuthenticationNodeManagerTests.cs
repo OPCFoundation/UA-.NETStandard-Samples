@@ -74,7 +74,7 @@ namespace Opc.Ua.Samples.Tests
                 $"Reading the log file path failed: {value.StatusCode}");
 
             await TestContext.Out
-                .WriteLineAsync($"The log file path is {value.WrappedValue}")
+                .WriteLineAsync($"The log file path is {value.WrappedValue}", ct)
                 .ConfigureAwait(false);
         }
 
@@ -104,7 +104,7 @@ namespace Opc.Ua.Samples.Tests
             userAccessLevel.WrappedValue.TryGetValue(out byte forThisUser);
 
             await TestContext.Out
-                .WriteLineAsync($"AccessLevel {forTheNode}, UserAccessLevel {forThisUser} for an anonymous session")
+                .WriteLineAsync($"AccessLevel {forTheNode}, UserAccessLevel {forThisUser} for an anonymous session", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -138,7 +138,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"An anonymous write answered {result}")
+                .WriteLineAsync($"An anonymous write answered {result}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -261,7 +261,7 @@ namespace Opc.Ua.Samples.Tests
 
             string contents = await File.ReadAllTextAsync(logFile, ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"The log file holds: {contents}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"The log file holds: {contents}", ct).ConfigureAwait(false);
 
             Assert.That(
                 contents,

@@ -67,7 +67,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync("The root holds: " + string.Join(", ", root.Select(directory => $"{directory.Name} ({directory.FullPath})")))
+                .WriteLineAsync("The root holds: " + string.Join(", ", root.Select(directory => $"{directory.Name} ({directory.FullPath})")), ct)
                 .ConfigureAwait(false);
 
             DirectoryEntry mount = root.FirstOrDefault(directory => directory.Name == kMount);

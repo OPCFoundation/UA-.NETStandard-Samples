@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net11.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Quickstarts.UserAuthenticationServer</RootNamespace>
     <AssemblyName>Quickstarts.UserAuthenticationServer</AssemblyName>

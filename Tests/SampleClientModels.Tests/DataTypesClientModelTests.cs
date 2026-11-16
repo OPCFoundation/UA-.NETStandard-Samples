@@ -65,7 +65,7 @@ namespace Opc.Ua.Samples.Tests
 
             string text = value.WrappedValue.ToString();
 
-            await TestContext.Out.WriteLineAsync($"PrimaryVehicle: {text}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"PrimaryVehicle: {text}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 // Make and Model come from the vehicle type of the first node set, the
@@ -112,7 +112,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(string.Join(
                     ", ",
-                    Model.DataTypes.Select(type => $"{type.Name} ({(type.FromCompiledType ? "compiled" : "browsed")})")))
+                    Model.DataTypes.Select(type => $"{type.Name} ({(type.FromCompiledType ? "compiled" : "browsed")})")), ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -180,7 +180,7 @@ namespace Opc.Ua.Samples.Tests
 
             string schema = Model.CreateSchema(Find(name), format, UaSchemaScope.Type);
 
-            await TestContext.Out.WriteLineAsync(schema).ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync(schema, ct).ConfigureAwait(false);
 
             Assert.That(schema, Does.Contain(name), $"The {format} schema does not name {name}.");
         }
@@ -197,7 +197,7 @@ namespace Opc.Ua.Samples.Tests
 
             string schema = Model.CreateSchema(Find("CarType"), UaSchemaFormat.Bsd, UaSchemaScope.Type);
 
-            await TestContext.Out.WriteLineAsync(schema).ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync(schema, ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(schema, Does.Contain("CarType"), "The schema does not describe CarType.");

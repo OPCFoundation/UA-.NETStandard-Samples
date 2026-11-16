@@ -13,7 +13,7 @@ Please follow the steps outlined [here](#contributing) to start contributing.
 
 ## Overview
 
-Sample Servers and Clients, including all required controls, targeting .NET 10, .NET 8 and .NET Framework 4.8.
+Sample Servers and Clients, including all required controls, targeting .NET 11, .NET 8 and .NET Framework 4.8.
 
 Integrates the offical OPC UA [NuGet](https://www.nuget.org/packages/OPCFoundation.NetStandard.Opc.Ua/) package containing the OPC UA reference implementation targeting [.NET Standard](https://docs.microsoft.com/en-us/dotnet/standard/net-standard).
 
@@ -23,7 +23,7 @@ Furthermore, cloud applications and services (such as ASP.Net, Azure Websites, A
 ## For more information and license terms, see [here](http://opcfoundation.github.io/UA-.NETStandard).
 
 ## Features included
-1. Sample Servers and Clients, including all required controls, for .NET 10, .NET 8 and .NET Framework 4.8.
+1. Sample Servers and Clients, including all required controls, for .NET 11, .NET 8 and .NET Framework 4.8.
 2. Sessions (including UI support in the samples).
 3. Subscriptions (including UI support in the samples).
 4. OPC UA [Aggregation Server](Workshop/Aggregation/README.md).
@@ -202,7 +202,7 @@ The console samples of this repository are the
 [NetCoreGlobalDiscoveryServer](Samples/GDS/ConsoleServer) and the
 [ConsoleLds](Samples/LDS/ConsoleServer). The Windows Forms samples need Windows.
 
-Please follow instructions in this [article](https://aka.ms/dotnetcoregs) to setup the dotnet command line environment for your platform. The .NET 10 SDK is required to build every target framework of the samples.
+Please follow instructions in this [article](https://aka.ms/dotnetcoregs) to setup the dotnet command line environment for your platform. The .NET 11 SDK is required to build every target framework of the samples.
 
 ### Prerequisites
 1. Once the `dotnet` command is available, navigate to the root folder in your local copy of the repository and execute `dotnet restore "UA Samples.slnx"`. This command calls into NuGet to restore the tree of dependencies.

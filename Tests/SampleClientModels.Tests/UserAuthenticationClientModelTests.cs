@@ -56,7 +56,7 @@ namespace Opc.Ua.Samples.Tests
             UserTokenType[] policies = Model.UserTokenPolicies.Select(policy => policy.TokenType).ToArray();
 
             await TestContext.Out
-                .WriteLineAsync("The endpoint accepts: " + string.Join(", ", policies))
+                .WriteLineAsync("The endpoint accepts: " + string.Join(", ", policies), ct)
                 .ConfigureAwait(false);
 
             Assert.That(policies, Does.Contain(UserTokenType.Anonymous));
@@ -74,7 +74,7 @@ namespace Opc.Ua.Samples.Tests
 
             DataValue plain = await SessionOps.ReadValueAsync(Session, browsed, ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"The log file path is '{path}'").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"The log file path is '{path}'", ct).ConfigureAwait(false);
 
             Assert.That(path, Is.Not.Empty, "The sample server has to publish a log file path.");
             Assert.That(path, Is.EqualTo(plain.GetValue<string>(string.Empty)), "The model does not read what a plain read reads.");
@@ -90,7 +90,7 @@ namespace Opc.Ua.Samples.Tests
 
             OperationResult written = await Model.WriteLogFilePathAsync(@".\NotAllowed.txt", ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"The write reported: {written}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"The write reported: {written}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
@@ -118,7 +118,7 @@ namespace Opc.Ua.Samples.Tests
                 .ImpersonateUserNameAsync("no-such-user-8f2c", "not the password", s_locales, ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Impersonating reported: {refused}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Impersonating reported: {refused}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(refused.Succeeded, Is.False, "An account the server cannot verify must not be reported as a success.");

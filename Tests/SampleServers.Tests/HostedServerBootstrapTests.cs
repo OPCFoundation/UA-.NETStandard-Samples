@@ -87,7 +87,7 @@ namespace Opc.Ua.Samples.Tests
                     .ToArray();
 
                 await TestContext.Out.WriteLineAsync(
-                    $"BoilerHostedBootstrap: endpoints -> {string.Join(", ", endpoints)}")
+                    $"BoilerHostedBootstrap: endpoints -> {string.Join(", ", endpoints)}", ct)
                     .ConfigureAwait(false);
 
                 Assert.That(endpoints, Is.Not.Empty, "The started server offers no endpoints.");
@@ -188,7 +188,7 @@ namespace Opc.Ua.Samples.Tests
                     "Starting without a configuration file must fail the start of the host.").ConfigureAwait(false);
 
                 await TestContext.Out.WriteLineAsync(
-                    $"BoilerHostedBootstrap: startup failure -> {failure.Message}")
+                    $"BoilerHostedBootstrap: startup failure -> {failure.Message}", ct)
                     .ConfigureAwait(false);
             }
             finally

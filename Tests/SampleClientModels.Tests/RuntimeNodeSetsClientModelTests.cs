@@ -93,7 +93,7 @@ namespace Opc.Ua.Samples.Tests
             IReadOnlyList<VendorNode> nodes = await Model.BrowseVendorModelAsync(ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync("Revision 1: " + string.Join(", ", nodes.Select(node => node.Name)))
+                .WriteLineAsync("Revision 1: " + string.Join(", ", nodes.Select(node => node.Name)), ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -263,7 +263,7 @@ namespace Opc.Ua.Samples.Tests
                 .WriteLineAsync("Site: " + string.Join(
                     ", ",
                     nodes.Select(node =>
-                        $"{node.Name}{(node.DeclaredByType ? string.Empty : " (from the document)")}")))
+                        $"{node.Name}{(node.DeclaredByType ? string.Empty : " (from the document)")}")), ct)
                 .ConfigureAwait(false);
 
             IReadOnlyList<string> undeclared = nodes

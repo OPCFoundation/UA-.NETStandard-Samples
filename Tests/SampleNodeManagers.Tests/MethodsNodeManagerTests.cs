@@ -121,7 +121,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Start() -> {noArguments.StatusCode}, Start(1) -> {oneArgument.StatusCode}")
+                .WriteLineAsync($"Start() -> {noArguments.StatusCode}, Start(1) -> {oneArgument.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -166,7 +166,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Start(\"...\", \"...\") -> {result.StatusCode}, " +
-                    $"per argument: {string.Join(", ", result.InputArgumentResults.ToArray().Select(code => code.ToString()))}")
+                    $"per argument: {string.Join(", ", result.InputArgumentResults.ToArray().Select(code => code.ToString()))}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(

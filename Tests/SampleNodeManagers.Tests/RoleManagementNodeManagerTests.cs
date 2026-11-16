@@ -71,7 +71,7 @@ namespace Opc.Ua.Samples.Tests
         /// The identity mapping rule the server adds for the workstation certificate at
         /// startup, which two of the fixtures below take away and put back.
         /// </summary>
-        private static IdentityMappingRuleType WorkstationRule => new IdentityMappingRuleType {
+        private static IdentityMappingRuleType CreateWorkstationRule() => new IdentityMappingRuleType {
             CriteriaType = IdentityCriteriaType.X509Subject,
             Criteria = Quickstarts.RoleManagement.Server.SampleUsers.WorkstationCertificateSubject,
         };
@@ -112,7 +112,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"An anonymous read of the temperature answered {value.StatusCode}")
+                .WriteLineAsync($"An anonymous read of the temperature answered {value.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -148,7 +148,7 @@ namespace Opc.Ua.Samples.Tests
 
             await TestContext.Out
                 .WriteLineAsync(
-                    $"An Observer read {read.StatusCode}, wrote {write}, called Reset -> {call.StatusCode}")
+                    $"An Observer read {read.StatusCode}, wrote {write}, called Reset -> {call.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -355,7 +355,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"AddIdentity as an Engineer -> {byEngineer.StatusCode}, " +
-                    $"as a SecurityAdmin without encryption -> {unencrypted.StatusCode}")
+                    $"as a SecurityAdmin without encryption -> {unencrypted.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -422,7 +422,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync($"The write of the open guest session answered {granted} after the grant")
+                    .WriteLineAsync($"The write of the open guest session answered {granted} after the grant", ct)
                     .ConfigureAwait(false);
 
                 Assert.That(
@@ -585,7 +585,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Unencrypted, browsing the maintenance note answered {browsedUnencrypted}")
+                .WriteLineAsync($"Unencrypted, browsing the maintenance note answered {browsedUnencrypted}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -609,7 +609,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Unencrypted, an Engineer read the calibration {refusedRead.StatusCode} " +
-                    $"and wrote it {refusedWrite}")
+                    $"and wrote it {refusedWrite}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -694,7 +694,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"The workstation certificate says {workstation.ApplicationCertificateSubject}, " +
-                    $"and the server was configured with {WorkstationRule.Criteria}")
+                    $"and the server was configured with {CreateWorkstationRule().Criteria}", ct)
                 .ConfigureAwait(false);
 
             IReadOnlyList<string> asWorkstation = await SessionOps
@@ -878,14 +878,14 @@ namespace Opc.Ua.Samples.Tests
                 Does.Not.Contain("ServiceCode"),
                 "Before the flag is set the Role is granted by its identity rule only.");
 
-            CallMethodResult removed = await RemoveIdentityAsync(admin, WorkstationRole, WorkstationRule, ct)
+            CallMethodResult removed = await RemoveIdentityAsync(admin, WorkstationRole, CreateWorkstationRule(), ct)
                 .ConfigureAwait(false);
 
             Assert.That(
                 StatusCode.IsGood(removed.StatusCode),
                 Is.True,
                 $"Removing the X509Subject rule the server configured failed: {removed.StatusCode}. " +
-                $"The rule was '{WorkstationRule.Criteria}'.");
+                $"The rule was '{CreateWorkstationRule().Criteria}'.");
 
             try
             {
@@ -921,7 +921,7 @@ namespace Opc.Ua.Samples.Tests
             }
             finally
             {
-                CallMethodResult restored = await AddIdentityAsync(admin, WorkstationRole, WorkstationRule, ct)
+                CallMethodResult restored = await AddIdentityAsync(admin, WorkstationRole, CreateWorkstationRule(), ct)
                     .ConfigureAwait(false);
 
                 Assert.That(
@@ -1008,7 +1008,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync($"The server audited: {reported}")
+                    .WriteLineAsync($"The server audited: {reported}", ct)
                     .ConfigureAwait(false);
 
                 Assert.Multiple(() => {

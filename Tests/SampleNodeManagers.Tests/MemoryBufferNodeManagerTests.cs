@@ -69,7 +69,7 @@ namespace Opc.Ua.Samples.Tests
             IReadOnlyList<string> tags = await BrowseNamesAsync(buffer, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The UInt32 buffer browses into {tags.Count} entries.")
+                .WriteLineAsync($"The UInt32 buffer browses into {tags.Count} entries.", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -90,7 +90,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"{Tag("UInt32", 0)} = {value.WrappedValue} ({value.StatusCode})")
+                .WriteLineAsync($"{Tag("UInt32", 0)} = {value.WrappedValue} ({value.StatusCode})", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -125,7 +125,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"past the end: {pastTheEnd.StatusCode}, malformed: {malformed.StatusCode}, " +
-                    $"unknown buffer: {unknownBuffer.StatusCode}")
+                    $"unknown buffer: {unknownBuffer.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -179,7 +179,7 @@ namespace Opc.Ua.Samples.Tests
 
             await TestContext.Out
                 .WriteLineAsync(
-                    $"filter: {withFilter}, index range: {withIndexRange}, encoding: {withEncoding}")
+                    $"filter: {withFilter}, index range: {withIndexRange}, encoding: {withEncoding}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {

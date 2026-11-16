@@ -51,7 +51,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out.WriteLineAsync(
-                $"Lds: FindServers -> {string.Join(", ", servers.ConvertAll(server => server.ApplicationUri))}")
+                $"Lds: FindServers -> {string.Join(", ", servers.ConvertAll(server => server.ApplicationUri))}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(servers.ToArray(), Is.Not.Empty, "The discovery server returned no applications at all.");
@@ -79,7 +79,7 @@ namespace Opc.Ua.Samples.Tests
                 .EnsureApplicationCertificateAsync(sample.ServerConfig, ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"GdsConsole: certificate {certificate}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"GdsConsole: certificate {certificate}", ct).ConfigureAwait(false);
 
             await using ConsoleSampleProcess gds = await ConsoleSampleProcess.StartAsync(
                 sample.ServerProject,
@@ -99,7 +99,7 @@ namespace Opc.Ua.Samples.Tests
 
             string[] namespaces = client.Session.NamespaceUris.ToArray();
 
-            await TestContext.Out.WriteLineAsync($"GdsConsole: namespaces -> {string.Join(", ", namespaces)}")
+            await TestContext.Out.WriteLineAsync($"GdsConsole: namespaces -> {string.Join(", ", namespaces)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(

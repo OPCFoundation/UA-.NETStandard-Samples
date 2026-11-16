@@ -143,7 +143,7 @@ namespace Opc.Ua.Samples.Tests
                 string value = SampleFormDriver.AttributeText(attributes, "Value");
 
                 await TestContext.Out
-                    .WriteLineAsync($"The client shows DataType '{dataType}' and Value '{value}'")
+                    .WriteLineAsync($"The client shows DataType '{dataType}' and Value '{value}'", token)
                     .ConfigureAwait(true);
 
                 Assert.Multiple(() => {
@@ -231,7 +231,7 @@ namespace Opc.Ua.Samples.Tests
                     "the control a node which is not historized.");
 
                 await TestContext.Out
-                    .WriteLineAsync($"read type after pointing at the item: {history.ReadType}")
+                    .WriteLineAsync($"read type after pointing at the item: {history.ReadType}", token)
                     .ConfigureAwait(true);
 
                 string[] columns = results.Columns
@@ -240,7 +240,7 @@ namespace Opc.Ua.Samples.Tests
                     .ToArray();
 
                 await TestContext.Out
-                    .WriteLineAsync($"columns: {string.Join(", ", columns)}")
+                    .WriteLineAsync($"columns: {string.Join(", ", columns)}", token)
                     .ConfigureAwait(true);
 
                 string[] values = results.Rows
@@ -250,7 +250,7 @@ namespace Opc.Ua.Samples.Tests
                     .ToArray();
 
                 await TestContext.Out
-                    .WriteLineAsync($"{results.Rows.Count} rows, the first are: {string.Join("; ", values)}")
+                    .WriteLineAsync($"{results.Rows.Count} rows, the first are: {string.Join("; ", values)}", token)
                     .ConfigureAwait(true);
 
                 Assert.That(
@@ -301,7 +301,7 @@ namespace Opc.Ua.Samples.Tests
                     token).ConfigureAwait(true);
 
                 await TestContext.Out
-                    .WriteLineAsync($"The client reports {messages.Text} messages and {updates.Text} item updates")
+                    .WriteLineAsync($"The client reports {messages.Text} messages and {updates.Text} item updates", token)
                     .ConfigureAwait(true);
 
                 Assert.That(
@@ -417,7 +417,7 @@ namespace Opc.Ua.Samples.Tests
                 await TestContext.Out
                     .WriteLineAsync(
                         $"{SampleFormDriver.BrowseNameOf(scalar)}: " +
-                        SampleFormDriver.AttributesSeen(attributes))
+                        SampleFormDriver.AttributesSeen(attributes), token)
                     .ConfigureAwait(true);
 
                 Assert.Multiple(() => {
@@ -483,7 +483,7 @@ namespace Opc.Ua.Samples.Tests
                     "to be showing one. An empty box means that read never came back.");
 
                 await TestContext.Out
-                    .WriteLineAsync($"The client read the log file path '{path.Text}'")
+                    .WriteLineAsync($"The client read the log file path '{path.Text}'", token)
                     .ConfigureAwait(true);
 
                 phase.Enter("writing the log file path as an anonymous session");
@@ -503,7 +503,7 @@ namespace Opc.Ua.Samples.Tests
                 Assert.That(answered, Is.True, "Writing the log file path never reported an outcome.");
 
                 await TestContext.Out
-                    .WriteLineAsync($"The write reported: {Reported(form)}")
+                    .WriteLineAsync($"The write reported: {Reported(form)}", token)
                     .ConfigureAwait(true);
 
                 Assert.That(
@@ -538,7 +538,7 @@ namespace Opc.Ua.Samples.Tests
                 Assert.That(refused, Is.True, "Impersonating never reported an outcome.");
 
                 await TestContext.Out
-                    .WriteLineAsync($"Impersonating reported: {Reported(form)}")
+                    .WriteLineAsync($"Impersonating reported: {Reported(form)}", token)
                     .ConfigureAwait(true);
 
                 Assert.Multiple(() => {
@@ -605,7 +605,7 @@ namespace Opc.Ua.Samples.Tests
                 string[] unfiltered = ChildrenIn(flow, engineering).Concat(ChildrenIn(flow, operations)).ToArray();
 
                 await TestContext.Out
-                    .WriteLineAsync($"Without a view the flow meter shows: {SampleFormDriver.ChildrenOf(flow)}")
+                    .WriteLineAsync($"Without a view the flow meter shows: {SampleFormDriver.ChildrenOf(flow)}", token)
                     .ConfigureAwait(true);
 
                 // the baseline the filtered browse is compared against: if this ever stops
@@ -656,7 +656,7 @@ namespace Opc.Ua.Samples.Tests
 
                 await TestContext.Out
                     .WriteLineAsync(
-                        $"Through the engineering view it shows: {SampleFormDriver.ChildrenOf(flow)}")
+                        $"Through the engineering view it shows: {SampleFormDriver.ChildrenOf(flow)}", token)
                     .ConfigureAwait(true);
 
                 Assert.Multiple(() => {
@@ -723,7 +723,7 @@ namespace Opc.Ua.Samples.Tests
                 string condition = row.SubItems[kConditionColumn].Text;
 
                 await TestContext.Out
-                    .WriteLineAsync($"Silencing '{row.SubItems[kSourceColumn].Text}/{condition}'")
+                    .WriteLineAsync($"Silencing '{row.SubItems[kSourceColumn].Text}/{condition}'", token)
                     .ConfigureAwait(true);
 
                 phase.Enter("silencing the alarm through the condition menu");
@@ -744,7 +744,7 @@ namespace Opc.Ua.Samples.Tests
                     token).ConfigureAwait(true);
 
                 await TestContext.Out
-                    .WriteLineAsync($"'{condition}' now reports: {FlagsOf(conditions, condition)}")
+                    .WriteLineAsync($"'{condition}' now reports: {FlagsOf(conditions, condition)}", token)
                     .ConfigureAwait(true);
 
                 Assert.That(
@@ -793,7 +793,7 @@ namespace Opc.Ua.Samples.Tests
                 string first = NewestTimeIn(conditions);
 
                 await TestContext.Out
-                    .WriteLineAsync($"{conditions.Items.Count} conditions, newest at {first}")
+                    .WriteLineAsync($"{conditions.Items.Count} conditions, newest at {first}", token)
                     .ConfigureAwait(true);
 
                 phase.Enter("watching the list for a while");
@@ -806,7 +806,7 @@ namespace Opc.Ua.Samples.Tests
                     token).ConfigureAwait(true);
 
                 await TestContext.Out
-                    .WriteLineAsync($"{conditions.Items.Count} conditions, newest at {NewestTimeIn(conditions)}")
+                    .WriteLineAsync($"{conditions.Items.Count} conditions, newest at {NewestTimeIn(conditions)}", token)
                     .ConfigureAwait(true);
 
                 Assert.That(
@@ -926,7 +926,7 @@ namespace Opc.Ua.Samples.Tests
             {
                 await TestContext.Out.WriteLineAsync(
                     $"{sampleName}: while the form was being disposed - " +
-                    string.Join("; ", watchdog.DuringTeardown))
+                    string.Join("; ", watchdog.DuringTeardown), ct)
                     .ConfigureAwait(false);
             }
         }

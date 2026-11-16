@@ -92,7 +92,7 @@ namespace Opc.Ua.Samples.Tests
             notifier.WrappedValue.TryGetValue(out byte flags);
 
             await TestContext.Out
-                .WriteLineAsync($"EventNotifier of the platforms object: {flags}")
+                .WriteLineAsync($"EventNotifier of the platforms object: {flags}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -139,7 +139,7 @@ namespace Opc.Ua.Samples.Tests
                 "a well test report carrying the well it belongs to",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Event: {reported}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Event: {reported}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
@@ -176,7 +176,7 @@ namespace Opc.Ua.Samples.Tests
                 ct: ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The event history holds {outcome.Events.Count} events.")
+                .WriteLineAsync($"The event history holds {outcome.Events.Count} events.", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -214,7 +214,7 @@ namespace Opc.Ua.Samples.Tests
 
             await TestContext.Out
                 .WriteLineAsync(
-                    $"Asking for one event returned {first.Events.Count}, continued: {first.HasMore}")
+                    $"Asking for one event returned {first.Events.Count}, continued: {first.HasMore}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -272,7 +272,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Inserting a report: {result} / {string.Join(", ", perEvent)}")
+                .WriteLineAsync($"Inserting a report: {result} / {string.Join(", ", perEvent)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -311,7 +311,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Inserting the same report again: {string.Join(", ", perEvent)}")
+                .WriteLineAsync($"Inserting the same report again: {string.Join(", ", perEvent)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -348,7 +348,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Deleting the report again: {result} / {string.Join(", ", perEvent)}")
+                .WriteLineAsync($"Deleting the report again: {result} / {string.Join(", ", perEvent)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -393,7 +393,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Replacing the report: {result} / {string.Join(", ", perEvent)}")
+                .WriteLineAsync($"Replacing the report: {result} / {string.Join(", ", perEvent)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -432,7 +432,7 @@ namespace Opc.Ua.Samples.Tests
             NodeId platforms = await ResolvePlatformsAsync(ct).ConfigureAwait(false);
 
             await using TestClient writer = await TestClient
-                .ConnectEncryptedAsync(EndpointUrl, "event history auditor", AuditorIdentity, ct)
+                .ConnectEncryptedAsync(EndpointUrl, "event history auditor", CreateAuditorIdentity(), ct)
                 .ConfigureAwait(false);
 
             await writer.Session.FetchNamespaceTablesAsync(ct).ConfigureAwait(false);
@@ -472,7 +472,7 @@ namespace Opc.Ua.Samples.Tests
                     ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"The server audited the delete: {reported}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"The server audited the delete: {reported}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
@@ -503,7 +503,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Deleting an unknown event: {result} / {string.Join(", ", perEvent)}")
+                .WriteLineAsync($"Deleting an unknown event: {result} / {string.Join(", ", perEvent)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -543,7 +543,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync($"{capability}: {value.WrappedValue}")
+                    .WriteLineAsync($"{capability}: {value.WrappedValue}", ct)
                     .ConfigureAwait(false);
 
                 Assert.That(

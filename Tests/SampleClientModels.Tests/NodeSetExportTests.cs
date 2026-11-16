@@ -66,7 +66,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Exported {result.NodeCount} nodes of [{string.Join(", ", result.NamespaceUris)}].")
+                .WriteLineAsync($"Exported {result.NodeCount} nodes of [{string.Join(", ", result.NamespaceUris)}].", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {

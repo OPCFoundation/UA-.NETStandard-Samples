@@ -323,7 +323,7 @@ namespace Opc.Ua.Samples.Tests
             {
                 await TestContext.Out.WriteLineAsync(
                     $"{client.Sample.Name}: while the form was being disposed - " +
-                    string.Join("; ", watchdog.DuringTeardown))
+                    string.Join("; ", watchdog.DuringTeardown), ct)
                     .ConfigureAwait(false);
             }
         }

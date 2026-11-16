@@ -91,7 +91,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The model read {values.Count} values of {item}.")
+                .WriteLineAsync($"The model read {values.Count} values of {item}.", ct)
                 .ConfigureAwait(false);
 
             Assert.That(values, Is.Not.Empty, "The sample archive has values in it.");
@@ -200,7 +200,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     "Modified history at our timestamp: " +
-                    string.Join(" | ", ofOurs.Select(entry => $"{entry.Info.UpdateType} at {entry.Info.ModificationTime:O} by {entry.Info.UserName}")))
+                    string.Join(" | ", ofOurs.Select(entry => $"{entry.Info.UpdateType} at {entry.Info.ModificationTime:O} by {entry.Info.UserName}")), ct)
                 .ConfigureAwait(false);
 
             Assert.That(ofOurs, Has.Count.EqualTo(2), "The insert and the delete both left a record.");
@@ -232,7 +232,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Configuration of the Double item: stepped {configuration.Stepped}, " +
-                    $"min interval {configuration.MinTimeInterval}, start of archive {configuration.StartOfArchive:O}")
+                    $"min interval {configuration.MinTimeInterval}, start of archive {configuration.StartOfArchive:O}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -252,7 +252,7 @@ namespace Opc.Ua.Samples.Tests
 
             HistoryServerCapabilitiesInfo capabilities = await Model.ReadCapabilitiesAsync(ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Capabilities: {capabilities}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Capabilities: {capabilities}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(capabilities.AccessHistoryData, Is.True, "The server serves data history.");
@@ -293,7 +293,7 @@ namespace Opc.Ua.Samples.Tests
                     ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Audited: {audited.Record}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Audited: {audited.Record}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(audited.Record.EventType, Is.EqualTo(ObjectTypeIds.AuditHistoryValueUpdateEventType), "A value update is audited as such.");

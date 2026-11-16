@@ -61,15 +61,6 @@ namespace Opc.Ua.Client.Controls
             ItemsLV.ListViewItemSorter = new BaseListCtrlSorter(this);
         }
 
-        /// <summary>
-        /// The ListView contained in the control.
-        /// </summary>
-        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
-        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
-        protected System.Windows.Forms.ListView ItemsLV;
-        #pragma warning restore CA1051
-        #pragma warning restore CA2213
-
         #region Public Interface
         /// <summary>
         /// Whether the control should allow items to be dragged.

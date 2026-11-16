@@ -372,7 +372,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Production/CurrentState while Off -> {suspended.StatusCode}, " +
-                    $"StartBatch() -> {refused.StatusCode}")
+                    $"StartBatch() -> {refused.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -551,7 +551,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Start() while Off -> {result.StatusCode}")
+                .WriteLineAsync($"Start() while Off -> {result.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             string state = await ReadOperationStateNameAsync(ct).ConfigureAwait(false);
@@ -586,7 +586,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Start() with the interlock open -> {refused.StatusCode}")
+                .WriteLineAsync($"Start() with the interlock open -> {refused.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             string afterVeto = await ReadOperationStateNameAsync(ct).ConfigureAwait(false);
@@ -708,7 +708,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Reported: {reported}")
+                .WriteLineAsync($"Reported: {reported}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(

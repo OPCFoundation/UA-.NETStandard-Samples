@@ -96,7 +96,7 @@ namespace Opc.Ua.Samples.Tests
             DataValue after = await SessionOps.ReadValueAsync(Session, value, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Int32Value was {before.WrappedValue}, wrote {written}, read {after.WrappedValue}")
+                .WriteLineAsync($"Int32Value was {before.WrappedValue}, wrote {written}, read {after.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -175,7 +175,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Historizing: dynamic Int32 {onArchived.WrappedValue}, " +
-                    $"dynamic Double {onOther.WrappedValue}, static Int32 {onStatic.WrappedValue}")
+                    $"dynamic Double {onOther.WrappedValue}, static Int32 {onStatic.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -239,7 +239,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The archive returned {values.Count} samples for the last hour.")
+                .WriteLineAsync($"The archive returned {values.Count} samples for the last hour.", ct)
                 .ConfigureAwait(false);
 
             Assert.That(values, Is.Not.Empty, "The archive holds samples for the last hour.");
@@ -307,7 +307,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Between {samples[1].WrappedValue} at {before:O} and {samples[2].WrappedValue} at {after:O} " +
-                    $"the read at {between:O} answers {outcome.Values[0].WrappedValue} ({outcome.Values[0].StatusCode})")
+                    $"the read at {between:O} answers {outcome.Values[0].WrappedValue} ({outcome.Values[0].StatusCode})", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -363,7 +363,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Average per minute over ten minutes: {outcome.StatusCode}, " +
-                    $"{outcome.Values.Count} values from {samples.Count} samples")
+                    $"{outcome.Values.Count} values from {samples.Count} samples", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
