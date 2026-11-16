@@ -90,7 +90,7 @@ namespace Quickstarts.HistoricalAccessServer
     /// value.
     /// </para>
     /// </remarks>
-    public class HistoricalAccessServerNodeManager : FluentNodeManagerBase
+    public class HistoricalAccessServerNodeManager : FluentNodeManagerBase, INodeManagerReadinessNotification
     {
         #region Constructors
         /// <summary>
@@ -181,6 +181,20 @@ namespace Quickstarts.HistoricalAccessServer
         #endregion
 
         #region INodeManager Members
+        /// <summary>
+        /// Nothing left to initialize once the server is ready.
+        /// </summary>
+        /// <remarks>
+        /// The historians registered in <see cref="CreateAddressSpaceAsync"/> are only
+        /// staged while the address space is prepared; the server publishes them when
+        /// it notifies the readiness of the node manager, and since SDK 2.0.2 it refuses
+        /// to start a node manager with staged historians which is not notified.
+        /// </remarks>
+        public ValueTask OnServerReadyAsync(CancellationToken cancellationToken)
+        {
+            return default;
+        }
+
         /// <summary>
         /// Does any initialization required before the address space can be used.
         /// </summary>

@@ -154,8 +154,8 @@ namespace Opc.Ua.Gds.Client.Controls
             this.HintLabel.Padding = new System.Windows.Forms.Padding(6, 0, 6, 4);
             this.HintLabel.Size = new System.Drawing.Size(684, 32);
             this.HintLabel.TabIndex = 8;
-            this.HintLabel.Text = "A ticket is an opaque blob issued by the device manufacturer. The sample registrar " +
-                "stores it verbatim and keys it by its SHA-256 hash, so any file can stand in for one.";
+            this.HintLabel.Text = "A ticket is the signed text issued by the device manufacturer. The sample registrar " +
+                "stores it verbatim and keys it by its SHA-256 hash, so any UTF-8 text file can stand in for one.";
             //
             // RegistrarLabel
             //

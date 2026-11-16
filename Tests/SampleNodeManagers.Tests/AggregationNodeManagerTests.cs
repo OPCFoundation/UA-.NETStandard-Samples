@@ -158,7 +158,8 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false),
                 names => names.Count > 0,
                 "the aggregation server to connect downstream and serve the proxied address space",
-                timeout: TimeSpan.FromSeconds(45)).ConfigureAwait(false);
+                timeout: TimeSpan.FromSeconds(45),
+                ct: ct).ConfigureAwait(false);
 
             await TestContext.Out
                 .WriteLineAsync($"Through the proxy: {string.Join(", ", m_passThroughNames)}")

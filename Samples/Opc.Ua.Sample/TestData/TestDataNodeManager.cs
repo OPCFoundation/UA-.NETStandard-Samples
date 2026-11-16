@@ -57,8 +57,24 @@ namespace TestData
     [NodeManager(
         NamespaceUri = "http://test.org/UA/Data/",
         AdditionalNamespaceUris = new[] { "http://test.org/UA/Data/Instance" })]
-    public partial class TestDataNodeManager : ITestDataSystemCallback
+    public partial class TestDataNodeManager : ITestDataSystemCallback, INodeManagerReadinessNotification
     {
+        #region INodeManagerReadinessNotification Members
+        /// <summary>
+        /// Nothing left to initialize once the server is ready.
+        /// </summary>
+        /// <remarks>
+        /// The historian registered while the address space is prepared is only staged;
+        /// the server publishes it when it notifies the readiness of the node manager,
+        /// and since SDK 2.0.2 it refuses to start a node manager with a staged
+        /// historian which is not notified.
+        /// </remarks>
+        public ValueTask OnServerReadyAsync(CancellationToken cancellationToken)
+        {
+            return default;
+        }
+        #endregion
+
         #region Address Space Creation
         /// <summary>
         /// Creates the test system the predefined nodes are loaded against.

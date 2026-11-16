@@ -108,7 +108,6 @@ namespace Opc.Ua.Samples.Tests
                 Clients = [
                     new ReverseConnectClient {
                         EndpointUrl = m_clientUrl.ToString(),
-                        MaxSessionCount = 0,
                         Enabled = true,
                     }
                 ],

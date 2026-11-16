@@ -115,16 +115,6 @@ namespace Quickstarts.RuntimeNodeSets.Server
         /// <summary>
         /// The options which publish a revision of the vendor model.
         /// </summary>
-        /// <remarks>
-        /// <see cref="RuntimeNodeSetOptions.AllowLifecycleFromRequestCallback"/> is what
-        /// lets the <c>Load</c>, <c>Reload</c> and <c>Remove</c> Methods of the control
-        /// model act on this registration: without it the lifecycle refuses an operation
-        /// which was started from a Client request, because it would wait for the very
-        /// request that started it to complete. It is safe here for the reason the SDK
-        /// names - the Methods are served by the control node manager, which is a
-        /// different, stable one - and it would deadlock if the Methods lived on the
-        /// vendor model itself.
-        /// </remarks>
         /// <param name="revision">One of <see cref="Revisions"/>.</param>
         public RuntimeNodeSetOptions VendorOptions(string revision)
         {
@@ -132,7 +122,6 @@ namespace Quickstarts.RuntimeNodeSets.Server
             {
                 Sources = [RuntimeNodeSetSource.FromFile(FilePath(revision))],
                 DefaultNamespaceUri = VendorNamespaceUri,
-                AllowLifecycleFromRequestCallback = true,
             };
         }
 
