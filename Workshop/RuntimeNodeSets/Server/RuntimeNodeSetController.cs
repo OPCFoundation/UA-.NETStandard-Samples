@@ -27,10 +27,10 @@ namespace Quickstarts.RuntimeNodeSets.Server
     /// </summary>
     public enum ReloadMode
     {
-        /// <summary>Drain the requests in flight, then swap.</summary>
+        /// <summary>Swap, and migrate the monitored items whose node still exists (since SDK 2.0.2 the same as <see cref="ShadowReload"/>).</summary>
         Reload = 0,
 
-        /// <summary>Swap for new requests, let the old generation keep its monitored items.</summary>
+        /// <summary>Swap, and migrate the monitored items whose node still exists.</summary>
         ShadowReload = 1,
 
         /// <summary>Swap at once and invalidate the monitored items of the old generation.</summary>
@@ -52,12 +52,11 @@ namespace Quickstarts.RuntimeNodeSets.Server
     /// only a registration the lifecycle made can be handed back to it.
     /// </para>
     /// <para>
-    /// A lifecycle operation waits for the requests in flight to drain. A Method call is
-    /// a request, so the operations below would wait for themselves if the Method and the
-    /// model being replaced were served by the same node manager. They are not: the
-    /// Methods are on the control model, which is never reloaded, and the vendor options
-    /// set <see cref="RuntimeNodeSetOptions.AllowLifecycleFromRequestCallback"/> so that
-    /// the lifecycle excludes the initiating request from the drain.
+    /// A lifecycle commit waits for reconciliation and readiness, but not for the requests
+    /// in flight to drain: the generation it replaces is retired asynchronously. A Method
+    /// call can therefore start one without waiting for itself, and needs no caller
+    /// context. The Methods still live on the control model, which is never reloaded, so
+    /// that a reload never replaces the node manager serving the call that asked for it.
     /// </para>
     /// </remarks>
     public sealed class RuntimeNodeSetController : IServerStartupTask
@@ -150,7 +149,6 @@ namespace Quickstarts.RuntimeNodeSets.Server
         {
             m_vendor = await m_lifecycle.AddRuntimeNodeSetAsync(
                 m_library.VendorOptions(RuntimeNodeSetLibrary.InitialRevision),
-                callerContext: null,
                 cancellationToken).ConfigureAwait(false);
 
             m_revision = RuntimeNodeSetLibrary.InitialRevision;
@@ -252,7 +250,6 @@ namespace Quickstarts.RuntimeNodeSets.Server
 
                 m_vendor = await m_lifecycle.AddRuntimeNodeSetAsync(
                     m_library.VendorOptions(revision),
-                    context.GetOperationContext(),
                     cancellationToken).ConfigureAwait(false);
 
                 m_revision = revision;
@@ -306,11 +303,10 @@ namespace Quickstarts.RuntimeNodeSets.Server
                 }
 
                 RuntimeNodeSetOptions replacement = m_library.VendorOptions(revision);
-                IOperationContext caller = context.GetOperationContext();
 
-                // the three modes differ only in what happens to the MonitoredItems of
-                // the generation being replaced, and the two which keep serving them do
-                // not take a caller context: they never wait for the requests in flight.
+                // the modes differ only in what happens to the MonitoredItems of the
+                // generation being replaced. None of them waits for the requests in
+                // flight, so a Method call may start one without deadlocking.
                 m_vendor = mode switch {
                     ReloadMode.ShadowReload => await m_lifecycle
                         .ShadowReloadRuntimeNodeSetAsync(m_vendor, replacement, cancellationToken)
@@ -319,7 +315,7 @@ namespace Quickstarts.RuntimeNodeSets.Server
                         .ImmediateReloadRuntimeNodeSetAsync(m_vendor, replacement, cancellationToken)
                         .ConfigureAwait(false),
                     _ => await m_lifecycle
-                        .ReloadRuntimeNodeSetAsync(m_vendor, replacement, caller, cancellationToken)
+                        .ReloadRuntimeNodeSetAsync(m_vendor, replacement, cancellationToken)
                         .ConfigureAwait(false),
                 };
 
@@ -369,7 +365,6 @@ namespace Quickstarts.RuntimeNodeSets.Server
 
                 await m_lifecycle.RemoveAsync(
                     m_vendor,
-                    context.GetOperationContext(),
                     cancellationToken).ConfigureAwait(false);
 
                 string removed = m_revision;

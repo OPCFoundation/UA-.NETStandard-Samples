@@ -80,10 +80,6 @@ namespace Opc.Ua.Gds.Server
     public class SampleGlobalDiscoveryServer : GlobalDiscoverySampleServer
     {
         private readonly GlobalDiscoveryServerAliasMerger m_merger;
-        private readonly IApplicationsDatabase m_database;
-        private readonly ICertificateRequest m_request;
-        private readonly ICertificateGroup m_certificateGroup;
-        private readonly bool m_autoApprove;
         private readonly ServerConfigurationOptions m_serverConfigurationOptions;
 
         /// <summary>
@@ -117,10 +113,6 @@ namespace Opc.Ua.Gds.Server
             : base(database, request, certificateGroup, userDatabase, telemetry, autoApprove)
         {
             m_merger = merger ?? throw new ArgumentNullException(nameof(merger));
-            m_database = database;
-            m_request = request;
-            m_certificateGroup = certificateGroup;
-            m_autoApprove = autoApprove;
             m_serverConfigurationOptions = serverConfigurationOptions;
         }
 
@@ -129,49 +121,6 @@ namespace Opc.Ua.Gds.Server
         {
             base.OnServerStarted(server);
             m_merger.RegisterWithServer(server);
-        }
-
-        /// <summary>
-        /// Creates the GDS node manager and, alongside it, the node managers of the
-        /// factories registered with the server: the <c>ManagedApplications</c> and the
-        /// onboarding-registrar node managers the host registers.
-        /// </summary>
-        /// <remarks>
-        /// The base class builds the <c>MasterNodeManager</c> with the GDS
-        /// <c>ApplicationsNodeManager</c> alone and ignores the node manager factories
-        /// registered with the server, so the list is rebuilt here: the GDS node manager
-        /// first, then one node manager per registered factory, the way
-        /// <see cref="StandardServer"/> creates them.
-        /// </remarks>
-        protected override async ValueTask<IMasterNodeManager> CreateMasterNodeManagerAsync(
-            IServerInternal server,
-            ApplicationConfiguration configuration,
-            CancellationToken cancellationToken = default)
-        {
-            var nodeManagers = new List<IAsyncNodeManager> {
-                new ApplicationsNodeManager(
-                    server,
-                    configuration,
-                    m_database,
-                    m_request,
-                    m_certificateGroup,
-                    m_autoApprove)
-            };
-
-            foreach (INodeManagerFactory factory in NodeManagerFactories)
-            {
-                nodeManagers.Add(factory.Create(server, configuration).ToAsyncNodeManager());
-            }
-
-            foreach (IAsyncNodeManagerFactory factory in AsyncNodeManagerFactories)
-            {
-                nodeManagers.Add(
-                    await factory.CreateAsync(server, configuration, cancellationToken).ConfigureAwait(false));
-            }
-
-            #pragma warning disable CA2000 // Justification: ownership of the MasterNodeManager transfers to the caller.
-            return new MasterNodeManager(server, configuration, null, nodeManagers.ToArray());
-            #pragma warning restore CA2000
         }
 
         /// <summary>

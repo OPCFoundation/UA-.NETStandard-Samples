@@ -135,8 +135,12 @@ namespace Opc.Ua.Gds.Server
             registrar.AddChild(unregister);
 
             // one call wires both Methods to the store: the SDK matches the two children by
-            // BrowseName and installs its own handlers.
+            // BrowseName and installs its own handlers. Without a ticket validator this
+            // overload refuses every ticket with BadConfigurationError since SDK 2.0.2 -
+            // validating signed Part 21 tickets is issue #939.
+#pragma warning disable CS0618 // Justification: replaced by the validator overload in #939.
             registrar.BindToTicketStore(m_ticketStore);
+#pragma warning restore CS0618
 
             ResetOutputArgumentsBeforeCall(register);
             ResetOutputArgumentsBeforeCall(unregister);
@@ -157,19 +161,21 @@ namespace Opc.Ua.Gds.Server
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Three details are dictated by the SDK rather than by Part 21, and they let both
+        /// Two details are dictated by the SDK rather than by Part 21, and they let both
         /// client generations call the Methods. The NodeId is the type-declaration MethodId
         /// of the Onboarding companion model, because the current generated
         /// <c>OnboardingClient</c> calls that id on the wrapped instance directly - which
         /// OPC UA Part 4 permits - and this hand-built registrar has no instantiated type to
         /// answer for it otherwise. The BrowseName stays in namespace 0, because the earlier
         /// <c>OnboardingClient</c> generation resolves the Methods with an ns=0 browse path.
-        /// And the <c>Tickets</c>
-        /// argument is declared as a <c>ByteString</c> array rather than as the Part 21
-        /// <c>EncodedTicket</c> alias: <c>MethodState</c> type-checks every input argument
-        /// against the declared DataType, and ns=0 models <c>EncodedTicket</c> with
-        /// <c>String</c> as its base type, so the ByteString array both halves of the SDK
-        /// actually exchange would be rejected with <c>Bad_TypeMismatch</c>.
+        /// </para>
+        /// <para>
+        /// The <c>Tickets</c> argument is a <c>String</c> array, the base type of the
+        /// Part 21 <c>EncodedTicket</c>. Since SDK 2.0.2 both halves of the SDK exchange
+        /// tickets that way - the client sends even its obsolete ByteString overload as
+        /// UTF-8 decoded strings, and the <c>BindToTicketStore</c> handler reads strings -
+        /// so a ByteString declaration, which the earlier SDK needed, refuses every call
+        /// with <c>Bad_InvalidArgument</c>.
         /// </para>
         /// </remarks>
         private MethodState CreateTicketMethod(
@@ -194,7 +200,7 @@ namespace Opc.Ua.Gds.Server
             inputArguments.Value = new[] {
                 new Argument {
                     Name = "Tickets",
-                    DataType = Opc.Ua.DataTypeIds.ByteString,
+                    DataType = Opc.Ua.DataTypeIds.String,
                     ValueRank = ValueRanks.OneDimension,
                     Description = new LocalizedText("The encoded onboarding tickets.")
                 }

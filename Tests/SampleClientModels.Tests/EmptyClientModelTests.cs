@@ -78,7 +78,7 @@ namespace Opc.Ua.Samples.Tests
             // connect control does after a disconnect
             await AttachAsync(ct).ConfigureAwait(false);
 
-            Assert.That(changes.Events.Last().Change, Is.EqualTo(ConnectionChange.Attached));
+            Assert.That(changes.Events[^1].Change, Is.EqualTo(ConnectionChange.Attached));
         }
 
         [Test]

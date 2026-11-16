@@ -67,7 +67,6 @@ server.AddRuntimeNodeSet(controller.ControlModelOptions());
 // Server/RuntimeNodeSetController.cs - the vendor model, once the server is up
 m_vendor = await m_lifecycle.AddRuntimeNodeSetAsync(
     m_library.VendorOptions(RuntimeNodeSetLibrary.InitialRevision),
-    callerContext: null,
     cancellationToken);
 ```
 
@@ -94,28 +93,22 @@ Raised upstream as
 ## Calling the lifecycle from a Method handler
 
 The Methods on `ModelControl` are what the client presses, and every one of them enters
-the lifecycle from inside a request. A lifecycle operation waits for the requests in
-flight to drain, so that is a deadlock waiting to happen and the SDK refuses it by
-default. Two things make it safe here, and both are necessary:
-
-* **A different node manager serves the request.** The Methods are on the control model,
-  which is never reloaded and never removed. The model being replaced is the vendor one.
-  Putting the Methods on the model they replace would deadlock.
-* **The options opt in.**
-
-  ```csharp
-  new RuntimeNodeSetOptions {
-      Sources = [RuntimeNodeSetSource.FromFile(path)],
-      AllowLifecycleFromRequestCallback = true,   // exclude the initiating request from the drain
-  }
-  ```
-
-The caller's context has to be handed on for that to work, and a Method handler gets it
-from the system context it was invoked with:
+the lifecycle from inside a request. Since SDK 2.0.2 that needs no opt-in and no caller
+context: a lifecycle commit waits for reconciliation and readiness, but not for the
+requests in flight to drain. The generation being replaced is retired asynchronously, so
+the Method call that asked for the change never waits for itself.
 
 ```csharp
-await m_lifecycle.RemoveAsync(m_vendor, context.GetOperationContext(), cancellationToken);
+await m_lifecycle.RemoveAsync(m_vendor, cancellationToken);
 ```
+
+The Methods still live on the control model, which is never reloaded and never removed,
+so that a reload never replaces the node manager serving the call that asked for it.
+
+> SDK 2.0.2 reshaped `INodeManagerLifecycle` into a prepare-and-commit transaction
+> (`PrepareAsync` with `NodeManagerBatchChange.Add`/`Replace`/`Remove`, then `CommitAsync`).
+> The single-call methods this sample uses are the SDK's compatibility layer for one
+> release and are marked obsolete.
 
 ## The three reloads, and the only difference a client sees
 
@@ -124,19 +117,19 @@ space. They differ in one thing: what happens to the MonitoredItems the generati
 replaced still owns. That is why the client has a **Watch the speed** button and a list of
 notifications — it is the only place the difference is visible.
 
-| Mode | The requests in flight | The MonitoredItems of the old generation |
+| Mode | Transition | The MonitoredItems of the old generation |
 |---|---|---|
-| `Reload` | drained first | deleted with the generation |
-| `ShadowReload` | not waited for | keep being served off the retired generation until they drain |
-| `ImmediateReload` | not waited for | invalidated at once with `BadNodeIdUnknown` |
+| `Reload` | `Migrate` | move to the replacement when their node still exists, otherwise invalidated |
+| `ShadowReload` | `Migrate` | the same as `Reload` since SDK 2.0.2 |
+| `ImmediateReload` | `Invalidate` | invalidated at once with `BadNodeIdUnknown` |
 
-Watch the speed, then reload in each of the three modes and look at what arrives in the
-list. A shadow reload is what a server picks when a subscription must not be disturbed by
-a model update; an immediate reload is what it picks when the old model must stop being
+Watch the speed, then reload in each of the modes and look at what arrives in the list. A
+migrating reload is what a server picks when a subscription must not be disturbed by a
+model update; an immediate reload is what it picks when the old model must stop being
 served this instant, and the `BadNodeIdUnknown` is deliberate.
 
-A shadow reload can only keep an item alive because both revisions give the same node the
-same NodeId. `ns=N;i=1102` is `Conveyor1/Speed` in revision 1 and in revision 2. A
+A migrating reload can only keep an item alive because both revisions give the same node
+the same NodeId. `ns=N;i=1102` is `Conveyor1/Speed` in revision 1 and in revision 2. A
 document which reused a NodeId for a different node would be a modelling error the server
 cannot repair.
 

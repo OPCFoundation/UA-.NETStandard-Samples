@@ -59,8 +59,24 @@ namespace Quickstarts.HistoricalEvents.Server
     /// this namespace to it through the historian dispatcher.
     /// </remarks>
     [NodeManager]
-    public partial class HistoricalEventsNodeManager
+    public partial class HistoricalEventsNodeManager : INodeManagerReadinessNotification
     {
+        #region INodeManagerReadinessNotification Members
+        /// <summary>
+        /// Nothing left to initialize once the server is ready.
+        /// </summary>
+        /// <remarks>
+        /// The historian registered while the address space is prepared is only staged;
+        /// the server publishes it when it notifies the readiness of the node manager,
+        /// and since SDK 2.0.2 it refuses to start a node manager with a staged
+        /// historian which is not notified.
+        /// </remarks>
+        public ValueTask OnServerReadyAsync(CancellationToken cancellationToken)
+        {
+            return default;
+        }
+        #endregion
+
         #region Configure
         /// <summary>
         /// Builds the dynamic part of the address space and wires the behaviour of

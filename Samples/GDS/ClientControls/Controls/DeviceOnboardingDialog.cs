@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -66,8 +67,11 @@ namespace Opc.Ua.Gds.Client.Controls
         private ISession m_session;
         private readonly ITelemetryContext m_telemetry;
         private NodeId m_registrarNodeId;
-        private readonly List<(string Path, byte[] Ticket)> m_tickets =
-            new List<(string, byte[])>();
+        private readonly List<(string Path, string Ticket)> m_tickets =
+            new List<(string, string)>();
+
+        // rejects a file which is not UTF-8 instead of sending a ticket with replaced characters
+        private static readonly UTF8Encoding s_strictUtf8 = new UTF8Encoding(false, true);
 
         /// <summary>
         /// Creates the dialog.
@@ -177,17 +181,16 @@ namespace Opc.Ua.Gds.Client.Controls
         /// </summary>
         /// <remarks>
         /// <para>
-        /// A ticket is an <c>EncodedTicket</c> - a ByteString whose content Part 21 leaves to
-        /// the device manufacturer. There is no standard file extension for one, and the
-        /// sample cannot decode it either: the Onboarding companion model that defines
-        /// <c>BaseTicketType</c> and its subtypes is not part of the shipped GDS packages, so
-        /// there is nothing to parse it with. The registrar consequently stores the blob
-        /// verbatim and keys it by its SHA-256 hash.
+        /// A ticket is an <c>EncodedTicket</c> - a String, in practice the signed JSON the
+        /// device manufacturer issues. There is no standard file extension for one, and the
+        /// sample registrar does not parse it: it stores the text verbatim and keys it by the
+        /// SHA-256 hash of its UTF-8 bytes. A file is read as UTF-8 here, and one which is
+        /// not valid UTF-8 is refused when it is added rather than sent mangled.
         /// </para>
         /// <para>
         /// The filter therefore leads with the extensions a manufacturer is likely to use but
-        /// keeps All Files, because any file is a valid stand-in - which is what the hint on
-        /// the dialog says, so an empty filter does not read as an oversight.
+        /// keeps All Files, because any text file is a valid stand-in - which is what the
+        /// hint on the dialog says, so an empty filter does not read as an oversight.
         /// </para>
         /// </remarks>
         private void AddButton_Click(object sender, EventArgs e)
@@ -210,11 +213,12 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 try
                 {
-                    byte[] ticket = File.ReadAllBytes(path);
+                    byte[] bytes = File.ReadAllBytes(path);
+                    string ticket = s_strictUtf8.GetString(bytes);
                     m_tickets.Add((path, ticket));
 
                     var item = new ListViewItem(Path.GetFileName(path));
-                    item.SubItems.Add(ticket.Length.ToString(CultureInfo.CurrentCulture));
+                    item.SubItems.Add(bytes.Length.ToString(CultureInfo.CurrentCulture));
                     item.SubItems.Add(String.Empty);
                     TicketsListView.Items.Add(item);
                 }
@@ -264,11 +268,11 @@ namespace Opc.Ua.Gds.Client.Controls
             {
                 var client = new OnboardingClient(m_session, m_registrarNodeId, m_telemetry);
 
-                ByteString[] tickets = new ByteString[m_tickets.Count];
+                string[] tickets = new string[m_tickets.Count];
 
                 for (int ii = 0; ii < m_tickets.Count; ii++)
                 {
-                    tickets[ii] = m_tickets[ii].Ticket.ToByteString();
+                    tickets[ii] = m_tickets[ii].Ticket;
                 }
 
                 ArrayOf<StatusCode> results = register

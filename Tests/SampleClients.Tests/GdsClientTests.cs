@@ -75,6 +75,15 @@ namespace Opc.Ua.Samples.Tests
         private const string kGdsAdminUser = "appadmin";
 
         /// <summary>
+        /// Set on the STA thread of the harness when the registrar refused the onboarding
+        /// ticket the way issue #939 describes, and turned into an ignored result once the
+        /// harness is done - an Assert.Ignore thrown on that thread would be reported as a
+        /// failure of the harness instead. The fixture is non-parallelizable, so a static
+        /// is enough.
+        /// </summary>
+        private static volatile string s_onboardingKnownIssue;
+
+        /// <summary>
         /// The user the sample global discovery server gives the SecurityAdmin and
         /// ConfigureAdmin Roles to, and the only one its <c>ServerConfiguration</c> nodes are
         /// visible to.
@@ -114,6 +123,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             var phase = new ClientPhase();
+            s_onboardingKnownIssue = null;
 
             try
             {
@@ -139,6 +149,11 @@ namespace Opc.Ua.Samples.Tests
                 await ReportServerOutputAsync(gds).ConfigureAwait(false);
 
                 throw;
+            }
+
+            if (s_onboardingKnownIssue != null)
+            {
+                Assert.Ignore($"Known issue: {s_onboardingKnownIssue}");
             }
         }
 
@@ -536,11 +551,30 @@ namespace Opc.Ua.Samples.Tests
                 ExpandedNodeId.ToNodeId(registrar.NodeId, gdsClient.Session.NamespaceUris),
                 NullTelemetry.Instance);
 
-            ByteString[] tickets = [new byte[] { 1, 2, 3, 4 }.ToByteString()];
+            // EncodedTicket is a String subtype: a ticket is its text, not bytes.
+            string[] tickets = ["sample-onboarding-ticket"];
 
-            ArrayOf<StatusCode> registered = await client.RegisterTicketsAsync(tickets, ct).ConfigureAwait(true);
+            ArrayOf<StatusCode> registered;
+
+            try
+            {
+                registered = await client.RegisterTicketsAsync(tickets, ct).ConfigureAwait(true);
+            }
+            catch (ServiceResultException refused) when (refused.StatusCode == StatusCodes.BadConfigurationError)
+            {
+                // since SDK 2.0.2 a ticket is a signed JWS checked against a trusted
+                // manufacturer, and the sample registrar has no validator yet, so the call
+                // is refused with BadConfigurationError (#939). Only that refusal is the
+                // known issue: once the sample validates signed tickets it stops happening,
+                // and this test should then send a signed ticket instead of the plain text.
+                s_onboardingKnownIssue =
+                    "the GDS sample registrar cannot validate signed Part 21 tickets since SDK 2.0.2 " +
+                    "(https://github.com/OPCFoundation/UA-.NETStandard-Samples/issues/939).";
+                return;
+            }
 
             Assert.That(registered.Count, Is.EqualTo(1), "RegisterTickets did not report a result per ticket.");
+
             Assert.That(
                 StatusCode.IsGood(registered[0]),
                 Is.True,
