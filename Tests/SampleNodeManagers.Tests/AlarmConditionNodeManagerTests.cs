@@ -159,7 +159,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"EastTank under Green: {underGreen}, under Yellow: {underYellow}")
+                .WriteLineAsync($"EastTank under Green: {underGreen}, under Yellow: {underYellow}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -235,7 +235,7 @@ namespace Opc.Ua.Samples.Tests
                 "the system event the simulation reports",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"System event: {systemEvent}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"System event: {systemEvent}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
@@ -277,7 +277,7 @@ namespace Opc.Ua.Samples.Tests
                 "an event from a source underneath the green area",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Alarm: {alarm}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Alarm: {alarm}", ct).ConfigureAwait(false);
 
             Assert.That(
                 alarm.SourceName,
@@ -393,7 +393,7 @@ namespace Opc.Ua.Samples.Tests
                 async () => await conditions.ConditionRefreshAsync(0, ct).ConfigureAwait(false)).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Rejected refresh: {rejected.StatusCode}")
+                .WriteLineAsync($"Rejected refresh: {rejected.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -546,7 +546,7 @@ namespace Opc.Ua.Samples.Tests
                     "a suppressed alarm of the source which was put into maintenance",
                     ct).ConfigureAwait(false);
 
-                await TestContext.Out.WriteLineAsync($"Suppressed: {suppressed}").ConfigureAwait(false);
+                await TestContext.Out.WriteLineAsync($"Suppressed: {suppressed}", ct).ConfigureAwait(false);
             }
             finally
             {
@@ -561,7 +561,7 @@ namespace Opc.Ua.Samples.Tests
                 "the alarms of the source coming back out of maintenance",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Released: {released}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Released: {released}", ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -583,7 +583,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"ConditionType.SupportsFilteredRetain = {supported.WrappedValue} ({supported.StatusCode})")
+                .WriteLineAsync($"ConditionType.SupportsFilteredRetain = {supported.WrappedValue} ({supported.StatusCode})", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -633,7 +633,7 @@ namespace Opc.Ua.Samples.Tests
                 "the alarm reporting itself while it still passes the where clause",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"In scope: {inScope}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"In scope: {inScope}", ct).ConfigureAwait(false);
 
             Assert.That(
                 IsFalse(inScope, BrowseNames.SuppressedOrShelved),
@@ -653,7 +653,7 @@ namespace Opc.Ua.Samples.Tests
                     "the trailing event of the alarm as it leaves the where clause",
                     ct).ConfigureAwait(false);
 
-                await TestContext.Out.WriteLineAsync($"Left the filter: {trailing}").ConfigureAwait(false);
+                await TestContext.Out.WriteLineAsync($"Left the filter: {trailing}", ct).ConfigureAwait(false);
 
                 Assert.That(
                     IsFalse(trailing, BrowseNames.Retain),
@@ -691,7 +691,7 @@ namespace Opc.Ua.Samples.Tests
                 "the alarm coming back into the where clause",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Back in scope: {back}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Back in scope: {back}", ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -725,7 +725,7 @@ namespace Opc.Ua.Samples.Tests
                 "the alarm reporting that it was silenced",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Silenced: {silenced}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Silenced: {silenced}", ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -762,7 +762,7 @@ namespace Opc.Ua.Samples.Tests
                     "an alarm which reports itself out of service and therefore suppressed",
                     ct).ConfigureAwait(false);
 
-                await TestContext.Out.WriteLineAsync($"Out of service: {outOfService}").ConfigureAwait(false);
+                await TestContext.Out.WriteLineAsync($"Out of service: {outOfService}", ct).ConfigureAwait(false);
             }
             finally
             {
@@ -779,7 +779,7 @@ namespace Opc.Ua.Samples.Tests
                 "the alarm coming back into service",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"In service: {inService}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"In service: {inService}", ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -804,7 +804,7 @@ namespace Opc.Ua.Samples.Tests
                 "an alarm which repeated because nobody acknowledged it",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Re-alarmed: {repeated}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Re-alarmed: {repeated}", ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -844,7 +844,7 @@ namespace Opc.Ua.Samples.Tests
                 "the trip alarm going active and latching",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Latched: {active}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Latched: {active}", ct).ConfigureAwait(false);
 
             // resetting a latch which the process still holds has to be refused
             ServiceResultException tooEarly = await Assert.ThrowsAsync<ServiceResultException>(
@@ -899,7 +899,7 @@ namespace Opc.Ua.Samples.Tests
                 async () => await alarms.ResetAsync(tripAlarm, ct: ct).ConfigureAwait(false)).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Reset while offline: {vetoed.StatusCode}")
+                .WriteLineAsync($"Reset while offline: {vetoed.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -919,7 +919,7 @@ namespace Opc.Ua.Samples.Tests
                 "the trip alarm letting go of its latch",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Reset: {reset}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Reset: {reset}", ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -948,7 +948,7 @@ namespace Opc.Ua.Samples.Tests
                 "the trip alarm of a metal source taking the lead of its group",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Leading: {leading}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Leading: {leading}", ct).ConfigureAwait(false);
 
             CapturedEvent follower = await capture.WaitAsync(
                 candidate => candidate.SourceName == kMetalsSource
@@ -959,7 +959,7 @@ namespace Opc.Ua.Samples.Tests
                 "an alarm which the leading alarm of its group suppressed",
                 ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Follower: {follower}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Follower: {follower}", ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -988,7 +988,7 @@ namespace Opc.Ua.Samples.Tests
             DataValue rate = await SessionOps.ReadValueAsync(Session, currentRate, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"AlarmCount={count.WrappedValue}, CurrentAlarmRate={rate.WrappedValue}")
+                .WriteLineAsync($"AlarmCount={count.WrappedValue}, CurrentAlarmRate={rate.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(

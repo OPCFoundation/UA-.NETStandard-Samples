@@ -151,7 +151,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"TIC101_PV --AliasFor--> {target}, browse path -> {browsed}")
+                .WriteLineAsync($"TIC101_PV --AliasFor--> {target}, browse path -> {browsed}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -249,7 +249,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"TIC101_PV -> {resolved}, Plant/Reactor/TemperatureMeasurement -> {browsed}")
+                .WriteLineAsync($"TIC101_PV -> {resolved}, Plant/Reactor/TemperatureMeasurement -> {browsed}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -284,7 +284,7 @@ namespace Opc.Ua.Samples.Tests
                 .ResolveAliasNameAsync(NodeId.ToExpandedNodeId(browsed, Session.NamespaceUris), ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"The node resolves back to '{alias}'").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"The node resolves back to '{alias}'", ct).ConfigureAwait(false);
 
             Assert.That(alias, Is.EqualTo("TIC101_PV"));
         }
@@ -440,7 +440,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"{alias.AliasName} came from category {alias.AliasNameCategoryId} and stands for " +
-                    $"{alias.ReferencedNodes.ToArray().Length} node(s)")
+                    $"{alias.ReferencedNodes.ToArray().Length} node(s)", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -556,7 +556,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false)).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"An anonymous AddAliasesToCategory was refused: {refused.Message}")
+                .WriteLineAsync($"An anonymous AddAliasesToCategory was refused: {refused.Message}", ct)
                 .ConfigureAwait(false);
 
             IReadOnlyList<string> after = NamesOf(
@@ -611,7 +611,7 @@ namespace Opc.Ua.Samples.Tests
                 await TestContext.Out
                     .WriteLineAsync(
                         $"Reactor LastChange {beforeReactor} -> {afterReactor}, " +
-                        $"PlantTags LastChange {beforePlant} -> {afterPlant}")
+                        $"PlantTags LastChange {beforePlant} -> {afterPlant}", ct)
                     .ConfigureAwait(false);
 
                 Assert.That(

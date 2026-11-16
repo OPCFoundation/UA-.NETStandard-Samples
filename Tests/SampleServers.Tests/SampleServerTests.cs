@@ -166,7 +166,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out.WriteLineAsync(
-                $"{server.Sample.Name}: Objects -> {string.Join(", ", children.ConvertAll(child => child.BrowseName.Name))}")
+                $"{server.Sample.Name}: Objects -> {string.Join(", ", children.ConvertAll(child => child.BrowseName.Name))}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(children, Is.Not.Empty, "The Objects folder of the server is empty.");
@@ -177,7 +177,7 @@ namespace Opc.Ua.Samples.Tests
             string[] namespaces = session.NamespaceUris.ToArray();
 
             await TestContext.Out.WriteLineAsync(
-                $"{server.Sample.Name}: namespaces -> {string.Join(", ", namespaces)}")
+                $"{server.Sample.Name}: namespaces -> {string.Join(", ", namespaces)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(

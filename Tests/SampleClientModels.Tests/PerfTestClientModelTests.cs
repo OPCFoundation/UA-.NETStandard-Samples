@@ -72,7 +72,7 @@ namespace Opc.Ua.Samples.Tests
                 ct: ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The model counted {counted.MessageCount} messages and {counted.TotalItemUpdateCount} item updates.")
+                .WriteLineAsync($"The model counted {counted.MessageCount} messages and {counted.TotalItemUpdateCount} item updates.", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -125,7 +125,7 @@ namespace Opc.Ua.Samples.Tests
             string[] messages = Model.TakeMessages();
 
             await TestContext.Out
-                .WriteLineAsync("The tester logged: " + string.Join(" / ", messages))
+                .WriteLineAsync("The tester logged: " + string.Join(" / ", messages), ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -160,7 +160,7 @@ namespace Opc.Ua.Samples.Tests
             PerfTestPartitionStatistics partitions = Model.ReadPartitions();
 
             await TestContext.Out
-                .WriteLineAsync($"100 items landed in {partitions.PartitionCount} partition(s).")
+                .WriteLineAsync($"100 items landed in {partitions.PartitionCount} partition(s).", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -231,7 +231,7 @@ namespace Opc.Ua.Samples.Tests
             string[] messages = Model.TakeMessages();
 
             await TestContext.Out
-                .WriteLineAsync($"Ten affinity groups landed in {partitions.PartitionCount} partition(s).")
+                .WriteLineAsync($"Ten affinity groups landed in {partitions.PartitionCount} partition(s).", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -273,7 +273,7 @@ namespace Opc.Ua.Samples.Tests
             string[] messages = Model.TakeMessages();
 
             await TestContext.Out
-                .WriteLineAsync("The tester logged: " + string.Join(" / ", messages))
+                .WriteLineAsync("The tester logged: " + string.Join(" / ", messages), ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -297,7 +297,7 @@ namespace Opc.Ua.Samples.Tests
             string[] messages = Model.TakeMessages();
 
             await TestContext.Out
-                .WriteLineAsync("The tester logged: " + string.Join(" / ", messages))
+                .WriteLineAsync("The tester logged: " + string.Join(" / ", messages), ct)
                 .ConfigureAwait(false);
 
             Assert.That(

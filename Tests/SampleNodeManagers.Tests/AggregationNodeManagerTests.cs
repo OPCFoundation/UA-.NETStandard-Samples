@@ -162,7 +162,7 @@ namespace Opc.Ua.Samples.Tests
                 ct: ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Through the proxy: {string.Join(", ", m_passThroughNames)}")
+                .WriteLineAsync($"Through the proxy: {string.Join(", ", m_passThroughNames)}", ct)
                 .ConfigureAwait(false);
 
             return m_passThroughNames;
@@ -256,7 +256,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The proxy root {m_proxyRoot} is called {browseName.WrappedValue}")
+                .WriteLineAsync($"The proxy root {m_proxyRoot} is called {browseName.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -276,7 +276,7 @@ namespace Opc.Ua.Samples.Tests
             string namespaceUri = Aggregating.NamespaceUris.GetString(m_proxyRoot.NamespaceIndex);
 
             await TestContext.Out
-                .WriteLineAsync($"The proxy root lives in {namespaceUri}")
+                .WriteLineAsync($"The proxy root lives in {namespaceUri}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -343,7 +343,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Read {throughTheProxy.WrappedValue} through the proxy, {directly.WrappedValue} directly")
+                .WriteLineAsync($"Read {throughTheProxy.WrappedValue} through the proxy, {directly.WrappedValue} directly", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -393,7 +393,7 @@ namespace Opc.Ua.Samples.Tests
 
             await TestContext.Out
                 .WriteLineAsync($"Received {changes.Count} distinct values through the proxy: " +
-                    string.Join(", ", changes.Select(change => change.WrappedValue)))
+                    string.Join(", ", changes.Select(change => change.WrappedValue)), ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -418,7 +418,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The downstream server serves: {string.Join(", ", children)}")
+                .WriteLineAsync($"The downstream server serves: {string.Join(", ", children)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(

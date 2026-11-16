@@ -184,7 +184,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The server offered a connection for [{connection.EndpointUrl}].")
+                .WriteLineAsync($"The server offered a connection for [{connection.EndpointUrl}].", ct)
                 .ConfigureAwait(false);
 
             var expected = new Uri(m_host.EndpointUrl);

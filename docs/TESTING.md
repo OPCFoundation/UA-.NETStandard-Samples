@@ -78,8 +78,8 @@ Tests/
   SampleClients.Tests/         # Tier 2. References the sample *client* projects.
 ```
 
-`Samples.Tests.Common` targets `net10.0` and stays free of WinForms, so Tier 0 runs anywhere.
-Everything that touches a sample assembly targets `net10.0-windows`, because the samples are
+`Samples.Tests.Common` targets `net11.0` and stays free of WinForms, so Tier 0 runs anywhere.
+Everything that touches a sample assembly targets `net11.0-windows`, because the samples are
 WinForms executables - even though the tests never show a window.
 
 Generated model types such as `Quickstarts.Boiler.Constants` are compiled into *both* the

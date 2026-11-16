@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- tier 0 needs neither WinForms nor a network, keep it portable -->
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RootNamespace>Opc.Ua.Samples.Tests</RootNamespace>
     <AssemblyName>SampleConfiguration.Tests</AssemblyName>
     <IsTestProject>true</IsTestProject>

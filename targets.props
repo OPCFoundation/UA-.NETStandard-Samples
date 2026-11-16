@@ -6,6 +6,11 @@
          from nuget.org, previews from the OPC Foundation GitHub Packages feed, see
          Nuget.Config. -->
     <OpcUaNetStandardVersion>2.0.2</OpcUaNetStandardVersion>
+    <!-- Microsoft.Extensions.* and EF Core follow the .NET 11 release train. The
+         OPC UA stack only asks for Microsoft.Extensions 10.0.x as a minimum, so the
+         11.0.x packages are a plain upgrade of its dependency graph. -->
+    <MicrosoftExtensionsVersion>11.0.0</MicrosoftExtensionsVersion>
+    <EntityFrameworkCoreVersion>11.0.0</EntityFrameworkCoreVersion>
   </PropertyGroup>
 
   <!-- The GitHub Packages feed requires credentials, so it is only consulted when a
@@ -36,11 +41,11 @@
   </Choose>
 
   <PropertyGroup>
-    <AppTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</AppTargetFrameworks>
-    <AppTargetFramework>net10.0</AppTargetFramework>
-    <TestsTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</TestsTargetFrameworks>
-    <LibTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</LibTargetFrameworks>
-    <LibxTargetFrameworks>$(DotNetTargetFramework)net8.0;net10.0</LibxTargetFrameworks>
+    <AppTargetFrameworks>$(DotNetTargetFramework)net11.0</AppTargetFrameworks>
+    <AppTargetFramework>net11.0</AppTargetFramework>
+    <TestsTargetFrameworks>$(DotNetTargetFramework)net11.0</TestsTargetFrameworks>
+    <LibTargetFrameworks>$(DotNetTargetFramework)net11.0</LibTargetFrameworks>
+    <LibxTargetFrameworks>$(DotNetTargetFramework)net11.0</LibxTargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
@@ -56,7 +61,7 @@
     <PackageReference Include="Roslynator.Formatting.Analyzers" Version="5.0.1" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.404" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="11.0.100" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

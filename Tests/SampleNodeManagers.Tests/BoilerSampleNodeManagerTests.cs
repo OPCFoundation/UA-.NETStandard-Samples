@@ -141,7 +141,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync($"The simulation of {name} reports itself as {state.WrappedValue} ({state.StatusCode})")
+                    .WriteLineAsync($"The simulation of {name} reports itself as {state.WrappedValue} ({state.StatusCode})", ct)
                     .ConfigureAwait(false);
 
                 Assert.That(

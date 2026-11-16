@@ -78,5 +78,14 @@ namespace Opc.Ua.Client.Controls
         }
 
         #endregion
+
+        /// <summary>
+        /// The list of icon images.
+        /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
+        public System.Windows.Forms.ImageList ImageList;
+        #pragma warning restore CA1051
+        #pragma warning restore CA2213
     }
 }

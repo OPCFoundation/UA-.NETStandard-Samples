@@ -64,7 +64,7 @@ namespace Opc.Ua.Samples.Tests
             string[] names = snapshot.Nodes.Select(node => node.Name).ToArray();
 
             await TestContext.Out
-                .WriteLineAsync("Anonymous sees: " + string.Join(", ", snapshot.Nodes.Select(node => $"{node.Name}={node.Value} ({node.Status})")))
+                .WriteLineAsync("Anonymous sees: " + string.Join(", ", snapshot.Nodes.Select(node => $"{node.Name}={node.Value} ({node.Status})")), ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -139,7 +139,7 @@ namespace Opc.Ua.Samples.Tests
 
             OperationResult reset = await observer1.Model.ResetAsync(ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Reset as an Observer: {reset}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Reset as an Observer: {reset}", ct).ConfigureAwait(false);
 
             Assert.That(
                 reset.Status,
@@ -160,7 +160,7 @@ namespace Opc.Ua.Samples.Tests
             {
                 OperationResult refused = await unsecured.Model.AddRoleAsync(roleName, ct).ConfigureAwait(false);
 
-                await TestContext.Out.WriteLineAsync($"AddRole without encryption: {refused}").ConfigureAwait(false);
+                await TestContext.Out.WriteLineAsync($"AddRole without encryption: {refused}", ct).ConfigureAwait(false);
 
                 Assert.That(
                     refused.Status,
@@ -262,7 +262,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync($"UserName='{userName}', Thumbprint='{thumbprint}', X509Subject='{subject}'")
+                    .WriteLineAsync($"UserName='{userName}', Thumbprint='{thumbprint}', X509Subject='{subject}'", ct)
                     .ConfigureAwait(false);
 
                 Assert.Multiple(() => {
@@ -309,7 +309,7 @@ namespace Opc.Ua.Samples.Tests
                 MachineNodeEntry note = await MaintenanceNoteAsync(unsecured.Model, ct).ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync($"Unencrypted: status '{note.Status}', restrictions '{note.Restrictions}'")
+                    .WriteLineAsync($"Unencrypted: status '{note.Status}', restrictions '{note.Restrictions}'", ct)
                     .ConfigureAwait(false);
 
                 Assert.Multiple(() => {
@@ -331,7 +331,7 @@ namespace Opc.Ua.Samples.Tests
             MachineNodeEntry readable = await MaintenanceNoteAsync(encrypted.Model, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Encrypted: status '{readable.Status}', restrictions '{readable.Restrictions}'")
+                .WriteLineAsync($"Encrypted: status '{readable.Status}', restrictions '{readable.Restrictions}'", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -374,7 +374,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync($"CustomConfiguration without encryption: {refused}")
+                    .WriteLineAsync($"CustomConfiguration without encryption: {refused}", ct)
                     .ConfigureAwait(false);
 
                 Assert.That(
@@ -394,7 +394,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"{roleName}: endpoints '{configureAdmin.Endpoints}', custom {configureAdmin.CustomConfiguration}, " +
-                    $"identities '{configureAdmin.Identities}'; Operator: endpoints '{operatorRole.Endpoints}'")
+                    $"identities '{configureAdmin.Identities}'; Operator: endpoints '{operatorRole.Endpoints}'", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {

@@ -91,5 +91,14 @@ namespace Opc.Ua.Client.Controls
         }
 
         #endregion
+
+        /// <summary>
+        /// The ListView contained in the control.
+        /// </summary>
+        #pragma warning disable CA1051 // Justification: sample public API shape is preserved by design.
+        #pragma warning disable CA2213 // Justification: WinForms designer/owner lifetime manages this sample field.
+        protected System.Windows.Forms.ListView ItemsLV;
+        #pragma warning restore CA1051
+        #pragma warning restore CA2213
     }
 }

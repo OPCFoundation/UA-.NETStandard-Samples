@@ -56,7 +56,7 @@ namespace Opc.Ua.Samples.Tests
             IReadOnlyList<PlantEntry> plant = await Model.LoadPlantAsync(ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync("The plant: " + string.Join(", ", plant.Select(entry => $"{entry.Path}={entry.TagName}")))
+                .WriteLineAsync("The plant: " + string.Join(", ", plant.Select(entry => $"{entry.Path}={entry.TagName}")), ct)
                 .ConfigureAwait(false);
 
             Assert.That(plant, Is.SameAs(Model.Plant));
@@ -92,7 +92,7 @@ namespace Opc.Ua.Samples.Tests
             // an empty pattern searches for everything
             AliasSearchResult found = await Model.SearchAsync(standard, string.Empty, verbose: false, ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"FindAlias: {found.Outcome.Text}; {found.LastChange}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"FindAlias: {found.Outcome.Text}; {found.LastChange}", ct).ConfigureAwait(false);
 
             Assert.That(found.Outcome.Failed, Is.False, $"The search was refused: {found.Outcome.Text}");
             Assert.That(found.Outcome.Text, Does.Contain($"{found.Aliases.Count} alias(es)"));
@@ -138,7 +138,7 @@ namespace Opc.Ua.Samples.Tests
 
             Outcome refused = await Model.AddAliasAsync(plant[0], plantTags, "XX999_PV", ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Adding anonymously: {refused.Text}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Adding anonymously: {refused.Text}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(refused.Failed, Is.True, "An anonymous session must not be allowed to add a tag.");
@@ -187,7 +187,7 @@ namespace Opc.Ua.Samples.Tests
 
             Outcome added = await model.AddAliasAsync(pressure, plantTags, tagName, ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Adding as a SecurityAdmin: {added.Text}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Adding as a SecurityAdmin: {added.Text}", ct).ConfigureAwait(false);
 
             Assert.That(added.Failed, Is.False, $"A SecurityAdmin on an encrypted channel may add a tag: {added.Text}");
 
@@ -209,7 +209,7 @@ namespace Opc.Ua.Samples.Tests
                 IReadOnlyList<PlantEntry> renamed = await model.LoadPlantAsync(ct).ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync("The pressure measurement now answers to: " + renamed.Single(entry => entry.NodeId == pressure.NodeId).TagName)
+                    .WriteLineAsync("The pressure measurement now answers to: " + renamed.Single(entry => entry.NodeId == pressure.NodeId).TagName, ct)
                     .ConfigureAwait(false);
 
                 Outcome deleted = await model.DeleteAliasAsync(alias, plantTags, ct).ConfigureAwait(false);

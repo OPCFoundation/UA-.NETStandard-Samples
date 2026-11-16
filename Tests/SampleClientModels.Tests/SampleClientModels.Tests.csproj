@@ -4,7 +4,7 @@
     <!-- the sample clients are WinForms executables, so anything referencing them has to
          target the windows flavour - even though no window, no STA thread and no message
          loop is ever created here: the models under test know nothing about the window -->
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net11.0-windows</TargetFramework>
     <RootNamespace>Opc.Ua.Samples.Tests</RootNamespace>
     <AssemblyName>SampleClientModels.Tests</AssemblyName>
     <IsTestProject>true</IsTestProject>

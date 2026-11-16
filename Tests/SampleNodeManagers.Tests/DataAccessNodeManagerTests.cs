@@ -222,7 +222,7 @@ namespace Opc.Ua.Samples.Tests
             NodeId browsed = ExpandedNodeId.ToNodeId(measurement.NodeId, Session.NamespaceUris);
 
             await TestContext.Out
-                .WriteLineAsync($"Browsing to the measurement gives {browsed}")
+                .WriteLineAsync($"Browsing to the measurement gives {browsed}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -262,7 +262,7 @@ namespace Opc.Ua.Samples.Tests
                 Segment("Pipe1001")).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Factory path: {throughTheFactory}, asset path: {throughTheAssets}")
+                .WriteLineAsync($"Factory path: {throughTheFactory}, asset path: {throughTheAssets}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -345,7 +345,7 @@ namespace Opc.Ua.Samples.Tests
                     .ConfigureAwait(false);
 
                 await TestContext.Out
-                    .WriteLineAsync($"Set point: was {original.WrappedValue}, wrote {written}, read {readBack.WrappedValue}")
+                    .WriteLineAsync($"Set point: was {original.WrappedValue}, wrote {written}, read {readBack.WrappedValue}", ct)
                     .ConfigureAwait(false);
 
                 Assert.That(

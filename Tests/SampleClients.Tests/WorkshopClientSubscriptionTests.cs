@@ -98,7 +98,7 @@ namespace Opc.Ua.Samples.Tests
         /// </remarks>
         private static readonly TimeSpan s_notificationTimeout = TimeSpan.FromSeconds(45);
 
-        public static IEnumerable<SubscribingClient> Clients => new[] {
+        public static IEnumerable<SubscribingClient> CreateClients() => new[] {
             new SubscribingClient {
                 Name = "Boiler",
                 HasNotification = form => HasValue(form, "DrumLevelTB"),
@@ -145,7 +145,7 @@ namespace Opc.Ua.Samples.Tests
         private const int kDataAccessValueColumn = 5;
 
         [Test]
-        [TestCaseSource(nameof(Clients))]
+        [TestCaseSource(nameof(CreateClients))]
         [CancelAfter(kTimeout)]
         public async Task ClientReceivesItsNotifications(SubscribingClient client, CancellationToken ct)
         {

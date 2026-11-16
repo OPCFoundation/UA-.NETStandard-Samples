@@ -85,7 +85,7 @@ namespace Opc.Ua.Samples.Tests
             IReadOnlyList<ReferenceDescription> filtered = await Model.BrowseAsync(flow, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Through the engineering view the flow meter shows: {string.Join(", ", filtered.Select(reference => reference.BrowseName))}")
+                .WriteLineAsync($"Through the engineering view the flow meter shows: {string.Join(", ", filtered.Select(reference => reference.BrowseName))}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {

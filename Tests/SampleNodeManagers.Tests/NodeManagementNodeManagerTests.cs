@@ -114,7 +114,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The server assigned {result.AddedNodeId} to Valve201")
+                .WriteLineAsync($"The server assigned {result.AddedNodeId} to Valve201", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -161,7 +161,7 @@ namespace Opc.Ua.Samples.Tests
             AddNodesResult second = await AddAsync(again, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The requested node id answered {first.StatusCode}, and a second time {second.StatusCode}")
+                .WriteLineAsync($"The requested node id answered {first.StatusCode}, and a second time {second.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -338,7 +338,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"On the standard address space, DeleteNodes answered {deleted} and AddReferences {added}")
+                .WriteLineAsync($"On the standard address space, DeleteNodes answered {deleted} and AddReferences {added}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -476,7 +476,7 @@ namespace Opc.Ua.Samples.Tests
             uint afterDelete = await ReadCountAsync(countId, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"DeviceCount went {before} -> {afterAdd} -> {afterDelete}")
+                .WriteLineAsync($"DeviceCount went {before} -> {afterAdd} -> {afterDelete}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -526,7 +526,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The model change event reported {string.Join(", ", Changed(reported))}")
+                .WriteLineAsync($"The model change event reported {string.Join(", ", Changed(reported))}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -550,7 +550,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"MaxNodesPerNodeManagement reads {value.WrappedValue} ({value.StatusCode})")
+                .WriteLineAsync($"MaxNodesPerNodeManagement reads {value.WrappedValue} ({value.StatusCode})", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {

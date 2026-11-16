@@ -310,7 +310,8 @@ namespace Opc.Ua.Gds.Server
                 {
                     return null;
                 }
-                await Task.WhenAny(readTask, Task.Delay(200)).ConfigureAwait(false);
+                await ((Task)readTask).WaitAsync(TimeSpan.FromMilliseconds(200))
+                    .ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
             }
 
             return await readTask.ConfigureAwait(false);

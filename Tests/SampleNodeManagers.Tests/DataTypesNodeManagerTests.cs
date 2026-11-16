@@ -106,7 +106,7 @@ namespace Opc.Ua.Samples.Tests
                 $"Reading the primary vehicle failed: {value.StatusCode}");
 
             await TestContext.Out
-                .WriteLineAsync($"PrimaryVehicle: {value.WrappedValue}")
+                .WriteLineAsync($"PrimaryVehicle: {value.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -175,7 +175,7 @@ namespace Opc.Ua.Samples.Tests
             decoded.TryGetValue(out IEncodeable body);
 
             await TestContext.Out
-                .WriteLineAsync($"PrimaryVehicle: {body?.GetType().Name}")
+                .WriteLineAsync($"PrimaryVehicle: {body?.GetType().Name}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -253,7 +253,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Round trip: {read.Make} {read.Model}, {read.Engine}, " +
-                    $"{read.ManufacturerName}, {read.NoOfGears} gears")
+                    $"{read.ManufacturerName}, {read.NoOfGears} gears", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -295,7 +295,7 @@ namespace Opc.Ua.Samples.Tests
             DataValue reported = await capture.NextAsync(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"LotType: read {read.WrappedValue}, subscription reported {reported.WrappedValue}")
+                .WriteLineAsync($"LotType: read {read.WrappedValue}, subscription reported {reported.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -351,7 +351,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"PrimaryVehicle after write: {after.WrappedValue}")
+                .WriteLineAsync($"PrimaryVehicle after write: {after.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(

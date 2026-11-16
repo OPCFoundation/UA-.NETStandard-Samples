@@ -434,7 +434,7 @@ namespace Opc.Ua.Samples.Tests
             string[] browseNames = children.Select(child => child.BrowseName.Name).ToArray();
 
             await TestContext.Out
-                .WriteLineAsync($"Gds: ServerConfiguration exposes {string.Join(", ", browseNames)}")
+                .WriteLineAsync($"Gds: ServerConfiguration exposes {string.Join(", ", browseNames)}", ct)
                 .ConfigureAwait(true);
 
             Assert.Multiple(() => {
@@ -511,7 +511,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(true);
 
             await TestContext.Out
-                .WriteLineAsync($"Gds: ManagedApplications holds {managed.Count} application(s)")
+                .WriteLineAsync($"Gds: ManagedApplications holds {managed.Count} application(s)", ct)
                 .ConfigureAwait(true);
         }
 
@@ -675,7 +675,7 @@ namespace Opc.Ua.Samples.Tests
                 TimeSpan.FromSeconds(30),
                 ct: ct).ConfigureAwait(true);
 
-            await TestContext.Out.WriteLineAsync($"Gds: the managed server reports {reported}")
+            await TestContext.Out.WriteLineAsync($"Gds: the managed server reports {reported}", ct)
                 .ConfigureAwait(true);
 
             Assert.That(

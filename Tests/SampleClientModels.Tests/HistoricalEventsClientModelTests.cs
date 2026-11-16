@@ -85,7 +85,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync("Live event: " + string.Join(" | ", live.Record.DisplayTexts))
+                .WriteLineAsync("Live event: " + string.Join(" | ", live.Record.DisplayTexts), ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -118,7 +118,7 @@ namespace Opc.Ua.Samples.Tests
                 ct: ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync("First event: " + string.Join(" | ", page.Events[0].DisplayTexts))
+                .WriteLineAsync("First event: " + string.Join(" | ", page.Events[0].DisplayTexts), ct)
                 .ConfigureAwait(false);
 
             Assert.That(page.Events.Select(record => record.DisplayTexts.Count), Has.All.EqualTo(shownFields));
@@ -204,14 +204,14 @@ namespace Opc.Ua.Samples.Tests
                 .WriteLineAsync(
                     "Select clauses of the filter: " +
                     string.Join(" | ", filter.GetSelectClause().Select(clause =>
-                        $"{clause.TypeDefinitionId}:{clause.AttributeId}:{string.Join("/", clause.BrowsePath.ToArray().Select(name => name.ToString()))}")))
+                        $"{clause.TypeDefinitionId}:{clause.AttributeId}:{string.Join("/", clause.BrowsePath.ToArray().Select(name => name.ToString()))}")), ct)
                 .ConfigureAwait(false);
 
             IReadOnlyList<StatusCode> inserted = await Model
                 .WriteEventsAsync(platforms, filter, [report], PerformUpdateType.Insert, ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"Inserted through the model: {string.Join(", ", inserted)}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"Inserted through the model: {string.Join(", ", inserted)}", ct).ConfigureAwait(false);
 
             Assert.That(inserted[0], Is.EqualTo((StatusCode)StatusCodes.GoodEntryInserted), "The model inserts a report through the history client.");
 
@@ -263,7 +263,7 @@ namespace Opc.Ua.Samples.Tests
                 kEventTimeout,
                 ct: ct).ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"First event at {first:O}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"First event at {first:O}", ct).ConfigureAwait(false);
 
             Assert.That(first, Is.GreaterThan(new DateTime(2000, 1, 1)), "The first event time is the default of an empty field.");
             Assert.That(first, Is.LessThanOrEqualTo(DateTime.UtcNow.AddMinutes(1)), "The first event lies in the future.");

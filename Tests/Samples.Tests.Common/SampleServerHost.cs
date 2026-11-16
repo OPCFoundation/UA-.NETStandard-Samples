@@ -177,7 +177,7 @@ namespace Opc.Ua.Samples.Tests
                 catch (Exception e) when (IsAddressAlreadyInUse(e) && DateTime.UtcNow < deadline)
                 {
                     await TestContext.Progress.WriteLineAsync(
-                        $"{m_name}: {EndpointUrl} is still bound, retrying ...").ConfigureAwait(false);
+                        $"{m_name}: {EndpointUrl} is still bound, retrying ...", ct).ConfigureAwait(false);
                     await Task.Delay(kBindRetryDelay, ct).ConfigureAwait(false);
                 }
             }

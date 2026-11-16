@@ -50,9 +50,12 @@ namespace Opc.Ua.Samples.Tests
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
 
-            Task finished = await Task.WhenAny(completion.Task, Task.Delay(timeout)).ConfigureAwait(false);
+            // waits for the message loop without throwing, so that a timeout and a failure
+            // of the sample are told apart below, and without leaving a timer behind
+            await ((Task)completion.Task).WaitAsync(timeout)
+                .ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
-            if (finished != completion.Task)
+            if (!completion.Task.IsCompleted)
             {
                 throw new TimeoutException(
                     $"The sample client did not finish within {timeout.TotalSeconds:F0} seconds.");

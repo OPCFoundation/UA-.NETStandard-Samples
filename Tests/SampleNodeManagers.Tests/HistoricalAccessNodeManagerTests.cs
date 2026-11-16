@@ -100,7 +100,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Historizing: sample archive {onRecorded.WrappedValue}, " +
-                    $"dynamic archive {onCollecting.WrappedValue}")
+                    $"dynamic archive {onCollecting.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -182,7 +182,7 @@ namespace Opc.Ua.Samples.Tests
                 new QualifiedName(Opc.Ua.BrowseNames.Stepped)).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"HA Configuration/Stepped of the double item: {stepped}")
+                .WriteLineAsync($"HA Configuration/Stepped of the double item: {stepped}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -194,7 +194,7 @@ namespace Opc.Ua.Samples.Tests
             DataValue value = await SessionOps.ReadValueAsync(Session, stepped, ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Stepped = {value.WrappedValue} ({value.StatusCode})")
+                .WriteLineAsync($"Stepped = {value.WrappedValue} ({value.StatusCode})", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -217,7 +217,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The archive holds {values.Count} values for {item}.")
+                .WriteLineAsync($"The archive holds {values.Count} values for {item}.", ct)
                 .ConfigureAwait(false);
 
             Assert.That(values, Is.Not.Empty, "The sample archive has no values in it.");
@@ -300,7 +300,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Reusing a released continuation point: {reused.StatusCode}")
+                .WriteLineAsync($"Reusing a released continuation point: {reused.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -339,7 +339,7 @@ namespace Opc.Ua.Samples.Tests
                 .WriteLineAsync(
                     $"At {At(expected):O} the archive holds {expected.WrappedValue}, " +
                     $"a read at that time returns {outcome.Values[0].WrappedValue} " +
-                    $"({outcome.Values[0].StatusCode})")
+                    $"({outcome.Values[0].StatusCode})", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -378,7 +378,7 @@ namespace Opc.Ua.Samples.Tests
                 .WriteLineAsync(
                     $"At {At(expected):O} the archive holds {expected.WrappedValue}, " +
                     $"a read at that time returns {outcome.Values[0].WrappedValue} " +
-                    $"({outcome.Values[0].StatusCode})")
+                    $"({outcome.Values[0].StatusCode})", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -426,7 +426,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"At {At(recorded):O} the archive recorded {recorded.StatusCode}, " +
-                    $"a read at that time returns {outcome.Values[0].StatusCode}")
+                    $"a read at that time returns {outcome.Values[0].StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -471,7 +471,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"Average over {span:0} ms in steps of {span / 4:0} ms: " +
-                    $"{outcome.StatusCode}, {outcome.Values.Count} values")
+                    $"{outcome.StatusCode}, {outcome.Values.Count} values", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -511,7 +511,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Insert: {result}, per value: {string.Join(", ", perValue)}")
+                .WriteLineAsync($"Insert: {result}, per value: {string.Join(", ", perValue)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -550,7 +550,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"After inserting at {ReadBackAt:O} the archive holds {archive.Count} values.")
+                .WriteLineAsync($"After inserting at {ReadBackAt:O} the archive holds {archive.Count} values.", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -587,7 +587,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Deleting nothing, per value: {string.Join(", ", perValue)}")
+                .WriteLineAsync($"Deleting nothing, per value: {string.Join(", ", perValue)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -642,7 +642,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Deleting at {DeletedAt:O}, per value: {string.Join(", ", perDeleted)}")
+                .WriteLineAsync($"Deleting at {DeletedAt:O}, per value: {string.Join(", ", perDeleted)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -739,7 +739,7 @@ namespace Opc.Ua.Samples.Tests
             NodeId item = await ResolveWritableItemAsync(ct).ConfigureAwait(false);
 
             await using TestClient writer = await TestClient
-                .ConnectEncryptedAsync(EndpointUrl, "history auditor", AuditorIdentity, ct)
+                .ConnectEncryptedAsync(EndpointUrl, "history auditor", CreateAuditorIdentity(), ct)
                 .ConfigureAwait(false);
 
             await writer.Session.FetchNamespaceTablesAsync(ct).ConfigureAwait(false);
@@ -799,7 +799,7 @@ namespace Opc.Ua.Samples.Tests
                     ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"The server audited the replace: {ofReplace}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"The server audited the replace: {ofReplace}", ct).ConfigureAwait(false);
 
             (_, IReadOnlyList<StatusCode> perDeleted) = await HistoryOps
                 .DeleteAtTimeAsync(writer.Session, item, [AuditedAt], ct)
@@ -817,7 +817,7 @@ namespace Opc.Ua.Samples.Tests
                     ct)
                 .ConfigureAwait(false);
 
-            await TestContext.Out.WriteLineAsync($"The server audited the delete: {ofDelete}").ConfigureAwait(false);
+            await TestContext.Out.WriteLineAsync($"The server audited the delete: {ofDelete}", ct).ConfigureAwait(false);
 
             Assert.Multiple(() => {
                 Assert.That(
@@ -888,7 +888,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Inserting a batch with a collision: {result}, per value: {string.Join(", ", perValue)}")
+                .WriteLineAsync($"Inserting a batch with a collision: {result}, per value: {string.Join(", ", perValue)}", ct)
                 .ConfigureAwait(false);
 
             IReadOnlyList<DataValue> archive = await HistoryOps
@@ -943,7 +943,7 @@ namespace Opc.Ua.Samples.Tests
                 ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Asking for an aggregate the server does not have: {outcome.StatusCode}")
+                .WriteLineAsync($"Asking for an aggregate the server does not have: {outcome.StatusCode}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -991,7 +991,7 @@ namespace Opc.Ua.Samples.Tests
                 ct: ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The captured history grew from {before.Count} to {grown.Count} values without a subscription.")
+                .WriteLineAsync($"The captured history grew from {before.Count} to {grown.Count} values without a subscription.", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -1094,7 +1094,7 @@ namespace Opc.Ua.Samples.Tests
             await TestContext.Out
                 .WriteLineAsync(
                     $"HA Configuration of the live temperature: MinTimeInterval {interval.WrappedValue}, " +
-                    $"Stepped {isStepped.WrappedValue}, StartOfOnlineArchive {start.WrappedValue}")
+                    $"Stepped {isStepped.WrappedValue}, StartOfOnlineArchive {start.WrappedValue}", ct)
                 .ConfigureAwait(false);
 
             Assert.Multiple(() => {
@@ -1151,7 +1151,7 @@ namespace Opc.Ua.Samples.Tests
                 .ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"Inserting three readings at one instant: {inserted} / {string.Join(", ", perInserted)}")
+                .WriteLineAsync($"Inserting three readings at one instant: {inserted} / {string.Join(", ", perInserted)}", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
@@ -1373,7 +1373,7 @@ namespace Opc.Ua.Samples.Tests
                 ct: ct).ConfigureAwait(false);
 
             await TestContext.Out
-                .WriteLineAsync($"The dynamic archive grew from {before.Count} to {grown} values while monitored.")
+                .WriteLineAsync($"The dynamic archive grew from {before.Count} to {grown} values while monitored.", ct)
                 .ConfigureAwait(false);
 
             Assert.That(
